@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -43,8 +44,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,11 +58,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests partition scan query fallback.
  */
+@RunWith(JUnit4.class)
 public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -126,6 +132,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanLocal() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -149,10 +156,73 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * Scan (with explicit {@code setLocal(true)}) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testScanLocalExplicit() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            int part = anyLocalPartition(cache.context());
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(part).setLocal(true));
+
+            doTestScanQuery(qry, part);
+
+            GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+                int remPart = remotePartition(cache.context()).getKey();
+
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(remPart).setLocal(true));
+
+                return null;
+            }, IgniteCheckedException.class, null);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan (with explicit {@code setLocal(true)}, no partition specified) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testScanLocalExplicitNoPart() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setLocal(true));
+
+            assertFalse(qry.getAll().isEmpty());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * Scan should perform on the remote node.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanRemote() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -182,6 +252,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanFallbackOnRebalancing() throws Exception {
         scanFallbackOnRebalancing(false);
     }
@@ -279,6 +350,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanFallbackOnRebalancingCursor1() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         clientMode = false;
@@ -346,6 +418,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanFallbackOnRebalancingCursor2() throws Exception {
         scanFallbackOnRebalancing(true);
     }

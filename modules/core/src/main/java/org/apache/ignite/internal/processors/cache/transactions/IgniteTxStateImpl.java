@@ -29,8 +29,6 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -73,6 +71,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     protected Boolean recovery;
 
+    /** */
+    @GridToStringInclude
+    protected Boolean mvccEnabled;
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -81,6 +83,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return activeCacheIds;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +149,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx, recovery != null && recovery, read, null, e.getValue());
+            Throwable err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)
@@ -171,6 +178,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery != null && recovery;
     }
 
     /** {@inheritDoc} */
@@ -203,8 +215,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
+        assert tx.local();
+
         GridCacheSharedContext cctx = cacheCtx.shared();
 
         int cacheId = cacheCtx.cacheId();
@@ -214,6 +228,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 "(cannot transact between recovery and non-recovery caches).");
 
         this.recovery = recovery;
+
+        if (this.mvccEnabled != null && this.mvccEnabled != cacheCtx.mvccEnabled())
+            throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
+                "(caches with different mvcc settings can't be enlisted in one transaction).");
+
+        this.mvccEnabled = cacheCtx.mvccEnabled();
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
@@ -462,7 +482,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public boolean mvccEnabled() {
+        return Boolean.TRUE == mvccEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }
 }

@@ -125,7 +125,7 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
+    @Override public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         return (ContinuousQuery<K, V>)super.setInitialQuery(initQry);
     }
 
@@ -199,12 +199,12 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
+    @Override public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
         return (ContinuousQuery<K, V>)super.setTimeInterval(timeInterval);
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
+    @Override public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
         return (ContinuousQuery<K, V>)super.setAutoUnsubscribe(autoUnsubscribe);
     }
 
@@ -213,7 +213,16 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
         return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets whether this query should be executed on local node only.
+     *
+     * Note: backup event queues are not kept for local continuous queries. It may lead to loss of notifications in case
+     * of node failures. Use {@link ContinuousQuery#setRemoteFilterFactory(Factory)} to register cache event listeners
+     * on all cache nodes, if delivery guarantee is required.
+     *
+     * @param loc Local flag.
+     * @return {@code this} for chaining.
+     */
     @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
         return (ContinuousQuery<K, V>)super.setLocal(loc);
     }

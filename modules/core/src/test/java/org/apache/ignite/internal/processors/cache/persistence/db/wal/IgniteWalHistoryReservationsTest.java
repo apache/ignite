@@ -33,19 +33,24 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean client;
@@ -65,8 +70,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY)
-                .setWalSegmentSize(512 * 1024);
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -79,6 +84,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg1);
+
+        cfg.setFailureDetectionTimeout(20_000);
 
         return cfg;
     }
@@ -104,7 +111,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReservedOnExchange() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         final int entryCnt = 10_000;
@@ -112,7 +122,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         stopGrid(initGridCnt);
 
@@ -122,8 +132,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         log.warning("Start loading");
 
-        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
-            for (int k = 0; k < entryCnt; k++){
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
+            for (int k = 0; k < entryCnt; k++) {
                 st.addData(k, k);
 
                 printProgress(k);
@@ -156,10 +166,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         log.warning("Start loading");
 
-        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
             st.allowOverwrite(true);
 
-            for (int k = 0; k < entryCnt; k++){
+            for (int k = 0; k < entryCnt; k++) {
                 st.addData(k, k);
 
                 printProgress(k);
@@ -191,16 +201,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                     for (int g = 0; g < initGridCnt; g++) {
                         IgniteEx ig = grid(g);
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
-
-                        synchronized (reservationStorage) {
-                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
-
-                            if (reserved.isEmpty())
-                                return false;
-                        }
+                        if (isReserveListEmpty(ig))
+                            return false;
                     }
 
                     return true;
@@ -218,16 +220,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 for (int g = 0; g < initGridCnt; g++) {
                     IgniteEx ig = grid(g);
 
-                    FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
-
-                    synchronized (reservationStorage) {
-                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
-
-                        if (!reserved.isEmpty())
-                            return false;
-                    }
+                    if (isReserveListEmpty(ig))
+                        return false;
                 }
 
                 return true;
@@ -238,9 +232,26 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code true} if reserve list is empty.
+     */
+    private boolean isReserveListEmpty(IgniteEx ig) {
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
+
+        Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
+
+        synchronized (segmentAware) {
+            Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
+
+            if (reserved.isEmpty())
+                return true;
+        }
+        return false;
+    }
+
+    /**
      *
      */
-    private void printProgress(int k){
+    private void printProgress(int k) {
         if (k % 1000 == 0)
             log.warning("Keys -> " + k);
     }
@@ -248,12 +259,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -266,6 +281,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             cache.remove(k);
 
         IgniteEx ig1 = startGrid(1);
+
+        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -283,8 +300,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             }
         }
 
-        cache.rebalance().get();
-
         for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
             GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
             GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
@@ -297,12 +312,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -327,6 +346,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
         assertEquals(entryCnt / 2, cache.size());
@@ -343,8 +364,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             }
         }
 
-        cache.rebalance().get();
-
         for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
             GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
             GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
@@ -357,10 +376,14 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
 
@@ -384,7 +407,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
-                nodeId0, false));
+            nodeId0, false));
 
         startGrid(0);
 
@@ -396,7 +419,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeLeftDuringExchange() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         final int entryCnt = 10_000;
@@ -404,7 +430,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final Ignite ig0 = startGrids(initGridCnt);
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 
@@ -434,16 +460,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                     for (int g = 0; g < initGridCnt; g++) {
                         IgniteEx ig = grid(g);
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
-
-                        synchronized (reservationStorage) {
-                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
-
-                            if (reserved.isEmpty())
-                                return false;
-                        }
+                        if (isReserveListEmpty(ig))
+                            return false;
                     }
 
                     return true;
@@ -463,16 +481,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 for (int g = 0; g < initGridCnt - 1; g++) {
                     IgniteEx ig = grid(g);
 
-                    FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
-
-                    synchronized (reservationStorage) {
-                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
-
-                        if (!reserved.isEmpty())
-                            return false;
-                    }
+                    if (isReserveListEmpty(ig))
+                        return false;
                 }
 
                 return true;

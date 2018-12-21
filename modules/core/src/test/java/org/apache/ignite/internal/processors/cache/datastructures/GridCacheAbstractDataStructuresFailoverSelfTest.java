@@ -69,6 +69,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -76,6 +79,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Failover tests for cache data structures.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
@@ -115,11 +119,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
         // No-op
     }
 
@@ -176,6 +175,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongFailsWhenServersLeft() throws Exception {
         client = true;
 
@@ -206,6 +206,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongTopologyChange() throws Exception {
         try (IgniteAtomicLong atomic = grid(0).atomicLong(STRUCTURE_NAME, 10, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -223,6 +224,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongConstantTopologyChange() throws Exception {
         doTestAtomicLong(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -230,6 +232,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongConstantMultipleTopologyChange() throws Exception {
         doTestAtomicLong(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -268,6 +271,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceTopologyChange() throws Exception {
         try (IgniteAtomicReference atomic = grid(0).atomicReference(STRUCTURE_NAME, 10, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -285,6 +289,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceConstantTopologyChange() throws Exception {
         doTestAtomicReference(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -292,6 +297,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceConstantMultipleTopologyChange() throws Exception {
         doTestAtomicReference(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -330,6 +336,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedTopologyChange() throws Exception {
         try (IgniteAtomicStamped atomic = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -353,6 +360,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedConstantTopologyChange() throws Exception {
         doTestAtomicStamped(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -360,6 +368,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedConstantMultipleTopologyChange() throws Exception {
         doTestAtomicStamped(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -410,6 +419,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountDownLatchTopologyChange() throws Exception {
         try (IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 20, true, true)) {
             try {
@@ -432,6 +442,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreFailoverSafe() throws Exception {
         try (final IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -455,6 +466,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreNonFailoverSafe() throws Exception {
         try (IgniteSemaphore sem = grid(0).semaphore(STRUCTURE_NAME, 20, false, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -486,6 +498,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseSetInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).set(STRUCTURE_NAME, new CollectionConfiguration()));
     }
@@ -493,6 +506,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseQueueInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).queue(STRUCTURE_NAME, 0, new CollectionConfiguration()));
     }
@@ -500,6 +514,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseAtomicLongInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).atomicLong(STRUCTURE_NAME, 10, true));
     }
@@ -507,6 +522,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseAtomicReferenceInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).atomicReference(STRUCTURE_NAME, 10, true));
     }
@@ -514,6 +530,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseCountDownLatchInInterruptedThread() throws Exception {
         IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 1, true, true);
         latch.countDown();
@@ -524,6 +541,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseAtomicStampedInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).atomicStamped(STRUCTURE_NAME, 10, 10,true));
     }
@@ -531,6 +549,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanCloseSemaphoreInInterruptedThread() throws Exception {
         doCloseByInterruptedThread(grid(0).semaphore(STRUCTURE_NAME, 1, true, true));
     }
@@ -558,6 +577,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreSingleNodeFailure() throws Exception {
         final Ignite i1 = grid(0);
 
@@ -611,6 +631,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreConstantTopologyChangeFailoverSafe() throws Exception {
         doTestSemaphore(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
     }
@@ -618,6 +639,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreConstantTopologyChangeNonFailoverSafe() throws Exception {
         doTestSemaphore(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false);
     }
@@ -625,6 +647,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreMultipleTopologyChangeFailoverSafe() throws Exception {
         doTestSemaphore(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
     }
@@ -632,6 +655,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreMultipleTopologyChangeNonFailoverSafe() throws Exception {
         doTestSemaphore(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false);
     }
@@ -710,6 +734,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockFailsWhenServersLeft() throws Exception {
         testReentrantLockFailsWhenServersLeft(false);
     }
@@ -717,6 +742,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFairReentrantLockFailsWhenServersLeft() throws Exception {
         testReentrantLockFailsWhenServersLeft(true);
     }
@@ -790,6 +816,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
         doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
     }
@@ -797,6 +824,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
         doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
     }
@@ -804,6 +832,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
         doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
     }
@@ -811,6 +840,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
     }
@@ -818,6 +848,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFairReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
         doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
     }
@@ -825,6 +856,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFairReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
         doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
     }
@@ -832,6 +864,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFairReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
         doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
     }
@@ -839,6 +872,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
     }
@@ -921,6 +955,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountDownLatchConstantTopologyChange() throws Exception {
         doTestCountDownLatch(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -928,6 +963,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountDownLatchConstantMultipleTopologyChange() throws Exception {
         doTestCountDownLatch(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -971,6 +1007,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFifoQueueTopologyChange() throws Exception {
         try {
             grid(0).queue(STRUCTURE_NAME, 0, config(false)).put(10);
@@ -993,6 +1030,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueTopologyChange() throws Exception {
         ConstantTopologyChangeWorker topWorker = new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT);
 
@@ -1047,6 +1085,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueConstantTopologyChange() throws Exception {
         int topChangeThreads = collectionCacheMode() == CacheMode.PARTITIONED ? 1 : TOP_CHANGE_THREAD_CNT;
 
@@ -1056,6 +1095,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueConstantMultipleTopologyChange() throws Exception {
         int topChangeThreads = collectionCacheMode() == CacheMode.PARTITIONED ? 1 : TOP_CHANGE_THREAD_CNT;
 
@@ -1126,6 +1166,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSequenceInitialization() throws Exception {
         checkAtomicSequenceInitialization(false);
     }
@@ -1133,6 +1174,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSequenceInitializationOnStableNodes() throws Exception {
         checkAtomicSequenceInitialization(true);
     }
@@ -1216,6 +1258,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSequenceTopologyChange() throws Exception {
         try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 10, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
@@ -1231,6 +1274,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
         doTestAtomicSequence(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT, true));
     }
@@ -1238,6 +1282,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSequenceConstantMultipleTopologyChange() throws Exception {
         doTestAtomicSequence(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
     }
@@ -1277,6 +1322,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUncommitedTxLeave() throws Exception {
         final int val = 10;
 
@@ -1325,7 +1371,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         protected final AtomicBoolean failed = new AtomicBoolean(false);
 
         /** */
-        private final int topChangeThreads;
+        protected final int topChangeThreads;
 
         /** Flag to enable circular topology change. */
         private boolean circular;
@@ -1362,7 +1408,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             if (failed.get())
                                 return;
 
-                            int idx = nodeIdx.getAndIncrement();
+                            int idx = nodeIdx.incrementAndGet();
 
                             Thread.currentThread().setName("thread-" + getTestIgniteInstanceName(idx));
 
@@ -1373,8 +1419,15 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                 cb.apply(g);
                             }
+                            catch (IgniteException e) {
+                                if (!X.hasCause(e, NodeStoppingException.class) &&
+                                    !X.hasCause(e, IllegalStateException.class))
+                                    throw e;
+
+                                // OK for this test.
+                            }
                             finally {
-                                if(circular)
+                                if (circular)
                                     stopGrid(G.allGrids().get(0).configuration().getIgniteInstanceName());
                                 else
                                     stopGrid(idx);
@@ -1443,7 +1496,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             throw F.wrap(e);
                     }
                 }
-            }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
+            }, topChangeThreads, "topology-change-thread");
         }
     }
 

@@ -17,21 +17,20 @@
 
 package org.apache.ignite.sink.flink;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
  * Apache Flink sink tests.
  */
 public class FlinkIgniteSinkSelfTestSuite extends TestSuite {
-
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache Flink sink Test Suite");
 
-        suite.addTest(new TestSuite(FlinkIgniteSinkSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(FlinkIgniteSinkSelfTest.class));
 
         return suite;
     }

@@ -53,7 +53,7 @@ struct TypesTestSuiteFixture : odbc::OdbcTestSuite
     TypesTestSuiteFixture() :
         cache1(0)
     {
-        node = StartTestNode("queries-test.xml", "NodeMain");
+        node = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = node.GetCache<int64_t, TestType>("cache");
     }

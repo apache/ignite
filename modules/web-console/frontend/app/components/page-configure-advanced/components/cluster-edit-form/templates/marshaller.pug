@@ -24,52 +24,91 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Marshaller
     panel-description
-        | Marshaller allows to marshal or unmarshal objects in grid. 
-        | It provides serialization/deserialization mechanism for all instances that are sent across networks or are otherwise serialized. 
-        | By default BinaryMarshaller will be used. 
+        | Marshaller allows to marshal or unmarshal objects in grid.
+        | It provides serialization/deserialization mechanism for all instances that are sent across networks or are otherwise serialized.
+        | By default BinaryMarshaller will be used.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/binary-marshaller" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +dropdown('Marshaller:', marshaller + '.kind', '"kind"', 'true', 'Default', '$ctrl.marshallerVariant',
-                    'Instance of marshaller to use in grid<br/>\
-                    <ul>\
-                        <li>OptimizedMarshaller - Optimized implementation of marshaller</li>\
-                        <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
-                        <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Marshaller:',
+                    model: marshaller + '.kind',
+                    name: '"kind"',
+                    placeholder: 'Default',
+                    options: '$ctrl.marshallerVariant',
+                    tip: 'Instance of marshaller to use in grid<br/>\
+                       <ul>\
+                           <li>OptimizedMarshaller - Optimized implementation of marshaller</li>\
+                           <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
+                           <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
+                       </ul>'
+                })
             .pc-form-grid-col-60(ng-if='$ctrl.available(["2.0.0", "2.1.0"])')
-                +dropdown('Marshaller:', marshaller + '.kind', '"kind"', 'true', 'Default', '$ctrl.marshallerVariant',
-                    'Instance of marshaller to use in grid<br/>\
-                    <ul>\
-                        <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
-                        <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Marshaller:',
+                    model: marshaller + '.kind',
+                    name: '"kind"',
+                    placeholder: 'Default',
+                    options: '$ctrl.marshallerVariant',
+                    tip: 'Instance of marshaller to use in grid<br/>\
+                        <ul>\
+                            <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
+                            <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
+                        </ul>'
+                })
             .pc-form-group.pc-form-grid-row(
                 ng-show=`${marshaller}.kind === 'OptimizedMarshaller'`
                 ng-if='$ctrl.available(["1.0.0", "2.1.0"])'
             )
                 .pc-form-grid-col-60
-                    +number('Streams pool size:', `${optMarshaller}.poolSize`, '"poolSize"', 'true', '0', '0',
-                        'Specifies size of cached object streams used by marshaller<br/>\
-                        Object streams are cached for performance reason to avoid costly recreation for every serialization routine<br/>\
-                        If 0 (default), pool is not used and each thread has its own cached object stream which it keeps reusing<br/>\
-                        Since each stream has an internal buffer, creating a stream for each thread can lead to high memory consumption if many large messages are marshalled or unmarshalled concurrently<br/>\
-                        Consider using pool in this case. This will limit number of streams that can be created and, therefore, decrease memory consumption<br/>\
-                        NOTE: Using streams pool can decrease performance since streams will be shared between different threads which will lead to more frequent context switching')
+                    +form-field__number({
+                        label: 'Streams pool size:',
+                        model: `${optMarshaller}.poolSize`,
+                        name: '"poolSize"',
+                        placeholder: '0',
+                        min: '0',
+                        tip: 'Specifies size of cached object streams used by marshaller<br/>\
+                             Object streams are cached for performance reason to avoid costly recreation for every serialization routine<br/>\
+                             If 0 (default), pool is not used and each thread has its own cached object stream which it keeps reusing<br/>\
+                             Since each stream has an internal buffer, creating a stream for each thread can lead to high memory consumption if many large messages are marshalled or unmarshalled concurrently<br/>\
+                             Consider using pool in this case. This will limit number of streams that can be created and, therefore, decrease memory consumption<br/>\
+                             NOTE: Using streams pool can decrease performance since streams will be shared between different threads which will lead to more frequent context switching'
+                    })
                 .pc-form-grid-col-60
-                    +checkbox('Require serializable', `${optMarshaller}.requireSerializable`, '"requireSerializable"',
-                        'Whether marshaller should require Serializable interface or not')
+                    +form-field__checkbox({
+                        label: 'Require serializable',
+                        model: `${optMarshaller}.requireSerializable`,
+                        name: '"requireSerializable"',
+                        tip: 'Whether marshaller should require Serializable interface or not'
+                    })
             .pc-form-grid-col-60
-                +checkbox('Marshal local jobs', `${model}.marshalLocalJobs`, '"marshalLocalJobs"', 'If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node')
+                +form-field__checkbox({
+                    label: 'Marshal local jobs',
+                    model: `${model}.marshalLocalJobs`,
+                    name: '"marshalLocalJobs"',
+                    tip: 'If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-30(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +number('Keep alive time:', `${model}.marshallerCacheKeepAliveTime`, '"marshallerCacheKeepAliveTime"', 'true', '10000', '0',
-                    'Keep alive time of thread pool that is in charge of processing marshaller messages')
+                +form-field__number({
+                    label: 'Keep alive time:',
+                    model: `${model}.marshallerCacheKeepAliveTime`,
+                    name: '"marshallerCacheKeepAliveTime"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Keep alive time of thread pool that is in charge of processing marshaller messages'
+                })
             .pc-form-grid-col-30(ng-if-end)
-                +number('Pool size:', `${model}.marshallerCacheThreadPoolSize`, '"marshallerCacheThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
-                    'Default size of thread pool that is in charge of processing marshaller messages')
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${model}.marshallerCacheThreadPoolSize`,
+                    name: '"marshallerCacheThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Default size of thread pool that is in charge of processing marshaller messages'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterMarshaller')

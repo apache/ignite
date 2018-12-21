@@ -17,12 +17,20 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.cache.query.annotations.QuerySqlField
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
+import org.apache.ignite.spark.IgniteDataFrameSettings.{FORMAT_IGNITE, OPTION_TABLE}
+import org.apache.spark.sql.functions.lit
+import org.apache.spark.sql.types.DataTypes.StringType
+import org.apache.spark.sql.{Dataset, Row}
+
+import scala.annotation.meta.field
 
 /**
   */
@@ -232,6 +240,25 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
             checkQueryData(df, data)
         }
+
+        it("Should optimize union") {
+            val union = readTable("JPerson").union(readTable("JPerson2"))
+
+            val data = (
+                (1, "JPerson-1"),
+                (2, "JPerson-2"))
+
+            checkQueryData(union, data)
+        }
+
+        it("Should optimize null column") {
+            val p = readTable("JPerson").withColumn("nullColumn", lit(null).cast(StringType))
+
+            val data = Tuple1(
+                (1, "JPerson-1", null))
+
+            checkQueryData(p, data)
+        }
     }
 
     describe("Not Optimized Queries") {
@@ -278,12 +305,33 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         }
     }
 
+    def readTable(tblName: String): Dataset[Row] =
+        igniteSession.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_TABLE, tblName)
+            .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .load
+
     override protected def beforeAll(): Unit = {
         super.beforeAll()
 
         createPersonTable(client, DEFAULT_CACHE)
 
         createCityTable(client, DEFAULT_CACHE)
+
+        val p = client.getOrCreateCache(new CacheConfiguration[Long, JPerson]()
+            .setName("P")
+            .setSqlSchema("SQL_PUBLIC")
+            .setIndexedTypes(classOf[Long], classOf[JPerson]))
+
+        p.put(1L, new JPerson(1L, "JPerson-1"))
+
+        val p2 = client.getOrCreateCache(new CacheConfiguration[Long, JPerson2]()
+            .setName("P2")
+            .setSqlSchema("SQL_PUBLIC")
+            .setIndexedTypes(classOf[Long], classOf[JPerson2]))
+
+        p2.put(1L, new JPerson2(2L, "JPerson-2"))
 
         val configProvider = enclose(null) (x ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
@@ -302,4 +350,12 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
         igniteSession.udf.register("test_reverse", (str: String) ⇒ str.reverse)
     }
+
+    case class JPerson(
+        @(QuerySqlField @field) id: Long,
+        @(QuerySqlField @field)(index = true) name: String)
+
+    case class JPerson2(
+        @(QuerySqlField @field) id: Long,
+        @(QuerySqlField @field)(index = true) name: String)
 }

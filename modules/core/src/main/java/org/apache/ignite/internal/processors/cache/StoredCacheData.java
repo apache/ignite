@@ -98,8 +98,10 @@ public class StoredCacheData implements Serializable {
     /**
      * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
      */
-    public void sql(boolean sql) {
+    public StoredCacheData sql(boolean sql) {
         this.sql = sql;
+
+        return this;
     }
 
     /** {@inheritDoc} */

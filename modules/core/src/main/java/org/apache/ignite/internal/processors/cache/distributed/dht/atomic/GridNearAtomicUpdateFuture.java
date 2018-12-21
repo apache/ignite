@@ -70,15 +70,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Collection<?> keys;
 
     /** Values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<?> vals;
 
     /** Conflict put values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheDrInfo> conflictPutVals;
 
     /** Conflict remove values. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheVersion> conflictRmvVals;
 
     /** Mappings if operations is mapped to more than one node. */
@@ -347,7 +344,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     @Override public void onPrimaryResponse(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
         GridNearAtomicAbstractUpdateRequest req;
 
@@ -485,7 +481,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
                 "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-            cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
             e.add(remapKeys, cause);
 
@@ -915,7 +911,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Mapping.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private Map<UUID, PrimaryRequestState> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
         Long futId,
@@ -1159,7 +1154,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    public synchronized String toString() {
+    @Override public synchronized String toString() {
         return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
     }
 }

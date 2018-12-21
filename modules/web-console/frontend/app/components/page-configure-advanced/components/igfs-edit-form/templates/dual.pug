@@ -31,12 +31,28 @@ panel-collapsible(
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6
             .settings-row
-                +number('Maximum pending puts size:', `${model}.dualModeMaxPendingPutsSize`, '"dualModeMaxPendingPutsSize"', 'true', '0', 'Number.MIN_SAFE_INTEGER',
-                    'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache<br/>\
-                    Zero or negative value stands for unlimited size')
+                +form-field__number({
+                    label: 'Maximum pending puts size:',
+                    model: `${model}.dualModeMaxPendingPutsSize`,
+                    name: '"dualModeMaxPendingPutsSize"',
+                    placeholder: '0',
+                    min: 'Number.MIN_SAFE_INTEGER',
+                    tip: 'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache<br/>\
+                         Zero or negative value stands for unlimited size'
+                })
             .settings-row
-                +java-class('Put executor service:', `${model}.dualModePutExecutorService`, '"dualModePutExecutorService"', 'true', 'false', 'DUAL mode put operation executor service')
+                +form-field__java-class({
+                    label: 'Put executor service:',
+                    model: `${model}.dualModePutExecutorService`,
+                    name: '"dualModePutExecutorService"',
+                    tip: 'DUAL mode put operation executor service'
+                })
             .settings-row
-                +checkbox('Put executor service shutdown', `${model}.dualModePutExecutorServiceShutdown`, '"dualModePutExecutorServiceShutdown"', 'DUAL mode put operation executor service shutdown flag')
+                +form-field__checkbox({
+                    label: 'Put executor service shutdown',
+                    model: `${model}.dualModePutExecutorServiceShutdown`,
+                    name: '"dualModePutExecutorServiceShutdown"',
+                    tip: 'DUAL mode put operation executor service shutdown flag'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'igfsDualMode')

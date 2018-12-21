@@ -104,7 +104,6 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     /**
      * @param ignite Ignite instance.
      */
-    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);

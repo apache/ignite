@@ -38,7 +38,6 @@ public @interface IgniteSpiConsistencyChecked {
      * Optional consistency check means that check will be performed only if
      * SPI class names and versions match.
      */
-    @SuppressWarnings("JavaDoc")
     public boolean optional();
 
     /**
@@ -46,6 +45,5 @@ public @interface IgniteSpiConsistencyChecked {
      * for SwapSpaceSpi for example, since client nodes has no data at all, so they
      * don't need to be consistent with server nodes.
      */
-    @SuppressWarnings("JavaDoc")
     public boolean checkClient() default true;
 }

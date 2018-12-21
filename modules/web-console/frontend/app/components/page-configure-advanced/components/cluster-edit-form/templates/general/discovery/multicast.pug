@@ -22,21 +22,54 @@ mixin discovery-multicast(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text-ip-address('IP address:', `${model}.multicastGroup`, '"multicastGroup"', 'true', '228.1.2.4', 'IP address of multicast group')
+            +form-field__ip-address({
+                label: 'IP address:',
+                model: `${model}.multicastGroup`,
+                name: '"multicastGroup"',
+                enabled: 'true',
+                placeholder: '228.1.2.4',
+                tip: 'IP address of multicast group'
+            })
         .pc-form-grid-col-30
-            +number-min-max('Port number:', `${model}.multicastPort`, '"multicastPort"', 'true', '47400', '0', '65535', 'Port number which multicast messages are sent to')
+            +form-field__number({
+                label: 'Port number:',
+                model: `${model}.multicastPort`,
+                name: '"multicastPort"',
+                placeholder: '47400',
+                min: '0',
+                max: '65535',
+                tip: 'Port number which multicast messages are sent to'
+            })
         .pc-form-grid-col-20
-            +number('Waits for reply:', `${model}.responseWaitTime`, '"responseWaitTime"', 'true', '500', '0',
-                'Time in milliseconds IP finder waits for reply to multicast address request')
+            +form-field__number({
+                label: 'Waits for reply:',
+                model: `${model}.responseWaitTime`,
+                name: '"responseWaitTime"',
+                placeholder: '500',
+                min: '0',
+                tip: 'Time in milliseconds IP finder waits for reply to multicast address request'
+            })
         .pc-form-grid-col-20
-            +number('Attempts count:', `${model}.addressRequestAttempts`, '"addressRequestAttempts"', 'true', '2', '0',
-                'Number of attempts to send multicast address request<br/>\
-                IP finder re - sends request only in case if no reply for previous request is received')
+            +form-field__number({
+                label: 'Attempts count:',
+                model: `${model}.addressRequestAttempts`,
+                name: '"addressRequestAttempts"',
+                placeholder: '2',
+                min: '0',
+                tip: 'Number of attempts to send multicast address request<br/>\
+                     IP finder re - sends request only in case if no reply for previous request is received'
+            })
         .pc-form-grid-col-20.pc-form-grid-col-free
-            +text-ip-address('Local address:', `${model}.localAddress`, '"localAddress"', 'true', '0.0.0.0',
-                'Local host address used by this IP finder<br/>\
-                If provided address is non - loopback then multicast socket is bound to this interface<br/>\
-                If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses')
+            +form-field__ip-address({
+                label: 'Local address:',
+                model: `${model}.localAddress`,
+                name: '"localAddress"',
+                enabled: 'true',
+                placeholder: '0.0.0.0',
+                tip: 'Local host address used by this IP finder<br/>\
+                     If provided address is non - loopback then multicast socket is bound to this interface<br/>\
+                     If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses'
+            })
         .pc-form-grid-col-60
             .ignite-form-field
                 +list-addresses({

@@ -50,10 +50,7 @@ namespace Apache.Ignite.Examples.ThinClient
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteClientConfiguration
-            {
-                Host = "127.0.0.1"
-            };
+            var cfg = new IgniteClientConfiguration("127.0.0.1");
 
             using (IIgniteClient igniteClient = Ignition.StartClient(cfg))
             {
@@ -66,7 +63,7 @@ namespace Apache.Ignite.Examples.ThinClient
                     Name = CacheName,
                     QueryEntities = new[]
                     {
-                        new QueryEntity(typeof(int), typeof(Employee)), 
+                        new QueryEntity(typeof(int), typeof(Employee)),
                     }
                 };
 
@@ -78,7 +75,7 @@ namespace Apache.Ignite.Examples.ThinClient
                 // Run SQL example.
                 SqlQueryExample(cache);
                 LinqExample(cache);
-                
+
                 // Run SQL fields query example.
                 SqlFieldsQueryExample(cache);
                 LinqFieldsExample(cache);
@@ -105,7 +102,7 @@ namespace Apache.Ignite.Examples.ThinClient
             foreach (var entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);
         }
-        
+
         /// <summary>
         /// Queries employees that have provided ZIP code in address.
         /// </summary>
@@ -122,13 +119,13 @@ namespace Apache.Ignite.Examples.ThinClient
 
             foreach (ICacheEntry<int, Employee> entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);
-            
+
             Console.WriteLine();
             Console.WriteLine(">>> Generated SQL:");
             Console.WriteLine(">>> " + qry.ToCacheQueryable().GetFieldsQuery().Sql);
         }
 
-        
+
         /// <summary>
         /// Queries names and salaries for all employees.
         /// </summary>
@@ -143,7 +140,7 @@ namespace Apache.Ignite.Examples.ThinClient
             foreach (var row in qry)
                 Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
         }
-        
+
         /// <summary>
         /// Queries names and salaries for all employees.
         /// </summary>
@@ -157,7 +154,7 @@ namespace Apache.Ignite.Examples.ThinClient
 
             foreach (var row in qry)
                 Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Salary + ']');
-            
+
             Console.WriteLine();
             Console.WriteLine(">>> Generated SQL:");
             Console.WriteLine(">>> " + qry.ToCacheQueryable().GetFieldsQuery().Sql);

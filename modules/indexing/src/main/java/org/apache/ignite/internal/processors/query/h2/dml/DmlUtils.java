@@ -71,14 +71,14 @@ public class DmlUtils {
                     U.resolveClassLoader(desc.context().gridConfig()));
 
             if (LocalDateTimeUtils.isJava8DateApiPresent()) {
-                if (val instanceof Timestamp && LocalDateTimeUtils.isLocalDateTime(expCls))
+                if (val instanceof Timestamp && LocalDateTimeUtils.LOCAL_DATE_TIME ==expCls)
                     return LocalDateTimeUtils.valueToLocalDateTime(ValueTimestamp.get((Timestamp) val));
 
-                if (val instanceof Date && LocalDateTimeUtils.isLocalDate(expCls))
+                if (val instanceof Date && LocalDateTimeUtils.LOCAL_DATE == expCls)
                     return LocalDateTimeUtils.valueToLocalDate(ValueDate.fromDateValue(
                         DateTimeUtils.dateValueFromDate(((Date) val).getTime())));
 
-                if (val instanceof Time && LocalDateTimeUtils.isLocalTime(expCls))
+                if (val instanceof Time && LocalDateTimeUtils.LOCAL_TIME == expCls)
                     return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time) val));
             }
 
@@ -102,7 +102,7 @@ public class DmlUtils {
                 return newArr;
             }
 
-            Object res = H2Utils.convert(val, desc, type);
+            Object res = H2Utils.convert(val, desc.indexing(), type);
 
             if (res instanceof Date && res.getClass() != Date.class && expCls == Date.class) {
                 // We can get a Timestamp instead of Date when converting a String to Date

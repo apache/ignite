@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-import AgentManager from 'app/modules/agent/AgentManager.service';
+import {tap} from 'rxjs/operators';
 
 export default class {
-    static $inject = [AgentManager.name, 'ConnectedClustersDialog'];
+    static $inject = ['AgentManager', 'ConnectedClustersDialog'];
 
-    /** @type {Number} */
     connectedClusters = 0;
 
     /**
-     * @param {AgentManager} agentMgr
-     * @param connectedClustersDialog
+     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
+     * @param {import('../connected-clusters-dialog/service').default} connectedClustersDialog
      */
     constructor(agentMgr, connectedClustersDialog) {
         this.agentMgr = agentMgr;
@@ -39,10 +38,11 @@ export default class {
     }
 
     $onInit() {
-        this.connectedClusters$ = this.agentMgr.connectionSbj
-            .do(({ clusters }) => this.connectedClusters = clusters.length)
-            .do(({ clusters }) => this.clusters = clusters)
-            .subscribe();
+        this.connectedClusters$ = this.agentMgr.connectionSbj.pipe(
+            tap(({ clusters }) => this.connectedClusters = clusters.length),
+            tap(({ clusters }) => this.clusters = clusters)
+        )
+        .subscribe();
     }
 
     $onDestroy() {

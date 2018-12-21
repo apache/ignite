@@ -57,7 +57,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(ioType, ioVer);
 
-        io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
+        io.initNewPage(pageAddr, newPageId, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

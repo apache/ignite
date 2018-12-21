@@ -19,6 +19,8 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.ml.Exportable;
+import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -27,7 +29,7 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * Model consisting of several models and prediction aggregation strategy.
  */
-public class ModelsComposition implements Model<Vector, Double> {
+public class ModelsComposition implements Model<Vector, Double>, Exportable<ModelsCompositionFormat> {
     /**
      * Predictions aggregator.
      */
@@ -75,6 +77,12 @@ public class ModelsComposition implements Model<Vector, Double> {
      */
     public List<Model<Vector, Double>> getModels() {
         return models;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <P> void saveModel(Exporter<ModelsCompositionFormat, P> exporter, P path) {
+        ModelsCompositionFormat format = new ModelsCompositionFormat(models, predictionsAggregator);
+        exporter.save(format, path);
     }
 
     /** {@inheritDoc} */

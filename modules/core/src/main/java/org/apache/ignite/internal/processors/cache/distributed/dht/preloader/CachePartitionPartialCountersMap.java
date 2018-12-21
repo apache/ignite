@@ -34,7 +34,7 @@ public class CachePartitionPartialCountersMap implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    static final IgniteProductVersion PARTIAL_COUNTERS_MAP_SINCE = IgniteProductVersion.fromString("2.1.4");
+    public static final IgniteProductVersion PARTIAL_COUNTERS_MAP_SINCE = IgniteProductVersion.fromString("2.1.4");
 
     /** */
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
@@ -225,7 +225,7 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         StringBuilder sb = new StringBuilder("CachePartitionPartialCountersMap {");
 
         for (int i = 0; i < partIds.length; i++) {

@@ -159,7 +159,7 @@ public class HadoopFileBlock extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopFileBlock.class, this, "hosts", Arrays.toString(hosts));
     }
 }

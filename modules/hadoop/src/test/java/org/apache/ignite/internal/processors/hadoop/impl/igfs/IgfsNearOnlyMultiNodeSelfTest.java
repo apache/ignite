@@ -43,6 +43,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,6 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test hadoop file system implementation.
  */
+@RunWith(JUnit4.class)
 public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Path to the default hadoop configuration. */
     public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
@@ -69,10 +73,6 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(nodeCount());
-
-        grid(0).createNearCache("data", new NearCacheConfiguration());
-
-        grid(0).createNearCache("meta", new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -89,8 +89,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data"));
-        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data")
+            .setNearConfiguration(new NearCacheConfiguration()));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta")
+            .setNearConfiguration(new NearCacheConfiguration()));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -158,7 +160,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("igfs://127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("igfs://igfs@127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -166,6 +168,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testContentsConsistency() throws Exception {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<IgniteBiTuple<String, Long>> files = F.asList(

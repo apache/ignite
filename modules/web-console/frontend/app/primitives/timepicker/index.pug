@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, required, placeholder, tip })
+mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, required, placeholder, tip, format = 'HH:mm'})
     mixin __form-field__timepicker()
         input(
             id=`{{ ${name} }}Input`
@@ -28,17 +28,20 @@ mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, r
             ng-disabled=disabled && `${disabled}`
 
             bs-timepicker
-            data-time-format='HH:mm'
+            data-time-format=format
             data-length='1'
             data-minute-step='1'
+            data-second-step='1'
             data-arrow-behavior='picker'
 
             data-placement='bottom'
+            data-container='body'
 
             tabindex='0'
 
             onkeydown='return false'
-            expose-ignite-form-field-control='$input'
+            ng-ref='$input'
+            ng-ref-read='ngModel'
         )&attributes(attributes.attributes)
 
     .form-field.form-field__timepicker.ignite-form-field(id=`{{ ${name} }}Field`)
@@ -53,8 +56,8 @@ mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, r
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

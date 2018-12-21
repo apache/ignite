@@ -21,45 +21,78 @@ include /app/helpers/jade/mixins
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Transactions
-    panel-description 
-        | Settings for transactions. 
+    panel-description
+        | Settings for transactions.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/transactions" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +dropdown('Concurrency:', `${model}.defaultTxConcurrency`, '"defaultTxConcurrency"', 'true', 'PESSIMISTIC',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Concurrency:',
+                    model: `${model}.defaultTxConcurrency`,
+                    name: '"defaultTxConcurrency"',
+                    placeholder: 'PESSIMISTIC',
+                    options: '[\
                         {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
                         {value: "PESSIMISTIC", label: "PESSIMISTIC"}\
                     ]',
-                    'Cache transaction concurrency to use when one is not explicitly specified\
-                    <ul>\
-                        <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
-                        <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
-                    </ul>')
+                    tip: 'Cache transaction concurrency to use when one is not explicitly specified\
+                        <ul>\
+                            <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
+                            <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
+                        </ul>'
+                })
             .pc-form-grid-col-30
-                +dropdown('Isolation:', `${model}.defaultTxIsolation`, '"defaultTxIsolation"', 'true', 'REPEATABLE_READ',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Isolation:',
+                    model: `${model}.defaultTxIsolation`,
+                    name: '"defaultTxIsolation"',
+                    placeholder: 'REPEATABLE_READ',
+                    options: '[\
                         {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
                         {value: "REPEATABLE_READ", label: "REPEATABLE_READ"},\
                         {value: "SERIALIZABLE", label: "SERIALIZABLE"}\
                     ]',
-                    'Default transaction isolation\
-                    <ul>\
-                        <li>READ_COMMITTED - Always a committed value will be provided for read operations</li>\
-                        <li>REPEATABLE_READ - If a value was read once within transaction, then all consecutive reads will provide the same in-transaction value</li>\
-                        <li>SERIALIZABLE - All transactions occur in a completely isolated fashion, as if all transactions in the system had executed serially, one after the other.</li>\
-                    </ul>')
+                    tip: 'Default transaction isolation\
+                        <ul>\
+                            <li>READ_COMMITTED - Always a committed value will be provided for read operations</li>\
+                            <li>REPEATABLE_READ - If a value was read once within transaction, then all consecutive reads will provide the same in-transaction value</li>\
+                            <li>SERIALIZABLE - All transactions occur in a completely isolated fashion, as if all transactions in the system had executed serially, one after the other.</li>\
+                        </ul>'
+                })
             .pc-form-grid-col-60
-                +number('Default timeout:', `${model}.defaultTxTimeout`, '"defaultTxTimeout"', 'true', '0', '0', 'Default transaction timeout')
+                +form-field__number({
+                    label: 'Default timeout:',
+                    model: `${model}.defaultTxTimeout`,
+                    name: '"defaultTxTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Default transaction timeout'
+                })
             .pc-form-grid-col-30
-                +number('Pessimistic log cleanup delay:', `${model}.pessimisticTxLogLinger`, '"pessimisticTxLogLinger"', 'true', '10000', '0',
-                    'Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node')
+                +form-field__number({
+                    label: 'Pessimistic log cleanup delay:',
+                    model: `${model}.pessimisticTxLogLinger`,
+                    name: '"pessimisticTxLogLinger"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node'
+                })
             .pc-form-grid-col-30
-                +number('Pessimistic log size:', `${model}.pessimisticTxLogSize`, '"pessimisticTxLogSize"', 'true', '0', '0',
-                    'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
+                +form-field__number({
+                    label: 'Pessimistic log size:',
+                    model: `${model}.pessimisticTxLogSize`,
+                    name: '"pessimisticTxLogSize"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes'
+                })
             .pc-form-grid-col-60
-                +java-class('Manager factory:', `${model}.txManagerFactory`, '"txManagerFactory"', 'true', 'false',
-                    'Class name of transaction manager factory for integration with JEE app servers')
+                +form-field__java-class({
+                    label: 'Manager factory:',
+                    model: `${model}.txManagerFactory`,
+                    name: '"txManagerFactory"',
+                    tip: 'Class name of transaction manager factory for integration with JEE app servers'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterTransactions')

@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Predictions aggregator returning weighted sum of predictions.
+ * Predictions aggregator returning weighted plus of predictions.
  * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
  */
 public class WeightedPredictionsAggregator implements PredictionsAggregator {
@@ -85,5 +85,15 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
 
         return builder.append(bias > 0 ? " + " : " - ").append(String.format("%.4f", bias))
             .append("]").toString();
+    }
+
+    /** */
+    public double[] getWeights() {
+        return weights;
+    }
+
+    /** */
+    public double getBias() {
+        return bias;
     }
 }

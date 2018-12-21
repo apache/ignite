@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -42,56 +43,67 @@ import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
  * several learning iterations.
  */
 public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
-    private boolean useIndex;
+    /** Use index. */
+    private boolean useIdx;
 
     /**
      * Create an instance of learning strategy.
      *
-     * @param useIndex Use index.
+     * @param useIdx Use index.
      */
-    public GDBOnTreesLearningStrategy(boolean useIndex) {
-        this.useIndex = useIndex;
+    public GDBOnTreesLearningStrategy(boolean useIdx) {
+        this.useIdx = useIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> List<Model<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V> List<Model<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
 
         DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         assert trainer instanceof DecisionTree;
         DecisionTree decisionTreeTrainer = (DecisionTree) trainer;
 
-        List<Model<Vector, Double>> models = new ArrayList<>();
+        List<Model<Vector, Double>> models = initLearningState(mdlToUpdate);
+
+        ConvergenceChecker<K,V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+            externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
+
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIdx)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
-                double[] weights = Arrays.copyOf(compositionWeights, i);
-                WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
-                Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
+                double[] weights = Arrays.copyOf(compositionWeights, models.size());
+                WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLbVal);
+                ModelsComposition currComposition = new ModelsComposition(models, aggregator);
+
+                if(convCheck.isConverged(dataset, currComposition))
+                    break;
 
                 dataset.compute(part -> {
-                    if(part.getCopyOfOriginalLabels() == null)
-                        part.setCopyOfOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
+                    if (part.getCopiedOriginalLabels() == null)
+                        part.setCopiedOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
 
                     for(int j = 0; j < part.getLabels().length; j++) {
                         double mdlAnswer = currComposition.apply(VectorUtils.of(part.getFeatures()[j]));
-                        double originalLbVal = externalLbToInternalMapping.apply(part.getCopyOfOriginalLabels()[j]);
-                        part.getLabels()[j] = -lossGradient.apply(sampleSize, originalLbVal, mdlAnswer);
+                        double originalLbVal = externalLbToInternalMapping.apply(part.getCopiedOriginalLabels()[j]);
+                        part.getLabels()[j] = -loss.gradient(sampleSize, originalLbVal, mdlAnswer);
                     }
                 });
 
                 long startTs = System.currentTimeMillis();
                 models.add(decisionTreeTrainer.fit(dataset));
                 double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-                environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
+                trainerEnvironment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
             }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+        compositionWeights = Arrays.copyOf(compositionWeights, models.size());
         return models;
     }
 }

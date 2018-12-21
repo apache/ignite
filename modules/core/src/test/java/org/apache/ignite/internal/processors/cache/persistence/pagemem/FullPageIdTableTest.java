@@ -26,7 +26,10 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,6 +37,10 @@ import static org.junit.Assert.assertEquals;
  *
  */
 public class FullPageIdTableTest  {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** */
     private static final int CACHE_ID_RANGE = 1;
 
@@ -101,7 +108,7 @@ public class FullPageIdTableTest  {
             }
         }
         finally {
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 
@@ -218,7 +225,7 @@ public class FullPageIdTableTest  {
         finally {
             long msPassed = U.currentTimeMillis() - seed;
             System.err.println("Seed used [" + seed + "] duration ["+ msPassed+ "] ms");
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 

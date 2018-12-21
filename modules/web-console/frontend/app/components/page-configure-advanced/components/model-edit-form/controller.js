@@ -31,7 +31,8 @@ export default class ModelEditFormController {
     /** @type {ng.ICompiledExpression} */
     onSave;
 
-    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', Confirm.name, 'ConfigChangesGuard', IgniteVersion.name, '$scope', Models.name, 'IgniteFormUtils'];
+    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', 'Confirm', 'ConfigChangesGuard', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
+
     /**
      * @param {ModalImportModels} ModalImportModels
      * @param {Confirm} Confirm

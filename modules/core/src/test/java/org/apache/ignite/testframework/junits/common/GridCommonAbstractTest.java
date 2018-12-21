@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -78,23 +79,18 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -102,13 +98,10 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -124,11 +117,12 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -404,12 +398,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
+    }
+
+    /**
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
         throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
@@ -490,7 +491,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected final void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -504,7 +506,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected final void tearDown() throws Exception {
+    @After
+    @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         super.tearDown();
@@ -537,7 +540,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         awaitPartitionMapExchange(false, false, null);
     }
@@ -549,7 +551,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *      be filtered
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,
@@ -679,7 +680,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
-                                Collection<ClusterNode> affNodes =
+                                List<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int affNodesCnt = affNodes.size();
@@ -693,8 +694,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
+                                boolean notPrimary = !affNodes.isEmpty() &&
+                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
+                                    !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
+
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
@@ -952,7 +958,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * Use method for manual rebalancing cache on all nodes. Note that using
      * <pre name="code" class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
@@ -970,40 +976,52 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             return;
 
         IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
         }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /**
@@ -1060,7 +1078,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
         return findKeys(cache, cnt, startFrom, 0);
     }
@@ -1071,7 +1088,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
@@ -1152,7 +1168,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         return findKeys(cache, cnt, startFrom, 1);
     }
@@ -1164,7 +1179,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
@@ -1393,7 +1407,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1401,7 +1415,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**
@@ -1807,7 +1821,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodesCnt == -1) {
             nodes = G.allGrids();
 
-            assertTrue(nodes.size() > 0);
+            assertTrue(!nodes.isEmpty());
         }
         else {
             nodes = new ArrayList<>(nodesCnt);
@@ -1994,5 +2008,37 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
+    }
+
+    /**
+     * Checks if all txs and mvcc futures are finished.
+     */
+    protected void checkFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            boolean hasFutures = false;
+
+            for (GridCacheFuture<?> fut : futs) {
+                if (!fut.isDone()) {
+                    log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');
+
+                    hasFutures = true;
+                }
+            }
+
+            if (hasFutures)
+                fail("Some mvcc futures are not finished");
+
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                log.error("Expecting no active transaction [node=" + ig.localNode().id() + ", tx=" + tx + ']');
+
+            if (!txs.isEmpty())
+                fail("Some transaction are not finished");
+        }
     }
 }

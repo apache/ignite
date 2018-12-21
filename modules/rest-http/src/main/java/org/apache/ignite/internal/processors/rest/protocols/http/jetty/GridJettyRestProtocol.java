@@ -23,7 +23,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Properties;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
@@ -43,7 +42,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -114,7 +112,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
@@ -210,7 +207,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if Jetty started.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private boolean startJetty() throws IgniteCheckedException {
         try {
             httpSrv.start();

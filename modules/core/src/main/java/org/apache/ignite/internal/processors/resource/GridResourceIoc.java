@@ -107,7 +107,6 @@ public class GridResourceIoc {
      * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     boolean inject(Object target,
         Class<? extends Annotation> annCls,
         GridResourceInjector injector,

@@ -19,11 +19,12 @@ import _ from 'lodash';
 
 import columnDefs from './column-defs';
 
-export default class SnapshotsListCachesCtrl {
+export default class ConnectedClustersListCtrl {
     static $inject = ['$scope', 'AgentManager'];
 
     /**
      * @param {ng.IScope} $scope
+     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
      */
     constructor($scope, agentMgr) {
         this.$scope = $scope;

@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -54,8 +55,8 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
@@ -262,7 +263,11 @@ public class IgniteProcessProxy implements IgniteEx {
         for (String arg : U.jvmArgs()) {
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
                 arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) ||
+                arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
+                arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions") ||
+                arg.startsWith(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS))
                 filteredJvmArgs.add(arg);
         }
 

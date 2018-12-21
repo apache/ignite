@@ -44,7 +44,6 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
      * @param cls State item type.
      * @param factory Item factory.
      */
-    @SuppressWarnings("unchecked")
     public DirectMessageState(Class<T> cls, IgniteOutClosure<T> factory) {
         this.factory = factory;
 
@@ -63,7 +62,6 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
     /**
      * Go forward.
      */
-    @SuppressWarnings("unchecked")
     public void forward() {
         pos++;
 

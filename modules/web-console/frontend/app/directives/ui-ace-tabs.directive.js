@@ -17,10 +17,10 @@
 
 import _ from 'lodash';
 
-export default ['igniteUiAceTabs', [function() {
+export default function() {
     return {
         scope: true,
         restrict: 'AE',
         controller: _.noop
     };
-}]];
+}

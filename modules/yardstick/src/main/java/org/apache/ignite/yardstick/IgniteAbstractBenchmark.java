@@ -17,14 +17,21 @@
 
 package org.apache.ignite.yardstick;
 
+import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
@@ -63,10 +70,44 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
 
         waitForNodes();
 
+        activateCluster();
+
         IgniteLogger log = ignite().log();
 
         if (log.isInfoEnabled())
             log.info("Benchmark arguments: " + args);
+    }
+
+    /**
+     * Checks if persistence is enabled and activates cluster.
+     */
+    private void activateCluster() {
+        //Flag to set if there is at least one data region with persistence in Ignite configuration.
+        boolean pdsInCfg = false;
+
+        DataStorageConfiguration dsCfg = ignite().configuration().getDataStorageConfiguration();
+
+        if (dsCfg != null) {
+            pdsInCfg = dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();
+
+            DataRegionConfiguration[] drCfgArr = dsCfg.getDataRegionConfigurations();
+
+            if (drCfgArr != null) {
+                for (DataRegionConfiguration drCfg : drCfgArr) {
+                    if (drCfg.isPersistenceEnabled()) {
+                        pdsInCfg = true;
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ((args.persistentStoreEnabled() || pdsInCfg) && !ignite().cluster().active()) {
+            BenchmarkUtils.println("Activating cluster.");
+
+            ignite().cluster().active(true);
+        }
     }
 
     /**
@@ -138,17 +179,53 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         }, EVT_NODE_JOINED);
 
         if (!nodesStarted()) {
-            println(cfg, "Waiting for " + (args.nodes() - 1) + " nodes to start...");
+            println(cfg, "Waiting for the cluster to contain at least " + args.nodes() + " nodes...");
 
             nodesStartedLatch.await();
         }
+
+        println("Cluster is ready");
     }
 
     /**
+     * Determine if all required nodes are started. Since nodes can close their local ignite instances, this method
+     * seeks in the history topology containing: 1) driver's local node; 2) right number of nodes.
+     *
      * @return {@code True} if all nodes are started, {@code false} otherwise.
      */
     private boolean nodesStarted() {
-        return ignite().cluster().nodes().size() >= args.nodes();
+        IgniteCluster cluster = ignite().cluster();
+
+        UUID locNodeId = cluster.localNode().id();
+
+        long curTop = cluster.topologyVersion();
+
+        for (long top = curTop; top >= 1; top--) {
+            Collection<ClusterNode> nodes = cluster.topology(top);
+
+            // Current node don't know about such topology because it joined later.
+            if (nodes == null)
+                continue;
+
+            if (topologyContainsId(nodes, locNodeId) && nodes.size() >= args.nodes())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param top topology (collection of cluster nodes).
+     * @param nodeId id of the node to find.
+     * @return {@code True} if topology contains node with specified id, {@code false} otherwise.
+     */
+    private static boolean topologyContainsId(@NotNull Collection<? extends ClusterNode> top, UUID nodeId) {
+        for (ClusterNode node : top) {
+            if (node.id().equals(nodeId))
+                return true;
+        }
+
+        return false;
     }
 
     /**

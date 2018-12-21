@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.message.DbException;
 import org.h2.value.Value;
@@ -65,19 +67,28 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @param valType Value type.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row, int keyType, int valType)
-        throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
+        CacheDataRow row,
+        int keyType,
+        int valType) throws IgniteCheckedException {
         super(row);
 
         this.desc = desc;
 
-        this.key = desc.wrap(row.key(), keyType);
+        CacheObjectValueContext coCtx = desc.indexing().objectContext();
+
+        this.key = H2Utils.wrap(coCtx, row.key(), keyType);
 
         if (row.value() != null)
-            this.val = desc.wrap(row.value(), valType);
+            this.val = H2Utils.wrap(coCtx, row.value(), valType);
 
         if (row.version() != null)
-            this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+            this.ver = H2Utils.wrap(coCtx, row.version(), Value.JAVA_OBJECT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -125,7 +136,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             v = ValueNull.INSTANCE;
         else {
             try {
-                v = desc.wrap(res, desc.fieldType(col));
+                v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -218,6 +229,16 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public final int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         throw new UnsupportedOperationException();
     }
 }

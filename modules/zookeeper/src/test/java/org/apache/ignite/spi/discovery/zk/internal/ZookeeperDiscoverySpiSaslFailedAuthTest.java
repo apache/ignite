@@ -18,27 +18,37 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteNodeWithInvalidPasswordFailsToJoin() throws Exception {
         System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
             "InvalidZookeeperClient");
 
-        System.setProperty("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", Integer.toString(1));
+        System.setProperty(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT, "1");
 
         try {
             startGrid(0);
 
             Assert.fail("Ignite node with invalid password should fail on join.");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             //ignored
+        }
+        finally {
+            System.clearProperty(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT);
         }
     }
 }

@@ -22,7 +22,6 @@ import java.util.Random;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Failover test context.

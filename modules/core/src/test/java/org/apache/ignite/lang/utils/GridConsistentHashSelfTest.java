@@ -32,12 +32,15 @@ import org.apache.ignite.internal.util.GridConsistentHash;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Consistent hash test.
  */
-@SuppressWarnings({"AssertWithSideEffects"})
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 20;
@@ -103,6 +106,7 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCollisions() throws Exception {
         Map<Integer, Set<UUID>> map = new HashMap<>();
 
@@ -154,14 +158,15 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testTreeSetRestrictions() throws Exception {
         // Constructs hash without explicit node's comparator.
         GridConsistentHash<Object> hash = new GridConsistentHash<>();
 
         try {
             // Add several objects with the same hash without neigther natural ordering nor comparator.
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
             fail("Expects failed due to internal TreeSet requires comparator or natural ordering.");
         }
@@ -178,8 +183,8 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
         }, null);
 
         // Add several objects with the same hash into consistent hash with explicit comparator.
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
         info("Expected pass due to internal TreeSet has explicit comparator.");
     }
@@ -187,6 +192,7 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneNode() {
         GridConsistentHash<UUID> hash = new GridConsistentHash<>();
 
@@ -204,6 +210,7 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHistory() {
         for (int i = NODES; i-- > 0; ) {
             GridConsistentHash<UUID> hash = new GridConsistentHash<>();

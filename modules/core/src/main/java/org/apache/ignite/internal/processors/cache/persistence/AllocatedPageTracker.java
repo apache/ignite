@@ -21,8 +21,11 @@ package org.apache.ignite.internal.processors.cache.persistence;
  * Tracks allocated pages.
  */
 public interface AllocatedPageTracker {
+    /** No-op instance. */
+    public AllocatedPageTracker NO_OP = delta -> {};
+
     /**
-     * Increments totalAllocatedPages counter.
+     * Updates totalAllocatedPages counter.
      *
      * @param delta Value to increment by.
      */

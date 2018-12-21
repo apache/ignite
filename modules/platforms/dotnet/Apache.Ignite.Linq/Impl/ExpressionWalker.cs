@@ -33,6 +33,9 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class ExpressionWalker
     {
+        /** SQL quote */
+        private const string SqlQuote = "\"";
+
         /** Compiled member readers. */
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>> MemberReaders =
             new CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>>();
@@ -251,10 +254,57 @@ namespace Apache.Ignite.Linq.Impl
 
             var cacheCfg = queryable.CacheConfiguration;
 
-            return string.Format(cacheCfg.SqlEscapeAll
-                    ? "\"{0}\".\"{1}\""
-                    : "\"{0}\".{1}",
-                cacheCfg.Name, queryable.TableName);
+            var tableName = queryable.TableName;
+            if (cacheCfg.SqlEscapeAll)
+            {
+                tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
+            }
+
+            var schemaName = NormalizeSchemaName(cacheCfg.Name, cacheCfg.SqlSchema);
+
+            return string.Format("{0}.{1}", schemaName, tableName);
+        }
+
+        /// <summary>
+        /// Normalizes SQL schema name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeSchemaName</c>
+        /// </summary>
+        private static string NormalizeSchemaName(string cacheName, string schemaName)
+        {
+            if (schemaName == null)
+            {
+                // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
+                // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
+                // SQL syntax perspective. We do not want node to fail on startup due to this.
+                return string.Format("{0}{1}{0}", SqlQuote, cacheName);
+            }
+
+            if (schemaName.StartsWith(SqlQuote, StringComparison.Ordinal)
+                && schemaName.EndsWith(SqlQuote, StringComparison.Ordinal))
+            {
+                return schemaName;
+            }
+
+            return NormalizeObjectName(schemaName, false);
+        }
+
+        /// <summary>
+        /// Normalizes SQL object name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeObjectName</c>
+        /// </summary>
+        private static string NormalizeObjectName(string name, bool replace)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            if (replace)
+            {
+                name = name.Replace('.', '_').Replace('$', '_');
+            }
+
+            return name.ToUpperInvariant();
         }
     }
 }

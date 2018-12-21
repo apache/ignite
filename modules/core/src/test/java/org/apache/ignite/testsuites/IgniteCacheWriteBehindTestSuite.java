@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedWritesTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreLocalTest;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindSto
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreAtomicTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreNonCoalescingTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreTxTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite that contains all tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
@@ -35,22 +37,29 @@ import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBe
 public class IgniteCacheWriteBehindTestSuite extends TestSuite {
     /**
      * @return Ignite Bamboo in-memory data grid test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Write-Behind Store Test Suite");
 
         // Write-behind tests.
-        suite.addTest(new TestSuite(GridCacheWriteBehindStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheWriteBehindStoreMultithreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheWriteBehindStoreLocalTest.class));
-        suite.addTest(new TestSuite(GridCacheWriteBehindStoreReplicatedTest.class));
-        suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedTest.class));
-        suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedWritesTest.class));
-        suite.addTest(new TestSuite(IgnteCacheClientWriteBehindStoreAtomicTest.class));
-        suite.addTest(new TestSuite(IgnteCacheClientWriteBehindStoreTxTest.class));
-        suite.addTest(new TestSuite(IgnteCacheClientWriteBehindStoreNonCoalescingTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreMultithreadedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreLocalTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreReplicatedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedWritesTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreAtomicTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreTxTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreNonCoalescingTest.class, ignoredTests);
 
         return suite;
     }

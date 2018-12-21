@@ -21,7 +21,8 @@ import _ from 'lodash';
 import naturalCompare from 'natural-compare-lite';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
-import {Observable} from 'rxjs/Observable';
+import {race, timer, merge, of, from, combineLatest} from 'rxjs';
+import {tap, filter, take, pluck, switchMap} from 'rxjs/operators';
 import ObjectID from 'bson-objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
@@ -93,7 +94,8 @@ export class ModalImportModels {
     /** @type {ng.ICompiledExpression} */
     onHide;
 
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigEffects.name, ConfigureState.name, '$http', 'IgniteConfirm', IgniteConfirmBatch.name, 'IgniteFocus', SqlTypes.name, JavaTypes.name, 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', '$http', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+
     /**
      * @param {UIRouter} $uiRouter
      * @param {ConfigSelectors} ConfigSelectors
@@ -125,56 +127,66 @@ export class ModalImportModels {
     }
 
     loadData() {
-        return Observable.of(this.clusterID)
-            .switchMap((id = 'new') => {
-                return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
-            })
-        .switchMap((cluster) => {
-            return (!(cluster.caches || []).length && !(cluster.models || []).length)
-                ? Observable.of({
-                    cluster,
-                    caches: [],
-                    models: []
-                })
-                : Observable.fromPromise(Promise.all([
-                    this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster._id}),
-                    this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster._id})
-                ]))
-                .switchMap(() => {
-                    return Observable.combineLatest(
-                        this.ConfigureState.state$.let(this.ConfigSelectors.selectShortCachesValue()),
-                        this.ConfigureState.state$.let(this.ConfigSelectors.selectShortModelsValue()),
-                        (caches, models) => ({
-                            cluster,
-                            caches,
-                            models
-                        })
-                    ).take(1);
-                });
-        })
-        .take(1);
+        return of(this.clusterID).pipe(
+            switchMap((id = 'new') => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
+            }),
+            switchMap((cluster) => {
+                return (!(cluster.caches || []).length && !(cluster.models || []).length)
+                    ? of({
+                        cluster,
+                        caches: [],
+                        models: []
+                    })
+                    : from(Promise.all([
+                        this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster._id}),
+                        this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster._id})
+                    ])).pipe(switchMap(() => {
+                        return combineLatest(
+                            this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortCachesValue()),
+                            this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortModelsValue()),
+                            (caches, models) => ({
+                                cluster,
+                                caches,
+                                models
+                            })
+                        ).pipe(take(1));
+                    }));
+            }),
+            take(1)
+        );
     }
+
     saveBatch(batch) {
         if (!batch.length)
             return;
 
+        this.$scope.importDomain.loadingOptions = SAVING_DOMAINS;
         this.Loading.start('importDomainFromDb');
+
         this.ConfigureState.dispatchAction({
             type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
             changedItems: this.batchActionsToRequestBody(batch),
             prevActions: []
         });
-        this.saveSubscription = Observable.race(
-            this.ConfigureState.actions$.filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK')
-                .do(() => this.onHide()),
-            this.ConfigureState.actions$.filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR')
+
+        this.saveSubscription = race(
+            this.ConfigureState.actions$.pipe(
+                filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK'),
+                tap(() => this.onHide())
+            ),
+            this.ConfigureState.actions$.pipe(
+                filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR')
+            )
+        ).pipe(
+            take(1),
+            tap(() => {
+                this.Loading.finish('importDomainFromDb');
+            })
         )
-        .take(1)
-        .do(() => {
-            this.Loading.finish('importDomainFromDb');
-        })
         .subscribe();
     }
+
     batchActionsToRequestBody(batch) {
         const result = batch.reduce((req, action) => {
             return {
@@ -199,21 +211,25 @@ export class ModalImportModels {
         result.cluster.caches = [...new Set(result.cluster.caches)];
         return result;
     }
+
     onTableSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.tablesToUse = selected;
             this.selectedTablesIDs = selected.map((t) => t.id);
         });
     }
+
     onSchemaSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.schemasToUse = selected;
             this.selectedSchemasIDs = selected.map((i) => i.name);
         });
     }
+
     onVisibleRowsChange(rows) {
         return this.visibleTables = rows.map((r) => r.entity);
     }
+
     onCacheSelect(cacheID) {
         if (cacheID < 0)
             return;
@@ -221,26 +237,33 @@ export class ModalImportModels {
         if (this.loadedCaches[cacheID])
             return;
 
-        return this.onCacheSelectSubcription = Observable.merge(
-            Observable.timer(0, 1).take(1)
-                .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_CACHE', cacheID})),
-            Observable.race(
-                this.ConfigureState.actions$
-                    .filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache._id === cacheID).pluck('cache')
-                    .do((cache) => {
+        return this.onCacheSelectSubcription = merge(
+            timer(0, 1).pipe(
+                take(1),
+                tap(() => this.ConfigureState.dispatchAction({type: 'LOAD_CACHE', cacheID}))
+            ),
+            race(
+                this.ConfigureState.actions$.pipe(
+                    filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache._id === cacheID),
+                    pluck('cache'),
+                    tap((cache) => {
                         this.loadedCaches[cacheID] = cache;
-                    }),
-                this.ConfigureState.actions$
-                    .filter((a) => a.type === 'LOAD_CACHE_ERR' && a.action.cacheID === cacheID)
-            ).take(1)
+                    })
+                ),
+                this.ConfigureState.actions$.pipe(
+                    filter((a) => a.type === 'LOAD_CACHE_ERR' && a.action.cacheID === cacheID)
+                )
+            ).pipe(take(1))
         )
         .subscribe();
     }
+
     $onDestroy() {
         this.subscription.unsubscribe();
         if (this.onCacheSelectSubcription) this.onCacheSelectSubcription.unsubscribe();
         if (this.saveSubscription) this.saveSubscription.unsubscribe();
     }
+
     $onInit() {
         // Restores old behavior
         const {$http, Confirm, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, $root, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
@@ -279,7 +302,7 @@ export class ModalImportModels {
 
         this.$scope.importCommon = {};
 
-        this.subscription = this.loadData().do((data) => {
+        this.subscription = this.loadData().pipe(tap((data) => {
             this.$scope.caches = _mapCaches(data.caches);
             this.$scope.domains = data.models;
             this.caches = data.caches;
@@ -294,7 +317,7 @@ export class ModalImportModels {
             }
             this.$scope.$watch('importCommon.action', this._fillCommonCachesOrTemplates(this.$scope.importCommon), true);
             this.$scope.importCommon.action = IMPORT_DM_NEW_CACHE;
-        }).subscribe();
+        })).subscribe();
 
         // New
         this.loadedCaches = {
@@ -1025,13 +1048,9 @@ export class ModalImportModels {
 
                             $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                            // FormUtils.confirmUnsavedChanges(dirty, () => {
                             $scope.importDomain.action = 'connect';
                             $scope.importDomain.tables = [];
                             this.selectedTables = [];
-
-                            // Focus.move('jdbcUrl');
-                            // });
                         }
                         else {
                             $scope.importDomain.jdbcDriversNotFound = true;

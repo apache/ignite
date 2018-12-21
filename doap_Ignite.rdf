@@ -27,8 +27,8 @@
     <name>Apache Ignite</name>
     <homepage rdf:resource="http://ignite.apache.org" />
     <asfext:pmc rdf:resource="http://ignite.apache.org" />
-    <shortdesc>Apache Ignite is an In-Memory Data Fabric providing in-memory data caching, partitioning, processing, and querying components.</shortdesc>
-    <description>Apache Ignite In-Memory Data Fabric is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, in-memory SQL, in-memory file system, streaming, and more.</description>
+    <shortdesc>Apache Ignite is an In-Memory Database and Caching Platform providing in-memory data caching, partitioning, processing, and querying components.</shortdesc>
+    <description>Apache Ignite In-Memory Database and Caching Platform is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, in-memory SQL, in-memory file system, streaming, and more.</description>
     <bug-database rdf:resource="https://issues.apache.org/jira/browse/IGNITE" />
     <mailing-list rdf:resource="https://ignite.apache.org/community/resources.html#mail-lists" />
     <download-page rdf:resource="https://ignite.apache.org/download" />

@@ -26,8 +26,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +number('Public:', model + '.publicThreadPoolSize', '"publicThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
-                    'Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node')
+                +form-field__number({
+                    label: 'Public:',
+                    model: model + '.publicThreadPoolSize',
+                    name: '"publicThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node'
+                })
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'System:',
@@ -38,14 +44,32 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Thread pool that is in charge of processing internal system messages'
                 })
             .pc-form-grid-col-30
-                +number('Service:', model + '.serviceThreadPoolSize', '"serviceThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
-                    'Thread pool that is in charge of processing proxy invocation')
+                +form-field__number({
+                    label: 'Service:',
+                    model: model + '.serviceThreadPoolSize',
+                    name: '"serviceThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing proxy invocation'
+                })
             .pc-form-grid-col-30
-                +number('Management:', model + '.managementThreadPoolSize', '"managementThreadPoolSize"', 'true', '4', '1',
-                    'Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs')
+                +form-field__number({
+                    label: 'Management:',
+                    model: model + '.managementThreadPoolSize',
+                    name: '"managementThreadPoolSize"',
+                    placeholder: '4',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs'
+                })
             .pc-form-grid-col-30
-                +number('IGFS:', model + '.igfsThreadPoolSize', '"igfsThreadPoolSize"', 'true', 'availableProcessors', '1',
-                    'Thread pool that is in charge of processing outgoing IGFS messages')
+                +form-field__number({
+                    label: 'IGFS:',
+                    model: model + '.igfsThreadPoolSize',
+                    name: '"igfsThreadPoolSize"',
+                    placeholder: 'availableProcessors',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing outgoing IGFS messages'
+                })
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Rebalance:',
@@ -58,8 +82,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
                     +form-field__error({ error: 'max', message: 'Rebalance thread pool size should not exceed or be equal to System thread pool size' })
             .pc-form-grid-col-30
-                +number('Utility cache:', model + '.utilityCacheThreadPoolSize', '"utilityCacheThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
-                    'Default thread pool size that will be used to process utility cache messages')
+                +form-field__number({
+                    label: 'Utility cache:',
+                    model: model + '.utilityCacheThreadPoolSize',
+                    name: '"utilityCacheThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Default thread pool size that will be used to process utility cache messages'
+                })
             .pc-form-grid-col-30
                 form-field-size(
                     label='Utility cache keep alive time:'
@@ -73,19 +103,43 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     on-scale-change='_s1 = $event'
                 )
             .pc-form-grid-col-30
-                +number('Async callback:', model + '.asyncCallbackPoolSize', '"asyncCallbackPoolSize"', 'true', 'max(8, availableProcessors)', '1',
-                    'Size of thread pool that is in charge of processing asynchronous callbacks')
+                +form-field__number({
+                    label:'Async callback:',
+                    model: model + '.asyncCallbackPoolSize',
+                    name: '"asyncCallbackPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing asynchronous callbacks'
+                })
             .pc-form-grid-col-30
-                +number('Striped:', model + '.stripedPoolSize', '"stripedPoolSize"', 'true', 'max(8, availableProcessors)', '1',
-                    'Striped pool size that should be used for cache requests processing')
+                +form-field__number({
+                    label: 'Striped:',
+                    model: model + '.stripedPoolSize',
+                    name: '"stripedPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Striped pool size that should be used for cache requests processing'
+                })
 
             //- Since ignite 2.0
             .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
-                +number('Data streamer:', model + '.dataStreamerThreadPoolSize', '"dataStreamerThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
-                    'Size of thread pool that is in charge of processing data stream messages')
+                +form-field__number({
+                    label: 'Data streamer:',
+                    model: model + '.dataStreamerThreadPoolSize',
+                    name: '"dataStreamerThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing data stream messages'
+                })
             .pc-form-grid-col-30
-                +number('Query:', model + '.queryThreadPoolSize', '"queryThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
-                    'Size of thread pool that is in charge of processing query messages')
+                +form-field__number({
+                    label: 'Query:',
+                    model: model + '.queryThreadPoolSize',
+                    name: '"queryThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing query messages'
+                })
             .pc-form-grid-col-60(ng-if-end)
                 .ignite-form-field
                     +form-field__label({ label: 'Executor configurations:', name: '"executorConfigurations"' })
@@ -101,7 +155,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         }`
                     )
                         list-editable-item-view
-                            | {{ $item.name }} / 
+                            | {{ $item.name }} /
                             | {{ $item.size || 'max(8, availableProcessors)'}}
 
                         list-editable-item-edit
@@ -121,11 +175,18 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                         ui-validate-watch=`"${executors}"`
                                         ui-validate-watch-object-equality='true'
                                         ng-model-options='{allowInvalid: true}'
-                                        data-ignite-form-field-input-autofocus='true'
+                                        ignite-form-field-input-autofocus='true'
                                     )
                                         +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
                                 .pc-form-grid-col-30
-                                    +number('Pool size:', '$item.size', '"ExecutorPoolSize"', 'true', 'max(8, availableProcessors)', '1', 'Thread pool size')
+                                    +form-field__number({
+                                        label: 'Pool size:',
+                                        model: '$item.size',
+                                        name: '"ExecutorPoolSize"',
+                                        placeholder: 'max(8, availableProcessors)',
+                                        min: '1',
+                                        tip: 'Thread pool size'
+                                    })
 
                         list-editable-no-items
                             list-editable-add-item-button(

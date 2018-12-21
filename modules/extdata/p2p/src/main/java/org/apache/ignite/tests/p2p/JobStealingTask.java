@@ -50,7 +50,6 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert !subgrid.isEmpty();
@@ -65,7 +64,6 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) {
         Map<UUID, Integer> ret = U.newHashMap(results.size());
 

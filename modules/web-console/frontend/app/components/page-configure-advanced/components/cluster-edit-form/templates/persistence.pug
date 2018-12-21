@@ -27,56 +27,189 @@ panel-collapsible(
 )
     panel-title Persistence store
     panel-description
-        | Configures Apache Ignite Native Persistence. 
+        | Configures Apache Ignite Native Persistence.
         a.link-success(href='https://apacheignite.readme.io/docs/distributed-persistent-store' target='_blank') More info
     panel-content.pca-form-row(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +checkbox('Enabled', enabled, '"PersistenceEnabled"', 'Flag indicating whether to configure persistent configuration')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"PersistenceEnabled"',
+                    tip: 'Flag indicating whether to configure persistent configuration'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Store path:', `${model}.persistentStorePath`, '"PersistenceStorePath"', enabled, 'false', 'Input store path',
-                'A path the root directory where the Persistent Store will persist data and indexes')
+                +form-field__text({
+                    label: 'Store path:',
+                    model: `${model}.persistentStorePath`,
+                    name: '"PersistenceStorePath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input store path',
+                    tip: 'A path the root directory where the Persistent Store will persist data and indexes'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"PersistenceMetricsEnabled"', enabled, 'Flag indicating whether persistence metrics collection is enabled')
+                +form-field__checkbox({
+                    label: 'Metrics enabled',
+                    model: `${model}.metricsEnabled`,
+                    name: '"PersistenceMetricsEnabled"',
+                    disabled: `!${enabled}`,
+                    tip: 'Flag indicating whether persistence metrics collection is enabled'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('Always write full pages', `${model}.alwaysWriteFullPages`, '"PersistenceAlwaysWriteFullPages"', enabled, 'Flag indicating whether always write full pages')
+                +form-field__checkbox({
+                    label: 'Always write full pages',
+                    model: `${model}.alwaysWriteFullPages`,
+                    name: '"PersistenceAlwaysWriteFullPages"',
+                    disabled: `!${enabled}`,
+                    tip: 'Flag indicating whether always write full pages'
+                })
             .pc-form-grid-col-60
-                +number('Checkpointing frequency:', `${model}.checkpointingFrequency`, '"PersistenceCheckpointingFrequency"', enabled, '180000', '1',
-                'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
+                +form-field__number({
+                    label: 'Checkpointing frequency:',
+                    model: `${model}.checkpointingFrequency`,
+                    name: '"PersistenceCheckpointingFrequency"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '180000',
+                    min: '1',
+                    tip: 'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store'
+                })
             .pc-form-grid-col-60
-                +number('Checkpointing page buffer size:', `${model}.checkpointingPageBufferSize`, '"PersistenceCheckpointingPageBufferSize"', enabled, '268435456', '0',
-                'Amount of memory allocated for a checkpointing temporary buffer')
+                +form-field__number({
+                    label: 'Checkpointing page buffer size:',
+                    model: `${model}.checkpointingPageBufferSize`,
+                    name: '"PersistenceCheckpointingPageBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '268435456',
+                    min: '0',
+                    tip: 'Amount of memory allocated for a checkpointing temporary buffer'
+                })
             .pc-form-grid-col-60
-                +number('Checkpointing threads:', `${model}.checkpointingThreads`, '"PersistenceCheckpointingThreads"', enabled, '1', '1', 'A number of threads to use for the checkpointing purposes')
+                +form-field__number({
+                    label: 'Checkpointing threads:',
+                    model: `${model}.checkpointingThreads`,
+                    name: '"PersistenceCheckpointingThreads"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '1',
+                    min: '1',
+                    tip: 'A number of threads to use for the checkpointing purposes'
+                })
             .pc-form-grid-col-60
-                +text-enabled('WAL store path:', `${model}.walStorePath`, '"PersistenceWalStorePath"', enabled, 'false', 'Input store path', 'A path to the directory where WAL is stored')
+                +form-field__text({
+                    label: 'WAL store path:',
+                    model: `${model}.walStorePath`,
+                    name: '"PersistenceWalStorePath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input store path',
+                    tip: 'A path to the directory where WAL is stored'
+                })
             .pc-form-grid-col-60
-                +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"PersistenceWalArchivePath"', enabled, 'false', 'Input archive path', 'A path to the WAL archive directory')
+                +form-field__text({
+                    label: 'WAL archive path:',
+                    model: `${model}.walArchivePath`,
+                    name: '"PersistenceWalArchivePath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input archive path',
+                    tip: 'A path to the WAL archive directory'
+                })
             .pc-form-grid-col-30
-                +number('WAL segments:', `${model}.walSegments`, '"PersistenceWalSegments"', enabled, '10', '1', 'A number of WAL segments to work with')
+                +form-field__number({
+                    label: 'WAL segments:',
+                    model: `${model}.walSegments`,
+                    name: '"PersistenceWalSegments"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'A number of WAL segments to work with'
+                })
             .pc-form-grid-col-30
-                +number('WAL segment size:', `${model}.walSegmentSize`, '"PersistenceWalSegmentSize"', enabled, '67108864', '0', 'Size of a WAL segment')
+                +form-field__number({
+                    label: 'WAL segment size:',
+                    model: `${model}.walSegmentSize`,
+                    name: '"PersistenceWalSegmentSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '67108864',
+                    min: '0',
+                    tip: 'Size of a WAL segment'
+                })
             .pc-form-grid-col-30
-                +number('WAL history size:', `${model}.walHistorySize`, '"PersistenceWalHistorySize"', enabled, '20', '1', 'A total number of checkpoints to keep in the WAL history')
+                +form-field__number({
+                    label: 'WAL history size:',
+                    model: `${model}.walHistorySize`,
+                    name: '"PersistenceWalHistorySize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '20',
+                    min: '1',
+                    tip: 'A total number of checkpoints to keep in the WAL history'
+                })
             .pc-form-grid-col-30
-                +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"PersistenceWalFlushFrequency"', enabled, '2000', '1',
-                'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
+                +form-field__number({
+                    label: 'WAL flush frequency:',
+                    model: `${model}.walFlushFrequency`,
+                    name: '"PersistenceWalFlushFrequency"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '2000',
+                    min: '1',
+                    tip:'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout'
+                })
             .pc-form-grid-col-30
-                +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"PersistenceWalFsyncDelay"', enabled, '1000', '1', 'WAL fsync delay, in nanoseconds')
+                +form-field__number({
+                    label: 'WAL fsync delay:',
+                    model: `${model}.walFsyncDelayNanos`,
+                    name: '"PersistenceWalFsyncDelay"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '1000',
+                    min: '1',
+                    tip: 'WAL fsync delay, in nanoseconds'
+                })
             .pc-form-grid-col-30
-                +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"PersistenceWalRecordIteratorBufferSize"', enabled, '67108864', '1',
-                'How many bytes iterator read from disk(for one reading), during go ahead WAL')
+                +form-field__number({
+                    label: 'WAL record iterator buffer size:',
+                    model: `${model}.walRecordIteratorBufferSize`,
+                    name: '"PersistenceWalRecordIteratorBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '67108864',
+                    min: '1',
+                    tip: 'How many bytes iterator read from disk(for one reading), during go ahead WAL'
+                })
             .pc-form-grid-col-30
-                +number('Lock wait time:', `${model}.lockWaitTime`, '"PersistenceLockWaitTime"', enabled, '10000', '1',
-                'Time out in second, while wait and try get file lock for start persist manager')
+                +form-field__number({
+                    label: 'Lock wait time:',
+                    model: `${model}.lockWaitTime`,
+                    name: '"PersistenceLockWaitTime"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '10000',
+                    min: '1',
+                    tip: 'Time out in second, while wait and try get file lock for start persist manager'
+                })
             .pc-form-grid-col-30
-                +number('Rate time interval:', `${model}.rateTimeInterval`, '"PersistenceRateTimeInterval"', enabled, '60000', '1000',
-                'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked.')
+                +form-field__number({
+                    label: 'Rate time interval:' ,
+                    model: `${model}.rateTimeInterval`,
+                    name: '"PersistenceRateTimeInterval"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '60000',
+                    min: '1000',
+                    tip: 'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked.'
+                })
             .pc-form-grid-col-30
-                +number('Thread local buffer size:', `${model}.tlbSize`, '"PersistenceTlbSize"', enabled, '131072', '1',
-                'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL')
+                +form-field__number({
+                    label: 'Thread local buffer size:',
+                    model: `${model}.tlbSize`,
+                    name: '"PersistenceTlbSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '131072',
+                    min: '1',
+                    tip: 'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL'
+                })
             .pc-form-grid-col-30
-                +number('Sub intervals:', `${model}.subIntervals`, '"PersistenceSubIntervals"', enabled, '5', '1',
-                'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics')
+                +form-field__number({
+                    label: 'Sub intervals:',
+                    model: `${model}.subIntervals`,
+                    name: '"PersistenceSubIntervals"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterPersistence')

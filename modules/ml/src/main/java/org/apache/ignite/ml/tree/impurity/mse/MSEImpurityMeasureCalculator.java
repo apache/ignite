@@ -33,20 +33,20 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
     /**
      * Constructs an instance of MSEImpurityMeasureCalculator.
      *
-     * @param useIndex Use index while calculate.
+     * @param useIdx Use index while calculate.
      */
-    public MSEImpurityMeasureCalculator(boolean useIndex) {
-        super(useIndex);
+    public MSEImpurityMeasureCalculator(boolean useIdx) {
+        super(useIdx);
     }
 
     /** {@inheritDoc} */
     @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = null;
-        boolean canCalculate = false;
+        TreeDataIndex idx = null;
+        boolean canCalculate;
 
-        if (useIndex) {
-            index = data.createIndexByFilter(depth, filter);
-            canCalculate = index.rowsCount() > 0;
+        if (useIdx) {
+            idx = data.createIndexByFilter(depth, filter);
+            canCalculate = idx.rowsCount() > 0;
         }
         else {
             data = data.filter(filter);
@@ -54,8 +54,8 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
         }
 
         if (canCalculate) {
-            int rowsCnt = rowsCount(data, index);
-            int colsCnt = columnsCount(data, index);
+            int rowsCnt = rowsCount(data, idx);
+            int colsCnt = columnsCount(data, idx);
 
             @SuppressWarnings("unchecked")
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[colsCnt];
@@ -63,14 +63,14 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
             double rightYOriginal = 0;
             double rightY2Original = 0;
             for (int i = 0; i < rowsCnt; i++) {
-                double lbVal = getLabelValue(data, index, 0, i);
+                double lbVal = getLabelValue(data, idx, 0, i);
 
                 rightYOriginal += lbVal;
                 rightY2Original += Math.pow(lbVal, 2);
             }
 
             for (int col = 0; col < res.length; col++) {
-                if (!useIndex)
+                if (!useIdx)
                     data.sort(col);
 
                 double[] x = new double[rowsCnt + 1];
@@ -86,7 +86,7 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
                 int leftSize = 0;
                 for (int i = 0; i <= rowsCnt; i++) {
                     if (leftSize > 0) {
-                        double lblVal = getLabelValue(data, index, col, i - 1);
+                        double lblVal = getLabelValue(data, idx, col, i - 1);
 
                         leftY += lblVal;
                         leftY2 += Math.pow(lblVal, 2);
@@ -96,7 +96,7 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
                     }
 
                     if (leftSize < rowsCnt)
-                        x[leftSize + 1] = getFeatureValue(data, index, col, i);
+                        x[leftSize + 1] = getFeatureValue(data, idx, col, i);
 
                     y[leftSize] = new MSEImpurityMeasure(
                         leftY, leftY2, leftSize, rightY, rightY2, rowsCnt - leftSize

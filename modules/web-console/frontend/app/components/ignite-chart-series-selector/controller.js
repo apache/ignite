@@ -16,21 +16,21 @@
  */
 
 export default class IgniteChartSeriesSelectorController {
-    static $inject = [];
-
     constructor() {
         this.charts = [];
         this.selectedCharts = [];
     }
 
     $onChanges(changes) {
-        if (changes && 'chartApi' in changes && changes.chartApi.currentValue)
+        if (changes && 'chartApi' in changes && changes.chartApi.currentValue) {
             this.applyValues();
+            this.setSelectedCharts();
+        }
     }
 
     applyValues() {
         this.charts = this._makeMenu();
-        this.selectedCharts = this.charts.map(({ key }) => key);
+        this.selectedCharts = this.charts.filter((chart) => !chart.hidden).map(({ key }) => key);
     }
 
     setSelectedCharts() {
@@ -55,7 +55,8 @@ export default class IgniteChartSeriesSelectorController {
         return Object.keys(this.chartApi.config.datasetLegendMapping).map((key) => {
             return {
                 key,
-                label: labels[key]
+                label: labels[key].name || labels[key],
+                hidden: labels[key].hidden
             };
         });
     }

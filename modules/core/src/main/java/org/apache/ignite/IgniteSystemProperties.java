@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
@@ -135,6 +136,15 @@ public final class IgniteSystemProperties {
      * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
      */
     public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
+
+    /**
+     * This property changes output format of {@link GridRestCommand#CACHE_GET_ALL} from {k: v, ...}
+     * to [{"key": k, "value": v}, ...] to allow non-string keys output.
+     *
+     * @deprecated Should be made default in Apache Ignite 3.0.
+     */
+    @Deprecated
+    public static final String IGNITE_REST_GETALL_AS_ARRAY = "IGNITE_REST_GETALL_AS_ARRAY";
 
     /**
      * This property defines the maximum number of attempts to remap near get to the same
@@ -248,6 +258,13 @@ public final class IgniteSystemProperties {
      * Specifies timeout for deadlock detection procedure.
      */
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
+
+    /**
+     * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
+     */
+    public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
 
     /**
      * System property to override multicast group taken from configuration.
@@ -483,6 +500,9 @@ public final class IgniteSystemProperties {
     /** SQL retry timeout. */
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 
+    /** Enable backward compatible handling of UUID through DDL. */
+    public static final String IGNITE_SQL_UUID_DDL_BYTE_FORMAT = "IGNITE_SQL_UUID_DDL_BYTE_FORMAT";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -492,6 +512,10 @@ public final class IgniteSystemProperties {
     /** Maximum number of discovery message history used to support client reconnect. */
     public static final String IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE =
         "IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE";
+
+    /** Time interval that indicates that client reconnect throttle must be reset to zero. 2 minutes by default. */
+    public static final String CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL =
+        "CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL";
 
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
@@ -572,21 +596,6 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
         "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
-
-    /**
-     * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
-     * of this property.
-     * <p>
-     * If property is {@code false} then node is not required to have service implementation class if service is not
-     * deployed on this node.
-     * <p>
-     * If the property is {@code true} then service implementation class is required on node even if service
-     * is not deployed on this node.
-     * <p>
-     * If the property is not set ({@code null}) then Ignite will automatically detect which compatibility mode
-     * should be used.
-     */
-    public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
     /**
      * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
@@ -872,6 +881,22 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
+     * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
+     */
+    public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     * Default value is 0.5
+     */
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Count of WAL compressor worker threads. Default value is 4.
+     */
+    public static final String IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT";
+
+    /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
      * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
      *
@@ -932,7 +957,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.
@@ -950,10 +975,131 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * When set to {@code true}, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE)
+     * within transaction for non MVCC mode.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
+
+    /**
+     * Timeout between ZooKeeper client retries, default 2s.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
+
+    /**
+     * Number of attempts to reconnect to ZooKeeper.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
+
+    /**
+     * Maximum number for cached MVCC transaction updates. This caching is used for continuous query with MVCC caches.
+     */
+    public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
+
+    /**
+     * Try reuse memory on deactivation. Useful in case of huge page memory region size.
+     */
+    public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
+
+    /**
+     * Maximum inactivity period for system worker in milliseconds. When this value is exceeded, worker is considered
+     * blocked with consequent critical failure handler invocation.
+     */
+    public static final String IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT = "IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT";
+
+    /**
+     * Timeout for checkpoint read lock acquisition in milliseconds.
+     */
+    public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
+
+    /**
+     * Timeout for waiting schema update if schema was not found for last accepted version.
+     */
+    public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
+
+    /**
+     * System property to override {@link CacheConfiguration#rebalanceThrottle} configuration property for all caches.
+     * {@code 0} by default, which means that override is disabled.
+     */
+    public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
+
+    /**
+     * Enables start caches in parallel.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
+
+    /** For test purposes only. Force Mvcc mode. */
+    public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
+
+    /**
+     * Allows to log additional information about all restored partitions after binary and logical recovery phases.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
+
+    /**
+     * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
+     */
+    public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
+
+    /**
+     * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
+     */
+    public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
         // No-op.
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or {@code null} if the property is not set.
+     */
+    public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
+        return getEnum(enumCls, name, null);
+    }
+
+    /**
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or the given default.
+     */
+    public static <E extends Enum<E>> E getEnum(String name, E dflt) {
+        return getEnum(dflt.getDeclaringClass(), name, dflt);
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Enum value or the given default.
+     */
+    private static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name, E dflt) {
+        assert enumCls != null;
+
+        String val = getString(name);
+
+        if (val == null)
+            return dflt;
+
+        return Enum.valueOf(enumCls, val);
     }
 
     /**

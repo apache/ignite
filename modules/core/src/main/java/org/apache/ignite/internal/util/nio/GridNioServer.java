@@ -193,11 +193,9 @@ public class GridNioServer<T> {
     private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
 
     /** For test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean skipWrite;
 
     /** For test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean skipRead;
 
     /** Local address. */
@@ -241,7 +239,10 @@ public class GridNioServer<T> {
     /** */
     private final IgniteRunnable balancer;
 
-    /** */
+    /**
+     * Interval in milliseconds between consequtive {@link GridWorkerListener#onIdle(GridWorker)} calls
+     * in server workers.
+     */
     private final boolean readWriteSelectorsAssign;
 
     /**
@@ -742,7 +743,6 @@ public class GridNioServer<T> {
     /**
      * @return Future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public IgniteInternalFuture<String> dumpStats() {
         String msg = "NIO server statistics [readerSesBalanceCnt=" + readerMoveCnt.get() +
             ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']';
@@ -1334,7 +1334,6 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWriteSsl(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -1571,7 +1570,6 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -1710,7 +1708,6 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      */
-    @SuppressWarnings("unchecked")
     private void onMessageWritten(GridSelectorNioSessionImpl ses, Message msg) {
         if (lsnr != null)
             lsnr.onMessageSent(ses, (T)msg);
@@ -1785,11 +1782,15 @@ public class GridNioServer<T> {
                 boolean reset = false;
 
                 while (!closed) {
+                    updateHeartbeat();
+
                     try {
                         if (reset)
                             createSelector();
 
                         bodyInternal();
+
+                        onIdle();
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
@@ -1823,6 +1824,9 @@ public class GridNioServer<T> {
                 }
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
@@ -1875,7 +1879,7 @@ public class GridNioServer<T> {
          *
          * @param req Change request.
          */
-        public void offer(SessionChangeRequest req) {
+        @Override public void offer(SessionChangeRequest req) {
             changeReqs.offer(req);
 
             if (select)
@@ -1924,7 +1928,11 @@ public class GridNioServer<T> {
                 while (!closed && selector.isOpen()) {
                     SessionChangeRequest req0;
 
+                    updateHeartbeat();
+
                     while ((req0 = changeReqs.poll()) != null) {
+                        updateHeartbeat();
+
                         switch (req0.operation()) {
                             case CONNECT: {
                                 NioOperationFuture fut = (NioOperationFuture)req0;
@@ -2100,6 +2108,8 @@ public class GridNioServer<T> {
 
                         if (res > 0) {
                             // Walk through the ready keys collection and process network events.
+                            updateHeartbeat();
+
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
@@ -2128,6 +2138,8 @@ public class GridNioServer<T> {
                     try {
                         if (!changeReqs.isEmpty())
                             continue;
+
+                        updateHeartbeat();
 
                         // Wake up every 2 seconds to check if closed.
                         if (selector.select(2000) > 0) {
@@ -2190,7 +2202,7 @@ public class GridNioServer<T> {
         /**
          * @param ses Session.
          */
-        public final void registerWrite(GridSelectorNioSessionImpl ses) {
+        @Override public final void registerWrite(GridSelectorNioSessionImpl ses) {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
@@ -2734,7 +2746,6 @@ public class GridNioServer<T> {
          * @param key Key.
          * @throws IOException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void processConnect(SelectionKey key) throws IOException {
             SocketChannel ch = (SocketChannel)key.channel();
 
@@ -2891,7 +2902,9 @@ public class GridNioServer<T> {
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
-
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
@@ -2903,13 +2916,19 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
+                    updateHeartbeat();
+
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
+                    else
+                        updateHeartbeat();
 
                     if (balancer != null)
                         balancer.run();
+
+                    onIdle();
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -3337,17 +3356,17 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        public NioOperation operation() {
+        @Override public NioOperation operation() {
             return op;
         }
 
         /** {@inheritDoc} */
-        public Object message() {
+        @Override public Object message() {
             return msg;
         }
 
         /** {@inheritDoc} */
-        public void resetSession(GridNioSession ses) {
+        @Override public void resetSession(GridNioSession ses) {
             assert msg instanceof Message : msg;
 
             this.ses = (GridSelectorNioSessionImpl)ses;
@@ -3361,7 +3380,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        public GridSelectorNioSessionImpl session() {
+        @Override public GridSelectorNioSessionImpl session() {
             return ses;
         }
 

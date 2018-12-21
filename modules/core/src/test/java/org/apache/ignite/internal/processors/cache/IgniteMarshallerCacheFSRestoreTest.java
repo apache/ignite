@@ -36,16 +36,22 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean isDuplicateObserved = true;
@@ -126,6 +132,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      *
      * This test must never hang on proposing of MarshallerMapping.
      */
+    @Test
     public void testFileMappingReadAndPropose() throws Exception {
         isPersistenceEnabled = false;
 
@@ -183,6 +190,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6536">IGNITE-6536</a> JIRA provides more information
      * about this case.
      */
+    @Test
     public void testNodeStartFailsOnCorruptedStorage() throws Exception {
         isPersistenceEnabled = true;
 
@@ -243,7 +251,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                 int type,
                 long topVer,
                 ClusterNode node,
@@ -267,7 +275,9 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */

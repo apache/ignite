@@ -20,30 +20,63 @@ include /app/helpers/jade/mixins
 -var stealingAttributes = `${model}.stealingAttributes`
 
 .pc-form-grid-col-30
-    +number('Active jobs threshold:', `${model}.activeJobsThreshold`, '"jsActiveJobsThreshold"', 'true', '95', '0',
-        'Number of jobs that can be executed in parallel')
+    +form-field__number({
+        label: 'Active jobs threshold:',
+        model: `${model}.activeJobsThreshold`,
+        name: '"jsActiveJobsThreshold"',
+        placeholder: '95',
+        min: '0',
+        tip: 'Number of jobs that can be executed in parallel'
+    })
 .pc-form-grid-col-30
-    +number('Wait jobs threshold:', `${model}.waitJobsThreshold`, '"jsWaitJobsThreshold"', 'true', '0', '0',
-        'Job count threshold at which this node will start stealing jobs from other nodes')
+    +form-field__number({
+        label: 'Wait jobs threshold:',
+        model: `${model}.waitJobsThreshold`,
+        name: '"jsWaitJobsThreshold"',
+        placeholder: '0',
+        min: '0',
+        tip: 'Job count threshold at which this node will start stealing jobs from other nodes'
+    })
 .pc-form-grid-col-30
-    +number('Message expire time:', `${model}.messageExpireTime`, '"jsMessageExpireTime"', 'true', '1000', '1',
-        'Message expire time in ms')
+    +form-field__number({
+        label: 'Message expire time:',
+        model: `${model}.messageExpireTime`,
+        name: '"jsMessageExpireTime"',
+        placeholder: '1000',
+        min: '1',
+        tip: 'Message expire time in ms'
+    })
 .pc-form-grid-col-30
-    +number('Maximum stealing attempts:', `${model}.maximumStealingAttempts`, '"jsMaximumStealingAttempts"', 'true', '5', '1',
-        'Maximum number of attempts to steal job by another node')
+    +form-field__number({
+        label: 'Maximum stealing attempts:',
+        model: `${model}.maximumStealingAttempts`,
+        name: '"jsMaximumStealingAttempts"',
+        placeholder: '5',
+        min: '1',
+        tip: 'Maximum number of attempts to steal job by another node'
+    })
 .pc-form-grid-col-60
-    +checkbox('Stealing enabled', `${model}.stealingEnabled`, '"jsStealingEnabled"',
-        'Node should attempt to steal jobs from other nodes')
+    +form-field__checkbox({
+        label: 'Stealing enabled',
+        model: `${model}.stealingEnabled`,
+        name: '"jsStealingEnabled"',
+        tip: 'Node should attempt to steal jobs from other nodes'
+    })
 .pc-form-grid-col-60
-    +java-class('External listener:', `${model}.externalCollisionListener`, '"jsExternalCollisionListener"', 'true', 'false',
-        'Listener to be set for notification of external collision events', '$ctrl.clonedCluster.collision.kind === "JobStealing"')
+    +form-field__java-class({
+        label: 'External listener:',
+        model: `${model}.externalCollisionListener`,
+        name: '"jsExternalCollisionListener"',
+        tip: 'Listener to be set for notification of external collision events',
+        validationActive: '$ctrl.clonedCluster.collision.kind === "JobStealing"'
+    })
 .pc-form-grid-col-60
     .ignite-form-field
         +form-field__label({ label: 'Stealing attributes:', name: '"stealingAttributes"' })
             +form-field__tooltip(`Configuration parameter to enable stealing to/from only nodes that have these attributes set`)
         +list-pair-edit({
             items: stealingAttributes,
-            keyLbl: 'Attribute name', 
+            keyLbl: 'Attribute name',
             valLbl: 'Attribute value',
             itemName: 'stealing attribute',
             itemsName: 'stealing attributes'

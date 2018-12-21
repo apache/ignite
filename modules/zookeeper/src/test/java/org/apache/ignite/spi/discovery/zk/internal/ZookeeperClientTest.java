@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.curator.test.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,10 +39,14 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ZookeeperClientTest extends GridCommonAbstractTest {
     /** */
     private static final int SES_TIMEOUT = 60_000;
@@ -69,6 +73,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSaveLargeValue() throws Exception {
         startZK(1);
 
@@ -100,6 +105,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClose() throws Exception {
         startZK(1);
 
@@ -121,6 +127,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateAll() throws Exception {
         startZK(1);
 
@@ -142,6 +149,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateAllRequestOverflow() throws Exception {
         startZK(1);
 
@@ -164,6 +172,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateAllNodeExists() throws Exception {
         startZK(1);
 
@@ -187,6 +196,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteAll() throws Exception {
         startZK(1);
 
@@ -196,12 +206,12 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2"), -1);
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll("/apacheIgnite", Collections.singletonList("1"), -1);
+        client.deleteAll(Collections.singletonList("/apacheIgnite/1"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -209,6 +219,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteAllRequestOverflow() throws Exception {
         startZK(1);
 
@@ -227,12 +238,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         assertEquals(cnt, client.getChildren("/apacheIgnite").size());
 
-        List<String> subPaths = new ArrayList<>(cnt);
-
-        for (int i = 0; i < cnt; i++)
-            subPaths.add(String.valueOf(i));
-
-        client.deleteAll("/apacheIgnite", subPaths, -1);
+        client.deleteAll(paths, -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -240,6 +246,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteAllNoNode() throws Exception {
         startZK(1);
 
@@ -249,7 +256,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2", "3"), -1);
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2", "/apacheIgnite/3"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -257,6 +264,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss1() throws Exception {
         ZookeeperClient client = new ZookeeperClient(log, "localhost:2200", 3000, null);
 
@@ -273,6 +281,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss2() throws Exception {
         startZK(1);
 
@@ -295,6 +304,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss3() throws Exception {
         startZK(1);
 
@@ -323,6 +333,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLoss4() throws Exception {
         startZK(1);
 
@@ -360,6 +371,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1() throws Exception {
         startZK(1);
 
@@ -391,6 +403,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1_Callback() throws Exception {
         startZK(1);
 
@@ -433,6 +446,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect1_InCallback() throws Exception {
         startZK(1);
 
@@ -479,6 +493,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect2() throws Exception {
         startZK(1);
 
@@ -494,6 +509,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect3() throws Exception {
         startZK(3);
 
@@ -517,6 +533,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect4() throws Exception {
         startZK(3);
 

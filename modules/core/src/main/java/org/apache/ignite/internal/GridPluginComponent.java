@@ -50,7 +50,6 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void start() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }

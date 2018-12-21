@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -43,7 +44,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     private final IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** Build index. */
-    private final boolean buildIndex;
+    private final boolean buildIdx;
 
     /**
      * Constructs a new instance of decision tree data builder.
@@ -56,11 +57,15 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
         IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIdx) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
-        this.buildIndex = buildIdx;
+        this.buildIdx = buildIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public DecisionTreeData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+    @Override public DecisionTreeData build(
+        LearningEnvironment envBuilder,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
+        C ctx) {
         double[][] features = new double[Math.toIntExact(upstreamDataSize)][];
         double[] labels = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -75,6 +80,6 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new DecisionTreeData(features, labels, buildIndex);
+        return new DecisionTreeData(features, labels, buildIdx);
     }
 }

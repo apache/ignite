@@ -43,6 +43,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -53,10 +55,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -100,6 +106,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValidationIfPartitionCountersAreInconsistent() throws Exception {
         IgniteEx ignite = (IgniteEx) startGrids(2);
         ignite.cluster().active(true);
@@ -132,6 +139,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
         IgniteEx ignite = (IgniteEx) startGrids(4);
         ignite.cluster().active(true);

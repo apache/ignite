@@ -392,7 +392,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate desc, long pos, int len,
-        final @Nullable byte[] outBuf, final int outOff, final int outLen) {
+        @Nullable final byte[] outBuf, final int outOff, final int outLen) {
         assert len > 0;
 
         final IgfsStreamControlRequest msg = new IgfsStreamControlRequest();

@@ -26,12 +26,11 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -40,6 +39,10 @@ import static org.junit.Assert.assertEquals;
  * Ignite {@link BinaryObject} API system tests.
  */
 public class IgniteBinaryTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /**
      * Unmarshalling schema-less Ignite binary objects into Java static types.
      */

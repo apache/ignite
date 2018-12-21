@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -41,22 +40,13 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final boolean clientEvtChange;
-
     /**
      * @param assign Assignment.
      */
-    public HistoryAffinityAssignment(GridAffinityAssignment assign) {
+    HistoryAffinityAssignment(GridAffinityAssignment assign) {
         this.topVer = assign.topologyVersion();
         this.assignment = assign.assignment();
         this.idealAssignment = assign.idealAssignment();
-        this.clientEvtChange = assign.clientEventChange();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clientEventChange() {
-        return clientEvtChange;
     }
 
     /** {@inheritDoc} */

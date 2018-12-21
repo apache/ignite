@@ -84,6 +84,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Extra WITH-params. */
     private List<String> params;
 
+    /** Encrypted flag. */
+    private boolean encrypted;
+
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
      */
@@ -334,6 +337,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void params(List<String> params) {
         this.params = params;
+    }
+
+    /**
+     * @return Encrypted flag.
+     */
+    public boolean encrypted() {
+        return encrypted;
+    }
+
+    /**
+     * @param encrypted Encrypted flag.
+     */
+    public void encrypted(boolean encrypted) {
+        this.encrypted = encrypted;
     }
 
     /** {@inheritDoc} */

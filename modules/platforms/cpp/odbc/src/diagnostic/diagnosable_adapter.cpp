@@ -52,6 +52,11 @@ namespace ignite
             {
                 AddStatusRecord(err.GetStatus(), err.GetErrorMessage(), 0, 0);
             }
+
+            void DiagnosableAdapter::AddStatusRecord(const DiagnosticRecord& rec)
+            {
+                diagnosticRecords.AddStatusRecord(rec);
+            }
         }
     }
 }

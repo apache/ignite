@@ -13,11 +13,11 @@ Build image
 
 3) Copy Apache Ignite's binary archive to Docker module directory
 
-        cp -rfv ../../target/bin/apache-ignite-fabric-*.zip
+        cp -rfv ../../target/bin/apache-ignite-*.zip
 
 4) Unpack Apache Ignite's binary archive
 
-        unzip apache-ignite-fabric-*.zip
+        unzip apache-ignite-*.zip
 
 5) Build docker image
 

@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 export default class InputDialogController {
     static $inject = ['deferred', 'ui'];
 
-    constructor(deferred, {title, label, value, toValidValue}) {
+    constructor(deferred, options) {
         this.deferred = deferred;
-        this.title = title;
-        this.label = label;
-        this.value = value;
-        this.toValidValue = toValidValue;
+        this.options = options;
     }
 
     confirm() {
-        if (_.isFunction(this.toValidValue))
-            return this.deferred.resolve(this.toValidValue(this.value));
+        if (_.isFunction(this.options.toValidValue))
+            return this.deferred.resolve(this.options.toValidValue(this.options.value));
 
-        this.deferred.resolve(this.value);
+        this.deferred.resolve(this.options.value);
     }
 }

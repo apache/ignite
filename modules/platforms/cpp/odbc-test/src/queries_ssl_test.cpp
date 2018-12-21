@@ -47,7 +47,7 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-ssl.xml", name);
+        return StartPlatformNode("queries-ssl.xml", name);
     }
 
     /**

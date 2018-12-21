@@ -30,10 +30,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,6 +45,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 
 /**
  * Cache data row adapter.
@@ -60,6 +67,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected CacheObject val;
 
     /** */
+    @GridToStringInclude
     protected long expireTime = -1;
 
     /** */
@@ -137,7 +145,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             int grpId = grp != null ? grp.groupId() : 0;
 
-            final long page = pageMem.acquirePage(grpId, pageId);
+            final IoStatisticsHolder statHolder = (grp != null) ?
+                grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
+
+            final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
@@ -149,9 +160,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     DataPagePayload data = io.readPayload(pageAddr,
                         itemId(nextLink),
-                        pageMem.pageSize());
+                        pageMem.realPageSize(grpId));
 
                     nextLink = data.nextLink();
+
+                    int hdrLen = 0;
 
                     if (first) {
                         if (nextLink == 0) {
@@ -162,12 +175,21 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         }
 
                         first = false;
+
+                        // Assume that row header is always located entirely on the very first page.
+                        hdrLen = readHeader(pageAddr, data.offset());
+
+                        if (rowData == LINK_WITH_HEADER)
+                            return;
                     }
 
                     ByteBuffer buf = pageMem.pageBuffer(pageAddr);
 
-                    buf.position(data.offset());
-                    buf.limit(data.offset() + data.payloadSize());
+                    int off = data.offset() + hdrLen;
+                    int payloadSize = data.payloadSize() - hdrLen;
+
+                    buf.position(off);
+                    buf.limit(off + payloadSize);
 
                     boolean keyOnly = rowData == RowData.KEY_ONLY;
 
@@ -190,6 +212,18 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * Reads row header (i.e. MVCC info) which should be located on the very first page od data.
+     *
+     * @param addr Address.
+     * @param off Offset
+     * @return Number of bytes read.
+     */
+    protected int readHeader(long addr, int off) {
+        // No-op.
+        return 0;
+    }
+
+    /**
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
      * @param buf Buffer.
@@ -199,7 +233,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      * @return Read object.
      */
-    private IncompleteObject<?> readFragment(
+    protected IncompleteObject<?> readFragment(
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
         ByteBuffer buf,
@@ -268,7 +302,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param readCacheId {@code true} If need to read cache ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void readFullRow(
+    protected void readFullRow(
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
         long addr,
@@ -276,6 +310,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean readCacheId)
         throws IgniteCheckedException {
         int off = 0;
+
+        off += readHeader(addr, off);
+
+        if (rowData == LINK_WITH_HEADER)
+            return;
 
         if (readCacheId) {
             cacheId = PageUtils.getInt(addr, off);
@@ -326,7 +365,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete.
      */
-    private IncompleteObject<?> readIncompleteCacheId(
+    protected IncompleteObject<?> readIncompleteCacheId(
         ByteBuffer buf,
         IncompleteObject<?> incomplete
     ) {
@@ -371,7 +410,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteCacheObject readIncompleteKey(
+    protected IncompleteCacheObject readIncompleteKey(
         CacheObjectContext coctx,
         ByteBuffer buf,
         IncompleteCacheObject incomplete
@@ -396,7 +435,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteCacheObject readIncompleteValue(
+    protected IncompleteCacheObject readIncompleteValue(
         CacheObjectContext coctx,
         ByteBuffer buf,
         IncompleteCacheObject incomplete
@@ -419,7 +458,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param incomplete Incomplete object.
      * @return Incomplete object.
      */
-    private IncompleteObject<?> readIncompleteExpireTime(
+    protected IncompleteObject<?> readIncompleteExpireTime(
         ByteBuffer buf,
         IncompleteObject<?> incomplete
     ) {
@@ -463,7 +502,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteObject<?> readIncompleteVersion(
+    protected IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
@@ -573,6 +612,60 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        int len = key().valueBytesLength(null);
+
+        len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
+
+        return len + (cacheId() != 0 ? 4 : 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return MVCC_CRD_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return MVCC_OP_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return TxState.NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCoordinatorVersion() {
+        return MVCC_CRD_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCounter() {
+        return MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return MVCC_OP_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return TxState.NA;
+    }
+
     /**
      *
      */
@@ -584,7 +677,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         KEY_ONLY,
 
         /** */
-        NO_KEY
+        NO_KEY,
+
+        /** */
+        LINK_ONLY,
+
+        /** */
+        LINK_WITH_HEADER
     }
 
     /** {@inheritDoc} */

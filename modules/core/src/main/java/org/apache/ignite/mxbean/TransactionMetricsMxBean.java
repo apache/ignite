@@ -18,7 +18,6 @@
 package org.apache.ignite.mxbean;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**

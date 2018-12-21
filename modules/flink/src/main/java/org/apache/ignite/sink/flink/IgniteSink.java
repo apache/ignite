@@ -138,7 +138,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      * @throws IgniteException If failed.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public void open(Configuration parameter) {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");

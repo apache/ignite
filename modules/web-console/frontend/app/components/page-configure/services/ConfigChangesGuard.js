@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-import {of} from 'rxjs/observable/of';
+import {of} from 'rxjs';
+import {switchMap, catchError} from 'rxjs/operators';
 import {Confirm} from 'app/services/Confirm.service';
 import {DiffPatcher} from 'jsondiffpatch';
 import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
@@ -52,7 +53,7 @@ export class IgniteObjectDiffer {
 }
 
 export default class ConfigChangesGuard {
-    static $inject = [Confirm.name, '$sce'];
+    static $inject = ['Confirm', '$sce'];
 
     /**
      * @param {Confirm} Confirm.
@@ -74,7 +75,7 @@ export default class ConfigChangesGuard {
             You have unsaved changes.
             Are you sure you want to discard them?
             </p>
-            <details>
+            <details class='config-changes-guard__details'>
                 <summary>Click here to see changes</summary>
                 <div style='max-height: 400px; overflow: auto;'>${html.format(changes)}</div>                
             </details>
@@ -92,9 +93,9 @@ export default class ConfigChangesGuard {
         if (!a && !b)
             return Promise.resolve(true);
 
-        return of(this._hasChanges(a, b))
-            .switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true))
-            .catch(() => of(false))
-            .toPromise();
+        return of(this._hasChanges(a, b)).pipe(
+            switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true)),
+            catchError(() => of(false))
+        ).toPromise();
     }
 }

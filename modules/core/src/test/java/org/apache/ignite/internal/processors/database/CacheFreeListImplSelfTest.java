@@ -45,16 +45,22 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CPUS = Runtime.getRuntime().availableProcessors();
@@ -70,7 +76,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         if (pageMem != null)
-            pageMem.stop();
+            pageMem.stop(true);
 
         pageMem = null;
     }
@@ -78,6 +84,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_1024() throws Exception {
         checkInsertDeleteSingleThreaded(1024);
     }
@@ -85,6 +92,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_2048() throws Exception {
         checkInsertDeleteSingleThreaded(2048);
     }
@@ -92,6 +100,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_4096() throws Exception {
         checkInsertDeleteSingleThreaded(4096);
     }
@@ -99,6 +108,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_8192() throws Exception {
         checkInsertDeleteSingleThreaded(8192);
     }
@@ -106,6 +116,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_16384() throws Exception {
         checkInsertDeleteSingleThreaded(16384);
     }
@@ -113,6 +124,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_1024() throws Exception {
         checkInsertDeleteMultiThreaded(1024);
     }
@@ -120,6 +132,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_2048() throws Exception {
         checkInsertDeleteMultiThreaded(2048);
     }
@@ -127,6 +140,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_4096() throws Exception {
         checkInsertDeleteMultiThreaded(4096);
     }
@@ -134,6 +148,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_8192() throws Exception {
         checkInsertDeleteMultiThreaded(8192);
     }
@@ -141,6 +156,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_16384() throws Exception {
         checkInsertDeleteMultiThreaded(16384);
     }
@@ -162,7 +178,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -205,7 +221,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                         TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        list.insertDataRow(row);
+                        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                         assertTrue(row.link() != 0L);
 
@@ -223,7 +239,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
                                 TestDataRow rmvd = stored.remove(row.link);
 
                                 if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link);
+                                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
 
                                     break;
                                 }
@@ -253,7 +269,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -288,7 +304,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                 TestDataRow row = new TestDataRow(keySize, valSize);
 
-                list.insertDataRow(row);
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                 assertTrue(row.link() != 0L);
 
@@ -306,7 +322,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                     assertTrue(rmvd == row);
 
-                    list.removeDataRowByLink(row.link);
+                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
                 }
             }
         }
@@ -407,6 +423,20 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int size() throws IgniteCheckedException {
+            int len = key().valueBytesLength(null);
+
+            len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
+
+            return len + (cacheId() != 0 ? 4 : 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int headerSize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }
@@ -423,6 +453,46 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int cacheId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int newMvccOperationCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int mvccOperationCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte mvccTxState() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte newMvccTxState() {
             return 0;
         }
     }

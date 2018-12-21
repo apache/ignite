@@ -22,8 +22,8 @@ include /app/helpers/jade/mixins
     required: '$ctrl.required',
     disabled: '$ctrl.ngDisabled'
 })
-    +form-field__tooltip({ title: '{{::$ctrl.tip}}' })(
-        ng-if='::$ctrl.tip'
+    +form-field__tooltip({title: '{{$ctrl.tip}}'})(
+        ng-if='$ctrl.tip'
     )
 
 .form-field__control.form-field__control-group(ng-form='$ctrl.innerForm')
@@ -39,6 +39,8 @@ include /app/helpers/jade/mixins
         max='{{ $ctrl.max ? $ctrl.max / $ctrl.sizeScale.value : "" }}'
         ng-required='$ctrl.required'
         ng-disabled='$ctrl.ngDisabled'
+        ignite-form-field-input-autofocus='{{$ctrl.autofocus}}'
+        ng-on-blur='$ctrl.triggerBlur()'
     )
     button.select-toggle(
         bs-select
@@ -72,6 +74,6 @@ include /app/helpers/jade/mixins
         message: 'Only numbers allowed'
     })
     +form-field__error({
-        error: 'required',
+        error: 'step',
         message: 'Invalid step'
     })

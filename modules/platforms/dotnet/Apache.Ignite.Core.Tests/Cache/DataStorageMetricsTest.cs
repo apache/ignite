@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 DataStorageConfiguration = new DataStorageConfiguration
                 {
-                    CheckpointFrequency = TimeSpan.FromSeconds(1),
+                    CheckpointFrequency = TimeSpan.FromSeconds(5),
                     MetricsEnabled = true,
                     WalMode = WalMode.LogOnly,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.GreaterOrEqual(metrics.LastCheckpointTotalPagesNumber, 26);
                 Assert.AreEqual(0, metrics.LastCheckpointDataPagesNumber);
                 Assert.AreEqual(0, metrics.LastCheckpointCopiedOnWritePagesNumber);
-                Assert.AreEqual(TimeSpan.Zero, metrics.LastCheckpointLockWaitDuration);
+                Assert.Greater(TimeSpan.FromSeconds(1), metrics.LastCheckpointLockWaitDuration);
 
                 Assert.Greater(metrics.LastCheckpointPagesWriteDuration, TimeSpan.Zero);
                 Assert.Greater(metrics.LastCheckpointMarkDuration, TimeSpan.Zero);

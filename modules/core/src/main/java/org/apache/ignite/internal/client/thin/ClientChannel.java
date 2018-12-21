@@ -43,4 +43,9 @@ interface ClientChannel extends AutoCloseable {
      */
     public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException;
+
+    /**
+     * @return Server version.
+     */
+    public ProtocolVersion serverVersion();
 }

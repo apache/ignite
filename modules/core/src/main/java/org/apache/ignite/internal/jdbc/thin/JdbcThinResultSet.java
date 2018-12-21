@@ -169,7 +169,6 @@ public class JdbcThinResultSet implements ResultSet {
      * @param updCnt Update count.
      * @param closeStmt Close statement on the result set close.
      */
-    @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
         List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
@@ -194,7 +193,6 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
@@ -1754,7 +1752,6 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1768,7 +1765,6 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T getObject(int colIdx, Class<T> targetCls) throws SQLException {
         return (T)getObject0(colIdx, targetCls);
     }
@@ -1838,7 +1834,6 @@ public class JdbcThinResultSet implements ResultSet {
      * @return Object field value.
      * @throws SQLException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private Object getValue(int colIdx) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();

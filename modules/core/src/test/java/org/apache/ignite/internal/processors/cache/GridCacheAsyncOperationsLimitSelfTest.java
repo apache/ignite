@@ -22,10 +22,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks that number of concurrent asynchronous operations is limited when configuration parameter is set.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelfTest {
     /** */
     public static final int MAX_CONCURRENT_ASYNC_OPS = 50;
@@ -47,6 +51,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOps() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
         final GridAtomicInteger max = new GridAtomicInteger();

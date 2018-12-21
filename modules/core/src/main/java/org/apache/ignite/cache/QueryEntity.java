@@ -20,7 +20,6 @@ package org.apache.ignite.cache;
 import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,11 +48,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -100,8 +96,11 @@ public class QueryEntity implements Serializable {
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
-    /** Decimal fields information. */
-    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+    /** Precision(Maximum length) for fields. */
+    private Map<String, Integer> fieldsPrecision = new HashMap<>();
+
+    /** Scale for fields. */
+    private Map<String, Integer> fieldsScale = new HashMap<>();
 
     /**
      * Creates an empty query entity.
@@ -135,7 +134,9 @@ public class QueryEntity implements Serializable {
         defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
             : new HashMap<String, Object>();
 
-        decimalInfo = other.decimalInfo != null ? new HashMap<>(other.decimalInfo) : new HashMap<>();
+        fieldsPrecision = other.fieldsPrecision != null ? new HashMap<>(other.fieldsPrecision) : new HashMap<>();
+
+        fieldsScale = other.fieldsScale != null ? new HashMap<>(other.fieldsScale) : new HashMap<>();
     }
 
     /**
@@ -282,13 +283,29 @@ public class QueryEntity implements Serializable {
                     getFromMap(getDefaultFieldValues(), targetFieldName),
                     getFromMap(target.getDefaultFieldValues(), targetFieldName)
                 );
+
+                checkEquals(conflicts,
+                    "precision of " + targetFieldName,
+                    getFromMap(getFieldsPrecision(), targetFieldName),
+                    getFromMap(target.getFieldsPrecision(), targetFieldName));
+
+                checkEquals(
+                    conflicts,
+                    "scale of " + targetFieldName,
+                    getFromMap(getFieldsScale(), targetFieldName),
+                    getFromMap(target.getFieldsScale(), targetFieldName));
             }
             else {
+                Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
+                Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
+
                 queryFieldsToAdd.add(new QueryField(
                     targetFieldName,
                     targetFieldType,
                     !contains(target.getNotNullFields(),targetFieldName),
-                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName),
+                    precision == null ? -1 : precision,
+                    scale == null ? -1 : scale
                 ));
             }
         }
@@ -308,7 +325,7 @@ public class QueryEntity implements Serializable {
     /**
      * @return Value from sourceMap or null if map is null.
      */
-    private static Object getFromMap(Map<String, Object> sourceMap, String key) {
+    private static <V> V getFromMap(Map<String, V> sourceMap, String key) {
         return sourceMap == null ? null : sourceMap.get(key);
     }
 
@@ -320,7 +337,7 @@ public class QueryEntity implements Serializable {
      * @param local Local object.
      * @param received Received object.
      */
-    private void checkEquals(StringBuilder conflicts, String name, Object local, Object received) {
+    private <V> void checkEquals(StringBuilder conflicts, String name, V local, V received) {
         if (!Objects.equals(local, received))
             conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
@@ -573,22 +590,39 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Gets set of field name to precision and scale.
-     *
-     * @return Set of names of fields that must have non-null values.
+     * @return Precision map for a fields.
      */
-    public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
-        return decimalInfo == null ? Collections.emptyMap() : unmodifiableMap(decimalInfo);
+    public Map<String, Integer> getFieldsPrecision() {
+        return fieldsPrecision;
     }
 
     /**
-     * Sets decimal fields info.
+     * Sets fieldsPrecision map for a fields.
      *
-     * @param decimalInfo Set of name to precision and scale for decimal fields.
-     * @return {@code this} for chaining.
+     * @param fieldsPrecision Precision map for a fields.
+     * @return {@code This} for chaining.
      */
-    public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
-        this.decimalInfo = decimalInfo;
+    public QueryEntity setFieldsPrecision(Map<String, Integer> fieldsPrecision) {
+        this.fieldsPrecision = fieldsPrecision;
+
+        return this;
+    }
+
+    /**
+     * @return Scale map for a fields.
+     */
+    public Map<String, Integer> getFieldsScale() {
+        return fieldsScale;
+    }
+
+    /**
+     * Sets fieldsScale map for a fields.
+     *
+     * @param fieldsScale Scale map for a fields.
+     * @return {@code This} for chaining.
+     */
+    public QueryEntity setFieldsScale(Map<String, Integer> fieldsScale) {
+        this.fieldsScale = fieldsScale;
 
         return this;
     }
@@ -707,8 +741,11 @@ public class QueryEntity implements Serializable {
         if (!F.isEmpty(desc.notNullFields()))
             entity.setNotNullFields(desc.notNullFields());
 
-        if (!F.isEmpty(desc.decimalInfo()))
-            entity.setDecimalInfo(desc.decimalInfo());
+        if (!F.isEmpty(desc.fieldsPrecision()))
+            entity.setFieldsPrecision(desc.fieldsPrecision());
+
+        if (!F.isEmpty(desc.fieldsScale()))
+            entity.setFieldsScale(desc.fieldsScale());
 
         return entity;
     }
@@ -835,8 +872,11 @@ public class QueryEntity implements Serializable {
             if (sqlAnn.notNull())
                 desc.addNotNullField(prop.fullName());
 
-            if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
-                desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
+            if (sqlAnn.precision() != -1)
+                desc.addPrecision(prop.fullName(), sqlAnn.precision());
+
+            if (sqlAnn.scale() != -1)
+                desc.addScale(prop.fullName(), sqlAnn.scale());
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
@@ -880,13 +920,14 @@ public class QueryEntity implements Serializable {
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
             F.eq(defaultFieldValues, entity.defaultFieldValues) &&
-            F.eq(decimalInfo, entity.decimalInfo);
+            F.eq(fieldsPrecision, entity.fieldsPrecision) &&
+            F.eq(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues, decimalInfo);
+            tableName, _notNullFields, defaultFieldValues, fieldsPrecision, fieldsScale);
     }
 
     /** {@inheritDoc} */

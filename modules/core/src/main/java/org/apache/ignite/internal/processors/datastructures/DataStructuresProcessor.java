@@ -181,7 +181,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) {
         if (ctx.config().isDaemon() || !active)
             return;
@@ -193,7 +192,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     public void onBeforeActivate() {
-        initLatch = new CountDownLatch(1);
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null || latch0.getCount() == 0)
+            initLatch = new CountDownLatch(1);
     }
 
     /**
@@ -834,7 +836,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Instance of queue.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public final <T> IgniteQueue<T> queue(final String name, @Nullable final String grpName, int cap,
         @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
@@ -1547,7 +1548,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String grpName, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
@@ -1578,7 +1578,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
                 if (hdr != null)
-                    cctx.dataStructures().removeSetData(hdr.id());
+                    cctx.dataStructures().removeSetData(hdr.id(), hdr.separated());
             }
         };
 
@@ -1612,7 +1612,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Object has casted to expected type.
      * @throws IgniteCheckedException If {@code obj} has different to {@code cls} type.
      */
-    @SuppressWarnings("unchecked")
     @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws IgniteCheckedException {
         if (obj == null)
             return null;

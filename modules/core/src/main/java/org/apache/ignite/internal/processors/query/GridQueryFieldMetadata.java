@@ -51,4 +51,18 @@ public interface GridQueryFieldMetadata extends Externalizable {
      * @return Field type name.
      */
     public String fieldTypeName();
+
+    /**
+     * Gets field precision.
+     *
+     * @return Field precision.
+     */
+    public int precision();
+
+    /**
+     * Gets field scale.
+     *
+     * @return Field scale.
+     */
+    public int scale();
 }

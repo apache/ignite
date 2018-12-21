@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -145,23 +146,19 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         UUID futId,
         IgniteLogger log
     ) throws Exception {
-        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
+        List<String> batch = new LinkedList<>();
+
         String evtDir = paths.distributedFutureBasePath(futId);
 
-        try {
-            client.deleteAll(evtDir,
-                client.getChildrenIfPathExists(evtDir),
-                -1);
-        }
-        catch (KeeperException.NoNodeException e) {
-            U.log(log, "Node for deletion was not found: " + e.getPath());
+        if (client.exists(evtDir)) {
+            batch.addAll(client.getChildrenPaths(evtDir));
 
-            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
+            batch.add(evtDir);
         }
 
-        client.deleteIfExists(evtDir, -1);
+        batch.add(paths.distributedFutureResultPath(futId));
 
-        client.deleteIfExists(paths.distributedFutureResultPath(futId), -1);
+        client.deleteAll(batch, -1);
     }
 
     /**

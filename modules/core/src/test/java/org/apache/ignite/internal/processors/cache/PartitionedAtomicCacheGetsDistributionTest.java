@@ -17,33 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests of partitioned atomic cache's 'get' requests distribution.
  */
-public class PartitionedAtomicCacheGetsDistributionTest extends ReplicatedAtomicCacheGetsDistributionTest {
+public class PartitionedAtomicCacheGetsDistributionTest extends CacheGetsDistributionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
-        CacheConfiguration<K, V> cacheCfg = super.cacheConfiguration();
-
-        cacheCfg.setBackups(backupsCount());
-
-        return cacheCfg;
-    }
-
-    /**
-     * @return Backups count.
-     */
-    protected int backupsCount() {
-        return gridCount() - 1;
     }
 }

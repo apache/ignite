@@ -19,13 +19,17 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpCommunicationSpiTcpSelfTest {
     /** */
-    private final static int SPI_COUNT = 4;
+    private static final int SPI_COUNT = 4;
 
     private TcpCommunicationSpi spis[] = new TcpCommunicationSpi[SPI_COUNT];
 
@@ -63,6 +67,7 @@ public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpC
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFailureDetectionEnabled() throws Exception {
         assertTrue(spis[0].failureDetectionTimeoutEnabled());
         assertTrue(spis[0].failureDetectionTimeout() == IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT);

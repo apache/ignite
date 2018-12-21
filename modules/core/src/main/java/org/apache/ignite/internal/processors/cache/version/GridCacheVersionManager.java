@@ -41,9 +41,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** */
     public static final GridCacheVersion EVICT_VER = new GridCacheVersion(Integer.MAX_VALUE, 0, 0, 0);
 
-    /** */
-    public static final GridCacheVersion START_VER = new GridCacheVersion(0, 0, 0, 0);
-
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 
@@ -56,11 +53,13 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** Current order for store operations. */
     private final AtomicLong loadOrder = new AtomicLong(0);
 
+    /** Entry start version. */
+    private GridCacheVersion startVer;
+
     /** Last version. */
     private volatile GridCacheVersion last;
 
     /** Data center ID. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private byte dataCenterId;
 
     /** */
@@ -87,6 +86,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
+        startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
+
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
     }
 
@@ -104,6 +105,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         this.dataCenterId = dataCenterId;
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+
+        startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
 
     /**
@@ -300,5 +303,26 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheVersion last() {
         return last;
+    }
+
+    /**
+     * Gets start version.
+     *
+     * @return Start version.
+     */
+    public GridCacheVersion startVersion() {
+        assert startVer != null;
+
+        return startVer;
+    }
+
+    /**
+     * Check if given version is start version.
+     *
+     * @param ver Version.
+     * @return {@code True} if given version is start version.
+     */
+    public boolean isStartVersion(GridCacheVersion ver) {
+        return startVer.equals(ver);
     }
 }

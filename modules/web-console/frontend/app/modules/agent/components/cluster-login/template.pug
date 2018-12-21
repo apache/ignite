@@ -23,7 +23,6 @@ include /app/helpers/jade/mixins
        form.modal-content(name=form novalidate ng-submit='$ctrl.login()')
             .modal-header
                 h4.modal-title
-                    i.icon-confirm
                     span Cluster Authentication
                 button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
                     svg(ignite-icon="cross")
@@ -53,5 +52,7 @@ include /app/helpers/jade/mixins
                             autocomplete='node-password'
                         )
             .modal-footer
-                button#btn-cancel.btn-ignite.btn-ignite--link-success(type='button' ng-click='$ctrl.onHide()') Cancel
-                button#btn-login.btn-ignite.btn-ignite--success Login
+                div
+                    button#btn-cancel.btn-ignite.btn-ignite--link-success(type='button' ng-click='$ctrl.onHide()') Cancel
+                    button#btn-login.btn-ignite.btn-ignite--success Login
+

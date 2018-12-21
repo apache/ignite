@@ -55,6 +55,20 @@ object IgniteDataFrameSettings {
     val OPTION_TABLE = "table"
 
     /**
+      * Config option to specify the Ignite SQL schema name in which the specified table is present.
+      * If this is not specified, all schemata will be scanned for a table name which matches the given table
+      * name and the first matching table will be used. This option can be used when there are multiple tables in
+      * different schemata with the same table name to disambiguate the tables.
+      *
+      * @example {{{
+      * val igniteDF = spark.read.format(IGNITE)
+      *     .option(OPTION_TABLE, "myTable")
+      *     .option(OPTION_SCHEMA, "mySchema")
+      * }}}
+      */
+    val OPTION_SCHEMA = "schema"
+
+    /**
       * Config option to specify newly created Ignite SQL table parameters.
       * Value of these option will be used in `CREATE TABLE ...  WITH "option value goes here"`
       *
@@ -123,7 +137,7 @@ object IgniteDataFrameSettings {
     /**
       * Config option for saving data frame.
       * Internally all SQL inserts are done through `IgniteDataStreamer`.
-      * This options sets perNodeBufferSize` property of streamer.
+      * This options sets `perNodeBufferSize` property of streamer.
       *
       * @example {{{
       * val igniteDF = spark.write.format(IGNITE)

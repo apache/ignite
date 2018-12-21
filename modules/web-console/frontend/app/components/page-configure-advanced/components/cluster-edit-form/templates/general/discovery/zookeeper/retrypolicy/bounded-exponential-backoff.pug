@@ -19,8 +19,30 @@ include /app/helpers/jade/mixins
 -var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.BoundedExponentialBackoff`
 
 .pc-form-grid-col-20(ng-if-start=`${modelRetryPolicyKind} === 'BoundedExponentialBackoff'`)
-    +number('Base interval:', `${model}.baseSleepTimeMs`, '"beBaseSleepTimeMs"', 'true', '1000', '0', 'Initial amount of time in ms to wait between retries')
+    +form-field__number({
+        label: 'Base interval:',
+        model: `${model}.baseSleepTimeMs`,
+        name: '"beBaseSleepTimeMs"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Initial amount of time in ms to wait between retries'
+    })
 .pc-form-grid-col-20
-    +number('Max interval:', `${model}.maxSleepTimeMs`, '"beMaxSleepTimeMs"', 'true', 'Integer.MAX_VALUE', '0', 'Max time in ms to sleep on each retry')
+    +form-field__number({
+        label: 'Max interval:',
+        model: `${model}.maxSleepTimeMs`,
+        name: '"beMaxSleepTimeMs"',
+        placeholder: 'Integer.MAX_VALUE',
+        min: '0',
+        tip: 'Max time in ms to sleep on each retry'
+    })
 .pc-form-grid-col-20(ng-if-end)
-    +number-min-max('Max retries:', `${model}.maxRetries`, '"beMaxRetries"', 'true', '10', '0', '29', 'Max number of times to retry')
+    +form-field__number({
+        label: 'Max retries:',
+        model: `${model}.maxRetries`,
+        name: '"beMaxRetries"',
+        placeholder: '10',
+        min: '0',
+        max: '29',
+        tip: 'Max number of times to retry'
+    })

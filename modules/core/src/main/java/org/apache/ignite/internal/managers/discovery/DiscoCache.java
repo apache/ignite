@@ -157,7 +157,7 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        alives.addAll(alives0);
+        this.alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
         this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
@@ -313,7 +313,7 @@ public class DiscoCache {
      * @return Oldest server node.
      */
     @Nullable public ClusterNode oldestServerNode(){
-        if (srvNodes.size() > 0)
+        if (!srvNodes.isEmpty())
             return srvNodes.get(0);
 
         return null;

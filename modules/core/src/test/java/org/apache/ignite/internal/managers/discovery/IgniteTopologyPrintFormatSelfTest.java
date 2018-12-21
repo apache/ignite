@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -32,10 +33,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.log4j.Level;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TOPOLOGY_SNAPSHOT = "Topology snapshot";
@@ -85,6 +90,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -96,6 +102,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -109,8 +116,12 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doServerLogTest(MockLogger log) throws Exception {
+        String nodeId8;
+
         try {
             Ignite server = startGrid("server");
+
+            nodeId8 = U.id8(server.cluster().localNode().id());
 
             setLogger(log, server);
 
@@ -124,7 +135,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=2, servers=2, clients=0,")
+                return s.contains("Topology snapshot [ver=2, locNode=" + nodeId8 + ", servers=2, clients=0,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 0"));
             }
         }));
@@ -133,6 +144,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -144,6 +156,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -157,8 +170,12 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doServerAndClientTest(MockLogger log) throws Exception {
+        String nodeId8;
+
         try {
             Ignite server = startGrid("server");
+
+            nodeId8 = U.id8(server.cluster().localNode().id());
 
             setLogger(log, server);
 
@@ -174,7 +191,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=4, servers=2, clients=2,")
+                return s.contains("Topology snapshot [ver=4, locNode=" + nodeId8 + ", servers=2, clients=2,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 2"));
             }
         }));
@@ -183,6 +200,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -194,6 +212,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -207,8 +226,12 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doForceServerAndClientTest(MockLogger log) throws Exception {
+        String nodeId8;
+
         try {
             Ignite server = startGrid("server");
+
+            nodeId8 = U.id8(server.cluster().localNode().id());
 
             setLogger(log, server);
 
@@ -225,7 +248,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=5, servers=2, clients=3,")
+                return s.contains("Topology snapshot [ver=5, locNode=" + nodeId8 + ", servers=2, clients=3,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 3"));
             }
         }));

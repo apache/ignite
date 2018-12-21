@@ -57,7 +57,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion version() {
+    @Override public GridCacheVersion version() {
         if (ver == GET_ENTRY_INVALID_VER_AFTER_GET) {
             throw new IgniteException("Impossible to get entry version after " +
                 "get() inside OPTIMISTIC REPEATABLE_READ transaction. Use only getEntry() or getEntries() inside " +
@@ -84,7 +84,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         String res = "CacheEntry [key=" + getKey() +
             ", val=" + getValue();
 

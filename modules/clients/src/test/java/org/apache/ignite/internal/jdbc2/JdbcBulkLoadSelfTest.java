@@ -37,12 +37,16 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** COPY command test for the regular JDBC driver. */
+@RunWith(JUnit4.class)
 public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
@@ -124,13 +128,14 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testBulkLoadThrows() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 conn = createConnection();
 
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
+                    stmt.executeUpdate("copy from 'dummy.csv' into Person" +
                         " (_key, id, firstName, lastName) format csv");
 
                     return null;
@@ -142,7 +147,6 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /**
      * A test class for creating a query entity.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
