@@ -48,6 +48,9 @@ public class JdbcMetadataInfo {
     /** Root context. Used to get all the database metadata. */
     private final GridKernalContext ctx;
 
+    /** The only one possible value of table type. */
+    public static final String TABLE_TYPE = "TABLE";
+
     /**
      * Initializes info.
      *
@@ -114,7 +117,18 @@ public class JdbcMetadataInfo {
      * @return List of metadatas of tables that matches .
      */
     public List<JdbcTableMeta> getTablesMeta(String schemaPtrn, String tabPtrn) {
-        List<JdbcTableMeta> tabMetas = new ArrayList<>();
+        Comparator<JdbcTableMeta> bySchemaThenTabname = new Comparator<JdbcTableMeta>() {
+            @Override public int compare(JdbcTableMeta o1, JdbcTableMeta o2) {
+                int schemCmp = o1.schemaName().compareTo(o2.schemaName());
+
+                if (schemCmp != 0)
+                    return schemCmp;
+
+                return o1.tableName().compareTo(o2.tableName());
+            }
+        };
+
+        TreeSet<JdbcTableMeta> tabMetas = new TreeSet<>(bySchemaThenTabname);
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
             for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -124,16 +138,13 @@ public class JdbcMetadataInfo {
                 if (!matches(table.tableName(), tabPtrn))
                     continue;
 
-                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
+                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), TABLE_TYPE);
 
-                // TODO: use linked hash set for this? or just remove this?
-                if (!tabMetas.contains(tableMeta))
-                    tabMetas.add(tableMeta);
-                // TODO: sort etither here or on client side.
+                tabMetas.add(tableMeta);
             }
         }
 
-        return tabMetas;
+        return new ArrayList<>(tabMetas);
     }
 
     /**
