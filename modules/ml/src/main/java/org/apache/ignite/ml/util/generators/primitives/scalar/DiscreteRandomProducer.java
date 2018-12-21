@@ -29,7 +29,7 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
  */
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /** */
-    private double EPS = 1e-5;
+    private static final double EPS = 1e-5;
 
     /** Probabilities. */
     private final double[] probs;
