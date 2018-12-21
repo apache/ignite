@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.h2.engine.Database;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -355,7 +356,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             locNodeHnd,
             GridIoPolicy.IDX_POOL,
             false))
-            throw retryException("Failed to send message to nodes: " + nodes);
+            throw H2Utils.retryException("Failed to send message to nodes: " + nodes);
     }
 
     /**
@@ -556,14 +557,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node == null)
-                        throw retryException("Failed to get node by ID during broadcast [nodeId=" + nodeId + ']');
+                        throw H2Utils.retryException("Failed to get node by ID during broadcast [nodeId=" + nodeId + ']');
 
                     nodes.add(node);
                 }
             }
 
             if (F.isEmpty(nodes))
-                throw retryException("Failed to collect affinity nodes during broadcast [" +
+                throw H2Utils.retryException("Failed to collect affinity nodes during broadcast [" +
                     "cacheName=" + cctx.name() + ']');
         }
 
@@ -618,7 +619,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
 
             if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
-                throw retryException("Failed to get primary node by key for range segment.");
+                throw H2Utils.retryException("Failed to get primary node by key for range segment.");
         }
 
         return new SegmentKey(node, segmentForPartition(partition));
@@ -699,34 +700,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             U.swap(arr, i, i + 1);
         }
-    }
-
-    /**
-     * @param msg Message.
-     * @return Row.
-     */
-    private Row toRow(GridH2RowMessage msg) {
-        if (msg == null)
-            return null;
-
-        GridKernalContext ctx = kernalContext();
-
-        List<GridH2ValueMessage> vals = msg.values();
-
-        assert !F.isEmpty(vals) : vals;
-
-        Value[] vals0 = new Value[vals.size()];
-
-        for (int i = 0; i < vals0.length; i++) {
-            try {
-                vals0[i] = vals.get(i).value(ctx);
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException(e);
-            }
-        }
-
-        return database.createRow(vals0, MEMORY_CALCULATE);
     }
 
     /** @return Index segments count. */
@@ -1094,7 +1067,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 List<GridH2RowRangeBounds> bounds;
 
                 if (stream == null) {
-                    stream = new RangeStream(qctx, segmentKey.node());
+                    stream =
+                        new RangeStream(database, kernalContext(), log, GridH2IndexBase.this, qctx, segmentKey.node());
 
                     stream.req = createRequest(qctx, batchLookupId, segmentKey.segmentId());
                     stream.req.bounds(bounds = new ArrayList<>());
@@ -1147,8 +1121,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
             qctx.putStreams(batchLookupId, rangeStreams);
 
             // Start streaming.
-            for (RangeStream stream : rangeStreams.values())
+            assert ctx != null;
+            assert log != null;
+
+            for (RangeStream stream : rangeStreams.values()) {
                 stream.start();
+            }
         }
 
         /** {@inheritDoc} */
@@ -1189,7 +1167,19 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Per node range stream.
      */
-    private class RangeStream {
+    private static class RangeStream {
+        /** H2 database. */
+        private final Database database;
+
+        /** Kernal context. */
+        private final GridKernalContext kctx;
+
+        /** Logger. */
+        private final IgniteLogger log;
+
+        /** Index. */
+        private final GridH2IndexBase idx;
+
         /** */
         final GridH2QueryContext qctx;
 
@@ -1218,7 +1208,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param qctx Query context.
          * @param node Node.
          */
-        RangeStream(GridH2QueryContext qctx, ClusterNode node) {
+        RangeStream(Database database, GridKernalContext kctx, IgniteLogger log, GridH2IndexBase idx, GridH2QueryContext qctx, ClusterNode node) {
+            this.database = database;
+            this.kctx = kctx;
+            this.log = log;
+            this.idx = idx;
             this.node = node;
             this.qctx = qctx;
         }
@@ -1227,9 +1221,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * Start streaming.
          */
         private void start() {
-            assert ctx != null;
-            assert log != null: getName();
-
             remainingRanges = req.bounds().size();
 
             assert remainingRanges > 0;
@@ -1237,7 +1228,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (log.isDebugEnabled())
                 log.debug("Starting stream: [node=" + node + ", req=" + req + "]");
 
-            send(singletonList(node), req);
+            idx.send(singletonList(node), req);
         }
 
         /**
@@ -1257,10 +1248,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             for (int attempt = 0;; attempt++) {
                 if (qctx.isCleared())
-                    throw retryException("Query is cancelled.");
+                    throw H2Utils.retryException("Query is cancelled.");
 
-                if (kernalContext().isStopping())
-                    throw retryException("Local node is stopping.");
+                if (kctx.isStopping())
+                    throw H2Utils.retryException("Local node is stopping.");
 
                 GridH2IndexRangeResponse res;
 
@@ -1268,7 +1259,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     res = respQueue.poll(500, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException ignored) {
-                    throw retryException("Interrupted while waiting for reply.");
+                    throw H2Utils.retryException("Interrupted while waiting for reply.");
                 }
 
                 if (res != null) {
@@ -1286,7 +1277,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                                     req = createRequest(qctx, req.batchLookupId(), req.segment());
 
                                 // Prefetch next page.
-                                send(singletonList(node), req);
+                                idx.send(singletonList(node), req);
                             }
                             else
                                 req = null;
@@ -1295,10 +1286,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                         case STATUS_NOT_FOUND:
                             if (req == null || req.bounds() == null) // We have already received the first response.
-                                throw retryException("Failure on remote node.");
+                                throw H2Utils.retryException("Failure on remote node.");
 
                             if (U.currentTimeMillis() - start > 30_000)
-                                throw retryException("Timeout reached.");
+                                throw H2Utils.retryException("Timeout reached.");
 
                             try {
                                 U.sleep(20 * attempt);
@@ -1308,7 +1299,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                             }
 
                             // Retry to send the request once more after some time.
-                            send(singletonList(node), req);
+                            idx.send(singletonList(node), req);
 
                             break;
 
@@ -1320,8 +1311,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     }
                 }
 
-                if (!kernalContext().discovery().alive(node))
-                    throw retryException("Node has left topology: " + node.id());
+                if (!kctx.discovery().alive(node))
+                    throw H2Utils.retryException("Node has left topology: " + node.id());
             }
         }
 
@@ -1375,6 +1366,32 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     }
                 }
             }
+        }
+
+        /**
+         * @param msg Message.
+         * @return Row.
+         */
+        private Row toRow(GridH2RowMessage msg) {
+            if (msg == null)
+                return null;
+
+            List<GridH2ValueMessage> vals = msg.values();
+
+            assert !F.isEmpty(vals) : vals;
+
+            Value[] vals0 = new Value[vals.size()];
+
+            for (int i = 0; i < vals0.length; i++) {
+                try {
+                    vals0[i] = vals.get(i).value(kctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e);
+                }
+            }
+
+            return database.createRow(vals0, MEMORY_CALCULATE);
         }
 
         /**
@@ -1434,16 +1451,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         for (int pos = 0; pos < columnIds.length; ++pos)
             columnIds[pos] = columns[pos].getColumnId();
-    }
-
-    /**
-     * Create retry exception for distributed join.
-     *
-     * @param msg Message.
-     * @return Exception.
-     */
-    private GridH2RetryException retryException(String msg) {
-        return new GridH2RetryException(msg);
     }
 
     /**
