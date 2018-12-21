@@ -437,9 +437,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      */
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
-            if (Thread.currentThread().getName().contains("sys-#"))
-                log.info("TX: committing " + nearXidVersion().asGridUuid() + ", node=" + cctx.localNodeId());
-
             for (IgniteTxEntry txEntry : writeEntries()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
