@@ -2353,6 +2353,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
+        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
+            sharedCtx.coordinators().ensureStarted();
+
         onKernalStart(cacheContext.cache());
 
         if (log.isInfoEnabled())
