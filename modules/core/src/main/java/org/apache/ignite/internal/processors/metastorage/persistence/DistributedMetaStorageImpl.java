@@ -73,6 +73,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private static final long DFLT_MAX_HISTORY_BYTES = 10 * 1024 * 1024;
 
     /** */
+    final GridInternalSubscriptionProcessor subscrProcessor;
+
+    /** */
     private DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
 
     /** */
@@ -114,33 +117,33 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     public DistributedMetaStorageImpl(GridKernalContext ctx) {
         super(ctx);
+
+        subscrProcessor = ctx.internalSubscriptionProcessor();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
-
         if (isPersistenceEnabled(ctx.config())) {
-            isp.registerMetastorageListener(new MetastorageLifecycleListener() {
+            subscrProcessor.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(
                     ReadOnlyMetastorage metastorage
                 ) throws IgniteCheckedException {
-                    onMetaStorageReadyForRead(metastorage, isp);
+                    onMetaStorageReadyForRead(metastorage);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onReadyForReadWrite(
                     ReadWriteMetastorage metastorage
                 ) throws IgniteCheckedException {
-                    onMetaStorageReadyForWrite(metastorage, isp);
+                    onMetaStorageReadyForWrite(metastorage);
                 }
             });
         }
         else {
             bridge = new EmptyDistributedMetaStorageBridge();
 
-            for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
 
@@ -200,10 +203,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** */
-    private void onMetaStorageReadyForRead(
-        ReadOnlyMetastorage metastorage,
-        GridInternalSubscriptionProcessor isp
-    ) throws IgniteCheckedException {
+    private void onMetaStorageReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         assert isPersistenceEnabled(ctx.config());
 
         assert startupExtras != null;
@@ -223,17 +223,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         bridge = readOnlyBridge;
 
-        for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
             subscriber.onReadyForRead(this);
 
         bridge = oldBridge;
     }
 
     /** */
-    private void onMetaStorageReadyForWrite(
-        ReadWriteMetastorage metastorage,
-        GridInternalSubscriptionProcessor isp
-    ) throws IgniteCheckedException {
+    private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         assert isPersistenceEnabled(ctx.config());
 
         synchronized (innerStateLock) {
@@ -263,7 +260,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         writeAvailable.countDown();
 
-        for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
     }
 
@@ -505,14 +502,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         DistributedMetaStorageNodeData nodeData = (DistributedMetaStorageNodeData)data.commonData();
 
-        if (nodeData.fullData == null) {
-            if (nodeData.updates != null) {
-                for (DistributedMetaStorageHistoryItem update : nodeData.updates)
-                    updateLater(update);
+        if (nodeData != null) {
+            if (nodeData.fullData == null) {
+                if (nodeData.updates != null) {
+                    for (DistributedMetaStorageHistoryItem update : nodeData.updates)
+                        updateLater(update);
+                }
             }
+            else
+                writeFullDataLater(nodeData);
         }
-        else
-            writeFullDataLater(nodeData);
     }
 
     /** */

@@ -21,11 +21,9 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -141,8 +139,8 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
                 metastorage.write(historyVersionKey(), dms.ver);
 
-                for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : dms.lsnrs)
-                    entry.get2().onReInit();
+                for (DistributedMetastorageLifecycleListener lsnr : dms.subscrProcessor.getGlobalMetastorageSubscribers())
+                    lsnr.onReInit(dms);
             }
 
             metastorage.remove(cleanupKey);

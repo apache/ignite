@@ -21,10 +21,8 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -94,8 +92,8 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
                 dms.addToHistoryCache(dms.ver + i + 1 - len, histItem);
             }
 
-            for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : dms.lsnrs)
-                entry.get2().onReInit();
+            for (DistributedMetastorageLifecycleListener lsnr : dms.subscrProcessor.getGlobalMetastorageSubscribers())
+                lsnr.onReInit(dms);
         }
     }
 }
