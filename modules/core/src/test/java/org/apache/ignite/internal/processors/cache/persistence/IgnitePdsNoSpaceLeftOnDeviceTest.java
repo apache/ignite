@@ -50,7 +50,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
         final DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration();
 
-        dataStorageConfiguration.getDefaultDataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(1<<24);
+        dataStorageConfiguration.getDefaultDataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(1 << 24);
         dataStorageConfiguration.setFileIOFactory(new FailingFileIOFactory());
 
         cfg.setDataStorageConfiguration(dataStorageConfiguration);
@@ -75,6 +75,8 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -109,8 +111,6 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
         }
 
         waitForTopology(1);
-
-        stopAllGrids();
     }
 
     /**
@@ -130,11 +130,11 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
         /**
          * Node ConsistentId for which the error will be generated
          */
-        private static final AtomicReference<String> unluckyConsistentId =new AtomicReference<>();
+        private static final AtomicReference<String> unluckyConsistentId = new AtomicReference<>();
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            if (unluckyConsistentId.get()!=null
+            if (unluckyConsistentId.get() != null
                 && file.getAbsolutePath().contains(unluckyConsistentId.get())
                 && file.getAbsolutePath().contains(StandaloneGridKernalContext.BINARY_META_FOLDER))
                 throw new IOException("No space left on device");
@@ -144,9 +144,10 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
         /**
          * Set node ConsistentId for which the error will be generated
+         *
          * @param unluckyConsistentId Node ConsistentId.
          */
-        public static void setUnluckyConsistentId(String unluckyConsistentId){
+        public static void setUnluckyConsistentId(String unluckyConsistentId) {
             FailingFileIOFactory.unluckyConsistentId.set(unluckyConsistentId);
         }
     }
