@@ -666,7 +666,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("TooBroadScope")
     @Test
     public void testStopRemoteListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();

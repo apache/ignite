@@ -574,7 +574,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -1354,7 +1353,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * @param msgId Message ID.
          * @param entries Entries to check.
          */
-        @SuppressWarnings({"ForLoopReplaceableByForEach"})
         private void evictReaders(GridCacheContext<?, ?> cacheCtx, Collection<IgniteTxKey> keys, UUID nodeId, long msgId,
             @Nullable List<GridDhtCacheEntry> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())

@@ -119,7 +119,6 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         res = (T)in.readObject();
 

@@ -69,7 +69,7 @@ public class H2RowCacheRegistry {
             HashMap<Integer, H2RowCache> caches0 = copy();
 
             if (cacheInfo.affinityNode()) {
-                GridCacheContext cacheCtx = cacheInfo.gridCacheContext();
+                GridCacheContext cacheCtx = cacheInfo.cacheContext();
 
                 assert cacheCtx != null;
 

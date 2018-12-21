@@ -92,7 +92,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try(Ignite ignite =
+                try (Ignite ignite =
                     Ignition.start(MODULE_PATH + "/src/test/config/factory-incorrect-store-cache.xml")) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
                             getCacheStoreFactory().create();
