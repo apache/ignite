@@ -144,7 +144,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @param msgPerIter Messages per iteration.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkAck(int ackCnt, int idleTimeout, int msgPerIter) throws Exception {
         createSpis(ackCnt, idleTimeout, TcpCommunicationSpi.DFLT_MSG_QUEUE_LIMIT);
 
@@ -278,7 +277,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkOverflow() throws Exception {
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);

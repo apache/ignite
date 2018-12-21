@@ -104,7 +104,6 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
@@ -164,7 +163,6 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {

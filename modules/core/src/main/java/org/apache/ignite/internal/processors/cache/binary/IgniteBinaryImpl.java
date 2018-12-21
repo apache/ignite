@@ -61,7 +61,6 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException {
         guard();
 

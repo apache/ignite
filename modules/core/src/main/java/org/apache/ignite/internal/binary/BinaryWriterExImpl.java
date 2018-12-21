@@ -1736,7 +1736,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeBytes(String s) throws IOException {
         int len = s.length();
 
@@ -1747,7 +1746,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeChars(String s) throws IOException {
         int len = s.length();
 
@@ -1758,7 +1756,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public void writeUTF(String s) throws IOException {
         writeString(s);
     }
