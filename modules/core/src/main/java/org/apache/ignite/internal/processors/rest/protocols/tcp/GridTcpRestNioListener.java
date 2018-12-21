@@ -214,7 +214,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                         ses.close();
 
-                        Thread.currentThread().interrupt();
+                        return;
                     }
                 }
 
