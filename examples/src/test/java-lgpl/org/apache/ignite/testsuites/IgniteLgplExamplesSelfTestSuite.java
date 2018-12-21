@@ -17,6 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
+import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
@@ -35,10 +39,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @Suite.SuiteClasses({
     HibernateL2CacheExampleSelfTest.class,
     SpatialQueryExampleSelfTest.class,
+    ComputeScheduleExampleSelfTest.class,
 
     // Multi-node.
     HibernateL2CacheExampleMultiNodeSelfTest.class,
     SpatialQueryExampleMultiNodeSelfTest.class,
+    ComputeScheduleExampleMultiNodeSelfTest.class,
 })
 public class IgniteLgplExamplesSelfTestSuite {
     /** */
