@@ -602,11 +602,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
-        assert txLog != null && mvccEnabled;
+        assert mvccEnabled;
 
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
-        txLog.put(key, state, primary);
+        if (txLog != null) // Non-affinity node for mvcc caches.
+            txLog.put(key, state, primary);
 
         Waiter waiter;
 
