@@ -153,8 +153,6 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 }

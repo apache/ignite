@@ -115,7 +115,6 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     @Override protected void afterTestsStopped() throws Exception {
         orgCache = null;
 
-        stopAllGrids();
     }
 
     /** */

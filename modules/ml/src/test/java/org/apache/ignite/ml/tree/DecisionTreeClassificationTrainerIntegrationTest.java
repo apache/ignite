@@ -43,11 +43,6 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */

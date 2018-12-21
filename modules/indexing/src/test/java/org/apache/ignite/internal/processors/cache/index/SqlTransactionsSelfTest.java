@@ -64,7 +64,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
 
         super.afterTestsStopped();
     }

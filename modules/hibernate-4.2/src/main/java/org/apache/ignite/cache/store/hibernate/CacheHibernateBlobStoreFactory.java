@@ -166,7 +166,7 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + sesFactoryBean +
-                        ", igniteConfig=" + appContext + ']');
+                        ", igniteConfig=" + appContext + ']' + " err = ");
             }
         }
 

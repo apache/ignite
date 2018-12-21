@@ -147,8 +147,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(true);
-
         stores.clear();
     }
 

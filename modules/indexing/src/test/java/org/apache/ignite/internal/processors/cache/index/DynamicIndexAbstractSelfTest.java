@@ -86,8 +86,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

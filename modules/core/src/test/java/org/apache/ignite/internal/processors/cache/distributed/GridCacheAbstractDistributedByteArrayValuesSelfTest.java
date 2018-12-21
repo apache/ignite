@@ -126,8 +126,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         caches = null;
         mvccCaches = null;
 
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

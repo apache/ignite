@@ -58,8 +58,6 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

@@ -111,8 +111,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

@@ -86,8 +86,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

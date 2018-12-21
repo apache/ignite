@@ -109,11 +109,6 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** */
     public void testAlternativeUsageOfIn(){
         try (FieldsQueryCursor<List<?>> cur = orgCache.query(new SqlFieldsQuery(

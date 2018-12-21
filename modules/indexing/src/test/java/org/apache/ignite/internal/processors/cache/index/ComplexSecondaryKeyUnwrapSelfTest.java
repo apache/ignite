@@ -49,8 +49,6 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**

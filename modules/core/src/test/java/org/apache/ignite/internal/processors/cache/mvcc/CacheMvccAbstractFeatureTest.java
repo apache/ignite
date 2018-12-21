@@ -78,8 +78,6 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

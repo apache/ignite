@@ -210,8 +210,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

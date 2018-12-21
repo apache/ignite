@@ -41,8 +41,6 @@ public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractD
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
     }
 

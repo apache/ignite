@@ -35,8 +35,6 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids(false);
-
         cleanPersistenceDir();
     }
 

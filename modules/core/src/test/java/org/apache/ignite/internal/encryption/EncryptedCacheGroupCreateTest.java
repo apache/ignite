@@ -38,8 +38,6 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

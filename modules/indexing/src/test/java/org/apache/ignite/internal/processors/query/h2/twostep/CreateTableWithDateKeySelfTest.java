@@ -59,8 +59,6 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
         initCache = null;
     }

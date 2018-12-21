@@ -53,12 +53,8 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        try {
-            stopAllGrids();
-        }
-        finally {
-            super.afterTestsStopped();
-        }
+        super.afterTestsStopped();
+
     }
 
     /**

@@ -137,7 +137,6 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        stopAllGrids();
     }
 
     /**

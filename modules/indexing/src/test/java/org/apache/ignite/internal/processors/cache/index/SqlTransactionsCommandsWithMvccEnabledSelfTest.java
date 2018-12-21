@@ -61,7 +61,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
 
         super.afterTestsStopped();
     }

@@ -89,8 +89,6 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         AuthorizationContext.clear();
 
-        stopAllGrids();
-
         super.afterTest();
     }
 
