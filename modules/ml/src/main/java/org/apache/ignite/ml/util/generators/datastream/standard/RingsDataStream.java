@@ -23,16 +23,21 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
-public class CirclesDataStream implements DataStreamGenerator {
+import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.ring;
+
+public class RingsDataStream implements DataStreamGenerator {
     private final int countOfCircles;
     private final double minRadius;
     private final double distanceBetweenCircles;
+    private long seed;
 
-    public CirclesDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles) {
+    public RingsDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles) {
+        this(countOfCircles, minRadius, distanceBetweenCircles, System.currentTimeMillis());
+    }
+
+    public RingsDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles, long seed) {
         A.ensure(countOfCircles > 0, "countOfCircles > 0");
         A.ensure(minRadius > 0, "minRadius > 0");
         A.ensure(distanceBetweenCircles > 0, "distanceBetweenCircles > 0");
@@ -40,6 +45,7 @@ public class CirclesDataStream implements DataStreamGenerator {
         this.countOfCircles = countOfCircles;
         this.minRadius = minRadius;
         this.distanceBetweenCircles = distanceBetweenCircles;
+        this.seed = seed;
     }
 
     @Override
@@ -49,11 +55,9 @@ public class CirclesDataStream implements DataStreamGenerator {
             final double radius = minRadius + distanceBetweenCircles * i;
             final double variance = 0.1 * (i + 1);
 
-            GaussRandomProducer randomProducer = new GaussRandomProducer(0, variance);
-            builder = builder.add(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
-                randomProducer.noizify(t -> radius * Math.sin(t)),
-                randomProducer.noizify(t -> radius * Math.cos(t))
-            ), 1.0);
+            GaussRandomProducer gauss = new GaussRandomProducer(0, variance, seed);
+            builder = builder.add(ring(radius, 0, 2 * Math.PI).noisify(gauss));
+            seed >>= 2;
         }
 
         return builder.build().asDataStream().labeled();

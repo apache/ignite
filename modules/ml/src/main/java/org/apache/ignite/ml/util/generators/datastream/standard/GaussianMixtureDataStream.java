@@ -21,57 +21,49 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
+import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.gauss;
+
 public class GaussianMixtureDataStream implements DataStreamGenerator {
-    public static class Builder {
-        private final List<Vector> means = new ArrayList<>();
-        private final List<Vector> variances = new ArrayList<>();
+    private final List<IgniteFunction<Long, VectorGenerator>> components;
+    private long seed;
 
-        public Builder add(Vector mean, Vector variance) {
-            A.ensure(variance.size() >= 0, "variance.size() >= 0");
-
-            means.add(mean);
-            variances.add(variance);
-            return this;
-        }
-
-        public GaussianMixtureDataStream build() {
-            A.notEmpty(means, "this.means.size()");
-
-            Vector[] means = new Vector[this.means.size()];
-            Vector[] variances = new Vector[this.variances.size()];
-            for(int i = 0; i<this.means.size(); i++) {
-                means[i] = this.means.get(i);
-                variances[i] = this.variances.get(i);
-            }
-
-            return new GaussianMixtureDataStream(means, variances);
-        }
-    }
-
-    private final Vector[] points;
-    private final Vector[] variances;
-
-    private GaussianMixtureDataStream(Vector[] points, Vector[] variances) {
-        this.points = points;
-        this.variances = variances;
+    private GaussianMixtureDataStream(List<IgniteFunction<Long, VectorGenerator>> components, long seed) {
+        this.components = components;
+        this.seed = seed;
     }
 
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
-        long seed = System.currentTimeMillis();
-        for (int i = 0; i < points.length; i++) {
-            VectorGenerator gauss = VectorGeneratorPrimitives.gauss(points[i], variances[i], seed);
-            builder = builder.add(gauss, 1.0);
+        for (int i = 0; i < components.size(); i++) {
+            builder = builder.add(components.get(i).apply(seed), 1.0);
             seed >>= 2;
         }
 
         return builder.build().asDataStream().labeled();
+    }
+
+    public static class Builder {
+        private List<IgniteFunction<Long, VectorGenerator>> components = new ArrayList<>();
+
+        public Builder add(Vector mean, Vector variance) {
+            components.add(seed -> gauss(mean, variance, seed));
+            return this;
+        }
+
+        public GaussianMixtureDataStream build() {
+            return build(System.currentTimeMillis());
+        }
+
+        public GaussianMixtureDataStream build(long seed) {
+            A.notEmpty(components, "this.means.size()");
+            return new GaussianMixtureDataStream(components, seed);
+        }
     }
 }

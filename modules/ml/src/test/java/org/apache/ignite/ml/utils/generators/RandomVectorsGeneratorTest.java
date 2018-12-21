@@ -24,7 +24,7 @@ public class RandomVectorsGeneratorTest {
     public void name() {
 //        Stream<LabeledVector<Vector, Double>> targetStream = new GaussianLerpDataStream(2, 5, 1.0, -50, 50.0, System.currentTimeMillis()).labeled();
 //        Stream<LabeledVector<Vector, Double>> targetStream = new ClassificationDataStream(2, 10, 0, 0, 2, 20.0, System.currentTimeMillis()).labeled();
-//                Stream<LabeledVector<Vector, Double>> targetStream = new CirclesDataStream(5, 5, 5).labeled();
+//                Stream<LabeledVector<Vector, Double>> targetStream = new RingsDataStream(5, 5, 5).labeled();
         Stream<LabeledVector<Vector, Double>> targetStream = new TwoSeparableClassesDataStream(-2.0, 10).labeled();
 //        Stream<LabeledVector<Vector, Double>> targetStream = RegressionDataStream.twoDimensional(
 //            (Math::sin, new GaussRandomProducer(0, 0.01)),
