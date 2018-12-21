@@ -450,25 +450,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected H2Cursor doFind0(
-        IgniteTree t,
-        @Nullable SearchRow first,
-        @Nullable SearchRow last,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
-        try {
-            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
-
-            if (range == null)
-                range = H2Utils.EMPTY_CURSOR;
-
-            return new H2Cursor(range);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
         if (qctx == null) {
             assert !cctx.mvccEnabled();

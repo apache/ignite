@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -61,7 +64,6 @@ import org.h2.table.TableFilter;
 import org.h2.util.DoneFuture;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
 import java.util.ArrayList;
@@ -413,7 +415,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     // This is the first request containing all the search rows.
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), filter(qctx));
+                    src = new RangeSource(this, msg.bounds(), msg.segment(), filter(qctx));
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -620,36 +622,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         return new SegmentKey(node, segmentForPartition(partition));
-    }
-
-    /**
-     * @param row Row.
-     * @return Row message.
-     */
-    private GridH2RowMessage toRowMessage(Row row) {
-        if (row == null)
-            return null;
-
-        int cols = row.getColumnCount();
-
-        assert cols > 0 : cols;
-
-        List<GridH2ValueMessage> vals = new ArrayList<>(cols);
-
-        for (int i = 0; i < cols; i++) {
-            try {
-                vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException(e);
-            }
-        }
-
-        GridH2RowMessage res = new GridH2RowMessage();
-
-        res.values(vals);
-
-        return res;
     }
 
     /**
@@ -1417,100 +1389,32 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Bounds iterator.
+     * Find rows for the segments (distributed joins).
+     *
+     * @param bounds Bounds.
+     * @param segment Segment.
+     * @param filter Filter.
+     * @return Iterator.
      */
-    private class RangeSource {
-        /** */
-        Iterator<GridH2RowRangeBounds> boundsIter;
+    public Iterator<GridH2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
+        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
+        SearchRow first = toSearchRow(bounds.first());
+        SearchRow last = toSearchRow(bounds.last());
 
-        /** */
-        int curRangeId = -1;
+        IgniteTree t = treeForRead(segment);
 
-        /** */
-        private final int segment;
+        try {
+            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
-        /** */
-        private final BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter;
+            if (range == null)
+                range = H2Utils.EMPTY_CURSOR;
 
-        /** Iterator. */
-        Iterator<GridH2Row> iter = emptyIterator();
+            H2Cursor cur = new H2Cursor(range);
 
-        /**
-         * @param bounds Bounds.
-         * @param segment Segment.
-         * @param filter Filter.
-         */
-        RangeSource(Iterable<GridH2RowRangeBounds> bounds, int segment, BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
-            this.segment = segment;
-            this.filter = filter;
-            boundsIter = bounds.iterator();
+            return new CursorIteratorWrapper(cur);
         }
-
-        /**
-         * @return {@code true} If there are more rows in this source.
-         */
-        public boolean hasMoreRows() throws IgniteCheckedException {
-            return boundsIter.hasNext() || iter.hasNext();
-        }
-
-        /**
-         * @param maxRows Max allowed rows.
-         * @return Range.
-         */
-        public GridH2RowRange next(int maxRows) {
-            assert maxRows > 0 : maxRows;
-
-            for (; ; ) {
-                if (iter.hasNext()) {
-                    // Here we are getting last rows from previously partially fetched range.
-                    List<GridH2RowMessage> rows = new ArrayList<>();
-
-                    GridH2RowRange nextRange = new GridH2RowRange();
-
-                    nextRange.rangeId(curRangeId);
-                    nextRange.rows(rows);
-
-                    do {
-                        rows.add(toRowMessage(iter.next()));
-                    }
-                    while (rows.size() < maxRows && iter.hasNext());
-
-                    if (iter.hasNext())
-                        nextRange.setPartial();
-                    else
-                        iter = emptyIterator();
-
-                    return nextRange;
-                }
-
-                iter = emptyIterator();
-
-                if (!boundsIter.hasNext()) {
-                    boundsIter = emptyIterator();
-
-                    return null;
-                }
-
-                GridH2RowRangeBounds bounds = boundsIter.next();
-
-                curRangeId = bounds.rangeId();
-
-                SearchRow first = toSearchRow(bounds.first());
-                SearchRow last = toSearchRow(bounds.last());
-
-                IgniteTree t = treeForRead(segment);
-
-                iter = new CursorIteratorWrapper(doFind0(t, first, last, filter));
-
-                if (!iter.hasNext()) {
-                    // We have to return empty range here.
-                    GridH2RowRange emptyRange = new GridH2RowRange();
-
-                    emptyRange.rangeId(curRangeId);
-
-                    return emptyRange;
-                }
-            }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
     }
 
@@ -1519,21 +1423,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Snapshot for requested segment if there is one.
      */
     protected <K, V> IgniteTree<K, V> treeForRead(int segment) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param t Tree.
-     * @param first Lower bound.
-     * @param last Upper bound always inclusive.
-     * @param filter Filter.
-     * @return Iterator over rows in given range.
-     */
-    protected H2Cursor doFind0(
-        IgniteTree t,
-        @Nullable SearchRow first,
-        @Nullable SearchRow last,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
         throw new UnsupportedOperationException();
     }
 
