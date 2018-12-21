@@ -17,39 +17,34 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite. <p> Contains only Spring ignite examples tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    HibernateL2CacheExampleSelfTest.class,
+    SpatialQueryExampleSelfTest.class,
+
+    // Multi-node.
+    HibernateL2CacheExampleMultiNodeSelfTest.class,
+    SpatialQueryExampleMultiNodeSelfTest.class,
+})
 public class IgniteLgplExamplesSelfTestSuite {
-    /**
-     * @return Suite.
-     */
-    public static TestSuite suite() {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteLgplExamplesSelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SpatialQueryExampleSelfTest.class));
-
-        // Multi-node.
-        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SpatialQueryExampleMultiNodeSelfTest.class));
-
-        return suite;
     }
 }
