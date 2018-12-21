@@ -513,7 +513,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param isLocalQry Local query flag.
      * @return Collection of nodes for broadcasting.
      */
-    // TODO: Move to distributed batch
     public List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?, ?> cctx, boolean isLocalQry) {
         Map<UUID, int[]> partMap = qctx.partitionsMap();
 
@@ -567,7 +566,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param isLocalQry Local query flag.
      * @return Segment key for Affinity key.
      */
-    // TODO: Move to distributed batch
     public SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj,
         boolean isLocalQry) {
         assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
