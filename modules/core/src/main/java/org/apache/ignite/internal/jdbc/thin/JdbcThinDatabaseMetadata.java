@@ -819,8 +819,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         return new JdbcThinResultSet(rows, meta);
     }
 
-
-
     /** {@inheritDoc} */
     @Override public ResultSet getColumnPrivileges(String catalog, String schema, String tbl,
         String colNamePtrn) throws SQLException {

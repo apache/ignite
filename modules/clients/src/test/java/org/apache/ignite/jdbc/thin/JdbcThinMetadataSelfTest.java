@@ -151,8 +151,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
-            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
+        jcache(grid(0),
+            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class),
+            "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
