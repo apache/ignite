@@ -407,35 +407,81 @@ public class AgentConfiguration {
             props.load(reader);
         }
 
-        String val = (String)props.remove("tokens");
+        String val = props.getProperty("tokens");
 
         if (val != null)
             tokens(new ArrayList<>(Arrays.asList(val.split(","))));
 
-        val = (String)props.remove("server-uri");
+        val = props.getProperty("server-uri");
 
         if (val != null)
             serverUri(val);
 
-        val = (String)props.remove("node-uri");
+        val = props.getProperty("node-uri");
 
+        // Intentionaly wrapped by ArrayList, for further maniulations.
         if (val != null)
             nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
 
-        val = (String)props.remove("node-login");
+        val = props.getProperty("node-login");
 
         if (val != null)
             nodeLogin(val);
 
-        val = (String)props.remove("node-password");
+        val = props.getProperty("node-password");
 
         if (val != null)
             nodePassword(val);
 
-        val = (String)props.remove("driver-folder");
+        val = props.getProperty("driver-folder");
 
         if (val != null)
             driversFolder(val);
+
+        val = props.getProperty("node-key-store");
+
+        if (val != null)
+            nodeKeyStore(val);
+
+        val = props.getProperty("node-key-store-password");
+
+        if (val != null)
+            nodeKeyStorePassword(val);
+
+        val = props.getProperty("node-trust-store");
+
+        if (val != null)
+            nodeTrustStore(val);
+
+        val = props.getProperty("node-trust-store-password");
+
+        if (val != null)
+            nodeTrustStorePassword(val);
+
+        val = props.getProperty("server-key-store");
+
+        if (val != null)
+            serverKeyStore(val);
+
+        val = props.getProperty("server-key-store-password");
+
+        if (val != null)
+            serverKeyStorePassword(val);
+
+        val = props.getProperty("server-trust-store");
+
+        if (val != null)
+            serverTrustStore(val);
+
+        val = props.getProperty("server-trust-store-password");
+
+        if (val != null)
+            serverTrustStorePassword(val);
+
+        val = props.getProperty("cipher-suites");
+
+        if (val != null)
+            cipherSuites(Arrays.asList(val.split(",")));
     }
 
     /**
@@ -512,20 +558,22 @@ public class AgentConfiguration {
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
 
+        String nl = System.lineSeparator();
+
         if (!F.isEmpty(tokens)) {
             sb.append("User's security tokens          : ");
 
-            sb.append(tokens.stream().map(this::secured).collect(Collectors.joining(", "))).append('\n');
+            sb.append(tokens.stream().map(this::secured).collect(Collectors.joining(", "))).append(nl);
         }
 
         sb.append("URI to Ignite node REST server  : ")
-            .append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+            .append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append(nl);
 
         if (nodeLogin != null)
-            sb.append("Login to Ignite node REST server: ").append(nodeLogin).append('\n');
+            sb.append("Login to Ignite node REST server: ").append(nodeLogin).append(nl);
 
-        sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
-        sb.append("Path to agent property file     : ").append(configPath()).append('\n');
+        sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append(nl);
+        sb.append("Path to agent property file     : ").append(configPath()).append(nl);
 
         String drvFld = driversFolder();
 
@@ -536,32 +584,35 @@ public class AgentConfiguration {
                 drvFld = new File(agentHome, "jdbc-drivers").getPath();
         }
 
-        sb.append("Path to JDBC drivers folder     : ").append(drvFld).append('\n');
-        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled").append('\n');
+        sb.append("Path to JDBC drivers folder     : ").append(drvFld).append(nl);
+        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled").append(nl);
 
         if (!F.isEmpty(nodeKeyStore))
-            sb.append("Node key store                  : ").append(nodeKeyStore).append('\n');
+            sb.append("Node key store                  : ").append(nodeKeyStore).append(nl);
 
         if (!F.isEmpty(nodeKeyStorePass))
-            sb.append("Node key store password         : ").append(secured(nodeKeyStorePass)).append('\n');
+            sb.append("Node key store password         : ").append(secured(nodeKeyStorePass)).append(nl);
 
         if (!F.isEmpty(nodeTrustStore))
-            sb.append("Node trust store                : ").append(nodeTrustStore).append('\n');
+            sb.append("Node trust store                : ").append(nodeTrustStore).append(nl);
 
         if (!F.isEmpty(nodeTrustStorePass))
-            sb.append("Node trust store password       : ").append(secured(nodeTrustStorePass)).append('\n');
+            sb.append("Node trust store password       : ").append(secured(nodeTrustStorePass)).append(nl);
 
         if (!F.isEmpty(srvKeyStore))
-            sb.append("Server key store                : ").append(srvKeyStore).append('\n');
+            sb.append("Server key store                : ").append(srvKeyStore).append(nl);
 
         if (!F.isEmpty(srvKeyStorePass))
-            sb.append("Server key store password       : ").append(secured(srvKeyStorePass)).append('\n');
+            sb.append("Server key store password       : ").append(secured(srvKeyStorePass)).append(nl);
 
         if (!F.isEmpty(srvTrustStore))
-            sb.append("Server trust store              : ").append(srvTrustStore).append('\n');
+            sb.append("Server trust store              : ").append(srvTrustStore).append(nl);
 
         if (!F.isEmpty(srvTrustStorePass))
-            sb.append("Server trust store password     : ").append(secured(srvTrustStorePass)).append('\n');
+            sb.append("Server trust store password     : ").append(secured(srvTrustStorePass)).append(nl);
+
+        if (!F.isEmpty(cipherSuites))
+            sb.append("Cipher suites                   : ").append(String.join(", ", cipherSuites)).append(nl);
 
         return sb.toString();
     }
