@@ -769,7 +769,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param ucast Unicast or broadcast query.
          * @param affColId Affinity column ID.
          */
-        DistributedLookupBatch(GridH2IndexBase idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+        public DistributedLookupBatch(GridH2IndexBase idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
             this.idx = idx;
             this.cctx = cctx;
             this.ucast = ucast;
