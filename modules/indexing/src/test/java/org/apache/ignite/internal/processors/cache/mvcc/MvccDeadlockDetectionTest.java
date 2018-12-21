@@ -36,10 +36,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -47,6 +50,18 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /** */
 @RunWith(JUnit4.class)
 public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
+    /** */
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "0");
+    }
+
+    /** */
+    @AfterClass
+    public static void afterClass() {
+        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
+    }
+
     /** */
     private IgniteEx client;
 

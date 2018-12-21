@@ -649,7 +649,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             DeadlockDetectionManager.DelayedDeadlockComputation delayedComputation
                 = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
 
-            fut.listen(fut0 -> delayedComputation.cancel());
+            if (delayedComputation != null)
+                fut.listen(fut0 -> delayedComputation.cancel());
         }
 
         return fut;
