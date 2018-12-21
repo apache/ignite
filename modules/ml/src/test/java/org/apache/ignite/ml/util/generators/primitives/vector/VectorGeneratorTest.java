@@ -29,7 +29,7 @@ public class VectorGeneratorTest {
     }
 
     @Test
-    public void concat() {
+    public void concat1() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
         VectorGenerator g2 = VectorGeneratorPrimitives.constant(VectorUtils.of(3., 4.));
         VectorGenerator g12 = g1.concat(g2);
@@ -37,6 +37,14 @@ public class VectorGeneratorTest {
 
         assertArrayEquals(new double[] {1., 2., 3., 4.}, g12.get().asArray(), 1e-7);
         assertArrayEquals(new double[] {3., 4., 1., 2.}, g21.get().asArray(), 1e-7);
+    }
+
+    @Test
+    public void concat2() {
+        VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
+        VectorGenerator g2 = g1.concat(() -> 1.0);
+
+        assertArrayEquals(new double[] {1., 2., 1.}, g2.get().asArray(), 1e-7);
     }
 
     @Test

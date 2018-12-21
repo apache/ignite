@@ -24,57 +24,130 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProduce
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 
+/**
+ * Collection of predefined vector generators.
+ */
 public class VectorGeneratorPrimitives {
-    public static VectorGenerator gauss(Vector mean, Vector variances, Long seed) {
-        A.notEmpty(mean.asArray(), "mean.size() != 0");
-        A.ensure(mean.size() == variances.size(), "mean.size() == variances.size()");
+    /**
+     * Returns vector generator of vectors from multidimension gauss distribution.
+     *
+     * @param means mean values per dimension.
+     * @param variances variance values per dimension.
+     * @param seed seed.
+     * @return generator.
+     */
+    public static VectorGenerator gauss(Vector means, Vector variances, Long seed) {
+        A.notEmpty(means.asArray(), "mean.size() != 0");
+        A.ensure(means.size() == variances.size(), "mean.size() == variances.size()");
 
-        RandomProducer[] producers = new RandomProducer[mean.size()];
+        RandomProducer[] producers = new RandomProducer[means.size()];
         for (int i = 0; i < producers.length; i++)
-            producers[i] = new GaussRandomProducer(mean.get(i), variances.get(i), seed >>= 2);
+            producers[i] = new GaussRandomProducer(means.get(i), variances.get(i), seed >>= 2);
         return RandomProducer.vectorize(producers);
     }
 
-    public static VectorGenerator gauss(Vector mean, Vector variances) {
-        return gauss(mean, variances, System.currentTimeMillis());
+    /**
+     * Returns vector generator of vectors from multidimension gauss distribution.
+     *
+     * @param means mean values per dimension.
+     * @param variances variance values per dimension.
+     * @return generator.
+     */
+    public static VectorGenerator gauss(Vector means, Vector variances) {
+        return gauss(means, variances, System.currentTimeMillis());
     }
 
+    /**
+     * Returns vector generator of 2D-vectors from ring-like distribution.
+     *
+     * @param radius ring radius.
+     * @param fromAngle from angle.
+     * @param toAngle to angle.
+     * @return generator.
+     */
     public static VectorGenerator ring(double radius, double fromAngle, double toAngle) {
+        return ring(radius, fromAngle, toAngle, System.currentTimeMillis());
+    }
+
+    /**
+     * Returns vector generator of 2D-vectors from ring-like distribution around zero.
+     *
+     * @param radius ring radius.
+     * @param fromAngle from angle.
+     * @param toAngle to angle.
+     * @param seed seed.
+     * @return generator.
+     */
+    public static VectorGenerator ring(double radius, double fromAngle, double toAngle, long seed) {
         return new ParametricVectorGenerator(
-            new UniformRandomProducer(fromAngle, toAngle),
+            new UniformRandomProducer(fromAngle, toAngle, seed),
             t -> radius * Math.sin(t),
             t -> radius * Math.cos(t)
         );
     }
 
-    public static VectorGenerator parallelogram(Vector dimensions, long seed) {
-        A.notEmpty(dimensions.asArray(), "dimensions.size() != 0");
+    /**
+     * Returns vector generator of vectors from multidimension uniform distribution around zero.
+     *
+     * @param bounds parallelogram bounds.
+     * @return generator.
+     */
+    public static VectorGenerator parallelogram(Vector bounds) {
+        return parallelogram(bounds, System.currentTimeMillis());
+    }
 
-        UniformRandomProducer[] producers = new UniformRandomProducer[dimensions.size()];
+    /**
+     * Returns vector generator of vectors from multidimension uniform distribution around zero.
+     *
+     * @param bounds parallelogram bounds.
+     * @param seed seed.
+     * @return generator.
+     */
+    public static VectorGenerator parallelogram(Vector bounds, long seed) {
+        A.notEmpty(bounds.asArray(), "bounds.size() != 0");
+
+        UniformRandomProducer[] producers = new UniformRandomProducer[bounds.size()];
         for (int i = 0; i < producers.length; i++)
-            producers[i] = new UniformRandomProducer(-dimensions.get(i), dimensions.get(i), seed >>= 2);
+            producers[i] = new UniformRandomProducer(-bounds.get(i), bounds.get(i), seed >>= 2);
 
         return RandomProducer.vectorize(producers);
     }
 
-    public static VectorGenerator parallelogram(Vector dimensions) {
-        return parallelogram(dimensions, System.currentTimeMillis());
+    /**
+     * Returns vector generator of 2D-vectors from circle-like distribution around zero.
+     *
+     * @param radius circle radius.
+     * @return generator.
+     */
+    public static VectorGenerator circle(double radius) {
+        return circle(radius, System.currentTimeMillis());
     }
 
+    /**
+     * Returns vector generator of 2D-vectors from circle-like distribution around zero.
+     *
+     * @param radius circle radius.
+     * @param seed seed.
+     * @return generator.
+     */
     public static VectorGenerator circle(double radius, long seed) {
         return new UniformRandomProducer(-radius, radius, seed)
             .vectorize(2)
             .filter(v -> Math.sqrt(v.getLengthSquared()) <= radius);
     }
 
-    public static VectorGenerator circle(double radius) {
-        return circle(radius, System.currentTimeMillis());
-    }
-
+    /**
+     * @param size vector size.
+     * @return generator of constant vector = zero.
+     */
     public static VectorGenerator zero(int size) {
         return constant(VectorUtils.of(new double[size]));
     }
 
+    /**
+     * @param v constant.
+     * @return generator of constant vector.
+     */
     public static VectorGenerator constant(Vector v) {
         return () -> v;
     }

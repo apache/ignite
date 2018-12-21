@@ -35,11 +35,26 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
+/**
+ * Basic interface for pseudorandom vectors generators.
+ */
 public interface VectorGenerator extends Supplier<Vector> {
-    public default VectorGenerator map(IgniteFunction<Vector, Vector> f) {
-        return () -> f.apply(get());
+    /**
+     * Maps values of vector generator using mapper.
+     *
+     * @param mapper mapper.
+     * @return vector generator with mapped vectors.
+     */
+    public default VectorGenerator map(IgniteFunction<Vector, Vector> mapper) {
+        return () -> mapper.apply(get());
     }
 
+    /**
+     * Filters values of vector generator using predicate.
+     *
+     * @param predicate predicate.
+     * @return vector generator with filtered vectors.
+     */
     public default VectorGenerator filter(IgnitePredicate<Vector> predicate) {
         return () -> {
             Vector v = null;
@@ -52,18 +67,53 @@ public interface VectorGenerator extends Supplier<Vector> {
         };
     }
 
+    /**
+     * Creates new generator by concatenation of vectors of this generator and other.
+     *
+     * @param other other.
+     * @return generator of concatenated vectors.
+     */
     public default VectorGenerator concat(VectorGenerator other) {
         return () -> VectorUtils.concat(this.get(), other.get());
     }
 
+    /**
+     * Creates new generator by concatenation of vectors of this generator and random producer.
+     *
+     * @param producer producer.
+     * @return generator of concatenated vector and noize.
+     */
+    public default VectorGenerator concat(RandomProducer producer) {
+        return () -> VectorUtils.concat(this.get(), VectorUtils.of(producer.get()));
+    }
+
+    /**
+     * Creates new generator by sum of vectors of this generator and other.
+     *
+     * @param other other.
+     * @return generator of vector sums.
+     */
     public default VectorGenerator plus(VectorGenerator other) {
         return () -> this.get().plus(other.get());
     }
 
+    /**
+     * Creates a permanent rearrangement mapping of features in vector and applies this rearrangement for each vectors
+     * of current generator.
+     *
+     * @return generator of vectors with shuffled features.
+     */
     public default VectorGenerator shuffle() {
         return shuffle(System.currentTimeMillis());
     }
 
+    /**
+     * Creates a permanent rearrangement mapping of features in vector and applies this rearrangement for each vectors
+     * of current generator.
+     *
+     * @param seed seed.
+     * @return generator of vectors with shuffled features.
+     */
     public default VectorGenerator shuffle(Long seed) {
         Random rnd = new Random(seed);
         List<Integer> shuffledIds = IntStream.range(0, get().size()).boxed().collect(Collectors.toList());
@@ -83,10 +133,25 @@ public interface VectorGenerator extends Supplier<Vector> {
         });
     }
 
+    /**
+     * Increase vectors of generator by increaseSize and sets to new values random selected feature values from already
+     * set components.
+     *
+     * @param increaseSize increase size.
+     * @return generator.
+     */
     public default VectorGenerator duplicateRandomFeatures(int increaseSize) {
         return duplicateRandomFeatures(increaseSize, System.currentTimeMillis());
     }
 
+    /**
+     * Increase vectors of generator by increaseSize and sets to new values random selected feature values from already
+     * set components.
+     *
+     * @param increaseSize increase size.
+     * @param seed seed.
+     * @return generator.
+     */
     public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
         A.ensure(increaseSize > 0, "increaseSize > 0");
 
@@ -103,22 +168,57 @@ public interface VectorGenerator extends Supplier<Vector> {
         });
     }
 
+    /**
+     * Moves all vectors to other position by summing with input vector.
+     *
+     * @param v vector.
+     * @return generator with old vectors plus input vector.
+     */
     public default VectorGenerator move(Vector v) {
         return map(x -> x.plus(v));
     }
 
+    /**
+     * Rotate first two components of all vectors of generator by angle around zero.
+     *
+     * @param angle angle.
+     * @return generator.
+     */
     public default VectorGenerator rotate(double angle) {
+        return rotate(angle, 0, 1);
+    }
+
+    /**
+     * Rotate selected two components of all vectors of generator by angle around zero.
+     *
+     * @param angle
+     * @param firstComponent first component id.
+     * @param secondComponent second component id.
+     * @return generator.
+     */
+    public default VectorGenerator rotate(double angle, int firstComponent, int secondComponent) {
         return map(x -> x.copy()
-            .set(0, x.get(0) * Math.cos(angle) + x.get(1) * Math.sin(angle))
-            .set(1, -x.get(0) * Math.sin(angle) + x.get(1) * Math.cos(angle))
+            .set(firstComponent, x.get(firstComponent) * Math.cos(angle) + x.get(secondComponent) * Math.sin(angle))
+            .set(secondComponent, -x.get(firstComponent) * Math.sin(angle) + x.get(secondComponent) * Math.cos(angle))
         );
     }
 
+    /**
+     * Adds noize to all components of generated vectors.
+     *
+     * @param randomProducer random producer.
+     * @return generator.
+     */
     public default VectorGenerator noisify(RandomProducer randomProducer) {
         int vectorSize = get().size();
         return plus(randomProducer.vectorize(vectorSize));
     }
 
+    /**
+     * Conterts vectors generator to unlabeled data stream generator.
+     *
+     * @return data stream generator.
+     */
     public default DataStreamGenerator asDataStream() {
         final VectorGenerator gen = this;
         return new DataStreamGenerator() {

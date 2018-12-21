@@ -28,24 +28,45 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.DiscreteRandomProducer;
 
+/**
+ * Represents a distribution family of district vector generators.
+ */
 public class VectorGeneratorsFamily implements VectorGenerator {
+    /** Family of generators. */
     private final List<VectorGenerator> family;
+
+    /** Randomized selector of vector generator from family. */
     private final DiscreteRandomProducer selector;
 
+    /**
+     * Creates an instance of VectorGeneratorsFamily.
+     *
+     * @param family family of generators.
+     * @param selector randomized selector of generator from family.
+     */
     private VectorGeneratorsFamily(List<VectorGenerator> family, DiscreteRandomProducer selector) {
         this.family = family;
         this.selector = selector;
     }
 
+    /** {@inheritDoc} */
     @Override public Vector get() {
         return family.get(selector.getInt()).get();
     }
 
+    /**
+     * @return pseudo random vector with parent distribution id.
+     */
     public VectorWithDistributionId getWithId() {
         int id = selector.getInt();
         return new VectorWithDistributionId(family.get(id).get(), id);
     }
 
+    /**
+     * Creates data stream where label of vector == id of distribution from family.
+     *
+     * @return data stream generator.
+     */
     @Override public DataStreamGenerator asDataStream() {
         VectorGeneratorsFamily gen = this;
         return new DataStreamGenerator() {
@@ -56,11 +77,29 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         };
     }
 
+    /**
+     * Helper for distribution family building.
+     */
     public static class Builder {
+        /** Family. */
         private final List<VectorGenerator> family = new ArrayList<>();
+
+        /** Weights of generators. */
         private final List<Double> weights = new ArrayList<>();
+
+        /**
+         * Mapper for generators in family.
+         * It as applied before create an instance of VectorGeneratorsFamily
+         */
         private IgniteFunction<VectorGenerator, VectorGenerator> mapper = x -> x;
 
+        /**
+         * Add generator to family with weight proportional to it selection probability.
+         *
+         * @param generator generator.
+         * @param weight weight.
+         * @return this builder.
+         */
         public Builder add(VectorGenerator generator, double weight) {
             A.ensure(weight > 0, "weight > 0");
 
@@ -69,20 +108,43 @@ public class VectorGeneratorsFamily implements VectorGenerator {
             return this;
         }
 
+        /**
+         * Add generator to family with weight = 1.
+         *
+         * @param generator generator.
+         * @return this builder.
+         */
         public Builder add(VectorGenerator generator) {
             return add(generator, 1);
         }
 
-        public Builder map(IgniteFunction<VectorGenerator, VectorGenerator> f) {
-            final IgniteFunction<VectorGenerator, VectorGenerator> old = mapper;
-            mapper = x -> f.apply(old.apply(x));
+        /**
+         * add map function for all generators in family.
+         *
+         * @param mapper mapper.
+         * @return this builder.
+         */
+        public Builder map(IgniteFunction<VectorGenerator, VectorGenerator> mapper) {
+            final IgniteFunction<VectorGenerator, VectorGenerator> old = this.mapper;
+            this.mapper = x -> mapper.apply(old.apply(x));
             return this;
         }
 
+        /**
+         * Builds VectorGeneratorsFamily instance.
+         *
+         * @return vector generators family.
+         */
         public VectorGeneratorsFamily build() {
             return build(System.currentTimeMillis());
         }
 
+        /**
+         * Builds VectorGeneratorsFamily instance.
+         *
+         * @param seed seed.
+         * @return vector generators family.
+         */
         public VectorGeneratorsFamily build(long seed) {
             A.notEmpty(family, "family.size != 0");
             double sumOfWeigts = weights.stream().mapToDouble(x -> x).sum();
@@ -93,19 +155,33 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         }
     }
 
-    static class VectorWithDistributionId {
+    /** */
+    public static class VectorWithDistributionId {
+        /** Vector. */
         private final Vector vector;
+
+        /** Distribution id. */
         private final int distributionId;
 
+        /**
+         * @param vector Vector.
+         * @param distributionId Distribution id.
+         */
         public VectorWithDistributionId(Vector vector, int distributionId) {
             this.vector = vector;
             this.distributionId = distributionId;
         }
 
+        /**
+         * @return vector.
+         */
         public Vector vector() {
             return vector;
         }
 
+        /**
+         * @return distribution id.
+         */
         public int distributionId() {
             return distributionId;
         }

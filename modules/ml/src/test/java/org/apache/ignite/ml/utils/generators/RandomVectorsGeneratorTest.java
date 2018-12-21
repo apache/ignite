@@ -6,17 +6,18 @@ import java.util.stream.Stream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.standard.TwoSeparableClassesDataStream;
 import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
+import org.apache.ignite.ml.util.generators.standard.TwoSeparableClassesDataStream;
 import org.junit.Test;
+import org.mockito.verification.VerificationWithTimeout;
 
-import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.parallelogram;
-import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.gauss;
 import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.circle;
+import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.gauss;
+import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.parallelogram;
 import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.ring;
 
 public class RandomVectorsGeneratorTest {
@@ -42,19 +43,34 @@ public class RandomVectorsGeneratorTest {
 
         Long seed = System.currentTimeMillis();
         UniformRandomProducer rnd = new UniformRandomProducer(-10, 10);
-        VectorGenerator noize = rnd.vectorize(2)
-            .concat(new GaussRandomProducer(rnd.get(), Math.abs(rnd.get())).vectorize(3))
-            .concat(new ParametricVectorGenerator(rnd, t -> t, t -> -t));
+        VectorGenerator noize = rnd.vectorize(1);
+
+        VectorGenerator ringWithOutliners1 = new VectorGeneratorsFamily.Builder()
+            .add(ring(5, -Math.PI, 0).noisify(gauss).move(VectorUtils.of(-6.0, -2.5)).concat(new UniformRandomProducer(-1, 1)), 250)
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(.1, .1)).move(VectorUtils.of(0., -6)).concat(new UniformRandomProducer(0, 1)), 2)
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(.1, .1)).move(VectorUtils.of(10., 7.5)).concat(new UniformRandomProducer(0, 1)), 2)
+            .build();
+
+        VectorGenerator ringWithOutliners2 = new VectorGeneratorsFamily.Builder()
+            .add(ring(5, 0, Math.PI).noisify(gauss).move(VectorUtils.of(-7.0, 2.5)).concat(new UniformRandomProducer(-2, 0)), 250)
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(1., 1.)).move(VectorUtils.of(-6., 0.)).concat(new UniformRandomProducer(0, 1)), 4)
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.1, 0.1)).move(VectorUtils.of(7.5, -3.)).concat(new UniformRandomProducer(0, 1)), 4)
+            .build();
+
+        VectorGenerator parallelogramWithOutliners = new VectorGeneratorsFamily.Builder()
+            .add(parallelogram(VectorUtils.of(1, 1)).rotate(Math.PI / 4).move(VectorUtils.of(5., 2.)), 100)
+            .add(VectorGeneratorPrimitives.constant(VectorUtils.of(10., 15.)), 1)
+            .build();
 
         targetStream = new VectorGeneratorsFamily.Builder()
-            .add(ring(5, -Math.PI, 0).noisify(gauss).move(VectorUtils.of(-6.0, -2.5)))
-            .add(ring(5, 0, Math.PI).noisify(gauss).move(VectorUtils.of(-7.0, 2.5)))
-            .add(ring(5, 0, 2 * Math.PI).noisify(gauss).move(VectorUtils.of(7.0, 0.0)))
-            .add(circle(1).move(VectorUtils.of(8.5, 1.5)))
-            .add(parallelogram(VectorUtils.of(2, 2)).rotate(Math.PI / 4))
-            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.2, 0.1)).move(VectorUtils.of(8.5, -1.5)))
-            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.1, 0.2)).move(VectorUtils.of(5.5, -1.5)))
-            .map(g -> g.concat(noize).duplicateRandomFeatures(3, seed).shuffle(seed))
+            .add(ringWithOutliners1)
+            .add(ringWithOutliners2)
+            .add(ring(5, 0, 2 * Math.PI).noisify(gauss).move(VectorUtils.of(7.0, 0.0)).concat(new UniformRandomProducer(-0.5, 2)))
+            .add(circle(1).move(VectorUtils.of(8.5, 1.5)).concat(new UniformRandomProducer(-1.5, 0.5)))
+            .add(parallelogramWithOutliners)
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.2, 0.1)).move(VectorUtils.of(8.5, -1.5)).concat(new UniformRandomProducer(-5, -4)))
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.1, 0.2)).move(VectorUtils.of(5.5, -1.5)).concat(new UniformRandomProducer(4, 6)))
+            .map(g -> g)
             .build().asDataStream().labeled();
 
         targetStream.limit(3000).forEach(v -> {
