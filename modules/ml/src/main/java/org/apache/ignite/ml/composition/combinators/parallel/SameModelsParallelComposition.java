@@ -18,18 +18,25 @@
 package org.apache.ignite.ml.composition.combinators.parallel;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-public class SameModelsParallelComposition<I, O, M extends Model<I, O>>
-    extends ModelsParallelComposition<I, O, M, List<O>, SameModelsParallelComposition<I, O, M>, List<O>> {
-    public SameModelsParallelComposition(M mdl1,
-        SameModelsParallelComposition<I, O, M> mdl2,
-        IgniteBiFunction<O, List<O>, List<O>> merger) {
-        super(mdl1, mdl2, merger);
+public class SameModelsParallelComposition<I, O, M extends Model<I, O>> implements Model<I, List<O>> {
+    private final List<M> models;
+
+    public SameModelsParallelComposition(List<M> models) {
+        this.models = models;
     }
 
     @Override public List<O> apply(I i) {
-        return super.apply(i);
+        return models
+            .stream()
+            .map(m -> m.apply(i))
+            .collect(Collectors.toList());
+    }
+
+    public List<M> models() {
+        return models;
     }
 }

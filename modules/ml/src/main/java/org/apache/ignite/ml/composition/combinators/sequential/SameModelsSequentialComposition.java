@@ -17,12 +17,36 @@
 
 package org.apache.ignite.ml.composition.combinators.sequential;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class SameModelsSequentialComposition<I, M extends Model<I, I>>
-    extends ModelsSequentialComposition<I, I, M, List<I>, SameModelsSequentialComposition<I, M>> {
-    public SameModelsSequentialComposition(M mdl1, SameModelsSequentialComposition<I, M> mdl2) {
-        super(mdl1, mdl2);
+public class SameModelsSequentialComposition<I, O, M extends Model<I, O>>
+    implements Model<I, O> {
+    private final IgniteFunction<O, I> f;
+    private final List<M> mdls;
+    private final IgniteFunction<I, O> finalMdl;
+
+    public SameModelsSequentialComposition(IgniteFunction<O, I> f, List<M> mdls) {
+        this.f = f;
+        this.mdls = new ArrayList<>(mdls);
+        IgniteFunction<I, O> fn = mdls.get(0);
+
+        for (M m : mdls.subList(1, mdls.size()))
+            fn = fn.andThen(f).andThen(m);
+
+        finalMdl = fn;
+    }
+
+    /** {@inheritDoc} */
+    @Override public O apply(I i) {
+        return finalMdl.apply(i);
+    }
+
+    public SameModelsSequentialComposition<I, O, M> addModel(M mdl) {
+        mdls.add(mdl);
+
+        return this;
     }
 }

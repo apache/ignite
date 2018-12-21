@@ -34,6 +34,14 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
     private T2 tr2;
     private IgniteFunction<M1, DatasetMapping<L, L>> datasetMapping;
 
+    public TrainersSequentialComposition(T1 tr1, T2 tr2,
+        IgniteFunction<M1, DatasetMapping<L, L>> datasetMapping) {
+        this.tr1 = tr1;
+        this.tr2 = tr2;
+        this.datasetMapping = datasetMapping;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
@@ -47,17 +55,20 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
         return new ModelsSequentialComposition<>(mdl1, mdl2);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> update(
         ModelsSequentialComposition<I, O1, M1, O2, M2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return super.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean checkState(ModelsSequentialComposition<I, O1, M1, O2, M2> mdl) {
         // Never called.
         throw new NotImplementedException();
     }
 
+    /** {@inheritDoc} */
     @Override protected <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> updateModel(
         ModelsSequentialComposition<I, O1, M1, O2, M2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
@@ -80,7 +91,31 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
         };
     }
 
-    public static
+    public DatasetTrainer<Model<I, O2>, L> unsafeSimplyTyped() {
+        TrainersSequentialComposition<I, O1, M1, L, T1, O2, M2, T2> self = this;
+        return new DatasetTrainer<Model<I, O2>, L>() {
+            @Override
+            public <K, V> Model<I, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return self.fit(datasetBuilder, featureExtractor, lbExtractor);
+            }
+
+            @Override public <K, V> Model<I, O2> update(Model<I, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return self.update((ModelsSequentialComposition<I, O1, M1, O2, M2>)mdl, datasetBuilder, featureExtractor, lbExtractor);
+            }
+
+            @Override protected boolean checkState(Model<I, O2> mdl) {
+                return false;
+            }
+
+            @Override protected <K, V> Model<I, O2> updateModel(Model<I, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return null;
+            }
+        }
+    }
 
     private static <K, V, I, O> IgniteBiFunction<K, V, Vector> getNewExtractor(IgniteBiFunction<K, V, Vector> oldExtractor,
         Model<I, O> mdl,

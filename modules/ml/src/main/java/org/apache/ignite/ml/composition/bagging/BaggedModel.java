@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.bagging;
 
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.Model;
 
-public interface DatasetMapping<L1, L2> {
-    public Vector mapFeatures(Vector v);
-    public L2 mapLabels(L1 lbls);
-
-    public static <L> DatasetMapping<L, L> mappingFeatures(IgniteFunction<Vector, Vector> mapper) {
-        return new DatasetMapping<L, L>() {
-            @Override public Vector mapFeatures(Vector v) {
-                return mapper.apply(v);
-            }
-
-            @Override public L mapLabels(L lbls) {
-                return lbls;
-            }
-        };
+public class BaggedModel<I, O, M extends Model> implements Model<I,O> {
+    @Override public O apply(I i) {
+        return null;
     }
 }
