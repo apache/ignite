@@ -110,11 +110,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Thread thread = new Thread(this::stopAllGrids);
-
-        thread.start();
-
-        thread.join(getTestTimeout());
+        stopAllGrids();
 
         cleanPersistenceDir();
     }
