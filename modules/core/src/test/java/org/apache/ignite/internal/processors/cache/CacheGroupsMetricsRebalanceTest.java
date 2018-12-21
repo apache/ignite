@@ -217,9 +217,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         ig.events().localListen(new IgnitePredicate<Event>() {
-            /**
-             * @{inheritDoc}
-             */
             @Override public boolean apply(Event evt) {
                 latch.countDown();
 
