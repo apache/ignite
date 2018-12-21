@@ -45,7 +45,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -55,11 +55,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
+import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -252,7 +252,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -261,7 +261,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -270,7 +270,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -279,7 +279,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -679,7 +679,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString(2));
+                    JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +

@@ -21,15 +21,16 @@ import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -46,6 +47,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 public class JdbcMetadataInfo {
     /** Root context. Used to get all the database metadata. */
     private final GridKernalContext ctx;
+
+    /** The only one possible value of table type. */
+    public static final String TABLE_TYPE = "TABLE";
 
     /**
      * Initializes info.
@@ -113,7 +117,18 @@ public class JdbcMetadataInfo {
      * @return List of metadatas of tables that matches .
      */
     public List<JdbcTableMeta> getTablesMeta(String schemaPtrn, String tabPtrn) {
-        List<JdbcTableMeta> tabMetas = new ArrayList<>();
+        Comparator<JdbcTableMeta> bySchemaThenTabname = new Comparator<JdbcTableMeta>() {
+            @Override public int compare(JdbcTableMeta o1, JdbcTableMeta o2) {
+                int schemCmp = o1.schemaName().compareTo(o2.schemaName());
+
+                if (schemCmp != 0)
+                    return schemCmp;
+
+                return o1.tableName().compareTo(o2.tableName());
+            }
+        };
+
+        TreeSet<JdbcTableMeta> tabMetas = new TreeSet<>(bySchemaThenTabname);
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
             for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -123,16 +138,13 @@ public class JdbcMetadataInfo {
                 if (!matches(table.tableName(), tabPtrn))
                     continue;
 
-                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
+                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), TABLE_TYPE);
 
-                // TODO: use linked hash set for this? or just remove this?
-                if (!tabMetas.contains(tableMeta))
-                    tabMetas.add(tableMeta);
-                // TODO: sort etither here or on client side.
+                tabMetas.add(tableMeta);
             }
         }
 
-        return tabMetas;
+        return new ArrayList<>(tabMetas);
     }
 
     /**
@@ -141,7 +153,7 @@ public class JdbcMetadataInfo {
      * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
      *
      * @param protocolVer for what version of protocol to generate metadata. Early versions of protocol don't support
-     *        some features like default values or precision/scale. If {@code null}, current version will be used.
+     * some features like default values or precision/scale. If {@code null}, current version will be used.
      * @return List of metadatas about columns that match specified schema/tablename/columnname criterias.
      */
     public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protocolVer,
@@ -209,7 +221,7 @@ public class JdbcMetadataInfo {
      * @param schemaNamePtrn sql pattern for schema name filter.
      * @return schema names that matches provided pattern.
      */
-    public Set<String> getSchemasMeta(String schemaNamePtrn) {
+    public SortedSet<String> getSchemasMeta(String schemaNamePtrn) {
         SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
@@ -220,5 +232,38 @@ public class JdbcMetadataInfo {
         }
 
         return schemas;
+    }
+
+    /**
+     * See {@link DatabaseMetaData#getIndexInfo(String, String, String, boolean, boolean)} for details.
+     *
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side. Parameters {@code unique}
+     * {@code approximate} are ignored.
+     *
+     * @return Sorted by index name collection of index info, filtered according to specified criterias.
+     */
+    public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tableNamePtrn) {
+        final Comparator<JdbcIndexMeta> byIndexName = new Comparator<JdbcIndexMeta>() {
+            @Override public int compare(JdbcIndexMeta o1, JdbcIndexMeta o2) {
+                return o1.indexName().compareTo(o2.indexName());
+            }
+        };
+
+        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(byIndexName);
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (!matches(table.schemaName(), schemaNamePtrn))
+                    continue;
+
+                if (!matches(table.tableName(), tableNamePtrn))
+                    continue;
+
+                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
+                    meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
+            }
+        }
+
+        return meta;
     }
 }

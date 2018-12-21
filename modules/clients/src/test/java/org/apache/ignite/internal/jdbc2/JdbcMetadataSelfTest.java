@@ -242,28 +242,28 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             rs = meta.getTables(null, "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             rs = meta.getTables(null, "pers", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             rs = meta.getTables(null, "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             rs = meta.getTables(null, "PUBLIC", "", new String[]{"WRONG"});
@@ -544,7 +544,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcDatabaseMetadata.CATALOG_NAME, rs.getString(2));
+                    JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
 
             assertEquals(expectedSchemas, schemas);
