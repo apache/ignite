@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +50,9 @@ class BinaryMetadataFileStore {
     private final GridKernalContext ctx;
 
     /** */
+    private final FileIOFactory fileIOFactory;
+
+    /** */
     private final IgniteLogger log;
 
     /**
@@ -67,8 +71,13 @@ class BinaryMetadataFileStore {
         this.ctx = ctx;
         this.log = log;
 
-        if (!CU.isPersistenceEnabled(ctx.config()))
+        if (!CU.isPersistenceEnabled(ctx.config())) {
+            this.fileIOFactory = null;
+
             return;
+        }
+        else
+            this.fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
 
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
@@ -98,10 +107,8 @@ class BinaryMetadataFileStore {
 
             byte[] marshalled = U.marshal(ctx, binMeta);
 
-            if (ctx.config() != null
-                && ctx.config().getDataStorageConfiguration() != null
-                && ctx.config().getDataStorageConfiguration().getFileIOFactory() != null) {
-                try (final FileIO out = ctx.config().getDataStorageConfiguration().getFileIOFactory().create(file)) {
+            if (fileIOFactory != null) {
+                try (final FileIO out = fileIOFactory.create(file)) {
                     int left = marshalled.length;
                     while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
                         ;
