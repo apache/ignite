@@ -77,8 +77,9 @@ SSL options has no default values:
 
 Documentation for SSL options: https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
 
-Sample usage:
-    `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com"  --mail:auth:pass "my_password"`
+Sample usages:
+    `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com" --mail:auth:pass "my_password"`
+    `ignite-web-console-win.exe --server:ssl true --server:key "server.key" --server:cert "server.crt" --server:ca "ca.crt" --server:passphrase "my_password"`
 
 Advanced configuration of SMTP for Web Console.
 -------------------------------------
