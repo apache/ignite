@@ -19,22 +19,48 @@ package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
 
+/**
+ * Pseudorandom producer generating values from gauss distribution.
+ */
 public class GaussRandomProducer extends RandomProducerWithGenerator {
+    /** Mean. */
     private final double mean;
+    /** Variance. */
     private final double variance;
 
+    /**
+     * Creates an instance of GaussRandomProducer with mean = 0 and variance = 1.0.
+     */
     public GaussRandomProducer() {
         this(0.0, 1.0, System.currentTimeMillis());
     }
 
+    /**
+     * Creates an instance of GaussRandomProducer with mean = 0 and variance = 1.0.
+     *
+     * @param seed seed.
+     */
     public GaussRandomProducer(long seed) {
         this(0.0, 1.0, seed);
     }
 
+    /**
+     * Creates an instance of GaussRandomProducer.
+     *
+     * @param mean mean.
+     * @param variance variance.
+     */
     public GaussRandomProducer(double mean, double variance) {
         this(mean, variance, System.currentTimeMillis());
     }
 
+    /**
+     * Creates an instance of GaussRandomProducer.
+     *
+     * @param mean mean.
+     * @param variance variance.
+     * @param seed seed.
+     */
     public GaussRandomProducer(double mean, double variance, long seed) {
         super(seed);
 
@@ -44,6 +70,7 @@ public class GaussRandomProducer extends RandomProducerWithGenerator {
         this.variance = variance;
     }
 
+    /** {@inheritDoc} */
     @Override public Double get() {
         return mean + generator().nextGaussian() * Math.sqrt(variance);
     }

@@ -19,14 +19,33 @@ package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
 
+/**
+ * Pseudorandom producer generating values from uniform continuous distribution.
+ */
 public class UniformRandomProducer extends RandomProducerWithGenerator {
+    /** Generate values from this value. */
     private final double from;
+
+    /** Generate values to this value. */
     private final double to;
 
+    /**
+     * Creates an instance of UniformRandomProducer.
+     *
+     * @param from Generate values from this value.
+     * @param to Generate values to this value.
+     */
     public UniformRandomProducer(double from, double to) {
         this(from, to, System.currentTimeMillis());
     }
 
+    /**
+     * Creates an instance of UniformRandomProducer.
+     *
+     * @param from Generate values from this value.
+     * @param to Generate values to this value.
+     * @param seed seed.
+     */
     public UniformRandomProducer(double from, double to, long seed) {
         super(seed);
 
@@ -36,6 +55,7 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
         this.to = to;
     }
 
+    /** {@inheritDoc} */
     @Override public Double get() {
         double result = generator().nextDouble() * (to - from) + from;
         if (result > to)

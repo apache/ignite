@@ -19,20 +19,33 @@ package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import java.util.Random;
 
-public abstract class RandomProducerWithGenerator implements RandomProducer {
+/**
+ * Base class for generators based on basic java Random.
+ */
+abstract class RandomProducerWithGenerator implements RandomProducer {
+    /** Rnd. */
     private final Random rnd;
 
-    public RandomProducerWithGenerator() {
+    /**
+     * Creates an instance of RandomProducerWithGenerator.
+     */
+    protected RandomProducerWithGenerator() {
         this(System.currentTimeMillis());
     }
 
-    public RandomProducerWithGenerator(long seed) {
+    /**
+     * Creates an instance of RandomProducerWithGenerator.
+     *
+     * @param seed seed.
+     */
+    protected RandomProducerWithGenerator(long seed) {
         this.rnd = new Random(seed);
     }
 
+    /**
+     * @return java preudorandom values generator.
+     */
     protected Random generator() {
         return rnd;
     }
-
-    ;
 }

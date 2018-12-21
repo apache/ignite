@@ -24,15 +24,34 @@ import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
+/**
+ * Pseudorandom producer generating values from user provided discrete distribution.
+ */
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
+    /** */
     private double EPS = 1e-5;
+
+    /** Probabilities. */
     private final double[] probs;
+
+    /** Random variable values. */
     private final int[] ids;
 
+    /**
+     * Creates an instance of DiscreteRandomProducer.
+     *
+     * @param probs discrete distribution probabilities.
+     */
     public DiscreteRandomProducer(double... probs) {
         this(System.currentTimeMillis(), probs);
     }
 
+    /**
+     * Creates an instance of DiscreteRandomProducer.
+     *
+     * @param seed seed.
+     * @param probs discrete distribution probabilities.
+     */
     public DiscreteRandomProducer(long seed, double... probs) {
         super(seed);
 
@@ -64,27 +83,46 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
             this.probs[i] += this.probs[i - 1];
     }
 
-    public static DiscreteRandomProducer uniform(List<VectorGenerator> families) {
-        return uniform(families.size(), System.currentTimeMillis());
-    }
-
-    public static DiscreteRandomProducer uniform(List<VectorGenerator> families, long seed) {
-        return uniform(families.size(), seed);
-    }
-
+    /**
+     * Creates a producer of random values from uniform discrete distribution.
+     *
+     * @param numberOfValues number of distinct values.
+     * @return producer.
+     */
     public static DiscreteRandomProducer uniform(int numberOfValues) {
         return uniform(numberOfValues, System.currentTimeMillis());
     }
 
+    /**
+     * Creates a producer of random values from uniform discrete distribution.
+     *
+     * @param numberOfValues number of distinct values.
+     * @param seed seed.
+     * @return producer.
+     */
     public static DiscreteRandomProducer uniform(int numberOfValues, long seed) {
-        return new DiscreteRandomProducer(seed, IntStream.range(0, numberOfValues).mapToDouble(x -> 1.0 / numberOfValues)
+        return new DiscreteRandomProducer(seed, IntStream.range(0, numberOfValues)
+            .mapToDouble(x -> 1.0 / numberOfValues)
             .toArray());
     }
 
+    /**
+     * Generates pseudorandom discrete distribution.
+     *
+     * @param numberOfValues number of distinct values of pseudorandom variable.
+     * @return probabilities array.
+     */
     public static double[] randomDistribution(int numberOfValues) {
         return randomDistribution(numberOfValues, System.currentTimeMillis());
     }
 
+    /**
+     * Generates pseudorandom discrete distribution.
+     *
+     * @param numberOfValues number of distinct values of pseudorandom variable.
+     * @param seed seed.
+     * @return probabilities array.
+     */
     public static double[] randomDistribution(int numberOfValues, long seed) {
         A.ensure(numberOfValues > 0, "numberOfValues > 0");
 
@@ -101,8 +139,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public Double get() {
-        //TODO: optimize this to binary search.
         double p = generator().nextDouble();
         for (int i = 0; i < probs.length; i++) {
             if (probs[i] > p)
@@ -112,14 +150,28 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         return (double)ids[probs.length - 1];
     }
 
+    /**
+     * @return value of preudorandom discrete variable.
+     */
     public int getInt() {
         return get().intValue();
     }
 
+    /**
+     * @return count of distinct values of distribution.
+     */
     public int size() {
         return probs.length;
     }
 
+    /**
+     * Sort of probabilities values and corresponded indicies.
+     *
+     * @param probs probabilities.
+     * @param idx random variable values.
+     * @param from from.
+     * @param to to.
+     */
     private void sort(double[] probs, int[] idx, int from, int to) {
         if (from < to) {
             double pivot = probs[(from + to) / 2];
