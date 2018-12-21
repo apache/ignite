@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedLookupBatch;
-import org.apache.ignite.internal.processors.query.h2.opt.join.GridH2CollocationModel;
+import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
@@ -72,7 +72,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.GridH2CollocationModel.buildCollocationModel;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.buildCollocationModel;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
@@ -236,7 +236,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         // Query expressions can not be distributed as well.
         if (qctx == null || qctx.type() != PREPARE || !qctx.distributedJoins() ||
             !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return GridH2CollocationModel.MULTIPLIER_COLLOCATED;
+            return CollocationModel.MULTIPLIER_COLLOCATED;
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
         // other than index condition masks and sort order, but in our case it can depend on order
@@ -245,7 +245,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         assert filters != null;
 
-        GridH2CollocationModel c = buildCollocationModel(qctx, ses.getSubQueryInfo(), filters, filter, false);
+        CollocationModel c = buildCollocationModel(qctx, ses.getSubQueryInfo(), filters, filter, false);
 
         return c.calculateMultiplier();
     }
