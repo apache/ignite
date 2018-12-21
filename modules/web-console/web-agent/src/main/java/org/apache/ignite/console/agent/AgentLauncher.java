@@ -366,7 +366,7 @@ public class AgentLauncher {
             if (sslSocketFactory != null) {
                 builder.sslSocketFactory(sslSocketFactory, serverTrustMgr);
 
-                if (F.isEmpty(cipherSuites))
+                if (!F.isEmpty(cipherSuites))
                     builder.connectionSpecs(sslConnectionSpec(cipherSuites));
             }
 

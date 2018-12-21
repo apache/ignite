@@ -17,7 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.beust.jcommander.Parameter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,6 +27,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import com.beust.jcommander.Parameter;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -496,6 +497,17 @@ public class AgentConfiguration {
             cipherSuites(cfg.cipherSuites());
     }
 
+    /**
+     * @param s String with sensitive data.
+     * @return Secured string.
+     */
+    private String secured(String s) {
+        int len = s.length();
+        int toShow = len > 4 ? 4 : 1;
+
+        return new String(new char[len - toShow]).replace('\0', '*') + s.substring(len - toShow, len);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -503,24 +515,7 @@ public class AgentConfiguration {
         if (!F.isEmpty(tokens)) {
             sb.append("User's security tokens          : ");
 
-            boolean first = true;
-
-            for (String tok : tokens) {
-                if (first)
-                    first = false;
-                else
-                    sb.append(',');
-
-                if (tok.length() > 4) {
-                    sb.append(new String(new char[tok.length() - 4]).replace('\0', '*'));
-
-                    sb.append(tok.substring(tok.length() - 4));
-                }
-                else
-                    sb.append(new String(new char[tok.length()]).replace('\0', '*'));
-            }
-
-            sb.append('\n');
+            sb.append(tokens.stream().map(this::secured).collect(Collectors.joining(", "))).append('\n');
         }
 
         sb.append("URI to Ignite node REST server  : ")
@@ -542,7 +537,31 @@ public class AgentConfiguration {
         }
 
         sb.append("Path to JDBC drivers folder     : ").append(drvFld).append('\n');
-        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled");
+        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled").append('\n');
+
+        if (!F.isEmpty(nodeKeyStore))
+            sb.append("Node key store                  : ").append(nodeKeyStore).append('\n');
+
+        if (!F.isEmpty(nodeKeyStorePass))
+            sb.append("Node key store password         : ").append(secured(nodeKeyStorePass)).append('\n');
+
+        if (!F.isEmpty(nodeTrustStore))
+            sb.append("Node trust store                : ").append(nodeTrustStore).append('\n');
+
+        if (!F.isEmpty(nodeTrustStorePass))
+            sb.append("Node trust store password       : ").append(secured(nodeTrustStorePass)).append('\n');
+
+        if (!F.isEmpty(srvKeyStore))
+            sb.append("Server key store                : ").append(srvKeyStore).append('\n');
+
+        if (!F.isEmpty(srvKeyStorePass))
+            sb.append("Server key store password       : ").append(secured(srvKeyStorePass)).append('\n');
+
+        if (!F.isEmpty(srvTrustStore))
+            sb.append("Server trust store              : ").append(srvTrustStore).append('\n');
+
+        if (!F.isEmpty(srvTrustStorePass))
+            sb.append("Server trust store password     : ").append(secured(srvTrustStorePass)).append('\n');
 
         return sb.toString();
     }
