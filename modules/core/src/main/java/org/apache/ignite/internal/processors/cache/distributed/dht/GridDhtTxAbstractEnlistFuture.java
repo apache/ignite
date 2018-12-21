@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1144,16 +1146,24 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (keys == null)
                 keys = new ArrayList<>();
 
-            keys.add(key);
-
-            if (val != null) {
-                if (vals == null)
+            if (vals == null && val != null) {
+                if (keys.isEmpty())
                     vals = new ArrayList<>();
+                else {
+                    assert !(val instanceof GridInvokeValue);
 
-                vals.add(val);
+                    // Add missed 'nulls'
+                    vals = new ArrayList<>(keys.size() + 1);
+
+                    for (int i = 0; i < keys.size(); i++)
+                        vals.add(null);
+                }
             }
 
-            assert (vals == null) || keys.size() == vals.size();
+            keys.add(key);
+
+            if (vals != null)
+                vals.add(val);
         }
 
         /**
