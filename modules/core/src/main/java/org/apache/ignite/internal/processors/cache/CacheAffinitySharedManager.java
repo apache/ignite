@@ -2094,6 +2094,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param grpId Cache group ID
+     * @return Cache affinity cache.
+     */
+    @Nullable public GridAffinityAssignmentCache groupAffinity(int grpId) {
+        CacheGroupHolder grpHolder = grpHolders.get(grpId);
+
+        return grpHolder != null ? grpHolder.affinity() : null;
+    }
+
+    /**
      * @param fut Exchange future.
      * @return Affinity assignment.
      * @throws IgniteCheckedException If failed.
