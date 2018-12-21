@@ -82,43 +82,7 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
- * Mini test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
- *
- * crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.localNode()) = {int[8]@5854}
- 0 = 16
- 1 = 1
- 2 = 10
- 3 = 11
- 4 = 12
- 5 = 13
- 6 = 29
- 7 = 15
- crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(grid(1).localNode()) = {int[11]@5862}
- 0 = 18
- 1 = 19
- 2 = 5
- 3 = 21
- 4 = 6
- 5 = 7
- 6 = 8
- 7 = 9
- 8 = 25
- 9 = 26
- 10 = 31
- crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(grid(2).localNode()) = {int[13]@5888}
- 0 = 0
- 1 = 2
- 2 = 3
- 3 = 4
- 4 = 14
- 5 = 17
- 6 = 20
- 7 = 22
- 8 = 23
- 9 = 24
- 10 = 27
- 11 = 28
- 12 = 30
+ * Test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */

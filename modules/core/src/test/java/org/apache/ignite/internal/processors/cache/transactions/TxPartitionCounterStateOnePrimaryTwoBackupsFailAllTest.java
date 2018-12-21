@@ -1,18 +1,23 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -24,12 +29,6 @@ import static java.util.stream.Collectors.toCollection;
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
-    private static final int [] SIZES = new int[] {5, 7, 3};
-
-    /** */
-    private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
-
-    /** */
     private static final int PARTITION_ID = 0;
 
     /** */
@@ -40,29 +39,22 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testPrepareCommitReorder() throws Exception {
-        doTestPrepareCommitReorder(false);
+    public void testStopAllOwnersWithPartialCommitSameCounter() throws Exception {
+        doTestPrepareCommitReorder(false, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, new int[] {5, 5});
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderSkipCheckpoint() throws Exception {
-        doTestPrepareCommitReorder(true);
+    public void testStopAllOwnersWithPartialCommitCounterDiffers() throws Exception {
+        doTestPrepareCommitReorder(false, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, new int[] {8, 5});
     }
 
     /**
      * Test scenario:
      *
-     * txs prepared in order 0, 1, 2
-     * tx[2] committed out of order.
-     * tx[0], tx[1] rolled back due to prepare fail.
-     *
-     * Pass: counters for rolled back txs are incremented on primary and backup nodes.
-     *
-     * @param skipCheckpoint Skip checkpoint.
      */
-    private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        final int finishedTxIdx = 2;
+    private void doTestPrepareCommitReorder(boolean skipCp, int[] prepareOrder, int[] primCommitOrder, int[] backup1CommitOrder, int[] backup2CommitOrder, int[] sizes) throws Exception {
+        AtomicInteger cnt = new AtomicInteger();
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
@@ -71,33 +63,51 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
                     Map<IgniteEx, int[]> prepares = new HashMap<IgniteEx, int[]>();
 
-                    prepares.put((IgniteEx)txTop.get1(), new int[] {1, 2, 0});
+                    prepares.put((IgniteEx)txTop.get1(), prepareOrder);
 
                     Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
 
                     Ignite backup1 = txTop.get2().get(0);
                     Ignite backup2 = txTop.get2().get(1);
 
-                    commits.put((IgniteEx)txTop.get1(), new int[] {2, 1, 0});
-                    commits.put((IgniteEx)backup1, new int[] {0, 1, 2});
-                    commits.put((IgniteEx)backup2, new int[] {0, 2, 1});
+                    commits.put((IgniteEx)txTop.get1(), primCommitOrder);
+                    commits.put((IgniteEx)backup1, backup1CommitOrder);
+                    commits.put((IgniteEx)backup2, backup2CommitOrder);
 
-                    return new TwoTxCallbackAdapter(prepares, commits, SIZES.length);
+                    return new TPCCommitTxCallbackAdapter(prepares, commits, sizes.length) {
+                        @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                            super.onBackupCommitted(backup, idx);
+
+                            if (cnt.incrementAndGet() == 2) {
+                                // Stop all backups first or recovery will commit a transaction on backups.
+                                stopGrid(skipCp, txTop.get2().get(0).name());
+                                stopGrid(skipCp, txTop.get2().get(1).name());
+                                stopAllGrids();
+                            }
+
+                            return true;
+                        }
+                    };
                 }
             },
-            SIZES);
-    }
+            sizes);
 
-    /** */
-    private enum TxState {
-        /** Prepare. */ PREPARE,
-        /** Commit. */COMMIT
+        waitForTopology(0);
+
+        IgniteEx crd = startGrid(txTop.get(PARTITION_ID).get2().get(0).name());
+        IgniteEx n2 = startGrid(txTop.get(PARTITION_ID).get2().get(1).name());
+
+        crd.cluster().active(true);
+
+        waitForTopology(2);
+
+        assertPartitionsSame(idleVerify(n2, DEFAULT_CACHE_NAME));
     }
 
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class TwoTxCallbackAdapter extends TxCallbackAdapter {
+    protected class TPCCommitTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Map<T3<IgniteEx /** Node */, TxState /** State */, IgniteUuid /** Near xid */ >, GridFutureAdapter<?>>
             futures = new ConcurrentHashMap<>();
@@ -121,7 +131,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
          * @param prepares Map of node to it's prepare order.
          * @param commits Map of node to it's commit order.
          */
-        public TwoTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+        public TPCCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
             this.txCnt = txCnt;
 
             for (int[] ints : prepares.values())
@@ -169,7 +179,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
          * @param idx Index.
          */
         protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-            log.info("TX: backup committed [name=" + backup.name() + ", txId=" + idx + ']');
+            log.info("TX: backup committed [name=" + backup.name() + ", id=" + backup.localNode().id() + ", txId=" + idx + ']');
 
             return false;
         }
@@ -299,5 +309,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
             return false;
         }
+    }
+
+    /** */
+    private enum TxState {
+        /** Prepare. */ PREPARE,
+        /** Commit. */COMMIT
     }
 }
