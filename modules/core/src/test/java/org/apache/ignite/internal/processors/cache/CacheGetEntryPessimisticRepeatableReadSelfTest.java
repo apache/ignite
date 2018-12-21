@@ -82,7 +82,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testLocalTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
