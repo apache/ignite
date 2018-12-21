@@ -48,6 +48,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +64,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests deadlock detection for pessimistic transactions.
  */
+@RunWith(JUnit4.class)
 public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -118,6 +122,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
@@ -128,6 +133,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
@@ -138,6 +144,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
@@ -148,6 +155,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksLocal() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             IgniteCache cache = null;

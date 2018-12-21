@@ -33,10 +33,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests distributed SQL query cancel related scenarios.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 3;
@@ -85,6 +89,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** */
+    @Test
     public void testQueryCancelsOnGridShutdown() throws Exception {
         try (Ignite client = startGrid("client")) {
 
@@ -138,6 +143,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** */
+    @Test
     public void testQueryResponseFailCode() throws Exception {
         try (Ignite client = startGrid("client")) {
 

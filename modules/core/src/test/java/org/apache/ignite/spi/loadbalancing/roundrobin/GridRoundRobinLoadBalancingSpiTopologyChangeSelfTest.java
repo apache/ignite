@@ -23,14 +23,15 @@ import org.apache.ignite.GridTestJob;
 import org.apache.ignite.GridTestTaskSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.checkCyclicBalancing;
 
@@ -38,6 +39,7 @@ import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestU
  * Tests round robin load balancing with topology changes.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
     extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
@@ -56,14 +58,10 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
         return spiCtx;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 

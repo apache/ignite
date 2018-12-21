@@ -21,6 +21,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -31,6 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test getEntry and getEntries methods.
  */
+@RunWith(JUnit4.class)
 public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency concurrency() {
@@ -45,6 +49,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTransactionalMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -62,6 +67,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -76,6 +82,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTransactionalMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
@@ -92,6 +99,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -48,7 +49,7 @@ import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableDropColumn;
@@ -91,24 +92,35 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryPar
  */
 public class DdlStatementsProcessor {
     /** Kernal context. */
-    GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** Indexing. */
-    IgniteH2Indexing idx;
+    private SchemaManager schemaMgr;
 
     /** Is backward compatible handling of UUID through DDL enabled. */
     private static final boolean handleUuidAsByte =
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
     /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param schemaMgr Schema manager.
+     */
+    public DdlStatementsProcessor(GridKernalContext ctx, SchemaManager schemaMgr) {
+        this.ctx = ctx;
+        this.schemaMgr = schemaMgr;
+    }
+
+    /**
      * Initialize message handlers and this' fields needed for further operation.
      *
      * @param ctx Kernal context.
-     * @param idx Indexing.
+     * @param schemaMgr Schema manager.
      */
-    public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
+    public void start(final GridKernalContext ctx, SchemaManager schemaMgr) {
         this.ctx = ctx;
-        this.idx = idx;
+        this.schemaMgr = schemaMgr;
     }
 
     /**
@@ -129,14 +141,14 @@ public class DdlStatementsProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
 
                 assert tbl.rowDescriptor() != null;
 
-                isDdlSupported(tbl);
+                ensureDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -167,10 +179,10 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
+                GridH2Table tbl = schemaMgr.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
-                    isDdlSupported(tbl);
+                    ensureDdlSupported(tbl);
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -186,7 +198,7 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
@@ -270,14 +282,14 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
 
                 assert tbl.rowDescriptor() != null;
 
-                isDdlSupported(tbl);
+                ensureDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -309,10 +321,10 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
+                GridH2Table tbl = schemaMgr.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
-                    isDdlSupported(tbl);
+                    ensureDdlSupported(tbl);
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
@@ -332,7 +344,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
                     if (!cmd.ifNotExists())
@@ -365,7 +377,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -380,7 +392,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -423,7 +435,7 @@ public class DdlStatementsProcessor {
                         assert tbl.rowDescriptor() != null;
 
                         if (!allFieldsNullable)
-                            QueryUtils.checkNotNullAllowed(tbl.cacheContext().config());
+                            QueryUtils.checkNotNullAllowed(tbl.cacheInfo().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
@@ -435,7 +447,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -445,7 +457,11 @@ public class DdlStatementsProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
-                    if (tbl.cacheContext().mvccEnabled())
+                    GridCacheContext cctx = tbl.cacheContext();
+
+                    assert cctx != null;
+
+                    if (cctx.mvccEnabled())
                         throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
                             "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -525,13 +541,10 @@ public class DdlStatementsProcessor {
      * Check if table supports DDL statement.
      *
      * @param tbl Table.
+     * @throws IgniteSQLException If failed.
      */
-    private static void isDdlSupported(GridH2Table tbl) {
-        GridCacheContext cctx = tbl.cacheContext();
-
-        assert cctx != null;
-
-        if (cctx.isLocal())
+    private static void ensureDdlSupported(GridH2Table tbl) throws IgniteSQLException {
+        if (tbl.cacheInfo().config().getCacheMode() == CacheMode.LOCAL)
             throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }

@@ -45,6 +45,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -55,6 +58,7 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 /**
  *  GridDiscovery self test.
  */
+@RunWith(JUnit4.class)
 public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,6 +105,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoteNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
@@ -110,6 +115,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -122,6 +128,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -136,6 +143,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -149,6 +157,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryListener() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -218,6 +227,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
         GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();

@@ -19,7 +19,6 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -52,14 +51,34 @@ public class VectorUtils {
     }
 
     /**
+     * Wrap specified value into vector.
+     *
+     * @param val Value to wrap.
+     * @return Specified value wrapped into vector.
+     */
+    public static Vector num2Vec(double val) {
+        return fill(val, 1);
+    }
+
+    /**
      * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
      * @param vecSize Vector size of output vector.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize) {
-        return num2Vec(num, vecSize, false);
+    public static Vector oneHot(int num, int vecSize) {
+        return oneHot(num, vecSize, false);
+    }
+
+    /**
+     * Turn number to 1-sized array.
+     *
+     * @param val Value to wrap in array.
+     * @return Number wrapped in 1-sized array.
+     */
+    public static double[] num2Arr(double val) {
+        return new double[] {val};
     }
 
     /**
@@ -70,7 +89,7 @@ public class VectorUtils {
      * @param isDistributed Flag indicating if distributed vector should be created.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
+    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
         Vector res = new DenseVector(vecSize);
         return res.setX(num, 1);
     }
@@ -123,11 +142,11 @@ public class VectorUtils {
     }
 
     /**
-     * Zip two vectors with given binary function (i.e. apply binary function to both vector elementwise and construct
-     * vector from results).
+     * Zip two vectors with given binary function
+     * (i.e. apply binary function to both vector elementwise and construct vector from results).
      *
-     * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}. Length of result is length of shortest of
-     * vectors.
+     * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}.
+     * Length of result is length of shortest of vectors.
      *
      * @param v1 First vector.
      * @param v2 Second vector.
@@ -170,15 +189,16 @@ public class VectorUtils {
      *
      * @param values Values.
      */
-    public static Vector of(double... values) {
+    public static Vector of(double ... values) {
         A.notNull(values, "values");
 
         return new DenseVector(values);
     }
 
     /**
-     * Creates vector based on array of Doubles. If array contains null-elements then method returns sparse local on
-     * head vector. In other case method returns dense local on heap vector.
+     * Creates vector based on array of Doubles. If array contains null-elements then
+     * method returns sparse local on head vector. In other case method returns
+     * dense local on heap vector.
      *
      * @param values Values.
      */
@@ -211,6 +231,36 @@ public class VectorUtils {
         double[] vals = new double[size1 + size2];
         System.arraycopy(v1.asArray(), 0, vals, 0, size1);
         System.arraycopy(v2.asArray(), 0, vals, size1, size2);
+
         return new DenseVector(vals);
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param v1 First vector.
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector... vs) {
+        Vector res = v1;
+        for (Vector v : vs)
+            res = concat(res, v);
+        return res;
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector... vs) {
+        Vector res = vs.length == 0 ? new DenseVector() : vs[0];
+        for (int i = 1; i < vs.length; i++) {
+            Vector v = vs[i];
+            res = concat(res, v);
+        }
+        return res;
     }
 }

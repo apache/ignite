@@ -35,8 +35,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
@@ -54,6 +52,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -65,6 +66,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
  */
 @SuppressWarnings("ErrorNotRethrown")
+@RunWith(JUnit4.class)
 public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -95,11 +97,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             cfg.setClientMode(true);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
@@ -138,6 +135,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryFullSync() throws Exception {
         checkRestarts(FULL_SYNC);
     }
@@ -145,6 +143,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryPrimarySync() throws Exception {
         checkRestarts(PRIMARY_SYNC);
     }
@@ -152,6 +151,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryFullAsync() throws Exception {
         checkRestarts(FULL_ASYNC);
     }

@@ -63,16 +63,18 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests the recovery after a dynamic cache start failure.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSelfTest {
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
@@ -97,11 +99,6 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         return 3;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * Returns {@code true} if persistence is enabled.
      *
@@ -114,6 +111,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBrokenAffinityFunStartOnServerFailedOnClient() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnClient";
 
@@ -142,6 +140,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBrokenAffinityFunStartOnServerFailedOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnServer";
 
@@ -171,6 +170,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBrokenAffinityFunStartOnClientFailOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnServer";
 
@@ -200,6 +200,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Test cache start with broken affinity function that throws an exception on all nodes.
      */
+    @Test
     public void testBrokenAffinityFunOnAllNodes() {
         final boolean failOnAllNodes = true;
         final int unluckyNode = 0;
@@ -216,6 +217,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Test cache start with broken affinity function that throws an exception on initiator node.
      */
+    @Test
     public void testBrokenAffinityFunOnInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -232,6 +234,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Test cache start with broken affinity function that throws an exception on non-initiator node.
      */
+    @Test
     public void testBrokenAffinityFunOnNonInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -248,6 +251,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Test cache start with broken affinity function that throws an exception on coordinator node.
      */
+    @Test
     public void testBrokenAffinityFunOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
@@ -264,6 +268,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Test cache start with broken affinity function that throws an exception on initiator node.
      */
+    @Test
     public void testBrokenAffinityFunOnCoordinator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
@@ -280,6 +285,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start with node filter and broken affinity function that throws an exception on initiator node.
      */
+    @Test
     public void testBrokenAffinityFunWithNodeFilter() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 0;
@@ -296,6 +302,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start with broken cache store that throws an exception on all nodes.
      */
+    @Test
     public void testBrokenCacheStoreOnAllNodes() {
         final boolean failOnAllNodes = true;
         final int unluckyNode = 0;
@@ -312,6 +319,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start with broken cache store that throws an exception on initiator node.
      */
+    @Test
     public void testBrokenCacheStoreOnInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -328,6 +336,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start that throws an Ignite checked exception on initiator node.
      */
+    @Test
     public void testThrowsIgniteCheckedExceptionOnInitiator() {
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
@@ -342,6 +351,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start with broken cache store that throws an exception on non-initiator node.
      */
+    @Test
     public void testBrokenCacheStoreOnNonInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -358,6 +368,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      * Tests cache start that throws an Ignite checked exception on non-initiator node.
      */
+    @Test
     public void testThrowsIgniteCheckedExceptionOnNonInitiator() {
         final int unluckyNode = 1;
         final int unluckyCfg = 1;
@@ -372,6 +383,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      *  Tests cache start with broken cache store that throws an exception on initiator node.
      */
+    @Test
     public void testBrokenCacheStoreOnCoordinatorDiffInitiator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
@@ -389,6 +401,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *  Tests cache start that throws an Ignite checked exception on coordinator node
      *  that doesn't initiator node.
      */
+    @Test
     public void testThrowsIgniteCheckedExceptionOnCoordinatorDiffInitiator() {
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
@@ -403,6 +416,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      *  Tests cache start with broken cache store that throws an exception on coordinator node.
      */
+    @Test
     public void testBrokenCacheStoreFunOnCoordinator() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = crdIdx;
@@ -419,6 +433,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      *  Tests cache start that throws an Ignite checked exception on coordinator node.
      */
+    @Test
     public void testThrowsIgniteCheckedExceptionOnCoordinator() {
         final int unluckyNode = crdIdx;
         final int unluckyCfg = 1;
@@ -433,6 +448,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /**
      *  Tests multiple creation of cache with broken affinity function.
      */
+    @Test
     public void testCreateCacheMultipleTimes() {
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
@@ -458,6 +474,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCacheStartAfterFailure() throws Exception {
         CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFun(
             false, 1, 0, 1, false).get(0);
@@ -480,6 +497,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testExistingCacheAfterFailure() throws Exception {
         IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
 
@@ -501,6 +519,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTopologyChangesAfterFailure() throws Exception {
         final String clientName = "testTopologyChangesAfterFailure";
 
@@ -558,6 +577,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
     }
 
+    @Test
     public void testConcurrentClientNodeJoins() throws Exception {
         final int clientCnt = 3;
         final int numberOfAttempts = 5;

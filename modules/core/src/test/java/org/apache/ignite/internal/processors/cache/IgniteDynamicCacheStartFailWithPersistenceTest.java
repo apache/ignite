@@ -58,9 +58,6 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         cleanPersistenceDir();
 
         startGrids(gridCount());
@@ -68,6 +65,12 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
     }
 
     /** {@inheritDoc} */

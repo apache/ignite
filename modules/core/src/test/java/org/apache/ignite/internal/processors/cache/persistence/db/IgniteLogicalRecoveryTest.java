@@ -23,9 +23,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -49,6 +51,8 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -64,10 +68,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
+@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -176,6 +184,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -200,11 +209,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cacheLoader.consistencyCheck(node);
 
         checkNoRebalanceAfterRecovery();
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -233,11 +245,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         checkNoRebalanceAfterRecovery();
 
         cacheLoader.consistencyCheck(node);
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
      *
      */
+    @Test
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
@@ -252,8 +267,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryWithMvccCaches() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10052");
+        fail("https://issues.apache.org/jira/browse/IGNITE-10582");
 
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
@@ -293,11 +309,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             cacheLoader.consistencyCheck(grid(idx));
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -325,11 +344,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             cacheLoader.consistencyCheck(grid(idx));
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
      *
      */
+    @Test
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 
@@ -381,6 +403,47 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             cacheLoader.consistencyCheck(grid(idx));
     }
 
+    /**
+     * Checks that cache contexts have consistent parameters after recovery finished and nodes have joined to topology.
+     */
+    private void checkCacheContextsConsistencyAfterRecovery() throws Exception {
+        IgniteEx crd = grid(0);
+
+        Collection<String> cacheNames = crd.cacheNames();
+
+        for (String cacheName : cacheNames) {
+            for (int nodeIdx = 1; nodeIdx < 3; nodeIdx++) {
+                IgniteEx node = grid(nodeIdx);
+
+                GridCacheContext one = cacheContext(crd, cacheName);
+                GridCacheContext other = cacheContext(node, cacheName);
+
+                checkCacheContextsConsistency(one, other);
+            }
+        }
+    }
+
+    /**
+     * @return Cache context with given name from node.
+     */
+    private GridCacheContext cacheContext(IgniteEx node, String cacheName) {
+        return node.cachex(cacheName).context();
+    }
+
+    /**
+     * Checks that cluster-wide parameters are consistent between two caches.
+     *
+     * @param one Cache context.
+     * @param other Cache context.
+     */
+    private void checkCacheContextsConsistency(GridCacheContext one, GridCacheContext other) {
+        Assert.assertEquals(one.statisticsEnabled(), other.statisticsEnabled());
+        Assert.assertEquals(one.dynamicDeploymentId(), other.dynamicDeploymentId());
+        Assert.assertEquals(one.keepBinary(), other.keepBinary());
+        Assert.assertEquals(one.updatesAllowed(), other.updatesAllowed());
+        Assert.assertEquals(one.group().receivedFrom(), other.group().receivedFrom());
+    }
+
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return new StopNodeFailureHandler();
@@ -399,13 +462,21 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         List<Ignite> nodes = G.allGrids();
 
-        for (Ignite node : nodes) {
+        for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
+
+            Set<Integer> mvccCaches = ((IgniteEx) node).context().cache().cacheGroups().stream()
+                .flatMap(group -> group.caches().stream())
+                .filter(cache -> cache.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                .map(GridCacheContext::groupId)
+                .collect(Collectors.toSet());
 
             List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
                 .map(msg -> (GridDhtPartitionDemandMessage) msg)
-                .map(msg -> msg.groupId())
+                .map(GridCacheGroupIdMessage::groupId)
                 .filter(grpId -> grpId != sysCacheGroupId)
+                //TODO: remove following filter when failover for MVCC will be fixed.
+                .filter(grpId -> !mvccCaches.contains(grpId))
                 .distinct()
                 .collect(Collectors.toList());
 
