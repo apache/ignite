@@ -214,7 +214,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (stream == null) {
                 stream = new RangeStream(cctx.kernalContext(), idx, qctx, segmentKey.node());
 
-                stream.request(GridH2IndexBase.createRequest(qctx, batchLookupId, segmentKey.segmentId()));
+                stream.request(createRequest(qctx, batchLookupId, segmentKey.segmentId()));
                 stream.request().bounds(bounds = new ArrayList<>());
 
                 rangeStreams.put(segmentKey, stream);
