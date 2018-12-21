@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
@@ -88,7 +89,7 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return new PartitionResult(tree);
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
     }
 
     /**
@@ -100,7 +101,7 @@ public class PartitionExtractor {
     @SuppressWarnings("IfMayBeConditional")
     public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
-        int joinGrp = PartitionTableModel.GRP_NONE;
+        PartitionJoinAffinityDescriptor aff = null;
 
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
@@ -110,13 +111,13 @@ public class PartitionExtractor {
                 return null;
 
             // This only possible if query is resolved to "NONE". Will be skipped later during map request prepare.
-            if (qryRes.joinGroup() == PartitionTableModel.GRP_NONE)
+            if (qryRes.affinity() == null)
                 continue;
 
-            if (joinGrp == PartitionTableModel.GRP_NONE)
-                joinGrp = qryRes.joinGroup();
-            else if (joinGrp != qryRes.joinGroup())
-                // Queries refer to different join gorups, cannot merge -> broadcast.
+            if (aff == null)
+                aff = qryRes.affinity();
+            else if (!aff.isCompatible(qryRes.affinity()))
+                // Queries refer to incompatible affinity groups, cannot merge -> broadcast.
                 return null;
         }
 
@@ -140,7 +141,10 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        return new PartitionResult(tree);
+        // If there is no affinity, then we assume "NONE" result.
+        assert aff != null || tree == PartitionNoneNode.INSTANCE;
+
+        return new PartitionResult(tree, aff);
     }
 
     /**

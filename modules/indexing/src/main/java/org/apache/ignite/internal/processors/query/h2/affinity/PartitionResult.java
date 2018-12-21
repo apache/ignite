@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -28,13 +29,18 @@ public class PartitionResult {
     @GridToStringInclude
     private final PartitionNode tree;
 
+    /** Affinity function. */
+    private final PartitionJoinAffinityDescriptor aff;
+
     /**
      * Constructor.
      *
      * @param tree Tree.
+     * @param aff Affinity function.
      */
-    public PartitionResult(PartitionNode tree) {
+    public PartitionResult(PartitionNode tree, PartitionJoinAffinityDescriptor aff) {
         this.tree = tree;
+        this.aff = aff;
     }
 
     /**
@@ -42,6 +48,13 @@ public class PartitionResult {
      */
     public PartitionNode tree() {
         return tree;
+    }
+
+    /**
+     * @return Affinity function.
+     */
+    public PartitionJoinAffinityDescriptor affinity() {
+        return aff;
     }
 
     /**

@@ -134,4 +134,21 @@ public class PartitionTableModel {
 
         grps.remove(rightTbl.joinGroup());
     }
+
+    /**
+     * Get affinity descriptor for the group.
+     *
+     * @param grpId Group ID.
+     * @return Affinity descriptor or {@code null} if there is no affinity descriptor (e.g. for "NONE" result).
+     */
+    @Nullable public PartitionJoinAffinityDescriptor joinGroupAffinity(int grpId) {
+        if (grpId == GRP_NONE)
+            return null;
+
+        PartitionJoinGroup grp = grps.get(grpId);
+
+        assert grp != null;
+
+        return grp.affinityDescriptor();
+    }
 }
