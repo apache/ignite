@@ -366,7 +366,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                         }
                         catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
-                                log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
+                                log.debug("Attempted to remove node locks from removed entry in cache lock manager " +
                                     "disco callback (will ignore): " + entry);
                         }
                     }
