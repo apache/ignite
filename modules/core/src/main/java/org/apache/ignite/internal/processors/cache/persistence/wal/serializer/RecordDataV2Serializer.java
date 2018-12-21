@@ -141,7 +141,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 return cpRec;
 
-            case DATA_RECORD:
+            case DATA_RECORD: {
                 int entryCnt = in.readInt();
                 long timeStamp = in.readLong();
 
@@ -151,28 +151,31 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                     entries.add(readPlainDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
+            }
 
-            case MVCC_DATA_RECORD:
-                entryCnt = in.readInt();
-                timeStamp = in.readLong();
+            case MVCC_DATA_RECORD: {
+                int entryCnt = in.readInt();
+                long timeStamp = in.readLong();
 
-                entries = new ArrayList<>(entryCnt);
+                List<MvccDataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readMvccDataEntry(in));
 
                 return new MvccDataRecord(entries, timeStamp);
+            }
 
-            case ENCRYPTED_DATA_RECORD:
-                entryCnt = in.readInt();
-                timeStamp = in.readLong();
+            case ENCRYPTED_DATA_RECORD: {
+                int entryCnt = in.readInt();
+                long timeStamp = in.readLong();
 
-                entries = new ArrayList<>(entryCnt);
+                List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readEncryptedDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
+            }
 
             case SNAPSHOT:
                 long snpId = in.readLong();

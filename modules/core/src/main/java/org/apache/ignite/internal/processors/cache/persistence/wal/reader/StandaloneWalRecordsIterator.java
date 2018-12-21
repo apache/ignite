@@ -394,7 +394,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return post-processed record.
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private WALRecord postProcessDataRecord(
+    @SuppressWarnings("unchecked")
+    private @NotNull WALRecord postProcessDataRecord(
         @NotNull DataRecord dataRec,
         GridKernalContext kernalCtx,
         IgniteCacheObjectProcessor processor
@@ -412,7 +413,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         DataRecord res = dataRec instanceof MvccDataRecord ?
-            new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
+            new MvccDataRecord((List)postProcessedEntries, dataRec.timestamp()) :
             new DataRecord(postProcessedEntries, dataRec.timestamp());
 
         res.size(dataRec.size());
