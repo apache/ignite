@@ -213,6 +213,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                         U.error(log, "Marshaller does not initialized.", e);
 
                         ses.close();
+
+                        Thread.currentThread().interrupt();
                     }
                 }
 
