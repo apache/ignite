@@ -10,8 +10,11 @@ import org.junit.internal.ArrayComparisonFailure;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link VectorGenerator}.
+ */
 public class VectorGeneratorTest {
-
+    /** */
     @Test
     public void testMap() {
         Vector originalVec = new UniformRandomProducer(-1, 1).vectorize(2).get();
@@ -19,6 +22,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(originalVec.times(2.).asArray(), doubledVec.asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void testFilter() {
         new UniformRandomProducer(-1, 1).vectorize(2)
@@ -28,6 +32,7 @@ public class VectorGeneratorTest {
             .forEach(v -> assertTrue(v.get(0) < 0.5 && v.get(1) > -0.5));
     }
 
+    /** */
     @Test
     public void concat1() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
@@ -39,6 +44,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(new double[] {3., 4., 1., 2.}, g21.get().asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void concat2() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
@@ -47,6 +53,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(new double[] {1., 2., 1.}, g2.get().asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void plus() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
@@ -58,6 +65,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(g21.get().asArray(), g12.get().asArray(), 1e-7);
     }
 
+    /** */
     @Test(expected = CardinalityException.class)
     public void testPlusForDifferentSizes1() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
@@ -65,6 +73,7 @@ public class VectorGeneratorTest {
         g1.plus(g2).get();
     }
 
+    /** */
     @Test(expected = CardinalityException.class)
     public void testPlusForDifferentSizes2() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2.));
@@ -72,6 +81,7 @@ public class VectorGeneratorTest {
         g2.plus(g1).get();
     }
 
+    /** */
     @Test
     public void shuffle() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2., 3., 4.))
@@ -84,6 +94,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(v1.asArray(), v2.asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void duplicateRandomFeatures() {
         VectorGenerator g1 = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2., 3., 4.))
@@ -103,12 +114,14 @@ public class VectorGeneratorTest {
         }
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testWithNegativeIncreaseSize() {
         VectorGeneratorPrimitives.constant(VectorUtils.of(1., 2., 3., 4.))
             .duplicateRandomFeatures(-2, 1L).get();
     }
 
+    /** */
     @Test
     public void move() {
         Vector res = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 1.))
@@ -118,6 +131,7 @@ public class VectorGeneratorTest {
         assertArrayEquals(new double[] {3., 5.}, res.asArray(), 1e-7);
     }
 
+    /** */
     @Test(expected = CardinalityException.class)
     public void testMoveWithDifferentSizes1() {
         VectorGeneratorPrimitives.constant(VectorUtils.of(1., 1.))
@@ -125,6 +139,7 @@ public class VectorGeneratorTest {
             .get();
     }
 
+    /** */
     @Test(expected = CardinalityException.class)
     public void testMoveWithDifferentSizes2() {
         VectorGeneratorPrimitives.constant(VectorUtils.of(1.))
@@ -132,6 +147,7 @@ public class VectorGeneratorTest {
             .get();
     }
 
+    /** */
     @Test
     public void rotate() {
         double[] angles = {0., Math.PI / 2, -Math.PI / 2, Math.PI, 2 * Math.PI, Math.PI / 4};
@@ -151,6 +167,7 @@ public class VectorGeneratorTest {
         }
     }
 
+    /** */
     @Test
     public void noisify() {
         Vector res = VectorGeneratorPrimitives.constant(VectorUtils.of(1., 0.))

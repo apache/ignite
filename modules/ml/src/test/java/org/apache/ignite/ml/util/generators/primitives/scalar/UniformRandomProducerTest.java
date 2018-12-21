@@ -7,7 +7,11 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests for {@link UniformRandomProducer}.
+ */
 public class UniformRandomProducerTest {
+    /** */
     @Test
     public void testGet() {
         Random random = new Random(0L);
@@ -30,6 +34,7 @@ public class UniformRandomProducerTest {
         assertEquals(variance, varianceStat, 0.1);
     }
 
+    /** */
     @Test
     public void testSeedConsidering() {
         UniformRandomProducer producer1 = new UniformRandomProducer(0, 1, 0L);
@@ -38,6 +43,7 @@ public class UniformRandomProducerTest {
         assertEquals(producer1.get(), producer2.get(), 0.0001);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testFail() {
         new UniformRandomProducer(1, 0, 0L);

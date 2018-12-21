@@ -29,9 +29,13 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link DataStreamGenerator}.
+ */
 public class DataStreamGeneratorTest {
+    /** */
     @Test
-    public void unlabeled() {
+    public void testUnlabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
@@ -43,8 +47,9 @@ public class DataStreamGeneratorTest {
         });
     }
 
+    /** */
     @Test
-    public void labeled() {
+    public void testLabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
@@ -57,8 +62,9 @@ public class DataStreamGeneratorTest {
         });
     }
 
+    /** */
     @Test
-    public void mapVectors() {
+    public void testMapVectors() {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
@@ -71,8 +77,9 @@ public class DataStreamGeneratorTest {
         });
     }
 
+    /** */
     @Test
-    public void blur() {
+    public void testBlur() {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
@@ -85,8 +92,9 @@ public class DataStreamGeneratorTest {
         });
     }
 
+    /** */
     @Test
-    public void asMap() {
+    public void testAsMap() {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
@@ -102,8 +110,9 @@ public class DataStreamGeneratorTest {
         }));
     }
 
+    /** */
     @Test
-    public void asDatasetBuilder() throws Exception {
+    public void testAsDatasetBuilder() throws Exception {
         AtomicInteger counter = new AtomicInteger();
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
@@ -132,6 +141,7 @@ public class DataStreamGeneratorTest {
         checkDataset(N / 2, b3, v -> (Double)v.label() < 0);
     }
 
+    /** */
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {
 
@@ -143,6 +153,7 @@ public class DataStreamGeneratorTest {
         }
     }
 
+    /** */
     private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
@@ -151,10 +162,12 @@ public class DataStreamGeneratorTest {
         );
     }
 
+    /** */
     private List<LabeledVector> map(LabeledVectorSet<Double, LabeledVector> d) {
         return IntStream.range(0, d.rowSize()).mapToObj(d::getRow).collect(Collectors.toList());
     }
 
+    /** */
     private List<LabeledVector> reduce(List<LabeledVector> l, List<LabeledVector> r) {
         if (l == null) {
             if (r == null)
@@ -170,6 +183,7 @@ public class DataStreamGeneratorTest {
         }
     }
 
+    /** */
     private static class UpstreamTransformerForTest implements UpstreamTransformer<Vector, Double> {
         @Override public Stream<UpstreamEntry<Vector, Double>> transform(
             Stream<UpstreamEntry<Vector, Double>> upstream) {

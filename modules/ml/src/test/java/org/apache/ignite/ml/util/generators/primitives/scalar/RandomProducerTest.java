@@ -8,7 +8,11 @@ import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests for {@link RandomProducer}.
+ */
 public class RandomProducerTest {
+    /** */
     @Test
     public void testVectorize() {
         RandomProducer p = () -> 1.0;
@@ -18,6 +22,7 @@ public class RandomProducerTest {
         assertArrayEquals(new double[] {1., 1., 1.}, vec.asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void testVectorize2() {
         Vector vec = RandomProducer.vectorize(
@@ -30,11 +35,13 @@ public class RandomProducerTest {
         assertArrayEquals(new double[] {1., 2., 3.}, vec.asArray(), 1e-7);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testVectorizeFail() {
         RandomProducer.vectorize();
     }
 
+    /** */
     @Test
     public void testNoizify1() {
         IgniteFunction<Double, Double> f = v -> 2 * v;
@@ -46,6 +53,7 @@ public class RandomProducerTest {
             assertEquals(2 * i + 1.0, res.apply((double)i), 1e-7);
     }
 
+    /** */
     @Test
     public void testNoizify2() {
         RandomProducer p = () -> 1.0;

@@ -9,18 +9,24 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link VectorGeneratorPrimitives}.
+ */
 public class VectorGeneratorPrimitivesTest {
+    /** */
     @Test
     public void testConstant() {
         Vector vec = VectorUtils.of(1.0, 0.0);
         assertArrayEquals(vec.copy().asArray(), VectorGeneratorPrimitives.constant(vec).get().asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void testZero() {
         assertArrayEquals(new double[] {0., 0.}, VectorGeneratorPrimitives.zero(2).get().asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void testRing() {
         VectorGeneratorPrimitives.ring(1., 0, 2 * Math.PI)
@@ -35,6 +41,7 @@ public class VectorGeneratorPrimitivesTest {
             });
     }
 
+    /** */
     @Test
     public void testCircle() {
         VectorGeneratorPrimitives.circle(1.)
@@ -42,6 +49,7 @@ public class VectorGeneratorPrimitivesTest {
             .forEach(v -> assertTrue(Math.sqrt(v.getLengthSquared()) <= 1.));
     }
 
+    /** */
     @Test
     public void testParallelogram() {
         VectorGeneratorPrimitives.parallelogram(VectorUtils.of(2., 100.))
@@ -54,6 +62,7 @@ public class VectorGeneratorPrimitivesTest {
             });
     }
 
+    /** */
     @Test
     public void testGauss() {
         VectorGenerator gen = VectorGeneratorPrimitives.gauss(VectorUtils.of(2., 100.), VectorUtils.of(20., 1.), 10L);
@@ -70,11 +79,13 @@ public class VectorGeneratorPrimitivesTest {
         assertArrayEquals(variance, varianceStat.asArray(), 0.1);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testGaussFail1() {
         VectorGeneratorPrimitives.gauss(VectorUtils.of(), VectorUtils.of());
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testGaussFail2() {
         VectorGeneratorPrimitives.gauss(VectorUtils.of(0.5, -0.5), VectorUtils.of(1.0, -1.0));

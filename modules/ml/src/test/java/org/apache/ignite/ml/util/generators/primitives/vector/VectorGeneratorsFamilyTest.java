@@ -14,7 +14,11 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link VectorGeneratorsFamily}.
+ */
 public class VectorGeneratorsFamilyTest {
+    /** */
     @Test
     public void testSelection() {
         VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
@@ -42,16 +46,19 @@ public class VectorGeneratorsFamilyTest {
         assertArrayEquals(new double[] {0.25, 1.}, counters.get(2).asArray(), 1e-2);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidParameters1() {
         new VectorGeneratorsFamily.Builder().build();
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidParameters2() {
         new VectorGeneratorsFamily.Builder().add(() -> VectorUtils.of(1.), -1.).build();
     }
 
+    /** */
     @Test
     public void testMap() {
         VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
@@ -62,6 +69,7 @@ public class VectorGeneratorsFamilyTest {
         assertArrayEquals(new double[] {2., 1.}, family.get().asArray(), 1e-7);
     }
 
+    /** */
     @Test
     public void testGet() {
         VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
@@ -77,6 +85,7 @@ public class VectorGeneratorsFamilyTest {
         }
     }
 
+    /** */
     @Test
     public void testAsDataStream() {
         VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()

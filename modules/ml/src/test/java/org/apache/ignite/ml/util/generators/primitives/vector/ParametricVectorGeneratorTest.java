@@ -6,7 +6,11 @@ import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests for {@link ParametricVectorGenerator}.
+ */
 public class ParametricVectorGeneratorTest {
+    /** */
     @Test
     public void testGet() {
         Vector vec = new ParametricVectorGenerator(
@@ -21,6 +25,7 @@ public class ParametricVectorGeneratorTest {
         assertArrayEquals(new double[] {2., 4., 6., 100.}, vec.asArray(), 1e-7);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalArguments() {
         new ParametricVectorGenerator(() -> 2.).get();

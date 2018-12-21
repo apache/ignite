@@ -6,7 +6,11 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests for {@link GaussRandomProducer}.
+ */
 public class GaussRandomProducerTest {
+    /** */
     @Test
     public void testGet() {
         Random random = new Random(0L);
@@ -22,6 +26,7 @@ public class GaussRandomProducerTest {
         assertEquals(variance, varianceStat, 0.1);
     }
 
+    /** */
     @Test
     public void testSeedConsidering() {
         GaussRandomProducer producer1 = new GaussRandomProducer(0L);
@@ -30,11 +35,13 @@ public class GaussRandomProducerTest {
         assertEquals(producer1.get(), producer2.get(), 0.0001);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalVariance1() {
         new GaussRandomProducer(0, 0.);
     }
 
+    /** */
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalVariance2() {
         new GaussRandomProducer(0, -1.);
