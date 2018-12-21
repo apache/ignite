@@ -367,6 +367,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
+
+    /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
+    private volatile WALPointer memoryRecoveryRecordPtr;
+
     /**
      * @param ctx Kernal context.
      */
@@ -1978,8 +1982,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.wal().resumeLogging(restored);
 
-            // We should log this record to ensure that node start marker pointer will be found in compacted segment.
-            cctx.wal().log(new MemoryRecoveryRecord(System.currentTimeMillis()));
+            // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
+            // next physical recovery.
+            memoryRecoveryRecordPtr = cctx.wal().log(new MemoryRecoveryRecord(System.currentTimeMillis()));
 
             assert metaStorage == null;
 
@@ -2095,6 +2100,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
+        WALPointer recPtr = status.endPtr;
+
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
@@ -2103,6 +2110,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
+
+            WALRecord rec = cctx.wal().read(status.startPtr);
+
+            if (!(rec instanceof CheckpointRecord))
+                throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
+                    "[ptr=" + status.startPtr + ", rec=" + rec + "]");
+
+            WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
+
+            if (cpMark != null) {
+                log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
+                    "back pointer: " + cpMark);
+
+                recPtr = cpMark;
+            }
         }
         else
             cctx.wal().notchLastCheckpointPtr(status.startPtr);
@@ -2115,7 +2137,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int applied = 0;
 
-        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
+        try (WALIterator it = cctx.wal().replay(recPtr)) {
             while (it.hasNextX()) {
                 WALRecord rec = restoreBinaryState.next(it);
 
@@ -2141,7 +2163,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             long page = pageMem.acquirePage(grpId, pageId, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
@@ -2213,7 +2235,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             long page = pageMem.acquirePage(grpId, pageId, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     r.applyDelta(pageMem, pageAddr);
@@ -3473,7 +3495,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(null);
+            CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
+
+            memoryRecoveryRecordPtr = null;
 
             WALPointer cpPtr = null;
 

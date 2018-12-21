@@ -107,7 +107,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 long msb = in.readLong();
                 long lsb = in.readLong();
                 boolean hasPtr = in.readByte() != 0;
-                int idx0 = hasPtr ? in.readInt() : 0;
+                long idx0 = hasPtr ? in.readLong() : 0;
                 int off = hasPtr ? in.readInt() : 0;
                 int len = hasPtr ? in.readInt() : 0;
 

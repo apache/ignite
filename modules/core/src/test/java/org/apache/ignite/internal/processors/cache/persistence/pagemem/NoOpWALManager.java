@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -47,22 +45,27 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer ptr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord entry) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) {
 
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
+    @Override public WALRecord read(WALPointer ptr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALIterator replay(WALPointer start) {
         return null;
     }
 
@@ -72,7 +75,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void release(WALPointer start) throws IgniteCheckedException {
+    @Override public void release(WALPointer start) {
         // No-op.
     }
 
@@ -102,7 +105,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
+    @Override public void start(GridCacheSharedContext cctx) {
         // No-op.
     }
 
