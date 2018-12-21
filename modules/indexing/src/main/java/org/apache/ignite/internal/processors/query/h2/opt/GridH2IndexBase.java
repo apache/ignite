@@ -797,12 +797,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Simple cursor from a single node.
      */
-    private static class UnicastCursor implements Cursor {
+    public static class UnicastCursor implements Cursor {
         /** */
-        final int rangeId;
+        private final int rangeId;
 
         /** */
-        RangeStream stream;
+        private final RangeStream stream;
 
         /**
          * @param rangeId Range ID.
