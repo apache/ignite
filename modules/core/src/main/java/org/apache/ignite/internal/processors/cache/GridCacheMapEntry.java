@@ -104,7 +104,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -231,10 +230,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** Read Lock for continuous query listener */
     @GridToStringExclude
     private final Lock listenerLock;
-
-    /** Public access needs for tests. */
-    public static volatile boolean disableTriggeringCacheInterceptorOnConflict =
-        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Flags:
@@ -2333,7 +2328,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 conflictResolve,
                 intercept,
                 updateCntr,
-                disableTriggeringCacheInterceptorOnConflict
+                cctx.disableTriggeringCacheInterceptorOnConflict()
             );
 
             key.valueBytes(cctx.cacheObjectContext());
@@ -3319,7 +3314,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
      */
     private boolean skipInterceptor(@Nullable GridCacheVersion explicitVer) {
-        return isRemoteDrUpdate(explicitVer) && disableTriggeringCacheInterceptorOnConflict;
+        return isRemoteDrUpdate(explicitVer) && cctx.disableTriggeringCacheInterceptorOnConflict();
     }
 
     /** {@inheritDoc} */
