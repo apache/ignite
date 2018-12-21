@@ -82,18 +82,26 @@ module.exports = {
         if (_isTrue('server:ssl')) {
             const sslOptions = {
                 enable301Redirects: true,
-                trustXFPHeader: true
+                trustXFPHeader: true,
+                isServer: true
             };
 
-            const setSslOption = (cfg, fromFile = false) => {
-                const cfgValue = nconf.get(`server:${cfg}`);
+            const setSslOption = (name, fromFile = false) => {
+                const v = nconf.get(`server:${name}`);
 
-                const hasOption = !!cfgValue;
+                const hasOption = !!v;
 
                 if (hasOption)
-                    sslOptions[cfg] = fromFile ? fs.readFileSync(cfgValue) : cfgValue;
+                    sslOptions[name] = fromFile ? fs.readFileSync(v) : v;
 
                 return hasOption;
+            };
+
+            const setSslOptionBoolean = (name) => {
+                const v = nconf.get(`server:${name}`);
+
+                if (v)
+                    sslOptions[name] = v === 'true' || v === true;
             };
 
             setSslOption('key', true);
@@ -112,10 +120,9 @@ module.exports = {
             setSslOption('secureOptions');
             setSslOption('sessionIdContext');
 
-            const honorCipherOrder = nconf.get(`server:honorCipherOrder`);
-
-            if (honorCipherOrder)
-                sslOptions.honorCipherOrder = _isTrue(honorCipherOrder);
+            setSslOptionBoolean('honorCipherOrder');
+            setSslOptionBoolean('requestCert');
+            setSslOptionBoolean('rejectUnauthorized');
 
             // Special care for case, when user set password for something like "123456".
             if (sslOptions.passphrase)

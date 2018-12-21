@@ -74,6 +74,8 @@ SSL options has no default values:
     --server:secureOptions "Optional OpenSSL options"
     --server:sessionIdContext "Opaque identifier used by servers to ensure session state is not shared between applications"
     --server:honorCipherOrder "true or false"
+    --server:requestCert "Set to true to specify whether a server should request a certificate from a connecting client"
+    --server:rejectUnauthorized "Set to true to automatically reject clients with invalid certificates"
 
 Documentation for SSL options: https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
 
