@@ -117,7 +117,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testVersionMvccTx() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
