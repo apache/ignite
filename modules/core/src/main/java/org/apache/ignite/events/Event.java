@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.UsagesTrackable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +82,7 @@ import org.jetbrains.annotations.Nullable;
  * @see TaskEvent
  * @see org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */
-public interface Event extends Comparable<Event>, Serializable {
+public interface Event extends Comparable<Event>, UsagesTrackable, Serializable {
     /**
      * Gets globally unique ID of this event.
      *

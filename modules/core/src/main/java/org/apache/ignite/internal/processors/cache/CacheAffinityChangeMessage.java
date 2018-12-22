@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -58,6 +59,9 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
 
     /** */
     private transient boolean exchangeNeeded;
+
+    /** */
+    private final AtomicInteger usagesCounter = new AtomicInteger(0);
 
     /**
      * Constructor used when message is created after cache rebalance finished.
@@ -164,6 +168,16 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         return discoCache.copy(topVer, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int incrementAndGetUsages() {
+        return usagesCounter.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decrementAndGetUsages() {
+        return usagesCounter.updateAndGet(i -> i > 0 ? i - 1 : i);
     }
 
     /** {@inheritDoc} */

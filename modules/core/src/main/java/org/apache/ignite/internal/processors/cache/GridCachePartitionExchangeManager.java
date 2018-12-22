@@ -245,6 +245,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 return;
 
             try {
+                evt.incrementAndGetUsages();
+
                 if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
                     (((DiscoveryCustomEvent)evt).customMessage() instanceof ChangeGlobalStateMessage)) {
                     ChangeGlobalStateMessage stateChangeMsg =
@@ -320,6 +322,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private void processEventInactive(DiscoveryEvent evt, DiscoCache cache) {
         // Clear local join caches context.
         cctx.cache().localJoinCachesContext();
+
+        evt.decrementAndGetUsages();
 
         if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive: " + evt);
@@ -587,6 +591,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else {
             if (log.isDebugEnabled())
                 log.debug("Do not start exchange for discovery event: " + evt);
+
+            evt.decrementAndGetUsages();
         }
 
         notifyNodeFail(evt);

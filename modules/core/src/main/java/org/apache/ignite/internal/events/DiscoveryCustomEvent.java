@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.events;
 
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,6 +52,9 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** Affinity topology version. */
     private AffinityTopologyVersion affTopVer;
 
+    /** */
+    private final GridFutureAdapter<Void> usagesFut = new GridFutureAdapter<>();
+
     /**
      * Default constructor.
      */
@@ -64,7 +70,8 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     }
 
     /**
-     * @param customMsg New customMessage.
+     * @param customMsg New customMessage. <b>Should not be {@code null}</b>, use {@link #nullifyCustomMessage()} if you
+     * want to nullify custom message field.
      */
     public void customMessage(DiscoveryCustomMessage customMsg) {
         this.customMsg = customMsg;
@@ -118,5 +125,41 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
         }
 
         return false;
+    }
+
+    /**
+     * Nullifies the custom message field once usages tracker returns zero.
+     * <p/>
+     * Is used to reduce memory consumption during storing a history of processed events.
+     */
+    public void nullifyCustomMessage() {
+        usagesFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+            @Override public void apply(IgniteInternalFuture<Void> future) {
+                customMsg = null;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public int incrementAndGetUsages() {
+        if (customMsg == null)
+            return 0;
+
+        return customMsg.incrementAndGetUsages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decrementAndGetUsages() {
+        DiscoveryCustomMessage msg = customMsg;
+
+        if (msg == null)
+            return 0;
+
+        int cnt = msg.decrementAndGetUsages();
+
+        if (cnt == 0 && !usagesFut.isDone())
+            usagesFut.onDone();
+
+        return cnt;
     }
 }

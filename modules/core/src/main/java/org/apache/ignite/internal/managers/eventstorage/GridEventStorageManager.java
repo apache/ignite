@@ -870,6 +870,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             return;
 
         for (EventListener lsnr : lsnrs) {
+            evt.incrementAndGetUsages();
+
             try {
                 ((ListenerWrapper)lsnr).onEvent(evt, params);
             }
@@ -878,6 +880,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 if (e instanceof Error)
                     throw (Error)e;
+            }
+            finally {
+                evt.decrementAndGetUsages();
             }
         }
     }

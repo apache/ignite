@@ -74,7 +74,7 @@ import org.jetbrains.annotations.Nullable;
  *     </li>
  * </ol>
  */
-public interface DiscoveryCustomMessage extends Serializable {
+public interface DiscoveryCustomMessage extends UsagesTrackable, Serializable {
     /**
      * @return Unique custom message ID.
      */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -60,6 +61,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
 
     /** */
     private long timestamp;
+
+    /** */
+    private final AtomicInteger usagesCounter = new AtomicInteger(0);
 
     /** */
     @GridToStringExclude
@@ -141,6 +145,16 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int incrementAndGetUsages() {
+        return usagesCounter.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decrementAndGetUsages() {
+        return usagesCounter.updateAndGet(i -> i > 0 ? i - 1 : i);
     }
 
     /**
