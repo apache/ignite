@@ -25,6 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import junit.framework.TestResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -41,7 +42,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
+ * TODO IGNITE-10739 redesign this and related classes to get rid of JUnit 3 features.
+ *
+ * @deprecated This class uses obsolete methods of JUnit 3 framework and because of that you need to use JUnit 3
+ * naming convention for test cases in classes extending it. Also, Junit 4 annotations like {@code Before}
+ * and {@code Ignore} may not work. It is expected to be reworked per IGNITE-10739.
  */
+@Deprecated
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int SERVER_NODE_IDX = 0;
@@ -71,9 +78,35 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         this.testsCfg = testsCfg;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public int countTestCases() {
+        return countTestCasesFallback();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public void run(TestResult res) {
+        runFallback(res);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public String getName() {
+        return getNameFallback();
+    }
+
     /** {@inheritDoc} */
-    @Override
-    protected boolean isSafeTopology() {
+    @Override protected boolean isSafeTopology() {
         return false;
     }
 

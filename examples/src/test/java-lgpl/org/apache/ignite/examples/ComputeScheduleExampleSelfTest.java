@@ -19,15 +19,15 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.misc.schedule.ComputeScheduleExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Tests {@link ComputeScheduleExample}.
  */
 public class ComputeScheduleExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testComputeScheduleExample() throws Exception {
+    /** */
+    @Test
+    public void testComputeScheduleExample() {
         ComputeScheduleExample.main(EMPTY_ARGS);
     }
 }
