@@ -19,7 +19,7 @@ package org.apache.ignite.events;
 
 import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.UsagesTrackable;
+import org.apache.ignite.internal.util.UsagesTrackable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 

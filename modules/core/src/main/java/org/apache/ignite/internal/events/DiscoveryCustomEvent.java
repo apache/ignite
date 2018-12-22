@@ -141,25 +141,37 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public int incrementAndGetUsages() {
-        if (customMsg == null)
-            return 0;
-
-        return customMsg.incrementAndGetUsages();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int decrementAndGetUsages() {
+    @Override public int incrementAndGet() {
         DiscoveryCustomMessage msg = customMsg;
 
         if (msg == null)
             return 0;
 
-        int cnt = msg.decrementAndGetUsages();
+        return msg.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decrementAndGet() {
+        DiscoveryCustomMessage msg = customMsg;
+
+        if (msg == null)
+            return 0;
+
+        int cnt = msg.decrementAndGet();
 
         if (cnt == 0 && !usagesFut.isDone())
             usagesFut.onDone();
 
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int get() {
+        DiscoveryCustomMessage msg = customMsg;
+
+        if (msg == null)
+            return 0;
+
+        return msg.get();
     }
 }

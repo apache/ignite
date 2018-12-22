@@ -15,38 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.internal.util;
+
+import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Allows to track usages of an object.
+ * Usages tracker.
  * <p/>
- * It's useful when it is necessary to provide additional actions depending on usages, e.g. cleaning.
+ * Can not be less than zero even if 'decrement' method has been called more times than 'increment'.
  */
-public interface UsagesTrackable {
-    /**
-     * Callback to confirm that consumer is going to work with the object.
-     *
-     * @return Count of usages after increment.
-     */
-    public default int incrementAndGetUsages() {
-        return 0;
+public class UsagesTracker implements UsagesTrackable, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private final AtomicInteger usagesCounter = new AtomicInteger(0);
+
+    /** {@inheritDoc} */
+    @Override public int incrementAndGet() {
+        return usagesCounter.incrementAndGet();
     }
 
-    /**
-     * Callback to confirm that consumer has finished work with the object.
-     *
-     * @return Count of usages after decrement.
-     */
-    public default int decrementAndGetUsages() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int decrementAndGet() {
+        return usagesCounter.updateAndGet(i -> i > 0 ? i - 1 : i);
     }
 
-    /**
-     * Returns value of usages counter.
-     *
-     * @return Count of usages.
-     */
-    public default int getUsages() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int get() {
+        return usagesCounter.get();
     }
 }

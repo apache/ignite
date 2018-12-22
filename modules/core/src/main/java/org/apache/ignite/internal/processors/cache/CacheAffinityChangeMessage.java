@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.UsagesTracker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -61,7 +61,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     private transient boolean exchangeNeeded;
 
     /** */
-    private final AtomicInteger usagesCounter = new AtomicInteger(0);
+    private final UsagesTracker usagesTracker = new UsagesTracker();
 
     /**
      * Constructor used when message is created after cache rebalance finished.
@@ -171,13 +171,18 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int incrementAndGetUsages() {
-        return usagesCounter.incrementAndGet();
+    @Override public int incrementAndGet() {
+        return usagesTracker.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public int decrementAndGetUsages() {
-        return usagesCounter.updateAndGet(i -> i > 0 ? i - 1 : i);
+    @Override public int decrementAndGet() {
+        return usagesTracker.decrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int get() {
+        return usagesTracker.get();
     }
 
     /** {@inheritDoc} */

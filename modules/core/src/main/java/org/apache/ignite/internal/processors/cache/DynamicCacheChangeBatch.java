@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.UsagesTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,7 +54,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     private Set<String> restartingCaches;
 
     /** */
-    private final AtomicInteger usagesCounter = new AtomicInteger(0);
+    private final UsagesTracker usagesTracker = new UsagesTracker();
 
     /**
      * @param reqs Requests.
@@ -93,13 +92,18 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int incrementAndGetUsages() {
-        return usagesCounter.incrementAndGet();
+    @Override public int incrementAndGet() {
+        return usagesTracker.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public int decrementAndGetUsages() {
-        return usagesCounter.updateAndGet(i -> i > 0 ? i - 1 : i);
+    @Override public int decrementAndGet() {
+        return usagesTracker.decrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int get() {
+        return usagesTracker.get();
     }
 
     /**
