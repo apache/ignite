@@ -53,11 +53,14 @@ import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheSto
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgnitePdsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.
      */

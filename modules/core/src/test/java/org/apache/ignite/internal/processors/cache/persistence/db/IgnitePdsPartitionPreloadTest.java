@@ -587,6 +587,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
