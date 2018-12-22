@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import junit.framework.TestSuite;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.IgniteException;
@@ -28,13 +27,27 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
+@RunWith(Suite.class)
+public abstract class ZookeeperDiscoverySpiAbstractTestSuite {
     /** */
     private static TestingCluster testingCluster;
+
+    /**
+     * @throws Exception Thrown in case of the failure.
+     */
+    @BeforeClass
+    public static void init() throws Exception {
+        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
+
+        initSuite();
+    }
 
     /**
      * @throws Exception If failed.
