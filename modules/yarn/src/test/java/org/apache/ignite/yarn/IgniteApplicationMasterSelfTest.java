@@ -145,7 +145,7 @@ public class IgniteApplicationMasterSelfTest {
      * @throws Exception If failed.
      */
     @Test
-     public void testMemoryOverHeadPreventAllocation() throws Exception {
+    public void testMemoryOverHeadPreventAllocation() throws Exception {
         rmMock.availableRes(new MockResource(1024, 2));
         appMaster.setRmClient(rmMock);
         appMaster.setNmClient(new NMMock());
