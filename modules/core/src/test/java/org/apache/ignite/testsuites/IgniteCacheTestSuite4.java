@@ -153,11 +153,14 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPa
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedTransactionalSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite4 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite4 {
     /**
      * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.

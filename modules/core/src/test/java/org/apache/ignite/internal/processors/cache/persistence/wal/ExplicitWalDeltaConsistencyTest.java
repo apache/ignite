@@ -62,6 +62,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     /**
      *
      */
+    @Test
     public final void testNotEmptyPds() throws Exception {
         IgniteEx ignite = startGrid(0);
 

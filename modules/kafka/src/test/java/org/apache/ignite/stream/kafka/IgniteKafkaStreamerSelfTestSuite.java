@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest;
 import org.apache.ignite.stream.kafka.connect.IgniteSourceConnectorTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache Kafka streamers tests.
  */
-public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteKafkaStreamerSelfTestSuite {
     /**
      * @return Test suite.
      */

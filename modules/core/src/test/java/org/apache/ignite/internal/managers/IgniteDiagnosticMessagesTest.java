@@ -50,6 +50,10 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -184,6 +188,27 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode) {
+        return defaultCacheConfiguration()
+            .setAtomicityMode(atomicityMode)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setNearConfiguration(null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
+    public void testSeveralLongRunningMvccTxs() throws Exception {
+        checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSeveralLongRunningTxs() throws Exception {
@@ -294,6 +319,16 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
+    public void testLongRunningMvccTx() throws Exception {
+        checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testLongRunningTx() throws Exception {
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "3500");
 

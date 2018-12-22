@@ -15,23 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.testframework.junits;
 
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Ignore;
+import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited deprecated assertions.
+import junit.framework.TestResult;
 
 /**
- * ContinuousMapperExample self test.
+ * Supports compatibility with old tests based on configurations variations.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
-public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
+abstract class LegacyConfigVariationsSupport extends TestCase {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
-     * @throws Exception If failed.
+     * Fallback to superclass.
      */
-//    public void testContinuousMapperExample() throws Exception {
-//        ComputeContinuousMapperExample.main(EMPTY_ARGS);
-//    }
+    protected int countTestCasesFallback() {
+        return super.countTestCases();
+    }
+
+    /**
+     * Fallback to superclass.
+     */
+    protected void runFallback(TestResult res) {
+        super.run(res);
+    }
+
+    /**
+     * Fallback to superclass.
+     */
+    protected String getNameFallback() {
+        return super.getName();
+    }
 }
