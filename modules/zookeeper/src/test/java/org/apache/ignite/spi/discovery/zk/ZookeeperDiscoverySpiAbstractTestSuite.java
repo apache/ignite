@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import junit.framework.TestSuite;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.IgniteException;
@@ -27,14 +28,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-@RunWith(Suite.class)
-public abstract class ZookeeperDiscoverySpiAbstractTestSuite {
+public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
     /** */
     private static TestingCluster testingCluster;
 

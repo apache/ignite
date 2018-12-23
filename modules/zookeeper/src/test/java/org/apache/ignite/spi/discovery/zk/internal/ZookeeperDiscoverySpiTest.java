@@ -138,8 +138,9 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -158,8 +159,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
-/** */
+/**
+ *
+ */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
@@ -1768,7 +1772,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentStartStop1() throws Exception {
-        concurrentStartStop(1);
+       concurrentStartStop(1);
     }
 
     /**
@@ -3585,22 +3589,22 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConnectionCheck() throws Exception {
-        final int NODES = 5;
+       final int NODES = 5;
 
         startGridsMultiThreaded(NODES);
 
-        for (int i = 0; i < NODES; i++) {
-            Ignite node = ignite(i);
+       for (int i = 0; i < NODES; i++) {
+           Ignite node = ignite(i);
 
-            TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
+           TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
 
-            List<ClusterNode> nodes = new ArrayList<>(node.cluster().nodes());
+           List<ClusterNode> nodes = new ArrayList<>(node.cluster().nodes());
 
-            BitSet res = spi.checkConnection(nodes).get();
+           BitSet res = spi.checkConnection(nodes).get();
 
-            for (int j = 0; j < NODES; j++)
-                assertTrue(res.get(j));
-        }
+           for (int j = 0; j < NODES; j++)
+               assertTrue(res.get(j));
+       }
     }
 
     /**
@@ -3872,18 +3876,20 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     public void testReconnectServersRestart_1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
+
         reconnectServersRestart(1);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     public void testReconnectServersRestart_2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
+
         reconnectServersRestart(3);
     }
 
