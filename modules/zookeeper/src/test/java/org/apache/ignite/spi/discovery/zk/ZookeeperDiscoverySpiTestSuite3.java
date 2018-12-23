@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMulti
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runners.Suite;
 
 /**
@@ -43,4 +44,13 @@ import org.junit.runners.Suite;
     GridP2PContinuousDeploymentSelfTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite3 extends ZookeeperDiscoverySpiAbstractTestSuite {
+    /**
+     * @throws Exception Thrown in case of the failure.
+     */
+    @BeforeClass
+    public static void init() throws Exception {
+        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
+
+        initSuite();
+    }
 }
