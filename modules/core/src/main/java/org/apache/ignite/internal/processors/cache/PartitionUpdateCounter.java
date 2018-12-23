@@ -26,6 +26,7 @@ import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
@@ -45,7 +46,7 @@ public class PartitionUpdateCounter {
     /** */
     private IgniteLogger log;
 
-    /** Queue of counter update tasks*/
+    /** Queue of counter update tasks. */
     private TreeSet<Item> queue = new TreeSet<>();
 
     /** Counter of applied updates in partition. */
@@ -120,16 +121,20 @@ public class PartitionUpdateCounter {
      *
      * @param val Values.
      */
-    public synchronized void update(long val) {
+    public synchronized void update(long val) throws IllegalUpdateCounterException {
+        // New counter should be not less than last seen update.
+        // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
+        // Best behavior is to stop node by failure handler in such a case.
+        if (!gaps().isEmpty() && val < hwm())
+            throw new IllegalUpdateCounterException();
+
         long cur = cntr.get();
 
+        // Reserved update counter is updated only on exchange.
         reserveCntr.set(Math.max(cur, val));
 
         if (val <= cur)
             return;
-
-        // New counter should be greater when last seen update.
-        assert val >= hwm();
 
         cntr.set(val);
 
@@ -264,7 +269,7 @@ public class PartitionUpdateCounter {
             gaps.add(end);
 
             // Close pending ranges.
-            update(item.start + item.delta);
+            cntr.set(item.start + item.delta);
 
             item = poll();
         }
@@ -276,7 +281,13 @@ public class PartitionUpdateCounter {
      * @param delta Delta.
      */
     public long reserve(long delta) {
-        return reserveCntr.getAndAdd(delta);
+        long cntr = this.cntr.get();
+
+        long newCntr = reserveCntr.getAndAdd(delta);
+
+        assert newCntr >= cntr;
+
+        return newCntr;
     }
 
 //    /**
@@ -386,7 +397,7 @@ public class PartitionUpdateCounter {
         }
     }
 
-    public TreeSet<Item> holes() {
+    public TreeSet<Item> gaps() {
         return queue;
     }
 
@@ -488,5 +499,8 @@ public class PartitionUpdateCounter {
     /** {@inheritDoc} */
     public String toString() {
         return "Counter [lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
+    }
+
+    public static class IllegalUpdateCounterException extends IgniteCheckedException {
     }
 }

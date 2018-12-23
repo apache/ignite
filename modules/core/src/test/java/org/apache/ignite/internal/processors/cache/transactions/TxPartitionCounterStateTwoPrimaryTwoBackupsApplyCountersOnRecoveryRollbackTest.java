@@ -38,9 +38,12 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryRollbackTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int [] SIZES = new int[] {5, 7, 3};

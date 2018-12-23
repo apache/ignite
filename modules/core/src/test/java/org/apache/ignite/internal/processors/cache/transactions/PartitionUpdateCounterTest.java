@@ -18,15 +18,11 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * TODO FIXME add multithreaded test.
@@ -115,7 +111,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             else {
                 assertEquals(pc, pc0);
                 assertEquals(expTotal, pc0.get());
-                assertTrue(pc0.holes().isEmpty());
+                assertTrue(pc0.gaps().isEmpty());
 
                 pc = pc0;
             }

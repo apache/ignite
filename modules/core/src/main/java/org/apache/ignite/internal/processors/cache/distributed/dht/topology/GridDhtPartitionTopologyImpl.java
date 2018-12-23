@@ -1405,7 +1405,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-
                             part.updateCounter(updCntr);
 
                             if (updCntr != 0 && updCntr > curCntr) { // TODO FIXME use retval from updateCounter to understand if counter changes.

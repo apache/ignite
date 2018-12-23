@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -28,25 +26,25 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * TODO add flag for stoppping primary w/o checkpoint.
  */
 @RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionCounterStateAbstractTest {
@@ -86,6 +84,20 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         doTestPrepareCommitReorder(true);
     }
 
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailRebalance() throws Exception {
+        doTestPrepareCommitReorder2(false);
+    }
+
+    /**
+     * Scenario: fail node (with enabled or disabled checkpoint) before rebalance is completed.
+     */
+    @Test
+    public void testPrepareCommitReorderFailRebalanceSkipCheckpoint() throws Exception {
+        doTestPrepareCommitReorder2(true);
+    }
+
     /**
      * Test scenario
      *
@@ -101,9 +113,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
                             assertEquals(TOTAL, cntr.reserved());
 
-                            assertFalse(cntr.holes().isEmpty());
+                            assertFalse(cntr.gaps().isEmpty());
 
-                            PartitionUpdateCounter.Item gap = cntr.holes().first();
+                            PartitionUpdateCounter.Item gap = cntr.gaps().first();
 
                             assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
                             assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
@@ -130,6 +142,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         TestRecordingCommunicationSpi.stopBlockAll();
 
         String primaryName = txTop.get1().name();
+        String backupName = txTop.get2().get(0).name();
 
         IgniteEx primary = startGrid(primaryName);
 
@@ -140,11 +153,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // Check if holes are closed on rebalance.
         PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
 
-        assertTrue(cntr.holes().isEmpty());
+        assertTrue(cntr.gaps().isEmpty());
 
         assertEquals(TOTAL, cntr.get());
-
-        String backupName = txTop.get2().get(0).name();
 
         stopGrid(backupName);
 
@@ -170,6 +181,95 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         assertEquals(TOTAL + addCnt, cntr.get());
 
         assertEquals(TOTAL + addCnt, cntr.reserved());
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test scenario
+     *
+     * @param skipCheckpoint Skip checkpoint.
+     */
+    private void doTestPrepareCommitReorder2(boolean skipCheckpoint) throws Exception {
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
+                    @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+                        if (idx == PRIMARY_COMMIT_ORDER[0]) {
+                            PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+
+                            assertEquals(TOTAL, cntr.reserved());
+
+                            assertFalse(cntr.gaps().isEmpty());
+
+                            PartitionUpdateCounter.Item gap = cntr.gaps().first();
+
+                            assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
+                            assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
+
+                            stopGrid(skipCheckpoint, primary.name()); // Will stop primary node before all commits are applied.
+
+                            return true;
+                        }
+
+                        throw new IgniteException("Should not commit other transactions");
+                    }
+                };
+            }
+        }, SIZES);
+
+        T2<Ignite, List<Ignite>> txTop = txTops.get(PARTITION_ID);
+
+        waitForTopology(NODES_CNT);
+
+        IgniteEx client = grid(CLIENT_GRID_NAME);
+
+        assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
+
+        TestRecordingCommunicationSpi.stopBlockAll();
+
+        String primaryName = txTop.get1().name();
+        String backupName = txTop.get2().get(0).name();
+
+        TestRecordingCommunicationSpi.spi(grid(backupName)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (msg instanceof GridDhtPartitionSupplyMessage) {
+                    GridDhtPartitionSupplyMessage m0 = (GridDhtPartitionSupplyMessage)msg;
+
+                    return m0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
+                }
+
+                return false;
+            }
+        });
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    TestRecordingCommunicationSpi.spi(grid(backupName)).waitForBlocked();
+                }
+                catch (InterruptedException e) {
+                    fail("Unexpected interruption");
+                }
+
+                stopGrid(skipCheckpoint, primaryName);
+
+                TestRecordingCommunicationSpi.spi(grid(backupName)).stopBlock();
+
+                try {
+                    startGrid(primaryName);
+
+                    awaitPartitionMapExchange();
+                }
+                catch (Exception e) {
+                    fail();
+                }
+            }
+        }, 1);
+
+        IgniteEx primary = startGrid(primaryName);
+
+        fut.get();
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }

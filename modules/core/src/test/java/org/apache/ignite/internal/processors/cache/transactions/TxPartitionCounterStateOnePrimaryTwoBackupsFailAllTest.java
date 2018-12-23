@@ -1,32 +1,37 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.stream.Collectors.toCollection;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int PARTITION_ID = 0;
@@ -39,14 +44,20 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommitSameCounter() throws Exception {
+    public void testStopAllOwnersWithPartialCommitSameTxSizes() throws Exception {
         doTestPrepareCommitReorder(false, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, new int[] {5, 5});
     }
 
     /** */
     @Test
-    public void testStopAllOwnersWithPartialCommitCounterDiffers() throws Exception {
+    public void testStopAllOwnersWithPartialCommitDifferentTxSizes() throws Exception {
         doTestPrepareCommitReorder(false, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, new int[] {8, 5});
+    }
+
+    /** */
+    @Test
+    public void testStopAllOwnersWithPartialCommitSameTxSizes2() throws Exception {
+        doTestPrepareCommitReorder2(false, new int[] {0, 1, 2}, new int[] {0, 1, 2}, new int[] {1, 2, 0}, new int[] {2, 1, 0}, new int[] {5, 7, 3});
     }
 
     /**
@@ -56,6 +67,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     private void doTestPrepareCommitReorder(boolean skipCp, int[] prepareOrder, int[] primCommitOrder, int[] backup1CommitOrder, int[] backup2CommitOrder, int[] sizes) throws Exception {
         AtomicInteger cnt = new AtomicInteger();
 
+        Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
+
         Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
@@ -64,8 +77,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                     Map<IgniteEx, int[]> prepares = new HashMap<IgniteEx, int[]>();
 
                     prepares.put((IgniteEx)txTop.get1(), prepareOrder);
-
-                    Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
 
                     Ignite backup1 = txTop.get2().get(0);
                     Ignite backup2 = txTop.get2().get(1);
@@ -99,9 +110,87 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
         crd.cluster().active(true);
 
-        waitForTopology(2);
+        // Backup with gap in update counter should be stopped by failure handler.
+        waitForTopology(1);
 
-        assertPartitionsSame(idleVerify(n2, DEFAULT_CACHE_NAME));
+        IgniteEx backupNode = (IgniteEx)G.allGrids().iterator().next();
+
+        PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
+
+        assertTrue(cntr.gaps().isEmpty());
+    }
+
+    /**
+     * Test scenario:
+     *
+     */
+    private void doTestPrepareCommitReorder2(boolean skipCp, int[] prepareOrder, int[] primCommitOrder, int[] backup1CommitOrder, int[] backup2CommitOrder, int[] sizes) throws Exception {
+        Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
+        Map<IgniteEx, CountDownLatch> awaits = new ConcurrentHashMap<>();
+
+        AtomicBoolean finish = new AtomicBoolean();
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+            new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                    T2<Ignite, List<Ignite>> txTop = map.get(PARTITION_ID);
+
+                    Map<IgniteEx, int[]> prepares = new HashMap<IgniteEx, int[]>();
+
+                    prepares.put((IgniteEx)txTop.get1(), prepareOrder);
+
+                    Ignite backup1 = txTop.get2().get(0);
+                    Ignite backup2 = txTop.get2().get(1);
+
+                    commits.put((IgniteEx)txTop.get1(), primCommitOrder);
+                    commits.put((IgniteEx)backup1, backup1CommitOrder);
+                    commits.put((IgniteEx)backup2, backup2CommitOrder);
+
+                    awaits.put((IgniteEx)backup1, new CountDownLatch(2));
+                    awaits.put((IgniteEx)backup2, new CountDownLatch(2));
+
+                    return new TPCCommitTxCallbackAdapter(prepares, commits, sizes.length) {
+                        @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                            super.onBackupCommitted(backup, idx);
+
+                            CountDownLatch latch = awaits.get(backup);
+                            latch.countDown();
+                            if (latch.getCount() == 0) {
+                                for (CountDownLatch countDownLatch : awaits.values()) {
+                                    try {
+                                        assertTrue(U.await(countDownLatch, 30_000, TimeUnit.MILLISECONDS));
+                                    }
+                                    catch (IgniteInterruptedCheckedException e) {
+                                        fail();
+                                    }
+                                }
+
+                                if (finish.compareAndSet(false, true)) {
+                                    // Stop all backups first or recovery will commit a transaction on backups.
+                                    stopGrid(skipCp, txTop.get2().get(0).name());
+                                    stopGrid(skipCp, txTop.get2().get(1).name());
+                                    stopAllGrids();
+                                }
+
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    };
+                }
+            },
+            sizes);
+
+        waitForTopology(0);
+
+        IgniteEx crd = startGrid(txTop.get(PARTITION_ID).get2().get(0).name());
+        IgniteEx n2 = startGrid(txTop.get(PARTITION_ID).get2().get(1).name());
+
+        n2.cluster().active(true);
+
+        // All nodes should be stopped by failure handler due to partition update counter inconsistency.
+        waitForTopology(0);
     }
 
     /**

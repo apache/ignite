@@ -12,7 +12,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
@@ -188,9 +187,9 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
                         // After reordered commit partition update counter must contain single hole corresponding to committed tx.
                         PartitionUpdateCounter cntr = counter(PARTITION_ID);
 
-                        assertFalse(cntr.holes().isEmpty());
+                        assertFalse(cntr.gaps().isEmpty());
 
-                        PartitionUpdateCounter.Item gap = cntr.holes().first();
+                        PartitionUpdateCounter.Item gap = cntr.gaps().first();
 
                         assertEquals(gap.start(), SIZES[COMMIT_ORDER[1]] + SIZES[COMMIT_ORDER[2]]);
                         assertEquals(gap.delta(), SIZES[COMMIT_ORDER[0]]);
@@ -222,9 +221,9 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
             assertEquals(0, cntr.get());
             assertEquals(TOTAL, cntr.hwm());
 
-            assertEquals(1, cntr.holes().size());
+            assertEquals(1, cntr.gaps().size());
 
-            PartitionUpdateCounter.Item hole = cntr.holes().first();
+            PartitionUpdateCounter.Item hole = cntr.gaps().first();
 
             assertEquals(SIZES[0] + SIZES[1], hole.start());
             assertEquals(SIZES[2], hole.delta());

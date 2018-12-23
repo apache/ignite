@@ -17,30 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -105,9 +92,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             if (idx == BACKUP_COMMIT_ORDER[0]) {
                                 PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-                                assertFalse(cntr.holes().isEmpty());
+                                assertFalse(cntr.gaps().isEmpty());
 
-                                PartitionUpdateCounter.Item gap = cntr.holes().first();
+                                PartitionUpdateCounter.Item gap = cntr.gaps().first();
 
                                 assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
                                 assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
@@ -146,7 +133,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         // Check if holes are closed on rebalance.
         PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-        assertTrue(cntr.holes().isEmpty());
+        assertTrue(cntr.gaps().isEmpty());
 
         assertEquals(TOTAL, cntr.get());
 

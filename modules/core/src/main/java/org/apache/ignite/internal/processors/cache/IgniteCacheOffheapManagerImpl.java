@@ -37,6 +37,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -1594,7 +1596,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            pCntr.update(val);
+            try {
+                if (ctx.gridConfig().getIgniteInstanceName().endsWith("0") && partId() == 0 && grp.groupId() == CU.cacheId("default")) {
+                    System.out.println();
+                }
+
+                pCntr.update(val);
+            }
+            catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
+                U.error(log, "Received incompatible update counter from supplier node meaning that partition consistency " +
+                    "couldn't be restored. Most probably a node with most actual data is out of topology.");
+
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
 
         /** {@inheritDoc} */
