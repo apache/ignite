@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Geospatial indexing tests.
  */
-public class GeoSpatialIndexingTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class GeoSpatialIndexingTestSuite {
     /**
      * @return Test suite.
      */

@@ -1102,6 +1102,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -1138,6 +1139,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpWhenSeveralNodesFailing() throws Exception {
         int nodes = 6;
 

@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -89,12 +90,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testCaseSensitive() throws Exception {
         //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
         //TODO IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
@@ -119,11 +119,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
         //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
         //TODO: IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 final CacheConfiguration cfg = cacheConfig("cache1", true, Integer.class, Fact.class)

@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -48,6 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests cache in-place modification logic with iterative value increment.
  */
 @RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-2229")
 public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -111,8 +113,6 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
      */
     @Test
     public void testFullTextQueryNodeJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2229");
-
         for (int r = 0; r < 5; r++) {
             startGrids(GRID_CNT);
 

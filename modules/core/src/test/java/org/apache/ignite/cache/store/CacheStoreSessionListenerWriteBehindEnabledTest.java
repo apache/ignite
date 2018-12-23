@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -73,7 +72,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     private static final AtomicInteger uninitializedListenerCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 

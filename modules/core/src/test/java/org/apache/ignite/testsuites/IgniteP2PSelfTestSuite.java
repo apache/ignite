@@ -40,25 +40,26 @@ import org.apache.ignite.p2p.P2PScanQueryUndeployTest;
 import org.apache.ignite.p2p.P2PStreamingClassLoaderTest;
 import org.apache.ignite.p2p.SharedDeploymentTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * P2P test suite.
  */
-public class IgniteP2PSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteP2PSelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @return P2P tests suite.
-     * @throws Exception If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite P2P Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridP2PDoubleDeploymentSelfTest.class));

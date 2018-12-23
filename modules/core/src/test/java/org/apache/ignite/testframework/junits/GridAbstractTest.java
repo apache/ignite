@@ -41,9 +41,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiPredicate;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -121,11 +123,12 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -148,7 +151,8 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
-public abstract class GridAbstractTest extends TestCase {
+@RunWith(JUnit4.class)
+public abstract class GridAbstractTest extends LegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -176,13 +180,20 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Supports obtaining test name for JUnit4 cases. */
-    @Rule public transient TestName nameRule = new TestName();
+    /** Lock to maintain integrity of {@link TestCounters}. */
+    private final Lock runSerializer = new ReentrantLock();
 
     /** Manages test execution and reporting. */
     @Rule public transient TestRule runRule = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
-            runTest(base);
+            runSerializer.lock();
+            try {
+                assert getName() != null : "getName returned null";
+
+                runTestCase(base);
+            } finally {
+                runSerializer.unlock();
+            }
         }
     };
 
@@ -264,13 +275,6 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getName() {
-        String junit3Name = super.getName();
-
-        return junit3Name != null ? junit3Name : nameRule.getMethodName();
     }
 
     /**
@@ -552,9 +556,14 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * Called before execution of every test method in class.
+     * <p>
+     * Do not annotate with Before in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
      */
+    @Deprecated
     protected void beforeTest() throws Exception {
         // No-op.
     }
@@ -562,18 +571,28 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
      * execution.
+     * <p>
+     * Do not annotate with After in overriding methods.</p>
      *
      * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
      */
+    @Deprecated
     protected void afterTest() throws Exception {
         // No-op.
     }
 
     /**
      * Called before execution of all test methods in class.
+     * <p>
+     * Do not annotate with BeforeClass in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @BeforeClass} annotation.
      */
+    @Deprecated
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
@@ -583,16 +602,27 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * Called after execution of all test methods in class or
      * if {@link #beforeTestsStarted()} failed without execution of any test methods.
+     * <p>
+     * Do not annotate with AfterClass in overriding methods.</p>
      *
      * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @AfterClass} annotation.
      */
+    @Deprecated
     protected void afterTestsStopped() throws Exception {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Before
-    @Override public void setUp() throws Exception {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Do not annotate with Before in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
+     */
+    @Deprecated
+    @Override protected void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -1765,9 +1795,15 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** {@inheritDoc} */
-    @After
-    @Override public void tearDown() throws Exception {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Do not annotate with After in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
+     */
+    @Deprecated
+    @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
@@ -2093,17 +2129,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    @Override protected void runTest() throws Throwable {
-        runTest(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                GridAbstractTest.super.runTest();
-            }
-        });
-    }
-
-    /** */
-    private void runTest(Statement testRoutine) throws Throwable {
+    @Override void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
@@ -2496,6 +2522,12 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * Test counters.
+     *
+     * TODO IGNITE-10179 Try to make this class go away since its primary (possibly even only) purpose appears to
+     * support methods isFirstTest() and isLastTest() which in turn look like JUnit 3-specific workaround for
+     * functionality that is natively available in JUnit 4 via BeforeClass and AfterClass annotations. Along the way,
+     * find out if this will allow to get rid of runSerializer lock which is introduced with sole purpose to
+     * maintain integrity of TestCounters.
      */
     protected class TestCounters {
         /** */
@@ -2613,17 +2645,18 @@ public abstract class GridAbstractTest extends TestCase {
                 if (this0.forceTestCnt)
                     cnt = this0.testCnt;
                 else {
+                    BiPredicate<Method, Class<? extends Annotation>> annotated
+                        = (m, cls) -> m.getAnnotation(cls) != null;
+
                     cnt = 0;
 
                     for (Method m : this0.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()) && m.getParameterCount() == 0)
+                        if (annotated.test(m, Test.class) && !annotated.test(m, Ignore.class))
                             cnt++;
                 }
 
                 numOfTests = cnt;
             }
-
-            countTestCases();
 
             return numOfTests;
         }
