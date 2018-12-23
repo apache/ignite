@@ -22,6 +22,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataUpdateAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
+@TcpDiscoveryEnsureDelivery
 public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
