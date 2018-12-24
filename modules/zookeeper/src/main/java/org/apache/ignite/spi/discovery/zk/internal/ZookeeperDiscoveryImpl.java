@@ -311,8 +311,6 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteInternalFuture<Boolean> nodeStatusFut;
 
-        stats.onCommunicationError();
-
         for (;;) {
             checkState();
 
@@ -322,6 +320,8 @@ public class ZookeeperDiscoveryImpl {
                 ZkCommunicationErrorProcessFuture newFut = ZkCommunicationErrorProcessFuture.createOnCommunicationError(
                     this,
                     node.sessionTimeout() + 1000);
+
+                stats.onCommunicationError();
 
                 if (commErrProcFut.compareAndSet(fut, newFut)) {
                     fut = newFut;
