@@ -1580,8 +1580,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     private CacheOperationGate onEnter() {
         GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
 
-        return new CacheOperationGate(gate,
-            lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+        try {
+            return new CacheOperationGate(gate,
+                lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+        }
+        catch (IllegalStateException e) {
+            boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
+
+            if (isCacheProxy)
+                ((IgniteCacheProxyImpl) delegate).checkRestart(true);
+
+            throw e; // If we reached this line.
+        }
     }
 
     /**
