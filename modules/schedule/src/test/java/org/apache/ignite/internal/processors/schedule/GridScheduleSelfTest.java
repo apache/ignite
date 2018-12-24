@@ -305,6 +305,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAfterFirstLaunch() throws Exception {
         SchedulerFuture<Integer> fut = null;
 
