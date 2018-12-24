@@ -3298,7 +3298,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             Thread runner = runner();
 
-            if (runner == null) {
+            if (runner != null) {
                 LockSupport.unpark(runner);
 
                 U.join(runner());
