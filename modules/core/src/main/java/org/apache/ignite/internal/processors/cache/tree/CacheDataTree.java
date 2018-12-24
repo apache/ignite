@@ -129,6 +129,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         setDataPageScanEnabled(DFLT_DATA_PAGE_SCAN_ENABLED);
     }
 
+    /**
+     * @return {@code true} If data page scan is enabled.
+     */
+    public static boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled.get();
+    }
+
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
