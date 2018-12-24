@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
-import org.apache.ignite.internal.processors.security.GridSecuritySession;
+import org.apache.ignite.internal.processors.security.IgniteSecuritySession;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -271,7 +271,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    try(GridSecuritySession s = ctx.security().startSession(secCtx0)) {
+                    try(IgniteSecuritySession s = ctx.security().startSession(secCtx0)) {
                         authorize(req);
                     }
                 }

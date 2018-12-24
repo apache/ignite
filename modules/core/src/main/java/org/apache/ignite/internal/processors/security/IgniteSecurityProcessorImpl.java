@@ -57,18 +57,18 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySession startSession(SecurityContext secCtx) {
+    @Override public IgniteSecuritySession startSession(SecurityContext secCtx) {
         assert secCtx != null;
 
         SecurityContext old = curSecCtx.get();
 
         curSecCtx.set(secCtx);
 
-        return new GridSecuritySessionImpl(this, old);
+        return new IgniteSecuritySessionImpl(this, old);
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySession startSession(UUID nodeId) {
+    @Override public IgniteSecuritySession startSession(UUID nodeId) {
         return startSession(
             secCtxs.computeIfAbsent(nodeId,
                 uuid -> nodeSecurityContext(

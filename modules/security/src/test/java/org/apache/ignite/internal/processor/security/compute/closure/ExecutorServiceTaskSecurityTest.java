@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 /**
  * Testing permissions when the service task is executed cache operations on remote node.
  */
-public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
+public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /**
      *
      */

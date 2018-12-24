@@ -15,24 +15,24 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurityProcessor {
     /**
-     * Creates {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link IgniteSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * session {@link GridSecuritySession} will be closed.
+     * session {@link IgniteSecuritySession} will be closed.
      *
      * @param secCtx Security Context.
      * @return Grid security Session.
      */
-    public GridSecuritySession startSession(SecurityContext secCtx);
+    public IgniteSecuritySession startSession(SecurityContext secCtx);
 
     /**
-     * Creates {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link IgniteSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * node with given noddeId until session {@link GridSecuritySession} will be closed.
+     * node with given noddeId until session {@link IgniteSecuritySession} will be closed.
      *
      * @param nodeId Node id.
      * @return Grid security Session.
      */
-    public GridSecuritySession startSession(UUID nodeId);
+    public IgniteSecuritySession startSession(UUID nodeId);
 
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,

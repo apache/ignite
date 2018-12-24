@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissi
 import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForExecutorServiceTest;
 import org.apache.ignite.internal.processor.security.compute.closure.ComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.closure.DistributedClosureSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.closure.ExecuteServiceTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.closure.ExecutorServiceTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerCachePermissionTest;
 import org.apache.ignite.internal.processor.security.datastreamer.closure.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
@@ -68,7 +68,7 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(DistributedClosureSecurityTest.class));
         suite.addTest(new TestSuite(ComputeTaskSecurityTest.class));
-        suite.addTest(new TestSuite(ExecuteServiceTaskSecurityTest.class));
+        suite.addTest(new TestSuite(ExecutorServiceTaskSecurityTest.class));
         suite.addTest(new TestSuite(ScanQuerySecurityTest.class));
         suite.addTest(new TestSuite(EntryProcessorSecurityTest.class));
         suite.addTest(new TestSuite(IgniteDataStreamerSecurityTest.class));
