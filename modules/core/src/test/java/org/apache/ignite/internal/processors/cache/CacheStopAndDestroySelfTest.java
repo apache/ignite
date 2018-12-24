@@ -45,8 +45,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,9 +61,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
 public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Key-value used at test. */
     private static String KEY_VAL = "1";
 
@@ -110,7 +105,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
             iCfg.setDataStorageConfiguration(memCfg);
         }
 
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
         iCfg.setCacheConfiguration();
