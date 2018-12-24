@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +45,11 @@ public interface DbCheckpointListener {
          * @param cacheOrGrpName Cache or group name.
          */
         public boolean needToSnapshot(String cacheOrGrpName);
+
+        /**
+         * @return Checkpoint tracker.
+         */
+        public CheckpointMetricsTracker tracker();
 
         /**
          * @return Context executor.

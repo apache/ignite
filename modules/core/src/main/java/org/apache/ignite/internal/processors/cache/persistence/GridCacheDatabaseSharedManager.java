@@ -3568,7 +3568,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasModifiedPages;
 
-            DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap());
+            DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap(), tracker);
 
             internalReadLock();
             try {
@@ -3595,10 +3595,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 ctx0.awaitPendingTasksFinished();
 
+                tracker.onListenersExecuteEnd();
+
                 if (curr.nextSnapshot)
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, ctx0.partitionStatMap());
 
                 fillCacheGroupState(cpRec);
+
+                tracker.onCacheGroupStateEnd();
 
                 cpPagesTuple = beginAllCheckpoints();
                 
@@ -3661,11 +3665,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
-                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
+                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, " +
+                                "checkpointBeforeLockTime=%sms, " +
+                                "checkpointLockWait=%dms, " +
+                                "checkpointExecuteListenersTime=%sms, " +
+                                "checkpointOffheapSaveFreeListTime=%sms, " +
+                                "checkpointOffheapSaveMetadataTime=%sms, " +
+                                "checkpointCacheGroupStateTime=%sms, " +
+                                "checkpointCalculatePagesTime=%sms, " +
                                 "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cp.checkpointMark(),
+                            tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
+                            tracker.executeListenersDuration(),
+                            tracker.offheapSaveFreeListMetadataDuration(),
+                            tracker.offheapSaveMetadataDuration(),
+                            tracker.cacheGroupStateDuration(),
+                            tracker.calculatePagesDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
@@ -3926,16 +3943,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private final PartitionAllocationMap map;
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
+            /** */
+            private final CheckpointMetricsTracker tracker;
 
             /**
              * @param curr Current checkpoint progress.
              * @param map Partition map.
+             * @param tracker Checkpoint tracker.
              */
             private DbCheckpointContextImpl(
                 CheckpointProgress curr,
-                PartitionAllocationMap map) {
+                PartitionAllocationMap map,
+                CheckpointMetricsTracker tracker) {
                 this.curr = curr;
                 this.map = map;
+                this.tracker = tracker;
                 this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
             }
 
@@ -3952,6 +3974,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public boolean needToSnapshot(String cacheOrGrpName) {
                 return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
+            }
+
+            /** {@inheritDoc} */
+            @Override public CheckpointMetricsTracker tracker() {
+                return tracker;
             }
 
             /** {@inheritDoc} */

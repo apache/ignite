@@ -195,7 +195,26 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        syncMetadata(ctx.executor(), store -> saveStoreMetadata(store, ctx, false, needSnapshot));
+        ctx.tracker().onOffheapSaveFreeListMetadataStart();
+
+        reuseList.saveMetadata();
+
+        for (CacheDataStore store : partDataStores.values()) {
+            RowStore rowStore0 = store.rowStore();
+
+            if (rowStore0 != null) {
+                CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
+
+                freeList.saveMetadata();
+            }
+        }
+
+        ctx.tracker().onOffheapSaveFreeListMetadataEnd();
+
+        for (CacheDataStore store : partDataStores.values())
+            saveStoreMetadata(store, ctx, false, needSnapshot);
+
+        ctx.tracker().onOffheapSaveMetadataEnd();
     }
 
     /** {@inheritDoc} */
@@ -256,11 +275,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean needSnapshot
     ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
-
+//
         if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-
-            freeList.saveMetadata();
+//            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
+//
+//            freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();

@@ -74,7 +74,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
     /** Cache size */
-    public static final int CACHE_SIZE = 10000;
+    public static final int CACHE_SIZE = 100000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -126,7 +126,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-            .setAffinity(new RendezvousAffinityFunction(false, 64))
+            .setAffinity(new RendezvousAffinityFunction(false, 1024))
             .setIndexedTypes(String.class, String.class);
     }
 
@@ -330,5 +330,25 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         assertTrue("Size after repeated put operations should be not more than on 5% greater. " +
                 "Size before = " + totalPartSizeBeforeStop.get() + ", Size after = " + totalPartSizeAfterRestore.get(),
             totalPartSizeBeforeStop.get() > correctedRestoreSize);
+    }
+
+    @Test
+    public void testRestorFreeListCorrectlyAfterRandomStop2() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+        ignite0.cluster().active(true);
+
+        Random random = new Random();
+
+        List<T2<Integer, byte[]>> cachedEntry = new ArrayList<>();
+
+        IgniteCache<Integer, Object> cache = ignite0.cache(CACHE_NAME);
+
+        for (int j = 0; j < CACHE_SIZE; j++) {
+            byte[] val = new byte[random.nextInt(3072)];
+
+            cache.put(j, val);
+
+//            cachedEntry.add(new T2<>(j, val));
+        }
     }
 }

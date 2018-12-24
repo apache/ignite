@@ -75,6 +75,11 @@ public class CheckpointMetricsTracker {
 
     /** */
     private long walCpRecordFsyncEnd;
+    private long listenersExecuteEnd;
+    private long cacheGroupStateEnd;
+    private long offheapSaveFreeListMetadataStart;
+    private long offheapSaveFreeListMetadataEnd;
+    private long offheapSaveMetadataEnd;
 
     /**
      * Increments counter if copy on write page was written.
@@ -145,6 +150,23 @@ public class CheckpointMetricsTracker {
     public void onEnd() {
         cpEnd = System.currentTimeMillis();
     }
+    public void onListenersExecuteEnd() {
+        listenersExecuteEnd = System.currentTimeMillis();
+    }
+    public void onCacheGroupStateEnd() {
+        cacheGroupStateEnd = System.currentTimeMillis();
+    }
+    public void onOffheapSaveFreeListMetadataStart() {
+        offheapSaveFreeListMetadataStart = System.currentTimeMillis();
+    }
+
+    public void onOffheapSaveFreeListMetadataEnd() {
+        offheapSaveFreeListMetadataEnd = System.currentTimeMillis();
+    }
+
+    public void onOffheapSaveMetadataEnd() {
+        offheapSaveMetadataEnd = System.currentTimeMillis();
+    }
 
     /**
      *
@@ -174,6 +196,26 @@ public class CheckpointMetricsTracker {
         return cpMarkStart - cpLockWaitStart;
     }
 
+    public long beforeLockDuration() {
+        return cpLockWaitStart - cpStart;
+    }
+
+    public long executeListenersDuration() {
+        return listenersExecuteEnd - cpMarkStart;
+    }
+
+    public long cacheGroupStateDuration() {
+        return cacheGroupStateEnd - listenersExecuteEnd;
+    }
+
+    public long offheapSaveFreeListMetadataDuration() {
+        return offheapSaveFreeListMetadataEnd - offheapSaveFreeListMetadataStart;
+    }
+
+    public long offheapSaveMetadataDuration() {
+        return offheapSaveMetadataEnd - offheapSaveFreeListMetadataEnd;
+    }
+
     /**
      * @return Checkpoint mark duration.
      */
@@ -186,6 +228,9 @@ public class CheckpointMetricsTracker {
      */
     public long lockHoldDuration() {
         return cpLockRelease - cpMarkStart;
+    }
+    public long calculatePagesDuration() {
+        return cpLockRelease - cacheGroupStateEnd;
     }
 
     /**
