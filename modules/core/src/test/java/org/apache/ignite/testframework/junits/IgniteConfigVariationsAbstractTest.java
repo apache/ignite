@@ -62,7 +62,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /** */
+    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
     private static VariationsTestsConfig testsCfgInjected;
 
     /**

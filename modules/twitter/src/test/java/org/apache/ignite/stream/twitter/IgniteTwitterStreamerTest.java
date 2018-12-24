@@ -63,8 +63,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * See <a href="http://wiremock.org/docs/junit-rule/">The JUnit 4.x Rule</a>. Also note that in order for this
-     * test to migrate from JUnit 3 to 4 WireMock version had to upgrade from {@code 1.57} to {@code 1.58}.
+     * See <a href="http://wiremock.org/docs/junit-rule/">The JUnit 4.x Rule</a>.
      */
     @ClassRule
     public static WireMockClassRule wireMockClsRule = new WireMockClassRule(WireMockConfiguration.DYNAMIC_PORT);
