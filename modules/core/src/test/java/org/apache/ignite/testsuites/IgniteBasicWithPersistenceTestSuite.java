@@ -18,11 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheBigEntryTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
@@ -30,7 +33,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
-import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -65,6 +68,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridMarshallerMappingConsistencyTest.class);
         suite.addTestSuite(SystemWorkersTerminationTest.class);
         suite.addTestSuite(FailureHandlingConfigurationTest.class);
+        suite.addTest(new JUnit4TestAdapter(SystemWorkersBlockingTest.class));
+        suite.addTest(new JUnit4TestAdapter(CheckpointReadLockFailureTest.class));
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
