@@ -438,12 +438,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 List<Integer> keys = testKeys(cache0);
 
+                final int ITERATIONS_COUNT = SF.applyLB(100, 5);
                 for (Integer key : keys) {
                     log.info("Test key: " + key);
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < ITERATIONS_COUNT; i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -525,7 +526,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < SF.applyLB(100, 10); i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -2919,8 +2920,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         ignite(0).createCache(ccfg);
 
         try {
-            final int ACCOUNTS = 50;
-            final int VAL_PER_ACCOUNT = 1000;
+            final int ACCOUNTS = SF.applyLB(50, 5);
+            final int VAL_PER_ACCOUNT = SF.applyLB(1000, 10);
 
             IgniteCache<Integer, Account> cache0 = ignite(0).cache(ccfg.getName());
 
@@ -3057,7 +3058,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }, 2, "update-thread");
 
             try {
-                U.sleep(15_000);
+                U.sleep(SF.applyLB(15_000, 2_000));
             }
             finally {
                 stop.set(true);
@@ -3880,7 +3881,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        for (int i = 0; i < 1000; i++) {
+                        final int ITERATIONS_COUNT = SF.applyLB(1000, 50);
+                        for (int i = 0; i < ITERATIONS_COUNT; i++) {
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val1 = cache.get(key1);
@@ -4128,8 +4130,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         try {
             final List<Ignite> clients = clients();
 
-            final int ACCOUNTS = 100;
-            final int VAL_PER_ACCOUNT = 10_000;
+            final int ACCOUNTS = SF.applyLB(100, 10);
+            final int VAL_PER_ACCOUNT = SF.applyLB(10_000, 50);
 
             IgniteCache<Integer, Account> srvCache = srv.cache(cacheName);
 
@@ -4138,9 +4140,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger();
 
-            final int THREADS = 20;
+            final int THREADS =  SF.applyLB(20, 5);
 
-            final long testTime = 30_000;
+            final long testTime =  SF.applyLB(30_000, 5_000);
 
             final long stopTime = System.currentTimeMillis() + testTime;
 
@@ -4491,7 +4493,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }, "update-thread-" + i));
             }
 
-            U.sleep(60_000);
+            U.sleep(SF.applyLB(60_000, 5_000));
 
             finished.set(true);
 
