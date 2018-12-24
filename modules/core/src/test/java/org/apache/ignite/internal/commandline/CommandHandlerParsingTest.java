@@ -325,7 +325,7 @@ public class CommandHandlerParsingTest extends TestCase {
                     break;
                 }
                 case TX: {
-                    args = hnd.parseAndValidate(asList(cmd.text(), "xid", "xid1", "minDuration", "10", "kill", "--yes"));
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
                     assertEquals(cmd, args.command());
                     assertEquals(DFLT_HOST, args.host());
@@ -461,8 +461,8 @@ public class CommandHandlerParsingTest extends TestCase {
         catch (IllegalArgumentException ignored) {
         }
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "120", "minSize", "10", "limit", "100", "order", "SIZE",
-            "servers"));
+        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
+            "--servers"));
 
         VisorTxTaskArg arg = args.transactionArguments();
 
@@ -472,8 +472,8 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
         assertEquals(VisorTxProjection.SERVER, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "130", "minSize", "1", "limit", "60", "order", "DURATION",
-            "clients"));
+        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
+            "--clients"));
 
         arg = args.transactionArguments();
 
@@ -483,7 +483,7 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
         assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "nodes", "1,2,3"));
+        args = hnd.parseAndValidate(asList("--tx", "--nodes", "1,2,3"));
 
         arg = args.transactionArguments();
 
