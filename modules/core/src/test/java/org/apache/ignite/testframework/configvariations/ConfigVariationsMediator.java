@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testframework.configvariations;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
@@ -28,9 +26,6 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
  * Mediates passing config variations to respective tests.
  */
 class ConfigVariationsMediator {
-    /** IMPL NOTE this relies on serialized execution of test cases. */
-    private static final Map<JUnit4TestAdapter, VariationsTestsConfig> map = new IdentityHashMap<>();
-
     /** */
     private final JUnit4TestAdapter adapter;
 
@@ -56,18 +51,12 @@ class ConfigVariationsMediator {
     /** */
     private JUnit4TestAdapter prepare(Class<? extends IgniteConfigVariationsAbstractTest> cls,
         VariationsTestsConfig cfg) {
-        JUnit4TestAdapter res = new JUnit4TestAdapter(cls) {
-            final JUnit4TestAdapter self = this;
-
+        return new JUnit4TestAdapter(cls) {
             @Override public void run(TestResult tr) {
-                IgniteConfigVariationsAbstractTest.injectTestsConfiguration(map.get(self));
+                IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfg);
 
                 super.run(tr);
             }
         };
-
-        map.put(res, cfg);
-
-        return res;
     }
 }

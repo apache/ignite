@@ -73,4 +73,62 @@ public abstract class LegacySupport extends Assert {
         }
         if (e != null) throw e;
     }
+
+    /**
+     * Called before execution of every test method in class.
+     * <p>
+     * Do not annotate with Before in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTest()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
+     */
+    @Deprecated
+    protected void beforeTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
+     * execution.
+     * <p>
+     * Do not annotate with After in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
+     */
+    @Deprecated
+    protected void afterTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called before execution of all test methods in class.
+     * <p>
+     * Do not annotate with BeforeClass in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @BeforeClass} annotation.
+     */
+    @Deprecated
+    protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called after execution of all test methods in class or
+     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
+     * <p>
+     * Do not annotate with AfterClass in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @AfterClass} annotation.
+     */
+    @Deprecated
+    protected void afterTestsStopped() throws Exception {
+        // No-op.
+    }
 }
