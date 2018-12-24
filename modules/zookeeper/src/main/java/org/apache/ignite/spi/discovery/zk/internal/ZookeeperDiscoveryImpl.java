@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -310,10 +311,12 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteInternalFuture<Boolean> nodeStatusFut;
 
+        stats.onCommunicationError();
+
         for (;;) {
             checkState();
 
-            ZkCommunicationErrorProcessFuture  fut = commErrProcFut.get();
+            ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
 
             if (fut == null || fut.isDone()) {
                 ZkCommunicationErrorProcessFuture newFut = ZkCommunicationErrorProcessFuture.createOnCommunicationError(

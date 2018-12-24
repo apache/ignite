@@ -3618,6 +3618,19 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         assertEquals(cache.get(1), 1);
 
         assertEquals(1, srv1.cluster().forClients().nodes().size());
+
+        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+        IgniteEx ignite = grid("server1-block");
+
+        ObjectName spiName = U.makeMBeanName(ignite.context().igniteInstanceName(), "SPIs",
+            ZookeeperDiscoverySpi.class.getSimpleName());
+
+        ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+
+        assertNotNull(bean);
+
+        assertEquals(0, bean.getCommErrorProcNum());
     }
 
     /**
