@@ -38,10 +38,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class WalCompactionTest extends GridCommonAbstractTest {
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
@@ -108,6 +112,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
         testApplyingUpdatesFromCompactedWal(false);
     }
@@ -117,6 +122,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
         testApplyingUpdatesFromCompactedWal(true);
     }
@@ -233,6 +239,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsFsync() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.FSYNC);
     }
@@ -240,6 +247,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsLogOnly() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.LOG_ONLY);
     }
@@ -313,6 +321,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);

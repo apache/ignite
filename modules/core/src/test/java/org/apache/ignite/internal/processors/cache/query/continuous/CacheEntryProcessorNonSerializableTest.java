@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -240,9 +241,9 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
     public void testMvccPessimisticOnePhaseCommitWithNearCache() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -260,10 +261,9 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -281,10 +281,9 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccPessimisticWithNearCache() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 
@@ -303,10 +302,9 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccPessimisticFullSyncWithNearCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(new NearCacheConfiguration<>());
 

@@ -51,6 +51,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -241,10 +242,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
     @Test
     public void testSeveralLongRunningMvccTxs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
 
@@ -364,10 +364,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
     @Test
     public void testLongRunningMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
 

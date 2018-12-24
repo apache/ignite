@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -181,10 +182,9 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5956")
     @Test
     public void testJoin2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5956");
-
         join(true, PARTITIONED, REPLICATED, PARTITIONED);
     }
 

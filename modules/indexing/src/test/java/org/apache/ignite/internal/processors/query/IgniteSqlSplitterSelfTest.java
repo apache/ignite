@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -153,10 +154,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10199")
     @Test
     public void testMergeJoin() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10199");
-
         IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,
             Integer.class, Org.class));
 
@@ -183,6 +183,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testPushDownSubquery() {
         IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,

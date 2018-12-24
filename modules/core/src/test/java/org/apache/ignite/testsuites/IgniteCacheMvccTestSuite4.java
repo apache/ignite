@@ -91,11 +91,14 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheJdbcBl
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite4 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite4 {
     /**
      * @return IgniteCache test suite.
      */

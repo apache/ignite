@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -99,10 +100,9 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187,https://issues.apache.org/jira/browse/IGNITE-7956")
+    @Test
     public void testMvccTransactionalNearEvictionMaxSize() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkNearEvictionMaxSize();

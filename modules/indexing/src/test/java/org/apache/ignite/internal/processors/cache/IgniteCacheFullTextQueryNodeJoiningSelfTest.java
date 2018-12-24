@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,6 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests cache in-place modification logic with iterative value increment.
  */
 @RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-2229")
 public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstractTest {
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 3;
@@ -99,8 +101,6 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
      */
     @Test
     public void testFullTextQueryNodeJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2229");
-
         for (int r = 0; r < 5; r++) {
             startGrids(GRID_CNT);
 

@@ -37,6 +37,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -429,10 +430,9 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10021")
     @Test
     public void testCancelAllTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
-
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;

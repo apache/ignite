@@ -39,9 +39,8 @@ import org.junit.runners.AllTests;
 public class DatasetTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(DatasetTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(DatasetWrapperTest.class));
         suite.addTest(new JUnit4TestAdapter(DatasetAffinityFunctionWrapperTest.class));
         suite.addTest(new JUnit4TestAdapter(PartitionDataStorageTest.class));
@@ -50,11 +49,9 @@ public class DatasetTestSuite {
         suite.addTest(new JUnit4TestAdapter(SimpleLabeledDatasetTest.class));
         suite.addTest(new JUnit4TestAdapter(DatasetWrapperTest.class));
         suite.addTest(new JUnit4TestAdapter(ObjectHistogramTest.class));
-
-        /** JUnit 3 tests. */
-        suite.addTestSuite(ComputeUtilsTest.class);
-        suite.addTestSuite(CacheBasedDatasetBuilderTest.class);
-        suite.addTestSuite(CacheBasedDatasetTest.class);
+        suite.addTest(new JUnit4TestAdapter(ComputeUtilsTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBasedDatasetBuilderTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBasedDatasetTest.class));
 
         return suite;
     }

@@ -18,11 +18,13 @@
 package org.apache.ignite.stream.twitter;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.twitter.hbc.core.HttpHosts;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import junit.framework.TestResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -30,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.internal.runners.JUnit38ClassRunner;
@@ -47,7 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Test for {@link TwitterStreamer}. Tests Public Status streaming API https://dev.twitter.com/streaming/public.
  */
-@RunWith(JUnit38ClassRunner.class)
+@RunWith(JUnit38ClassRunner.class) // TODO IGNITE-10739 migrate to JUnit 4.
 public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
@@ -63,12 +66,43 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /** See <a href="http://wiremock.org/docs/junit-rule/">The JUnit 4.x Rule </a> */
+    @ClassRule
+    public static WireMockClassRule wireMockClsRule = new WireMockClassRule(WireMockConfiguration.DYNAMIC_PORT);
+
     /** Embedded mock HTTP server's for Twitter API rule. */
     @Rule
-    public final WireMockRule wireMockRule = new WireMockRule();
+    public WireMockClassRule wireMockRule = wireMockClsRule;
 
     /** Embedded mock HTTP server for Twitter API. */
-    public final WireMockServer mockServer = new WireMockServer(); //Starts server on 8080 port.
+    public final WireMockServer mockSrv = new WireMockServer(); //Starts server on 8080 port.
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public int countTestCases() {
+        return countTestCasesFallback();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public void run(TestResult res) {
+        runFallback(res);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public String getName() {
+        return getNameFallback();
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -76,20 +110,20 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
+    @Override public void beforeTest() {
         grid().getOrCreateCache(defaultCacheConfiguration());
 
-        mockServer.start();
+        mockSrv.start();
 
         stubFor(get(urlMatching("/1.1" + MOCK_TWEET_PATH + ".*")).willReturn(aResponse().
             withHeader("Content-Type", "text/plain").withBody(tweet.length() + "\n" + tweet)));
     }
 
     /** {@inheritDoc} */
-    @Override public void afterTest() throws Exception {
+    @Override public void afterTest() {
         stopAllGrids();
 
-        mockServer.stop();
+        mockSrv.stop();
     }
 
     /**
@@ -122,7 +156,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private void executeStreamer(TwitterStreamer streamer) throws InterruptedException, TwitterException {
         // Checking streaming.
 
-        CacheListener listener = subscribeToPutEvents();
+        CacheListener lsnr = subscribeToPutEvents();
 
         streamer.start();
 
@@ -135,12 +169,12 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        CountDownLatch latch = listener.getLatch();
+        CountDownLatch latch = lsnr.getLatch();
 
         // Enough tweets was handled in 10 seconds. Limited by test's timeout.
         latch.await();
 
-        unsubscribeToPutEvents(listener);
+        unsubscribeToPutEvents(lsnr);
 
         streamer.stop();
 
@@ -159,13 +193,13 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
         IgniteCache<Long, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
-        String cachedValue = cache.get(status.getId());
+        String cachedVal = cache.get(status.getId());
 
         // Tweet successfully put to cache.
-        assertTrue(cachedValue != null && cachedValue.equals(status.getText()));
+        assertTrue(cachedVal != null && cachedVal.equals(status.getText()));
 
         // Same tweets does not produce duplicate entries.
-        assertTrue(cache.size() == 1);
+        assertEquals(1, cache.size());
     }
 
     /**
@@ -175,20 +209,20 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         Ignite ignite = grid();
 
         // Listen to cache PUT events and expect as many as messages as test data items.
-        CacheListener listener = new CacheListener();
+        CacheListener lsnr = new CacheListener();
 
-        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(lsnr, EVT_CACHE_OBJECT_PUT);
 
-        return listener;
+        return lsnr;
     }
 
     /**
-     * @param listener Cache listener.
+     * @param lsnr Cache listener.
      */
-    private void unsubscribeToPutEvents(CacheListener listener) {
+    private void unsubscribeToPutEvents(CacheListener lsnr) {
         Ignite ignite = grid();
 
-        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(lsnr, EVT_CACHE_OBJECT_PUT);
     }
 
     /**
@@ -212,7 +246,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /**
      * Listener.
      */
-    private class CacheListener implements IgnitePredicate<CacheEvent> {
+    private static class CacheListener implements IgnitePredicate<CacheEvent> {
 
         /** */
         private final CountDownLatch latch = new CountDownLatch(CACHE_ENTRY_COUNT);
@@ -228,8 +262,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
          * @param evt Cache Event.
          * @return {@code true}.
          */
-        @Override
-        public boolean apply(CacheEvent evt) {
+        @Override public boolean apply(CacheEvent evt) {
             latch.countDown();
 
             return true;

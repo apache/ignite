@@ -30,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -102,8 +103,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      */
     @Test
     public void testMvccTx() throws Exception {
-        if (!singleNode())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-7187", singleNode());
 
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 

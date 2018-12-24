@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -104,10 +105,9 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testCachePreloadMvcc2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
         cachePreloadTest();
@@ -169,10 +169,9 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testCachePreloadMvcc6() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         sameGrp = false;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
