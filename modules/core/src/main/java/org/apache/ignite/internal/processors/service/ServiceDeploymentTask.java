@@ -803,19 +803,6 @@ class ServiceDeploymentTask {
     }
 
     /**
-     * Releases resources to reduce memory usages.
-     */
-    protected void clear() {
-        singleDepsMsgs.clear();
-        expDeps.clear();
-        depErrors.clear();
-        remaining.clear();
-
-        if (evt instanceof DiscoveryCustomEvent)
-            ((DiscoveryCustomEvent)evt).customMessage(null);
-    }
-
-    /**
      * Returns if the task completed.
      *
      * @return {@code true} if the task completed, otherwise {@code false}.

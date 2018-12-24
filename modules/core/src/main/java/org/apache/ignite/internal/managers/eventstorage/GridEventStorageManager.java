@@ -47,7 +47,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -855,20 +854,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         assert evt != null;
 
         if (lsnrs != null) {
-            final boolean needLock = evt.type() == EVT_DISCOVERY_CUSTOM_EVT;
+            notifyListeners(lsnrs.highPriorityLsnrs, evt, params);
 
-            if (needLock)
-                ((DiscoveryCustomEvent)evt).lockNullifyingCustomMessage();
-
-            try {
-                notifyListeners(lsnrs.highPriorityLsnrs, evt, params);
-
-                notifyListeners(lsnrs.lsnrs, evt, params);
-            }
-            finally {
-                if (needLock)
-                    ((DiscoveryCustomEvent)evt).unlockNullifyingCustomMessage();
-            }
+            notifyListeners(lsnrs.lsnrs, evt, params);
         }
     }
 
