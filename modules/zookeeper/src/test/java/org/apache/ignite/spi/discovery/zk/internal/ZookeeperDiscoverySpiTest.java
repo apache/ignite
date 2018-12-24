@@ -3595,6 +3595,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test reproduces failure in case of client resolution failure
+     * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi#createTcpClient} from server side, further
+     * client reconnect and proper grid work.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -3605,7 +3609,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         clientModeThreadLocal(true);
 
-        IgniteEx cli = startGrid("client");
+        IgniteEx cli = startGrid("client-block");
 
         IgniteCache<Object, Object> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -5691,7 +5695,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * Block communications.
      */
-    private class TcpBlockCommunicationSpi extends TcpCommunicationSpi {
+    private static class TcpBlockCommunicationSpi extends TcpCommunicationSpi {
         /**
          * Whether this instance should actually block.
          */

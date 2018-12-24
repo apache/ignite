@@ -300,7 +300,9 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void resolveCommunicationError(ClusterNode node0, Exception err) {
-        if (node0.isClient())
+        ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
+
+        if (node0.isClient() && fut == null)
             return;
 
         ZookeeperClusterNode node = node(node0.id());
@@ -313,7 +315,7 @@ public class ZookeeperDiscoveryImpl {
         for (;;) {
             checkState();
 
-            ZkCommunicationErrorProcessFuture fut = commErrProcFut.get();
+            fut = commErrProcFut.get();
 
             if (fut == null || fut.isDone()) {
                 ZkCommunicationErrorProcessFuture newFut = ZkCommunicationErrorProcessFuture.createOnCommunicationError(
