@@ -50,7 +50,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests of determined assignments function of {@link GridServiceProcessor}.
+ * Tests of determined assignments function of {@link IgniteServiceProcessor}.
  */
 @RunWith(Parameterized.class)
 public class ServiceReassignmentFunctionSelfTest {

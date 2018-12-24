@@ -35,7 +35,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
-public class NonSerializableStaticServiceDeploymentTest extends GridCommonAbstractTest {
+public class ServiceDeploymentNonSerializableStaticConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_SERVICE_NAME = "nonSerializableService";
 

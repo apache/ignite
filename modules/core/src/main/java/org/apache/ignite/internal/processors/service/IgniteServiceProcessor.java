@@ -1765,7 +1765,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 desc.topologySnapshot(top);
         });
     }
-    
+
     /**
      * Enters busy state.
      *

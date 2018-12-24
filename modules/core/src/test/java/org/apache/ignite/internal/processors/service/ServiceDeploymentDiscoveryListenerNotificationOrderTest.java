@@ -42,7 +42,7 @@
   * because it may be nullified in PME process at the end of exchange in {@link GridDhtPartitionsExchangeFuture#onDone()}.
   */
  @RunWith(JUnit4.class)
- public class ServiceDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
+ public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
      /**
       * <b>Strongly depends on internal implementation of {@link GridEventStorageManager}.</b>
       * <p/>
