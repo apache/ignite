@@ -39,8 +39,6 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             pc.reserve(pair[1]);
         }
 
-        System.out.println();
-
         pc.update(0, 1);
         pc.update(2, 1);
 
@@ -79,6 +77,10 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         pc2.update(0, 1);
 
         assertEquals(pc, pc2);
+    }
+
+    public void testPrimaryModeBatch() {
+
     }
 
     public void testBackupModeBatch() {

@@ -472,14 +472,10 @@ public class PartitionUpdateCounter {
 
         PartitionUpdateCounter cntr = (PartitionUpdateCounter)o;
 
-        if (initCntr != cntr.initCntr)
-            return false;
         if (!queue.equals(cntr.queue))
             return false;
-        if (this.reserveCntr.get() != cntr.reserveCntr.get())
-            return false;
-        return this.cntr.get() == cntr.cntr.get();
 
+        return this.cntr.get() == cntr.cntr.get();
     }
 
     public long reserved() {
@@ -488,7 +484,7 @@ public class PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "Counter [lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
+        return "Counter [init=" + initCntr + ", lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
     }
 
     public static class IllegalUpdateCounterException extends IgniteCheckedException {

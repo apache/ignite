@@ -2101,14 +2101,33 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * @return List of last keys.
      */
-    protected List<Integer> loadDataToPartition(int p, String gridName, String cacheName, int total, int skip) {
+    protected List<Integer> loadDataToPartition(int p, String gridName, String cacheName, int total, int skip, int... putType) {
         IgniteCache<Integer, Integer> cache = grid(gridName).cache(cacheName);
 
         List<Integer> keys = partitionKeys(cache, p, total, skip);
 
+        int mode = putType != null && putType.length > 0 ? putType[0] : 0;
+
         Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k));
 
-        cache.putAll(map);
+        switch (mode) {
+            case 0:
+                cache.putAll(map);
+
+                break;
+            case 1:
+                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                    ds.addData(map);
+                }
+
+                break;
+            case 2:
+                for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+                    cache.put(entry.getKey(), entry.getValue());
+                }
+
+                break;
+        }
 
         return keys;
     }

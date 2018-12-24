@@ -1600,8 +1600,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 pCntr.update(val);
             }
             catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
-                U.error(log, "Received incompatible update counter from supplier node meaning that partition consistency " +
-                    "couldn't be restored. Most probably a node with most actual data is out of topology.");
+                U.error(log, "Partition inconsistency is detected. " +
+                    "Most probably a node with most actual data is out of topology or data streamer on " +
+                    "transactional cache in allowOverwrite=false mode is used concurrently with transactions in the same time.");
 
                 ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
