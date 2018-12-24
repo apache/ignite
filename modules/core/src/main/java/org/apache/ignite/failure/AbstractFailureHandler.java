@@ -18,10 +18,14 @@
 package org.apache.ignite.failure;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
@@ -30,7 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
     @GridToStringInclude
-    private Set<FailureType> ignoredFailureTypes = Collections.emptySet();
+    private Set<FailureType> ignoredFailureTypes =
+            Collections.unmodifiableSet(EnumSet.of(SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT));
 
     /** {@inheritDoc} */
     @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {

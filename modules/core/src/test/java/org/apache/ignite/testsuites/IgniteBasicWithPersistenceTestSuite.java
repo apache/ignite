@@ -20,8 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
@@ -61,6 +63,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridMarshallerMappingConsistencyTest.class);
         suite.addTestSuite(SystemWorkersTerminationTest.class);
         suite.addTestSuite(FailureHandlingConfigurationTest.class);
+        suite.addTestSuite(SystemWorkersBlockingTest.class);
+        suite.addTestSuite(CheckpointReadLockFailureTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridCommandHandlerSslTest.class);
