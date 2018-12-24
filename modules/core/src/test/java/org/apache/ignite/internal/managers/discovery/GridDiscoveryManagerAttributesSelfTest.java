@@ -27,8 +27,6 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,9 +46,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static DeploymentMode mode;
@@ -74,12 +69,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
-
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-
-        discoverySpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
     }

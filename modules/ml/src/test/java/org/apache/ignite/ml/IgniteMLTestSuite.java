@@ -48,7 +48,7 @@ import org.junit.runners.AllTests;
 public class IgniteMLTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(IgniteMLTestSuite.class.getSimpleName());
 
         /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(MathImplMainTestSuite.class));

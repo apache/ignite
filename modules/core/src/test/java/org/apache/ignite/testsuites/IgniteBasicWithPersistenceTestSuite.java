@@ -39,11 +39,14 @@ import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Basic test suite.
  */
-public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBasicWithPersistenceTestSuite {
     /**
      * @return Test suite.
      */

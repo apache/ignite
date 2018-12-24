@@ -25,9 +25,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -45,9 +42,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String SERVICE_NAME = "test-service";
 
     /** */
@@ -62,10 +56,6 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-        discoverySpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoverySpi);
 
         cfg.setClientMode(client);
 
