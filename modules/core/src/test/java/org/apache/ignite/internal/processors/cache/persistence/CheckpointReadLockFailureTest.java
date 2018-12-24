@@ -40,7 +40,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /** */
     private static final AbstractFailureHandler FAILURE_HND = new AbstractFailureHandler() {
         @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-            if (failureCtx.type() != FailureType.SYSTEM_CRITICAL_OPERATION_FAILED)
+            if (failureCtx.type() != FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT)
                 return true;
 
             if (hndLatch != null)
@@ -67,7 +67,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         Set<FailureType> ignoredFailureTypes = new HashSet<>(FAILURE_HND.getIgnoredFailureTypes());
-        ignoredFailureTypes.remove(FailureType.SYSTEM_CRITICAL_OPERATION_FAILED);
+        ignoredFailureTypes.remove(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT);
 
         FAILURE_HND.setIgnoredFailureTypes(ignoredFailureTypes);
     }

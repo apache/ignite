@@ -25,7 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_FAILED;
+import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 
 /**
@@ -37,7 +37,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
     @GridToStringInclude
     private Set<FailureType> ignoredFailureTypes = Collections.unmodifiableSet(
-        new HashSet<>(Arrays.asList(SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_FAILED)));
+        new HashSet<>(Arrays.asList(SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT)));
 
     /**
      * Sets failure types that must be ignored by failure handler.

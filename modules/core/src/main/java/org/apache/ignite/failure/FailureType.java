@@ -33,6 +33,6 @@ public enum FailureType {
     /** Critical error - error which leads to the system's inoperability. */
     CRITICAL_ERROR,
 
-    /** System critical operation has failed. */
-    SYSTEM_CRITICAL_OPERATION_FAILED;
+    /** System-critical operation has been timed out. */
+    SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 }
