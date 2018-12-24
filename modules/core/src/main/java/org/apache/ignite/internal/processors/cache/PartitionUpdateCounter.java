@@ -100,16 +100,6 @@ public class PartitionUpdateCounter {
     }
 
     /**
-     * Adds delta to current counter value.
-     *
-     * @param delta Delta.
-     * @return Value before add.
-     */
-    public long getAndAdd(long delta) {
-        return cntr.getAndAdd(delta);
-    }
-
-    /**
      * @return Next update counter.
      */
     public long next() {
