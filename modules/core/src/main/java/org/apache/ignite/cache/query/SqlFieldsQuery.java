@@ -381,9 +381,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * Sets data page scan enabled or disabled.
      *
      * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     * @return {@code this} for chaining.
      */
-    public void setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+    public SqlFieldsQuery setDataPageScanEnabled(Boolean dataPageScanEnabled) {
         this.dataPageScanEnabled = dataPageScanEnabled;
+
+        return this;
     }
 
     /**
