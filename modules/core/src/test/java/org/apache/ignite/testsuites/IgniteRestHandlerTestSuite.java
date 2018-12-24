@@ -24,11 +24,14 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheComman
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * REST support tests.
  */
-public class IgniteRestHandlerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteRestHandlerTestSuite {
     /**
      * @return Test suite.
      */

@@ -21,11 +21,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite2;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryLazyTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryCacheQueryLazyTestSuite2 {
     /**
      * @return Test suite.
      * @throws Exception If failed.

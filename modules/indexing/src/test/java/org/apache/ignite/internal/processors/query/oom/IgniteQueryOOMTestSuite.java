@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for queries produces OOME in some cases.
  */
-public class IgniteQueryOOMTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteQueryOOMTestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
@@ -31,8 +35,8 @@ public class IgniteQueryOOMTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Ignite Queries OOM Test Suite");
 
-        suite.addTestSuite(QueryOOMWithoutQueryParallelismTest.class);
-        suite.addTestSuite(QueryOOMWithQueryParallelismTest.class);
+        suite.addTest(new JUnit4TestAdapter(QueryOOMWithoutQueryParallelismTest.class));
+        suite.addTest(new JUnit4TestAdapter(QueryOOMWithQueryParallelismTest.class));
 
         return suite;
     }

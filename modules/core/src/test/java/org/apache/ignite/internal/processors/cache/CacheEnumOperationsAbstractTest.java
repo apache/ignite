@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -110,8 +111,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      */
     @Test
     public void testMvccTx() throws Exception {
-        if (!singleNode())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-7187", singleNode());
 
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 

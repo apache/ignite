@@ -29,11 +29,14 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheQuerySelfTestSuite4 {
     /**
      * @return Test suite.
      */

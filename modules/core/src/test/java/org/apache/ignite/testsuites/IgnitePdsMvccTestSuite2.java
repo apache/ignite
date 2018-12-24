@@ -44,11 +44,14 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgnitePdsMvccTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsMvccTestSuite2 {
     /**
      * @return Suite.
      */

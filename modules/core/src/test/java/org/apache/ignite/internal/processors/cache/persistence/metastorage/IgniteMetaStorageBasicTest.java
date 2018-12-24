@@ -193,6 +193,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing data migration between metastorage partitions (delete partition case)
      */
+    @Test
     public void testDeletePartitionFromMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>();
 
@@ -302,6 +303,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing data migration between metastorage partitions
      */
+    @Test
     public void testMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>(5_000);
 
@@ -374,6 +376,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing temporary storage
      */
+    @Test
     public void testMetaStoreMigrationTmpStorage() throws Exception {
         List<IgniteBiTuple<String, byte[]>> data = generateTestData(2_000, -1).collect(Collectors.toList());
 

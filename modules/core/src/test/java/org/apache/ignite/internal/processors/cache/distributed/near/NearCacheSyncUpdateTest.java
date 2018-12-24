@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -91,10 +92,9 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testNearCacheSyncUpdateMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         nearCacheSyncUpdateTx(TRANSACTIONAL_SNAPSHOT);
     }
 

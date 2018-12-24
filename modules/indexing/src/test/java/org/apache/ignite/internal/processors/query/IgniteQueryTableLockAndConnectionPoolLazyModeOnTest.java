@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Tests for lazy query execution.
  */
+@RunWith(JUnit4.class)
 public class IgniteQueryTableLockAndConnectionPoolLazyModeOnTest
     extends AbstractQueryTableLockAndConnectionPoolSelfTest {
     /** {@inheritDoc} */
