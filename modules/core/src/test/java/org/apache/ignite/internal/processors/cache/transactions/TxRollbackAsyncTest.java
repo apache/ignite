@@ -1074,6 +1074,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 }
                 catch (Throwable e) {
                     keyLocked.onDone(e);
+
+                    throw new RuntimeException(e);
                 }
             }
         }, 1, "tx-lock-thread");
