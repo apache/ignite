@@ -28,9 +28,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -43,9 +40,6 @@ import org.junit.runners.JUnit4;
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
 public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean isClient = false;
 
@@ -64,12 +58,6 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg2 = cacheConfig("org", Integer.class, Organization.class).setQueryParallelism(qryParallelism);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
