@@ -178,7 +178,6 @@ class GridDhtPartitionSupplier {
      * @param nodeId Id of the node which sent the demand message.
      * @param demandMsg Demand message.
      */
-    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int topicId, UUID nodeId, GridDhtPartitionDemandMessage demandMsg) {
         assert demandMsg != null;
         assert nodeId != null;

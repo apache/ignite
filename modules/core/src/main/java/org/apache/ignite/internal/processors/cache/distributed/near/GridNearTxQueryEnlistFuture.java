@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -118,6 +119,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 for (ClusterNode pNode : primary)
                     updateMappings(pNode);
             }
+
+            if (primary.isEmpty())
+                throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
+                    "nodes left the grid).");
 
             boolean locallyMapped = primary.contains(cctx.localNode());
 

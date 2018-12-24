@@ -435,7 +435,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 H2RowCache cache = rowCache.forGroup(cacheInfo.groupId());
 
                 return new H2TreeIndex(
-                    cacheInfo.gridCacheContext(),
+                    cacheInfo.cacheContext(),
                     cache,
                     tbl,
                     name,
@@ -1155,8 +1155,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new Iterable<List<?>>() {
                 @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
-                    return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
-                        cancel, params, parts, lazy, tracker);
+                    try {
+                        return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
+                            cancel, params, parts, lazy, tracker);
+                    }
+                    catch (Throwable e) {
+                        if (tracker != null)
+                            tracker.onDone();
+
+                        throw e;
+                    }
                 }
             };
         }
@@ -2626,7 +2634,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2Table tbl = schemaMgr.dataTable(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
-                    H2Utils.checkAndStartNotStartedCache(tbl);
+                    H2Utils.checkAndStartNotStartedCache(ctx, tbl);
 
                     int cacheId = tbl.cacheId();
 

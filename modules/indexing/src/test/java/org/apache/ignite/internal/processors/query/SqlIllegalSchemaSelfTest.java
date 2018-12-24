@@ -30,11 +30,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
  */
 @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
+@RunWith(JUnit4.class)
 public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -44,6 +48,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadCacheName() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -63,6 +68,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadCacheNameDynamic() throws Exception {
         doubleConsumerAccept(
             (node)->{
@@ -90,6 +96,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaLower() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -109,6 +116,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaLowerDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {
@@ -136,6 +144,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaUpper() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -155,6 +164,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaUpperDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {
@@ -182,6 +192,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaQuoted() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -201,6 +212,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBadSchemaQuotedDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {
