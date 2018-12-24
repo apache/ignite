@@ -428,7 +428,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                 }
             }, threadCnt, "put-thread");
 
-            f.get(15, TimeUnit.SECONDS);
+            f.get(90, TimeUnit.SECONDS);
 
             GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
