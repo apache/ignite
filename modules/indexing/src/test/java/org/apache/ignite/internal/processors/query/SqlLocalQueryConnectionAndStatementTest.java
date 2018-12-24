@@ -24,10 +24,14 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for statement reuse.
  */
+@RunWith(JUnit4.class)
 public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     public void beforeTestsStarted() throws Exception {
@@ -45,6 +49,7 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
 
     /**
      */
+    @Test
     public void testReplicated() {
         sql("CREATE TABLE repl_tbl (id LONG PRIMARY KEY, val LONG) WITH \"template=replicated\"").getAll();
 
@@ -62,6 +67,7 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
 
     /**
      */
+    @Test
     public void testLocalQuery() {
         sql("CREATE TABLE tbl (id LONG PRIMARY KEY, val LONG)").getAll();
 
