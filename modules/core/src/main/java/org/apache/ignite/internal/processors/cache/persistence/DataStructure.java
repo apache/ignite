@@ -375,7 +375,7 @@ public abstract class DataStructure implements PageLockListener {
 
         boolean needWalDeltaRecord = needWalDeltaRecord(pageId, page, walPlc);
 
-        if (PageIdUtils.tag(pageId) == FLAG_DATA) {
+        if (PageIdUtils.flag(pageId) == FLAG_DATA) {
             int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
             if (rotatedIdPart != 0) {

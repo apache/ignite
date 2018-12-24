@@ -38,16 +38,18 @@ import org.apache.ignite.session.GridSessionSetJobAttributeWaitListenerSelfTest;
 import org.apache.ignite.session.GridSessionSetTaskAttributeSelfTest;
 import org.apache.ignite.session.GridSessionTaskWaitJobAttributeSelfTest;
 import org.apache.ignite.session.GridSessionWaitAttributeSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Task session test suite.
  */
-public class IgniteTaskSessionSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteTaskSessionSelfTestSuite {
     /**
      * @return TaskSession test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite TaskSession Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridSessionCancelSiblingsFromFutureSelfTest.class));

@@ -83,11 +83,14 @@ import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Set;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Kernal self test suite.
  */
-public class IgniteKernalSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteKernalSelfTestSuite {
     /**
      * @return Kernal test suite.
      */

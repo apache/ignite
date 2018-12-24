@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache interceptor suite.
  */
-public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheInterceptorSelfTestSuite {
     /**
      * @return Cache API test suite.
      */

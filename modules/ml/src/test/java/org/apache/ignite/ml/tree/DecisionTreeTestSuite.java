@@ -36,9 +36,8 @@ import org.junit.runners.AllTests;
 public class DecisionTreeTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(DecisionTreeTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(DecisionTreeClassificationTrainerTest.class));
         suite.addTest(new JUnit4TestAdapter(DecisionTreeRegressionTrainerTest.class));
         suite.addTest(new JUnit4TestAdapter(DecisionTreeDataTest.class));
@@ -48,10 +47,8 @@ public class DecisionTreeTestSuite {
         suite.addTest(new JUnit4TestAdapter(MSEImpurityMeasureTest.class));
         suite.addTest(new JUnit4TestAdapter(StepFunctionTest.class));
         suite.addTest(new JUnit4TestAdapter(SimpleStepFunctionCompressorTest.class));
-
-        /** JUnit 3 tests. */
-        suite.addTestSuite(DecisionTreeRegressionTrainerIntegrationTest.class);
-        suite.addTestSuite(DecisionTreeClassificationTrainerIntegrationTest.class);
+        suite.addTest(new JUnit4TestAdapter(DecisionTreeRegressionTrainerIntegrationTest.class));
+        suite.addTest(new JUnit4TestAdapter(DecisionTreeClassificationTrainerIntegrationTest.class));
 
         return suite;
     }
