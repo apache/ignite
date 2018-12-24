@@ -928,7 +928,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        new IgniteThread(discoNtfWrk).start();
+        new DiscoveryMessageNotifierThread(discoNtfWrk).start();
 
         startSpi();
 
@@ -2632,10 +2632,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /** */
+    private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** {@inheritDoc} */
+        public DiscoveryMessageNotifierThread(GridWorker worker) {
+            super(worker);
+        }
+    }
+
     /**
      *
      */
-    private class DiscoveryMessageNotifierWorker extends GridWorker implements IgniteDiscoveryThread {
+    private class DiscoveryMessageNotifierWorker extends GridWorker {
         /** Queue. */
         private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
 
