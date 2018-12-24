@@ -34,16 +34,13 @@ import org.junit.runners.AllTests;
 public class InferenceTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(InferenceTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(SingleInfModelBuilderTest.class));
         suite.addTest(new JUnit4TestAdapter(ThreadedInfModelBuilderTest.class));
         suite.addTest(new JUnit4TestAdapter(DirectorySerializerTest.class));
         suite.addTest(new JUnit4TestAdapter(DefaultModelStorageTest.class));
-
-        /** JUnit 3 tests. */
-        suite.addTestSuite(IgniteDistributedInfModelBuilderTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDistributedInfModelBuilderTest.class));
 
         return suite;
     }

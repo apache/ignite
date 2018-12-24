@@ -37,9 +37,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,9 +51,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Path to jetty config configured with SSL. */
     private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Host. */
     private static final String HOST = "127.0.0.1";
@@ -107,12 +101,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         clientCfg.setJettyPath(REST_JETTY_CFG);
 
         cfg.setConnectorConfiguration(clientCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
