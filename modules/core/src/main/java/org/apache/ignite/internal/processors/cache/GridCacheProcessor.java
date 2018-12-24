@@ -55,6 +55,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -544,6 +545,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assertParameter(cc.getInterceptor() == null,
                 "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            // Disable in-memory evictions for mvcc cache. TODO IGNITE-10738
+            String memPlcName = cc.getDataRegionName();
+            DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
+
+            if (dataRegion != null && !dataRegion.config().isPersistenceEnabled() &&
+                dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
+                throw new IgniteCheckedException("Data pages evictions cannot be used with TRANSACTIONAL_SNAPSHOT " +
+                    "cache atomicity mode for in-memory regions. Please, either disable evictions or enable " +
+                    "persistence for data regions with TRANSACTIONAL_SNAPSHOT caches. [cacheName=" + cc.getName() +
+                    ", dataRegionName=" + memPlcName + ", pageEvictionMode=" +
+                    dataRegion.config().getPageEvictionMode() + ']');
+            }
         }
 
         if (cc.isWriteBehindEnabled()) {
