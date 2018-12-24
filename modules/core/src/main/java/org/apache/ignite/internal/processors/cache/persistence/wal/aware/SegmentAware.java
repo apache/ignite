@@ -252,6 +252,17 @@ public class SegmentAware {
     }
 
     /**
+     * Reset interrupted flag.
+     */
+    public void reset() {
+        segmentArchivedStorage.reset();
+
+        segmentCompressStorage.reset();
+
+        segmentCurrStateStorage.reset();
+    }
+
+    /**
      * Interrupt waiting on related objects.
      */
     public void interrupt() {
