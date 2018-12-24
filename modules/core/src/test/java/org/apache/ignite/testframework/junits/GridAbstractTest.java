@@ -149,7 +149,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
-public abstract class GridAbstractTest extends LegacySupport {
+public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
