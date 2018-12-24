@@ -251,7 +251,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSeveralLongRunningMvccTxs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
+        fail("https://issues.apache.org/jira/browse/IGNITE-10637"); // Support diagnostics message or disable test.
 
         checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
@@ -374,7 +374,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLongRunningMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
+        fail("https://issues.apache.org/jira/browse/IGNITE-10637"); // Support diagnostic messages or disable test.
 
         checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
