@@ -1149,11 +1149,12 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (vals == null && val != null) {
                 if (keys.isEmpty())
                     vals = new ArrayList<>();
-                else {
+                else { // Init vals with missed 'nulls'.
                     assert !(val instanceof GridInvokeValue);
 
-                    // Add missed 'nulls'
-                    vals = new ArrayList<>(keys.size() + 1);
+                    vals = new ArrayList<>();
+
+                    ((ArrayList<Message>)vals).ensureCapacity(keys.size() + 1);
 
                     for (int i = 0; i < keys.size(); i++)
                         vals.add(null);
