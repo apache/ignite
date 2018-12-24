@@ -1006,7 +1006,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!active)
             return;
 
-        if (!ctx.service().eventDrivenServiceProcessorEnabled())
+        if (ctx.service() instanceof GridServiceProcessor)
             ((GridServiceProcessor)ctx.service()).onUtilityCacheStarted();
 
         final AffinityTopologyVersion startTopVer = ctx.discovery().localJoin().joinTopologyVersion();
@@ -3035,7 +3035,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
             ctx.dataStructures().restoreStructuresState(ctx);
 
-            if (!ctx.service().eventDrivenServiceProcessorEnabled())
+            if (ctx.service() instanceof GridServiceProcessor)
                 ((GridServiceProcessor)ctx.service()).updateUtilityCache();
         }
 

@@ -145,11 +145,4 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @throws IgniteCheckedException On error.
      */
     public abstract Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException;
-
-    /**
-     * @return {@code true} if event driven service processor enabled, otherwise {@code false};
-     */
-    public boolean eventDrivenServiceProcessorEnabled() {
-        return false;
-    }
 }

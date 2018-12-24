@@ -296,7 +296,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.cacheObjects().onContinuousProcessorStarted(ctx);
 
-        if (!ctx.service().eventDrivenServiceProcessorEnabled())
+        if (ctx.service() instanceof GridServiceProcessor)
             ((GridServiceProcessor)ctx.service()).onContinuousProcessorStarted(ctx);
 
         if (log.isDebugEnabled())

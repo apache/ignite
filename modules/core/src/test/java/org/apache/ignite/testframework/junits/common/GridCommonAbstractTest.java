@@ -2051,7 +2051,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected void waitForServicesReadyTopology(final IgniteEx ignite,
         final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
-        if (!ignite.context().service().eventDrivenServiceProcessorEnabled())
+        if (!(ignite.context().service() instanceof IgniteServiceProcessor))
             return;
 
         final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();

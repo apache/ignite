@@ -81,7 +81,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
 
         IgniteCache<String, String> cache = ignite0.getOrCreateCache(cacheCfg);
 
-        if (ignite0.context().service().eventDrivenServiceProcessorEnabled())
+        if (ignite0.context().service() instanceof IgniteServiceProcessor)
             cache.put(ignite0.cluster().localNode().id().toString(), "val");
 
         latch = new CountDownLatch(1);

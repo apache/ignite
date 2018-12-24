@@ -72,7 +72,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        isEventDrivenServiceProcessorEnabled = grid(0).context().service().eventDrivenServiceProcessorEnabled();
+        isEventDrivenServiceProcessorEnabled = grid(0).context().service() instanceof IgniteServiceProcessor;
     }
 
     /** {@inheritDoc} */

@@ -1663,7 +1663,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         ctx.addNodeAttribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
-            ctx.service().eventDrivenServiceProcessorEnabled());
+            ctx.service() instanceof IgniteServiceProcessor);
     }
 
     /**

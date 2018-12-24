@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -99,7 +101,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
             GridKernalContext ctx = ((IgniteEx)node).context();
             GridContinuousProcessor proc = ctx.continuous();
 
-            final int locInfosCnt = ctx.service().eventDrivenServiceProcessorEnabled() ? 0 : 1;
+            final int locInfosCnt = ctx.service() instanceof GridServiceProcessor ? 1 : 0;
 
             assertEquals(locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "rmtInfos")).size());

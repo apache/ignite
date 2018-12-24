@@ -100,7 +100,7 @@ public class ServiceDeploymentManager {
     /**
      * @param ctx Grid kernal context.
      */
-    protected ServiceDeploymentManager(@NotNull GridKernalContext ctx) {
+    ServiceDeploymentManager(@NotNull GridKernalContext ctx) {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
@@ -120,7 +120,7 @@ public class ServiceDeploymentManager {
     /**
      * Starts processing of services deployments tasks.
      */
-    protected void startProcessing() {
+    void startProcessing() {
         assert depWorker.runner() == null : "Method shouldn't be called twice during lifecycle;";
 
         new IgniteThread(ctx.igniteInstanceName(), "services-deployment-worker", depWorker).start();
@@ -131,29 +131,24 @@ public class ServiceDeploymentManager {
      *
      * @param stopErr Cause error of deployment manager stop.
      */
-    protected void stopProcessing(IgniteCheckedException stopErr) {
-        try {
-            busyLock.block(); // Will not release it.
+    void stopProcessing(IgniteCheckedException stopErr) {
+        busyLock.block(); // Will not release it.
 
-            ctx.event().removeDiscoveryEventListener(discoLsnr);
+        ctx.event().removeDiscoveryEventListener(discoLsnr);
 
-            ctx.io().removeMessageListener(commLsnr);
+        ctx.io().removeMessageListener(commLsnr);
 
-            U.cancel(depWorker);
+        U.cancel(depWorker);
 
-            U.join(depWorker, log);
+        U.join(depWorker, log);
 
-            depWorker.tasksQueue.clear();
+        depWorker.tasksQueue.clear();
 
-            pendingEvts.clear();
+        pendingEvts.clear();
 
-            tasks.values().forEach(t -> t.completeError(stopErr));
+        tasks.values().forEach(t -> t.completeError(stopErr));
 
-            tasks.clear();
-        }
-        catch (Exception e) {
-            log.error("Error occurred during stopping deployment worker.", e);
-        }
+        tasks.clear();
     }
 
     /**
@@ -171,7 +166,7 @@ public class ServiceDeploymentManager {
      * @param discoCache Discovery cache.
      * @param depActions Service deployment actions.
      */
-    protected void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache, ServiceDeploymentActions depActions) {
+    void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache, ServiceDeploymentActions depActions) {
         checkClusterStateAndAddTask(evt, discoCache, depActions);
     }
 
@@ -180,7 +175,7 @@ public class ServiceDeploymentManager {
      * <p/>
      * Should be called from service deployment worker thread.
      */
-    protected void deployerBlockingSectionBegin() {
+    void deployerBlockingSectionBegin() {
         assert depWorker != null && Thread.currentThread() == depWorker.runner();
 
         depWorker.blockingSectionBegin();
@@ -191,7 +186,7 @@ public class ServiceDeploymentManager {
      * <p/>
      * Should be called from service deployment worker thread.
      */
-    protected void deployerBlockingSectionEnd() {
+    void deployerBlockingSectionEnd() {
         assert depWorker != null && Thread.currentThread() == depWorker.runner();
 
         depWorker.blockingSectionEnd();

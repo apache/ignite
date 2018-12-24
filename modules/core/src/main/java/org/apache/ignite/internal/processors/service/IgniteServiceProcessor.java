@@ -75,6 +75,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -91,8 +92,8 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 /**
  * Ignite service processor.
  * <p/>
- * Event driven implementation of service processor. Services deployment are managed by messages across discovery spi
- * and communication spi.
+ * Event-driven implementation of the service processor. Service deployment is managed via {@link DiscoverySpi} and
+ * {@link CommunicationSpi} messages.
  *
  * @see ServiceDeploymentManager
  * @see ServiceDeploymentTask
@@ -995,7 +996,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param oldTop Previous topology snapshot. Will be ignored for affinity service.
      * @throws IgniteCheckedException If failed.
      */
-    protected Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
+    Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         Object nodeFilter = cfg.getNodeFilter();
@@ -1120,7 +1121,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param top Service topology.
      * @throws IgniteCheckedException In case of deployment errors.
      */
-    protected void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
+    void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
         Map<UUID, Integer> top) throws IgniteCheckedException {
         String name = cfg.getName();
         String cacheName = cfg.getCacheName();
@@ -1323,7 +1324,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param srvcId Service id.
      */
-    protected void undeploy(@NotNull IgniteUuid srvcId) {
+    void undeploy(@NotNull IgniteUuid srvcId) {
         Collection<ServiceContextImpl> ctxs = locServices.remove(srvcId);
 
         if (ctxs != null) {
@@ -1339,7 +1340,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param reqSrvcId Request's service id.
      * @param err Error to complete with. If {@code null} a future will be completed successfully.
      */
-    protected void completeInitiatingFuture(boolean deploy, IgniteUuid reqSrvcId, Throwable err) {
+    void completeInitiatingFuture(boolean deploy, IgniteUuid reqSrvcId, Throwable err) {
         GridFutureAdapter<?> fut = deploy ? depFuts.remove(reqSrvcId) : undepFuts.remove(reqSrvcId);
 
         if (fut == null)
@@ -1364,7 +1365,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param fullTops Deployment topologies.
      */
-    protected void updateServicesTopologies(@NotNull final Map<IgniteUuid, Map<UUID, Integer>> fullTops) {
+    void updateServicesTopologies(@NotNull final Map<IgniteUuid, Map<UUID, Integer>> fullTops) {
         if (!enterBusy())
             return;
 
@@ -1393,7 +1394,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcId Service id.
      * @return Count of locally deployed service with given id.
      */
-    protected int localInstancesCount(IgniteUuid srvcId) {
+    int localInstancesCount(IgniteUuid srvcId) {
         Collection<ServiceContextImpl> ctxs = locServices.get(srvcId);
 
         if (ctxs == null)
@@ -1411,7 +1412,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param depActions Service deployment actions.
      */
-    protected void updateDeployedServices(final ServiceDeploymentActions depActions) {
+    void updateDeployedServices(final ServiceDeploymentActions depActions) {
         if (!enterBusy())
             return;
 
@@ -1432,7 +1433,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @return Deployed services information.
      */
-    protected Map<IgniteUuid, ServiceInfo> deployedServices() {
+    Map<IgniteUuid, ServiceInfo> deployedServices() {
         return new HashMap<>(deployedServices);
     }
 
@@ -1442,7 +1443,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param nodeId Joined node id.
      * @return Services to deploy.
      */
-    @NotNull protected Map<IgniteUuid, ServiceInfo> servicesReceivedFromJoin(UUID nodeId) {
+    @NotNull Map<IgniteUuid, ServiceInfo> servicesReceivedFromJoin(UUID nodeId) {
         Map<IgniteUuid, ServiceInfo> descs = new HashMap<>();
 
         registeredServices.forEach((srvcId, desc) -> {
@@ -1456,7 +1457,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @return Cluster coordinator, {@code null} if failed to determine.
      */
-    @Nullable protected ClusterNode coordinator() {
+    @Nullable ClusterNode coordinator() {
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
     }
 
@@ -1764,12 +1765,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 desc.topologySnapshot(top);
         });
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean eventDrivenServiceProcessorEnabled() {
-        return true;
-    }
-
+    
     /**
      * Enters busy state.
      *

@@ -301,7 +301,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void waitForService(final IgniteEx node) throws Exception {
-        if (node.context().service().eventDrivenServiceProcessorEnabled())
+        if (node.context().service() instanceof IgniteServiceProcessor)
             waitForServicesReadyTopology(node, node.context().discovery().topologyVersionEx());
         else {
             assertTrue(GridTestUtils.waitForCondition(new PA() {

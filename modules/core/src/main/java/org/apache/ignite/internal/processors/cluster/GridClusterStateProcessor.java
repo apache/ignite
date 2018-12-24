@@ -1166,7 +1166,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 Exception e = null;
 
                 try {
-                    if (!ctx.service().eventDrivenServiceProcessorEnabled()) {
+                    if (ctx.service() instanceof GridServiceProcessor) {
                         GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
 
                         srvcProc.onUtilityCacheStarted();

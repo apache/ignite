@@ -792,7 +792,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
-                        if (ctx.service().eventDrivenServiceProcessorEnabled())
+                        if (ctx.service() instanceof IgniteServiceProcessor)
                             ((IgniteServiceProcessor)ctx.service()).onLocalJoin(discoEvt, discoCache);
 
                         ctx.authentication().onLocalJoin();
@@ -853,7 +853,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
-                    if (ctx.service().eventDrivenServiceProcessorEnabled())
+                    if (ctx.service() instanceof IgniteServiceProcessor)
                         ((IgniteServiceProcessor)ctx.service()).onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
