@@ -50,9 +50,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -135,9 +132,6 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         + " WHERE " + TRADER_ID + "=?";
 
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 5;
 
     /** Distribution of partitions by nodes. */
@@ -153,8 +147,6 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         cfg.setIncludeEventTypes();
 
         cfg.setMarshaller(null);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
         aff.setPartitions(3000);
