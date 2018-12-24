@@ -312,7 +312,10 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         int x = enabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
             enabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
 
-        return (byte)(flags & x);
+        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
+        flags |= x; // Set new bits.
+
+        return (byte)flags;
     }
 
     /**

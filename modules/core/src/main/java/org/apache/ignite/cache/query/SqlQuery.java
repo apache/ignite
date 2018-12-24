@@ -60,6 +60,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Partitions for query */
     private int[] parts;
 
+    /** */
+    private Boolean dataPageScanEnabled;
+
     /**
      * Constructs query for the given type name and SQL query.
      *
@@ -278,6 +281,24 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.parts = prepare(parts);
 
         return this;
+    }
+
+    /**
+     * Sets data page scan enabled or disabled.
+     *
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public void setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /** {@inheritDoc} */

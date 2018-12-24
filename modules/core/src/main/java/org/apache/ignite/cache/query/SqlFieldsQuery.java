@@ -80,6 +80,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Schema. */
     private String schema;
 
+    /** */
+    private Boolean dataPageScanEnabled;
+
     /**
      * Copy constructs SQL fields query.
      *
@@ -96,6 +99,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         lazy = qry.lazy;
         parts = qry.parts;
         schema = qry.schema;
+        dataPageScanEnabled = qry.dataPageScanEnabled;
     }
 
     /**
@@ -371,6 +375,24 @@ public class SqlFieldsQuery extends Query<List<?>> {
         this.schema = schema;
 
         return this;
+    }
+
+    /**
+     * Sets data page scan enabled or disabled.
+     *
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public void setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**

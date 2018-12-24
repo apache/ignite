@@ -570,6 +570,7 @@ public class GridMapQueryExecutor {
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = (FORCE_LAZY && req.queries().size() == 1) || req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        final Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
         final List<Integer> cacheIds = req.caches();
 
@@ -667,7 +668,8 @@ public class GridMapQueryExecutor {
                     tx,
                     txReq,
                     lockFut,
-                    runCntr);
+                    runCntr,
+                    dataPageScanEnabled);
             }
             else {
                 ctx.closure().callLocal(
@@ -693,7 +695,8 @@ public class GridMapQueryExecutor {
                                 tx,
                                 txReq,
                                 lockFut,
-                                runCntr);
+                                runCntr,
+                                dataPageScanEnabled);
 
                             return null;
                         }
@@ -721,7 +724,9 @@ public class GridMapQueryExecutor {
             req.mvccSnapshot(),
             tx,
             txReq,
-            lockFut, runCntr);
+            lockFut,
+            runCntr,
+            dataPageScanEnabled);
     }
 
     /**
@@ -742,6 +747,7 @@ public class GridMapQueryExecutor {
      * @param txDetails TX details, if it's a {@code FOR UPDATE} request, or {@code null}.
      * @param lockFut Lock future.
      * @param runCntr Counter which counts remaining queries in case segmented index is used.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -764,7 +770,9 @@ public class GridMapQueryExecutor {
         @Nullable final GridDhtTxLocalAdapter tx,
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
         @Nullable final CompoundLockFuture lockFut,
-        @Nullable final AtomicInteger runCntr) {
+        @Nullable final AtomicInteger runCntr,
+        Boolean dataPageScanEnabled
+    ) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         // In presence of TX, we also must always have matching details.
@@ -800,7 +808,8 @@ public class GridMapQueryExecutor {
                         tx,
                         txDetails,
                         lockFut,
-                        runCntr);
+                        runCntr,
+                        dataPageScanEnabled);
                 }
             });
 
@@ -927,7 +936,7 @@ public class GridMapQueryExecutor {
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx));
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(

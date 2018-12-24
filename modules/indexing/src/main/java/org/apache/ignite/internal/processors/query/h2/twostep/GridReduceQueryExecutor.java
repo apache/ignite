@@ -387,6 +387,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
      * @param mvccTracker Query tracker.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -399,7 +400,9 @@ public class GridReduceQueryExecutor {
         Object[] params,
         final int[] parts,
         boolean lazy,
-        MvccQueryTracker mvccTracker) {
+        MvccQueryTracker mvccTracker,
+        Boolean dataPageScanEnabled
+    ) {
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
@@ -660,7 +663,8 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName);
+                    .schemaName(schemaName)
+                    .setDataPageScanEnabled(dataPageScanEnabled);
 
                 if (curTx != null && curTx.mvccSnapshot() != null)
                     req.mvccSnapshot(curTx.mvccSnapshot());
@@ -763,7 +767,8 @@ public class GridReduceQueryExecutor {
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
                                 timeoutMillis,
-                                cancel);
+                                cancel,
+                                dataPageScanEnabled);
 
                             resIter = new H2FieldsIterator(res, mvccTracker, false);
 
@@ -1127,7 +1132,7 @@ public class GridReduceQueryExecutor {
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null);
+                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1146,6 +1151,7 @@ public class GridReduceQueryExecutor {
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
             0,
+            null,
             null);
 
         lists.add(F.asList(getPlan(rs)));
