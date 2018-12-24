@@ -49,7 +49,7 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
     public UniformRandomProducer(double from, double to, long seed) {
         super(seed);
 
-        A.ensure(to >= from, "from > to");
+        A.ensure(to >= from, "from >= to");
 
         this.from = from;
         this.to = to;

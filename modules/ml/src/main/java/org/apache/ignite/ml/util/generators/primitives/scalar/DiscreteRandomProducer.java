@@ -101,9 +101,9 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
      * @return Producer.
      */
     public static DiscreteRandomProducer uniform(int numberOfValues, long seed) {
-        return new DiscreteRandomProducer(seed, IntStream.range(0, numberOfValues)
-            .mapToDouble(x -> 1.0 / numberOfValues)
-            .toArray());
+        double[] probs = new double[numberOfValues];
+        Arrays.fill(probs, 1.0 / numberOfValues);
+        return new DiscreteRandomProducer(seed, probs);
     }
 
     /**
@@ -127,7 +127,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         A.ensure(numberOfValues > 0, "numberOfValues > 0");
 
         Random random = new Random(seed);
-        long[] rnd = IntStream.range(0, numberOfValues).mapToLong(i -> random.nextInt(Integer.MAX_VALUE))
+        long[] rnd = IntStream.range(0, numberOfValues)
+            .mapToLong(i -> random.nextInt(Integer.MAX_VALUE))
             .limit(numberOfValues)
             .toArray();
         long sum = Arrays.stream(rnd).sum();

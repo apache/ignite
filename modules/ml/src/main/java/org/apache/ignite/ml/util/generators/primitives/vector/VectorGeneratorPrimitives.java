@@ -104,7 +104,7 @@ public class VectorGeneratorPrimitives {
      * @return Generator.
      */
     public static VectorGenerator parallelogram(Vector bounds, long seed) {
-        A.notEmpty(bounds.asArray(), "bounds.size() != 0");
+        A.ensure(bounds.size() != 0, "bounds.size() != 0");
 
         UniformRandomProducer[] producers = new UniformRandomProducer[bounds.size()];
         for (int i = 0; i < producers.length; i++)
@@ -141,7 +141,7 @@ public class VectorGeneratorPrimitives {
      * @return Generator of constant vector = zero.
      */
     public static VectorGenerator zero(int size) {
-        return constant(VectorUtils.of(new double[size]));
+        return constant(VectorUtils.zeroes(size));
     }
 
     /**

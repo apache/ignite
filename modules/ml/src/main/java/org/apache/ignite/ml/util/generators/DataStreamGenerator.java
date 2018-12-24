@@ -30,7 +30,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
 /**
- * Provides general interface for generation of pseudorandom vectors in according to shape defined
+ * Provides general interface for generation of pseudorandom vectors according to shape defined
  * by logic of specific data stream generator.
  */
 public interface DataStreamGenerator {
@@ -61,15 +61,18 @@ public interface DataStreamGenerator {
      * @return Stream of mapped vectors.
      */
     public default DataStreamGenerator mapVectors(IgniteFunction<Vector, Vector> f) {
-        DataStreamGenerator orig = this;
         return new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
-                return orig.labeled().map(v -> new LabeledVector<>(f.apply(v.features()), v.label()));
+                return DataStreamGenerator.this.labeled()
+                    .map(v -> new LabeledVector<>(f.apply(v.features()), v.label()));
             }
         };
     }
 
     /**
+     * Apply pseudorandom noize to vectors without labels mapping. Such method can be useful in cases
+     * when vectors with different labels should be mixed between them on class bounds.
+     *
      * @param rnd Generator of pseudorandom scalars modifying vector components with label saving.
      * @return Stream of blurred vectors with same labels.
      */
