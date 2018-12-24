@@ -118,6 +118,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
+        // TODO set this only for historical rebalance tests.
         cfg.setCommunicationSpi(new IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi());
 
         boolean client = igniteInstanceName.startsWith(CLIENT_GRID_NAME);

@@ -1597,10 +1597,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
-                if (ctx.gridConfig().getIgniteInstanceName().endsWith("0") && partId() == 0 && grp.groupId() == CU.cacheId("default")) {
-                    System.out.println();
-                }
-
                 pCntr.update(val);
             }
             catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {

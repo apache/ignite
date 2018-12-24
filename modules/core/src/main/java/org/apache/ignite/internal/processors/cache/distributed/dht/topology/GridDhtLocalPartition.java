@@ -171,6 +171,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
+    /** */
+    private volatile boolean stateChanged;
+
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -536,6 +539,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 this.state.compareAndSet(state0, setPartState(state0, toState));
 
+                stateChanged = true;
+
                 try {
                     ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                 }
@@ -561,6 +566,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update) {
+                    stateChanged = true;
+
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }
@@ -1433,6 +1440,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public GridLongList finalizeUpdateCounters() {
         return store.finalizeUpdateCounters();
+    }
+
+    /**
+     *
+     * @return {@code True} if partition state was changed before last call to this method.
+     */
+    public boolean getAndResetStateUpdate() {
+        boolean tmp = stateChanged;
+
+        stateChanged = false;
+
+        return tmp;
     }
 
     /**
