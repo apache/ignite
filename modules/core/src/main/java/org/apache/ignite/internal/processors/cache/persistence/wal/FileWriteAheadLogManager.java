@@ -3492,9 +3492,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         public void shutdown() throws IgniteInterruptedCheckedException {
             U.cancel(this);
 
-            LockSupport.unpark(runner());
+            Thread runner = runner();
 
-            U.join(runner());
+            if (runner != null) {
+                LockSupport.unpark(runner);
+
+                U.join(runner);
+            }
+
+            assert runner() == null : "WALWriter should be stopped.";
         }
 
         /**
