@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Load without compaction -> Stop -> Enable WAL Compaction -> Start.
@@ -65,6 +66,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
      *
      * @throws Exception On exception.
      */
+    @Test
     public void testWalCompactionSwitch() throws Exception {
         IgniteEx ex = startGrid(0);
 
