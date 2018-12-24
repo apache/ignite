@@ -144,8 +144,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
-    /** WAL MvccDataRecord batch size. */
-    public static final int MVCC_WAL_RECORD_BUFFER_SIZE = 20;
+    /** Default WAL MvccDataRecord batch size. */
+    private static final int DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE = 20;
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -285,7 +285,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** WAL data records buffer for enlisted entries. */
     @GridToStringExclude
-    private List<MvccDataEntry> enlistedRecordsForWal;
+    private List<MvccDataEntry> enlistWalBuffer;
 
     /** Rollback finish future. */
     @GridToStringExclude
@@ -446,12 +446,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (cctx.wal() == null || isRollbackOnly())
             return; // May safely omit for roll-backed tx.
 
-        if (enlistedRecordsForWal == null)
-            enlistedRecordsForWal = new ArrayList<>(MVCC_WAL_RECORD_BUFFER_SIZE);
+        if (enlistWalBuffer == null)
+            enlistWalBuffer = new ArrayList<>(DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE);
 
-        enlistedRecordsForWal.add(rec);
+        enlistWalBuffer.add(rec);
 
-        if (enlistedRecordsForWal.size() == MVCC_WAL_RECORD_BUFFER_SIZE)
+        if (enlistWalBuffer.size() == DFLT_MVCC_ENLIST_WAL_BUFFER_SIZE)
             flushEnlistBuffer();
     }
 
@@ -461,10 +461,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     void flushEnlistBuffer() throws IgniteCheckedException {
         // No need to log garbage for rolled backed tx.
-        if (!isRollbackOnly() && enlistedRecordsForWal != null)
-            cctx.wal().log(new MvccDataRecord(enlistedRecordsForWal));
+        if (!isRollbackOnly() && enlistWalBuffer != null)
+            cctx.wal().log(new MvccDataRecord(enlistWalBuffer));
 
-        enlistedRecordsForWal = null;
+        enlistWalBuffer.clear();
     }
 
     /**
