@@ -59,7 +59,6 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
     private static boolean client;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

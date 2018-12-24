@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +32,8 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
@@ -40,7 +43,8 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
  * Test suite for IGFS event tests.
  */
 @SuppressWarnings("PublicInnerClass")
-public class IgfsEventsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgfsEventsTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -50,13 +54,13 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
 
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualAsync.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }
@@ -70,9 +74,9 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }

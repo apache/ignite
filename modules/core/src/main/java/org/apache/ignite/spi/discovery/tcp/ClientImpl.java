@@ -541,7 +541,6 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
-    @SuppressWarnings("BusyWait")
     @Nullable private T2<SocketStream, Boolean> joinTopology(
         InetSocketAddress prevAddr,
         long timeout,

@@ -19,11 +19,14 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-public class IgnitePdsMvccTestSuite3 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsMvccTestSuite3 {
     /**
      * @return Suite.
      */

@@ -45,9 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -410,14 +408,6 @@ public class PageMemoryTracker implements IgnitePlugin {
             int grpId = snapshot.fullPageId().groupId();
             long pageId = snapshot.fullPageId().pageId();
 
-            // TODO Remove this dirty hack with newPageId after IGNITE-9303 is fixed.
-            ByteBuffer buf = ByteBuffer.allocate(Long.BYTES);
-            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
-            buf.put(snapshot.pageData(), PageIO.PAGE_ID_OFF, Long.BYTES);
-            buf.flip();
-
-            long newPageId = buf.getLong();
-
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             DirectMemoryPage page = page(fullPageId);
@@ -426,8 +416,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             try {
                 PageUtils.putBytes(page.address(), 0, snapshot.pageData());
-
-                page.fullPageId(new FullPageId(newPageId, grpId));
 
                 page.changeHistory().clear();
 
@@ -451,12 +439,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             try {
                 deltaRecord.applyDelta(pageMemoryMock, page.address());
-
-                // Set new fullPageId after recycle or after new page init, because pageId tag is changed.
-                if (record instanceof RecycleRecord)
-                    page.fullPageId(new FullPageId(((RecycleRecord)record).newPageId(), grpId));
-                else if (record instanceof InitNewPageRecord)
-                    page.fullPageId(new FullPageId(((InitNewPageRecord)record).newPageId(), grpId));
 
                 page.changeHistory().add(record);
             }
@@ -554,7 +536,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             long rmtPage = pageMem.acquirePage(fullPageId.groupId(), fullPageId.pageId());
 
             try {
-                long rmtPageAddr = pageMem.readLock(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
+                long rmtPageAddr = pageMem.readLockForce(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
 
                 try {
                     page.lock();

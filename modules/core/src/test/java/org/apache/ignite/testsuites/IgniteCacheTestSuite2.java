@@ -147,11 +147,14 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeout
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */

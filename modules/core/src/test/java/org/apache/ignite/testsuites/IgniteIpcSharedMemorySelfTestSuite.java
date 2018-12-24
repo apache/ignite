@@ -23,16 +23,18 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryCrashDetectionSe
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoaderSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemorySpaceSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryUtilsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Shared memory test suite.
  */
-public class IgniteIpcSharedMemorySelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteIpcSharedMemorySelfTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite IPC Shared Memory Test Suite.");
 
         suite.addTest(new JUnit4TestAdapter(IpcSharedMemorySpaceSelfTest.class));

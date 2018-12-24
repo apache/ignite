@@ -357,7 +357,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
-    @SuppressWarnings("unchecked")
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)
