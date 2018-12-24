@@ -812,7 +812,7 @@ class ServiceDeploymentTask {
         remaining.clear();
 
         if (evt instanceof DiscoveryCustomEvent)
-            ((DiscoveryCustomEvent)evt).nullifyCustomMessage();
+            ((DiscoveryCustomEvent)evt).customMessage(null);
     }
 
     /**

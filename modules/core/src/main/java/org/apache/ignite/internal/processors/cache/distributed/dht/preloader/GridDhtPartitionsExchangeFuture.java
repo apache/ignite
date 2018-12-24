@@ -2227,7 +2227,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
-                ((DiscoveryCustomEvent)firstDiscoEvt).nullifyCustomMessage();
+                ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
             if (err == null) {
                 if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {

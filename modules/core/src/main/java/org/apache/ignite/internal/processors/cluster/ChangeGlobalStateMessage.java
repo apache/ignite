@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -63,14 +62,11 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** */
     private long timestamp;
 
-    /** Using counter. The message is expected to be handled in PME and service deployment process. */
-    private final AtomicInteger usingCounter = new AtomicInteger(2);
-
     /** */
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
-    /** Service deployment actions to be processed on services deployment process. */
+    /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
@@ -164,11 +160,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int decrementUsingCounter() {
-        return usingCounter.decrementAndGet();
     }
 
     /**

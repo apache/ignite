@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -263,6 +264,31 @@ public class ServiceDeploymentManager {
     }
 
     /**
+     * Clones some instances of {@link DiscoveryCustomEvent} to capture necessary data, to avoid custom messages's
+     * nullifying by {@link GridDhtPartitionsExchangeFuture#onDone}.
+     *
+     * @param evt Discovery event.
+     * @return Discovery event to process.
+     */
+    private DiscoveryCustomEvent copyIfNeeded(@NotNull DiscoveryCustomEvent evt) {
+        DiscoveryCustomMessage msg = evt.customMessage();
+
+        assert msg != null : "DiscoveryCustomMessage has been nullified concurrently, evt=" + evt;
+
+        if (msg instanceof ServiceChangeBatchRequest)
+            return evt;
+
+        DiscoveryCustomEvent cp = new DiscoveryCustomEvent();
+
+        cp.node(evt.node());
+        cp.customMessage(msg);
+        cp.eventNode(evt.eventNode());
+        cp.affinityTopologyVersion(evt.affinityTopologyVersion());
+
+        return cp;
+    }
+
+    /**
      * Services discovery messages listener.
      */
     private class ServiceDiscoveryListener implements DiscoveryEventListener {
@@ -311,7 +337,7 @@ public class ServiceDeploymentManager {
                                 task.onReceiveFullDeploymentsMessage(msg0);
                         }
                         else if (msg instanceof CacheAffinityChangeMessage)
-                            addTask(evt, discoCache.version(), null);
+                            addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), null);
                         else {
                             ServiceDeploymentActions depActions = null;
 
@@ -325,7 +351,7 @@ public class ServiceDeploymentManager {
                                 depActions = ((DynamicCacheChangeBatch)msg).servicesDeploymentActions();
 
                             if (depActions != null)
-                                addTask(evt, discoCache.version(), depActions);
+                                addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), depActions);
                         }
                     }
                 }
