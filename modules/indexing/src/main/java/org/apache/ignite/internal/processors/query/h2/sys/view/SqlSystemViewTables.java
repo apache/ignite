@@ -18,22 +18,64 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 
+/**
+ * View that contains information about all the sql tables in the cluster.
+ */
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
-    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        return null;
-    }
+    /** Name of the sql table. */
+    public static final String TABLE_NAME = "TABLE_NAME";
+
+    /** Sql schema name (database name). */
+    public static final String SQL_SCHEMA = "SQL_SCHEMA";
+
+    /** Name of the cache holding that table. */
+    public static final String OWNING_CACHE_NAME = "OWNING_CACHE_NAME";
+
+    /** Id of the cache holding that table. */
+    public static final String OWNING_CACHE_ID = "OWNING_CACHE_ID";
 
     public SqlSystemViewTables(GridKernalContext ctx) {
-        super("TABLES", "Ignite tables", ctx, new String[] {"NAME", "OWNING_CACHE_ID"},
-            newColumn("SQL_SCHEMA"),
-            newColumn("TABLE_NAME"),
-            newColumn("OWNING_CACHE_NAME"),
-            newColumn("OWNING_CACHE_ID")
+        super("TABLES", "Ignite tables", ctx, new String[] {TABLE_NAME},
+            newColumn(SQL_SCHEMA),
+            newColumn(TABLE_NAME),
+            newColumn(OWNING_CACHE_NAME),
+            newColumn(OWNING_CACHE_ID)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+        SqlSystemViewColumnCondition nameCond = conditionForColumn(TABLE_NAME, first, last);
+
+        Predicate<GridQueryTypeDescriptor> filter;
+
+        if (nameCond.isEquality()) {
+            String fltTabName = nameCond.valueForEquality().getString();
+
+            filter = Predicate.isEqual(fltTabName);
+        }
+        else
+            filter = tab -> true;
+
+        final AtomicLong keys = new AtomicLong();
+
+        return ctx.cache().publicCacheNames().stream()
+            .flatMap(cacheName ->
+                ctx.query().types(cacheName).stream()
+                .filter(filter)
+                .map(tab -> createRow(ses, keys.incrementAndGet(),
+                    tab.schemaName(),
+                    tab.tableName(),
+                    cacheName,
+                    ctx.cache().cacheDescriptor(cacheName).cacheId()))
+            ).iterator();
     }
 }
