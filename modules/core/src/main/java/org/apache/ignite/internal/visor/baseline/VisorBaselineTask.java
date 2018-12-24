@@ -183,6 +183,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 if (node == null)
                     throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
             }
+
             return set0(baseline.values());
         }
 
