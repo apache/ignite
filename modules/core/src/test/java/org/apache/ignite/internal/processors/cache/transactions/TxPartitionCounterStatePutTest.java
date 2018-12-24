@@ -130,6 +130,24 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testPutTxSequentialVolatile() throws Exception {
+        doTestPutSequential(TX_CACHE_MEMORY);
+    }
+
+    /** */
+    @Test
+    public void testPutAtomicConcurrentVolatile() throws Exception {
+        doTestPutConcurrent(ATOMIC_CACHE_MEMORY);
+    }
+
+    /** TODO FIXME IGNORE !!! will fail. */
+    @Test
+    public void testPutTxConcurrentVolatile() throws Exception {
+        doTestPutConcurrent(TX_CACHE_MEMORY);
+    }
+
+    /** */
     private void doTestPutSequential(String cache) throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(3);
