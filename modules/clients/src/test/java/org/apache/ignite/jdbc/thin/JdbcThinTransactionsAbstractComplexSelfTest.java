@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -346,10 +347,9 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10770")
     @Test
     public void testInsertAndQueryMultipleCaches() throws SQLException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10770");
-
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
                 insertCity(conn, 5, "St Petersburg", 6000);

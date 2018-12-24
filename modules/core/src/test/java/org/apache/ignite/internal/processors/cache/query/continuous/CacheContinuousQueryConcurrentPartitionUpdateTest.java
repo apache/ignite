@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -316,10 +317,9 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10755")
     @Test
     public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10755");
-
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
 

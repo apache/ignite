@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -150,10 +151,9 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10763")
     @Test
     public void testReplicatedAndPartitionedUpdateSingleTransaction() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10763");
-
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(REPLICATED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
                 .setName("rep")

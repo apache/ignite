@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -41,10 +42,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxSql_ClientServer_Backups2_CoordinatorFails() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
-
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -52,10 +52,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxSql_Server_Backups1_CoordinatorFails_Persistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         persistence = true;
 
         accountsTxReadAll(2, 0, 1, 64,
@@ -65,10 +64,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testPutAllGetAll_ClientServer_Backups3_RestartCoordinator_ScanDml() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         putAllGetAll(RestartMode.RESTART_CRD  , 5, 2, 3, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
@@ -134,10 +132,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testPutAllGetAll_Server_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 1, 1,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
@@ -145,10 +142,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testPutAllGetAll_ClientServer_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 1,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
@@ -156,10 +152,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups2_Sql() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         updateNObjectsTest(7, 3, 2, 2, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,
             new InitIndexing(Integer.class, Integer.class), SQL, DML, RestartMode.RESTART_CRD);
     }
@@ -167,10 +162,9 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups1_Sql_Persistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         persistence = true;
 
         updateNObjectsTest(10, 2, 1, 1, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,

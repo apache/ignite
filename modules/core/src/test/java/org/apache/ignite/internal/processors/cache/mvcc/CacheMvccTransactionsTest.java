@@ -897,10 +897,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testWaitPreviousTxAck() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         testSpi = true;
 
         startGrid(0);
@@ -1093,10 +1092,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
-
         boolean vals[] = {true, false};
 
         for (boolean otherPuts : vals) {
@@ -1217,9 +1215,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testCleanupWaitsForGet2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
         /*
         Simulate case when there are two active transactions modifying the same key
         (it is possible if key lock is released but ack message is delayed), and at this moment
@@ -1326,10 +1324,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
-
         for (int i = 0; i < 4; i++) {
             cleanupWaitsForGet3(i + 1);
 
@@ -2539,10 +2536,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testMvccCoordinatorChangeSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
-
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -2871,10 +2867,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups2_Get() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
-
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
@@ -3397,10 +3392,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     public void testExpiration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));
@@ -3453,10 +3447,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     public void testChangeExpireTime() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));

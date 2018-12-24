@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -30,8 +31,9 @@ public class CacheMvccContinuousQueryClientTest extends IgniteCacheContinuousQue
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10769")
     @Test
     @Override public void testNodeJoinsRestartQuery() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10769");
+        super.testNodeJoinsRestartQuery();
     }
 }
