@@ -21,8 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -34,12 +32,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test reveals issue of null values in SQL query resultset columns that correspond to compound key.
  * That happens when QueryEntity.keyFields has wrong register compared to QueryEntity.fields.
  * Issue only manifests for BinaryMarshaller case. Otherwise the keyFields aren't taken into account.
  */
+@RunWith(JUnit4.class)
 public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -91,16 +93,12 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * The cache must not initialize if QueryEntity.keyFields isn't subset of QueryEntity.fields
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheInitializationFailure() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

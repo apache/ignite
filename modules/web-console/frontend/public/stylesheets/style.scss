@@ -255,17 +255,70 @@ body {
     flex-direction: column;
 }
 
-body > .wrapper,
-    // Nested ui-view, like on password reset state
-body > .wrapper > ui-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    flex: 1 0 auto;
+:root {
+    --page-side-padding: 30px;
+}
 
-    .body-container {
-        flex: 1 0 auto;
-        padding-bottom: 30px;
+.wrapper {
+    --header-height: 62px;
+
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto var(--header-height) 1fr;
+    grid-template-areas: 'notifications notifications' 'header header' 'sidebar content';
+
+    permanent-notifications {
+        grid-area: notifications;
+    }
+
+    web-console-header {
+        grid-area: header;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transform: translateZ(1px);
+    }
+
+    web-console-sidebar {
+        grid-area: sidebar;
+        transform: translateZ(1px);
+    }
+
+    &>.content {
+        grid-area: content;
+        padding-left: var(--page-side-padding);
+        padding-right: var(--page-side-padding);
+        padding-bottom: var(--page-side-padding);
+        display: flex;
+        flex-direction: column;
+
+        &>ui-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+    }
+
+    &.wrapper-public {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto var(--header-height) 1fr auto;
+        grid-template-areas: 'notifications' 'header' 'content' 'footer';
+    }
+}
+
+.public-page {
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 530px;
+
+    .public-page__title {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 30px;
     }
 }
 
@@ -374,7 +427,6 @@ i.btn {
 h1,
 h2,
 h3 {
-    user-select: none;
     font-weight: normal;
     /* Makes the vertical size of the text the same for all fonts. */
     line-height: 1;
@@ -2002,10 +2054,6 @@ html, body {
 
 .center-container {
     position: absolute !important;
-}
-
-.demo-mode {
-    padding-top: 30px;
 }
 
 // Fix for injecting svg icon into BS btn

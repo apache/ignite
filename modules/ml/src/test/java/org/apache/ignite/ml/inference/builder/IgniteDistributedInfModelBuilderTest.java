@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.inference.builder;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link IgniteDistributedInfModelBuilder} class.
@@ -56,7 +56,8 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
     }
 
     /** */
-    public void testBuild() throws ExecutionException, InterruptedException {
+    @Test
+    public void testBuild() {
         AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1, 1);
 
         InfModel<Integer, Future<Integer>> infMdl = mdlBuilder.build(

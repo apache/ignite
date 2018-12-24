@@ -30,11 +30,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,10 +46,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Evict latch. */
     private static CountDownLatch evictLatch;
 
@@ -87,12 +85,6 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
         c.setCacheConfiguration(cc);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
-
         return c;
     }
 
@@ -106,6 +98,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
         mode = LOCAL;
         gridCnt = 1;
@@ -114,6 +107,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
         gridCnt = 3;
@@ -122,6 +116,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitioned() throws Exception {
         mode = PARTITIONED;
         gridCnt = 3;

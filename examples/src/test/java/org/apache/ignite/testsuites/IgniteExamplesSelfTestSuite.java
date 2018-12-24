@@ -49,18 +49,20 @@ import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Examples test suite.
  * <p>
  * Contains all Ignite examples tests.</p>
  */
-public class IgniteExamplesSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesSelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
 //        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
 //            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
 
@@ -101,10 +103,10 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(ComputeClientBinaryExampleTest.class));
 
         // ML Grid.
-        suite.addTest(IgniteExamplesMLTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteExamplesMLTestSuite.class));
 
         // Encryption.
-        suite.addTestSuite(EncryptedCacheExampleSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(EncryptedCacheExampleSelfTest.class));
 
         return suite;
     }

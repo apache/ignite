@@ -28,6 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -35,6 +38,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Multithreaded update test with off heap enabled.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static volatile boolean failed;
@@ -71,6 +75,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransform() throws Exception {
         testTransform(keyForNode(0));
 
@@ -115,6 +120,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         testPut(keyForNode(0));
 
@@ -161,6 +167,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsent() throws Exception {
         testPutxIfAbsent(keyForNode(0));
 
@@ -205,6 +212,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         testPutGet(keyForNode(0));
 

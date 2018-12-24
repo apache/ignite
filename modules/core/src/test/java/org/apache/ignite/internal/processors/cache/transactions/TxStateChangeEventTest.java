@@ -34,6 +34,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
@@ -45,6 +48,7 @@ import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
 /**
  * Tests transaction state change event.
  */
+@RunWith(JUnit4.class)
 public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /** Label. */
     private final String lb = "testLabel";
@@ -70,6 +74,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocal() throws Exception {
         check(true);
     }
@@ -77,6 +82,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRemote() throws Exception {
         check(false);
     }

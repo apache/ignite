@@ -50,19 +50,18 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for dynamic cache start.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
 
@@ -104,8 +103,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         if (client) {
             cfg.setClientMode(true);
 
@@ -140,6 +137,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCacheMultithreadedSameNode() throws Exception {
         final IgniteEx kernal = grid(0);
 
@@ -206,6 +204,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheMultithreadedDifferentNodes() throws Exception {
         final Collection<IgniteInternalFuture<?>> futs = new ConcurrentLinkedDeque<>();
 
@@ -274,6 +273,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCacheSimpleTransactional() throws Exception {
         checkStartStopCacheSimple(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -281,6 +281,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCacheSimpleTransactionalMvcc() throws Exception {
         checkStartStopCacheSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
@@ -288,6 +289,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCacheSimpleAtomic() throws Exception {
         checkStartStopCacheSimple(CacheAtomicityMode.ATOMIC);
     }
@@ -295,6 +297,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCachesSimpleTransactional() throws Exception {
         checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -302,6 +305,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCachesSimpleTransactionalMvcc() throws Exception {
         checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
@@ -309,6 +313,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCachesSimpleAtomic() throws Exception {
         checkStartStopCachesSimple(CacheAtomicityMode.ATOMIC);
     }
@@ -446,6 +451,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopCacheAddNode() throws Exception {
         final IgniteEx kernal = grid(0);
 
@@ -498,6 +504,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFilter() throws Exception {
         try {
             testAttribute = false;
@@ -564,6 +571,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailWhenConfiguredCacheExists() throws Exception {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -585,6 +593,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailWhenOneOfConfiguredCacheExists() throws Exception {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -615,6 +624,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientCache() throws Exception {
         try {
             testAttribute = false;
@@ -658,6 +668,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromClientNode() throws Exception {
         try {
             testAttribute = false;
@@ -700,6 +711,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNearCacheFromClientNode() throws Exception {
         try {
             testAttribute = false;
@@ -745,6 +757,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -816,6 +829,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearNodesCache() throws Exception {
         try {
             testAttribute = false;
@@ -859,6 +873,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     public void testGetOrCreate() throws Exception {
         try {
             final CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -920,6 +935,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     public void testGetOrCreateCollection() throws Exception {
         final int cacheCnt = 3;
 
@@ -956,6 +972,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateMultiNode() throws Exception {
         try {
             final AtomicInteger cnt = new AtomicInteger();
@@ -998,6 +1015,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateMultiNodeTemplate() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
@@ -1017,6 +1035,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateNearOnlyMultiNode() throws Exception {
         checkGetOrCreateNear(true);
     }
@@ -1024,6 +1043,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateNearMultiNode() throws Exception {
         checkGetOrCreateNear(false);
     }
@@ -1145,6 +1165,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodesLeftEvent() throws Exception {
         testAttribute = false;
 
@@ -1199,6 +1220,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDaemonNode() throws Exception {
         daemon = true;
 
@@ -1231,6 +1253,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAwaitPartitionMapExchange() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(new CacheConfiguration(DYNAMIC_CACHE_NAME));
 
@@ -1256,6 +1279,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopWithClientJoin() throws Exception {
         Ignite ignite1 = ignite(1);
 
@@ -1310,6 +1334,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopSameCacheMultinode() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 

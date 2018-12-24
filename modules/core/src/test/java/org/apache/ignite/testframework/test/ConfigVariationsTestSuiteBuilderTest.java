@@ -18,21 +18,24 @@
 package org.apache.ignite.testframework.test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
+public class ConfigVariationsTestSuiteBuilderTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaults() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
@@ -59,6 +62,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testIgniteConfigFilter() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
@@ -79,6 +83,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testCacheConfigFilter() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()

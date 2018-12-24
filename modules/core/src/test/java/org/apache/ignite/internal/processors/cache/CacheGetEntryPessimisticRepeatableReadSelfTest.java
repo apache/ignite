@@ -21,6 +21,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -31,6 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test getEntry and getEntries methods.
  */
+@RunWith(JUnit4.class)
 public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency concurrency() {
@@ -45,9 +50,9 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
     public void testNearTransactionalMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -62,6 +67,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -76,9 +82,9 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testLocalTransactionalMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -92,6 +98,7 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

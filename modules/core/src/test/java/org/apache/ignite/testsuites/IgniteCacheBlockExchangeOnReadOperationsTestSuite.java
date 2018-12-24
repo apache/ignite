@@ -18,20 +18,23 @@
 package org.apache.ignite.testsuites;
 
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnGetAllTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnScanTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSingleGetTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheBlockExchangeOnReadOperationsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheBlockExchangeOnReadOperationsTestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
@@ -42,9 +45,9 @@ public class IgniteCacheBlockExchangeOnReadOperationsTestSuite extends TestSuite
     public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Do Not Block Read Operations Test Suite");
 
-        suite.addTestSuite(CacheBlockOnSingleGetTest.class);
-        suite.addTestSuite(CacheBlockOnGetAllTest.class);
-        suite.addTestSuite(CacheBlockOnScanTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheBlockOnSingleGetTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBlockOnGetAllTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBlockOnScanTest.class));
 
         return suite;
     }

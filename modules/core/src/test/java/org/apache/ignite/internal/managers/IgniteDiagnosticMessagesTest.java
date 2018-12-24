@@ -44,9 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -54,6 +51,10 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -67,10 +68,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -89,8 +88,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         if (testSpi)
             cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -123,6 +120,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessages1() throws Exception {
         checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -130,6 +128,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessagesMvcc1() throws Exception {
         checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
@@ -137,6 +136,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessages2() throws Exception {
         connectionsPerNode = 5;
 
@@ -146,6 +146,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessagesMvcc2() throws Exception {
         connectionsPerNode = 5;
 
@@ -155,6 +156,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunning() throws Exception {
         checkLongRunning(TRANSACTIONAL);
     }
@@ -162,6 +164,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunningMvcc() throws Exception {
         checkLongRunning(TRANSACTIONAL_SNAPSHOT);
     }
@@ -239,15 +242,16 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
     public void testSeveralLongRunningMvccTxs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeveralLongRunningTxs() throws Exception {
         checkSeveralLongRunningTxs(TRANSACTIONAL);
     }
@@ -360,15 +364,16 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
     public void testLongRunningMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunningTx() throws Exception {
         checkLongRunningTx(TRANSACTIONAL);
 
@@ -472,6 +477,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteTx() throws Exception {
         checkRemoteTx(TRANSACTIONAL);
     }
@@ -479,6 +485,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteMvccTx() throws Exception {
         checkRemoteTx(TRANSACTIONAL_SNAPSHOT);
     }

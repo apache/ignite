@@ -794,7 +794,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      */
     private class AddressSender extends IgniteSpiThread {
         /** */
-        @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
         private MulticastSocket sock;
 
         /** */

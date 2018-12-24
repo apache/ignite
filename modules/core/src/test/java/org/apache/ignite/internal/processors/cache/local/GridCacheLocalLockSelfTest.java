@@ -31,12 +31,16 @@ import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Test cases for multi-threaded tests.
  */
+@RunWith(JUnit4.class)
 public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -87,6 +91,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -132,6 +137,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLock() throws Throwable {
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -248,6 +254,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Throwable {
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

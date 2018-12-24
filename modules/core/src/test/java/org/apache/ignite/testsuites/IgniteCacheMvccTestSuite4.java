@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledAtomicCacheTest;
@@ -90,11 +91,14 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheJdbcBl
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite4 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite4 {
     /**
      * @return IgniteCache test suite.
      */
@@ -190,7 +194,7 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         suite.addTest(IgniteCacheTestSuite4.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(IgniteCrossCacheMvccTxSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCrossCacheMvccTxSelfTest.class));
 
         return suite;
     }

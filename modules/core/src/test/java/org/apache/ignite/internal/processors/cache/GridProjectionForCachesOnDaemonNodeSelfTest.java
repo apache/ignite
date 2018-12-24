@@ -21,19 +21,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests of cache related cluster projections for daemon node.
  */
+@RunWith(JUnit4.class)
 public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Daemon node. */
     private static boolean daemonNode;
 
@@ -47,22 +44,9 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(discoverySpi());
-
         cfg.setDaemon(daemonNode);
 
         return cfg;
-    }
-
-    /**
-     * @return Discovery SPI;
-     */
-    private DiscoverySpi discoverySpi() {
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        return spi;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +73,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForDataNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
@@ -107,6 +92,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForClientNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
@@ -125,6 +111,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForCacheNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 

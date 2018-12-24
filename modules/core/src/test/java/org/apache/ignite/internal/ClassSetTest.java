@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link ClassSet} class.
  */
-public class ClassSetTest extends TestCase {
+public class ClassSetTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAndContains() throws Exception {
         ClassSet clsSet = new ClassSet();
 
@@ -39,6 +43,7 @@ public class ClassSetTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddWithMaskAndContains() throws Exception {
         ClassSet clsSet = new ClassSet();
 
@@ -52,6 +57,7 @@ public class ClassSetTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceOnAddWithMask() throws Exception {
         ClassSet clsSet = new ClassSet();
 

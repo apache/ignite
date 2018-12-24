@@ -31,22 +31,21 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
+@RunWith(JUnit4.class)
 public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     /** */
     private static final String MYCACHE = "mycache";
-
-    /** */
-    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public static final int NODES_CNT = 2;
@@ -54,8 +53,6 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(), new CacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -90,6 +87,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance() throws Exception {
         // Fill cache with large dataset to make rebalancing slow.
         try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(MYCACHE)) {
@@ -143,7 +141,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
                 assertNotNull(cache);
 
                 boolean finished;
-                
+
                 log.info("Start rebalancing cache: " + cacheName + ", size: " + cache.localSize());
 
                 do {

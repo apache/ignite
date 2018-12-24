@@ -44,11 +44,11 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -60,10 +60,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final long INIT_REGION_SIZE = 20 << 20;
 
@@ -86,8 +84,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -99,14 +95,20 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setBackups(1);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Ignite cache configuration.
+     */
+    protected CacheConfiguration<Object, Object> cacheConfiguration() {
+        return (CacheConfiguration<Object, Object>)new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -126,6 +128,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageSingleNode() throws Exception {
         DataRegionMetrics initMetrics = null;
 
@@ -141,7 +144,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             assertTrue(currMetrics.getTotalAllocatedPages() >= currMetrics.getPhysicalMemoryPages());
 
-            final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+            final IgniteCache<String, String> cache = node.cache(DEFAULT_CACHE_NAME);
 
             Map<String, String> map = new HashMap<>();
 
@@ -169,13 +172,14 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageMultipleNodes() throws Exception {
         IgniteEx node0 = startGrid(0);
         IgniteEx node1 = startGrid(1);
 
         node0.cluster().active(true);
 
-        final IgniteCache<Integer, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, String> cache = node0.cache(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = new HashMap<>();
 
@@ -220,6 +224,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferSize() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -237,6 +242,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedCheckpointBuffer() throws Exception {
         IgniteEx ig = startGrid(0);
 

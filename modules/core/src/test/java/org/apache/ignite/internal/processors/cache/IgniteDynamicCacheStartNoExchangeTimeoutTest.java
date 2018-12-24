@@ -36,12 +36,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,18 +51,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 4;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -91,6 +87,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultinodeCacheStart() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);
@@ -122,6 +119,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode1(ccfg);
@@ -150,6 +148,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode2(ccfg);
@@ -181,6 +180,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode1(ccfg);
@@ -209,6 +209,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode2(ccfg);
@@ -240,6 +241,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged1() throws Exception {
         IgniteEx ignite0 = grid(0);
 
@@ -267,6 +269,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged2() throws Exception {
         IgniteEx ignite0 = grid(0);
 
@@ -292,6 +295,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged3() throws Exception {
         IgniteEx ignite0 = grid(0);
 

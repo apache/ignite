@@ -51,12 +51,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,10 +66,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for {@link IgfsProcessor}.
  */
+@RunWith(JUnit4.class)
 public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
-    /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Random numbers generator. */
     protected final SecureRandom rnd = new SecureRandom();
 
@@ -112,13 +110,6 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -164,6 +155,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testigfsEnabled() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(igfsName());
 
@@ -175,6 +167,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateProperties() throws Exception {
         IgfsPath p = path("/tmp/my");
 
@@ -208,6 +201,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreate() throws Exception {
         IgfsPath path = path("/file");
 
@@ -234,6 +228,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testMakeListDeleteDirs() throws Exception {
         assertListDir("/");
 
@@ -292,6 +287,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testMakeListDeleteDirsMultithreaded() throws Exception {
         assertListDir("/");
 
@@ -342,6 +338,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBasicOps() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -422,6 +419,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         IgfsPath dir1 = path("/dir1");
         IgfsPath subDir1 = path("/dir1/subdir1");
@@ -468,6 +466,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRename() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -615,6 +614,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateOpenAppend() throws Exception {
         // Error - path points to root directory.
         assertCreateFails("/", false);
@@ -675,6 +675,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testDeleteCacheConsistency() throws Exception {
         IgfsPath path = new IgfsPath("/someFile");
 
@@ -734,21 +735,25 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData1() throws Exception {
         checkCreateAppendLongData(123, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData2() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData3() throws Exception {
         checkCreateAppendLongData(123, 1024, 1000);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData4() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 1000);
     }
@@ -758,6 +763,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatNonEmpty() throws Exception {
         String dirPath = "/A/B/C";
 
@@ -792,6 +798,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatEmpty() throws Exception {
         igfs.clear();
     }
