@@ -23,10 +23,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClie
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyTopologySelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for near-only cache.
  */
+@RunWith(AllTests.class)
 public class IgniteCacheNearOnlySelfTestSuite {
     /**
      * @return Suite.

@@ -88,11 +88,14 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBas
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */
