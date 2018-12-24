@@ -173,6 +173,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
@@ -263,7 +264,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile GridFutureAdapter<Void> enableChangeApplied;
 
     /** */
-    private ReentrantReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+    ReentrantReadWriteLock checkpointLock = new ReentrantReadWriteLock();
 
     /** */
     private long checkpointFreq;
@@ -1555,7 +1556,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         IgniteException e = new IgniteException(msg);
 
-        if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
+        if (cctx.kernalContext().failure().process(new FailureContext(SYSTEM_CRITICAL_OPERATION_TIMEOUT, e)))
             throw e;
 
         throw new CheckpointReadLockTimeoutException(msg);
