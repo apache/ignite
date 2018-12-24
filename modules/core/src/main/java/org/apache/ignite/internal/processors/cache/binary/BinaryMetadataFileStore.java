@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -119,7 +120,7 @@ class BinaryMetadataFileStore {
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-            throw new RuntimeException(msg, e);
+            throw new IgniteException(msg, e);
         }
     }
 
