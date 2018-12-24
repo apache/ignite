@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.baseline;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -95,7 +95,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
         /**
          * @return Current baseline.
          */
-        @NotNull private Map<String, BaselineNode> currentBaseLine() {
+        private Map<String, BaselineNode> currentBaseLine() {
             Map<String, BaselineNode> nodes = new HashMap<>();
 
             Collection<BaselineNode> baseline = ignite.cluster().currentBaselineTopology();
@@ -174,15 +174,15 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
         private VisorBaselineTaskResult remove(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
 
-            if (!baseline.isEmpty()) {
-                for (String consistentId : consistentIds) {
-                    BaselineNode node = baseline.remove(consistentId);
+            if (F.isEmpty(baseline))
+                return set0(Collections.EMPTY_LIST);
 
-                    if (node == null)
-                        throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
-                }
+            for (String consistentId : consistentIds) {
+                BaselineNode node = baseline.remove(consistentId);
+
+                if (node == null)
+                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
             }
-
             return set0(baseline.values());
         }
 
