@@ -2118,8 +2118,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 }
 
-                if (!grpToRefresh.isEmpty())
+                if (!grpToRefresh.isEmpty()){
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
+                            grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
+
                     cctx.exchange().refreshPartitions(grpToRefresh);
+                }
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
