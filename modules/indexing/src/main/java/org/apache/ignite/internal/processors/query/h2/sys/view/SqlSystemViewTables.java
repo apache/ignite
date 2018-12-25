@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -33,6 +34,12 @@ import org.h2.value.Value;
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     /** Name of the affinity column. Columns value could be {@code null} if affinity key is not specified. */
     public static final String AFFINITY_COLUMN = "AFFINITY_COLUMN";
+
+    /** Alias for cache key. {@link QueryUtils#KEY_FIELD_NAME} by default. */
+    public static final String KEY_ALIAS = "KEY_ALIAS";
+
+    /** Alias for cache value. {@link QueryUtils#VAL_FIELD_NAME} by default. */
+    public static final String VALUE_ALIAS = "VALUE_ALIAS";
 
     /** Name of the sql table. */
     public static final String TABLE_NAME = "TABLE_NAME";
@@ -57,7 +64,9 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             newColumn(TABLE_NAME),
             newColumn(OWNING_CACHE_NAME),
             newColumn(OWNING_CACHE_ID, Value.INT),
-            newColumn(AFFINITY_COLUMN)
+            newColumn(AFFINITY_COLUMN),
+            newColumn(KEY_ALIAS),
+            newColumn(VALUE_ALIAS)
         );
     }
 
@@ -86,7 +95,10 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                     tab.tableName(),
                     cacheName,
                     ctx.cache().cacheDescriptor(cacheName).cacheId(),
-                    tab.affinityKey()))
+                    tab.affinityKey(),
+                    QueryUtils.cacheKeyName(tab),
+                    QueryUtils.cacheValueName(tab))
+                )
             ).iterator();
     }
 

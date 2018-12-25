@@ -537,11 +537,11 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         GridCacheProcessor cacheProc = ignite.context().cache();
 
-        execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
-            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic\"");
+        execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, MY_VAL VARCHAR) WITH " +
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic,wrap_value=true\"");
 
-        execSql("CREATE TABLE PUBLIC.ddl_table (ID1 INT, ID2 INT, VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
-            + "\"affinity_key=ID2\"");
+        execSql("CREATE TABLE PUBLIC.ddl_table (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
+            + "\"affinity_key=ID2,wrap_value=false\"");
 
         int cacheSqlId = cacheProc.cacheDescriptor("cache_sql").cacheId();
         int ddlTabId = cacheProc.cacheDescriptor("SQL_PUBLIC_DDL_TABLE").cacheId();
@@ -554,7 +554,9 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             "CACHE_SQL",    // TABLE_NAME
             "cache_sql",    // OWNING_CACHE_NAME
             cacheSqlId,     // OWNING_CACHE_ID
-            null            // AFFINITY_COLUMN
+            null,           // AFFINITY_COLUMN
+            "ID",           // KEY_ALIAS
+            "_VAL"          // VALUE_ALIAS
         );
 
         assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
@@ -571,7 +573,9 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                 "DDL_TABLE",            // TABLE_NAME
                 "SQL_PUBLIC_DDL_TABLE", // OWNING_CACHE_NAME
                 ddlTabId,               // OWNING_CACHE_ID
-                "ID2"                   // AFFINITY_COLUMN
+                "ID2",                  // AFFINITY_COLUMN
+                "_KEY",                 // KEY_ALIAS
+                "MY_VAL"                // VALUE_ALIAS
             )
         );
 

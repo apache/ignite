@@ -209,6 +209,26 @@ public class QueryUtils {
     }
 
     /**
+     * Compute name to access cache key from sql.
+     */
+    public static @NotNull String cacheKeyName(GridQueryTypeDescriptor tab) {
+        if (tab.keyFieldName() != null)
+            return tab.keyFieldName();
+
+        return KEY_FIELD_NAME;
+    }
+
+    /**
+     * Compute name to access cache value from sql.
+     */
+    public static @NotNull String cacheValueName(GridQueryTypeDescriptor tab) {
+        if (tab.valueFieldName() != null)
+            return tab.valueFieldName();
+
+        return VAL_FIELD_NAME;
+    }
+
+    /**
      * Normalize cache query entities.
      *
      * @param entities Query entities.
