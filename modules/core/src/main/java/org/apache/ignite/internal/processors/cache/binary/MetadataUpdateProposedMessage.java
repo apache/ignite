@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,7 +70,6 @@ import org.jetbrains.annotations.Nullable;
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
  */
-@TcpDiscoveryEnsureDelivery
 public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;

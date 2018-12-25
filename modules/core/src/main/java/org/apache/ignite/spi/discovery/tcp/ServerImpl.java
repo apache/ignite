@@ -5629,17 +5629,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
                 }
 
+                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    msg.topologyVersion(),
+                    node,
+                    snapshot,
+                    hist,
+                    msgObj);
+
                 if (waitForNotification || msgObj.isMutable()) {
                     blockingSectionBegin();
 
                     try {
-                        IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                            msg.topologyVersion(),
-                            node,
-                            snapshot,
-                            hist,
-                            msgObj);
-
                         fut.get();
                     }
                     finally {
@@ -5647,13 +5647,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
                 else {
-                    IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                        msg.topologyVersion(),
-                        node,
-                        snapshot,
-                        hist,
-                        msgObj);
-
                     lastCustomEvtLsnrFut = fut;
                 }
 
