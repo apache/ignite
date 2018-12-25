@@ -285,7 +285,15 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
                 GridCacheEntryEx entry = primaryNode.internalCache(cacheName).entryEx(key);
                 entry.unswap();
 
-                assertEquals(expTimes.get(cacheName).get(key), (Long)entry.expireTime());
+                Long exp = expTimes.get(cacheName).get(key);
+
+                Long actl = entry.expireTime();
+
+                if (!exp.equals(actl)) {
+                    log.error("key=" + key + ", entry=" + entry);
+
+                    fail("expected:"+exp+" but current:"+actl);
+                }
             }
         }
     }
