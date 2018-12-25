@@ -74,6 +74,12 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
         return predict(inputFrame);
     }
 
+    /**
+     * Makes a prediction using default column order specified in {@link #schema}.
+     *
+     * @param input Input arguments.
+     * @return Prediction result.
+     */
     public double predict(Double[] input) {
         LeapFrameBuilder builder = new LeapFrameBuilder();
 
@@ -92,6 +98,12 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
         return predict(inputFrame);
     }
 
+    /**
+     * Makes a prediction using MLeap API.
+     *
+     * @param inputFrame Input MLeap frame.
+     * @return Prediction result.
+     */
     public double predict(DefaultLeapFrame inputFrame) {
         DefaultLeapFrame outputFrame = transformer.transform(inputFrame).get();
 

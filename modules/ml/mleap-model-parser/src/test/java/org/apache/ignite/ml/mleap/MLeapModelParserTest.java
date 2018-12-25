@@ -25,9 +25,14 @@ import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.junit.Test;
 
-public class MLeapModelParserTest {
+import static org.junit.Assert.assertEquals;
 
-    private static final String TEST_MODEL_RESOURCE = "scikit-airbnb.rf.zip";
+/**
+ * Tests for {@link MLeapModelParser}.
+ */
+public class MLeapModelParserTest {
+    /** Test model resource name. */
+    private static final String TEST_MODEL_RESOURCE = "datasets/scikit-airbnb.rf.zip";
 
     /** Parser. */
     private final MLeapModelParser parser = new MLeapModelParser();
@@ -35,8 +40,9 @@ public class MLeapModelParserTest {
     /** Model builder. */
     private final SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
+    /** */
     @Test
-    public void testParse() {
+    public void testParseAndPredict() {
         URL url = MLeapModelParserTest.class.getClassLoader().getResource(TEST_MODEL_RESOURCE);
         if (url == null)
             throw new IllegalStateException("File not found [resource_name=" + TEST_MODEL_RESOURCE + "]");
@@ -56,7 +62,7 @@ public class MLeapModelParserTest {
 
             double prediction = mdl.predict(input);
 
-            System.out.println("Prediction: " + prediction);
+            assertEquals(95.3919, prediction, 1e-5);
         }
     }
 }

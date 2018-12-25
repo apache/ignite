@@ -34,7 +34,7 @@ import org.apache.ignite.ml.inference.parser.ModelParser;
 import scala.collection.JavaConverters;
 
 /**
- *
+ * MLeap model parser.
  */
 public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Double, MLeapModel> {
     /** */
@@ -92,7 +92,8 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
             if (!INPUT_FEATURES_FIELD_NAME.equals(fieldName)) {
                 schema.add(field.name());
                 if (ScalarType.Double().equals(field.dataType()))
-                    throw new IllegalArgumentException("Parser supports only double types [name=" + fieldName + ",type=" + field.dataType() + "]");
+                    throw new IllegalArgumentException("Parser supports only double types [name=" +
+                        fieldName + ",type=" + field.dataType() + "]");
             }
         }
 
