@@ -17,7 +17,6 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
-import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
@@ -28,9 +27,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
-import org.apache.ignite.internal.processors.cache.MvccCacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersMvccTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
@@ -72,11 +69,6 @@ public class IgniteCacheMvccTestSuite7 {
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 7");
 
         suite.addTest(IgniteCacheTestSuite7.suite(ignoredTests));
-
-        // Add Mvcc clones.
-        suite.addTest(new JUnit4TestAdapter(MvccCacheGroupMetricsMBeanTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionCountersMvccTest.class));
-
 
         return suite;
     }

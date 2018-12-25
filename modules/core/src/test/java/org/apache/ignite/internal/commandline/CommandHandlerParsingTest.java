@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIR
 import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -172,45 +171,6 @@ public class CommandHandlerParsingTest {
             assertTrue(e instanceof IllegalArgumentException);
         }
     }
-
-    /**
-     * Tests parsing and validation for the SSL arguments.
-     */
-    @Test
-    public void testParseAndValidateSSLArguments() {
-        CommandHandler hnd = new CommandHandler();
-
-        for (Command cmd : Command.values()) {
-
-            if (cmd == Command.CACHE || cmd == Command.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
-
-            try {
-                hnd.parseAndValidate(asList("--truststore"));
-
-                fail("expected exception: Expected truststore");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            Arguments args = hnd.parseAndValidate(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
-                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
-                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
-
-            assertEquals("testSSLProtocol", args.sslProtocol());
-            assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
-            assertEquals("testKeystore", args.sslKeyStorePath());
-            assertArrayEquals("testKeystorePassword".toCharArray(), args.sslKeyStorePassword());
-            assertEquals("testKeystoreType", args.sslKeyStoreType());
-            assertEquals("testTruststore", args.sslTrustStorePath());
-            assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
-            assertEquals("testTruststoreType", args.sslTrustStoreType());
-
-            assertEquals(cmd, args.command());
-        }
-    }
-
 
     /**
      * Tests parsing and validation for user and password arguments.
@@ -409,6 +369,7 @@ public class CommandHandlerParsingTest {
     /**
      * test parsing dump transaction arguments
      */
+    @SuppressWarnings("Null")
     @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();

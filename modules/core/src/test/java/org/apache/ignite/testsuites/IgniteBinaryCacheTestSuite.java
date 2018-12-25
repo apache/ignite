@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorPersistenceBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.GridDataStreamerImplSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAffinityRoutingBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest;
@@ -74,7 +73,6 @@ public class IgniteBinaryCacheTestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridDataStreamerImplSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorBinarySelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorPersistenceBinarySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest.class, ignoredTests);
 

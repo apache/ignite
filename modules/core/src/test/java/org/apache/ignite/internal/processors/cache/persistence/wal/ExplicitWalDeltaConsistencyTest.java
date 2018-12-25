@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.junit.Test;
 
 /**
  * WAL delta records consistency test with explicit checks.

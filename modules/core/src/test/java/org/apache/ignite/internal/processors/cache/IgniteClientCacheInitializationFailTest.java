@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -33,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -64,7 +66,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -84,17 +85,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /** Tx cache name. */
     private static final String TX_CACHE_NAME = "tx-cache";
 
-    /** Mvcc tx cache name. */
-    private static final String MVCC_TX_CACHE_NAME = "mvcc-tx-cache";
-
     /** Near atomic cache name. */
     private static final String NEAR_ATOMIC_CACHE_NAME = "near-atomic-cache";
 
     /** Near tx cache name. */
     private static final String NEAR_TX_CACHE_NAME = "near-tx-cache";
-
-    /** Near mvcc tx cache name. */
-    private static final String NEAR_MVCC_TX_CACHE_NAME = "near-mvcc-tx-cache";
 
     /** Failed caches. */
     private static final Set<String> FAILED_CACHES;
@@ -106,8 +101,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         set.add(TX_CACHE_NAME);
         set.add(NEAR_ATOMIC_CACHE_NAME);
         set.add(NEAR_TX_CACHE_NAME);
-        set.add(MVCC_TX_CACHE_NAME);
-        set.add(NEAR_MVCC_TX_CACHE_NAME);
 
         FAILED_CACHES = Collections.unmodifiableSet(set);
     }
@@ -135,13 +128,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             ccfg2.setName(TX_CACHE_NAME);
             ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            CacheConfiguration<Integer, String> ccfg3 = new CacheConfiguration<>();
-
-            ccfg3.setIndexedTypes(Integer.class, String.class);
-            ccfg3.setName(MVCC_TX_CACHE_NAME);
-            ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
         }
         else {
             GridQueryProcessor.idxCls = FailedIndexing.class;
@@ -171,15 +158,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testMvccTransactionalCacheInitialization() throws Exception {
-        checkCacheInitialization(MVCC_TX_CACHE_NAME);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testAtomicNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
@@ -190,15 +168,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     @Test
     public void testTransactionalNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccTransactionalNearCacheInitialization() throws Exception {
-        checkCacheInitialization(NEAR_MVCC_TX_CACHE_NAME);
     }
 
     /**
@@ -232,22 +201,19 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings({"ThrowableNotThrown"})
+    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgniteCache<Integer, String> cache;
 
                 // Start cache with near enabled.
-                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
-                    NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
+                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
                         .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-                    else if (NEAR_MVCC_TX_CACHE_NAME.equals(cacheName))
-                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
                     cache = client.getOrCreateCache(ccfg);
                 }
@@ -273,11 +239,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -285,6 +246,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteCheckedException {
             // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
+            SqlQuery qry, boolean keepBinary) throws IgniteCheckedException {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -303,6 +270,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
             IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
+            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -331,7 +304,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-                                               boolean ifTblExists, boolean ifColNotExists)
+            boolean ifTblExists, boolean ifColNotExists)
             throws IgniteCheckedException {
             // No-op.
         }
@@ -344,14 +317,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
-            GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.gridCacheContext().kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
+            GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + cctx.name() + " " + new Random().nextInt());
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(GridCacheContextInfo cacheInfo,
-            boolean rmvIdx) throws IgniteCheckedException {
+        @Override public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 
@@ -363,8 +335,9 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return null;
         }
 
-        @Override public boolean registerType(GridCacheContextInfo cacheInfo,
-            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public boolean registerType(GridCacheContext cctx,
+            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
             return false;
         }
 
@@ -410,7 +383,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void onKernalStop() {
+        @Override public void cancelAllQueries() {
             // No-op
         }
 
@@ -427,19 +400,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId) {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(ctx.name()) && ctx.kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
-
-            return true;
         }
     }
 }

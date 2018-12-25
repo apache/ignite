@@ -67,12 +67,6 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 

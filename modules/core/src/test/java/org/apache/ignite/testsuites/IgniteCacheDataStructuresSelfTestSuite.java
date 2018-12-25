@@ -63,8 +63,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithClientSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedAtomicLongApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedCountDownLatchSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
@@ -79,8 +77,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.replicated.Gri
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithClientSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSetWithNodeFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedAtomicLongApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedCountDownLatchSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedLockSelfTest;
@@ -119,8 +115,6 @@ public class IgniteCacheDataStructuresSelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedQueueMultiNodeSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedQueueRotativeMultiNodeTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedSetWithClientSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedSetWithNodeFilterSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteReplicatedCountDownLatchSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteReplicatedSemaphoreSelfTest.class));
@@ -138,8 +132,6 @@ public class IgniteCacheDataStructuresSelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCachePartitionedSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedSetWithClientSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedSetWithNodeFilterSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgnitePartitionedSetNoBackupsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicSetSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgnitePartitionedCountDownLatchSelfTest.class));
