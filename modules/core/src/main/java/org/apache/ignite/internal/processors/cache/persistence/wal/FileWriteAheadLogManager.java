@@ -2126,9 +2126,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return;
 
                 if (desc.idx < segmentAware.keepUncompressedIdxFrom() && duplicateIndices.contains(desc.idx)) {
-                    if (desc.file.exists() && !desc.file.delete())
-                        U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
+                    if (desc.file.exists()){
+                        if (!desc.file.delete()){
+                            U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                                 desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
+                        }
+
+                        U.log(log, "Remove obsolete WAL segment: " + desc.file.getAbsolutePath());
+                    }
                 }
             }
         }
