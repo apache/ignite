@@ -58,7 +58,7 @@ public class TensorFlowThreadedInferenceExample {
 
         InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
-        InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
+        InfModelParser<double[], Long, ?> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
 
             .withInput("Placeholder", doubles -> {
                 float[][][] reshaped = new float[1][28][28];
@@ -83,7 +83,7 @@ public class TensorFlowThreadedInferenceExample {
             .build(reader, parser)) {
             List<Future<?>> futures = new ArrayList<>(images.size());
             for (MnistUtils.MnistLabeledImage image : images)
-                futures.add(threadedMdl.predict(image.getPixels()));
+                futures.add(threadedMdl.apply(image.getPixels()));
             for (Future<?> f : futures)
                 f.get();
         }
