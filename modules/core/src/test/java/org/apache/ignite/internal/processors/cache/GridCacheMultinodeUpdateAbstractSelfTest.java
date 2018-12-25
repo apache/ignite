@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
@@ -55,7 +54,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 3 * 60_000;
+        return 4 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -138,7 +137,20 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
      * @return Number of iterations.
      */
     protected int iterations() {
-        return atomicityMode() == ATOMIC ? 30 : 15;
+        switch (atomicityMode()) {
+            case ATOMIC:
+                return 30;
+
+            case TRANSACTIONAL:
+                return 15;
+
+            case TRANSACTIONAL_SNAPSHOT:
+                return 5;
+        }
+
+        fail();
+
+        return 0;
     }
 
     /**
