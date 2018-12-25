@@ -65,7 +65,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         else
             filter = tab -> true;
 
-        final AtomicLong keys = new AtomicLong();
+        final AtomicLong keys = new AtomicLong();;
 
         return ctx.cache().publicCacheNames().stream()
             .flatMap(cacheName ->
@@ -77,5 +77,13 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                     cacheName,
                     ctx.cache().cacheDescriptor(cacheName).cacheId()))
             ).iterator();
+    }
+
+    @Override public boolean canGetRowCount() {
+        return true;
+    }
+
+    @Override public long getRowCount() {
+        return ctx.cache().publicAndDsCacheNames().stream().mapToLong(c -> ctx.query().types(c).size()).sum();
     }
 }

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -524,6 +525,26 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
     }
+
+    /**
+     * Simple test for {@link SqlSystemViewTables}
+     */
+    @Test
+    public void testTablesView() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        // this cache is
+        execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic\"");
+
+        String schema = ignite.cache("cache_sql").getConfiguration(CacheConfiguration.class).getSqlSchema();
+        System.out.println("+++ schema = " + schema);
+
+        List<List<?>> lists = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
+
+        System.out.println("+++ : " + lists);
+    }
+
 
     /**
      * Test caches system views.
