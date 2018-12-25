@@ -238,6 +238,20 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean initialized() {
+        lock.readLock().lock();
+
+        try {
+            assert topVer != null;
+
+            return !AffinityTopologyVersion.NONE.equals(topVer);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readyTopologyVersion() {
         lock.readLock().lock();
 

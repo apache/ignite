@@ -985,14 +985,19 @@ public class CacheGroupContext {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-            cacheOrGroupName(),
-            grpId,
-            ccfg.getAffinity(),
-            ccfg.getNodeFilter(),
-            ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL,
-            persistenceEnabled());
+        GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
+
+        if (affCache != null)
+            aff = affCache;
+        else
+            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
+                cacheOrGroupName(),
+                grpId,
+                ccfg.getAffinity(),
+                ccfg.getNodeFilter(),
+                ccfg.getBackups(),
+                ccfg.getCacheMode() == LOCAL,
+                persistenceEnabled());
 
         if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);
