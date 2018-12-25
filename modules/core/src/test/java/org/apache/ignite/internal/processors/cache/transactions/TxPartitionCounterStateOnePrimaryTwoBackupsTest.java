@@ -65,13 +65,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorder() throws Exception {
+    public void testPrepareCommitReorderFailBackupAfterTx1Commit() throws Exception {
         doTestPrepareCommitReorder(false);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderSkipCheckpoint() throws Exception {
+    public void testPrepareCommitReorderFailBackupAfterTx1Commit2() throws Exception {
         doTestPrepareCommitReorder(true);
     }
 
@@ -91,9 +91,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         U.map((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
                         SIZES.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-                            if (backup != backup1)
-                                return false;
-
                             super.onBackupCommitted(backup, idx);
 
                             if (idx == BACKUP_COMMIT_ORDER[0]) {
