@@ -4558,7 +4558,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile long nextCpTs;
 
         /** Checkpoint begin phase future. */
-        private GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
 
         /** Checkpoint finish phase future. */
         private GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
@@ -4590,7 +4590,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * (PageStore -> Number of written pages.)
          * Map for tracking which stores should be sync and how many pages was written.
          */
-        private Map<PageStore, LongAdder> pageStores;
+        private final Map<PageStore, LongAdder> pageStores;
 
         /**
          * Partitions destroy queue. Contains all partitions which should be destroyed in the current checkpoint.

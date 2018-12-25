@@ -193,7 +193,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         //then: checkpoint triggered by size limit of wall without checkpoint
         GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
 
-        String checkpointReason = U.field((Object)U.field(checkpointer, "curCpProgress"), "reason");
+        String checkpointReason = U.field((Object)U.field(checkpointer, "lastCp"), "reason");
 
         assertEquals("too big size of WAL without checkpoint", checkpointReason);
     }
