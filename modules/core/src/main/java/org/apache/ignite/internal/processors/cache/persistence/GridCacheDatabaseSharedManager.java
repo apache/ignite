@@ -46,7 +46,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -180,7 +179,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
@@ -2245,7 +2243,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             it.close();
         }
 
-        awaitApplyCompletion(exec, applyError);
+        awaitApplyComplete(exec, applyError);
 
         if (!finalizeState)
             return null;
@@ -2291,36 +2289,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param exec Striped executor.
      * @param applyError Check error reference.
      */
-    private void awaitApplyCompletion(
+    private void awaitApplyComplete(
         StripedExecutor exec,
         AtomicReference<IgniteCheckedException> applyError
     ) throws IgniteCheckedException {
         if (applyError.get() != null)
             throw applyError.get(); // Fail-fast check.
         else {
-            CountDownLatch stripesClearLatch = new CountDownLatch(exec.stripes());
-
-            // We have to ensure that all asynchronous updates are done.
-            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
-            range(0, exec.stripes()).forEach(idx -> exec.execute(idx, stripesClearLatch::countDown));
-
             try {
-                while (true) {
-                    if (stripesClearLatch.await(10_000, TimeUnit.MILLISECONDS))
-                        break;
-                    else {
-                        log.info("Await stripes executor complete tasks" +
-                            ", awaitLatch=" + stripesClearLatch.getCount() +
-                            ", stripes=" + exec.stripes() +
-                            ", queueSize=" + Arrays.toString(exec.stripesQueueSizes()) +
-                            ", activeStatus=" + Arrays.toString(exec.stripesActiveStatuses()));
-                    }
-                }
+                // Await completion apply tasks in all stripes.
+                exec.awaitComplete();
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
             }
 
+            // Checking error after all task applied.
             if (applyError.get() != null)
                 throw applyError.get();
         }
@@ -2358,6 +2342,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         exec.execute(stripe, () -> {
+            // WA for avoid assert check in PageMemory, that current thread hold chpLock.
             CHECKPOINT_LOCK_HOLD_COUNT.set(1);
 
             try {
@@ -2715,7 +2700,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().query().skipFieldLookup(false);
         }
 
-        awaitApplyCompletion(exec, applyError);
+        awaitApplyComplete(exec, applyError);
 
         if (log.isInfoEnabled())
             log.info("Finished applying WAL changes [updatesApplied=" + applied +
@@ -2850,6 +2835,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int pagesNum = 0;
 
+        // Collect collection of dirty pages from all regions.
         for (DataRegion memPlc : regions) {
             if (memPlc.config().isPersistenceEnabled()){
                 GridMultiCollectionWrapper<FullPageId> nextCpPagesCol =
@@ -2861,22 +2847,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        // Sort and split all dirty pages set to several stripes.
         GridMultiCollectionWrapper<FullPageId> pages = splitAndSortCpPagesIfNeeded(
             new IgniteBiTuple<>(res, pagesNum), exec.stripes());
 
-        // Identity stores set.
+        // Identity stores set for future fsync.
         Collection<PageStore> updStores = new GridConcurrentHashSet<>();
 
         AtomicInteger cpPagesCnt = new AtomicInteger();
 
+        // Shared refernce for tracking exception during write pages.
         AtomicReference<IgniteCheckedException> writePagesError = new AtomicReference<>();
 
         for (int i = 0; i < pages.collectionsSize(); i++) {
+            // Calculate stripe index.
             int stripeIdx = i % exec.stripes();
 
+            // Inner collection index.
             int innerIdx = i;
 
             exec.execute(stripeIdx, () -> {
+                // Local buffer for write pages.
                 ByteBuffer writePageBuf = ByteBuffer.allocateDirect(pageSize());
 
                 writePageBuf.order(ByteOrder.nativeOrder());
@@ -2887,6 +2878,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 try {
                     for (FullPageId fullId : pages0) {
+                        // Fail-fast break if some exception occurred.
                         if (writePagesError.get() != null)
                             break;
 
@@ -2894,6 +2886,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullId.groupId());
 
+                        // Write page content to writePageBuf.
                         Integer tag = pageMem.getForCheckpoint(fullId, writePageBuf, null);
 
                         assert tag == null || tag != PageMemoryImpl.TRY_AGAIN_TAG :
@@ -2902,17 +2895,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (tag != null) {
                             writePageBuf.rewind();
 
+                            // Save pageId to local variable for future using if exception occurred.
                             pageId = fullId;
 
+                            // Write writePageBuf to page store.
                             PageStore store = storeMgr.writeInternal(
                                 fullId.groupId(), fullId.pageId(), writePageBuf, tag, true);
 
                             writePageBuf.rewind();
 
+                            // Save store for future fsync.
                             updStores.add(store);
                         }
                     }
 
+                    // Add number of handled pages.
                     cpPagesCnt.addAndGet(pages0.size());
                 }
                 catch (IgniteCheckedException e) {
@@ -2923,10 +2920,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             });
         }
 
-        awaitApplyCompletion(exec, writePagesError);
+        // Await completion all write tasks.
+        awaitApplyComplete(exec, writePagesError);
 
         long written = U.currentTimeMillis();
 
+        // Fsync all touched stores.
         for (PageStore updStore : updStores)
             updStore.sync();
 
