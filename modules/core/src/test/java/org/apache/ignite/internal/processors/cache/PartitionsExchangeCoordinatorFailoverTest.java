@@ -47,14 +47,10 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Advanced coordinator failure scenarios during PME.
  */
-@RunWith(JUnit4.class)
 public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -106,7 +102,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
     /**
      * Tests that new coordinator is able to finish old exchanges in case of in-complete coordinator initialization.
      */
-    @Test
     public void testNewCoordinatorCompletedExchange() throws Exception {
         spiFactory = TestRecordingCommunicationSpi::new;
 
@@ -192,7 +187,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
         spiFactory = TestRecordingCommunicationSpi::new;
 
@@ -234,7 +228,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCoordinatorChangeAfterExchangesMerge() throws Exception {
         // Delay demand messages sending to suspend late affinity assignment.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
