@@ -31,7 +31,6 @@ import static java.util.stream.Collectors.toCollection;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int PARTITION_ID = 0;
@@ -85,7 +84,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                     commits.put((IgniteEx)backup1, backup1CommitOrder);
                     commits.put((IgniteEx)backup2, backup2CommitOrder);
 
-                    return new TPCCommitTxCallbackAdapter(prepares, commits, sizes.length) {
+                    return new TwoPhaseCommitTxCallbackAdapter(prepares, commits, sizes.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
                             super.onBackupCommitted(backup, idx);
 
@@ -123,6 +122,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     /**
      * Test scenario:
      *
+     * 1. All txs is prepared.
+     * 2. All txs are committed on primary, tx 1 and tx 2 committed in different order on both backups, tx 0 is not committed.
+     * 3. All nodes are stopped.
+     * 4. Start backup1 and backup2, detect partition inconsistency and trigger failure handler.
+     * 5. Verify nodes are stopped.
      */
     private void doTestPrepareCommitReorder2(boolean skipCp, int[] prepareOrder, int[] primCommitOrder, int[] backup1CommitOrder, int[] backup2CommitOrder, int[] sizes) throws Exception {
         Map<IgniteEx, int[]> commits = new HashMap<IgniteEx, int[]>();
@@ -149,12 +153,14 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                     awaits.put((IgniteEx)backup1, new CountDownLatch(2));
                     awaits.put((IgniteEx)backup2, new CountDownLatch(2));
 
-                    return new TPCCommitTxCallbackAdapter(prepares, commits, sizes.length) {
+                    return new TwoPhaseCommitTxCallbackAdapter(prepares, commits, sizes.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
                             super.onBackupCommitted(backup, idx);
 
                             CountDownLatch latch = awaits.get(backup);
+
                             latch.countDown();
+
                             if (latch.getCount() == 0) {
                                 for (CountDownLatch countDownLatch : awaits.values()) {
                                     try {
@@ -196,7 +202,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class TPCCommitTxCallbackAdapter extends TxCallbackAdapter {
+    protected class TwoPhaseCommitTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Map<T3<IgniteEx /** Node */, TxState /** State */, IgniteUuid /** Near xid */ >, GridFutureAdapter<?>>
             futures = new ConcurrentHashMap<>();
@@ -220,7 +226,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
          * @param prepares Map of node to it's prepare order.
          * @param commits Map of node to it's commit order.
          */
-        public TPCCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
             this.txCnt = txCnt;
 
             for (int[] ints : prepares.values())
@@ -336,11 +342,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             runAsync(() -> {
                 futures.put(new T3<>(primary, TxState.COMMIT, tx.nearXidVersion().asGridUuid()), proceedFut);
 
-                long l = countForNode(primary, TxState.COMMIT);
-
-                log.info("HHH: " + l);
-
-                if (l == txCnt)
+                if (countForNode(primary, TxState.COMMIT) == txCnt)
                     futures.remove(new T3<>(primary, TxState.COMMIT, version(commits.get(primary).poll()))).onDone();
             });
 
