@@ -1374,6 +1374,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheRestartIsAllowedOnlyToItsInititator() throws Exception {
         IgniteEx kernal = grid(ThreadLocalRandom.current().nextInt(nodeCount()));
 
