@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
@@ -76,8 +78,6 @@ import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTes
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.util.Set;
 
 /**
  * Kernal self test suite.
@@ -160,6 +160,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
+        suite.addTestSuite(NodeWithFilterRestartTest.class);
 
         return suite;
     }
