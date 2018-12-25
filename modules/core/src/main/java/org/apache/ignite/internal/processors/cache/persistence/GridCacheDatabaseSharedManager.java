@@ -283,9 +283,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end */
     private File cpDir;
 
-    /** */
-    private volatile boolean printCheckpointStats = true;
-
     /** Database configuration. */
     private final DataStorageConfiguration persistenceCfg;
 
@@ -2941,6 +2938,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private AtomicInteger inProgressTasks = new AtomicInteger();
 
+        /** */
+        private volatile int parts;
+
         /**
          * @param grpCtx Group context.
          * @param partId Partition ID to destroy.
@@ -2981,16 +2981,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private boolean isEmpty() {
-            boolean empty = pendingReqs.isEmpty();
+            return !it.hasNext();
+        }
 
-            PartitionDestroyQueue prevQueue = prevDestroyQueue;
-
-            if (prevQueue != null) {
-                if (empty)
-                    empty = prevQueue.isEmpty();
-            }
-
-            return empty;
+        /**
+         *
+         */
+        private int partitions(){
+            return parts;
         }
 
         /**
@@ -3065,7 +3063,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 prevDestroyQueue = null;
             }
 
-            it = pendingReqs.values().iterator();
+            Collection<PartitionDestroyRequest> partitionDestroyRequests = pendingReqs.values();
+
+            parts = partitionDestroyRequests.size();
+
+            it = partitionDestroyRequests.iterator();
         }
     }
 
@@ -3333,51 +3335,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 boolean success = false;
 
-                int destroyedPartitionsCnt;
-
                 try {
+                    // Write dirty pages and fsync stores.
                     if (chp.hasPages()) {
+                        if (checkCancel(chp))
+                            return;
+
+                        // Write pages to stores.
                         writePages(chp);
 
-                        // Must re-check shutdown flag here because threads may have skipped some pages.
-                        // If so, we should not put finish checkpoint mark.
-                        if (shutdownNow) {
-                            chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
-
+                        if (checkCancel(chp))
                             return;
-                        }
 
-                        chp.metrics.onFsyncStart();
+                        // Fsync page stores.
+                        fsyncStores(chp);
 
-                        if (!skipSync) {
-                            for (Map.Entry<PageStore, LongAdder> updStoreEntry :  chp.progress.pageStores.entrySet()) {
-                                if (shutdownNow) {
-                                    chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
-
-                                    return;
-                                }
-
-                                blockingSectionBegin();
-
-                                try {
-                                    updStoreEntry.getKey().sync();
-                                }
-                                finally {
-                                    blockingSectionEnd();
-                                }
-
-                                syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
-                            }
-                        }
+                        if (checkCancel(chp))
+                            return;
                     }
                     else {
                         chp.metrics.onPagesWriteStart();
+
                         chp.metrics.onFsyncStart();
                     }
 
                     snapshotMgr.afterCheckpointPageWritten();
 
-                    destroyedPartitionsCnt = destroyEvictedPartitions(chp);
+                    destroyEvictedPartitions(chp);
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     success = true;
@@ -3389,24 +3373,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 chp.metrics.onEnd();
 
-                if (chp.hasPages() || destroyedPartitionsCnt > 0) {
-                    if (printCheckpointStats) {
-                        if (log.isInfoEnabled()) {
-                            String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
+                if (chp.hasPages() || chp.hasDestroyedPartitions()) {
+                    if (log.isInfoEnabled()) {
+                        String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
 
-                            log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                    "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
-                                    "total=%dms]",
-                                chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
-                                chp.pages(),
-                                chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                                chp.walFilesDeleted,
-                                walSegsCoveredMsg,
-                                chp.metrics.markDuration(),
-                                chp.metrics.pagesWriteDuration(),
-                                chp.metrics.fsyncDuration(),
-                                chp.metrics.totalDuration()));
-                        }
+                        log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
+                                "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, " +
+                                "pagesWrite=%dms, fsync=%dms, partDestory=%dms, total=%dms]",
+                            chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
+                            chp.pages(),
+                            chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
+                            chp.walFilesDeleted,
+                            walSegsCoveredMsg,
+                            chp.metrics.markDuration(),
+                            chp.metrics.pagesWriteDuration(),
+                            chp.metrics.fsyncDuration(),
+                            chp.metrics.partitionDestroyDuration(),
+                            chp.metrics.totalDuration()));
                     }
                 }
 
@@ -3532,6 +3515,39 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          * @param chp Checkpoint entry.
+         * @throws IgniteCheckedException If some operation failed.
+         */
+        private void fsyncStores(Checkpoint chp) throws IgniteCheckedException {
+            chp.metrics.onFsyncStart();
+
+            CheckpointProgress cpProgress = chp.progress;
+
+            if (!skipSync) {
+                for (Map.Entry<PageStore, LongAdder> updStoreEntry : cpProgress.pageStores.entrySet()) {
+                    if (checkCancel(chp))
+                        return;
+
+                    PageStore pageStore = updStoreEntry.getKey();
+                    LongAdder pageCounter = updStoreEntry.getValue();
+
+                    blockingSectionBegin();
+
+                    try {
+                        pageStore.sync();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+
+                    cpProgress.pageStores.remove(pageStore);
+
+                    syncedPagesCntr.addAndGet(pageCounter.intValue());
+                }
+            }
+        }
+
+        /**
+         * @param chp Checkpoint entry.
          * @return {@code True} if current checkpoint operation canceleted.
          */
         private boolean checkCancel(Checkpoint chp) {
@@ -3549,17 +3565,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * Processes all evicted partitions scheduled for destroy.
          *
-         * @throws IgniteCheckedException If failed.
-         *
          * @return The number of destroyed partition files.
+         * @throws IgniteCheckedException If failed.
          */
-        private int destroyEvictedPartitions(Checkpoint chp) throws IgniteCheckedException {
+        private void destroyEvictedPartitions(Checkpoint chp) throws IgniteCheckedException {
+            chp.metrics.onDestroyPartitionsStart();
+
             PartitionDestroyQueue destroyQueue = chp.progress.destroyQueue;
 
             if (destroyQueue.isEmpty())
-                return 0;
-
-            AtomicInteger partDestroyed = new AtomicInteger();
+                return;
 
             Runnable destroyPartTask = () -> {
                 PartitionDestroyRequest req;
@@ -3574,8 +3589,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         GridCacheOffheapManager offheap = (GridCacheOffheapManager)grp.offheap();
 
                         offheap.destroyPartitionStore(grpId, partId);
-
-                        partDestroyed.incrementAndGet();
 
                         req.onDone(null);
 
@@ -3603,8 +3616,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 destroyPartTask.run();
 
             destroyQueue.awaitComplete();
-
-            return partDestroyed.get();
         }
 
         /**
@@ -3894,31 +3905,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 curr.destroyQueue.onCheckpointBegin();
 
-                if (printCheckpointStats)
-                    if (log.isInfoEnabled())
-                        log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
-                            chp.cpRec.checkpointId(),
-                            cpPtr,
-                            chp.metrics.lockWaitDuration(),
-                            chp.metrics.lockHoldDuration(),
-                            chp.metrics.walCpRecordFsyncDuration(),
-                            chp.pages(),
-                            curr.reason)
-                        );
+                if (log.isInfoEnabled())
+                    log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
+                            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
+                        chp.cpRec.checkpointId(),
+                        cpPtr,
+                        chp.metrics.lockWaitDuration(),
+                        chp.metrics.lockHoldDuration(),
+                        chp.metrics.walCpRecordFsyncDuration(),
+                        chp.pages(),
+                        curr.reason)
+                    );
             }
             else {
                 if (curr.nextSnapshot)
                     cctx.wal().flush(null, true);
 
-                if (printCheckpointStats) {
-                    if (log.isInfoEnabled())
-                        LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
-                                "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
-                            chp.metrics.lockWaitDuration(),
-                            chp.metrics.lockHoldDuration(),
-                            curr.reason));
-                }
+                if (log.isInfoEnabled())
+                    LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
+                            "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                        chp.metrics.lockWaitDuration(),
+                        chp.metrics.lockHoldDuration(),
+                        curr.reason));
             }
         }
 
@@ -3984,7 +3992,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 currCheckpointPagesCnt = 0;
             }
 
-            if (chp.hasPages()) {
+            if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                 CheckpointEntry cp = prepareCheckpointEntry(
                     tmpWriteBuf,
                     chp.cpEntry.timestamp(),
@@ -4403,6 +4411,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             assert progress != null && progress.cpPages != null;
 
             return progress.cpPages.checkpointPages();
+        }
+
+        /**
+         *
+         */
+        public boolean hasDestroyedPartitions() {
+            return progress.destroyQueue.partitions() > 0;
         }
 
         /**

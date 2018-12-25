@@ -68,6 +68,9 @@ public class CheckpointMetricsTracker {
     private long cpFsyncStart;
 
     /** */
+    private long cpDestroyPartsStart;
+
+    /** */
     private long cpEnd;
 
     /** */
@@ -142,6 +145,13 @@ public class CheckpointMetricsTracker {
     /**
      *
      */
+    public void onDestroyPartitionsStart() {
+        cpDestroyPartsStart = System.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
     public void onEnd() {
         cpEnd = System.currentTimeMillis();
     }
@@ -199,7 +209,14 @@ public class CheckpointMetricsTracker {
      * @return Checkpoint fsync duration.
      */
     public long fsyncDuration() {
-        return cpEnd - cpFsyncStart;
+        return cpDestroyPartsStart - cpFsyncStart;
+    }
+
+    /**
+     * @return Partition destory duration.
+     */
+    public long partitionDestroyDuration() {
+        return cpEnd - cpDestroyPartsStart;
     }
 
     /**
