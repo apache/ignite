@@ -1233,6 +1233,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         ignite(4).active(true);
 
+        doFinalChecks();
+    }
+
+    /**
+     * Verifies correctness of cache operations when working in in-memory mode.
+     */
+    protected void doFinalChecks() throws Exception {
         for (int i = 0; i < 4; i++)
             startGrid(i);
 
