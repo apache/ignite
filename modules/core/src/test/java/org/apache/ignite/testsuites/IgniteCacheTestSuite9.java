@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
@@ -28,35 +29,43 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrim
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite9 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite9 {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+    public static TestSuite suite() {
+        return suite(null);
+    }
 
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
-        suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
-        suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
-        suite.addTestSuite(IgniteCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class);
-        suite.addTestSuite(CachePutIfAbsentTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheGetCustomCollectionsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheLoadRebalanceEvictionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePrimarySyncTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTxCachePrimarySyncTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CachePutIfAbsentTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheAtomicPrimarySyncBackPressureTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteTxConcurrentRemoveObjectsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTxConcurrentRemoveObjectsTest.class, ignoredTests);
 
-        suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxDataConsistencyOnCommitFailureTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheOperationsInterruptTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheOperationsInterruptTest.class, ignoredTests);
 
         return suite;
     }

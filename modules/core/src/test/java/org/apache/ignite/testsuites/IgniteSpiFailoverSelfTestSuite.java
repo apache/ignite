@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpiConfigSelfTest;
 import org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpiSelfTest;
@@ -27,32 +28,34 @@ import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiSelf
 import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiStartStopSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Failover SPI self-test suite.
  */
-public class IgniteSpiFailoverSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiFailoverSelfTestSuite {
     /**
      * @return Failover SPI tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Failover SPI Test Suite");
 
         // Always failover.
-        suite.addTest(new TestSuite(GridAlwaysFailoverSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridAlwaysFailoverSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridAlwaysFailoverSpiConfigSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAlwaysFailoverSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAlwaysFailoverSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAlwaysFailoverSpiConfigSelfTest.class));
 
         // Never failover.
-        suite.addTest(new TestSuite(GridNeverFailoverSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridNeverFailoverSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridNeverFailoverSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridNeverFailoverSpiStartStopSelfTest.class));
 
         // Job stealing failover.
-        suite.addTest(new TestSuite(GridJobStealingFailoverSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridJobStealingFailoverSpiOneNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridJobStealingFailoverSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridJobStealingFailoverSpiConfigSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingFailoverSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingFailoverSpiOneNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingFailoverSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingFailoverSpiConfigSelfTest.class));
 
         return suite;
     }

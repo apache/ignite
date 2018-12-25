@@ -44,10 +44,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,15 +56,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Multi-threaded tests for cache queries.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
     private static final int GRID_CNT = 3;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static AtomicInteger idxSwapCnt = new AtomicInteger();
@@ -83,12 +81,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -219,6 +211,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedSwapUnswapString() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 2000;
@@ -289,6 +282,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedSwapUnswapLong() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 2000;
@@ -360,9 +354,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapLongString() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
-
+    @Test
+    public void testMultiThreadedSwapUnswapLongString() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -433,6 +426,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedSwapUnswapObject() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 4000;
@@ -505,6 +499,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedSameQuery() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 10;
@@ -568,6 +563,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedNewQueries() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 10;
@@ -627,6 +623,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedScanQuery() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 500;
@@ -685,6 +682,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testMultiThreadedSqlFieldsQuery() throws Throwable {
         int threadCnt = 16;
         final int keyCnt = 1100; // set resultSet size bigger than page size

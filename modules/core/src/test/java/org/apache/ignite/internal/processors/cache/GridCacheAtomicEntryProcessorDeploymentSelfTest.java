@@ -27,11 +27,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,10 +42,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache EntryProcessor + Deployment.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test value. */
     protected static String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
@@ -54,6 +53,14 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /** */
     protected boolean clientMode;
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            assert atomicityMode() != ATOMIC;
+
+            fail("https://issues.apache.org/jira/browse/IGNITE-10359");
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,12 +74,6 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
         cfg.setDeploymentMode(depMode);
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(null);
 
@@ -119,6 +120,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -128,6 +130,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -137,6 +140,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -146,6 +150,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 

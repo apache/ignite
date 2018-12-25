@@ -41,7 +41,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TotalAllocatedSize",
             "UsedCheckpointBufferPages",
             "UsedCheckpointBufferSize",
-            "CheckpointBufferSize"
+            "CheckpointBufferSize",
+            // IGNITE-10332
+            "StorageSize",
+            "SparseStorageSize"
         };
 
         /// <summary>

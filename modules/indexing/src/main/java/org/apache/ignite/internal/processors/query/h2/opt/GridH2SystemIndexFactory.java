@@ -17,19 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.h2.index.Index;
-
 import java.util.ArrayList;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.h2.index.Index;
 
 /**
  * Factory for system table indexes.
  */
 public interface GridH2SystemIndexFactory {
     /**
-     * Create list of indexes. First must be primary key, after that all unique indexes and
-     * only then non-unique indexes.
-     * All indexes must be subtypes of {@link H2TreeIndex}.
+     * Create list of indexes. First must be primary key, after that all unique indexes and only then non-unique
+     * indexes. All indexes must be subtypes of {@link H2TreeIndexBase}.
      *
      * @param tbl Table to create indexes for.
      * @return List of indexes.

@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -44,25 +45,23 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstractTest {
-    /** */
-    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setConsistentId(name);
 
@@ -79,8 +78,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAffinity(
-                    new RendezvousAffinityFunction(false, 32))
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setBackups(1)
         );
 
@@ -110,7 +109,11 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         Ignite ig0 = startGrids(3);
 
         ig0.cluster().active(true);

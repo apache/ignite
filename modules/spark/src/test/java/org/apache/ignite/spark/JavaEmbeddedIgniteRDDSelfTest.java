@@ -37,11 +37,15 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import scala.Tuple2;
 
 /**
  * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
+@RunWith(JUnit4.class)
 public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** For Ignite instance names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);
@@ -64,7 +68,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /** Sum function. */
     private static final Function2<Integer, Integer, Integer> SUM_F = new Function2<Integer, Integer, Integer>() {
-        public Integer call(Integer x, Integer y) {
+        @Override public Integer call(Integer x, Integer y) {
             return x + y;
         }
     };
@@ -120,6 +124,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreDataToIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -153,6 +158,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadDataFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -187,6 +193,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryObjectsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -225,6 +232,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFieldsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -272,9 +280,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Finder. */
-    private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @param igniteInstanceName Ignite instance name.
      * @param client Client.
@@ -283,12 +288,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

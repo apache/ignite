@@ -16,6 +16,7 @@
 import ctypes
 
 from pyignite.constants import *
+from .base import IgniteDataType
 
 
 __all__ = [
@@ -24,7 +25,7 @@ __all__ = [
 ]
 
 
-class Primitive:
+class Primitive(IgniteDataType):
     """
     Ignite primitive type. Base type for the following types:
 

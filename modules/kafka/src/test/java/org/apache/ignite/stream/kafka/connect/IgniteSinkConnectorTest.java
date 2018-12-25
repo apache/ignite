@@ -51,6 +51,9 @@ import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.easymock.EasyMock.mock;
@@ -58,6 +61,7 @@ import static org.easymock.EasyMock.mock;
 /**
  * Tests for {@link IgniteSinkConnector}.
  */
+@RunWith(JUnit4.class)
 public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
     private static final int EVENT_CNT = 10000;
@@ -138,9 +142,8 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSinkPutsWithoutTransformation() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9872");
-
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
@@ -151,6 +154,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }

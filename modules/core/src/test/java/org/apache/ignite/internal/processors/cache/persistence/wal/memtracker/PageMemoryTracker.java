@@ -31,8 +31,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -47,9 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -61,13 +57,13 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
 
 /**
@@ -150,40 +146,21 @@ public class PageMemoryTracker implements IgnitePlugin {
      */
     IgniteWriteAheadLogManager createWalManager() {
         if (isEnabled()) {
-            if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC) {
-                return new FsyncModeFileWriteAheadLogManager(gridCtx) {
-                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                        WALPointer res = super.log(record);
+            return new FileWriteAheadLogManager(gridCtx) {
+                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                    WALPointer res = super.log(record);
 
-                        applyWalRecord(record);
+                    applyWalRecord(record);
 
-                        return res;
-                    }
+                    return res;
+                }
 
-                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                        super.resumeLogging(lastPtr);
+                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                    super.resumeLogging(lastPtr);
 
-                        emptyPds = (lastPtr == null);
-                    }
-                };
-            }
-            else {
-                return new FileWriteAheadLogManager(gridCtx) {
-                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                        WALPointer res = super.log(record);
-
-                        applyWalRecord(record);
-
-                        return res;
-                    }
-
-                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                        super.resumeLogging(lastPtr);
-
-                        emptyPds = (lastPtr == null);
-                    }
-                };
-            }
+                    emptyPds = (lastPtr == null);
+                }
+            };
         }
 
         return null;
@@ -434,8 +411,6 @@ public class PageMemoryTracker implements IgnitePlugin {
             try {
                 PageUtils.putBytes(page.address(), 0, snapshot.pageData());
 
-                page.fullPageId(fullPageId);
-
                 page.changeHistory().clear();
 
                 page.changeHistory().add(record);
@@ -458,12 +433,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             try {
                 deltaRecord.applyDelta(pageMemoryMock, page.address());
-
-                // Set new fullPageId after recycle or after new page init, because pageId tag is changed.
-                if (record instanceof RecycleRecord)
-                    page.fullPageId(new FullPageId(((RecycleRecord)record).newPageId(), grpId));
-                else if (record instanceof InitNewPageRecord)
-                    page.fullPageId(new FullPageId(((InitNewPageRecord)record).newPageId(), grpId));
 
                 page.changeHistory().add(record);
             }
@@ -565,7 +534,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             long rmtPage = pageMem.acquirePage(fullPageId.groupId(), fullPageId.pageId());
 
             try {
-                long rmtPageAddr = pageMem.readLock(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
+                long rmtPageAddr = pageMem.readLockForce(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
 
                 try {
                     page.lock();

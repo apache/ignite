@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -78,12 +79,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -395,12 +396,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
+    }
+
+    /**
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
         throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
@@ -481,7 +489,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -495,7 +503,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         super.tearDown();
@@ -946,7 +954,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * Use method for manual rebalancing cache on all nodes. Note that using
      * <pre name="code" class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
@@ -964,40 +972,52 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             return;
 
         IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
         }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /**
@@ -1054,7 +1074,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
         return findKeys(cache, cnt, startFrom, 0);
     }
@@ -1065,7 +1084,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
@@ -1146,7 +1164,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         return findKeys(cache, cnt, startFrom, 1);
     }
@@ -1158,7 +1175,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
@@ -1387,7 +1403,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1395,7 +1411,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**

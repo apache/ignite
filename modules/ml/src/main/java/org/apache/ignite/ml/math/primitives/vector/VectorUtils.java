@@ -40,14 +40,45 @@ public class VectorUtils {
     }
 
     /**
+     * Create new vector of specified size n with specified value.
+     *
+     * @param val Value.
+     * @param n Size;
+     * @return New vector of specified size n with specified value.
+     */
+    public static DenseVector fill(double val, int n) {
+        return (DenseVector)new DenseVector(n).assign(val);
+    }
+
+    /**
+     * Wrap specified value into vector.
+     *
+     * @param val Value to wrap.
+     * @return Specified value wrapped into vector.
+     */
+    public static Vector num2Vec(double val) {
+        return fill(val, 1);
+    }
+
+    /**
      * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
      * @param vecSize Vector size of output vector.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize) {
-        return num2Vec(num, vecSize, false);
+    public static Vector oneHot(int num, int vecSize) {
+        return oneHot(num, vecSize, false);
+    }
+
+    /**
+     * Turn number to 1-sized array.
+     *
+     * @param val Value to wrap in array.
+     * @return Number wrapped in 1-sized array.
+     */
+    public static double[] num2Arr(double val) {
+        return new double[] {val};
     }
 
     /**
@@ -58,7 +89,7 @@ public class VectorUtils {
      * @param isDistributed Flag indicating if distributed vector should be created.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
+    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
         Vector res = new DenseVector(vecSize);
         return res.setX(num, 1);
     }
@@ -185,5 +216,51 @@ public class VectorUtils {
                 answer.set(i, values[i]);
 
         return answer;
+    }
+
+    /**
+     * Concatenates two given vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector v2) {
+        int size1 = v1.size();
+        int size2 = v2.size();
+        double[] vals = new double[size1 + size2];
+        System.arraycopy(v1.asArray(), 0, vals, 0, size1);
+        System.arraycopy(v2.asArray(), 0, vals, size1, size2);
+
+        return new DenseVector(vals);
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param v1 First vector.
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector... vs) {
+        Vector res = v1;
+        for (Vector v : vs)
+            res = concat(res, v);
+        return res;
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector... vs) {
+        Vector res = vs.length == 0 ? new DenseVector() : vs[0];
+        for (int i = 1; i < vs.length; i++) {
+            Vector v = vs[i];
+            res = concat(res, v);
+        }
+        return res;
     }
 }

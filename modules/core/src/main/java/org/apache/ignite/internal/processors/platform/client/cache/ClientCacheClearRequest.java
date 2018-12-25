@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache clear request.
@@ -37,8 +36,6 @@ public class ClientCacheClearRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_REMOVE);
-
         cache(ctx).clear();
 
         return super.process(ctx);

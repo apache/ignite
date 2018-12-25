@@ -24,20 +24,18 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Connection test.
  */
+@RunWith(JUnit4.class)
 public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
@@ -55,12 +53,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         assert cfg.getConnectorConfiguration() == null;
 
@@ -95,6 +87,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaults() throws Exception {
         String url = URL_PREFIX + HOST;
 
@@ -105,6 +98,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeId() throws Exception {
         String url = URL_PREFIX + HOST + "/?nodeId=" + grid(0).localNode().id();
 
@@ -118,6 +112,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomCache() throws Exception {
         String url = URL_PREFIX + HOST + "/" + CUSTOM_CACHE_NAME;
 
@@ -127,6 +122,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomPort() throws Exception {
         String url = URL_PREFIX + HOST + ":" + CUSTOM_PORT;
 
@@ -137,6 +133,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomCacheNameAndPort() throws Exception {
         String url = URL_PREFIX + HOST + ":" + CUSTOM_PORT + "/" + CUSTOM_CACHE_NAME;
 
@@ -146,6 +143,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongCache() throws Exception {
         final String url = URL_PREFIX + HOST + "/wrongCacheName";
 
@@ -166,6 +164,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongPort() throws Exception {
         final String url = URL_PREFIX + HOST + ":33333";
 
@@ -186,6 +185,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClose() throws Exception {
         String url = URL_PREFIX + HOST;
 

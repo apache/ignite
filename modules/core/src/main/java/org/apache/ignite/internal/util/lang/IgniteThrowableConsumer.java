@@ -25,13 +25,15 @@ import org.apache.ignite.IgniteCheckedException;
  * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
  *
  * @param <E> Type of closure parameter.
+ * @param <R> Type of result value.
  */
-public interface IgniteThrowableConsumer<E> extends Serializable {
+public interface IgniteThrowableConsumer<E, R> extends Serializable {
     /**
      * Consumer body.
      *
      * @param e Consumer parameter.
+     * @return Result of consumer operation.
      * @throws IgniteCheckedException if body execution was failed.
      */
-    public void accept(E e) throws IgniteCheckedException;
+    public R accept(E e) throws IgniteCheckedException;
 }

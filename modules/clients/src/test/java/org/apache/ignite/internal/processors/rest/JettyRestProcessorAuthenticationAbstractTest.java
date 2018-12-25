@@ -26,12 +26,16 @@ import org.apache.ignite.internal.processors.authentication.IgniteAccessControlE
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
 
 /**
  * Test REST with enabled authentication.
  */
+@RunWith(JUnit4.class)
 public abstract class JettyRestProcessorAuthenticationAbstractTest extends JettyRestProcessorUnsignedSelfTest {
     /** */
     protected static final String DFLT_USER = "ignite";
@@ -90,6 +94,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAuthenticationCommand() throws Exception {
         String ret = content(null, GridRestCommand.AUTHENTICATE);
 
@@ -99,13 +104,14 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUpdateRemoveUser() throws Exception {
         // Add user.
         String ret = content(null, GridRestCommand.ADD_USER,
             "user", "user1",
             "password", "password1");
 
-        JsonNode res = jsonResponse(ret);
+        JsonNode res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 
@@ -118,7 +124,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
             "user", "user1",
             "password", "password2");
 
-        res = jsonResponse(ret);
+        res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 
@@ -128,7 +134,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
         ret = content(null, GridRestCommand.REMOVE_USER,
             "user", "user1");
 
-        res = jsonResponse(ret);
+        res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 

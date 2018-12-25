@@ -40,8 +40,7 @@ final class H2StatementCache {
      */
     H2StatementCache(int size) {
         lruStmtCache = new LinkedHashMap<H2CachedStatementKey, PreparedStatement>(size, .75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
+            @Override protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
                 if (size() <= size)
                     return false;
 

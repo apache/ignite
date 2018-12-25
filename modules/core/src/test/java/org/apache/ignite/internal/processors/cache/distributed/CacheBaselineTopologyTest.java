@@ -52,10 +52,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -64,6 +65,7 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -82,9 +84,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DATA_NODE = "dataNodeUserAttr";
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -109,11 +108,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -151,6 +145,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceForCacheWithNodeFilter() throws Exception {
         try {
             final int EMPTY_NODE_IDX = 2;
@@ -232,6 +227,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChangesWithFixedBaseline() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -367,6 +363,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineTopologyChangesFromServer() throws Exception {
         testBaselineTopologyChanges(false);
     }
@@ -374,6 +371,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineTopologyChangesFromClient() throws Exception {
         testBaselineTopologyChanges(true);
     }
@@ -381,6 +379,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClusterActiveWhileBaselineChanging() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -542,6 +541,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryLeft() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -629,6 +629,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryLeftAndClusterRestart() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -740,6 +741,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMetadataUpdate() throws Exception {
         startGrids(5);
 
@@ -776,6 +778,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClusterRestoredOnRestart() throws Exception {
         startGrids(5);
 
@@ -811,6 +814,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -832,6 +836,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAffinityAssignmentChangedAfterRestart() throws Exception {
         int parts = 32;
 

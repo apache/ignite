@@ -541,7 +541,6 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
-    @SuppressWarnings("BusyWait")
     @Nullable private T2<SocketStream, Boolean> joinTopology(
         InetSocketAddress prevAddr,
         long timeout,
@@ -732,7 +731,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = locNode;
 
                     if (locNode.order() > 0) {
-                        node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
+                        node = locNode.clientReconnectNode(spi.locNodeAttrs);
 
                         marshalCredentials(node);
                     }

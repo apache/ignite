@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
+import org.apache.ignite.yardstick.jdbc.SelectCommand;
 import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
 
@@ -289,6 +290,10 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     public long mvccContentionRange = 10_000;
 
+    /** See {@link #selectCommand()}. */
+    @Parameter(names = {"--select-command"})
+    private SelectCommand selectCommand = SelectCommand.BY_PRIMARY_KEY;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -402,7 +407,7 @@ public class IgniteBenchmarkArguments {
     }
 
     /** With what cache atomicity mode to create tables. */
-    @Nullable public CacheAtomicityMode atomicMode(){
+    @Nullable public CacheAtomicityMode atomicMode() {
         return atomicMode;
     }
 
@@ -710,6 +715,15 @@ public class IgniteBenchmarkArguments {
      */
     public long mvccContentionRange() {
         return mvccContentionRange;
+    }
+
+    /**
+     * @return What type of SQL SELECT queries to execute. It affects what type of field will present in the WHERE
+     * clause: PK, indexed value field, etc.
+     * @see SelectCommand
+     */
+    public SelectCommand selectCommand() {
+        return selectCommand;
     }
 
     /** {@inheritDoc} */

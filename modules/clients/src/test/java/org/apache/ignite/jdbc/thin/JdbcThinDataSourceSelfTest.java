@@ -39,31 +39,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * DataSource test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -98,6 +90,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJndi() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -117,6 +110,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrlCompose() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -139,6 +133,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResetUrl() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -157,6 +152,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlHints() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -195,6 +191,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpNoDelay() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -218,6 +215,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         final IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 

@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="StopNodeFailureHandler"/>
         /// </summary>
         [Test]
+        [Ignore("IGNITE-10364")]
         public void TestStopNodeFailureHandler()
         {
            TestFailureHandler(typeof(StopNodeFailureHandler));
@@ -80,6 +81,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="StopNodeOrHaltFailureHandler"/>
         /// </summary>
         [Test]
+        [Ignore("IGNITE-10364")]
         public void TestStopNodeOrHaltFailureHandler()
         {
             TestFailureHandler(typeof(StopNodeOrHaltFailureHandler));

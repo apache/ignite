@@ -21,6 +21,7 @@ import org.apache.ignite.examples.datagrid.CacheAffinityExample;
 import org.apache.ignite.examples.datagrid.CacheEntryProcessorExample;
 import org.apache.ignite.examples.datagrid.CacheApiExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 //import org.apache.ignite.examples.datagrid.starschema.*;
 //import org.apache.ignite.examples.datagrid.store.dummy.*;
@@ -33,6 +34,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
@@ -40,6 +42,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheEntryProcessorExample() throws Exception {
         CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
@@ -112,6 +115,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheApiExample() throws Exception {
         CacheApiExample.main(EMPTY_ARGS);
     }

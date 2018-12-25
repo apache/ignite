@@ -574,7 +574,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -945,7 +944,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             skipStore,
                             cctx.store().configured(),
                             keepBinary,
-                            cctx.deploymentEnabled());
+                            cctx.deploymentEnabled(),
+                            inTx() ? tx.label() : null);
 
                         try {
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {
@@ -1320,8 +1320,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     replicate ? DR_PRELOAD : DR_NONE,
                                     false)) {
                                     if (rec && !entry.isInternal())
-                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                            (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                             false, null, null, null, false);
                                 }
                             }
@@ -1353,7 +1353,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * @param msgId Message ID.
          * @param entries Entries to check.
          */
-        @SuppressWarnings({"ForLoopReplaceableByForEach"})
         private void evictReaders(GridCacheContext<?, ?> cacheCtx, Collection<IgniteTxKey> keys, UUID nodeId, long msgId,
             @Nullable List<GridDhtCacheEntry> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
