@@ -175,7 +175,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      * @param groupName Group name.
      * @throws Exception If failed.
      */
-    public void testDestroySpecificCachesInDifferentCacheGroups(String groupName) throws Exception {
+    private void testDestroySpecificCachesInDifferentCacheGroups(String groupName) throws Exception {
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3));
 
@@ -203,7 +203,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      * @param groupName Group name.
      * @throws Exception If failed.
      */
-    public void testDestroySpecificCacheAndCacheGroup(String groupName) throws Exception {
+    private void testDestroySpecificCacheAndCacheGroup(String groupName) throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10582");
 
@@ -230,13 +230,13 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
         RebalanceBlockingSPI commSpi = (RebalanceBlockingSPI)ig1.configuration().getCommunicationSpi();
 
-        // Complete all futures for groups that we no need to wait.
-        commSpi.resumeRebalacneFutures.forEach((k, v) -> {
+        // Complete all futures for groups that we don't need to wait.
+        commSpi.resumeRebalanceFutures.forEach((k, v) -> {
             if (k != CU.cacheId(groupName))
                 v.onDone();
         });
 
-        CountDownLatch latch = commSpi.suspedRebalacneInMiddleLatch.get(CU.cacheId(groupName));
+        CountDownLatch latch = commSpi.suspendRebalanceInMiddleLatch.get(CU.cacheId(groupName));
 
         assert latch != null;
 
@@ -246,7 +246,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         testAction.accept(ig0);
 
         // Resume rebalance after action performed.
-        commSpi.resumeRebalacneFutures.get(CU.cacheId(groupName)).onDone();
+        commSpi.resumeRebalanceFutures.get(CU.cacheId(groupName)).onDone();
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -286,17 +286,17 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
         /** */
-        private final Map<Integer, GridFutureAdapter> resumeRebalacneFutures = new ConcurrentHashMap<>();
+        private final Map<Integer, GridFutureAdapter> resumeRebalanceFutures = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Integer, CountDownLatch> suspedRebalacneInMiddleLatch = new ConcurrentHashMap<>();
+        private final Map<Integer, CountDownLatch> suspendRebalanceInMiddleLatch = new ConcurrentHashMap<>();
 
         /** */
         RebalanceBlockingSPI() {
-            resumeRebalacneFutures.put(CU.cacheId(GROUP_1), new GridFutureAdapter());
-            resumeRebalacneFutures.put(CU.cacheId(GROUP_2), new GridFutureAdapter());
-            suspedRebalacneInMiddleLatch.put(CU.cacheId(GROUP_1), new CountDownLatch(3));
-            suspedRebalacneInMiddleLatch.put(CU.cacheId(GROUP_2), new CountDownLatch(3));
+            resumeRebalanceFutures.put(CU.cacheId(GROUP_1), new GridFutureAdapter());
+            resumeRebalanceFutures.put(CU.cacheId(GROUP_2), new GridFutureAdapter());
+            suspendRebalanceInMiddleLatch.put(CU.cacheId(GROUP_1), new CountDownLatch(3));
+            suspendRebalanceInMiddleLatch.put(CU.cacheId(GROUP_2), new CountDownLatch(3));
         }
 
         /** {@inheritDoc} */
@@ -305,13 +305,13 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                 ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message();
 
-                CountDownLatch latch = suspedRebalacneInMiddleLatch.get(msg0.groupId());
+                CountDownLatch latch = suspendRebalanceInMiddleLatch.get(msg0.groupId());
 
                 if (latch != null) {
                     if (latch.getCount() > 0)
                         latch.countDown();
                     else {
-                        resumeRebalacneFutures.get(msg0.groupId()).listen(f-> super.notifyListener(sndId, msg, msgC));
+                        resumeRebalanceFutures.get(msg0.groupId()).listen(f -> super.notifyListener(sndId, msg, msgC));
 
                         return;
                     }
