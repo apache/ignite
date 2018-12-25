@@ -17,13 +17,14 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown from Ignite API when client node disconnected from cluster.
  */
-public class IgniteClientDisconnectedException extends IgniteException {
+public class IgniteClientDisconnectedException extends ClusterTopologyException {
     /** */
     private static final long serialVersionUID = 0L;
 

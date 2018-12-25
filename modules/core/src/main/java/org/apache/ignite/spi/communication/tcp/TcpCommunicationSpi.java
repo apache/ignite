@@ -3046,7 +3046,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         });
 
         try {
-            reserveFut.reserve();
+            reserveFut.reserve(fut);
         }
         catch (Exception e) {
             fut.onDone(e);
@@ -3080,7 +3080,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /**
          *
          */
-        void reserve() {
+        void reserve(final GridFutureAdapter<GridCommunicationClient> clientFut) {
             final UUID nodeId = node.id();
 
             final GridCommunicationClient client = nodeClient(nodeId, connIdx);
@@ -3106,9 +3106,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         GridCommunicationClient client0 = nodeClient(nodeId, connIdx);
 
                         if (client0 == null) {
-                            clientFut = createNioClient(node, connIdx);
+                            this.clientFut = createNioClient(node, connIdx);
 
-                            clientFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
+                            this.clientFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut) {
                                     try {
                                         GridCommunicationClient client0 = fut.get();
@@ -3200,9 +3200,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 else {
                     oldFut.listen((IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>)fut -> {
                         try {
-                            clientFuts.remove(connKey, oldFut);
-
                             GridCommunicationClient client0 = fut.get();
+
+                            clientFuts.remove(connKey, oldFut);
 
                             if (client0 == null)
                                 onDone();
@@ -3215,6 +3215,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             }
                         }
                         catch (IgniteCheckedException e) {
+                            clientFut.onDone(e);
+
                             onDone(e);
                         }
                     });
