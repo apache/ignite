@@ -322,6 +322,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         if (!walSegment.exists()) {
             File[] list = nodeArchiveDir.listFiles();
 
+            Arrays.sort(list);
+
             log.info("Files in archive:" + list.length);
 
             for (File f : list)
