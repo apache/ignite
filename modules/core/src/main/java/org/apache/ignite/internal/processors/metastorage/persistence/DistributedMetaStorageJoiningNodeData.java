@@ -14,22 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
+
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
-public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
+/** */
+@SuppressWarnings("PublicField")
+class DistributedMetaStorageJoiningNodeData implements Serializable {
     /** */
-    public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    public void writeRaw(String key, byte[] data) throws IgniteCheckedException;
+    public final int bltId;
 
     /** */
-    public void remove(@NotNull String key) throws IgniteCheckedException;
+    public final DistributedMetaStorageVersion ver;
+
+    /** */
+    public final DistributedMetaStorageHistoryItem[] hist;
+
+    /** */
+    public DistributedMetaStorageJoiningNodeData(
+        int bltId,
+        DistributedMetaStorageVersion ver,
+        DistributedMetaStorageHistoryItem[] hist
+    ) {
+        this.bltId = bltId;
+        this.ver = ver;
+        this.hist = hist;
+    }
 }
