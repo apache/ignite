@@ -22,11 +22,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetInsideLockChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheFailoverTestSuite3 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheFailoverTestSuite3 {
     /**
      * @return Ignite Cache Failover test suite.
      */
