@@ -501,20 +501,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
                 }
-                else if (!crd) {
-                    // We should create only one fetch future for group.
-                    assert !fetchFuts.containsKey(grp.groupId());
+                else if (!crd && !fetchFuts.containsKey(grp.groupId())) {
+                    if (grp.affinity().lastVersion().compareTo(topVer) < 0 || grp.topology().readyTopologyVersion().compareTo(topVer) < 0) {
+                        GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
+                            grp.groupId(),
+                            topVer,
+                            discoCache);
 
-                    GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(
-                        cctx,
-                        grp.groupId(),
-                        topVer,
-                        discoCache
-                    );
+                        fetchFut.init(true);
 
-                    fetchFut.init(true);
-
-                    fetchFuts.put(grp.groupId(), fetchFut);
+                        fetchFuts.put(grp.groupId(), fetchFut);
+                    }
                 }
             }
             catch (IgniteCheckedException e) {

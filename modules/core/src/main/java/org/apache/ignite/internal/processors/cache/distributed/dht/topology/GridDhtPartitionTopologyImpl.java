@@ -285,8 +285,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public AffinityTopologyVersion readyTopologyVersion() {
         AffinityTopologyVersion topVer = this.readyTopVer;
 
-        assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
-            ", group=" + grp.cacheOrGroupName() + ']';
+//        assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
+//            ", group=" + grp.cacheOrGroupName() + ']';
 
         return topVer;
     }
