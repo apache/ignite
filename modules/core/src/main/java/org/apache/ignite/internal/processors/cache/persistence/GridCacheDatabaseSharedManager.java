@@ -3262,6 +3262,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private CheckpointProgressSnapshot wakeupForCheckpoint(long delayFromNow, String reason) {
+            return wakeupForCheckpoint(delayFromNow, reason, false);
+        }
+
+        /**
+         *
+         */
+        private CheckpointProgressSnapshot wakeupForCheckpoint(long delayFromNow, String reason, boolean cancelCurrent) {
             CheckpointProgress sched = scheduledCp;
 
             long next = U.currentTimeMillis() + delayFromNow;
@@ -3279,6 +3286,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     sched.nextCpTs = next;
                 }
+
+                CheckpointProgress lastCp = this.lastCp;
+
+                // Cancel current checkpoint if it still in progress.
+                if (cancelCurrent && !lastCp.cpFinishFut.isDone())
+                    lastCp.canceled = true;
 
                 ret = new CheckpointProgressSnapshot(sched);
 
