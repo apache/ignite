@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirect
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheDestroyDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsDiskErrorsRecoveringTest;
@@ -94,8 +93,6 @@ public class IgnitePdsWithIndexingCoreTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgnitePdsCorruptedIndexTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteLogicalRecoveryTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteSequentialNodeCrashRecoveryTest.class));
 
         return suite;
     }

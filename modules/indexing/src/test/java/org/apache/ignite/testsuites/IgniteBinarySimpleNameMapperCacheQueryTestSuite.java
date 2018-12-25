@@ -30,7 +30,7 @@ public class IgniteBinarySimpleNameMapperCacheQueryTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
 
         return IgniteBinaryCacheQueryTestSuite.suite();
