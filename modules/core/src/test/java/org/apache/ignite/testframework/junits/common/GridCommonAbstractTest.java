@@ -2064,8 +2064,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @return {@code true} if values of system variable "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
-     * otherwise {@code false}.
+     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
+     * otherwise {@code true}.
      */
     protected static boolean isEventDrivenServiceProcessorEnabled() {
         return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);

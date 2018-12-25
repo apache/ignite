@@ -78,7 +78,7 @@ public class ServiceDeploymentNonSerializableStaticConfigurationTest extends Gri
         log.registerListener(lsnr);
 
         try {
-            IgniteEx crd = startGrid(0);
+            startGrid(0);
 
             IgniteEx ignite = startGrid(1);
 
