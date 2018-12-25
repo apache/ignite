@@ -286,6 +286,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testCreateDestroyCachesMvccTxReplicated() throws Exception {
         createDestroyCaches(REPLICATED, TRANSACTIONAL_SNAPSHOT);
@@ -334,6 +335,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testScanQueryMvccTxReplicated() throws Exception {
         scanQuery(REPLICATED, TRANSACTIONAL_SNAPSHOT);

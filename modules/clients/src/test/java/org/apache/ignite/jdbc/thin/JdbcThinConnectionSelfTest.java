@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -1695,8 +1694,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5425")
     public void testGetSetClientInfoPair() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
