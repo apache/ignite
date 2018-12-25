@@ -28,8 +28,6 @@ import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,23 +41,17 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  */
 @RunWith(JUnit4.class)
 public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
+        TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         // Set parameters for fast ping failure.
         disco.setSocketTimeout(100);
         disco.setNetworkTimeout(100);
         disco.setReconnectCount(2);
 
-        cfg.setDiscoverySpi(disco);
         cfg.setMetricsUpdateFrequency(10_000);
 
         return cfg;

@@ -37,18 +37,16 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class WalCompactionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
 
@@ -67,8 +65,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -116,6 +112,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
         testApplyingUpdatesFromCompactedWal(false);
     }
@@ -125,6 +122,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
         testApplyingUpdatesFromCompactedWal(true);
     }
@@ -241,6 +239,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsFsync() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.FSYNC);
     }
@@ -248,6 +247,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsLogOnly() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.LOG_ONLY);
     }
@@ -321,6 +321,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);

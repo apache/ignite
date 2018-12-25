@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirect
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheDestroyDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsDiskErrorsRecoveringTest;
@@ -44,11 +45,14 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTe
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingLogOnlyTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
  */
-public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsWithIndexingCoreTestSuite {
     /**
      * @return Test suite.
      */
@@ -90,6 +94,8 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgnitePdsCorruptedIndexTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteLogicalRecoveryTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteSequentialNodeCrashRecoveryTest.class));
 
         return suite;
     }

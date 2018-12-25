@@ -59,9 +59,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
     private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
-    private WALWriter walWriter;
+    private final WALWriter walWriter;
     /** Wal segment sync worker. */
-    private WalSegmentSyncer walSegmentSyncWorker;
+    private final WalSegmentSyncer walSegmentSyncWorker;
     /** Context. */
     protected final GridCacheSharedContext cctx;
     /** Logger. */
@@ -109,7 +109,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         long maxWalSegmentSize,
         long fsyncDelay) {
         this.cctx = cctx;
-        this.log = cctx.logger(FileHandleManagerImpl.class);
+        log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
         this.metrics = metrics;
         this.mmap = mmap;
@@ -119,6 +119,23 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.walBufferSize = walBufferSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
+        walWriter = new WALWriter(log);
+
+        if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
+            walSegmentSyncWorker = new WalSegmentSyncer(
+                cctx.igniteInstanceName(),
+                cctx.kernalContext().log(WalSegmentSyncer.class)
+            );
+
+            if (log.isInfoEnabled())
+                log.info("Initialized write-ahead log manager [mode=" + mode + ']');
+        }
+        else {
+            U.quietAndWarn(log, "Initialized write-ahead log manager in NONE mode, persisted data may be lost in " +
+                "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
+
+            walSegmentSyncWorker = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -179,29 +196,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
-        if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
-            walSegmentSyncWorker = new WalSegmentSyncer(cctx.igniteInstanceName(),
-                cctx.kernalContext().log(WalSegmentSyncer.class));
-
-            if (log.isInfoEnabled())
-                log.info("Started write-ahead log manager [mode=" + mode + ']');
-        }
-        else
-            U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
-                "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate() {
-        if (!cctx.kernalContext().clientNode()) {
-            if (walSegmentSyncWorker != null)
-                new IgniteThread(walSegmentSyncWorker).start();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
@@ -216,16 +210,19 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (walSegmentSyncWorker != null)
             walSegmentSyncWorker.shutdown();
 
-        if (walWriter != null)
-            walWriter.shutdown();
+        walWriter.shutdown();
     }
 
     /** {@inheritDoc} */
     @Override public void resumeLogging() {
-        walWriter = new WALWriter(log);
-
         if (!mmap)
-            new IgniteThread(walWriter).start();
+            walWriter.restart();
+
+        if (cctx.kernalContext().clientNode())
+            return;
+
+        if (walSegmentSyncWorker != null)
+            walSegmentSyncWorker.restart();
     }
 
     /** {@inheritDoc} */
@@ -407,9 +404,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
         private void shutdown() throws IgniteInterruptedCheckedException {
             U.cancel(this);
 
-            LockSupport.unpark(runner());
+            Thread runner = runner();
 
-            U.join(runner());
+            if (runner != null) {
+                LockSupport.unpark(runner);
+
+                U.join(runner);
+            }
+
+            assert walWriter.runner() == null : "WALWriter should be stopped.";
         }
 
         /**
@@ -556,14 +559,25 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 throw se;
             }
         }
+
+        /**
+         * Restart worker in IgniteThread.
+         */
+        public void restart() {
+            assert runner() == null : "WALWriter is still running.";
+
+            isCancelled = false;
+
+            new IgniteThread(this).start();
+        }
     }
 
     /**
      * Syncs WAL segment file.
      */
-    public class WalSegmentSyncer extends GridWorker {
+    private class WalSegmentSyncer extends GridWorker {
         /** Sync timeout. */
-        long syncTimeout;
+        private final long syncTimeout;
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -597,6 +611,17 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
 
             U.join(this, log);
+        }
+
+        /**
+         * Restart worker in IgniteThread.
+         */
+        public void restart() {
+            assert runner() == null : "WalSegmentSyncer is running.";
+
+            isCancelled = false;
+
+            new IgniteThread(walSegmentSyncWorker).start();
         }
     }
 
