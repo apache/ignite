@@ -35,9 +35,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -59,9 +56,6 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
     /** */
     private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque<>();
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *
@@ -87,12 +81,6 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         c.setCommunicationSpi(commSpi);
 
         commSpis.add(commSpi);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         return c;
     }

@@ -68,12 +68,15 @@ import org.apache.ignite.internal.processors.igfs.split.IgfsFixedLengthRecordRes
 import org.apache.ignite.internal.processors.igfs.split.IgfsNewLineDelimiterRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsStringDelimiterRecordResolverSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for Hadoop file system over Ignite cache.
  * Contains platform independent tests only.
  */
-public class IgniteIgfsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteIgfsTestSuite {
     /**
      * @return Test suite.
      */

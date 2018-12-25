@@ -21,13 +21,16 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for web sessions caching functionality.
  */
-public class IgniteWebSessionSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteWebSessionSelfTestSuite {
     /**
      * @return Test suite.
      */
