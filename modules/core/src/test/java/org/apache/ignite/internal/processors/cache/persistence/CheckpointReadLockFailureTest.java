@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests critical failure handling on checkpoint read lock acquisition errors.
@@ -85,6 +86,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailureTypeOnTimeout() throws Exception {
         hndLatch = new CountDownLatch(1);
 
