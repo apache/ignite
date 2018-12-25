@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -3246,70 +3247,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 try {
                     if (chp.hasPages()) {
-                        // Identity stores set.
-                        ConcurrentLinkedHashMap<PageStore, LongAdder> updStores = new ConcurrentLinkedHashMap<>();
-
-                        CheckpointPages[] split = chp.progress.cpPages.split(
-                            asyncRunner == null ? 1 :asyncRunner.getPoolSize());
-
-                        CountDownFuture doneWriteFut = new CountDownFuture(
-                            asyncRunner == null ? 1 : split.length);
-
-                        chp.metrics.onPagesWriteStart();
-
-                        final int totalPagesToWriteCnt = chp.pages();
-
-                        if (asyncRunner != null) {
-                            for (int i = 0; i < split.length; i++) {
-                                Runnable write = new WriteCheckpointPages(
-                                    chp.metrics,
-                                    split[i],
-                                    updStores,
-                                    doneWriteFut,
-                                    totalPagesToWriteCnt,
-                                    new Runnable() {
-                                        @Override public void run() {
-                                            updateHeartbeat();
-                                        }
-                                    },
-                                    asyncRunner
-                                );
-
-                                try {
-                                    asyncRunner.execute(write);
-                                }
-                                catch (RejectedExecutionException ignore) {
-                                    // Run the task synchronously.
-                                    updateHeartbeat();
-
-                                    write.run();
-                                }
-                            }
-                        }
-                        else {
-                            // Single-threaded checkpoint.
-                            updateHeartbeat();
-
-                            Runnable write = new WriteCheckpointPages(
-                                chp.metrics,
-                                chp.progress.cpPages,
-                                updStores,
-                                doneWriteFut,
-                                totalPagesToWriteCnt,
-                                new Runnable() {
-                                    @Override public void run() {
-                                        updateHeartbeat();
-                                    }
-                                },
-                                null);
-
-                            write.run();
-                        }
-
-                        updateHeartbeat();
-
-                        // Wait and check for errors.
-                        doneWriteFut.get();
+                        writePages(chp);
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
@@ -3322,7 +3260,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.metrics.onFsyncStart();
 
                         if (!skipSync) {
-                            for (Map.Entry<PageStore, LongAdder> updStoreEntry : updStores.entrySet()) {
+                            for (Map.Entry<PageStore, LongAdder> updStoreEntry :  chp.progress.pageStores.entrySet()) {
                                 if (shutdownNow) {
                                     chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
 
@@ -3427,6 +3365,92 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 res = "[" + startIdx + " - " + endIdx + "]";
 
             return res;
+        }
+
+        /**
+         * @param chp Checkpoint entry.
+         * @throws IgniteCheckedException If some operation failed.
+         */
+        private void writePages(Checkpoint chp) throws IgniteCheckedException {
+            snapshotMgr.beforeCheckpointPageWritten();
+
+            CheckpointProgress cpProgress = chp.progress;
+
+            int parts = asyncRunner == null ? 1 : asyncRunner.getPoolSize();
+
+            CheckpointPages[] splittedCpPages = cpProgress.cpPages.split(parts);
+
+            CountDownFuture doneWriteFut = new CountDownFuture(splittedCpPages.length);
+
+            chp.metrics.onPagesWriteStart();
+
+            if (asyncRunner != null) {
+                updateHeartbeat();
+
+                for (int i = 0; i < splittedCpPages.length; i++) {
+                    Runnable write = new WriteCheckpointPages(
+                        chp.metrics,
+                        splittedCpPages[i],
+                        cpProgress.pageStores,
+                        doneWriteFut,
+                        () -> {
+                            updateHeartbeat();
+
+                            return checkCancel(chp);
+                        },
+                        asyncRunner
+                    );
+
+                    try {
+                        asyncRunner.execute(write);
+                    }
+                    catch (RejectedExecutionException ignore) {
+                        // Run the task synchronously.
+                        updateHeartbeat();
+
+                        write.run();
+                    }
+                }
+            }
+            else {
+                // Single-threaded checkpoint.
+                updateHeartbeat();
+
+                Runnable write = new WriteCheckpointPages(
+                    chp.metrics,
+                    cpProgress.cpPages,
+                    cpProgress.pageStores,
+                    doneWriteFut,
+                    () -> {
+                        updateHeartbeat();
+
+                        return checkCancel(chp);
+                    },
+                    null
+                );
+
+                write.run();
+            }
+
+            updateHeartbeat();
+
+            doneWriteFut.get();
+        }
+
+        /**
+         * @param chp Checkpoint entry.
+         * @return {@code True} if current checkpoint operation canceleted.
+         */
+        private boolean checkCancel(Checkpoint chp) {
+            CheckpointProgress cpProgress = chp.progress;
+
+            if (shutdownNow) {
+                cpProgress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+
+                return true;
+            }
+            else
+                return false;
         }
 
         /**
@@ -4103,16 +4127,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final CheckpointPages writePageIds;
 
         /** */
-        private final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores;
+        private final Map<PageStore, LongAdder> updStores;
 
         /** */
         private final CountDownFuture doneFut;
 
-        /** Total pages to write, counter may be greater than {@link #writePageIds} size */
-        private final int totalPagesToWrite;
-
         /** */
-        private final Runnable beforePageWrite;
+        private final Supplier<Boolean> checkCancel;
 
         /** If any pages were skipped, new task with remaining pages will be submitted here. */
         private final ExecutorService retryWriteExecutor;
@@ -4124,25 +4145,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param writePageIds Collection of page IDs to write.
          * @param updStores
          * @param doneFut
-         * @param totalPagesToWrite total pages to be written under this checkpoint
-         * @param beforePageWrite Action to be performed before every page write.
          * @param retryWriteExecutor Retry write executor.
          */
         private WriteCheckpointPages(
             final CheckpointMetricsTracker tracker,
             final CheckpointPages writePageIds,
-            final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
+            final Map<PageStore, LongAdder> updStores,
             final CountDownFuture doneFut,
-            final int totalPagesToWrite,
-            final Runnable beforePageWrite,
+            final Supplier<Boolean> checkCancel,
             final ExecutorService retryWriteExecutor
         ) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
-            this.totalPagesToWrite = totalPagesToWrite;
-            this.beforePageWrite = beforePageWrite;
+            this.checkCancel = checkCancel;
             this.retryWriteExecutor = retryWriteExecutor;
         }
 
@@ -4155,11 +4172,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 writePages(writePageIds);
 
-                if (writePageIds.isEmpty())
+                if (writePageIds.isEmpty() || checkCancel.get())
                     doneFut.onDone((Void)null);
                 else {
                     if (retryWriteExecutor == null) {
-                        while (!writePageIds.isEmpty())
+                        while (!writePageIds.isEmpty() && !checkCancel.get())
                             writePages(writePageIds);
 
                         doneFut.onDone((Void)null);
@@ -4171,9 +4188,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             writePageIds,
                             updStores,
                             doneFut,
-                            totalPagesToWrite,
-                            beforePageWrite,
-                            retryWriteExecutor);
+                            checkCancel,
+                            retryWriteExecutor
+                        );
 
                         retryWriteExecutor.submit(retryWritesTask);
                     }
@@ -4199,12 +4216,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (fullId == null)
                     continue;
 
-                if (checkpointer.shutdownNow)
+                if (checkCancel.get())
                     break;
 
                 tmpWriteBuf.rewind();
-
-                beforePageWrite.run();
 
                 snapshotMgr.beforePageWrite(fullId);
 
@@ -4420,6 +4435,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Has the ability to split pages to multiple CheckpointPages.
          */
         private final CheckpointBeginPages cpPages;
+
+        // Identity stores set.
+        private final ConcurrentLinkedHashMap<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
 
         /**
          * @param nextCpTs Next checkpoint timestamp.
