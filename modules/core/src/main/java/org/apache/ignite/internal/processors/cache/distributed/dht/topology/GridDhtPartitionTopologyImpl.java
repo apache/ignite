@@ -2335,7 +2335,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (affNodes.contains(ctx.localNode()))
                 continue;
 
-            List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
+            AffinityTopologyVersion topVer = aff.topologyVersion();
+
+            List<ClusterNode> nodes = part.state() == LOST ? nodes(p, topVer, OWNING, LOST) : nodes(p, topVer, OWNING);
+
             Collection<UUID> nodeIds = F.nodeIds(nodes);
 
             // If all affinity nodes are owners, then evict partition from local node.
