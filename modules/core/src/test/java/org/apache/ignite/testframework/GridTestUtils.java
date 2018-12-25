@@ -34,6 +34,9 @@ import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,6 +89,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -108,6 +113,8 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Utility class for tests.
@@ -2077,5 +2084,33 @@ public final class GridTestUtils {
 
             System.setProperties(props);
         }
+    }
+
+    /**
+     * @param node Node to connect to.
+     * @param params Connection parameters.
+     * @return Thin JDBC connection to specified node.
+     */
+    public static Connection connect(IgniteEx node, String params) throws SQLException {
+        Collection<GridPortRecord> recs = node.context().ports().records();
+
+        GridPortRecord cliLsnrRec = null;
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
+
+                break;
+            }
+        }
+
+        assertNotNull(cliLsnrRec);
+
+        String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
+
+        if (!F.isEmpty(params))
+            connStr += "/?" + params;
+
+        return DriverManager.getConnection(connStr);
     }
 }
