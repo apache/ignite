@@ -147,6 +147,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -2262,7 +2263,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             assert applied.get() > 0;
 
-            finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
+            finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr, exec);
         }
 
         cpHistory.initialize(retreiveHistory());
@@ -2833,59 +2834,94 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void finalizeCheckpointOnRecovery(long cpTs, UUID cpId, WALPointer walPtr) throws IgniteCheckedException {
+    private void finalizeCheckpointOnRecovery(
+        long cpTs,
+        UUID cpId,
+        WALPointer walPtr,
+        StripedExecutor exec
+    ) throws IgniteCheckedException {
         assert cpTs != 0;
-
-        ByteBuffer tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
 
         long start = System.currentTimeMillis();
 
-        Collection<DataRegion> memPolicies = context().database().dataRegions();
+        Collection<DataRegion> regions = dataRegions();
 
-        List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
+        Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(regions.size());
 
-        for (DataRegion memPlc : memPolicies) {
-            if (memPlc.config().isPersistenceEnabled()) {
-                PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
+        int pagesNum = 0;
 
-                cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(
-                    pageMem, (pageMem).beginCheckpoint()));
+        for (DataRegion memPlc : regions) {
+            if (memPlc.config().isPersistenceEnabled()){
+                GridMultiCollectionWrapper<FullPageId> nextCpPagesCol =
+                    ((PageMemoryEx)memPlc.pageMemory()).beginCheckpoint();
+
+                pagesNum += nextCpPagesCol.size();
+
+                res.add(nextCpPagesCol);
             }
         }
 
-        tmpWriteBuf.order(ByteOrder.nativeOrder());
+        GridMultiCollectionWrapper<FullPageId> pages = splitAndSortCpPagesIfNeeded(
+            new IgniteBiTuple<>(res, pagesNum), exec.stripes());
 
         // Identity stores set.
-        Collection<PageStore> updStores = new HashSet<>();
+        Collection<PageStore> updStores = new GridConcurrentHashSet<>();
 
-        int cpPagesCnt = 0;
+        AtomicInteger cpPagesCnt = new AtomicInteger();
 
-        for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities) {
-            PageMemoryEx pageMem = (PageMemoryEx)e.get1();
+        AtomicReference<IgniteCheckedException> writePagesError = new AtomicReference<>();
 
-            Collection<FullPageId> cpPages = e.get2();
+        for (int i = 0; i < pages.collectionsSize(); i++) {
+            int idx = i % exec.stripes();
 
-            cpPagesCnt += cpPages.size();
+            exec.execute(i, () -> {
+                ByteBuffer writePageBuf = ByteBuffer.allocateDirect(pageSize());
 
-            for (FullPageId fullId : cpPages) {
-                tmpWriteBuf.rewind();
+                writePageBuf.order(ByteOrder.nativeOrder());
 
-                Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
+                Collection<FullPageId> pages0 = pages.innerCollection(idx);
 
-                assert tag == null || tag != PageMemoryImpl.TRY_AGAIN_TAG :
-                        "Lock is held by other thread for page " + fullId;
+                FullPageId pageId = null;
 
-                if (tag != null) {
-                    tmpWriteBuf.rewind();
+                try {
+                    for (FullPageId fullId : pages0) {
+                        if (writePagesError.get() != null)
+                            break;
 
-                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
+                        writePageBuf.rewind();
 
-                    tmpWriteBuf.rewind();
+                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullId.groupId());
 
-                    updStores.add(store);
+                        Integer tag = pageMem.getForCheckpoint(fullId, writePageBuf, null);
+
+                        assert tag == null || tag != PageMemoryImpl.TRY_AGAIN_TAG :
+                            "Lock is held by other thread for page " + fullId;
+
+                        if (tag != null) {
+                            writePageBuf.rewind();
+
+                            pageId = fullId;
+
+                            PageStore store = storeMgr.writeInternal(
+                                fullId.groupId(), fullId.pageId(), writePageBuf, tag, true);
+
+                            writePageBuf.rewind();
+
+                            updStores.add(store);
+                        }
+                    }
+
+                    cpPagesCnt.addAndGet(pages0.size());
                 }
-            }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write page to pageStore, pageId=" + pageId);
+
+                    writePagesError.compareAndSet(null, e);
+                }
+            });
         }
+
+        awaitApplyCompletion(exec, writePagesError);
 
         long written = U.currentTimeMillis();
 
@@ -2894,8 +2930,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long fsync = U.currentTimeMillis();
 
-        for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities)
-            ((PageMemoryEx)e.get1()).finishCheckpoint();
+        for (DataRegion memPlc : regions) {
+            if (memPlc.config().isPersistenceEnabled())
+                ((PageMemoryEx)memPlc.pageMemory()).finishCheckpoint();
+        }
+
+        ByteBuffer tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
+
+        tmpWriteBuf.order(ByteOrder.nativeOrder());
 
         CheckpointEntry cp = prepareCheckpointEntry(
             tmpWriteBuf,
@@ -3971,7 +4013,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
 
-                GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(
+                    cpPagesTuple, persistenceCfg.getCheckpointThreads());
 
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
@@ -4204,7 +4247,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cpPagesTuple Checkpoint pages tuple.
      */
     private GridMultiCollectionWrapper<FullPageId> splitAndSortCpPagesIfNeeded(
-        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple
+        IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple,
+        int threads
     ) {
         List<FullPageId> cpPagesList = new ArrayList<>(cpPagesTuple.get2());
 
@@ -4230,9 +4274,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cpPagesList = Arrays.asList(objects);
         }
 
-        int cpThreads = persistenceCfg.getCheckpointThreads();
-
-        int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
+        int pagesSubLists = threads == 1 ? 1 : threads * 4;
         // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
 
         Collection[] pagesSubListArr = new Collection[pagesSubLists];
