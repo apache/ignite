@@ -296,6 +296,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
             raf.setLength(0); // Clear wal segment, but don't delete.
         }
 
+        log.info("Set compactionEnabled=true");
+
         compactionEnabled = true;
 
         ig = startGrid(0);

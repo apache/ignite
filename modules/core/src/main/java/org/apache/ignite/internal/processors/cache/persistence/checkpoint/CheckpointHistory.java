@@ -83,6 +83,11 @@ public class CheckpointHistory {
             IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
 
         isWalHistorySizeParameterEnabled = dsCfg.isWalHistorySizeParameterUsed();
+
+        if (isWalHistorySizeParameterEnabled)
+            U.log(log, "Checkpoint history started history mode.");
+        else
+            U.log(log, "Checkpoint history started file size mode.");
     }
 
     /**

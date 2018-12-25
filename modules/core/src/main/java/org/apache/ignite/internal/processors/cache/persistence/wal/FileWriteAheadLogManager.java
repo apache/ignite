@@ -970,7 +970,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
                 else {
-                    U.log(log, "Truncate [" + low + " -> " + high +"] WAL segments: " + desc.file.getAbsolutePath());
+                    U.log(log, "[" + (low == null ? new FileWALPointer(0, 0, 0) : low) + " -> " + high +
+                        "] WAL segments: " + desc.file.getAbsolutePath());
 
                     deleted++;
                 }
