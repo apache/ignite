@@ -39,6 +39,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -113,7 +115,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    // TODO: JUnit4
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -126,8 +127,15 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             grid(0).cache(DEFAULT_CACHE_NAME).put((long)i, (long)i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     * Called before execution of every test method in class.
+     *
+     * @throws Exception If failed.
+     */
+    @Before
+    public void before() throws Exception {
+        TestSQLFunctions.init();
+
         conn = DriverManager.getConnection(URL);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
@@ -138,8 +146,13 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         assert !stmt.isClosed();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     * Called after execution of every test method in class.
+     *
+     * @throws Exception If failed.
+     */
+    @After
+    public void after() throws Exception {
         if (stmt != null && !stmt.isClosed()) {
             stmt.close();
 
@@ -306,9 +319,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelQuery() throws Exception {
-        // TODO: Move to before test.
-        TestSQLFunctions.init();
-
         IgniteInternalFuture cancelRes = cancel(stmt);
 
         GridTestUtils.assertThrows(log, () -> {
@@ -333,8 +343,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCloseCancelingQuery() throws Exception {
-        TestSQLFunctions.init();
-
         IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
             try {
                 TestSQLFunctions.cancelLatch.await();
@@ -387,8 +395,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelMultipleStatementsQuery() throws Exception {
-        TestSQLFunctions.init();
-
         try (Statement anotherStatment = conn.createStatement()) {
             anotherStatment.setFetchSize(1);
 
@@ -426,8 +432,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelBatchQuery() throws Exception {
-        TestSQLFunctions.init();
-
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
 
@@ -467,8 +471,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelAgainstFullServerThreadPool() throws Exception {
-        TestSQLFunctions.init();
-
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
@@ -531,8 +533,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelFetchAgainstFullServerThreadPool() throws Exception {
-        TestSQLFunctions.init();
-
         stmt.setFetchSize(1);
 
         ResultSet rs = stmt.executeQuery("SELECT * from Integer");

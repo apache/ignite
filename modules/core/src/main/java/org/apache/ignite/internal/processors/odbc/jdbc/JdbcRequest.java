@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 
@@ -226,18 +227,14 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /**
      * Reads JdbcRequest Id.
      *
-     * @param reader Reader.
      * @param msg Jdbc request as byte array.
      * @return Request Id.
      */
-    public static long readRequestId(BinaryReaderExImpl reader, byte[] msg) {
-        try {
-            reader.skipBytes(1);
-        }
-        catch (IOException e) {
-            throw new IgniteException("Unable to decode request Id.");
-        }
+    public static long readRequestId(byte[] msg) {
+        BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        return reader.readLong();
+        stream.position(1);
+
+        return stream.readLong();
     }
 }

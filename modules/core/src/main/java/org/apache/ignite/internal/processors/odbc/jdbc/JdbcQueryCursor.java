@@ -65,14 +65,6 @@ class JdbcQueryCursor extends JdbcCursor {
     }
 
     /**
-     * @return Update count for not SELECT queries.
-     */
-    // TODO: Unused?
-    long updateCount() {
-        return (Long)((List<?>)cur.getAll().get(0)).get(0);
-    }
-
-    /**
      * @return List of the rows.
      */
     List<List<Object>> fetchRows() {

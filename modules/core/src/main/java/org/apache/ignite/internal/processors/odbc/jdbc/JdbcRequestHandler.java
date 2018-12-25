@@ -98,6 +98,10 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
  * JDBC request handler.
  */
 public class JdbcRequestHandler implements ClientListenerRequestHandler {
+    /** Jdbc query cancelled response. */
+    private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
+        new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+
     /** Kernel context. */
     private final GridKernalContext ctx;
 
@@ -380,19 +384,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response to send to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
-
-        try {
-            prepareQueryCancellationMeta(processor);
-        }
-        catch (QueryCancelledException e) {
-            return exceptionToResult(e);
-        }
-
-        // TODO: Too early exception, will not decrement counter.
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
+
+        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
+
+        if (!prepareQueryCancellationMeta(processor))
+            return JDBC_QUERY_CANCELLED_RESPONSE;
 
         boolean unregisterReq = false;
 
@@ -673,13 +672,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
         JdbcCursor cur = jdbcCursors.get(req.cursorId());
 
-        try {
-            prepareQueryCancellationMeta(cur);
-        }
-        catch (QueryCancelledException e) {
-            // Nothing to close, cause query was already cancelled.
+        if (!prepareQueryCancellationMeta(cur))
             return new JdbcResponse(null);
-        }
 
         try {
             cur = jdbcCursors.remove(req.cursorId());
@@ -741,12 +735,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
         final JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
-        try {
-            prepareQueryCancellationMeta(cur);
-        }
-        catch (QueryCancelledException e) {
-            return exceptionToResult(e);
-        }
+        if (!prepareQueryCancellationMeta(cur))
+            return JDBC_QUERY_CANCELLED_RESPONSE;
 
         boolean unregisterReq = false;
 
@@ -795,12 +785,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse getQueryMeta(JdbcQueryMetadataRequest req) {
         final JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
-        try {
-            prepareQueryCancellationMeta(cur);
-        }
-        catch (QueryCancelledException e) {
-            return exceptionToResult(e);
-        }
+        if (!prepareQueryCancellationMeta(cur))
+            return JDBC_QUERY_CANCELLED_RESPONSE;
 
         try {
             if (cur == null)
@@ -1400,25 +1386,26 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * Checks whether query was cancelled - returns null if true, otherwise increments query descriptor usage count.
      *
      * @param cur Jdbc Cursor.
-     * @throws QueryCancelledException If query was already cancelled.
+     * @return False, if query was already cancelled.
      */
-    private void prepareQueryCancellationMeta(JdbcCursor cur) throws QueryCancelledException {
+    private boolean prepareQueryCancellationMeta(JdbcCursor cur) {
         if (isCancellationSupported()) {
             // Nothing to do - cursor was already removed.
-            // TODO: Why do we code to exceptions? Return false instead.
             if (cur == null)
-                throw new QueryCancelledException();
+                return false;
 
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(cur.requestId());
 
                 // Query was already cancelled and unregisterd.
                 if (desc == null)
-                    throw new QueryCancelledException();
+                    return false;
 
                 desc.incrementUsageCount();
             }
         }
+
+        return true;
     }
 
     /**

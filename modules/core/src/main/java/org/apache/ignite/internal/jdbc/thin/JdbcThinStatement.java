@@ -471,17 +471,18 @@ public class JdbcThinStatement implements Statement {
     @Override public void cancel() throws SQLException {
         ensureNotClosed();
 
-        // No-op.
-        // TODO: Why not inside a mutex?
-        if (isCancelled())
-            return;
-
-        if (conn.isStream())
-            throw new SQLFeatureNotSupportedException("Cancel method is not allowed in streaming mode.");
+        if (!isQueryCancellationSupported())
+            throw new SQLFeatureNotSupportedException("Cancel method is not supported.");
 
         long reqId;
 
         synchronized (cancellationMux) {
+            if (isCancelled())
+                return;
+
+            if (conn.isStream())
+                throw new SQLFeatureNotSupportedException("Cancel method is not allowed in streaming mode.");
+
             reqId = currReqId;
 
             if (reqId != 0)
@@ -947,5 +948,19 @@ public class JdbcThinStatement implements Statement {
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
         }
+    }
+
+    /**
+     * @return Cancellation mutex.
+     */
+    Object cancellationMutex() {
+        return cancellationMux;
+    }
+
+    /**
+     * @return True if query cancellation supported, false otherwise.
+     */
+    private boolean isQueryCancellationSupported() {
+        return conn.isQueryCancellationSupported();
     }
 }

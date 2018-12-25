@@ -1069,4 +1069,11 @@ public class JdbcThinConnection implements Connection {
             }
         }
     }
+
+    /**
+     * @return True if query cancellation supported, false otherwise.
+     */
+    boolean isQueryCancellationSupported() {
+        return cliIo.isQueryCancellationSupported();
+    }
 }

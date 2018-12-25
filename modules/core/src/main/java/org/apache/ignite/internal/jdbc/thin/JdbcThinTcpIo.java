@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
@@ -504,15 +503,12 @@ public class JdbcThinTcpIo {
 
         try {
             if (stmt != null) {
-                // TODO: Convert to getter?
-                synchronized (stmt.cancellationMux) {
+                synchronized (stmt.cancellationMutex()) {
                     if (stmt.isCancelled()) {
                         if (req instanceof JdbcQueryCloseRequest)
                             return new JdbcResponse(null);
 
-                        // TODO: Move message to static constant
-                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED,
-                            new QueryCancelledException().getMessage());
+                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
                     }
 
                     sendRequestRaw(req);
@@ -527,8 +523,7 @@ public class JdbcThinTcpIo {
             JdbcResponse resp = readResponse();
 
             if (stmt != null && stmt.isCancelled())
-                // TODO: Move message to static constant
-                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException().getMessage());
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
             else
                 return resp;
         }
@@ -541,13 +536,12 @@ public class JdbcThinTcpIo {
 
     /**
      * Sends cancel request.
+     *
      * @param cancellationReq contains request id to be cancelled
      * @throws IOException In case of IO error.
      */
     void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
-        // TODO: Query cancellation is checked too late - we already set cancelled status for statement
-        if (isQueryCancellationSupported())
-            sendRequestRaw(cancellationReq);
+        sendRequestRaw(cancellationReq);
     }
 
     /**
@@ -555,7 +549,8 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null,
+            null, false);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -703,9 +698,9 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Returns true if query cancellation supported, false otherwise.
+     * @return True if query cancellation supported, false otherwise.
      */
-    private boolean isQueryCancellationSupported() {
+    boolean isQueryCancellationSupported() {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
