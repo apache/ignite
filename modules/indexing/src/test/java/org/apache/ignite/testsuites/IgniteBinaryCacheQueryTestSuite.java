@@ -193,7 +193,6 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiN
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
@@ -208,8 +207,8 @@ import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullify
 import org.apache.ignite.internal.processors.query.h2.H2StatementCacheSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.PreparedStatementExSelfTest;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -515,7 +514,7 @@ public class IgniteBinaryCacheQueryTestSuite {
         suite.addTest(new JUnit4TestAdapter(SqlUserCommandSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(EncryptedSqlTableTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(ObjectPoolSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ThreadLocalObjectPoolSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(H2StatementCacheSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(PreparedStatementExSelfTest.class));
 
