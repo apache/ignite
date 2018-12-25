@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -56,7 +57,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         cleanPersistenceDir();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -64,8 +67,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         ignite.cluster().active(true);
 
         ignite.context().globalMetastorage().write("key", "value");
-
-        Thread.sleep(150L); // Remove later.
 
         stopGrid(0);
 
@@ -76,7 +77,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertEquals("value", ignite.context().globalMetastorage().read("key"));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoinDirtyNode() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -86,8 +89,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         ignite.cluster().active(true);
 
         ignite.context().globalMetastorage().write("key1", "value1");
-
-        Thread.sleep(150L); // Remove later.
 
         stopGrid(1);
 
@@ -99,8 +100,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.context().globalMetastorage().write("key2", "value2");
 
-        Thread.sleep(150L); // Remove later.
-
         IgniteEx newNode = startGrid(1);
 
         assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
@@ -110,7 +109,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertGlobalMetastoragesAreEqual(ignite, newNode);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoinDirtyNodeFullData() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -124,8 +125,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
             ignite.context().globalMetastorage().write("key1", "value1");
 
-            Thread.sleep(150L); // Remove later.
-
             stopGrid(1);
 
             stopGrid(0);
@@ -137,8 +136,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             ignite.context().globalMetastorage().write("key2", "value2");
 
             ignite.context().globalMetastorage().write("key3", "value3");
-
-            Thread.sleep(150L); // Remove later.
 
             IgniteEx newNode = startGrid(1);
 
@@ -155,7 +152,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         }
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoinNodeWithLongerHistory() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -166,13 +165,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.context().globalMetastorage().write("key1", "value1");
 
-        Thread.sleep(150L); // Remove later.
-
         stopGrid(1);
 
         ignite.context().globalMetastorage().write("key2", "value2");
-
-        Thread.sleep(150L); // Remove later.
 
         stopGrid(0);
 
@@ -189,7 +184,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertGlobalMetastoragesAreEqual(ignite, grid(0));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testNamesCollision() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -213,8 +210,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         globalMetastorage.write("key", "globalValue");
 
-        Thread.sleep(150L); // Remove later.
-
         dbSharedMgr.checkpointReadLock();
 
         try {
@@ -227,7 +222,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertEquals("globalValue", globalMetastorage.read("key"));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testUnstableTopology() throws Exception {
         int cnt = 8;
@@ -261,14 +258,14 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         long start = System.currentTimeMillis();
 
-        long duration = 5_000L;
+        long duration = GridTestUtils.SF.applyLB(30_000, 5_000);
 
         try {
-            int i = 0;
-            while (System.currentTimeMillis() < start + duration)
+            for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
                 grid(0).context().globalMetastorage().write(
-                    "key" + ++i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
+                    "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
                 );
+            }
         }
         finally {
             stop.set(true);
@@ -290,7 +287,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testWrongStartOrder1() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -332,7 +331,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         }
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testWrongStartOrder2() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -386,7 +387,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         }
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testWrongStartOrder3() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -436,7 +439,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         }
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testWrongStartOrder4() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -488,5 +493,25 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         finally {
             System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test @SuppressWarnings("ThrowableNotThrown")
+    public void testInactiveClusterWrite() throws Exception {
+        startGrid(0);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+            grid(0).context().globalMetastorage().write("key", "value");
+
+            return null;
+        }, IllegalStateException.class, "Ignite cluster is not active");
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+            grid(0).context().globalMetastorage().remove("key");
+
+            return null;
+        }, IllegalStateException.class, "Ignite cluster is not active");
     }
 }

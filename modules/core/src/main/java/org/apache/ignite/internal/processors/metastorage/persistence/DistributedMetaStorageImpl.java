@@ -88,7 +88,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
         new GridConcurrentLinkedHashSet<>();
 
-    /** */
+    /** */ //TODO Change to ArrayBlockingQueue?
     private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
 
     /** */
@@ -105,9 +105,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** */
     private StartupExtras startupExtras = new StartupExtras();
-
-    /** */
-    private boolean active;
 
     /** */
     private final Object innerStateLock = new Object();
@@ -159,6 +156,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (active)
+            onActivate(ctx);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (!isPersistenceEnabled(ctx.config())) {
             if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
@@ -178,28 +181,30 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
-            writeAvailable.countDown();
-
-            GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
-
-            for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
-        }
 
-        synchronized (innerStateLock) {
-            active = true;
+            writeAvailable.countDown();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         synchronized (innerStateLock) {
-            active = false;
-
             bridge = new NotAvailableDistributedMetaStorageBridge();
 
             writeAvailable = new CountDownLatch(1);
         }
+    }
+
+    /** */
+    private boolean isActive() {
+        return ctx.state().clusterState().active();
+    }
+
+    /** */
+    @NotNull private IllegalStateException clusterIsNotActiveException() {
+        return new IllegalStateException("Ignite cluster is not active");
     }
 
     /** */
@@ -258,10 +263,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             startupExtras = null;
         }
 
-        writeAvailable.countDown();
-
         for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
+
+        writeAvailable.countDown();
     }
 
     /** {@inheritDoc} */
@@ -293,9 +298,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException {
-        if (!active)
-            throw new IllegalStateException("Cluster is not active");
-
         lock();
 
         try {
@@ -516,9 +518,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** */
     private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
-//        if (!active)
-//            throw new IllegalStateException("Cluster is not active");
-
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<?> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
@@ -536,6 +535,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateMessage msg
     ) {
+        if (!isActive()) {
+            msg.setActive(false);
+
+            return;
+        }
+
         try {
             U.await(writeAvailable);
 
@@ -547,16 +552,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** */
-    private void criticalError(Throwable e) {
-        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-        if (e instanceof Error)
-            throw (Error) e;
-
-        throw U.convertException((IgniteCheckedException)e);
-    }
-
-    /** */
     private void onAckMessage(
         AffinityTopologyVersion topVer,
         ClusterNode node,
@@ -564,8 +559,22 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) {
         GridFutureAdapter<?> fut = updateFuts.remove(msg.requestId());
 
-        if (fut != null)
-            fut.onDone();
+        if (fut != null) {
+            if (msg.isActive())
+                fut.onDone();
+            else
+                fut.onDone(clusterIsNotActiveException());
+        }
+    }
+
+    /** */
+    private void criticalError(Throwable e) {
+        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+        if (e instanceof Error)
+            throw (Error) e;
+
+        throw U.convertException((IgniteCheckedException)e);
     }
 
     /** */
@@ -639,6 +648,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** */
     private void updateLater(DistributedMetaStorageHistoryItem update) {
+        assert startupExtras != null;
+
         startupExtras.deferredUpdates.add(update);
     }
 

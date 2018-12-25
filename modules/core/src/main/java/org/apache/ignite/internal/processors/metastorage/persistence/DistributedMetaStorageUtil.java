@@ -41,7 +41,7 @@ class DistributedMetaStorageUtil {
     private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
 
     /** */
-    private static final String CLEANUP_KEY = "cleanup";
+    private static final String CLEANUP_GUARD_KEY = "clean";
 
     /** */
     @Nullable public static Serializable unmarshal(byte[] valBytes) throws IgniteCheckedException {
@@ -93,7 +93,7 @@ class DistributedMetaStorageUtil {
     }
 
     /** */
-    public static String cleanupKey() {
-        return COMMON_KEY_PREFIX + CLEANUP_KEY;
+    public static String cleanupGuardKey() {
+        return COMMON_KEY_PREFIX + CLEANUP_GUARD_KEY;
     }
 }

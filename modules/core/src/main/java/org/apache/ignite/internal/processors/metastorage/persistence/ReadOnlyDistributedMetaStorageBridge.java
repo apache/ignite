@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /** */
 class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
@@ -44,6 +45,9 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     private final ReadOnlyMetastorage metastorage;
 
     /** */
+    private DistributedMetaStorageHistoryItem firstToWrite;
+
+    /** */
     public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms, ReadOnlyMetastorage metastorage) {
         this.dms = dms;
         this.metastorage = metastorage;
@@ -51,6 +55,9 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** {@inheritDoc} */
     @Override public Serializable read(String globalKey) throws IgniteCheckedException {
+        if (firstToWrite != null && firstToWrite.key.equals(globalKey))
+            return unmarshal(firstToWrite.valBytes);
+
         return metastorage.read(localKey(globalKey));
     }
 
@@ -60,11 +67,28 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
-        metastorage.iterate(
-            localKeyPrefix() + globalKeyPrefix,
-            cb,
-            unmarshal
-        );
+        if (firstToWrite == null || !firstToWrite.key.startsWith(globalKeyPrefix))
+            metastorage.iterate(
+                localKeyPrefix() + globalKeyPrefix,
+                cb,
+                unmarshal
+            );
+        else {
+            Serializable firstToWriteVal = unmarshal ? unmarshal(firstToWrite.valBytes) : firstToWrite.valBytes;
+
+            metastorage.iterate(
+                localKeyPrefix() + globalKeyPrefix,
+                (key, val) -> {
+                    if (firstToWrite.key.equals(key)) {
+                        if (firstToWriteVal != null)
+                            cb.accept(key, firstToWriteVal);
+                    }
+                    else
+                        cb.accept(key, val);
+                },
+                unmarshal
+            );
+        }
     }
 
     /** {@inheritDoc} */
@@ -84,8 +108,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** */
     public void readInitialData(StartupExtras startupExtras) throws IgniteCheckedException {
-        String cleanupKey = cleanupKey();
-        if (metastorage.getData(cleanupKey) != null) {
+        if (metastorage.getData(cleanupGuardKey()) != null) {
             startupExtras.clearLocData = true;
 
             startupExtras.verToSnd = dms.ver = 0;
@@ -134,9 +157,18 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
                 List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
 
+                firstToWrite = startupExtras.firstToWrite;
+
                 metastorage.iterate(
                     localKeyPrefix(),
-                    (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
+                    (key, val) -> {
+                        if (firstToWrite != null && firstToWrite.key.equals(key)) {
+                            if (firstToWrite.valBytes != null)
+                                locFullData.add(firstToWrite);
+                        }
+                        else
+                            locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val));
+                    },
                     false
                 );
 

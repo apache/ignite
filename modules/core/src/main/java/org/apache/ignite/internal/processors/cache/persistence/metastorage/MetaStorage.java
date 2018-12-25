@@ -262,12 +262,12 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     @Override public Serializable read(String key) throws IgniteCheckedException {
         byte[] data = getData(key);
 
-        Object res = null;
+        Serializable res = null;
 
         if (data != null)
-            res = marshaller.unmarshal(data, getClass().getClassLoader());
+            res = marshaller.unmarshal(data, U.gridClassLoader());
 
-        return (Serializable)res;
+        return res;
     }
 
 
@@ -292,7 +292,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                             continue;
 
                         if (unmarshal) {
-                            Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
+                            Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
 
                             cb.accept(key, val);
                         }
@@ -320,7 +320,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 continue;
 
             if (unmarshal) {
-                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
+                Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
 
                 cb.accept(key, val);
             }

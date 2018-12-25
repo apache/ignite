@@ -38,8 +38,12 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
     private final UUID reqId;
 
     /** */
-    public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
+    private final boolean active;
+
+    /** */
+    public DistributedMetaStorageUpdateAckMessage(UUID reqId, boolean active) {
         this.reqId = reqId;
+        this.active = active;
     }
 
     /** {@inheritDoc} */
@@ -55,6 +59,11 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
     /** */
     public boolean isAckMessage() {
         return true;
+    }
+
+    /** */
+    public boolean isActive() {
+        return active;
     }
 
     /** {@inheritDoc} */

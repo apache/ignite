@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
@@ -104,9 +104,9 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         assert startupExtras != null;
 
         if (startupExtras.clearLocData || startupExtras.fullNodeData != null) {
-            String cleanupKey = cleanupKey();
+            String cleanupGuardKey = cleanupGuardKey();
 
-            metastorage.putData(cleanupKey, DUMMY_VALUE);
+            metastorage.putData(cleanupGuardKey, DUMMY_VALUE);
 
             if (startupExtras.clearLocData) {
                 Set<String> allKeys = new HashSet<>();
@@ -143,7 +143,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                     lsnr.onReInit(dms);
             }
 
-            metastorage.remove(cleanupKey);
+            metastorage.remove(cleanupGuardKey);
         }
 
         Long storedVer = (Long)metastorage.read(historyVersionKey());

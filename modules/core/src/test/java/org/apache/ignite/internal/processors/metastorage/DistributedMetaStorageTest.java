@@ -64,7 +64,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** */
+    /**
+     * @return {@code true} for tests with persistent cluster, {@code false} otherwise.
+     */
     protected boolean isPersistent() {
         return false;
     }
@@ -84,7 +86,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSingleNode() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -104,7 +108,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertNull(metastorage.read("key"));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testMultipleNodes() throws Exception {
         int cnt = 4;
@@ -120,8 +126,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
             metastorage(i).write(key, val);
 
-            Thread.sleep(150L); // Remove later.
-
             for (int j = 0; j < cnt; j++)
                 assertEquals(i + " " + j, val, metastorage(j).read(key));
         }
@@ -130,7 +134,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testListenersOnWrite() throws Exception {
         int cnt = 4;
@@ -153,15 +159,15 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).context().globalMetastorage().write("key", "value");
 
-        Thread.sleep(150L); // Remove later.
-
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
             assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
@@ -171,8 +177,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         grid(0).cluster().active(true);
 
         grid(0).context().globalMetastorage().write("key", "value");
-
-        Thread.sleep(150L); // Remove later.
 
         AtomicInteger predCntr = new AtomicInteger();
 
@@ -188,15 +192,15 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).context().globalMetastorage().remove("key");
 
-        Thread.sleep(150L); // Remove later.
-
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
             assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoinCleanNode() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -204,8 +208,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         ignite.context().globalMetastorage().write("key", "value");
-
-        Thread.sleep(150L); // Remove later.
 
         IgniteEx newNode = startGrid(1);
 
@@ -215,7 +217,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     }
 
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testJoinCleanNodeFullData() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
@@ -228,8 +232,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             ignite.context().globalMetastorage().write("key1", "value1");
 
             ignite.context().globalMetastorage().write("key2", "value2");
-
-            Thread.sleep(150L); // Remove later.
 
             IgniteEx newNode = startGrid(1);
 
@@ -244,12 +246,16 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * @return {@link DistributedMetaStorage} instance for i'th node.
+     */
     protected DistributedMetaStorage metastorage(int i) {
         return grid(i).context().globalMetastorage();
     }
 
-    /** */
+    /**
+     * Assert that two nodes have the same internal state in {@link DistributedMetaStorage}.
+     */
     protected void assertGlobalMetastoragesAreEqual(IgniteEx ignite1, IgniteEx ignite2) throws Exception {
         DistributedMetaStorage globalMetastorage1 = ignite1.context().globalMetastorage();
 
