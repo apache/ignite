@@ -108,6 +108,12 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     /** */
     private long totalSz;
 
+    /** */
+    private long storageSize;
+
+    /** */
+    private long sparseStorageSize;
+
     /**
      * Default constructor.
      */
@@ -151,6 +157,9 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         cpBufSz = m.getCheckpointBufferSize();
 
         totalSz = m.getTotalAllocatedSize();
+
+        storageSize = m.getStorageSize();
+        sparseStorageSize = m.getSparseStorageSize();
     }
 
     /**
@@ -335,9 +344,23 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         return totalSz;
     }
 
+    /**
+     * @return Storage space allocated in bytes.
+     */
+    public long getStorageSize() {
+        return storageSize;
+    }
+
+    /**
+     * @return Storage space allocated adjusted for possible sparsity in bytes.
+     */
+    public long getSparseStorageSize() {
+        return sparseStorageSize;
+    }
+
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -370,6 +393,10 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         out.writeLong(usedCpBufSz);
         out.writeLong(cpBufSz);
         out.writeLong(totalSz);
+
+        // V3
+        out.writeLong(storageSize);
+        out.writeLong(sparseStorageSize);
     }
 
     /** {@inheritDoc} */
@@ -402,6 +429,11 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
             usedCpBufSz = in.readLong();
             cpBufSz = in.readLong();
             totalSz = in.readLong();
+        }
+
+        if (protoVer > V2) {
+            storageSize = in.readLong();
+            sparseStorageSize = in.readLong();
         }
     }
 

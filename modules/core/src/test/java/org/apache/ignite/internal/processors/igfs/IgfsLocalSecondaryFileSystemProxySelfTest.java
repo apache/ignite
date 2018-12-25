@@ -33,10 +33,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for PROXY mode with local FS is configured as a secondary.
  */
+@RunWith(JUnit4.class)
 public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest {
     /** Fs work directory. */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
@@ -116,6 +120,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testListPathForSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -138,6 +143,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteSymlinkDir() throws Exception {
         if (U.isWindows())
             return;
@@ -154,6 +160,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSymlinkToFile() throws Exception {
         if (U.isWindows())
             return;
@@ -167,6 +174,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMkdirsInsideSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -183,6 +191,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedSpaceSize() throws Exception {
         final int DIRS_COUNT = 5;
         final int DIRS_MAX_DEEP = 3;
@@ -223,6 +232,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMaxLen() throws Exception {
         awaitPartitionMapExchange();
 

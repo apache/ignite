@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -106,8 +106,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -152,7 +150,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap<>();
 
     /** */
-    private final GridQueryIndexing idx;
+    private final @Nullable GridQueryIndexing idx;
 
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
@@ -338,7 +336,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         synchronized (stateMux) {
             // Preserve proposals.
@@ -684,7 +681,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.gridCacheContext()))
+            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.cacheContext()))
                 return;
 
             synchronized (stateMux) {
@@ -703,8 +700,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cacheInfo, qryEntity,
-                            mustDeserializeClss, escape);
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(
+                            ctx,
+                            cacheName,
+                            schemaName,
+                            cacheInfo,
+                            qryEntity,
+                            mustDeserializeClss,
+                            escape
+                        );
 
                         cands.add(cand);
                     }
@@ -1450,7 +1454,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor;
 
                 if (cacheInfo.isCacheContextInited()) {
-                    GridCacheContext cctx = cacheInfo.gridCacheContext();
+                    GridCacheContext cctx = cacheInfo.cacheContext();
 
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
@@ -1776,78 +1780,46 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Rebuilds indexes for provided caches from corresponding hash indexes.
      *
-     * @param cacheIds Cache IDs.
+     * @param cctx Cache context.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Set<Integer> cacheIds) {
-        if (!busyLock.enterBusy())
-            return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash (grid is stopping)."));
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        // Indexing module is disabled, nothing to rebuild.
+        if (idx == null)
+            return null;
 
-        // Because of alt type ids, there can be few entries in 'types' for a single cache.
-        // In order to avoid processing a cache more than once, let's track processed names.
-        Set<String> processedCacheNames = new HashSet<>();
+        // No data on non-affinity nodes.
+        if (!cctx.affinityNode())
+            return null;
+
+        // No indexes to rebuild when there are no QueryEntities.
+        if (!cctx.isQueryEnabled())
+            return null;
+
+        // No need to rebuild if cache has no data.
+        boolean empty = true;
+
+        for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+            if (!store.isEmpty()) {
+                empty = false;
+
+                break;
+            }
+        }
+
+        if (empty)
+            return null;
+
+        if (!busyLock.enterBusy())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
+                "(grid is stopping)."));
 
         try {
-            GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
-
-            for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())) &&
-                    processedCacheNames.add(e.getKey().cacheName()))
-                    fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
-            }
-
-            fut.markInitialized();
-
-            return fut;
+            return idx.rebuildIndexesFromHash(cctx);
         }
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param desc Type descriptor.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
-        @Nullable final QueryTypeDescriptorImpl desc) {
-        if (idx == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
-
-        if (desc == null)
-            return new GridFinishedFuture<>();
-
-        final GridWorkerFuture<Object> fut = new GridWorkerFuture<>();
-
-        idx.markForRebuildFromHash(cacheName);
-
-        GridWorker w = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker", log) {
-            @Override protected void body() {
-                try {
-                    idx.rebuildIndexesFromHash(cacheName);
-
-                    fut.onDone();
-                }
-                catch (Exception e) {
-                    fut.onDone(e);
-                }
-                catch (Throwable e) {
-                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
-                        ", name=" + desc.name() + ']', e);
-
-                    fut.onDone(e);
-
-                    throw e;
-                }
-            }
-        };
-
-        fut.setWorker(w);
-
-        ctx.getExecutorService().execute(w);
-
-        return fut;
     }
 
     /**

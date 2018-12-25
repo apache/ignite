@@ -32,9 +32,11 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link ComputeUtils}.
@@ -58,7 +60,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -68,6 +70,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     /**
      * Tests that in case two caches maintain their partitions on different nodes, affinity call won't be completed.
      */
+    @Test
     public void testAffinityCallWithRetriesNegative() {
         ClusterNode node1 = grid(1).cluster().localNode();
         ClusterNode node2 = grid(2).cluster().localNode();
@@ -109,6 +112,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     /**
      * Test that in case two caches maintain their partitions on the same node, affinity call will be completed.
      */
+    @Test
     public void testAffinityCallWithRetriesPositive() {
         ClusterNode node = grid(1).cluster().localNode();
 
@@ -148,6 +152,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     /**
      * Tests {@code getData()} method.
      */
+    @Test
     public void testGetData() {
         ClusterNode node = grid(1).cluster().localNode();
 
@@ -179,18 +184,18 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     upstreamCacheName,
                     (k, v) -> true,
-                    UpstreamTransformerChain.empty(),
+                    UpstreamTransformerBuilder.identity(),
                     datasetCacheName,
                     datasetId,
-                    0,
-                    (upstream, upstreamSize, ctx) -> {
+                    (env, upstream, upstreamSize, ctx) -> {
                         cnt.incrementAndGet();
 
                         assertEquals(1, upstreamSize);
 
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
-                    }
+                    },
+                    TestUtils.testEnvBuilder().buildForWorker(part)
                 ),
                 0
             );
@@ -207,6 +212,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     /**
      * Tests {@code initContext()} method.
      */
+    @Test
     public void testInitContext() {
         ClusterNode node = grid(1).cluster().localNode();
 
@@ -229,15 +235,16 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             ignite,
             upstreamCacheName,
             (k, v) -> true,
-            UpstreamTransformerChain.empty(),
+            UpstreamTransformerBuilder.identity(),
             datasetCacheName,
-            (upstream, upstreamSize) -> {
+            (env, upstream, upstreamSize) -> {
 
                 assertEquals(1, upstreamSize);
 
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
+            TestUtils.testEnvBuilder(),
             0
         );
 
@@ -262,7 +269,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // Do nothing, GC will clean up.
         }
     }

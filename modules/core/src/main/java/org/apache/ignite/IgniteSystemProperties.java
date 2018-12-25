@@ -260,6 +260,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
+     * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
+     */
+    public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
@@ -1033,6 +1040,13 @@ public final class IgniteSystemProperties {
      * Default is {@code true}.
      */
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
+
+    /**
+     * Disables cache interceptor triggering in case of conflicts.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.

@@ -30,7 +30,11 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.Organization;
@@ -39,6 +43,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Grid cache context is not registered for cache id root cause message test
  */
+@RunWith(JUnit4.class)
 public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
@@ -50,6 +55,7 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
     /** */
+    @Test
     public void testDisappearedCacheWasNotFoundMessage() {
         SqlQuery<String, Person> qry = new SqlQuery<String, Person>(Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
 
@@ -61,13 +67,18 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("Cache not found on local node"));
+            boolean exp = e.getMessage().contains("Cache not found on local node (was concurrently destroyed?)");
+
+            if (!exp)
+                throw e;
         }
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi(){
             /** {@inheritDoc} */
@@ -100,12 +111,12 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
         startGridsMultiThreaded(NODES_COUNT, false);
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Person.class)
+            .setQueryEntities(JoinSqlTestHelper.personQueryEntity())
         );
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                 .setCacheMode(CacheMode.REPLICATED)
-                .setIndexedTypes(String.class, Organization.class)
+                .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();

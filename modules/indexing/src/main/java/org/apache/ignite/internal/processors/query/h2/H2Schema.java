@@ -110,15 +110,6 @@ public class H2Schema {
     }
 
     /**
-     * @param tbl Table descriptor.
-     */
-    public void remove(H2TableDescriptor tbl) {
-        tbls.remove(tbl.tableName());
-
-        typeToTbl.remove(new H2TypeKey(tbl.cacheName(), tbl.typeName()));
-    }
-
-    /**
      * Drop table.
      *
      * @param tbl Table to be removed.

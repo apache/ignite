@@ -44,7 +44,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** Moving partitions. */
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
 
-    /** Occurred exceptions. */
+    /** Exceptions. */
     private Map<UUID, Exception> exceptions;
 
     /**
@@ -71,7 +71,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() { return V2; }
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
@@ -82,15 +84,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         cntrConflicts = U.readMap(in);
         hashConflicts = U.readMap(in);
         movingPartitions = U.readMap(in);
 
-        if(protoVer >= V2)
+        if (protoVer >= V2)
             exceptions = U.readMap(in);
     }
 
@@ -116,11 +116,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /**
-     * @return Occurred exceptions.
-     */
-    public Map<UUID, Exception> exceptions() { return exceptions; }
-
-    /**
      * @return <code>true</code> if any conflicts were discovered during idle_verify check.
      */
     public boolean hasConflicts() {
@@ -128,9 +123,11 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /**
-     * @return <code>true</code> if any exception was thrown during idle_verify check.
+     * @return Exceptions on nodes.
      */
-    public boolean hasExceptions() { return !F.isEmpty(exceptions); }
+    public Map<UUID, Exception> exceptions() {
+        return exceptions;
+    }
 
     /**
      * Print formatted result to given printer.
@@ -138,59 +135,60 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        if(hasExceptions()) {
-            printer.accept("idle_verify check has finished, from " + exceptions.size() + " nodes were got errors.\n");
-
-            printer.accept("nodes with errors are following:\n");
-            for(Map.Entry<UUID, Exception> entry : exceptions.entrySet())
-                printer.accept("Node ID:" + entry.getKey() +", error message: " + entry.getValue().getMessage() + "\n");
-        }
+        if (!hasConflicts())
+            printer.accept("idle_verify check has finished, no conflicts have been found.\n");
         else {
-            if (!hasConflicts())
-                printer.accept("idle_verify check has finished, no conflicts have been found.\n");
-            else {
-                int cntrConflictsSize = counterConflicts().size();
-                int hashConflictsSize = hashConflicts().size();
+            int cntrConflictsSize = counterConflicts().size();
+            int hashConflictsSize = hashConflicts().size();
 
-                printer.accept("idle_verify check has finished, found " + (cntrConflictsSize + hashConflictsSize) +
-                    " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
-                    hashConflictsSize + "]\n");
+            printer.accept("idle_verify check has finished, found " + (cntrConflictsSize + hashConflictsSize) +
+                " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
+                hashConflictsSize + "]\n");
 
-                if (!F.isEmpty(counterConflicts())) {
-                    printer.accept("Update counter conflicts:\n");
+            if (!F.isEmpty(counterConflicts())) {
+                printer.accept("Update counter conflicts:\n");
 
-                    for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : counterConflicts().entrySet()) {
-                        printer.accept("Conflict partition: " + entry.getKey() + "\n");
-
-                        printer.accept("Partition instances: " + entry.getValue() + "\n");
-                    }
-
-                    printer.accept("\n");
-                }
-
-                if (!F.isEmpty(hashConflicts())) {
-                    printer.accept("Hash conflicts:\n");
-
-                    for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : hashConflicts().entrySet()) {
-                        printer.accept("Conflict partition: " + entry.getKey() + "\n");
-
-                        printer.accept("Partition instances: " + entry.getValue() + "\n");
-                    }
-
-                    printer.accept("\n");
-                }
-            }
-
-            if (!F.isEmpty(movingPartitions())) {
-                printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
-
-                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
-                    printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : counterConflicts().entrySet()) {
+                    printer.accept("Conflict partition: " + entry.getKey() + "\n");
 
                     printer.accept("Partition instances: " + entry.getValue() + "\n");
                 }
 
                 printer.accept("\n");
+            }
+
+            if (!F.isEmpty(hashConflicts())) {
+                printer.accept("Hash conflicts:\n");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : hashConflicts().entrySet()) {
+                    printer.accept("Conflict partition: " + entry.getKey() + "\n");
+
+                    printer.accept("Partition instances: " + entry.getValue() + "\n");
+                }
+
+                printer.accept("\n");
+            }
+        }
+
+        if (!F.isEmpty(movingPartitions())) {
+            printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
+
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
+                printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
+
+                printer.accept("Partition instances: " + entry.getValue() + "\n");
+            }
+
+            printer.accept("\n");
+        }
+
+        if (!F.isEmpty(exceptions())) {
+            printer.accept("Idle verify failed on nodes:\n");
+
+            for (Map.Entry<UUID, Exception> e : exceptions().entrySet()) {
+                printer.accept("Node ID: " + e.getKey() + "\n");
+                printer.accept("Exception message:" + "\n");
+                printer.accept(e.getValue().getMessage() + "\n");
             }
         }
     }

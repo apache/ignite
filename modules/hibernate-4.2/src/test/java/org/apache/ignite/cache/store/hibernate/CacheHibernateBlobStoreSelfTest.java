@@ -106,8 +106,4 @@ public class CacheHibernateBlobStoreSelfTest extends
         // Store will be implicitly initialized.
         store.load("key");
     }
-
-    @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
-    }
 }

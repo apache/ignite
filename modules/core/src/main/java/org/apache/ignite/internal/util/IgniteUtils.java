@@ -55,6 +55,7 @@ import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
@@ -1178,7 +1179,6 @@ public abstract class IgniteUtils {
      *
      * @deprecated Calls to this method should never be committed to master.
      */
-    @SuppressWarnings("deprecation")
     @Deprecated
     public static void dumpStack() {
         dumpStack("Dumping stack.");
@@ -1636,7 +1636,6 @@ public abstract class IgniteUtils {
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
         Constructor ctor = forceEmptyConstructor(cls);
 
@@ -3584,7 +3583,7 @@ public abstract class IgniteUtils {
             }
         }
 
-        if (path.endsWith("jar")) {
+        if (path.toFile().getName().endsWith("jar")) {
             try {
                 // Why do we do this?
                 new JarFile(path.toString(), false).close();
@@ -5245,7 +5244,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> Map<K, V> readMap(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -5266,7 +5264,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
         ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5290,7 +5287,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5314,7 +5310,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> LinkedHashMap<K, V> readLinkedMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5355,7 +5350,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <V> Map<Integer, V> readIntKeyMap(ObjectInput in) throws IOException,
         ClassNotFoundException {
         int size = in.readInt();
@@ -5397,7 +5391,6 @@ public abstract class IgniteUtils {
      * @return Read map.
      * @throws IOException If de-serialization failed.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static Map<Integer, Integer> readIntKeyIntValueMap(DataInput in) throws IOException {
         Map<Integer, Integer> map = null;
 
@@ -5420,7 +5413,6 @@ public abstract class IgniteUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <E> List<E> readList(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -7048,7 +7040,6 @@ public abstract class IgniteUtils {
      * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is union of {@code a} and {@code b}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
@@ -7091,7 +7082,6 @@ public abstract class IgniteUtils {
      * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is difference between {@code a} and {@code b}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
@@ -7357,7 +7347,6 @@ public abstract class IgniteUtils {
      *
      * @deprecated Calls to this method should never be committed to master.
      */
-    @SuppressWarnings("deprecation")
     @Deprecated
     public static void dumpStack(Thread t) {
         dumpStack(t, System.err);
@@ -10601,6 +10590,71 @@ public abstract class IgniteUtils {
             assert rndNode != null;
 
         return rndNode;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param plc IO Policy.
+     * @param reserved Thread to reserve.
+     * @return Number of available threads in executor service for {@code plc}. If {@code plc}
+     *         is invalid, return {@code 1}.
+     */
+    public static int availableThreadCount(GridKernalContext ctx, byte plc, int reserved) {
+        IgniteConfiguration cfg = ctx.config();
+
+        int parallelismLvl;
+
+        switch (plc) {
+            case GridIoPolicy.P2P_POOL:
+                parallelismLvl = cfg.getPeerClassLoadingThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.SYSTEM_POOL:
+                parallelismLvl = cfg.getSystemThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.PUBLIC_POOL:
+                parallelismLvl = cfg.getPublicThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.MANAGEMENT_POOL:
+                parallelismLvl = cfg.getManagementThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.UTILITY_CACHE_POOL:
+                parallelismLvl = cfg.getUtilityCacheThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.IGFS_POOL:
+                parallelismLvl = cfg.getIgfsThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.SERVICE_POOL:
+                parallelismLvl = cfg.getServiceThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.DATA_STREAMER_POOL:
+                parallelismLvl = cfg.getDataStreamerThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.QUERY_POOL:
+                parallelismLvl = cfg.getQueryThreadPoolSize();
+
+                break;
+
+            default:
+                parallelismLvl = -1;
+        }
+
+        return Math.max(1, parallelismLvl - reserved);
     }
 
     /**

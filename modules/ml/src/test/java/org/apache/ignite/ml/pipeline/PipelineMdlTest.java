@@ -20,7 +20,7 @@ package org.apache.ignite.ml.pipeline;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.junit.Test;
 
 /**

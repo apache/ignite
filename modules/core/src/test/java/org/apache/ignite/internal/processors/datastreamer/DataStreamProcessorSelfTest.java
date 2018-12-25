@@ -62,17 +62,17 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -82,12 +82,10 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private CacheMode mode = PARTITIONED;
@@ -128,13 +126,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setForceServerMode(true);
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         cfg.setIncludeProperties();
 
@@ -192,7 +183,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         mode = PARTITIONED;
 
         checkDataStreamer();
@@ -201,6 +195,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testColocated() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -211,6 +206,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
 
@@ -220,7 +216,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = LOCAL;
 
         try {
@@ -337,6 +336,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedIsolated() throws Exception {
         mode = PARTITIONED;
 
@@ -346,6 +346,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedIsolated() throws Exception {
         mode = REPLICATED;
 
@@ -359,9 +360,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         try {
             useCache = true;
 
-            Ignite g1 = startGrid(0);
-            startGrid(1);
-            startGrid(2);
+            Ignite g1 = startGridsMultiThreaded(3);
 
             afterGridStarted();
 
@@ -440,6 +439,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveArrays() throws Exception {
         try {
             useCache = true;
@@ -473,6 +473,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedMultiThreaded() throws Exception {
         mode = REPLICATED;
 
@@ -482,6 +483,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedMultiThreaded() throws Exception {
         mode = PARTITIONED;
 
@@ -498,20 +500,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     protected void checkLoaderMultithreaded(int nodesCntNoCache, int nodesCntCache)
         throws Exception {
         try {
-            // Start all required nodes.
-            int idx = 1;
-
             useCache = true;
 
-            for (int i = 0; i < nodesCntCache; i++)
-                startGrid(idx++);
+            startGridsMultiThreaded(nodesCntCache);
 
             useCache = false;
 
-            for (int i = 0; i < nodesCntNoCache; i++)
-                startGrid(idx++);
+            startGridsMultiThreaded(nodesCntCache, nodesCntNoCache);
 
-            Ignite g1 = grid(idx - 1);
+            Ignite g1 = grid(nodesCntCache + nodesCntNoCache - 1);
 
             afterGridStarted();
 
@@ -613,6 +610,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderApi() throws Exception {
         useCache = true;
 
@@ -769,9 +767,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlush() throws Exception {
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        mode = PARTITIONED;
 
         useCache = true;
 
@@ -824,9 +822,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryFlush() throws Exception {
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        mode = PARTITIONED;
 
         useCache = true;
 
@@ -862,9 +860,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushTimeout() throws Exception {
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        mode = PARTITIONED;
 
         useCache = true;
 
@@ -916,7 +916,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateStore() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         storeMap = new ConcurrentHashMap<>();
 
         try {
@@ -924,10 +927,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             useCache = true;
 
-            Ignite ignite = startGrid(1);
-
-            startGrid(2);
-            startGrid(3);
+            Ignite ignite = startGridsMultiThreaded(3);
 
             afterGridStarted();
 
@@ -988,14 +988,12 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomUserUpdater() throws Exception {
         useCache = true;
 
         try {
-            Ignite ignite = startGrid(1);
-
-            startGrid(2);
-            startGrid(3);
+            Ignite ignite = startGridsMultiThreaded(3);
 
             afterGridStarted();
 
@@ -1026,6 +1024,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalDataStreamerDedicatedThreadPool() throws Exception {
         try {
             useCache = true;
@@ -1070,6 +1069,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteDataStreamerDedicatedThreadPool() throws Exception {
         try {
             useCache = true;

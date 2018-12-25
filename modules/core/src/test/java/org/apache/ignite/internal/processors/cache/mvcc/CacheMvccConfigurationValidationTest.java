@@ -37,12 +37,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,19 +53,8 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -77,6 +66,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup1() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -98,6 +88,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -120,6 +111,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
         final Ignite node2 = startGrid(2);
@@ -152,6 +144,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
         cleanPersistenceDir();
 
@@ -199,6 +192,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
         cleanPersistenceDir();
 
@@ -248,6 +242,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testTransactionalSnapshotLimitations() throws Exception {
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
