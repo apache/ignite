@@ -2872,14 +2872,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         AtomicReference<IgniteCheckedException> writePagesError = new AtomicReference<>();
 
         for (int i = 0; i < pages.collectionsSize(); i++) {
-            int idx = i % exec.stripes();
+            int stripeIdx = i % exec.stripes();
 
-            exec.execute(i, () -> {
+            int innerIdx = i;
+
+            exec.execute(stripeIdx, () -> {
                 ByteBuffer writePageBuf = ByteBuffer.allocateDirect(pageSize());
 
                 writePageBuf.order(ByteOrder.nativeOrder());
 
-                Collection<FullPageId> pages0 = pages.innerCollection(idx);
+                Collection<FullPageId> pages0 = pages.innerCollection(innerIdx);
 
                 FullPageId pageId = null;
 
