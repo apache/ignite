@@ -606,7 +606,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
-        if (txLog != null) // Non-affinity node for mvcc caches.
+        if (txLog != null) // txLog may not exist if node is non-affinity for any mvcc-cache.
             txLog.put(key, state, primary);
 
         Waiter waiter;
