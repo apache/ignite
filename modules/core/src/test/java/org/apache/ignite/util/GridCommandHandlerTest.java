@@ -1197,7 +1197,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     @Test
     public void testCacheIdleVerifyWithCorruptedPartition() throws Exception {
-        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify");
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
 
         String out = testOut.toString();
 
@@ -1212,7 +1212,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     @Test
     public void testCacheIdleVerifyDumpWithCorruptedPartition() throws Exception {
-        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump");
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
         String parts[] = testOut.toString().split("VisorIdleVerifyDumpTask successfully written output to '");
 

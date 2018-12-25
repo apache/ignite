@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,12 +49,30 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** Exceptions. */
     private Map<UUID, Exception> exceptions;
 
+    public IdleVerifyResultV2(Map<UUID, Exception> exceptions) {
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions);
+    }
+
     /**
      * @param cntrConflicts Counter conflicts.
      * @param hashConflicts Hash conflicts.
      * @param movingPartitions Moving partitions.
      */
     public IdleVerifyResultV2(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions
+    ) {
+        this(cntrConflicts, hashConflicts, movingPartitions, new HashMap<>());
+    }
+
+    /**
+     * @param cntrConflicts Counter conflicts.
+     * @param hashConflicts Hash conflicts.
+     * @param movingPartitions Moving partitions.
+     * @param exceptions Occurred exceptions.
+     */
+    private IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
@@ -135,7 +155,22 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        if (!hasConflicts())
+        if(!F.isEmpty(exceptions)){
+            Map<UUID, Exception> notIdleExceptions = exceptions.entrySet().stream()
+                .filter(e -> e.getValue() instanceof GridNotIdleException)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            if(!F.isEmpty(notIdleExceptions))
+                printer.accept("idle_verify check has finished, cluster not idle.\n");
+            else {
+                printer.accept("idle_verify check has finished, from " + exceptions.size() + " nodes were got errors.\n");
+
+                printer.accept("nodes with errors are following:\n");
+
+                for(Map.Entry<UUID, Exception> e : exceptions.entrySet())
+                    printer.accept("Node ID:" + e.getKey() +", error message: " + e.getValue().getMessage() + "\n");
+            }
+        } else if (!hasConflicts())
             printer.accept("idle_verify check has finished, no conflicts have been found.\n");
         else {
             int cntrConflictsSize = counterConflicts().size();

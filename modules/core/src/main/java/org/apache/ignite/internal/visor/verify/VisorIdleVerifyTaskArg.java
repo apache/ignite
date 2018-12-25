@@ -35,6 +35,9 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** Caches. */
     private Set<String> caches;
 
+    /** Check CRC */
+    private boolean checkCrc;
+
     /**
      * Default constructor.
      */
@@ -44,9 +47,11 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
+     * @param checkCrc Check CRC.
      */
-    public VisorIdleVerifyTaskArg(Set<String> caches) {
+    public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
         this.caches = caches;
+        this.checkCrc = checkCrc;
     }
 
 
@@ -57,14 +62,28 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         return caches;
     }
 
+    /** */
+    public boolean isCheckCrc() {
+        return checkCrc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
+        out.writeBoolean(checkCrc);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
+
+        if(protoVer >= V2)
+            checkCrc = in.readBoolean();
     }
 
     /** {@inheritDoc} */

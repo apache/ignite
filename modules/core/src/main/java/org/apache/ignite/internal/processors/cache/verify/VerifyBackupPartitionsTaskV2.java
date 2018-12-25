@@ -16,6 +16,8 @@
 */
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -47,14 +48,21 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
@@ -63,6 +71,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.MOVING_PARTITION_SIZE;
 
 /**
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
@@ -87,8 +97,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
-        List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        VisorIdleVerifyTaskArg arg
+    ) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (ClusterNode node : subgrid)
@@ -98,31 +110,23 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
-        throws IgniteException {
+    @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+
         Map<UUID, Exception> exceptions = new HashMap<>();
 
-        for (ComputeJobResult res : results) {
-            if (res.getException() != null) {
-                exceptions.put(res.getNode().id(), res.getException());
+        reduce(results, clusterHashes, exceptions);
 
-                continue;
-            }
+        if(!F.isEmpty(exceptions))
+            return new IdleVerifyResultV2(exceptions);
 
-            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
+        return checkConflicts(clusterHashes);
+    }
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
-            }
-        }
-
+    /** */
+    private IdleVerifyResultV2 checkConflicts(Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
-
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> updateCntrConflicts = new HashMap<>();
-
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
 
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
@@ -130,7 +134,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             Long updateCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
-                if (record.size() == PartitionHashRecordV2.MOVING_PARTITION_SIZE) {
+                if (record.size() == MOVING_PARTITION_SIZE) {
                     List<PartitionHashRecordV2> records = movingParts.computeIfAbsent(
                         e.getKey(), k -> new ArrayList<>());
 
@@ -154,23 +158,52 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts);
+    }
+
+    /** */
+    private void reduce(
+        List<ComputeJobResult> results,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<UUID, Exception> exceptions
+    ) {
+        for (ComputeJobResult res : results) {
+            if (res.getException() != null)
+                exceptions.put(res.getNode().id(), res.getException());
+
+            if(F.isEmpty(exceptions)) {
+                Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
+
+                for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
+                    List<PartitionHashRecordV2> r = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
+
+                    r.add(e.getValue());
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws
-        IgniteException {
-        ComputeJobResultPolicy superRes = super.result(res, rcvd);
+    @Override public ComputeJobResultPolicy result(
+        ComputeJobResult res,
+        List<ComputeJobResult> rcvd
+    ) throws IgniteException {
+        try {
+            ComputeJobResultPolicy superRes = super.result(res, rcvd);
 
-        // Deny failover.
-        if (superRes == ComputeJobResultPolicy.FAILOVER) {
-            superRes = ComputeJobResultPolicy.WAIT;
+            // Deny failover.
+            if (superRes == ComputeJobResultPolicy.FAILOVER) {
+                superRes = ComputeJobResultPolicy.WAIT;
 
-            log.warning("VerifyBackupPartitionsJobV2 failed on node " +
-                "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+                log.warning("VerifyBackupPartitionsJobV2 failed on node " +
+                    "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+            }
+
+            return superRes;
         }
-
-        return superRes;
+        catch (IgniteException e) {
+            return ComputeJobResultPolicy.WAIT;
+        }
     }
 
     /**
@@ -203,6 +236,71 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         /** {@inheritDoc} */
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
+            Set<Integer> grpIds = getGroupIds();
+
+            completionCntr.set(0);
+
+            List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
+
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
+
+            long lastProgressLogTs = U.currentTimeMillis();
+
+            for (int i = 0; i < partHashCalcFuts.size(); ) {
+                Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFuts.get(i);
+
+                try {
+                    Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
+
+                    res.putAll(partHash);
+
+                    i++;
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    for (int j = i + 1; j < partHashCalcFuts.size(); j++)
+                        partHashCalcFuts.get(j).cancel(false);
+
+                    if (e instanceof InterruptedException)
+                        throw new IgniteInterruptedException((InterruptedException)e);
+                    else if (e.getCause() instanceof IgniteException)
+                        throw (IgniteException)e.getCause();
+                    else
+                        throw new IgniteException(e.getCause());
+                }
+                catch (TimeoutException ignored) {
+                    if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
+                        lastProgressLogTs = U.currentTimeMillis();
+
+                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
+                            partHashCalcFuts.size() + " local partitions");
+                    }
+                }
+            }
+
+            return res;
+        }
+
+        /** */
+        private List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> calcPartitionHashAsync(Set<Integer> grpIds) {
+            List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFutures = new ArrayList<>();
+
+            for (Integer grpId : grpIds) {
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+
+                if (grpCtx == null)
+                    continue;
+
+                List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
+
+                for (GridDhtLocalPartition part : parts)
+                    partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
+            }
+
+            return partHashCalcFutures;
+        }
+
+        /** */
+        private Set<Integer> getGroupIds() {
             Set<Integer> grpIds = new HashSet<>();
 
             Set<String> missingCaches = new HashSet<>();
@@ -238,59 +336,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 }
             }
 
-            List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFutures = new ArrayList<>();
-
-            completionCntr.set(0);
-
-            for (Integer grpId : grpIds) {
-                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
-
-                if (grpCtx == null)
-                    continue;
-
-                List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
-
-                for (GridDhtLocalPartition part : parts)
-                    partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
-            }
-
-            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
-
-            long lastProgressLogTs = U.currentTimeMillis();
-
-            for (int i = 0; i < partHashCalcFutures.size(); ) {
-                Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFutures.get(i);
-
-                try {
-                    Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
-
-                    res.putAll(partHash);
-
-                    i++;
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    for (int j = i + 1; j < partHashCalcFutures.size(); j++)
-                        partHashCalcFutures.get(j).cancel(false);
-
-                    if (e instanceof InterruptedException)
-                        throw new IgniteInterruptedException((InterruptedException)e);
-                    else if (e.getCause() instanceof IgniteException)
-                        throw (IgniteException)e.getCause();
-                    else
-                        throw new IgniteException(e.getCause());
-                }
-                catch (TimeoutException ignored) {
-                    if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
-                        lastProgressLogTs = U.currentTimeMillis();
-
-                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
-                            partHashCalcFutures.size() + " local partitions");
-                    }
-                }
-            }
-
-            return res;
+            return grpIds;
         }
+
 
         /**
          *  Checks and throw exception if caches was missed.
@@ -301,22 +349,20 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             if (missingCaches.isEmpty())
                 return;
 
-            StringBuilder strBuilder = new StringBuilder("The following caches do not exist");
+            SB strBuilder = new SB("The following caches do not exist");
 
             if (onlySpecificCaches()) {
                 VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
 
-                strBuilder.append(" or do not match to the given filter [")
-                    .append(vdta.getCacheFilterEnum())
-                    .append("]: ");
+                strBuilder.a(" or do not match to the given filter [").a(vdta.getCacheFilterEnum()).a("]: ");
             }
             else
-                strBuilder.append(": ");
+                strBuilder.a(": ");
 
             for (String name : missingCaches)
-                strBuilder.append(name).append(", ");
+                strBuilder.a(name).a(", ");
 
-            strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
+            strBuilder.setLength(strBuilder.length() - 2);
 
             throw new IgniteException(strBuilder.toString());
         }
@@ -373,11 +419,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             final CacheGroupContext grpCtx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKeyV2, PartitionHashRecordV2>>() {
-                @Override public Map<PartitionKeyV2, PartitionHashRecordV2> call() throws Exception {
-                    return calculatePartitionHash(grpCtx, part);
-                }
-            });
+            return ForkJoinPool.commonPool().submit(() -> calculatePartitionHash(grpCtx, part));
         }
 
 
@@ -405,7 +447,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             try {
                 if (part.state() == GridDhtPartitionState.MOVING) {
                     PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(partKey, isPrimary, consId,
-                        partHash, updateCntrBefore, PartitionHashRecordV2.MOVING_PARTITION_SIZE);
+                        partHash, updateCntrBefore, MOVING_PARTITION_SIZE);
 
                     return Collections.singletonMap(partKey, movingHashRecord);
                 }
@@ -413,6 +455,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     return Collections.emptyMap();
 
                 partSize = part.dataStore().fullSize();
+
+                if(arg.isCheckCrc())
+                    checkPartitionCrc(grpCtx, part);
+
 
                 GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
 
@@ -448,6 +494,65 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             completionCntr.incrementAndGet();
 
             return Collections.singletonMap(partKey, partRec);
+        }
+
+        /**
+         * @return {@code True} if checkpoint is now, {@code False} otherwise.
+         */
+        private boolean isCheckpointNow() {
+            GridCacheDatabaseSharedManager db =
+                (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+            return db.writtenPagesCounter() != null;
+        }
+
+        /**
+         * Checks correct CRC sum for given partition and cache group.
+         *
+         * @param grpCtx Cache group context
+         * @param part partition.
+         */
+        private void checkPartitionCrc(CacheGroupContext grpCtx, GridDhtLocalPartition part) {
+            if (grpCtx.persistenceEnabled()) {
+                FilePageStore pageStore = null;
+
+                try {
+                    FilePageStoreManager pageStoreMgr =
+                        (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                    if (pageStoreMgr == null)
+                        return;
+
+                    pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), part.id());
+
+                    long pageId = PageIdUtils.pageId(part.id(), PageIdAllocator.FLAG_DATA, 0);
+
+                    ByteBuffer buf = ByteBuffer.allocateDirect(grpCtx.dataRegion().pageMemory().pageSize());
+
+                    buf.order(ByteOrder.nativeOrder());
+
+                    for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+                        buf.clear();
+
+                        if(isCheckpointNow())
+                            throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
+
+                        pageStore.read(pageId, buf, true);
+                    }
+                }
+                catch(GridNotIdleException e){
+                    throw e;
+                }
+                catch (Exception | AssertionError e) {
+                    String msg = new SB("CRC check of partition: ").a(part.id()).a(", for cache group ")
+                        .a(grpCtx.cacheOrGroupName()).a(" failed.")
+                        .a(pageStore != null ? " file: " + pageStore.getFileAbsolutePath() : "").toString();
+
+                    log.error(msg, e);
+
+                    throw new IgniteException(msg, e);
+                }
+            }
         }
     }
 }
