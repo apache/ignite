@@ -23,16 +23,18 @@ import org.apache.ignite.internal.GridContinuousJobAnnotationSelfTest;
 import org.apache.ignite.internal.GridContinuousJobSiblingsSelfTest;
 import org.apache.ignite.internal.GridContinuousTaskSelfTest;
 import org.apache.ignite.internal.GridTaskContinuousMapperSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Continuous task self-test suite.
  */
-public class IgniteContinuousTaskSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteContinuousTaskSelfTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridContinuousJobAnnotationSelfTest.class));

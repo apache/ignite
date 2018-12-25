@@ -23,11 +23,14 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Mvcc variant of {@link IgnitePdsTestSuite4}.
  */
-public class IgnitePdsMvccTestSuite4  extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsMvccTestSuite4 {
     /**
      * @return Suite.
      */

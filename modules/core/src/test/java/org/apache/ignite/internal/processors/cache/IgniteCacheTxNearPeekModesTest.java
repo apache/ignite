@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,7 +29,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 @RunWith(JUnit4.class)
 public class IgniteCacheTxNearPeekModesTest extends IgniteCacheTxPeekModesTest {
     /** {@inheritDoc} */
-    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 

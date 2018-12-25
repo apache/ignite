@@ -63,11 +63,14 @@ import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 import org.apache.ignite.util.mbeans.WorkersControlMXBeanTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for Ignite utility classes.
  */
-public class IgniteUtilSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteUtilSelfTestSuite {
     /**
      * @return Grid utility methods tests suite.
      */
