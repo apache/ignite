@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicE
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *  IgniteBinaryObjectsCacheTestSuite3 is kept together with {@link IgniteCacheTestSuite3}
@@ -40,10 +42,10 @@ import org.apache.ignite.testframework.config.GridTestProperties;
  *  In future this suite may be merged with {@link IgniteCacheTestSuite3}
  *
  */
+@RunWith(AllTests.class)
 public class IgniteBinaryObjectsCacheTestSuite3 {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
     public static TestSuite suite()  {
         return suite(null);

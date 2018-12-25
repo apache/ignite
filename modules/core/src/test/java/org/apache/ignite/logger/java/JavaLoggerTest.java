@@ -18,21 +18,19 @@
 package org.apache.ignite.logger.java;
 
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Java logger test.
  */
 @GridCommonTest(group = "Logger")
-@RunWith(JUnit4.class)
-public class JavaLoggerTest extends TestCase {
+public class JavaLoggerTest {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
     private IgniteLogger log;
