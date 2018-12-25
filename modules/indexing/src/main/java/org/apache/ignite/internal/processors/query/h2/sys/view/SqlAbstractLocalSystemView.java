@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
@@ -71,15 +74,29 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
+     * Create h2 row from array of columns of data.
+     *
+     * @param ses Session.
+     * @param key Key.
+     * @param data Data.
+     */
+    protected Row createRow(Session ses, long key, Object... data) {
+        return createRow(ses, key, Arrays.asList(data));
+    }
+
+    /**
+     *
+     * Create h2 row from List of columns of data. For better performance specify {@link RandomAccess} list.
+     *
      * @param ses Session.
      * @param key Key.
      * @param data Data for each column.
      */
-    protected Row createRow(Session ses, long key, Object... data) {
-        Value[] values = new Value[data.length];
+    protected Row createRow(Session ses, long key, List<?> data) {
+        Value[] values = new Value[data.size()];
 
-        for (int i = 0; i < data.length; i++) {
-            Object o = data[i];
+        for (int i = 0; i < data.size(); i++) {
+            Object o = data.get(i);
 
             Value v = (o == null) ? ValueNull.INSTANCE :
                 (o instanceof Value) ? (Value)o : ValueString.get(o.toString());

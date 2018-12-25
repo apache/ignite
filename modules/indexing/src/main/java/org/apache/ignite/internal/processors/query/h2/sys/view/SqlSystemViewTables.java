@@ -104,7 +104,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             .unordered()
             .distinct()
             .map(dataList ->
-                createRow(ses, keys.incrementAndGet(), dataList.toArray(new Object[0])))
+                createRow(ses, keys.incrementAndGet(), dataList))
             .iterator();
     }
 
