@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
@@ -49,12 +50,15 @@ import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -66,6 +70,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
 /**
  *
@@ -162,9 +167,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadOnlySafe() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
+        checkReadOnlySafe(false);
+    }
 
-        checkLostPartition(false, true, killSingleNode);
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReadOnlySafeRefreshDelay() throws Exception {
+        checkReadOnlySafe(true);
     }
 
     /**
@@ -172,11 +183,28 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadOnlySafeWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
-
         isPersistenceEnabled = true;
 
-        checkLostPartition(false, true, killSingleNode);
+        checkReadOnlySafe(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReadOnlySafeWithPersistenceRefreshDelay() throws Exception {
+        isPersistenceEnabled = true;
+
+        checkReadOnlySafe(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void checkReadOnlySafe(boolean waitRefresh) throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
+
+        checkLostPartition(false, true, killSingleNode, waitRefresh);
     }
 
     /**
@@ -208,9 +236,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafe() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+        checkReadWriteSafe(false);
+    }
 
-        checkLostPartition(true, true, killSingleNode);
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReadWriteSafeRefreshDelay() throws Exception {
+        checkReadWriteSafe(true);
     }
 
     /**
@@ -220,9 +254,26 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeWithPersistence() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        isPersistenceEnabled = true;
+        checkReadWriteSafe(false);
+    }
 
-        checkLostPartition(true, true, killSingleNode);
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReadWriteSafeWithPersistenceRefreshDelay() throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+
+        checkReadWriteSafe(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void checkReadWriteSafe(boolean waitRefresh) throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+
+        checkLostPartition(true, true, killSingleNode, waitRefresh);
     }
 
     /**
@@ -486,6 +537,22 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     private void checkLostPartition(boolean canWrite, boolean safe, TopologyChanger topChanger) throws Exception {
+        checkLostPartition(canWrite, safe, topChanger, false);
+    }
+
+    /**
+     * @param canWrite {@code True} if writes are allowed.
+     * @param safe {@code True} if lost partition should trigger exception.
+     * @param topChanger topology changer.
+     * @param waitRefresh Wait for refresh before resetting lost partitions.
+     * @throws Exception if failed.
+     */
+    private void checkLostPartition(
+        boolean canWrite,
+        boolean safe,
+        TopologyChanger topChanger,
+        boolean waitRefresh
+    ) throws Exception {
         assert partLossPlc != null;
 
         List<Integer> lostParts = topChanger.changeTopology();
@@ -561,6 +628,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
         }
 
+        if (waitRefresh)
+            awaitForRefreshPartitions();
+
         ignite(4).resetLostPartitions(singletonList(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange(true, true, null);
@@ -583,7 +653,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 if (shouldExecuteLocalQuery(ig, i))
                     checkQueryPasses(ig, true, i);
-
             }
 
             checkQueryPasses(ig, false);
@@ -850,6 +919,39 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             return res;
         }, IgniteCheckedException.class, msg);
+    }
+
+    /**
+     * Attempts to wait for the cluster state when partition updates are not scheduled.
+     *
+     * @throws IgniteCheckedException if failed.
+     */
+    private void awaitForRefreshPartitions() throws IgniteCheckedException {
+        while (true) {
+            boolean done = true;
+
+            for (Ignite ig : G.allGrids()) {
+                if (ig.cluster().localNode().isClient())
+                    continue;
+
+                GridCachePartitionExchangeManager exchg = ((IgniteEx)ig).context().cache().context().exchange();
+
+                AtomicReference<GridTimeoutObject> ref = GridTestUtils.getFieldValue(exchg, "pendingResend");
+
+                assertNotNull(ref);
+
+                if (!(done = (done && ref.get() == null))) {
+                    boolean success = GridTestUtils.waitForCondition(() -> ref.get() == null, 30_000);
+
+                    assertTrue(success);
+                }
+            }
+
+            if (done)
+                break;
+
+            U.sleep(DFLT_PRELOAD_RESEND_TIMEOUT);
+        }
     }
 
     /** */

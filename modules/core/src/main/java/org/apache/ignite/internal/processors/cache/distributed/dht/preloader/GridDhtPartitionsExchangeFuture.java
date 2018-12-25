@@ -1484,6 +1484,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             if (crd.isLocal()) {
+                if (exchActions != null) {
+                    Collection<String> caches = exchActions.cachesToResetLostPartitions();
+
+                    // Reset lost partitions on coordinator before update cache topology from single messages.
+                    if (!F.isEmpty(caches))
+                        resetLostPartitions(caches);
+                }
+
                 if (remaining.isEmpty()) {
                     initFut.onDone(true);
 
@@ -3352,10 +3360,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (exchActions != null) {
                         assignPartitionsStates();
 
-                        Set<String> caches = exchActions.cachesToResetLostPartitions();
+                        // Check rebalance state after reset lost partitions.
+                        for (String cache : exchActions.cachesToResetLostPartitions()) {
+                            GridCacheContext ctx = cctx.cacheContext(CU.cacheId(cache));
 
-                        if (!F.isEmpty(caches))
-                            resetLostPartitions(caches);
+                            cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
+                        }
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage

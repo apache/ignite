@@ -263,7 +263,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param top Topology.
      * @param checkGrpId Group ID.
      */
-    void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
+    public void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
 
         synchronized (mux) {
@@ -286,7 +286,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         GridDhtPartitionState state = top.partitionState(waitNode, part);
 
-                        if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.LOST) {
+                        if (state != GridDhtPartitionState.OWNING) {
                             rebalanced = false;
 
                             break;

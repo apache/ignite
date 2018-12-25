@@ -2125,6 +2125,25 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
+                // LOST partitions that has at least one owner.
+                Set<Integer> hasOwner = new HashSet<>();
+
+                for (GridDhtLocalPartition part : localPartitions()) {
+                    if (part.state() != LOST)
+                        continue;
+
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                        if (e.getValue().get(part.id()) != OWNING)
+                            continue;
+
+                        assert !ctx.localNodeId().equals(e.getKey());
+
+                        hasOwner.add(part.id());
+
+                        break;
+                    }
+                }
+
                 long updSeq = updateSeq.incrementAndGet();
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
@@ -2144,9 +2163,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                                 long updateCntr = locPart.updateCounter();
 
-                                //Set update counters to 0, for full rebalance.
-                                locPart.updateCounter(updateCntr, -updateCntr);
-                                locPart.initialUpdateCounter(0);
+                                if (hasOwner.contains(locPart.id())) {
+                                    //Set update counters to 0, for full rebalance.
+                                    locPart.updateCounter(updateCntr, -updateCntr);
+                                    locPart.initialUpdateCounter(0);
+                                }
                             }
                         }
                     }
@@ -2335,10 +2356,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (affNodes.contains(ctx.localNode()))
                 continue;
 
-            AffinityTopologyVersion topVer = aff.topologyVersion();
-
-            List<ClusterNode> nodes = part.state() == LOST ? nodes(p, topVer, OWNING, LOST) : nodes(p, topVer, OWNING);
-
+            List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
             Collection<UUID> nodeIds = F.nodeIds(nodes);
 
             // If all affinity nodes are owners, then evict partition from local node.
