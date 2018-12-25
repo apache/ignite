@@ -342,13 +342,21 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         });
     }
 
+    /**
+     * Communication SPI that allows to delay sending message by predicate.
+     */
     class DynamicDelayingCommunicationSpi extends TcpCommunicationSpi {
+        /** Function that returns delay in milliseconds for given message. */
         private final Function<Message, Integer> delayMessageFunc;
 
+        /** */
         DynamicDelayingCommunicationSpi() {
             this(msg -> 0);
         }
 
+        /**
+         * @param delayMessageFunc Function to calculate delay for message.
+         */
         DynamicDelayingCommunicationSpi(final Function<Message, Integer> delayMessageFunc) {
             this.delayMessageFunc = delayMessageFunc;
         }
