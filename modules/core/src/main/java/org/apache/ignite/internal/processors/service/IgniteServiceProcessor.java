@@ -1479,15 +1479,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             F.eq(ctx.discovery().localNode(), coordinator());
     }
 
-    /**
-     * Special handler for local join events for which the regular events are not generated.
-     * <p/>
-     * Local join event is expected in cases of joining to topology or client reconnect.
-     *
-     * @param evt Discovery event.
-     * @param discoCache Discovery cache.
-     */
-    public void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache) {
+    /** {@inheritDoc} */
+    @Override public void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache) {
         assert ctx.localNodeId().equals(evt.eventNode().id());
         assert evt.type() == EVT_NODE_JOINED;
 

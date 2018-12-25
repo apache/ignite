@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -792,8 +791,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
-                        if (ctx.service() instanceof IgniteServiceProcessor)
-                            ((IgniteServiceProcessor)ctx.service()).onLocalJoin(discoEvt, discoCache);
+                        ctx.service().onLocalJoin(discoEvt, discoCache);
 
                         ctx.authentication().onLocalJoin();
 
@@ -853,8 +851,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
-                    if (ctx.service() instanceof IgniteServiceProcessor)
-                        ((IgniteServiceProcessor)ctx.service()).onLocalJoin(localJoinEvent(), discoCache);
+                    ctx.service().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
                         @Override public void apply(IgniteFuture<?> fut) {
