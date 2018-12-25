@@ -504,18 +504,16 @@ public class JdbcThinTcpIo {
 
         try {
             if (stmt != null) {
+                // TODO: Convert to getter?
                 synchronized (stmt.cancellationMux) {
-                    if (stmt.isCancelled() && req instanceof JdbcQueryCloseRequest)
-                        return new JdbcResponse(null);
+                    if (stmt.isCancelled()) {
+                        if (req instanceof JdbcQueryCloseRequest)
+                            return new JdbcResponse(null);
 
-                    if (stmt.isCancelled() && (
-                        req instanceof JdbcQueryFetchRequest ||
-                            req instanceof JdbcQueryMetadataRequest ||
-                            req instanceof JdbcBulkLoadBatchRequest))
+                        // TODO: Move message to static constant
                         return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED,
                             new QueryCancelledException().getMessage());
-
-                    assert !stmt.isCancelled();
+                    }
 
                     sendRequestRaw(req);
 
@@ -529,6 +527,7 @@ public class JdbcThinTcpIo {
             JdbcResponse resp = readResponse();
 
             if (stmt != null && stmt.isCancelled())
+                // TODO: Move message to static constant
                 return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException().getMessage());
             else
                 return resp;
@@ -546,6 +545,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
+        // TODO: Query cancellation is checked too late - we already set cancelled status for statement
         if (isQueryCancellationSupported())
             sendRequestRaw(cancellationReq);
     }

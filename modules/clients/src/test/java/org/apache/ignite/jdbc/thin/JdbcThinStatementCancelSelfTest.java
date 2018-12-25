@@ -113,6 +113,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
+    // TODO: JUnit4
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -305,6 +306,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCancelQuery() throws Exception {
+        // TODO: Move to before test.
         TestSQLFunctions.init();
 
         IgniteInternalFuture cancelRes = cancel(stmt);

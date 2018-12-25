@@ -87,6 +87,7 @@ public class JdbcBulkLoadProcessor extends JdbcCursor {
      */
     public JdbcBulkLoadProcessor(BulkLoadProcessor processor, long reqId) {
         super(reqId);
+
         this.processor = processor;
         nextBatchIdx = 0;
     }
@@ -137,7 +138,7 @@ public class JdbcBulkLoadProcessor extends JdbcCursor {
             nextBatchIdx = -1;
         }
         catch (Exception e) {
-            throw new IOException("Unable to close processor", e);
+            throw new IOException("Unable to close processor: " + e.getMessage(), e);
         }
     }
 

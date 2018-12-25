@@ -102,6 +102,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
 
     /** {@inheritDoc} */
     @Override public long decodeRequestId(byte[] msg) {
+        // TODO: Remove reader.
         BinaryReaderExImpl reader = createReader(msg);
 
         return JdbcRequest.readRequestId(reader, msg);

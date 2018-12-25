@@ -257,6 +257,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
+        // TODO: Why "alive" instead of "closed"?
         ensureAlive();
         ensureHasCurrentRow();
 
@@ -716,10 +717,11 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
-        ensureAlive();
+        if (jdbcMeta == null) {
+            ensureAlive();
 
-        if (jdbcMeta == null)
             jdbcMeta = new JdbcThinResultSetMetadata(meta());
+        }
 
         return jdbcMeta;
     }

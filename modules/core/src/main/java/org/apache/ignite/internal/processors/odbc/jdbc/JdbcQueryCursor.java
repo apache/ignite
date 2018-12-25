@@ -51,6 +51,7 @@ class JdbcQueryCursor extends JdbcCursor {
      */
     JdbcQueryCursor(int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
         super(reqId);
+
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
@@ -59,18 +60,17 @@ class JdbcQueryCursor extends JdbcCursor {
     /**
      * Open iterator;
      */
-    void openIterator (){
-
+    void openIterator(){
         iter = cur.iterator();
     }
 
     /**
      * @return Update count for not SELECT queries.
      */
+    // TODO: Unused?
     long updateCount() {
         return (Long)((List<?>)cur.getAll().get(0)).get(0);
     }
-
 
     /**
      * @return List of the rows.

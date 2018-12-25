@@ -472,6 +472,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         // No-op.
+        // TODO: Why not inside a mutex?
         if (isCancelled())
             return;
 

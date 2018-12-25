@@ -389,6 +389,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return exceptionToResult(e);
         }
 
+        // TODO: Too early exception, will not decrement counter.
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
@@ -1312,6 +1313,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             // Query was already executed.
             if (desc == null)
                 return null;
+
             // Query was registered, however execution didn't start yet.
             else if (!desc.isExecutionStarted()) {
                 unregisterRequest(req.requestId());
@@ -1388,6 +1390,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 catch (Exception e) {
                     U.error(log, "Failed to close cursor [reqId=" + reqId + ", cursor=" + cursor + ']', e);
                 }
+
                 it.remove();
             }
         }
@@ -1402,6 +1405,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private void prepareQueryCancellationMeta(JdbcCursor cur) throws QueryCancelledException {
         if (isCancellationSupported()) {
             // Nothing to do - cursor was already removed.
+            // TODO: Why do we code to exceptions? Return false instead.
             if (cur == null)
                 throw new QueryCancelledException();
 

@@ -39,7 +39,7 @@ public class JdbcQueryDescriptor {
      * Constructor.
      */
     public JdbcQueryDescriptor() {
-        this.cancelHook = new GridQueryCancel();
+        cancelHook = new GridQueryCancel();
     }
 
     /**

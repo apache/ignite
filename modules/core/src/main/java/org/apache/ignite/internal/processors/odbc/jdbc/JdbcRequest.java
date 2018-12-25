@@ -88,7 +88,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
      */
     public JdbcRequest(byte type) {
         this.type = type;
-        this.reqId = REQ_ID_GENERATOR.incrementAndGet();
+
+        reqId = REQ_ID_GENERATOR.incrementAndGet();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +99,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         if (ver.compareTo(VER_2_8_0) >= 0)
             writer.writeLong(reqId);
-
     }
 
     /** {@inheritDoc} */
