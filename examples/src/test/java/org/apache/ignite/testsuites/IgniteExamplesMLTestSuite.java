@@ -27,12 +27,21 @@ import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtMethod;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -41,12 +50,20 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only ML Grid Ignite examples tests.</p>
  */
-public class IgniteExamplesMLTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesMLTestSuite {
     /** Base package to create test classes in. */
     private static final String basePkgForTests = "org.apache.ignite.examples.ml";
 
     /** Test class name pattern. */
     private static final String clsNamePtrn = ".*Example$";
+
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
+    }
 
     /**
      * Creates test suite for Ignite ML examples.
@@ -55,13 +72,10 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
-
         TestSuite suite = new TestSuite("Ignite ML Examples Test Suite");
 
         for (Class clazz : getClasses(basePkgForTests))
-            suite.addTest(new TestSuite(makeTestClass(clazz)));
+            suite.addTest(new JUnit4TestAdapter(makeTestClass(clazz)));
 
         return suite;
     }
@@ -79,15 +93,25 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
         ClassPool cp = ClassPool.getDefault();
         cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
 
-        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfName");
+        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfTest");
 
         cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
 
-        cl.addMethod(CtNewMethod.make("public void testExample() { "
+        CtMethod mtd = CtNewMethod.make("public void testExample() { "
             + exampleCls.getCanonicalName()
             + ".main("
             + MLExamplesCommonArgs.class.getName()
-            + ".EMPTY_ARGS_ML); }", cl));
+            + ".EMPTY_ARGS_ML); }", cl);
+
+        // Create and add annotation.
+        ClassFile ccFile = cl.getClassFile();
+        ConstPool constpool = ccFile.getConstPool();
+        AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
+        Annotation annot = new Annotation("org.junit.Test", constpool);
+        attr.addAnnotation(annot);
+        mtd.getMethodInfo().addAttribute(attr);
+
+        cl.addMethod(mtd);
 
         return cl.toClass();
     }

@@ -23,11 +23,14 @@ import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerNotificationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheExpiryPolicyTestSuite {
     /**
      * @return Cache Expiry Policy test suite.
      */
