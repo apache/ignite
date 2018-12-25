@@ -502,7 +502,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
                 }
                 else if (!crd && !fetchFuts.containsKey(grp.groupId())) {
-                    if (grp.affinity().lastVersion().compareTo(topVer) < 0 || grp.topology().readyTopologyVersion().compareTo(topVer) < 0) {
+                    boolean topVerLessOrNotInitialized = !grp.topology().initialized() ||
+                        grp.topology().readyTopologyVersion().compareTo(topVer) < 0;
+
+                    if (grp.affinity().lastVersion().compareTo(topVer) < 0 || topVerLessOrNotInitialized) {
                         GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                             grp.groupId(),
                             topVer,
