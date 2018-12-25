@@ -454,7 +454,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (grpHolder == null)
                         grpHolder = groupHolder(topVer, desc.groupDescriptor());
 
-                    if (grpHolder.client()) {
+                    if (grpHolder.client() && !cctx.localNode().isClient()) {
                         ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
 
                         grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
