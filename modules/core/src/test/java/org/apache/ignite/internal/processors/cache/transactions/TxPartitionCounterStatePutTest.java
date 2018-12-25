@@ -82,7 +82,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     private CacheConfiguration cacheConfiguration(String name, boolean inMemory) {
         return new CacheConfiguration(name).setDataRegionName(inMemory ? "mem" : "dflt").setCacheMode(PARTITIONED).setWriteSynchronizationMode(FULL_SYNC).
-            setAtomicityMode(TRANSACTIONAL).setBackups(2).setAffinity(new RendezvousAffinityFunction(false, 32));
+            setAtomicityMode(TRANSACTIONAL).setBackups(BACKUPS).setAffinity(new RendezvousAffinityFunction(false, 32));
     }
 
     /** {@inheritDoc} */
@@ -150,7 +150,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     private void doTestPutSequential(String cache) throws Exception {
         try {
-            Ignite ignite = startGridsMultiThreaded(3);
+            Ignite ignite = startGridsMultiThreaded(NODES);
 
             loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 0);
 

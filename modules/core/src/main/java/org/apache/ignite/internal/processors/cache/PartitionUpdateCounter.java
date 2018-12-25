@@ -120,7 +120,7 @@ public class PartitionUpdateCounter {
 
         long cur = cntr.get();
 
-        // Reserved update counter is updated only on exchange.
+        // Reserved update counter is updated only on exchange or in non-tx mode.
         reserveCntr.set(Math.max(cur, val));
 
         if (val <= cur)
@@ -134,7 +134,7 @@ public class PartitionUpdateCounter {
     }
 
     /**
-     * Updates counter by delta from start position.
+     * Updates counter by delta from start position. Used only in transactions.
      *
      * @param start Start.
      * @param delta Delta.
