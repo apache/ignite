@@ -1429,15 +1429,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         final Set<Integer> affReq = fut.context().groupsAffinityRequestOnJoin();
 
-        final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
-
         final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
 
         assert F.isEmpty(affReq) || (!F.isEmpty(receivedAff) && receivedAff.size() >= affReq.size())
             : ("Requested and received affinity are different " +
-                "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
-                ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
-                ", msg=" + msg + "]");
+            "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
+            ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
+            ", msg=" + msg + "]");
+
+        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {

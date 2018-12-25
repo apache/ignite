@@ -2116,7 +2116,7 @@ class ClusterCachesInfo {
      * @return {@code True} if cache with given name if system cache which should always survive client node disconnect.
      */
     private boolean surviveReconnect(String cacheName) {
-        return CU.isUtilityCache(cacheName);
+        return false;
     }
 
     /**
