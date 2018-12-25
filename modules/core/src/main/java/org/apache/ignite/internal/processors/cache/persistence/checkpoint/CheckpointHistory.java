@@ -85,9 +85,9 @@ public class CheckpointHistory {
         isWalHistorySizeParameterEnabled = dsCfg.isWalHistorySizeParameterUsed();
 
         if (isWalHistorySizeParameterEnabled)
-            U.log(log, "Checkpoint history started history mode.");
+            U.log(log, "Checkpoint history started history mode, maxCpHistMemSize=" + maxCpHistMemSize);
         else
-            U.log(log, "Checkpoint history started file size mode.");
+            U.log(log, "Checkpoint history started file size mode, maxCpHistMemSize=" + maxCpHistMemSize);
     }
 
     /**
@@ -255,15 +255,26 @@ public class CheckpointHistory {
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
     private WALPointer checkpointMarkUntilDeleteByMemorySize() {
-        if (histMap.size() <= maxCpHistMemSize)
+        if (histMap.size() <= maxCpHistMemSize) {
+            log.info("None point to remove WAL, histMap=" + histMap.size() + " maxCpHistMemSize=" + maxCpHistMemSize);
+
             return null;
+        }
 
         int calculatedCpHistSize = maxCpHistMemSize;
 
         for (Map.Entry<Long, CheckpointEntry> entry : histMap.entrySet()) {
-            if (histMap.size() <= calculatedCpHistSize++)
-                return entry.getValue().checkpointMark();
+            if (histMap.size() <= calculatedCpHistSize++) {
+                CheckpointEntry e = entry.getValue();
+
+                log.info("WAL entry to remove, entry=" +e);
+
+
+                return e.checkpointMark();
+            }
         }
+
+        log.info("WAL last cp to remove");
 
         return lastCheckpoint().checkpointMark();
     }

@@ -122,7 +122,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.omg.CORBA.INTERNAL;
 
+import static java.lang.Integer.MAX_VALUE;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -952,6 +954,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         int deleted = 0;
 
+        U.log(log, "Try to delete WAL segment files [" +
+            (low == null ? new FileWALPointer(0, 0, 0) : low) + " -> " +
+            (high == null ? new FileWALPointer(Long.MAX_VALUE, MAX_VALUE, MAX_VALUE) : high) + "]");
+
         for (FileDescriptor desc : descs) {
             if (lowPtr != null && desc.idx < lowPtr.index())
                 continue;
@@ -970,8 +976,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
                 else {
-                    U.log(log, "[" + (low == null ? new FileWALPointer(0, 0, 0) : low) + " -> " + high +
-                        "] WAL segments: " + desc.file.getAbsolutePath());
+                    U.log(log, "Delte WAL segment file: " + desc.file.getAbsolutePath());
 
                     deleted++;
                 }
@@ -2560,7 +2565,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             closeCurrentWalSegment();
 
-            curWalSegmIdx = Integer.MAX_VALUE;
+            curWalSegmIdx = MAX_VALUE;
         }
 
         /**
