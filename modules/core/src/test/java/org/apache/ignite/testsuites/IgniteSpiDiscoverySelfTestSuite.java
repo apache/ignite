@@ -24,7 +24,9 @@ import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
+import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
+import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
@@ -118,6 +120,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteClientReconnectMassiveShutdownTest.class));
 
         // SSL.
+        suite.addTest(new TestSuite(IgniteClientConnectSslTest.class));
+        suite.addTest(new TestSuite(IgniteClientReconnectMassiveShutdownSslTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslTrustedSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
@@ -132,7 +136,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(FilterDataForClientNodeDiscoveryTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryPendingMessageDeliveryTest.class));
-        
+
         suite.addTest(new TestSuite(TcpDiscoveryReconnectUnstableTopologyTest.class));
 
         return suite;
