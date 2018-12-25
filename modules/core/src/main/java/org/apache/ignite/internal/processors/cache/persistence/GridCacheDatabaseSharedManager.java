@@ -2311,9 +2311,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int stripes = exec.stripes();
 
-        int stripe = U.stripe(stripes, grpId, partId);
+        int stripe = U.stripeIdx(stripes, grpId, partId);
 
-        assert stripe >= 0 && stripe <= stripes;
+        assert stripe >= 0 && stripe <= stripes : "idx=" + stripe + ", stripes=" + stripes;
 
         try {
             semaphore.acquire();

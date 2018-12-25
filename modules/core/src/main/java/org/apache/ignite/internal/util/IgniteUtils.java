@@ -11197,7 +11197,9 @@ public abstract class IgniteUtils {
      * @param partId Partition Id.
      * @return Stripe idx.
      */
-    public static int stripe(int stripes, int grpId, int partId){
-        return (grpId % (stripes / 2)) + (partId % (stripes / 2));
+    public static int stripeIdx(int stripes, int grpId, int partId) {
+        assert partId >= 0;
+
+        return (Math.abs(grpId) % (stripes / 2)) + (partId % (stripes / 2));
     }
 }
