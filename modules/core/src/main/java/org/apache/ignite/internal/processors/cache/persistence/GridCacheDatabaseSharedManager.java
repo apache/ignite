@@ -2257,7 +2257,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             range(0, exec.stripes()).forEach(idx -> exec.execute(idx, stripesClearLatch::countDown));
 
             try {
-                stripesClearLatch.await();
+                while (true) {
+                    if (stripesClearLatch.await(10_000, TimeUnit.MILLISECONDS))
+                        break;
+                    else {
+                        log.info("Await stripes executor complete tasks" +
+                            ", awaitLatch=" + stripesClearLatch.getCount() +
+                            ", stripes=" + exec.stripes() +
+                            ", queueSize=" + Arrays.toString(exec.stripesQueueSizes()) +
+                            ", activeStatus=" + Arrays.toString(exec.stripesActiveStatuses()));
+                    }
+                }
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
