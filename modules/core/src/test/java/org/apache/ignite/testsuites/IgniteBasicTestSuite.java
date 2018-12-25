@@ -88,6 +88,7 @@ import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
+import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
@@ -217,6 +218,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(AtomicOperationsInTxTest.class));
 
         suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
+
+        suite.addTestSuite(ListeningTestLoggerTest.class);
 
         return suite;
     }

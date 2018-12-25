@@ -816,7 +816,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
         try {
-            return delegate.localPeek(key, peekModes, null);
+            return delegate.localPeek(key, peekModes);
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw cacheException(e);

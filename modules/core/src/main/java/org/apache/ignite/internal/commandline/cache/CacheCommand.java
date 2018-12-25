@@ -100,4 +100,9 @@ public enum CacheCommand {
     @Nullable public static CacheCommand fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
+    }
 }
