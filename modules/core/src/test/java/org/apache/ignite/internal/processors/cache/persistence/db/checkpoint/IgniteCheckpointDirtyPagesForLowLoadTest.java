@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -33,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -126,9 +128,12 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
             Collection<Integer> pageCntObserved = new ArrayList<>();
 
-            boolean checkpointWithLowNumOfPagesFound = false;
+            AtomicBoolean checkpointWithLowNumOfPagesFound = new AtomicBoolean();
 
-            for (int i = 0; i < 20; i++) {
+            loop:for (int i = 0; i < 20; i++) {
+                if (checkpointWithLowNumOfPagesFound.get())
+                    break;
+
                 Random random = new Random();
                 //touch some entry
                 int d = random.nextInt(PARTS) + PARTS;
@@ -146,40 +151,34 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                 try {
                     final int cpTimeout = 25000;
 
-                    db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
+                    IgniteInternalFuture fut = db.wakeupForCheckpoint("force-" + i);
+
+                    fut.listen((f) -> {
+                        int currCpPages = db.currentCheckpointPagesCount();
+
+                        pageCntObserved.add(currCpPages);
+
+                        log.info("Current CP pages: " + currCpPages);
+
+                        if (currCpPages < PARTS * GROUPS) {
+                            checkpointWithLowNumOfPagesFound.set(true);  // Reasonable number of pages in CP.
+                        }
+                    });
+
+                    fut.get(cpTimeout, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
                     long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
 
                     log.error("Timeout during waiting for checkpoint to start:" +
                         " [" + msPassed + "] but checkpoint is not running");
-
-                    continue;
-                }
-
-                final int timeout = 5000;
-                int currCpPages = waitForCurrentCheckpointPagesCounterUpdated(db, timeout);
-
-                if (currCpPages < 0) {
-                    log.error("Timeout during waiting for checkpoint counter to be updated");
-
-                    continue;
-                }
-
-                pageCntObserved.add(currCpPages);
-
-                log.info("Current CP pages: " + currCpPages);
-
-                if (currCpPages < PARTS * GROUPS) {
-                    checkpointWithLowNumOfPagesFound = true;  //reasonable number of pages in CP
-                    break;
                 }
             }
 
             stopGrid(0);
 
             assertTrue("All checkpoints mark too much pages: " + pageCntObserved,
-                checkpointWithLowNumOfPagesFound);
+                checkpointWithLowNumOfPagesFound.get());
 
         }
         finally {

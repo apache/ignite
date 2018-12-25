@@ -50,6 +50,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+
 /**
  *
  */
@@ -282,6 +284,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
             final FileIO delegate = delegateFactory.create(file, openOption);
+
+            if (!file.getName().contains(PART_FILE_PREFIX))
+                return delegate;
 
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {

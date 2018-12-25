@@ -61,6 +61,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -688,7 +689,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             // Only for partition file.
-            if (file.getName().contains("part-"))
+            if (file.getName().contains(PART_FILE_PREFIX))
                 return new TestFileIO(delegate.create(file, modes));
 
             return delegate.create(file, modes);

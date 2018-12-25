@@ -1972,7 +1972,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
                     .cache().context().database();
 
-            dbMgr.waitForCheckpoint("test");
+            dbMgr.waitForCheckpoint("test reason");
         }
     }
 

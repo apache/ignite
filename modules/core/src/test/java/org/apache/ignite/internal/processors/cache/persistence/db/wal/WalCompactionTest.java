@@ -320,11 +320,12 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(maxIdx > emptyIdx);
 
         if (!walSegment.exists()) {
-            log.info("Files in archive:");
+            File[] list = archiveDir.listFiles();
 
-            try (DirectoryStream<Path> files = newDirectoryStream(archiveDir.toPath())) {
-                files.forEach(path-> log.info(path.toString()));
-            }
+            log.info("Files in archive:" + list.length);
+
+            for (File f : list)
+                log.info(f.getAbsolutePath());
 
             // Failed to compress WAL segment shoudn't be deleted.
             fail("File " + walSegment.getAbsolutePath() + " does not exist.");
