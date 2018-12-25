@@ -224,9 +224,9 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
             try {
                 if (settings.enabled)
-                    baselineConfiguration.setBaselineAutoAdjustTimeout(settings.softTimeout);
+                    baselineConfiguration.updateBaselineAutoAdjustTimeoutAsync(settings.softTimeout).get();
 
-                baselineConfiguration.setBaselineAutoAdjustEnabled(settings.enabled);
+                baselineConfiguration.updateBaselineAutoAdjustEnabledAsync(settings.enabled).get();
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
