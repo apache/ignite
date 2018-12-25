@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -70,6 +71,9 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
     /** */
     private boolean isSmallRegion = false;
 
+    /** */
+    private final AtomicBoolean testFailed = new AtomicBoolean(false);
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 20 * 60 * 1000; //20 min
@@ -86,7 +90,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         plc.setPageEvictionMode(RANDOM_LRU);
 
         if (isSmallRegion)
-            plc.setMaxSize(128L * 1024 * 1024); // 100 MB
+            plc.setMaxSize(128L * 1024 * 1024); // 128 MB
         else
             plc.setMaxSize(1L * 1024 * 1024 * 1024); // 1GB
 
@@ -277,6 +281,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        testFailed.set(false);
+
         cleanPersistenceDir();
 
         try {
@@ -371,7 +377,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
      * @throws Exception If failed.
      */
     @Test
-    public void testHandWriteAllWithCoalescing() throws Exception {
+    public void testHangWriteAllWithCoalescing() throws Exception {
         isHangOnWriteAll = true;
 
         writeAllWithCoalescing();
@@ -409,6 +415,105 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         isSmallRegion = false;
 
         readWithCoalescing();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateAndReadTheSameKeyWithCoalescing() throws Exception {
+        isHangOnWriteAll = false;
+
+        isSmallRegion = false;
+
+        updateAndReadWithCoalescingSameKey();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateAndReadTheSameKeyWithCoalescingHangWriteAll() throws Exception {
+        isHangOnWriteAll = true;
+
+        isSmallRegion = false;
+
+        updateAndReadWithCoalescingSameKey();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void updateAndReadWithCoalescingSameKey() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
+
+        AtomicInteger t1Count = new AtomicInteger(5);
+
+        AtomicInteger t2Count = new AtomicInteger(5);
+
+        Thread t1 = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (t1Count.get() > 0) {
+                        for (int i = 0; i < 200000; i++) {
+                            TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
+
+                            cache.put(1, next);
+
+                            TestPojo ret = cache.get(1);
+
+                            assertEquals(ret, next);
+                        }
+
+                        t1Count.decrementAndGet();
+                    }
+                } catch (CacheException e) {
+                    //ignore
+                }
+            }
+        });
+
+        Thread t2 = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (t2Count.get() > 0) {
+                        for (int i = 200000; i < 400000; i++) {
+                            TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
+
+                            cache.put(2, next);
+
+                            TestPojo ret = cache.get(2);
+
+                            assertEquals(ret, next);
+                        }
+
+                        t2Count.decrementAndGet();
+                    }
+                } catch (CacheException e) {
+                    //ignore
+                }
+            }
+        });
+
+        TestErrorHandler handler = new TestErrorHandler();
+
+        t1.setUncaughtExceptionHandler(handler);
+
+        t2.setUncaughtExceptionHandler(handler);
+
+        t1.start();
+
+        t2.start();
+
+        t1.join();
+
+        t2.join();
+
+        assertFalse(testFailed.get());
     }
 
     /**
@@ -469,6 +574,12 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             }
         });
 
+        TestErrorHandler handler = new TestErrorHandler();
+
+        t1.setUncaughtExceptionHandler(handler);
+
+        t2.setUncaughtExceptionHandler(handler);
+
         t1.start();
 
         t2.start();
@@ -476,6 +587,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         t1.join();
 
         t2.join();
+
+        assertFalse(testFailed.get());
     }
 
     /**
@@ -542,6 +655,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         t2.join();
 
+        assertEquals(0, t2Count.get());
+
         //now wait for updates will be done on store size and check that the data set is the same
         if (isHangOnWriteAll)
             //max time -> 10000 updates that will be send by 1000 batches -> (10000 / 1000) * 10 = 100 seconds.
@@ -550,6 +665,16 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             U.sleep(10_000);
 
         checkCacheStore(cache);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private class TestErrorHandler implements Thread.UncaughtExceptionHandler {
+        /** {@inheritDoc} */
+        @Override public void uncaughtException(Thread t, Throwable e) {
+            testFailed.set(true);
+        }
     }
 }
 
