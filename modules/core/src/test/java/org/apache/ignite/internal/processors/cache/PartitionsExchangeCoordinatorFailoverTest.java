@@ -61,11 +61,11 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstractTest {
+    /** */
     private static final String CACHE_NAME = "cache";
 
+    /** */
     private Supplier<CommunicationSpi> spiFactory = TcpCommunicationSpi::new;
-
-    private boolean newCache;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,12 +81,17 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                     .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
-        if (newCache)
+        // Add cache that exists only on coordinator node.
+        if (igniteInstanceName.equals("crd")) {
+            IgnitePredicate<ClusterNode> nodeFilter = node -> node.consistentId().equals(igniteInstanceName);
+
             cfg.setCacheConfiguration(
                     new CacheConfiguration(CACHE_NAME + 0)
-                        .setBackups(2)
-                        .setAffinity(new RendezvousAffinityFunction(false, 32))
+                            .setBackups(2)
+                            .setNodeFilter(nodeFilter)
+                            .setAffinity(new RendezvousAffinityFunction(false, 32))
             );
+        }
 
         return cfg;
     }
@@ -179,7 +184,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
         // Check that all caches are operable.
         for (Ignite grid : G.allGrids()) {
-            IgniteCache cache = grid.cache("cache-" + grid.cluster().localNode().consistentId());
+            IgniteCache cache = grid.cache(CACHE_NAME);
 
             Assert.assertNotNull(cache);
 
@@ -229,19 +234,16 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
     }
 
-    private AffinityTopologyVersion lastFinishedExchangeVersion(IgniteEx node) {
-        return node.context().cache().context().exchange().lastFinishedFuture().topologyVersion();
-    }
-
     /**
+     * Test that exchange coordinator initialized correctly in case of exchanges merge and caches without affinity nodes.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Test
     public void testCoordinatorChangeAfterExchangesMerge() throws Exception {
         // Delay demand messages sending to suspend late affinity assignment.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
-            final int delay = 10_000;
+            final int delay = 5_000;
 
             if (msg instanceof GridDhtPartitionDemandMessage) {
                 GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage) msg;
@@ -255,12 +257,14 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             return 0;
         });
 
-        final IgniteEx crd = (IgniteEx) startGrids(2);
+        final IgniteEx crd = (IgniteEx) startGrid("crd");
+
+        startGrid(1);
 
         for (int k = 0; k < 1024; k++)
             crd.cache(CACHE_NAME).put(k, k);
 
-        // Delay sending single message from new node.
+        // Delay sending single message from new nodes.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
             final int delay = 1_000;
 
@@ -279,7 +283,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
         // Delay sending single messages to ensure exchanges are merged.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
-            final int delay = 10_000;
+            final int delay = 5_000;
 
             if (msg instanceof GridDhtPartitionsSingleMessage) {
                 GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
@@ -291,17 +295,14 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             return 0;
         });
 
-        // A new cache should be appeared in next exchange.
-        newCache = true;
-
         // Trigger next exchange.
         IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> startGrid(4));
 
         // Wait till other nodes will send their messages to coordinator.
-        U.sleep(5_000);
+        U.sleep(2_500);
 
         // And then stop coordinator node.
-        stopGrid(0, true);
+        stopGrid("crd", true);
 
         startNodeFut.get();
 
@@ -347,12 +348,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
     }
 
     class DynamicDelayingCommunicationSpi extends TcpCommunicationSpi {
-        /** Delay for single/full messages. */
-        private final int partitionsMsgDelay = 2000;
-
-        /** Delay for demand messages. */
-        private final int demandMsgDelay = 5000;
-
         private final Function<Message, Integer> delayMessageFunc;
 
         DynamicDelayingCommunicationSpi() {

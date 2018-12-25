@@ -1559,8 +1559,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Finish merged future to allow GridCachePartitionExchangeManager.ExchangeFutureSet cleanup.
      */
-    public void finishMerged() {
-        super.onDone(null, null);
+    public void finishMerged(AffinityTopologyVersion resVer) {
+        done.set(true);
+
+        super.onDone(resVer, null);
+    }
+
+    /**
+     * @return {@code True} if future was merged.
+     */
+    public boolean isMerged() {
+        synchronized (mux) {
+            return state == ExchangeLocalState.MERGED;
+        }
     }
 
     /** {@inheritDoc} */
@@ -3434,16 +3445,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                                 cctx.kernalContext().closure().callLocal(new Callable<Void>() {
                                     @Override public Void call() throws Exception {
-
                                         try {
                                             newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
                                         }
-                                        catch (Throwable e) {
-                                            U.error(log, "Failed to init new coordinator future: " + node.id(), e);
+                                        catch (Throwable t) {
+                                            U.error(log, "Failed to initialize new coordinator future.");
 
-                                            throw e;
+                                            throw t;
                                         }
-
 
                                         newCrdFut.listen(new CI1<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
