@@ -198,7 +198,7 @@ public class ConfigVariationsTestSuiteBuilder {
             addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
                 testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
        else
-            addedSuite = new ConfigVariationsMediator(cls, testCfg).makeTestSuite();
+            addedSuite = makeTestSuite(cls, testCfg);
 
         return addedSuite;
     }
@@ -225,10 +225,26 @@ public class ConfigVariationsTestSuiteBuilder {
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
 
-            suite.addTest(new ConfigVariationsMediator(cls, cfg0).makeTestSuite());
+            suite.addTest(makeTestSuite(cls, cfg0));
         }
 
         return suite;
+    }
+
+    /** */
+    private static TestSuite makeTestSuite(Class<? extends IgniteConfigVariationsAbstractTest> cls,
+        VariationsTestsConfig cfg) {
+        TestSuite res = new TestSuite(cls.getSimpleName());
+
+        res.addTest(new JUnit4TestAdapter(cls) {
+            @Override public void run(TestResult tr) {
+                IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfg);
+
+                super.run(tr);
+            }
+        });
+
+        return res;
     }
 
     /**
