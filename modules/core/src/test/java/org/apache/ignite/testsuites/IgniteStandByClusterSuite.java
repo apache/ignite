@@ -36,11 +36,14 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.jo
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinInActiveNodeToInActiveClusterWithPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect.IgniteStandByClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect.IgniteStandByClientReconnectToNewClusterTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteStandByClusterSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteStandByClusterSuite {
     /**
      * @return Test suite.
      */

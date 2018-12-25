@@ -40,15 +40,17 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTck
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache metrics.
  */
-public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMetricsSelfTestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Cache metrics test suite.
-     * @throws Exception If failed.
      */
     public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");

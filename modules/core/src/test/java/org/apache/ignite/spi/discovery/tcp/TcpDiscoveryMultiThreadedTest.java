@@ -54,8 +54,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -100,9 +98,6 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         return client != null ? client : clientFlagGlobal;
     }
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @throws Exception If fails.
      */
@@ -127,10 +122,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         if (client())
             cfg.setClientMode(true);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().
-            setIpFinder(ipFinder).
-            setJoinTimeout(60_000).
-            setNetworkTimeout(10_000));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(60_000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setNetworkTimeout(10_000);
 
         int[] evts = {EVT_NODE_FAILED, EVT_NODE_LEFT};
 

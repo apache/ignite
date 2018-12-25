@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Page memory leaks tests using indexing.
  */
-public class IgniteDbMemoryLeakWithIndexingTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteDbMemoryLeakWithIndexingTestSuite {
     /**
      * @return Test suite.
      */

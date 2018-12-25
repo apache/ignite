@@ -57,8 +57,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -76,9 +74,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @RunWith(JUnit4.class)
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 30_000;
 
@@ -685,10 +680,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
-        discoverySpi.setIpFinder(ipFinder);
         discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);
