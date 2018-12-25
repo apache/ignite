@@ -2939,7 +2939,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private AtomicInteger inProgressTasks = new AtomicInteger();
 
         /** */
-        private volatile int parts;
+        private int parts;
 
         /**
          * @param grpCtx Group context.
@@ -2980,14 +2980,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
-        private boolean isEmpty() {
+        private synchronized boolean isEmpty() {
             return !it.hasNext();
         }
 
         /**
          *
          */
-        private int partitions(){
+        private synchronized int partitions() {
             return parts;
         }
 
@@ -3023,6 +3023,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             return;
                         }
+
                         pendingReqs.remove(new T2<>(req0.grpId, req0.partId));
 
                         if ((checkCancel.get() && inProgressTasks.decrementAndGet() == 0) || pendingReqs.isEmpty())
@@ -3055,7 +3056,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
-        private void onCheckpointBegin() {
+        private synchronized void onCheckpointBegin() {
             if (prevDestroyQueue != null) {
                 pendingReqs.putAll(prevDestroyQueue.pendingReqs);
 
@@ -3903,8 +3904,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 curCpProgress.cpPages.onCheckpointBegin();
 
-                curr.destroyQueue.onCheckpointBegin();
-
                 if (log.isInfoEnabled())
                     log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
                             "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
@@ -3928,6 +3927,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.metrics.lockHoldDuration(),
                         curr.reason));
             }
+
+            curr.destroyQueue.onCheckpointBegin();
         }
 
         /**
