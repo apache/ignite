@@ -18,36 +18,25 @@
 package org.apache.ignite.ml.inference.builder;
 
 import org.apache.ignite.ml.inference.Model;
-import org.apache.ignite.ml.inference.parser.ModelParser;
-import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Util class for model builder tests.
+ * Tests for {@link SingleModelBuilder}.
  */
-class InfModelBuilderTestUtil {
-    /**
-     * Creates dummy model reader used in tests.
-     *
-     * @return Dummy model reader used in tests.
-     */
-    static ModelReader getReader() {
-        return () -> new byte[0];
-    }
+public class SingleModelBuilderTest {
+    /** */
+    @Test
+    public void testBuild() {
+        SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
-    /**
-     * Creates dummy model parser used in tests.
-     *
-     * @return Dummy model parser used in tests.
-     */
-    static ModelParser<Integer, Integer, Model<Integer, Integer>> getParser() {
-        return m -> new Model<Integer, Integer>() {
-            @Override public Integer predict(Integer input) {
-                return input;
-            }
+        Model<Integer, Integer> infMdl = mdlBuilder.build(
+            ModelBuilderTestUtil.getReader(),
+            ModelBuilderTestUtil.getParser()
+        );
 
-            @Override public void close() {
-                // Do nothing.
-            }
-        };
+        for (int i = 0; i < 100; i++)
+            assertEquals(Integer.valueOf(i), infMdl.apply(i));
     }
 }

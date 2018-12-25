@@ -17,26 +17,28 @@
 
 package org.apache.ignite.ml.inference.builder;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.ignite.ml.inference.Model;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link SingleModelBuilder}.
+ * Tests for {@link ThreadedModelBuilder} class.
  */
-public class SingleInfModelBuilderTest {
+public class ThreadedModelBuilderTest {
     /** */
     @Test
-    public void testBuild() {
-        SyncModelBuilder mdlBuilder = new SingleModelBuilder();
+    public void testBuild() throws ExecutionException, InterruptedException {
+        AsyncModelBuilder mdlBuilder = new ThreadedModelBuilder(10);
 
-        Model<Integer, Integer> infMdl = mdlBuilder.build(
-            InfModelBuilderTestUtil.getReader(),
-            InfModelBuilderTestUtil.getParser()
+        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
+            ModelBuilderTestUtil.getReader(),
+            ModelBuilderTestUtil.getParser()
         );
 
         for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.apply(i));
+            assertEquals(Integer.valueOf(i), infMdl.predict(i).get());
     }
 }

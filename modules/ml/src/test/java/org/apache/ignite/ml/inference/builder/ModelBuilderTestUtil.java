@@ -17,28 +17,37 @@
 
 package org.apache.ignite.ml.inference.builder;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import org.apache.ignite.ml.inference.Model;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Tests for {@link ThreadedModelBuilder} class.
+ * Util class for model builder tests.
  */
-public class ThreadedInfModelBuilderTest {
-    /** */
-    @Test
-    public void testBuild() throws ExecutionException, InterruptedException {
-        AsyncModelBuilder mdlBuilder = new ThreadedModelBuilder(10);
+class ModelBuilderTestUtil {
+    /**
+     * Creates dummy model reader used in tests.
+     *
+     * @return Dummy model reader used in tests.
+     */
+    static ModelReader getReader() {
+        return () -> new byte[0];
+    }
 
-        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
-            InfModelBuilderTestUtil.getReader(),
-            InfModelBuilderTestUtil.getParser()
-        );
+    /**
+     * Creates dummy model parser used in tests.
+     *
+     * @return Dummy model parser used in tests.
+     */
+    static ModelParser<Integer, Integer, Model<Integer, Integer>> getParser() {
+        return m -> new Model<Integer, Integer>() {
+            @Override public Integer predict(Integer input) {
+                return input;
+            }
 
-        for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.apply(i).get());
+            @Override public void close() {
+                // Do nothing.
+            }
+        };
     }
 }
