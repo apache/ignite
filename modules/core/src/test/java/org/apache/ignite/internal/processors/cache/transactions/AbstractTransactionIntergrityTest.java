@@ -47,9 +47,6 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -67,9 +64,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * This test can be extended to emulate failover scenarios during transactional operations on the grid.
  */
 public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Count of accounts in one thread. */
     private static final int DFLT_ACCOUNTS_CNT = 32;
 
@@ -137,8 +131,6 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         final IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setConsistentId(name);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()

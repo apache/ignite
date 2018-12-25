@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link IgniteDistributedModelBuilder} class.
@@ -55,6 +56,7 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
     public void testBuild() {
         AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 1, 1);
 
