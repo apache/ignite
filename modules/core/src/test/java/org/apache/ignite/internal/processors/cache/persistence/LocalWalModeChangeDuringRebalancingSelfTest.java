@@ -687,7 +687,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            return new TestFileIO(delegate.create(file, modes));
+            // Only for partition file.
+            if (file.getName().contains("part-"))
+                return new TestFileIO(delegate.create(file, modes));
+
+            return delegate.create(file, modes);
         }
     }
 
