@@ -603,7 +603,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
         assert mvccEnabled;
-        assert txLog != null || !primary;
 
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
@@ -619,8 +618,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void registerLocalTransaction(long crd, long cntr) {
-        assert mvccEnabled && txLog != null;
-
         Waiter old = waitMap.putIfAbsent(new TxKey(crd, cntr), LOCAL_TRANSACTION_MARKER);
 
         assert old == null || old.hasLocalTransaction();
