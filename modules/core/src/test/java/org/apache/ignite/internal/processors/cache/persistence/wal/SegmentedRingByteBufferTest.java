@@ -591,9 +591,9 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            long endTime = System.currentTimeMillis() + 60 * 1000L;
+            long endTime = U.currentTimeMillis() + 60 * 1000L;
 
-            while (System.currentTimeMillis() < endTime && ex.get() == null) {
+            while (U.currentTimeMillis() < endTime && ex.get() == null) {
                 try {
                     U.sleep(rnd.nextInt(100) + 1);
                 }
@@ -603,7 +603,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
                 List<SegmentedRingByteBuffer.ReadSegment> segs;
 
-                while ((segs = buf.poll()) != null) {
+                while ((segs = buf.poll()) != null && (U.currentTimeMillis() < endTime && ex.get() == null)) {
                     int size = 0;
 
                     for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
