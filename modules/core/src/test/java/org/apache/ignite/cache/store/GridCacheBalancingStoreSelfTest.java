@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -161,7 +162,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     private void doTestConcurrentLoad(int threads, final int keys, int threshold) throws Exception {
         final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
 
-        ConcurrentVerifyStore store = new ConcurrentVerifyStore(keys);
+        ConcurrentVerifyStore store = new ConcurrentVerifyStore(log, keys);
 
         final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
 
@@ -215,7 +216,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     private void doTestConcurrentLoadAll(int threads, final int threshold, final int keysCnt) throws Exception {
         final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
 
-        ConcurrentVerifyStore store = new ConcurrentVerifyStore(keysCnt);
+        ConcurrentVerifyStore store = new ConcurrentVerifyStore(log, keysCnt);
 
         final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
 
@@ -338,13 +339,16 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class ConcurrentVerifyStore implements CacheStore<Integer, Integer> {
+        /** */
+        private final IgniteLogger log;
 
         /** Cnts. */
         private final AtomicInteger[] cnts;
 
         /**
          */
-        private ConcurrentVerifyStore(int keys) {
+        private ConcurrentVerifyStore(IgniteLogger log, int keys) {
+            this.log = log;
             this.cnts = new AtomicInteger[keys];
 
             for (int i = 0; i < keys; i++)
@@ -360,7 +364,15 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                 throw new RuntimeException(e);
             }
 
-            assertEquals("Redundant load call.", 1, cnts[key].incrementAndGet());
+            AtomicInteger cnt = cnts[key];
+
+            int prev = cnt.get();
+            int curr = cnt.incrementAndGet();
+
+            log.info("Load key=" + key + " thread=" + Thread.currentThread().getName()
+                + " prev=" + prev + " curr=" + curr);
+
+            assertEquals("Redundant load call.", 1, curr);
 
             return key;
         }
@@ -382,7 +394,15 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
             Map<Integer, Integer> loaded = new HashMap<>();
 
             for (Integer key : keys) {
-                assertEquals("Redundant loadAll call.", 1, cnts[key].incrementAndGet());
+                AtomicInteger cnt = cnts[key];
+
+                int prev = cnt.get();
+                int curr = cnt.incrementAndGet();
+
+                log.info("LoadAll key=" + key + " thread=" + Thread.currentThread().getName()
+                    + " prev=" + prev + " curr=" + curr);
+
+                assertEquals("Redundant loadAll call.", 1, curr);
 
                 loaded.put(key, key);
             }
