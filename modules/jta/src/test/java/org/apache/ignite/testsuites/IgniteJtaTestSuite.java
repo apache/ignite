@@ -31,24 +31,27 @@ import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFac
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * JTA integration tests.
  */
-public class IgniteJtaTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteJtaTestSuite {
     /**
      * @return Test suite.
      */
     public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("JTA Integration Test Suite");
 
-        suite.addTestSuite(GridPartitionedCacheJtaFactorySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaFactorySelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaFactorySelfTest.class));
 
-        suite.addTestSuite(GridPartitionedCacheJtaLookupClassNameSelfTest.class);
-        suite.addTestSuite(GridReplicatedCacheJtaLookupClassNameSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaLookupClassNameSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaLookupClassNameSelfTest.class));
 
-        suite.addTestSuite(GridPartitionedCacheJtaFactoryUseSyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaFactoryUseSyncSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaFactoryUseSyncSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridJtaLifecycleAwareSelfTest.class));

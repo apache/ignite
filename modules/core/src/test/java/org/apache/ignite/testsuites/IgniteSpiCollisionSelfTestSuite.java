@@ -30,11 +30,14 @@ import org.apache.ignite.spi.collision.jobstealing.GridJobStealingCollisionSpiSt
 import org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpiConfigSelfTest;
 import org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpiSelfTest;
 import org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Collision SPI self-test suite.
  */
-public class IgniteSpiCollisionSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiCollisionSelfTestSuite {
     /**
      * @return Failover SPI tests suite.
      */

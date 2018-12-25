@@ -27,11 +27,14 @@ import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
+@RunWith(AllTests.class)
+public class ZookeeperDiscoverySpiTestSuite1 {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
      * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.

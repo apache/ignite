@@ -79,11 +79,14 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWit
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache API.
  */
-public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheFullApiSelfTestSuite {
     /**
      * @return Cache API test suite.
      */

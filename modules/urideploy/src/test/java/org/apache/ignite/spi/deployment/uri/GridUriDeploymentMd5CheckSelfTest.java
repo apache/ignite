@@ -100,7 +100,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     }
 
     /** {@inheritDoc} */
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         U.delete(getGarDir());
         U.delete(new File(getDeployDir(), "uri1.gar"));
         U.delete(new File(getDeployDir(), "uri2.gar"));

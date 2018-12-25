@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
@@ -110,11 +111,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite1 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite1 {
     /**
      * @return IgniteCache test suite.
      */
@@ -235,10 +239,10 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         suite.addTest(IgniteBinaryCacheTestSuite.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheMvccMultiThreadedUpdateSelfTest.class);
-        suite.addTestSuite(CacheMvccTxFastFinishTest.class);
-        suite.addTestSuite(IgniteCacheMvccTxInvokeTest.class);
-        suite.addTestSuite(IgniteCacheMvccTxNearEnabledInvokeTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheMvccMultiThreadedUpdateSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTxFastFinishTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxInvokeTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxNearEnabledInvokeTest.class));
 
         return suite;
     }

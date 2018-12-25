@@ -23,20 +23,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to check strange assertion in eviction manager.
  */
-@RunWith(JUnit4.class)
-public class QueueSizeCounterMultiThreadedTest extends TestCase {
+public class QueueSizeCounterMultiThreadedTest {
     /**
      * @throws Exception If failed.
      */
