@@ -2156,7 +2156,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int groupId = pageSnapshot.fullPageId().groupId();
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
-                            stripedApply((pageMem) -> {
+                            stripedApplyPage((pageMem) -> {
                                     try {
                                         applyPageSnapshot(pageMem, pageSnapshot);
 
@@ -2180,7 +2180,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         int groupId = metaStateRecord.groupId();
                         int partId = metaStateRecord.partitionId();
 
-                        stripedApply((pageMem) -> {
+                        stripedApplyPage((pageMem) -> {
                             GridDhtPartitionState state = fromOrdinal(metaStateRecord.state());
 
                             if (state == null || state == GridDhtPartitionState.EVICTED)
@@ -2207,7 +2207,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         int groupId = destroyRecord.groupId();
                         int partId = destroyRecord.partitionId();
 
-                        stripedApply((pageMem) -> {
+                        stripedApplyPage((pageMem) -> {
                             pageMem.invalidate(groupId, partId);
 
                             schedulePartitionDestroy(groupId, partId);
@@ -2223,7 +2223,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             int groupId = pageDelta.groupId();
                             int partId = partId(pageDelta.pageId());
 
-                            stripedApply((pageMem) -> {
+                            stripedApplyPage((pageMem) -> {
                                 try {
                                     applyPageDelta(pageMem, pageDelta);
 
@@ -2270,18 +2270,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Calculate the maximum number of concurrent tasks for apply through the striped executor.
+     *
+     * @param exec Striped executor.
      * @return Number of permits.
      */
     private int semaphorePertmits(StripedExecutor exec) {
+        // 4 task per-stripe by default.
         int permits = exec.stripes() * 4;
 
         long maxMemory = Runtime.getRuntime().maxMemory();
 
+        // Heuristic calculation part of heap size as a maximum number of concurrent tasks.
         int permits0 = (int)((maxMemory * 0.2) / (4096 * 2));
 
+        // May be for small heap. Get a low number of permits.
         if (permits0 < permits)
             permits = permits0;
 
+        // Property for override any calculation.
         return IgniteSystemProperties.getInteger(IGNITE_RECOVERY_SEMAPHORE_PERMITS, permits);
     }
 
@@ -2316,13 +2323,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partId Partition Id.
      * @param exec Striped executor.
      */
-    public void stripedApply(
+    public void stripedApplyPage(
         Consumer<PageMemoryEx> consumer,
         int grpId,
         int partId,
         StripedExecutor exec,
         Semaphore semaphore
     ) throws IgniteCheckedException {
+        assert consumer != null;
+        assert exec != null;
+        assert semaphore != null;
+
         PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
         if (pageMem == null)
@@ -2369,6 +2380,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         StripedExecutor exec,
         Semaphore semaphore
     ) {
+        assert run != null;
+        assert exec != null;
+        assert semaphore != null;
+
         int stripes = exec.stripes();
 
         int stripe = U.stripeIdx(stripes, grpId, partId);
@@ -2383,6 +2398,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         exec.execute(stripe, () -> {
+            // WA for avoid assert check in PageMemory, that current thread hold chpLock.
             CHECKPOINT_LOCK_HOLD_COUNT.set(1);
 
             try {
@@ -2626,7 +2642,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     applyUpdate(cacheCtx, dataEntry);
                                 }
                                 catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to apply data entry, " + dataEntry);
+                                    U.error(log, "Failed to apply data entry, dataEntry=" + dataEntry +
+                                        ", ptr=" + dataRec.position());
 
                                     applyError.compareAndSet(null, e);
                                 }
@@ -2672,19 +2689,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                     case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
                     case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
-                        PageDeltaRecord pageDeltaRecord = (PageDeltaRecord)rec;
+                        PageDeltaRecord pageDelta = (PageDeltaRecord)rec;
 
-                        stripedApply((pageMem) -> {
+                        stripedApplyPage((pageMem) -> {
                             try {
-                                applyPageDelta(pageMem, pageDeltaRecord);
+                                applyPageDelta(pageMem, pageDelta);
                             }
                             catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to apply page delta, " + pageDeltaRecord);
+                                U.error(log, "Failed to apply page delta, " + pageDelta);
 
                                 applyError.compareAndSet(null, e);
                             }
 
-                        }, pageDeltaRecord.groupId(), partId(pageDeltaRecord.pageId()), exec, semaphore);
+                        }, pageDelta.groupId(), partId(pageDelta.pageId()), exec, semaphore);
 
                         break;
 
