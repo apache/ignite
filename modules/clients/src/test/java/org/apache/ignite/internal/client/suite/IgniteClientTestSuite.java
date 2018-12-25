@@ -22,7 +22,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
-import org.apache.ignite.internal.client.ClientSslParametersTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslAuthenticationSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
@@ -68,7 +67,6 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSel
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 import org.junit.runner.RunWith;
@@ -112,7 +110,6 @@ public class IgniteClientTestSuite {
         suite.addTest(new JUnit4TestAdapter(RedisProtocolGetAllAsArrayTest.class));
         suite.addTest(new JUnit4TestAdapter(RedisProtocolConnectSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(RedisProtocolServerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(RedisProtocolStringAtomicDatastructuresSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(RestProcessorStartSelfTest.class));
 
@@ -171,9 +168,6 @@ public class IgniteClientTestSuite {
         suite.addTest(new JUnit4TestAdapter(ClientFailedInitSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
-
-        // SSL params.
-        suite.addTest(new JUnit4TestAdapter(ClientSslParametersTest.class));
 
         return suite;
     }
