@@ -11200,6 +11200,6 @@ public abstract class IgniteUtils {
     public static int stripeIdx(int stripes, int grpId, int partId) {
         assert partId >= 0;
 
-        return (Math.abs(grpId) % (stripes / 2)) + (partId % (stripes / 2));
+        return Math.abs((Math.abs(grpId) + partId)) % stripes;
     }
 }
