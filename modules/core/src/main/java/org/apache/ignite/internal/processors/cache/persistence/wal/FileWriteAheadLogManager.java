@@ -969,8 +969,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (!desc.file.delete())
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
-                else
+                else {
+                    U.log(log, "Truncate [" + low + " -> " + high +"] WAL segments: " + desc.file.getAbsolutePath());
+
                     deleted++;
+                }
 
                 // Bump up the oldest archive segment index.
                 if (segmentAware.lastTruncatedArchiveIdx() < desc.idx)
