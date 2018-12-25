@@ -399,17 +399,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new MetaPageUpdatePartitionDataRecord(
-                                grpId,
-                                partMetaId,
-                                updCntr,
-                                rmvId,
-                                (int)size, // TODO: Partition size may be long
-                                cntrsPageId,
-                                state == null ? -1 : (byte)state.ordinal(),
-                                pageCnt
-                            ));
+//                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+//                            wal.log(new MetaPageUpdatePartitionDataRecord(
+//                                grpId,
+//                                partMetaId,
+//                                updCntr,
+//                                rmvId,
+//                                (int)size, // TODO: Partition size may be long
+//                                cntrsPageId,
+//                                state == null ? -1 : (byte)state.ordinal(),
+//                                pageCnt
+//                            ));
                     }
                     finally {
                         pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);

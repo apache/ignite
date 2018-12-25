@@ -165,7 +165,8 @@ public class CheckpointMetricsTracker {
     }
 
     public void onOffheapSaveMetadataEnd() {
-        offheapSaveMetadataEnd = System.currentTimeMillis();
+        long end = System.currentTimeMillis();
+        offheapSaveMetadataEnd += (end - offheapSaveFreeListMetadataEnd);
     }
 
     /**
@@ -213,7 +214,7 @@ public class CheckpointMetricsTracker {
     }
 
     public long offheapSaveMetadataDuration() {
-        return offheapSaveMetadataEnd - offheapSaveFreeListMetadataEnd;
+        return offheapSaveMetadataEnd;
     }
 
     /**
