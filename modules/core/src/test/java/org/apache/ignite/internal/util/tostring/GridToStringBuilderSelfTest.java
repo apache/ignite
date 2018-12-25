@@ -162,6 +162,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCollectionLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
@@ -254,6 +255,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringSizeLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
         int tailLen = limit / 10 * 2;

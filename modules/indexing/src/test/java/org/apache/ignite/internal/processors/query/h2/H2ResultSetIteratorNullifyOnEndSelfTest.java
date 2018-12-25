@@ -59,6 +59,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL check nullification after close
      */
+    @Test
     public void testSqlQueryClose() {
         SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
 
@@ -76,6 +77,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL check nullification after complete
      */
+    @Test
     public void testSqlQueryComplete() {
         SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
 
@@ -91,6 +93,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL check nullification after close
      */
+    @Test
     public void testSqlQueryLocalClose() {
         SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
 
@@ -110,6 +113,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL check nullification after complete
      */
+    @Test
     public void testSqlQueryLocalComplete() {
         SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
 
@@ -267,6 +271,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * "onClose" should remove links to data.
      */
+    @Test
     public void testOnClose() {
         try {
             GridCloseableIterator it = indexing().queryLocalSql(
@@ -297,6 +302,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Complete iterate should remove links to data.
      */
+    @Test
     public void testOnComplete() {
         try {
             GridCloseableIterator it = indexing().queryLocalSql(

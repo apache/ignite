@@ -225,6 +225,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlQueryFailedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 

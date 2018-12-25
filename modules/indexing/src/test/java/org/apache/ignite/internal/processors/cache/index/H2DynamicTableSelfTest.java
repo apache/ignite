@@ -730,6 +730,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testCreateExistingTable() throws Exception {
         execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +

@@ -213,6 +213,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockNodeStop() throws Exception {
         final int nodeCnt = 3;
         int threadCnt = 2;

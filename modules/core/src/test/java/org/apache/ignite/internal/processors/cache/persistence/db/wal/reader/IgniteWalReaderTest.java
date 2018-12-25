@@ -826,6 +826,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * Tests WAL iterator which uses shared cache context of currently started Ignite node.
      */
+    @Test
     public void testIteratorWithCurrentKernelContext() throws Exception {
         IgniteEx ignite = startGrid(0);
 

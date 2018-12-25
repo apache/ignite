@@ -29,6 +29,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     /**
      *
      */
+    @Test
     public final void testPutRemoveAfterCheckpoint() throws Exception {
         IgniteEx ignite = startGrid(0);
 
