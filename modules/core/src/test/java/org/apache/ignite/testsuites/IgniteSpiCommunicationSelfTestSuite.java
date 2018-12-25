@@ -45,16 +45,18 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTe
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for all communication SPIs.
  */
-public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiCommunicationSelfTestSuite {
     /**
      * @return Communication SPI tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Communication SPI Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
@@ -95,7 +97,7 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationHandshakeWaitSslTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationConnectOnInitTest.class));
 
-        //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheDhtLockBackupSelfTest.class));
 
         return suite;
     }

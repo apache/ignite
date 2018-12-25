@@ -40,9 +40,8 @@ import org.junit.runners.AllTests;
 public class SelectionTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(SelectionTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(CrossValidationTest.class));
         suite.addTest(new JUnit4TestAdapter(ParameterSetGeneratorTest.class));
         suite.addTest(new JUnit4TestAdapter(LocalLabelPairCursorTest.class));
@@ -52,10 +51,8 @@ public class SelectionTestSuite {
         suite.addTest(new JUnit4TestAdapter(FmeasureTest.class));
         suite.addTest(new JUnit4TestAdapter(SHA256UniformMapperTest.class));
         suite.addTest(new JUnit4TestAdapter(TrainTestDatasetSplitterTest.class));
-
-        /** JUnit 3 tests. */
-        suite.addTestSuite(EvaluatorTest.class);
-        suite.addTestSuite(CacheBasedLabelPairCursorTest.class);
+        suite.addTest(new JUnit4TestAdapter(EvaluatorTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBasedLabelPairCursorTest.class));
 
         return suite;
     }

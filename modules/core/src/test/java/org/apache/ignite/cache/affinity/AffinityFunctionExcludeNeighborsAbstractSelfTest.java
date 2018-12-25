@@ -32,8 +32,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,9 +50,6 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
 
     /** Number of girds. */
     private int gridInstanceNum;
-
-    /** Ip finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -75,7 +70,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
             }
         };
 
-        spi.setIpFinder(ipFinder);
+        spi.setIpFinder(sharedStaticIpFinder);
 
         c.setDiscoverySpi(spi);
 
