@@ -899,7 +899,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     public void testWaitPreviousTxAck() throws Exception {
         testSpi = true;
 
@@ -1218,7 +1217,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     public void testCleanupWaitsForGet2() throws Exception {
         /*
         Simulate case when there are two active transactions modifying the same key
@@ -3396,7 +3394,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     public void testExpiration() throws Exception {
         final IgniteEx node = startGrid(0);
 
@@ -3452,7 +3449,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     public void testChangeExpireTime() throws Exception {
         final IgniteEx node = startGrid(0);
 

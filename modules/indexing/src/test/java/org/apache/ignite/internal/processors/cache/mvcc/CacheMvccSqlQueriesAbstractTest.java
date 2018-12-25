@@ -169,8 +169,9 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @param locQry Local query flag.
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     private void updateSingleValue(boolean singleNode, final boolean locQry) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int VALS = 100;
 
         final int writers = 4;
@@ -402,8 +403,9 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @param distributedJoin {@code True} to test distributed joins.
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     private void joinTransactional(boolean singleNode, final boolean distributedJoin) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int KEYS = 100;
 
         final int writers = 4;
