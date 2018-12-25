@@ -16,24 +16,34 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Zookeeper discovery statistics.
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
-    private int joinedNodesCnt;
+    private long joinedNodesCnt;
 
     /** */
-    private int failedNodesCnt;
+    private long failedNodesCnt;
+
+    /** Communication error count. */
+    private long commErrCnt;
 
     /** */
-    public int joinedNodesCnt() {
+    public long joinedNodesCnt() {
         return joinedNodesCnt;
     }
 
     /** */
-    public int failedNodesCnt() {
+    public long failedNodesCnt() {
         return failedNodesCnt;
+    }
+
+    /** */
+    public long commErrorCount() {
+        return commErrCnt;
     }
 
     /** */
@@ -44,5 +54,15 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onNodeFailed() {
         failedNodesCnt++;
+    }
+
+    /** */
+    public void onCommunicationError() {
+        commErrCnt++;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZookeeperDiscoveryStatistics.class, this);
     }
 }
