@@ -29,12 +29,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -1307,5 +1313,77 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      */
     private static boolean isValidCatalog(String catalog) {
         return catalog == null || catalog.equalsIgnoreCase(CATALOG_NAME);
+    }
+
+    /**
+     * This class is held only for compatibility purposes and shouldn't be used;
+     *
+     * @deprecated Use {@link JdbcMetadataInfo} instead.
+     */
+    private static class UpdateMetadataTask implements IgniteCallable<Collection<GridCacheSqlMetadata>> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         * @param ignite Ignite.
+         */
+        public UpdateMetadataTask(String cacheName, Ignite ignite) {
+            this.cacheName = cacheName;
+            this.ignite = ignite;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
+            IgniteCache cache = ignite.cache(cacheName);
+
+            return ((IgniteCacheProxy)cache).context().queries().sqlMetadataV2();
+        }
+    }
+
+    /**
+     * This class is held only for compatibility purposes and shouldn't be used;
+     *
+     * Column info.
+     *
+     * @deprecated Use {@link JdbcMetadataInfo} instead.
+     */
+    private static class ColumnInfo {
+        /** Class name. */
+        private final String typeName;
+
+        /** Not null flag. */
+        private final boolean notNull;
+
+        /**
+         * @param typeName Type name.
+         * @param notNull Not null flag.
+         */
+        private ColumnInfo(String typeName, boolean notNull) {
+            this.typeName = typeName;
+            this.notNull = notNull;
+        }
+
+        /**
+         * @return Type name.
+         */
+        public String typeName() {
+            return typeName;
+        }
+
+        /**
+         * @return Not null flag.
+         */
+        public boolean isNotNull() {
+            return notNull;
+        }
     }
 }
