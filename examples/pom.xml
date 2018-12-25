@@ -122,6 +122,14 @@
             <version>${javassist.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jpmml/pmml-evaluator -->
+        <dependency>
+            <groupId>org.jpmml</groupId>
+            <artifactId>pmml-evaluator</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+
+
     </dependencies>
 
     <properties>
