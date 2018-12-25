@@ -540,7 +540,8 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
             "\"cache_name=cache_sql,template=partitioned,atomicity=atomic\"");
 
-        execSql("CREATE TABLE PUBLIC.ddl_table (ID INT PRIMARY KEY, VAL VARCHAR)");
+        execSql("CREATE TABLE PUBLIC.ddl_table (ID1 INT, ID2 INT, VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
+            + "\"affinity_key=ID2\"");
 
         int cacheSqlId = cacheProc.cacheDescriptor("cache_sql").cacheId();
         int ddlTabId = cacheProc.cacheDescriptor("SQL_PUBLIC_DDL_TABLE").cacheId();
@@ -552,7 +553,9 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             "DEFAULT",      // TABLE_SCHEMA
             "CACHE_SQL",    // TABLE_NAME
             "cache_sql",    // OWNING_CACHE_NAME
-            cacheSqlId      // OWNING_CACHE_ID
+            cacheSqlId,     // OWNING_CACHE_ID
+            "DEFAULT",      // AFFINITY_MODE
+            null            // AFFINITY_COLUMN
         );
 
         assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
@@ -568,7 +571,9 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                 "PUBLIC",               // TABLE_SCHEMA
                 "DDL_TABLE",            // TABLE_NAME
                 "SQL_PUBLIC_DDL_TABLE", // OWNING_CACHE_NAME
-                ddlTabId                // OWNING_CACHE_ID
+                ddlTabId,               // OWNING_CACHE_ID
+                "COLUMN",               // AFFINITY_MODE
+                "ID2"                   // AFFINITY_COLUMN
             )
         );
 
