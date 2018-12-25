@@ -788,6 +788,7 @@ public class GridMapQueryExecutor {
 
             for (GridCacheSqlQuery qry : qrys) {
                 H2ConnectionWrapper connWrp = h2.connections().connectionForThread();
+                log.info("+++ MAP " + qryIdx + " " + connWrp.connection());
 
                 H2Utils.setupConnection(
                     connWrp.connection(schemaName),

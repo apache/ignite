@@ -73,7 +73,7 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -501,7 +501,9 @@ public class GridReduceQueryExecutor {
                 h2.connections().connectionForThread().connection(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
-            ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachThreadConnection();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.connections().detachThreadConnection();
+
+            log.info("+++ REDUCE " + detachedConn.object().connection());
 
             Collection<ClusterNode> nodes;
 

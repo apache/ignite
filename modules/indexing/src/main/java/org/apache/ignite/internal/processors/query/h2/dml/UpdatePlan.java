@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -623,7 +624,7 @@ public final class UpdatePlan {
         private final EnlistOperation op;
 
         /** */
-        private volatile ObjectPoolReusable<H2ConnectionWrapper> conn;
+        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
 
         /**
          * @param connMgr Connection manager.
@@ -648,7 +649,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn = connMgr.detachThreadConnection();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = connMgr.detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();
@@ -658,7 +659,7 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn;
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
 
             if (conn0 != null)
                 conn0.recycle();

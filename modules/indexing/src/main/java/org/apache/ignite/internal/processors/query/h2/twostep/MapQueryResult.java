@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -109,7 +110,7 @@ class MapQueryResult {
     /**
      * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
      */
-    private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
+    private ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn;
 
     /**
      * @param h2 H2 indexing.
