@@ -427,6 +427,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .map(desc -> {
                 DynamicCacheChangeRequest changeReq = startReqs.get(desc.cacheName());
 
+                startedInfos.put(desc.cacheId(), changeReq.nearCacheConfiguration() != null);
+
                 return new StartCacheInfo(
                     desc.cacheConfiguration(),
                     desc,
@@ -435,8 +437,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     changeReq.disabledAfterStart(),
                     true
                 );
-            })
-            .collect(Collectors.toList());
+            }).collect(Collectors.toList());
 
         Set<String> startedCaches = startCacheInfos.stream()
             .map(info -> info.getCacheDescriptor().cacheName())
@@ -453,17 +454,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             return null;
         }
 
-        for (StartCacheInfo startCacheInfo : startCacheInfos) {
+        Set<CacheGroupDescriptor> groupDescs = startDescs.stream()
+            .map(DynamicCacheDescriptor::groupDescriptor)
+            .collect(Collectors.toSet());
+
+        for (CacheGroupDescriptor grpDesc : groupDescs) {
             try {
-                DynamicCacheDescriptor desc = startCacheInfo.getCacheDescriptor();
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpDesc.groupId());
 
-                startedCaches.add(desc.cacheName());
-
-                startedInfos.put(desc.cacheId(), startCacheInfo.getReqNearCfg() != null);
-
-                CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
-
-                assert grp != null : desc.groupId();
+                assert grp != null : grpDesc.groupId();
                 assert !grp.affinityNode() || grp.isLocal() : grp.cacheOrGroupName();
 
                 if (!grp.isLocal()) {
@@ -474,7 +473,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert !crd || (grpHolder != null && grpHolder.affinity().idealAssignment() != null);
 
                     if (grpHolder == null)
-                        grpHolder = groupHolder(topVer, desc.groupDescriptor());
+                        grpHolder = groupHolder(topVer, grpDesc);
 
                     if (grpHolder.client() && !cctx.localNode().isClient()) {
                         ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
@@ -572,7 +571,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     -1,
                     false);
 
-                grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet(), null, null);
+                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null);
 
                 topFut.validate(grp, discoCache.allNodes());
             }
