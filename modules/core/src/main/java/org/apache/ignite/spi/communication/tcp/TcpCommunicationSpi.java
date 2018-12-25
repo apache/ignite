@@ -1072,7 +1072,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Logger. */
     @LoggerResource
-    private IgniteLogger log;
+    private volatile IgniteLogger log;
 
     /** Logger. */
     @LoggerResource(categoryName = "org.apache.ignite.internal.diagnostic")
