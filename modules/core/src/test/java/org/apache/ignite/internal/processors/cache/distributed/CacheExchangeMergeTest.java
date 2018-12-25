@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -75,6 +74,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -98,7 +99,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 45;
+    private static final long WAIT_SECONDS = 15;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -367,7 +368,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger(initNodes);
 
-            final GridConcurrentHashSet<Integer> stopNodes = new GridConcurrentHashSet<>();
+            final ConcurrentHashSet<Integer> stopNodes = new ConcurrentHashSet<>();
 
             IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -434,9 +435,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        int iterations = GridTestUtils.SF.applyLB(5, 1);
-
-        for (int i = 0; i < iterations; i++) {
+        for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
             startGrid(0);
@@ -473,10 +472,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10186")
     @Test
     public void testMergeServerAndClientJoin1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
-
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -974,6 +972,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         testSpi = true;
 
         Ignite srv0 = startGrids(srvs);
+
+        mergeExchangeWaitVersion(srv0, 6);
 
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 

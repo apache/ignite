@@ -43,7 +43,6 @@ import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
 import org.apache.ignite.internal.LongJVMPauseDetectorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
-import org.apache.ignite.internal.managers.deployment.DeploymentRequestOfUnknownClassProcessingTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
@@ -140,7 +139,6 @@ public class IgniteKernalSelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteConnectionConcurrentReserveAndRemoveTest.class));
         suite.addTest(new JUnit4TestAdapter(LongJVMPauseDetectorTest.class));
         suite.addTest(new JUnit4TestAdapter(ClusterMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DeploymentRequestOfUnknownClassProcessingTest.class));
 
         // Managed Services.
         suite.addTest(new JUnit4TestAdapter(GridServiceProcessorSingleNodeSelfTest.class));

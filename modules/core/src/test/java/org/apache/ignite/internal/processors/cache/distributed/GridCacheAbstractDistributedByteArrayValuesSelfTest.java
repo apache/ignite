@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
@@ -42,30 +44,17 @@ import static org.junit.Assert.assertArrayEquals;
 @RunWith(JUnit4.class)
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
-    /** */
-    private static final String CACHE = "cache";
-
-    /** */
-    private static final String MVCC_CACHE = "mvccCache";
+    /** Grids. */
+    protected static Ignite[] ignites;
 
     /** Regular caches. */
     private static IgniteCache<Integer, Object>[] caches;
-
-    /** Regular caches. */
-    private static IgniteCache<Integer, Object>[] mvccCaches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-            .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
-
-
-        CacheConfiguration ccfg = cacheConfiguration(CACHE);
-
-        c.setCacheConfiguration(ccfg, mvccCfg);
+        c.setCacheConfiguration(cacheConfiguration());
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -85,13 +74,12 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     }
 
     /**
-     * @param name Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String name) {
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cfg = cacheConfiguration0();
 
-        cfg.setName(name);
+        cfg.setName(CACHE_REGULAR);
 
         return cfg;
     }
@@ -104,31 +92,26 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         int gridCnt = gridCount();
 
         assert gridCnt > 0;
 
-        caches = new IgniteCache[gridCnt];
-        mvccCaches = new IgniteCache[gridCnt];
+        ignites = new Ignite[gridCnt];
 
-        startGridsMultiThreaded(gridCnt);
+        caches = new IgniteCache[gridCnt];
 
         for (int i = 0; i < gridCnt; i++) {
-            caches[i] = grid(i).cache(CACHE);
-            mvccCaches[i] = grid(i).cache(MVCC_CACHE);
+            ignites[i] = startGrid(i);
+
+            caches[i] = ignites[i].cache(CACHE_REGULAR);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         caches = null;
-        mvccCaches = null;
 
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        ignites = null;
     }
 
     /**
@@ -170,27 +153,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed0(caches, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
-
-    /**
-     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPessimisticMvcc() throws Exception {
-        testTransaction0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPessimisticMvccMixed() throws Exception {
-        testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
 
     /**
      * Test transaction behavior.

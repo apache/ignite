@@ -42,7 +42,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Client mode. */
-    private boolean set16kPageSize = true;
+    private boolean set2kPageSize = true;
 
     /** Entries count. */
     public static final int ENTRIES_COUNT = 300;
@@ -59,10 +59,8 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        if (set16kPageSize)
-            memCfg.setPageSize(16 * 1024);
-        else
-            memCfg.setPageSize(0); // Enforce default.
+        if (set2kPageSize)
+            memCfg.setPageSize(2048);
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setMaxSize(100L * 1000 * 1000);
@@ -70,7 +68,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
-        memCfg.setCheckpointFrequency(500);
+        memCfg.setCheckpointFrequency(3_000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -80,9 +78,6 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        if (!set16kPageSize)
-            ccfg1.setDiskPageCompression(null);
 
         cfg.setCacheConfiguration(ccfg1);
 
@@ -123,11 +118,11 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         for (int i = 0; i < ENTRIES_COUNT; i++)
             cache.put(i, i);
 
-        Thread.sleep(1500); // Await for checkpoint to happen.
+        Thread.sleep(5_000); // Await for checkpoint to happen.
 
         stopAllGrids();
 
-        set16kPageSize = false;
+        set2kPageSize = false;
 
         startGrids(2);
 
