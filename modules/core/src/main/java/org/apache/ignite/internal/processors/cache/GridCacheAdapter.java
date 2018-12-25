@@ -3522,6 +3522,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
+        if (ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1))
+            return true;
+
         while (true) {
             try {
                 GridCacheEntryEx entry = peekEx(cacheKey);
