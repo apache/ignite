@@ -210,7 +210,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                     try {
                         U.await(marshMapLatch);
                     } catch (IgniteInterruptedCheckedException e) {
-                        U.error(log, "Marshaller does not initialized.", e);
+                        U.error(log, "Marshaller is not initialized.", e);
 
                         ses.close();
 
