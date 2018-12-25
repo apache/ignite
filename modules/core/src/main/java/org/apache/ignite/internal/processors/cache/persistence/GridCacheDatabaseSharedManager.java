@@ -2317,15 +2317,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             semaphore.acquire();
-
-            exec.execute(stripe, () -> consumer.accept(pageMem));
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
         }
-        finally {
-            semaphore.release();
-        }
+
+        exec.execute(stripe, () -> {
+            checkpointReadLock();
+
+            try {
+                consumer.accept(pageMem);
+            }
+            finally {
+                checkpointReadUnlock();
+
+                semaphore.release();
+            }
+        });
     }
 
     /**
