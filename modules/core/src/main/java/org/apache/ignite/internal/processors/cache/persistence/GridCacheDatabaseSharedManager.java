@@ -2339,32 +2339,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (pageMem == null)
             return;
 
-        int stripes = exec.stripes();
-
-        int stripe = U.stripeIdx(stripes, grpId, partId);
-
-        assert stripe >= 0 && stripe <= stripes : "idx=" + stripe + ", stripes=" + stripes;
-
-        try {
-            semaphore.acquire();
-        }
-        catch (InterruptedException e) {
-            throw new IgniteInterruptedException(e);
-        }
-
-        exec.execute(stripe, () -> {
-            // WA for avoid assert check in PageMemory, that current thread hold chpLock.
-            CHECKPOINT_LOCK_HOLD_COUNT.set(1);
-
-            try {
-                consumer.accept(pageMem);
-            }
-            finally {
-                CHECKPOINT_LOCK_HOLD_COUNT.set(0);
-
-                semaphore.release();
-            }
-        });
+        stripedApply(() -> consumer.accept(pageMem), grpId, partId, exec, semaphore);
     }
 
     /**
