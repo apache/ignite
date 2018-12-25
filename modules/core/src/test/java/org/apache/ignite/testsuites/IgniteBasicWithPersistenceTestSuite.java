@@ -22,8 +22,10 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheBigEntryTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
@@ -31,7 +33,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
-import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -39,11 +41,14 @@ import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Basic test suite.
  */
-public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBasicWithPersistenceTestSuite {
     /**
      * @return Test suite.
      */
@@ -65,6 +70,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(GridMarshallerMappingConsistencyTest.class));
         suite.addTest(new JUnit4TestAdapter(SystemWorkersTerminationTest.class));
         suite.addTest(new JUnit4TestAdapter(FailureHandlingConfigurationTest.class));
+        suite.addTest(new JUnit4TestAdapter(SystemWorkersBlockingTest.class));
+        suite.addTest(new JUnit4TestAdapter(CheckpointReadLockFailureTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridCommandHandlerTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCommandHandlerSslTest.class));

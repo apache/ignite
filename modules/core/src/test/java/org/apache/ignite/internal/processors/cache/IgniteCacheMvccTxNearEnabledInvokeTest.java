@@ -18,18 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
 public class IgniteCacheMvccTxNearEnabledInvokeTest extends IgniteCacheMvccTxInvokeTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
-        super.beforeTestsStarted();
-    }
-
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();

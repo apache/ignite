@@ -15,25 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.examples;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest;
+import org.apache.ignite.examples.misc.schedule.ComputeScheduleExample;
 
 /**
- * Test suite for JSR-310 Java 8 Date and Time API queries.
+ * Multi-node test for {@link ComputeScheduleExample}.
  */
-public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("JSR-310 Java 8 Date and Time API Cache Queries Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class));
-
-        return suite;
+public class ComputeScheduleExampleMultiNodeSelfTest extends ComputeScheduleExampleSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("node-" + i, "examples/config/example-ignite.xml");
     }
 }

@@ -37,9 +37,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,9 +48,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -67,12 +61,6 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(storageCfg);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -193,6 +181,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing data migration between metastorage partitions (delete partition case)
      */
+    @Test
     public void testDeletePartitionFromMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>();
 
@@ -302,6 +291,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing data migration between metastorage partitions
      */
+    @Test
     public void testMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>(5_000);
 
@@ -374,6 +364,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Testing temporary storage
      */
+    @Test
     public void testMetaStoreMigrationTmpStorage() throws Exception {
         List<IgniteBiTuple<String, byte[]>> data = generateTestData(2_000, -1).collect(Collectors.toList());
 

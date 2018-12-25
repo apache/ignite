@@ -129,6 +129,7 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.zookeeper.KeeperException;
@@ -1809,7 +1810,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         long topVer = initNodes;
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < SF.applyLB(10, 2); i++) {
             info("Iteration: " + i);
 
             DiscoveryEvent[] expEvts = new DiscoveryEvent[NODES];
@@ -2118,7 +2119,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         final int THREADS = 30;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
 
             startGridsMultiThreaded(SRVS, THREADS);
@@ -2186,7 +2187,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         if (closeClientSock)
             testSockNio = true;
 
-        long stopTime = System.currentTimeMillis() + 60_000;
+        long stopTime = System.currentTimeMillis() + SF.applyLB(60_000, 5_000);
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -3054,7 +3055,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         int nodeIdx = 10;
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < SF.applyLB(10, 2); i++) {
             info("Iteration: " + i);
 
             for (Ignite node : G.allGrids())
@@ -3105,7 +3106,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         int nodeIdx = 15;
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < SF.applyLB(10, 2); i++) {
             info("Iteration: " + i);
 
             ZookeeperDiscoverySpi spi = null;
@@ -3814,7 +3815,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(srvs, clients);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
 
             final CountDownLatch disconnectLatch = new CountDownLatch(clients);
@@ -4511,7 +4512,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         int nextNodeIdx = 0;
         int nextCacheIdx = 0;
 
-        long stopTime = System.currentTimeMillis() + 60_000;
+        long stopTime = System.currentTimeMillis() + SF.applyLB(60_000, 5_000);
 
         int MAX_NODES = 20;
         int MAX_CACHES = 10;
