@@ -2296,8 +2296,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return rdcQryExec;
     }
 
-    /** {@inheritDoc} */
-    @Override public RunningQueryManager runningQueryManager() {
+    /**
+     * Return Running query manager.
+     *
+     * @return Running query manager.
+     */
+    public RunningQueryManager runningQueryManager() {
         return runningQueryMgr;
     }
 

@@ -444,10 +444,5 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
             return true;
         }
-
-        /** {@inheritDoc} */
-        @Override public RunningQueryManager runningQueryManager() {
-            return null;
-        }
     }
 }
