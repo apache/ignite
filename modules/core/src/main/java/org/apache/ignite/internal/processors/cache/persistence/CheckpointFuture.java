@@ -26,7 +26,7 @@ public interface CheckpointFuture  {
     /**
      * @return Begin future.
      */
-    public GridFutureAdapter beginFuture();
+    public GridFutureAdapter<Object> beginFuture();
 
     /**
      * @return Finish future.

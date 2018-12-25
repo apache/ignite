@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
@@ -1807,12 +1808,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public CheckpointFuture forceCheckpoint(String reason) {
+        return forceCheckpoint(reason, false);
+    }
+
+    /** {@inheritDoc} */
+    public CheckpointFuture forceCheckpoint(String reason, boolean cancelCurrent) {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
             return null;
 
-        return cp.wakeupForCheckpoint(0, reason);
+        return cp.wakeupForCheckpoint(0, reason, cancelCurrent);
     }
 
     /** {@inheritDoc} */
@@ -2921,7 +2927,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Partition destroy queue.
      */
-    private static class PartitionDestroyQueue {
+    static class PartitionDestroyQueue {
         /** */
         private final ConcurrentMap<T2<Integer, Integer>, PartitionDestroyRequest> pendingReqs =
             new ConcurrentHashMap<>();
@@ -2980,6 +2986,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
+        public int size() {
+            return pendingReqs.size() + (prevDestroyQueue != null ? prevDestroyQueue.size() : 0);
+        }
+
+        /**
+         *
+         */
         private synchronized boolean isNotEmpty() {
             return !pendingReqs.isEmpty() || (prevDestroyQueue != null && prevDestroyQueue.isNotEmpty());
         }
@@ -3019,7 +3032,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         pendingReqs.remove(new T2<>(req0.grpId, req0.partId));
 
-                        if ((checkCancel.get() && inProgressTasks.decrementAndGet() == 0) || pendingReqs.isEmpty())
+                        int cntInProgressTasks = inProgressTasks.decrementAndGet();
+
+                        if ((checkCancel.get() && cntInProgressTasks == 0) || pendingReqs.isEmpty())
                             doneFut.onDone();
                     });
 
@@ -3178,6 +3193,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         private long lastCpTs;
+
+        /**
+         * Can be replaced to another function only in test purpose.
+         */
+        volatile Function<Checkpoint, Boolean> checkCancel = this::checkCancel;
 
         /**
          * @param gridName Grid name.
@@ -3354,19 +3374,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     // Write dirty pages and fsync stores.
                     if (chp.hasPages()) {
-                        if (checkCancel(chp))
+                        if (checkCancel.apply(chp))
                             return;
 
                         // Write pages to stores.
                         writePages(chp);
 
-                        if (checkCancel(chp))
+                        if (checkCancel.apply(chp))
                             return;
 
                         // Fsync page stores.
                         fsyncStores(chp);
 
-                        if (checkCancel(chp))
+                        if (checkCancel.apply(chp))
                             return;
                     }
                     else {
@@ -3380,6 +3400,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Destoroy page store for evicted partitions.
                     destroyEvictedPartitions(chp);
+
+                    if (checkCancel.apply(chp))
+                        return;
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     success = true;
@@ -3457,7 +3480,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         () -> {
                             updateHeartbeat();
 
-                            return checkCancel(chp);
+                            return checkCancel.apply(chp);
                         },
                         asyncRunner
                     );
@@ -3485,7 +3508,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     () -> {
                         updateHeartbeat();
 
-                        return checkCancel(chp);
+                        return checkCancel.apply(chp);
                     },
                     null
                 );
@@ -3509,7 +3532,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!skipSync) {
                 for (Map.Entry<PageStore, LongAdder> updStoreEntry : cpProgress.pageStores.entrySet()) {
-                    if (checkCancel(chp))
+                    if (checkCancel.apply(chp))
                         return;
 
                     PageStore pageStore = updStoreEntry.getKey();
@@ -3639,10 +3662,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!destroyQueue.isNotEmpty())
                 return;
 
+            Supplier<Boolean> checkCancel = () -> {
+                updateHeartbeat();
+
+                return this.checkCancel.apply(chp);
+            };
+
             Runnable destroyPartTask = () -> {
                 PartitionDestroyRequest req;
 
-                while ((req = destroyQueue.poll(() -> checkCancel(chp))) != null) {
+                while ((req = destroyQueue.poll(checkCancel)) != null) {
                     int grpId = req.grpId;
                     int partId = req.partId;
 
@@ -3808,7 +3837,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 // Write checkpoint entry to file, as marker checkpoint start.
                 if (chp.hasPages() || chp.hasDestroyedPartitions()) {
-                    CheckpointEntry cp = prepareCheckpointEntry(
+                    CheckpointEntry cp = chp.cpEntry = prepareCheckpointEntry(
                         checkpointEntryWriteBuffer,
                         chp.cpTs,
                         chp.cpRec.checkpointId(),
@@ -3819,8 +3848,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Update checkpoint history.
                     cpHistory.addCheckpoint(cp);
-
-                    chp.cpEntry = cp;
                 }
             }
             finally {
@@ -4471,7 +4498,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
         public boolean hasPages() {
-            return pages() > 0;
+            return pages() > 0 || !progress.pageStores.isEmpty();
         }
 
         /**
@@ -4502,6 +4529,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public void walSegsCoveredRange(final IgniteBiTuple<Long, Long> walSegsCoveredRange) {
             this.walSegsCoveredRange = walSegsCoveredRange;
+        }
+
+        public CheckpointProgress checkpointProgress() {
+            return progress;
         }
     }
 
@@ -4569,7 +4600,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Data class representing the state of running/scheduled checkpoint.
      */
-    private static class CheckpointProgress {
+    static class CheckpointProgress {
         /** Scheduled time of checkpoint. */
         private volatile long nextCpTs;
 
@@ -4637,6 +4668,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             this.nextCpTs = nextCpTs;
         }
+
+        public Map<PageStore, LongAdder> pageStores(){
+            return pageStores;
+        }
+
+        public PartitionDestroyQueue destroyQueue() {
+            return destroyQueue;
+        }
     }
 
     /**
@@ -4660,7 +4699,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public GridFutureAdapter beginFuture() {
+        @Override public GridFutureAdapter<Object> beginFuture() {
             return cpBeginFut;
         }
 
