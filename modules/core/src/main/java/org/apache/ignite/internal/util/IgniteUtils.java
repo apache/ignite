@@ -11190,4 +11190,14 @@ public abstract class IgniteUtils {
             totalWritten += written;
         }
     }
+
+    /**
+     * @param stripes Number of stripes.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @return Stripe idx.
+     */
+    public static int stripe(int stripes, int grpId, int partId){
+        return (grpId % (stripes / 2)) + (partId % (stripes / 2));
+    }
 }

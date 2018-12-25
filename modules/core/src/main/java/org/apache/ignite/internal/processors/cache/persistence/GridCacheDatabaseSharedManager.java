@@ -46,14 +46,19 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
@@ -62,6 +67,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -143,6 +149,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -172,13 +179,16 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -2114,6 +2124,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             cctx.wal().notchLastCheckpointPtr(status.startPtr);
 
+        AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
+
+        Semaphore semaphore = new Semaphore(10_000);
+
+        StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+
         long start = U.currentTimeMillis();
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
@@ -2122,10 +2138,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 
-        int applied = 0;
+        AtomicLong applied = new AtomicLong();
 
         try {
             while (it.hasNextX()) {
+                if (applyError.get() != null)
+                    throw applyError.get();
+
                 WALRecord rec = restoreBinaryState.next();
 
                 if (rec == null)
@@ -2134,36 +2153,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 switch (rec.type()) {
                     case PAGE_RECORD:
                         if (restoreBinaryState.needApplyBinaryUpdate()) {
-                            PageSnapshot pageRec = (PageSnapshot)rec;
+                            PageSnapshot pageSnapshot = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            int grpId = pageRec.fullPageId().groupId();
+                            int groupId = pageSnapshot.fullPageId().groupId();
+                            int partId = partId(pageSnapshot.fullPageId().pageId());
 
-                            long pageId = pageRec.fullPageId().pageId();
+                            stripedApply((pageMem) -> {
+                                    try {
+                                        applyPageSnapshot(pageMem, pageSnapshot);
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+                                        applied.incrementAndGet();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to apply page snapshot, " + pageSnapshot);
 
-                            if (pageMem == null)
-                                break;
-
-                                long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
-
-                            try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
-
-                                try {
-                                    PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
-                                }
-                                finally {
-                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
-                                }
-                            }
-                            finally {
-                                pageMem.releasePage(grpId, pageId, page);
-                            }
-
-                            applied++;
+                                        applyError.compareAndSet(null, e);
+                                    }
+                                }, groupId, partId, exec, semaphore
+                            );
                         }
 
                         break;
@@ -2171,71 +2180,65 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case PART_META_UPDATE_STATE:
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        {
-                            int grpId = metaStateRecord.groupId();
+                    {
+                        int groupId = metaStateRecord.groupId();
+                        int partId = metaStateRecord.partitionId();
 
-                            int partId = metaStateRecord.partitionId();
-
-                            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(metaStateRecord.state());
+                        stripedApply((pageMem) -> {
+                            GridDhtPartitionState state = fromOrdinal(metaStateRecord.state());
 
                             if (state == null || state == GridDhtPartitionState.EVICTED)
-                                schedulePartitionDestroy(grpId, partId);
-                            else
-                                cancelOrWaitPartitionDestroy(grpId, partId);
-                        }
+                                schedulePartitionDestroy(groupId, partId);
+                            else {
+                                try {
+                                    cancelOrWaitPartitionDestroy(groupId, partId);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to cancel or wait partition destroy, " + metaStateRecord);
 
-                        break;
+                                    applyError.compareAndSet(null, e);
+                                }
+                            }
+                        }, groupId, partId, exec, semaphore);
+                    }
+
+                    break;
 
                     case PARTITION_DESTROY:
                         PartitionDestroyRecord destroyRecord = (PartitionDestroyRecord)rec;
 
-                        {
-                            int grpId = destroyRecord.groupId();
+                    {
+                        int groupId = destroyRecord.groupId();
+                        int partId = destroyRecord.partitionId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+                        stripedApply((pageMem) -> {
+                            pageMem.invalidate(groupId, partId);
 
-                            if (pageMem == null)
-                                break;
+                            schedulePartitionDestroy(groupId, partId);
+                        }, groupId, partId, exec, semaphore);
 
-                            pageMem.invalidate(grpId, destroyRecord.partitionId());
-
-                            schedulePartitionDestroy(grpId, destroyRecord.partitionId());
-                        }
-
-                        break;
+                    }
+                    break;
 
                     default:
                         if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {
-                            PageDeltaRecord r = (PageDeltaRecord)rec;
+                            PageDeltaRecord pageDelta = (PageDeltaRecord)rec;
 
-                            int grpId = r.groupId();
+                            int groupId = pageDelta.groupId();
+                            int partId = partId(pageDelta.pageId());
 
-                            long pageId = r.pageId();
-
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
-
-                            if (pageMem == null)
-                                break;
-
-                            // Here we do not require tag check because we may be applying memory changes after
-                            // several repetitive restarts and the same pages may have changed several times.
-                            long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
-
-                            try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
-
+                            stripedApply((pageMem) -> {
                                 try {
-                                    r.applyDelta(pageMem, pageAddr);
-                                }
-                                finally {
-                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
-                                }
-                            }
-                            finally {
-                                pageMem.releasePage(grpId, pageId, page);
-                            }
+                                    applyPageDelta(pageMem, pageDelta);
 
-                            applied++;
+                                    applied.incrementAndGet();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to apply page delta, " + pageDelta);
+
+                                    applyError.compareAndSet(null, e);
+                                }
+                            }, groupId, partId, exec, semaphore);
                         }
                 }
             }
@@ -2243,6 +2246,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             it.close();
         }
+
+        if (applyError.get() != null)
+            throw new IgniteException(applyError.get()); // Fail-fast check.
+        else {
+            CountDownLatch stripesClearLatch = new CountDownLatch(exec.stripes());
+
+            // We have to ensure that all asynchronous updates are done.
+            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
+            range(0, exec.stripes()).forEach(idx -> exec.execute(idx, stripesClearLatch::countDown));
+
+            try {
+                stripesClearLatch.await();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+        }
+
+        if (applyError.get() != null)
+            throw new IgniteException(applyError.get());
 
         if (!finalizeState)
             return null;
@@ -2258,13 +2281,105 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Finished applying memory changes [changesApplied=" + applied +
                 ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
-            if (applied > 0)
-                finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
+            assert applied.get() > 0;
+
+            finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
         }
 
         cpHistory.initialize(retreiveHistory());
 
         return restoreBinaryState;
+    }
+
+    /**
+     * @param consumer Runnable task.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @param exec Striped executor.
+     */
+    public void stripedApply(
+        Consumer<PageMemoryEx> consumer,
+        int grpId,
+        int partId,
+        StripedExecutor exec,
+        Semaphore semaphore
+    ) throws IgniteCheckedException {
+        PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+
+        if (pageMem == null)
+            return;
+
+        int stripes = exec.stripes();
+
+        int stripe = U.stripe(stripes, grpId, partId);
+
+        assert stripe >= 0 && stripe <= stripes;
+
+        try {
+            semaphore.acquire();
+
+            exec.execute(stripe, () -> consumer.accept(pageMem));
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
+        finally {
+            semaphore.release();
+        }
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param pageSnapshotRecord Page snapshot record.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void applyPageSnapshot(PageMemoryEx pageMem, PageSnapshot pageSnapshotRecord) throws IgniteCheckedException {
+        int grpId = pageSnapshotRecord.fullPageId().groupId();
+        long pageId = pageSnapshotRecord.fullPageId().pageId();
+
+        long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
+
+        try {
+            long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
+
+            try {
+                PageUtils.putBytes(pageAddr, 0, pageSnapshotRecord.pageData());
+            }
+            finally {
+                pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, pageId, page);
+        }
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param pageDeltaRecord Page delta record.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void applyPageDelta(PageMemoryEx pageMem, PageDeltaRecord pageDeltaRecord) throws IgniteCheckedException {
+        int grpId = pageDeltaRecord.groupId();
+        long pageId = pageDeltaRecord.pageId();
+
+        // Here we do not require tag check because we may be applying memory changes after
+        // several repetitive restarts and the same pages may have changed several times.
+        long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
+
+        try {
+            long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
+
+            try {
+                pageDeltaRecord.applyDelta(pageMem, pageAddr);
+            }
+            finally {
+                pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, pageId, page);
+        }
     }
 
     /**
@@ -4810,7 +4925,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                    GridDhtPartitionState partitionState = GridDhtPartitionState.fromOrdinal(io.getPartitionState(pageAddr));
+                    GridDhtPartitionState partitionState = fromOrdinal(io.getPartitionState(pageAddr));
 
                     String state = partitionState != null ? partitionState.toString() : "N/A";
 
