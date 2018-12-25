@@ -554,7 +554,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             "CACHE_SQL",    // TABLE_NAME
             "cache_sql",    // OWNING_CACHE_NAME
             cacheSqlId,     // OWNING_CACHE_ID
-            "DEFAULT",      // AFFINITY_MODE
             null            // AFFINITY_COLUMN
         );
 
@@ -572,7 +571,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                 "DDL_TABLE",            // TABLE_NAME
                 "SQL_PUBLIC_DDL_TABLE", // OWNING_CACHE_NAME
                 ddlTabId,               // OWNING_CACHE_ID
-                "COLUMN",               // AFFINITY_MODE
                 "ID2"                   // AFFINITY_COLUMN
             )
         );

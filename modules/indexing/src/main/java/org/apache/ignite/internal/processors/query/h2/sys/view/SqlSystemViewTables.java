@@ -31,20 +31,8 @@ import org.h2.value.Value;
  * View that contains information about all the sql tables in the cluster.
  */
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
-    /** Value for the {@link #AFFINITY_MODE} if custom affinity mapper is used. */
-    public static final String CUSTOM_AFF_MODE = "CUSTOM_MAPPER";
-
-    /** Value for the {@link #AFFINITY_MODE} if no mapper and no affinity key is specified. */
-    public static final String DEFAULT_AFF_MODE = "DEFAULT";
-
-    /** Value for the {@link #AFFINITY_MODE} if affinity key is specified. */
-    public static final String COLUMN_AFF_MODE = "COLUMN";
-
     /** Name of the affinity column. Columns value could be {@code null} if affinity key is not specified. */
     public static final String AFFINITY_COLUMN = "AFFINITY_COLUMN";
-
-    /** Affinity mode: used mapper, column or default. */
-    public static final String AFFINITY_MODE = "AFFINITY_MODE";
 
     /** Name of the sql table. */
     public static final String TABLE_NAME = "TABLE_NAME";
@@ -69,7 +57,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             newColumn(TABLE_NAME),
             newColumn(OWNING_CACHE_NAME),
             newColumn(OWNING_CACHE_ID, Value.INT),
-            newColumn(AFFINITY_MODE),
             newColumn(AFFINITY_COLUMN)
         );
     }
@@ -99,7 +86,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                     tab.tableName(),
                     cacheName,
                     ctx.cache().cacheDescriptor(cacheName).cacheId(),
-                    affinityMode(tab),
                     tab.affinityKey()))
             ).iterator();
     }
@@ -112,22 +98,5 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     /** {@inheritDoc} */
     @Override public long getRowCount() {
         return ctx.cache().publicAndDsCacheNames().stream().mapToLong(c -> ctx.query().types(c).size()).sum();
-    }
-
-    /**
-     * Compute value for {@link #AFFINITY_MODE} - what way of specifying affinity distribution is used.
-     * We could have either: custom affinity mapper (which is deprecated though), explicitly specified column of PK or
-     * default if no affinity key is specified during table creation.
-     *
-     * @param tab table which affinity mode to compute.
-     */
-    private static String affinityMode(GridQueryTypeDescriptor tab) {
-        if (tab.customAffinityKeyMapper())
-            return CUSTOM_AFF_MODE;
-
-        if (tab.affinityKey() != null)
-            return COLUMN_AFF_MODE;
-
-        return DEFAULT_AFF_MODE;
     }
 }
