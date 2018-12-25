@@ -71,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -254,7 +255,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @GridToStringExclude private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
             assert evt instanceof DiscoveryEvent;
-            assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
+            assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_CLIENT_NODE_DISCONNECTED;
 
             DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
@@ -275,7 +276,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         pendingExplicit = GridConcurrentFactory.newMap();
 
-        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_CLIENT_NODE_DISCONNECTED);
     }
 
     /** {@inheritDoc} */

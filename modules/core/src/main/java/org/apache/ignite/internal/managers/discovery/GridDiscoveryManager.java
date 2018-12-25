@@ -816,8 +816,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     assert locNode.isClient() : locNode;
                     assert node.isClient() : node;
 
-                    topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO, null));
-
                     ((IgniteKernal)ctx.grid()).onDisconnected();
 
                     if (!locJoin.isDone())

@@ -829,7 +829,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 if (timeoutObj != null && !cancelHandshakeTimeout(timeoutObj)) {
                                     err = new HandshakeTimeoutException(new IgniteSpiOperationTimeoutException(
                                         "Failed to perform handshake due to timeout " +
-                                        "(consider increasing 'connectionTimeout' configuration property)."));
+                                            "(consider increasing 'connectionTimeout' configuration property)."));
                                 }
 
                                 if (rcvCnt == -1 || err != null) {
@@ -3063,6 +3063,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** Connection index. */
         private final int connIdx;
 
+        /** */
+        private volatile IgniteInternalFuture<GridCommunicationClient> clientFut;
+
         /**
          * @param node Node.
          */
@@ -3103,7 +3106,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         GridCommunicationClient client0 = nodeClient(nodeId, connIdx);
 
                         if (client0 == null) {
-                            IgniteInternalFuture<GridCommunicationClient> clientFut = createNioClient(node, connIdx);
+                            clientFut = createNioClient(node, connIdx);
 
                             clientFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut) {
@@ -3195,32 +3198,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    oldFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
-                        @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut) {
-                            try {
-                                GridCommunicationClient client0 = fut.get();
+                    oldFut.listen((IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>)fut -> {
+                        try {
+                            clientFuts.remove(connKey, oldFut);
 
-                                if (client0 == null) {
-                                    clientFuts.remove(connKey, oldFut);
+                            GridCommunicationClient client0 = fut.get();
 
-                                    onDone();
-                                }
-                                else if (client0.reserve()) {
-                                    clientFuts.remove(connKey, oldFut);
+                            if (client0 == null)
+                                onDone();
+                            else if (client0.reserve())
+                                onDone(client0);
+                            else {
+                                removeNodeClient(nodeId, client0);
 
-                                    onDone(client0);
-                                }
-                                else {
-                                    clientFuts.remove(connKey, oldFut);
-
-                                    removeNodeClient(nodeId, client0);
-
-                                    onDone();
-                                }
+                                onDone();
                             }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
                         }
                     });
                 }
@@ -3236,6 +3231,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     onDone();
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable GridCommunicationClient res, @Nullable Throwable err) {
+            boolean done = super.onDone(res, err);
+
+            IgniteInternalFuture<GridCommunicationClient> clientFut0 = this.clientFut;
+
+            if (done && err != null && clientFut0 != null && !clientFut0.isDone() && clientFut0 instanceof GridFutureAdapter)
+                ((GridFutureAdapter<GridCommunicationClient>)clientFut0).onDone(res, err);
+
+            return done;
         }
 
         /** {@inheritDoc} */
@@ -3528,9 +3535,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         connectGate.enter();
 
-        fut.connect();
-
-        fut.listen((IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>)fut0 -> connectGate.leave());
+        try {
+            fut.connect();
+        }
+        finally {
+            connectGate.leave();
+        }
 
         return fut;
     }
@@ -3951,6 +3961,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
 
             return addrs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable GridCommunicationClient res, @Nullable Throwable err) {
+            if (err != null)
+                return super.onDone(null, err);
+
+            try {
+                connectGate.enter();
+            }
+            catch (Throwable ex) {
+                return super.onDone(null, ex);
+            }
+
+            try {
+                return super.onDone(res, err);
+            }
+            finally {
+                connectGate.leave();
+            }
         }
 
         /** {@inheritDoc} */
@@ -5012,7 +5042,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (fut != null) {
                         fut.onError(new HandshakeTimeoutException(new IgniteSpiOperationTimeoutException(
                             "Failed to perform handshake due to timeout " +
-                            "(consider increasing 'connectionTimeout' configuration property).")));
+                                "(consider increasing 'connectionTimeout' configuration property).")));
                     }
                 }));
             }
@@ -5111,8 +5141,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
     }
 
-
-
     /**
      *
      */
@@ -5178,82 +5206,69 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      */
     private class ConnectGateway {
-        /** Mutex. */
-        private final Object mux = new Object();
+        /** */
+        private GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
-        /** Open. */
-        private boolean closed;
-
-        /** Active count. */
-        private int activeCnt;
-
-        /** Err. */
+        /** */
         private IgniteException err;
 
         /**
          *
          */
         void enter() {
-            synchronized (mux) {
-                waitForOpen();
+            lock.readLock();
 
-                if (err != null) {
-                    doLeave();
+            if (err != null) {
+                lock.readUnlock();
 
-                    throw err;
-                }
+                throw err;
             }
         }
 
         /**
-         *
+         * @return {@code True} if entered gateway.
          */
         boolean tryEnter() {
-            synchronized (mux) {
-                waitForOpen();
+            lock.readLock();
 
-                boolean res = err == null;
+            boolean res = err == null;
 
-                if (!res)
-                    doLeave();
+            if (!res)
+                lock.readUnlock();
 
-                return res;
-            }
+            return res;
         }
 
         /**
          *
          */
         void leave() {
-            synchronized (mux) {
-                doLeave();
-            }
+            lock.readUnlock();
         }
 
         /**
          * @param reconnectFut Reconnect future.
          */
         void disconnected(IgniteFuture<?> reconnectFut) {
-            synchronized (mux) {
-                close();
+            lock.writeLock();
 
-                err = new IgniteClientDisconnectedException(reconnectFut, "Failed to connect, client node disconnected.");
+            err = new IgniteClientDisconnectedException(reconnectFut, "Failed to connect, client node disconnected.");
 
-                open();
-            }
+            lock.writeUnlock();
         }
 
         /**
          *
          */
         void reconnected() {
-            synchronized (mux) {
-                close();
+            lock.writeLock();
 
+            try {
                 if (err instanceof IgniteClientDisconnectedException)
                     err = null;
-
-                open();
+            }
+            finally {
+                lock.writeUnlock();
             }
         }
 
@@ -5261,69 +5276,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          *
          */
         void stopped() {
-            synchronized (mux) {
-                waitForOpen();
+            lock.readLock();
 
-                err = new IgniteException("Failed to connect, node stopped.");
+            err = new IgniteException("Failed to connect, node stopped.");
 
-                doLeave();
-            }
-        }
-
-        /**
-         *
-         */
-        private void waitForOpen() {
-            while (closed) {
-                try {
-                    mux.wait();
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            activeCnt++;
-
-            assert activeCnt > 0;
-
-            mux.notifyAll();
-        }
-
-        /**
-         *
-         */
-        private void doLeave() {
-            activeCnt--;
-
-            assert activeCnt >= 0;
-
-            mux.notifyAll();
-        }
-
-        /**
-         *
-         */
-        private void open() {
-            closed = false;
-
-            mux.notifyAll();
-        }
-
-        /**
-         *
-         */
-        private void close() {
-            closed = true;
-
-            while (activeCnt > 0) {
-                try {
-                    mux.wait();
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            lock.readUnlock();
         }
     }
 

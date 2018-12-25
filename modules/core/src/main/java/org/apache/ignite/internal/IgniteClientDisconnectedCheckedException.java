@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
  *
  */
-public class IgniteClientDisconnectedCheckedException extends IgniteCheckedException {
+public class IgniteClientDisconnectedCheckedException extends ClusterTopologyCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -7423,6 +7423,9 @@ public abstract class IgniteUtils {
 
         t = unwrap(t);
 
+        if (t instanceof IgniteClientDisconnectedException)
+            return new IgniteClientDisconnectedCheckedException(((IgniteClientDisconnectedException)t).reconnectFuture(), t.getMessage());
+
         return t instanceof IgniteCheckedException
             ? (IgniteCheckedException)t
             : new IgniteCheckedException(t);
