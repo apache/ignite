@@ -507,7 +507,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     for (Integer grpId0 : session0.disabledGrps) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                        assert grp != null;
+                        assert grp != null : "grpId=" + grpId0;
 
                         grp.topology().ownMoving(topVer);
                     }
