@@ -60,7 +60,7 @@ public class ZookeeperDiscoverySpiTestSuite1 {
 
     /** */
     @BeforeClass
-    public void init() {
+    public static void init() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");
     }

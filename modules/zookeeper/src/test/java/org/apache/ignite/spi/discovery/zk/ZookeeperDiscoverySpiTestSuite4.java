@@ -43,7 +43,7 @@ import org.junit.runners.Suite;
 public class ZookeeperDiscoverySpiTestSuite4 extends ZookeeperDiscoverySpiAbstractTestSuite {
     /** */
     @BeforeClass
-    public void init() throws Exception {
+    public static void init() throws Exception {
         System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
 
         initSuite();
