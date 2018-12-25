@@ -507,9 +507,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     for (Integer grpId0 : session0.disabledGrps) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                        assert grp != null;
+                        if (grp != null)
+                            grp.topology().ownMoving(topVer);
+                        else if (log.isDebugEnabled())
+                            log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
 
-                        grp.topology().ownMoving(topVer);
                     }
 
                     cctx.exchange().refreshPartitions();
