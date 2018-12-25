@@ -65,14 +65,21 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
     @Test
-    @Override public void testFlushTimeout() {
-        // No-op.
+    @Override public void testFlushTimeout() throws Exception {
+        super.testFlushTimeout();
     }
 
     /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
-    @Override public void testLocal() {
-        // No-op.
+    @Override public void testLocal() throws Exception {
+        super.testLocal();
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
+    @Test
+    @Override public void testTryFlush() throws Exception {
+        super.testTryFlush();
     }
 }
