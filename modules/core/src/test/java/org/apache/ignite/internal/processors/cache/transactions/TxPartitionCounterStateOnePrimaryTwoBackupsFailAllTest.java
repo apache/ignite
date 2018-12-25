@@ -87,15 +87,30 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                     commits.put((IgniteEx)backup1, backup1CommitOrder);
                     commits.put((IgniteEx)backup2, backup2CommitOrder);
 
+                    CountDownLatch l = new CountDownLatch(2);
+
                     return new TwoPhaseCommitTxCallbackAdapter(prepares, commits, sizes.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
                             super.onBackupCommitted(backup, idx);
 
-                            if (cnt.incrementAndGet() == 2) {
-                                // Stop all backups first or recovery will commit a transaction on backups.
-                                stopGrid(skipCp, txTop.get2().get(0).name());
-                                stopGrid(skipCp, txTop.get2().get(1).name());
-                                stopAllGrids();
+                            if (idx == commits.get(backup)[0]) {
+                                l.countDown();
+
+                                try {
+                                    assertTrue(U.await(l, 30_000, TimeUnit.MILLISECONDS));
+                                }
+                                catch (IgniteInterruptedCheckedException e) {
+                                    fail(e.getMessage());
+                                }
+
+                                if (backup == backup1) {
+                                    // Stop all backups first or recovery will commit a transaction on backups.
+                                    stopGrid(skipCp, txTop.get2().get(0).name());
+                                    stopGrid(skipCp, txTop.get2().get(1).name());
+                                    stopAllGrids();
+                                }
+
+                                return true;
                             }
 
                             return true;
@@ -174,7 +189,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                                 }
 
                                 return true;
-
                             }
 
                             return false;
