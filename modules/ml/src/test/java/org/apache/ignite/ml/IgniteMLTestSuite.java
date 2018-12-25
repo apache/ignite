@@ -25,10 +25,8 @@ import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
 import org.apache.ignite.ml.genetic.GAGridTestSuite;
-import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.multiclass.MultiClassTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
@@ -63,12 +61,10 @@ public class IgniteMLTestSuite {
         suite.addTest(new JUnit4TestAdapter(EnvironmentTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(StructuresTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(CommonTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(MultiClassTestSuite.class));
 
         /** JUnit 3 tests. */
         suite.addTest(DecisionTreeTestSuite.suite());
         suite.addTest(MLPTestSuite.suite());
-        suite.addTest(InferenceTestSuite.suite());
         suite.addTest(DatasetTestSuite.suite());
         suite.addTest(SelectionTestSuite.suite());
 
