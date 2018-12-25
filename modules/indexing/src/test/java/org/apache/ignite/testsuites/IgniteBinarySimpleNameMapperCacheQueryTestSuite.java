@@ -19,16 +19,18 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache query suite with binary marshaller.
  */
-public class IgniteBinarySimpleNameMapperCacheQueryTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinarySimpleNameMapperCacheQueryTestSuite {
     /**
      * @return Suite.
-     * @throws Exception In case of error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
 
         return IgniteBinaryCacheQueryTestSuite.suite();

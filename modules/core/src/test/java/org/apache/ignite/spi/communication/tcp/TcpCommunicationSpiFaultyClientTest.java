@@ -43,8 +43,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -58,9 +56,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  */
 @RunWith(JUnit4.class)
 public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Predicate. */
     private static final IgnitePredicate<ClusterNode> PRED = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode node) {
@@ -86,13 +81,9 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-        discoSpi.setClientReconnectDisabled(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientReconnectDisabled(true);
 
         cfg.setCommunicationSpi(spi);
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

@@ -18,7 +18,6 @@
 package org.apache.ignite.util;
 
 import java.nio.ByteBuffer;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
@@ -28,17 +27,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.ignite.internal.util.GridMessageCollection.of;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class GridMessageCollectionTest extends TestCase {
+public class GridMessageCollectionTest {
     /** */
     private byte proto;
 

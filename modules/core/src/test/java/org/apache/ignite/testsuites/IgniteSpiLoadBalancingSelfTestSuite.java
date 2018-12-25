@@ -35,10 +35,13 @@ import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoad
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiStartStopSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiWeightedSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Load balancing SPI self-test suite.
  */
+@RunWith(AllTests.class)
 public final class IgniteSpiLoadBalancingSelfTestSuite {
     /**
      * Enforces singleton.

@@ -71,13 +71,16 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  *
  */
-public class IgniteCacheMvccSqlTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccSqlTestSuite {
     /**
      * @return Test suite.
      */

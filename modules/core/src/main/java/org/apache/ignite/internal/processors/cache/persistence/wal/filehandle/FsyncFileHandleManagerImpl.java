@@ -108,16 +108,6 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
-        //NOOP.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate() {
-        //NOOP.
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDeactivate() throws IgniteCheckedException {
         FsyncFileWriteHandle currHnd = currentHandle();
 

@@ -23,17 +23,19 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.WithKeepBinaryCacheFullApiTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache API.
  */
-public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
     /**
      * @return Cache API test suite.
-     * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("With Keep Binary Cache Config Variations Full API Test Suite");
 
         suite.addTest(new ConfigVariationsTestSuiteBuilder(
