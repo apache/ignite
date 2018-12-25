@@ -374,6 +374,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
     private volatile WALPointer memoryRecoveryRecordPtr;
 
+    /** Flag allows to cancel checkpoint. */
+    private final boolean allowCheckpointCancel = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_ALLOW_CHECKPOINT_CANCEL, true);
+
     /**
      * @param ctx Kernal context.
      */
@@ -3439,16 +3443,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return true;
             }
 
-            // Check cancel flag for current checkpoint.
-            // Only one cancel is allow, second will be ignore via prevCanceled flag.
-            if (cpProgress.canceled && !cpProgress.prevCanceled) {
-                //TODO Actions after checkpoint canceled.
-                printCheckpointCancel(chp);
+            if (allowCheckpointCancel){
+                // Check cancel flag for current checkpoint.
+                // Only one cancel is allow, second will be ignore via prevCanceled flag.
+                if (cpProgress.canceled && !cpProgress.prevCanceled) {
+                    //TODO Actions after checkpoint canceled.
+                    printCheckpointCancel(chp);
 
-                return true;
+                    return true;
+                }
+                else
+                    return false;
             }
-            else
-                return false;
+
+            return false;
         }
 
         /**

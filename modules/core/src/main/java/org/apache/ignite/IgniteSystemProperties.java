@@ -1082,6 +1082,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
+     *
+     */
+    public static final String IGNITE_ALLOW_CHECKPOINT_CANCEL = "IGNITE_ALLOW_CHECKPOINT_CANCEL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
