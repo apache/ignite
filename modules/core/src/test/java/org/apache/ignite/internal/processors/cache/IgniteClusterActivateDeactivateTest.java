@@ -55,6 +55,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -1213,6 +1214,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8220")
     @Test
     public void testActivateFailover3() throws Exception {
         stateChangeFailover3(true);
@@ -1221,6 +1223,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8220")
     @Test
     public void testDeactivateFailover3() throws Exception {
         stateChangeFailover3(false);
