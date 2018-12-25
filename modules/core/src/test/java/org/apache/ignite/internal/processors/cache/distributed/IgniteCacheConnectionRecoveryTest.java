@@ -39,11 +39,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -75,7 +77,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
-            //cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT), //TODO IGNITE-10474: add Mvcc cache after fix.
+            cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT),
             cacheConfiguration("cache3", ATOMIC));
 
         return cfg;
@@ -119,15 +121,25 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 IgniteCache[] caches = {
                     node.cache("cache1"),
-//                    node.cache("cache2"), //TODO IGNITE-10474: add Mvcc cache after fix.
+                    node.cache("cache2"),
                     node.cache("cache3")};
 
                 int iter = 0;
 
                 while (U.currentTimeMillis() < stopTime) {
                     try {
-                        for (IgniteCache cache : caches)
-                            cache.putAllAsync(data).get(15, SECONDS);
+                        for (IgniteCache cache : caches) {
+                            while (true) {
+                                try {
+                                    cache.putAllAsync(data).get(15, SECONDS);
+
+                                    break;
+                                }
+                                catch (Exception e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                                }
+                            }
+                        }
 
                         CyclicBarrier b = barrierRef.get();
 
