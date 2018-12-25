@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataConcurrentUpdateWithIndexesTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
@@ -32,26 +33,25 @@ import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception In case of error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
         // Serialization.
-        suite.addTestSuite(BinarySerializationQuerySelfTest.class);
-        suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
-        suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
-        suite.addTestSuite(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class);
-        suite.addTestSuite(BigEntryQueryTest.class);
-        suite.addTestSuite(RunningQueriesTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinarySerializationQuerySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinarySerializationQueryWithReflectiveSerializerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheBinaryObjectsScanSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BigEntryQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(RunningQueriesTest.class));
 
-        suite.addTestSuite(BinaryMetadataConcurrentUpdateWithIndexesTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryMetadataConcurrentUpdateWithIndexesTest.class));
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
-        //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
+        //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class));
 
         //TODO: the following tests= was never tested with binary. Exclude or pass?
-//        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
+//        suite.addTest(new JUnit4TestAdapter(IgniteSqlSchemaIndexingTest.class));
 
         return suite;
     }
