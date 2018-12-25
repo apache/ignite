@@ -1532,18 +1532,18 @@ public class PageMemoryImpl implements PageMemoryEx {
     ) {
         boolean wasDirty = isDirty(page);
 
-        //if page is for restore, we shouldn't mark it as changed
-        if (!restore && markDirty && !wasDirty && changeTracker != null)
-            changeTracker.apply(page, fullId, this);
-
-        boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
-
-        assert PageIO.getCrc(page + PAGE_OVERHEAD) == 0; //TODO GG-11480
-
-        if (markDirty)
-            setDirty(fullId, page, markDirty, false);
-
         try {
+            //if page is for restore, we shouldn't mark it as changed
+            if (!restore && markDirty && !wasDirty && changeTracker != null)
+                changeTracker.apply(page, fullId, this);
+
+            boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
+
+            assert PageIO.getCrc(page + PAGE_OVERHEAD) == 0; //TODO GG-11480
+
+            if (markDirty)
+                setDirty(fullId, page, markDirty, false);
+
             beforeReleaseWrite(fullId, page + PAGE_OVERHEAD, pageWalRec);
         }
         catch (IgniteCheckedException e) {
@@ -1682,7 +1682,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) throws IgniteCheckedException {
-        boolean walIsNotDisable = !walMgr.disabled(pageId.groupId());
+        boolean walIsNotDisable = walMgr != null && !walMgr.disabled(pageId.groupId());
         boolean pageRecOrAlwaysWriteFullPage = walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages());
 
         if (pageRecOrAlwaysWriteFullPage && walIsNotDisable)
