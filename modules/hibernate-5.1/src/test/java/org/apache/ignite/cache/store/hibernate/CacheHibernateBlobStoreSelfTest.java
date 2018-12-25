@@ -25,6 +25,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -115,8 +116,10 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1757")
     @Test
     @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
+        // No-op.
     }
 }
