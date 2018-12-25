@@ -26,11 +26,14 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test sute for Messaging process.
  */
-public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteMessagingConfigVariationFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] GRID_PARAMETER_VARIATION = new ConfigParameter[][] {
@@ -44,9 +47,8 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
 
     /**
      * @return Messaging test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Compute New Full API Test Suite");
 
         suite.addTest(new ConfigVariationsTestSuiteBuilder(

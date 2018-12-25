@@ -50,7 +50,6 @@ class ClientBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T toBinary(Object obj) {
         if (obj == null)
             return null;

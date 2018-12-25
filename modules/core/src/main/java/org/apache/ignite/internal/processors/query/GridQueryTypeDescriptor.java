@@ -138,6 +138,11 @@ public interface GridQueryTypeDescriptor {
     public String affinityKey();
 
     /**
+     * @return Whether custom affinity key mapper exists.
+     */
+    public boolean customAffinityKeyMapper();
+
+    /**
      * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
      */
     public int typeId();

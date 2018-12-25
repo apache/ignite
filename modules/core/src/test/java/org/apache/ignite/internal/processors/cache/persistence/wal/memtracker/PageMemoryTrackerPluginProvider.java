@@ -76,7 +76,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T extends IgnitePlugin> T plugin() {
         return (T)plugin;
     }
@@ -117,7 +116,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         if (plugin != null) {
             if (IgniteWriteAheadLogManager.class.equals(cls))
