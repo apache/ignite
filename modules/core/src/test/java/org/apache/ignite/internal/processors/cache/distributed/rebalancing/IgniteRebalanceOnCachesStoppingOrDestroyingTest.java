@@ -231,7 +231,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         RebalanceBlockingSPI commSpi = (RebalanceBlockingSPI)ig1.configuration().getCommunicationSpi();
 
         // Complete all futures for groups that we no need to wait.
-        commSpi.resumeRebalacneLatch.forEach((k, v) -> {
+        commSpi.resumeRebalacneFutures.forEach((k, v) -> {
             if (k != CU.cacheId(groupName))
                 v.onDone();
         });
@@ -246,7 +246,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         testAction.accept(ig0);
 
         // Resume rebalance after action performed.
-        commSpi.resumeRebalacneLatch.get(CU.cacheId(groupName)).onDone();
+        commSpi.resumeRebalacneFutures.get(CU.cacheId(groupName)).onDone();
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -286,15 +286,15 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
         /** */
-        private final Map<Integer, GridFutureAdapter> resumeRebalacneLatch = new ConcurrentHashMap<>();
+        private final Map<Integer, GridFutureAdapter> resumeRebalacneFutures = new ConcurrentHashMap<>();
 
         /** */
         private final Map<Integer, CountDownLatch> suspedRebalacneInMiddleLatch = new ConcurrentHashMap<>();
 
         /** */
         RebalanceBlockingSPI() {
-            resumeRebalacneLatch.put(CU.cacheId(GROUP_1), new GridFutureAdapter());
-            resumeRebalacneLatch.put(CU.cacheId(GROUP_2), new GridFutureAdapter());
+            resumeRebalacneFutures.put(CU.cacheId(GROUP_1), new GridFutureAdapter());
+            resumeRebalacneFutures.put(CU.cacheId(GROUP_2), new GridFutureAdapter());
             suspedRebalacneInMiddleLatch.put(CU.cacheId(GROUP_1), new CountDownLatch(3));
             suspedRebalacneInMiddleLatch.put(CU.cacheId(GROUP_2), new CountDownLatch(3));
         }
@@ -311,7 +311,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                     if (latch.getCount() > 0)
                         latch.countDown();
                     else {
-                        resumeRebalacneLatch.get(msg0.groupId()).listen(f-> super.notifyListener(sndId, msg, msgC));
+                        resumeRebalacneFutures.get(msg0.groupId()).listen(f-> super.notifyListener(sndId, msg, msgC));
 
                         return;
                     }
