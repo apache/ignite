@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
@@ -122,6 +123,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_500_1_1() throws Exception {
         checkRebalancingDuringLoad(1000, 500, 1, 1);
     }
@@ -129,6 +131,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_500_1_1() throws Exception {
         checkRebalancingDuringLoad(8000, 500, 1, 1);
     }
@@ -136,6 +139,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_20000_1_1() throws Exception {
         checkRebalancingDuringLoad(1000, 20000, 1, 1);
     }
@@ -143,6 +147,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_8000_1_1() throws Exception {
         checkRebalancingDuringLoad(8000, 8000, 1, 1);
     }
@@ -150,6 +155,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_500_8_1() throws Exception {
         checkRebalancingDuringLoad(1000, 500, 8, 1);
     }
@@ -157,6 +163,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_500_8_1() throws Exception {
         checkRebalancingDuringLoad(8000, 500, 8, 1);
     }
@@ -164,6 +171,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_20000_8_1() throws Exception {
         checkRebalancingDuringLoad(1000, 20000, 8, 1);
     }
@@ -171,6 +179,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_8000_8_1() throws Exception {
         checkRebalancingDuringLoad(8000, 8000, 8, 1);
     }
@@ -178,6 +187,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_500_8_16() throws Exception {
         checkRebalancingDuringLoad(1000, 500, 8, 16);
     }
@@ -185,6 +195,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_500_8_16() throws Exception {
         checkRebalancingDuringLoad(8000, 500, 8, 16);
     }
@@ -192,6 +203,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_1000_20000_8_16() throws Exception {
         checkRebalancingDuringLoad(1000, 20000, 8, 16);
     }
@@ -199,6 +211,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingDuringLoad_8000_8000_8_16() throws Exception {
         checkRebalancingDuringLoad(8000, 8000, 8, 16);
     }
@@ -206,6 +219,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
         checkRebalancingDuringLoad(10, 10, 1, 1);
     }
@@ -213,6 +227,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
         checkRebalancingDuringLoad(10, 500, 8, 16);
     }
