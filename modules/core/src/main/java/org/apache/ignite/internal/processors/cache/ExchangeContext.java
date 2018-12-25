@@ -72,6 +72,8 @@ public class ExchangeContext {
             merge = !startCaches &&
                 protocolVer > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
+
+            System.err.println(startCaches + " " + merge);
         }
 
         evts = new ExchangeDiscoveryEvents(fut);

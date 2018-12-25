@@ -18,20 +18,37 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -44,22 +61,32 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstractTest {
+    private static final String CACHE_NAME = "cache";
+
+    private Supplier<CommunicationSpi> spiFactory = TcpCommunicationSpi::new;
+
+    private boolean newCache;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        IgnitePredicate<ClusterNode> nodeFilter = node -> node.consistentId().equals(igniteInstanceName);
+        cfg.setCommunicationSpi(spiFactory.get());
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration("cache-" + igniteInstanceName)
-                .setBackups(1)
-                .setNodeFilter(nodeFilter)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                new CacheConfiguration(CACHE_NAME)
+                    .setBackups(2)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
+
+        if (newCache)
+            cfg.setCacheConfiguration(
+                    new CacheConfiguration(CACHE_NAME + 0)
+                        .setBackups(2)
+                        .setAffinity(new RendezvousAffinityFunction(false, 32))
+            );
 
         return cfg;
     }
@@ -81,6 +108,8 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      */
     @Test
     public void testNewCoordinatorCompletedExchange() throws Exception {
+        spiFactory = TestRecordingCommunicationSpi::new;
+
         IgniteEx crd = (IgniteEx) startGrid("crd");
 
         IgniteEx newCrd = startGrid(1);
@@ -165,6 +194,8 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      */
     @Test
     public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
+        spiFactory = TestRecordingCommunicationSpi::new;
+
         IgniteEx crd = startGrid("crd");
 
         IgniteEx newCrd = startGrid(1);
@@ -198,6 +229,98 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
     }
 
+    private AffinityTopologyVersion lastFinishedExchangeVersion(IgniteEx node) {
+        return node.context().cache().context().exchange().lastFinishedFuture().topologyVersion();
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testCoordinatorChangeAfterExchangesMerge() throws Exception {
+        // Delay demand messages sending to suspend late affinity assignment.
+        spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
+            final int delay = 10_000;
+
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage) msg;
+
+                if (demandMessage.groupId() == GridCacheUtils.cacheId(GridCacheUtils.UTILITY_CACHE_NAME))
+                    return 0;
+
+                return delay;
+            }
+
+            return 0;
+        });
+
+        final IgniteEx crd = (IgniteEx) startGrids(2);
+
+        for (int k = 0; k < 1024; k++)
+            crd.cache(CACHE_NAME).put(k, k);
+
+        // Delay sending single message from new node.
+        spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
+            final int delay = 1_000;
+
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+
+                if (singleMsg.exchangeId() != null)
+                    return delay;
+            }
+
+            return 0;
+        });
+
+        // This should trigger exchanges merge.
+        startGridsMultiThreaded(2, 2);
+
+        // Delay sending single messages to ensure exchanges are merged.
+        spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
+            final int delay = 10_000;
+
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+
+                if (singleMsg.exchangeId() != null)
+                    return delay;
+            }
+
+            return 0;
+        });
+
+        // A new cache should be appeared in next exchange.
+        newCache = true;
+
+        // Trigger next exchange.
+        IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> startGrid(4));
+
+        // Wait till other nodes will send their messages to coordinator.
+        U.sleep(5_000);
+
+        // And then stop coordinator node.
+        stopGrid(0, true);
+
+        startNodeFut.get();
+
+        awaitPartitionMapExchange();
+
+        // Check that all caches are operable.
+        for (Ignite grid : G.allGrids()) {
+            IgniteCache cache = grid.cache(CACHE_NAME);
+
+            Assert.assertNotNull(cache);
+
+            for (int k = 0; k < 1024; k++)
+                Assert.assertEquals(k, cache.get(k));
+
+            for (int k = 0; k < 1024; k++)
+                cache.put(k, k);
+        }
+    }
+
     /**
      * Blocks sending full message from coordinator to non-coordinator node.
      * @param from Coordinator node.
@@ -221,5 +344,44 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
             return false;
         });
+    }
+
+    class DynamicDelayingCommunicationSpi extends TcpCommunicationSpi {
+        /** Delay for single/full messages. */
+        private final int partitionsMsgDelay = 2000;
+
+        /** Delay for demand messages. */
+        private final int demandMsgDelay = 5000;
+
+        private final Function<Message, Integer> delayMessageFunc;
+
+        DynamicDelayingCommunicationSpi() {
+            this(msg -> 0);
+        }
+
+        DynamicDelayingCommunicationSpi(final Function<Message, Integer> delayMessageFunc) {
+            this.delayMessageFunc = delayMessageFunc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
+                throws IgniteSpiException {
+            try {
+                GridIoMessage ioMsg = (GridIoMessage)msg;
+
+                int delay = delayMessageFunc.apply(ioMsg.message());
+
+                if (delay > 0) {
+                    log.warning(String.format("Delay sending %s to %s", msg, node));
+
+                    U.sleep(delay);
+                }
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteSpiException(e);
+            }
+
+            super.sendMessage(node, msg, ackC);
+        }
     }
 }
