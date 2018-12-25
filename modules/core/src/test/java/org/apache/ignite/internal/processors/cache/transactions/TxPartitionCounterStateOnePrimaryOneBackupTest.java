@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -106,7 +105,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
             @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
-                return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
+                return new OnePhaseCommitTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
                             PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
@@ -193,7 +192,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private void doTestPrepareCommitReorder2(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
             @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
-                return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
+                return new OnePhaseCommitTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
                             PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
@@ -277,7 +276,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class OnePhasePessimisticTxCallbackAdapter extends TxCallbackAdapter {
+    protected class OnePhaseCommitTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Queue<Integer> prepOrder;
 
@@ -303,7 +302,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
          * @param prepOrd Prepare order.
          * @param primCommitOrder Commit order.
          */
-        public OnePhasePessimisticTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
+        public OnePhaseCommitTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
             this.txCnt = prepOrd.length;
 
             prepOrder = new ConcurrentLinkedQueue<>();

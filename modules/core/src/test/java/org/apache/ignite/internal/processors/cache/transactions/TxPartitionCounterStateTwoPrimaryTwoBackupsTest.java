@@ -25,18 +25,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,7 +40,7 @@ import org.junit.runners.JUnit4;
 /**
  */
 @RunWith(JUnit4.class)
-public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryRollbackTest extends TxPartitionCounterStateAbstractTest {
+public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int [] SIZES = new int[] {5, 7, 3};
 
@@ -67,14 +63,14 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryR
 
     /** */
     @Test
-    public void testPrepareCommitReorder() throws Exception {
-        doTestPrepareCommitReorder(false);
+    public void testFailoverOnPrepare2Partitions() throws Exception {
+        doTestFailoverOnPrepare2Partitions(false);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderSkipCheckpoint() throws Exception {
-        doTestPrepareCommitReorder(true);
+    public void testFailoverOnPrepare2PartitionsSkipCheckpoint() throws Exception {
+        doTestFailoverOnPrepare2Partitions(true);
     }
 
     /**
@@ -88,7 +84,7 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryR
      *
      * @param skipCheckpoint Skip checkpoint.
      */
-    private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
+    private void doTestFailoverOnPrepare2Partitions(boolean skipCheckpoint) throws Exception {
         final int finishedTxIdx = 2;
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, new Supplier<Integer>() {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,10 +85,15 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                     Ignite primary = map.get(PARTITION_ID).get1();
-                    Ignite backup = map.get(PARTITION_ID).get2().get(0);
+                    Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
 
-                    return new TwoPhasePessimisticTxCallbackAdapter(PREPARE_ORDER, primary, PRIMARY_COMMIT_ORDER, backup, BACKUP_COMMIT_ORDER) {
+                    return new TwoPhaseCommitTxCallbackAdapter(U.map((IgniteEx)primary, PREPARE_ORDER),
+                        U.map((IgniteEx)primary, PRIMARY_COMMIT_ORDER, (IgniteEx)backup1, BACKUP_COMMIT_ORDER),
+                        SIZES.length) {
                         @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                            if (backup != backup1)
+                                return false;
+
                             super.onBackupCommitted(backup, idx);
 
                             if (idx == BACKUP_COMMIT_ORDER[0]) {

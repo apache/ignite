@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -77,6 +79,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static java.util.stream.Collectors.toCollection;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -873,5 +876,222 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             fail(b.toString());
         }
+    }
+
+
+
+    /**
+     * The callback order prepares and commits on primary node.
+     */
+    protected class TwoPhaseCommitTxCallbackAdapter extends TxCallbackAdapter {
+        /** */
+        private Map<T3<IgniteEx /** Node */, TxState /** State */, IgniteUuid /** Near xid */ >, GridFutureAdapter<?>>
+            futures = new ConcurrentHashMap<>();
+
+        /** */
+        private Map<IgniteEx, Queue<Integer>> prepares = new ConcurrentHashMap<>();
+
+        /** */
+        private Map<IgniteEx, Queue<Integer>> commits = new ConcurrentHashMap<>();
+
+        /** */
+        private final int txCnt;
+
+        /** */
+        private Map<IgniteUuid, Boolean> allPrimaryCommitted = new HashMap<>();
+
+        /** */
+        private boolean allPrimaryCommittedFlag = false;
+
+        /**
+         * @param prepares Map of node to it's prepare order.
+         * @param commits Map of node to it's commit order.
+         */
+        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+            this.txCnt = txCnt;
+
+            for (int[] ints : prepares.values())
+                assertEquals("Wrong order of prepares", txCnt, ints.length);
+
+            for (int[] ints : commits.values())
+                assertEquals("Wrong order of commits", txCnt, ints.length);
+
+            for (Map.Entry<IgniteEx, int[]> entry : prepares.entrySet())
+                this.prepares.put(entry.getKey(),
+                    IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
+
+            for (Map.Entry<IgniteEx, int[]> entry : commits.entrySet()) {
+                this.commits.put(entry.getKey(),
+                    IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
+            }
+        }
+
+        /** */
+        protected boolean onPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
+            log.info("TX: prepared on primary [name=" + primary.name() + ", txId=" + idx + ']');
+
+            return false;
+        }
+
+        /**
+         * @param primary Primary primary.
+         */
+        protected void onAllPrimaryPrepared(IgniteEx primary) {
+            log.info("TX: all primary prepared [name=" + primary.name() + ']');
+        }
+
+        /**
+         * @param primary Primary node.
+         * @param idx Index.
+         */
+        protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+            log.info("TX: primary committed [name=" + primary.name() + ", txId=" + idx + ']');
+
+            return false;
+        }
+
+        /**
+         * @param backup Backup node.
+         * @param idx Index.
+         */
+        protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+            log.info("TX: backup committed [name=" + backup.name() + ", id=" + backup.localNode().id() + ", txId=" + idx + ']');
+
+            return false;
+        }
+
+        /**
+         * @param primary Primary node.
+         */
+        protected void onAllPrimaryCommitted(IgniteEx primary) {
+            log.info("TX: all primary committed");
+        }
+
+        /**
+         * @param backup Backup node.
+         */
+        protected void onAllBackupCommitted(IgniteEx backup) {
+            log.info("TX: all backup committed: [name=" + backup.name() + ']');
+        }
+
+        /**
+         * @param node Primary.
+         * @param state State.
+         * @return Count of futures for node.
+         */
+        private long countForNode(IgniteEx node, TxState state) {
+            return futures.keySet().stream().filter(objects -> objects.get1() == node && objects.get2() == state).count();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> proceedFut) {
+            runAsync(() -> {
+                futures.put(new T3<>(primary, TxState.PREPARE, nearXidVer), proceedFut);
+
+                // Order prepares.
+                if (countForNode(primary, TxState.PREPARE) == txCnt) {// Wait until all prep requests queued and force prepare order.
+                    futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
+                }
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> fut) {
+            runAsync(() -> {
+                if (onPrepared(primary, tx, order(nearXidVer)))
+                    return;
+
+                if (prepares.get(primary).isEmpty()) {
+                    onAllPrimaryPrepared(primary);
+
+                    return;
+                }
+
+                futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
+            });
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?>
+            proceedFut) {
+            runAsync(() -> {
+                futures.put(new T3<>(primary, TxState.COMMIT, tx.nearXidVersion().asGridUuid()), proceedFut);
+
+                if (countForNode(primary, TxState.COMMIT) == txCnt)
+                    futures.remove(new T3<>(primary, TxState.COMMIT, version(commits.get(primary).poll()))).onDone();
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
+            IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+            if (commits.get(backup) == null) // Ignore backup because the order is not specified.
+                return false;
+
+            runAsync(() -> {
+                futures.put(new T3<>(backup, TxState.COMMIT, nearXidVer), fut);
+
+                Boolean prev = allPrimaryCommitted.put(nearXidVer, Boolean.TRUE); // First finish message to backup means what tx was committed on primary.
+
+                if (prev == null) {
+                    if (onPrimaryCommitted(primary, order(nearXidVer)))
+                        return;
+                }
+
+                if (countForNode(primary, TxState.COMMIT) == 0 && countForNode(backup, TxState.COMMIT) == txCnt) {
+                    if (!allPrimaryCommittedFlag) {
+                        onAllPrimaryCommitted(primary); // Report all primary committed once.
+
+                        allPrimaryCommittedFlag = true;
+                    }
+
+                    // Proceed with commit to backups.
+                    futures.remove(new T3<>(backup, TxState.COMMIT, version(commits.get(backup).poll()))).onDone();
+
+                    return;
+                }
+
+                if (prev == null)
+                    futures.remove(new T3<>(primary, TxState.COMMIT, version(commits.get(primary).poll()))).onDone();
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> fut) {
+            if (commits.get(backup) == null) // Ignore backup because the order is not specified.
+                return false;
+
+            runAsync(() -> {
+                if (onBackupCommitted(backup, order(nearXidVer)))
+                    return;
+
+                if (commits.get(backup).isEmpty()) {
+                    onAllBackupCommitted(backup);
+
+                    return;
+                }
+
+                futures.remove(new T3<>(backup, TxState.COMMIT, version(commits.get(backup).poll()))).onDone();
+            });
+
+            return false;
+        }
+    }
+
+    /** */
+    private enum TxState {
+        /** Prepare. */ PREPARE,
+        /** Commit. */COMMIT
     }
 }
