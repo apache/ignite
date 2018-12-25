@@ -182,6 +182,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.util.stream.IntStream.range;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -221,11 +222,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final boolean skipCheckpointOnNodeStop = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /** Checkpoint lock hold count. */
-    private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocal<Integer>() {
-        @Override protected Integer initialValue() {
-            return 0;
-        }
-    };
+    private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = ThreadLocal.withInitial(() -> 0);
 
     /** Assertion enabled. */
     private static final boolean ASSERTION_ENABLED = GridCacheDatabaseSharedManager.class.desiredAssertionStatus();
@@ -2126,7 +2123,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
 
-        Semaphore semaphore = new Semaphore(10_000);
+        Semaphore semaphore = new Semaphore(semaphorePertmits());
 
         StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
 
@@ -2302,6 +2299,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @return Number of permits.
+     */
+    private int semaphorePertmits() {
+        long maxMemory = Runtime.getRuntime().maxMemory();
+
+        long parts = (long)(maxMemory * 0.3);
+
+        int permits = (int)(parts / 4096 * 2);
+
+        return IgniteSystemProperties.getInteger(IGNITE_RECOVERY_SEMAPHORE_PERMITS, permits);
+    }
+
+    /**
      * @param consumer Runnable task.
      * @param grpId Group Id.
      * @param partId Partition Id.
@@ -2333,13 +2343,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         exec.execute(stripe, () -> {
-            checkpointReadLock();
+            CHECKPOINT_LOCK_HOLD_COUNT.set(1);
 
             try {
                 consumer.accept(pageMem);
             }
             finally {
-                checkpointReadUnlock();
+                CHECKPOINT_LOCK_HOLD_COUNT.set(0);
 
                 semaphore.release();
             }
