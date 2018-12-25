@@ -2123,9 +2123,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
 
-        Semaphore semaphore = new Semaphore(semaphorePertmits());
-
         StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+
+        Semaphore semaphore = new Semaphore(semaphorePertmits(exec));
 
         long start = U.currentTimeMillis();
 
@@ -2244,35 +2244,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             it.close();
         }
 
-        if (applyError.get() != null)
-            throw new IgniteException(applyError.get()); // Fail-fast check.
-        else {
-            CountDownLatch stripesClearLatch = new CountDownLatch(exec.stripes());
-
-            // We have to ensure that all asynchronous updates are done.
-            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
-            range(0, exec.stripes()).forEach(idx -> exec.execute(idx, stripesClearLatch::countDown));
-
-            try {
-                while (true) {
-                    if (stripesClearLatch.await(10_000, TimeUnit.MILLISECONDS))
-                        break;
-                    else {
-                        log.info("Await stripes executor complete tasks" +
-                            ", awaitLatch=" + stripesClearLatch.getCount() +
-                            ", stripes=" + exec.stripes() +
-                            ", queueSize=" + Arrays.toString(exec.stripesQueueSizes()) +
-                            ", activeStatus=" + Arrays.toString(exec.stripesActiveStatuses()));
-                    }
-                }
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
-            }
-        }
-
-        if (applyError.get() != null)
-            throw new IgniteException(applyError.get());
+        awaitApplyCompletion(exec, applyError);
 
         if (!finalizeState)
             return null;
@@ -2301,14 +2273,56 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @return Number of permits.
      */
-    private int semaphorePertmits() {
+    private int semaphorePertmits(StripedExecutor exec) {
+        int permits = exec.stripes() * 4;
+
         long maxMemory = Runtime.getRuntime().maxMemory();
 
-        long parts = (long)(maxMemory * 0.3);
+        int permits0 = (int)((maxMemory * 0.2) / (4096 * 2));
 
-        int permits = (int)(parts / 4096 * 2);
+        if (permits0 < permits)
+            permits = permits0;
 
         return IgniteSystemProperties.getInteger(IGNITE_RECOVERY_SEMAPHORE_PERMITS, permits);
+    }
+
+    /**
+     * @param exec Striped executor.
+     * @param applyError Check error reference.
+     */
+    private void awaitApplyCompletion(
+        StripedExecutor exec,
+        AtomicReference<IgniteCheckedException> applyError
+    ) throws IgniteCheckedException {
+        if (applyError.get() != null)
+            throw applyError.get(); // Fail-fast check.
+        else {
+            CountDownLatch stripesClearLatch = new CountDownLatch(exec.stripes());
+
+            // We have to ensure that all asynchronous updates are done.
+            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
+            range(0, exec.stripes()).forEach(idx -> exec.execute(idx, stripesClearLatch::countDown));
+
+            try {
+                while (true) {
+                    if (stripesClearLatch.await(10_000, TimeUnit.MILLISECONDS))
+                        break;
+                    else {
+                        log.info("Await stripes executor complete tasks" +
+                            ", awaitLatch=" + stripesClearLatch.getCount() +
+                            ", stripes=" + exec.stripes() +
+                            ", queueSize=" + Arrays.toString(exec.stripesQueueSizes()) +
+                            ", activeStatus=" + Arrays.toString(exec.stripesActiveStatuses()));
+                    }
+                }
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+
+            if (applyError.get() != null)
+                throw applyError.get();
+        }
     }
 
     /**
@@ -2347,6 +2361,46 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             try {
                 consumer.accept(pageMem);
+            }
+            finally {
+                CHECKPOINT_LOCK_HOLD_COUNT.set(0);
+
+                semaphore.release();
+            }
+        });
+    }
+
+    /**
+     * @param run Runnable task.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @param exec Striped executor.
+     */
+    public void stripedApply(
+        Runnable run,
+        int grpId,
+        int partId,
+        StripedExecutor exec,
+        Semaphore semaphore
+    ) {
+        int stripes = exec.stripes();
+
+        int stripe = U.stripeIdx(stripes, grpId, partId);
+
+        assert stripe >= 0 && stripe <= stripes : "idx=" + stripe + ", stripes=" + stripes;
+
+        try {
+            semaphore.acquire();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
+
+        exec.execute(stripe, () -> {
+            CHECKPOINT_LOCK_HOLD_COUNT.set(1);
+
+            try {
+                run.run();
             }
             finally {
                 CHECKPOINT_LOCK_HOLD_COUNT.set(0);
@@ -2543,9 +2597,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = U.currentTimeMillis();
 
-        int applied = 0;
+        AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
+
+        AtomicLong applied = new AtomicLong();
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+
+        Semaphore semaphore = new Semaphore(semaphorePertmits(exec));
 
         WALIterator it = cctx.wal().replay(status.startPtr, recordTypePredicate);
 
@@ -2573,11 +2633,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (cacheDesc == null)
                                 continue;
 
-                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                            stripedApply(() -> {
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                            applyUpdate(cacheCtx, dataEntry);
+                                try {
+                                    applyUpdate(cacheCtx, dataEntry);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to apply data entry, " + dataEntry);
 
-                            applied++;
+                                    applyError.compareAndSet(null, e);
+                                }
+
+                                applied.incrementAndGet();
+                            }, cacheId, dataEntry.partitionId(), exec, semaphore);
                         }
 
                         break;
@@ -2617,29 +2686,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                     case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
                     case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
-                        PageDeltaRecord rec0 = (PageDeltaRecord) rec;
+                        PageDeltaRecord pageDeltaRecord = (PageDeltaRecord)rec;
 
-                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(rec0.groupId());
-
-                        if (pageMem == null)
-                            break;
-
-                        long page = pageMem.acquirePage(
-                            rec0.groupId(), rec0.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
-
-                        try {
-                            long addr = pageMem.writeLock(rec0.groupId(), rec0.pageId(), page, true);
-
+                        stripedApply((pageMem) -> {
                             try {
-                                rec0.applyDelta(pageMem, addr);
+                                applyPageDelta(pageMem, pageDeltaRecord);
                             }
-                            finally {
-                                pageMem.writeUnlock(rec0.groupId(), rec0.pageId(), page, null, true, true);
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to apply page delta, " + pageDeltaRecord);
+
+                                applyError.compareAndSet(null, e);
                             }
-                        }
-                        finally {
-                            pageMem.releasePage(rec0.groupId(), rec0.pageId(), page);
-                        }
+
+                        }, pageDeltaRecord.groupId(), partId(pageDeltaRecord.pageId()), exec, semaphore);
 
                         break;
 
@@ -2654,6 +2713,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (skipFieldLookup)
                 cctx.kernalContext().query().skipFieldLookup(false);
         }
+
+        awaitApplyCompletion(exec, applyError);
 
         if (log.isInfoEnabled())
             log.info("Finished applying WAL changes [updatesApplied=" + applied +
