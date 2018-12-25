@@ -3224,7 +3224,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Progress of current chekpoint or {@code null}, if isn't checkpoint at this moment.
          */
         public @Nullable CheckpointProgress currentProgress(){
-            return curCpProgress;
+            return lastCp;
         }
 
         /** {@inheritDoc} */
@@ -3918,6 +3918,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
+            DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
+                @Override public boolean nextSnapshot() {
+                    return curr.nextSnapshot;
+                }
+
+                /** {@inheritDoc} */
+                @Override public PartitionAllocationMap partitionStatMap() {
+                    return curr.parts;
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean needToSnapshot(String cacheOrGrpName) {
+                    return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
+                }
+
+                /** {@inheritDoc} */
+                @Override public Executor executor() {
+                    return asyncRunner;
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean hasPages() {
+                    return chp.hasPages();
+                }
+            };
+
+            // Listeners must be invoked before we write checkpoint record to WAL.
+            for (DbCheckpointListener lsnr : lsnrs)
+                lsnr.onCheckpointBegin(ctx0);
+
             curr.cpPages.onCheckpointBegin();
 
             curr.destroyQueue.onCheckpointBegin();
@@ -3989,11 +4019,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     };
                 }
+
+                /** {@inheritDoc} */
+                @Override public boolean hasPages() {
+                    throw new IllegalStateException(
+                        "Property is unknown at this moment. You should use onCheckpointBegin() method."
+                    );
+                }
             };
 
             // Listeners must be invoked before we write checkpoint record to WAL.
             for (DbCheckpointListener lsnr : lsnrs)
-                lsnr.onCheckpointBegin(ctx0);
+                lsnr.onMarkCheckpointBegin(ctx0);
 
             if (asyncLsnrFut != null) {
                 asyncLsnrFut.markInitialized();
