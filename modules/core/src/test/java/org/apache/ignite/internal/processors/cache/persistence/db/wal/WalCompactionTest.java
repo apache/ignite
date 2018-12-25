@@ -320,7 +320,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(maxIdx > emptyIdx);
 
         if (!walSegment.exists()) {
-            File[] list = archiveDir.listFiles();
+            File[] list = nodeArchiveDir.listFiles();
 
             log.info("Files in archive:" + list.length);
 

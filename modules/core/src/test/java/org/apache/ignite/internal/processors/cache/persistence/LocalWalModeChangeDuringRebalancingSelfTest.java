@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -61,7 +62,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -689,7 +689,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             // Only for partition file.
-            if (file.getName().contains(PART_FILE_PREFIX))
+            if (file.getName().contains(CheckpointEntryType.END + ".bin"))
                 return new TestFileIO(delegate.create(file, modes));
 
             return delegate.create(file, modes);
