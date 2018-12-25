@@ -3324,6 +3324,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private void doCheckpoint() {
+            resetLastCheckpointTimeStamp();
+
             Checkpoint chp = new Checkpoint(lastCpTs, memoryRecoveryRecordPtr);
 
             memoryRecoveryRecordPtr = null;
@@ -3379,25 +3381,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 chp.metrics.onEnd();
 
-                if (chp.hasPages() || chp.hasDestroyedPartitions()) {
-                    if (log.isInfoEnabled()) {
-                        String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
-
-                        log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, " +
-                                "pagesWrite=%dms, fsync=%dms, partDestory=%dms, total=%dms]",
-                            chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
-                            chp.pages(),
-                            chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                            chp.walFilesDeleted,
-                            walSegsCoveredMsg,
-                            chp.metrics.markDuration(),
-                            chp.metrics.pagesWriteDuration(),
-                            chp.metrics.fsyncDuration(),
-                            chp.metrics.partitionDestroyDuration(),
-                            chp.metrics.totalDuration()));
-                    }
-                }
+                printCheckpointFinish(chp);
 
                 updateMetrics(chp, chp.metrics);
             }
@@ -3724,15 +3708,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             IgniteFuture snapFut = null;
 
-            long cpTs = System.currentTimeMillis();
-
-            // This can happen in an unlikely event of two checkpoints happening
-            // within a currentTimeMillis() granularity window.
-            if (cpTs == lastCpTs)
-                cpTs++;
-
-            lastCpTs = cpTs;
-
             checkpointLock.writeLock().lock();
 
             try {
@@ -3871,7 +3846,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (hasPages || hasPartitionsToDestroy) {
                     cp = prepareCheckpointEntry(
                         checkpointEntryWriteBuffer,
-                        cpTs,
+                        chp.cpTs,
                         chp.cpRec.checkpointId(),
                         cpPtr,
                         chp.cpRec,
@@ -4017,8 +3992,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (CheckpointEntry cp : removedFromHistory)
                 removeCheckpointFiles(cp);
 
-            if (chp.progress != null)
-                chp.progress.cpFinishFut.onDone();
+            CheckpointProgress currCpProgress = chp.progress;
+
+            if (currCpProgress != null)
+                currCpProgress.cpFinishFut.onDone();
         }
 
         /** {@inheritDoc} */
@@ -4042,6 +4019,63 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!isCancelled)
                 cancel();
+        }
+
+        /**
+         * Reset last checkpoint timeStamp.
+         */
+        private void resetLastCheckpointTimeStamp(){
+            long cpTs = System.currentTimeMillis();
+
+            // This can happen in an unlikely event of two checkpoints happening
+            // within a currentTimeMillis() granularity window.
+            if (cpTs == lastCpTs)
+                cpTs++;
+
+            lastCpTs = cpTs;
+        }
+
+        /**
+         * Print information if checkpoint was canceled.
+         */
+        private void printCheckpointCancel(Checkpoint chp){
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Checkpoint canceled [cpId=%s, pages=%d, markPos=%s, " +
+                        "markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
+                    chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
+                    chp.pages(),
+                    chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
+                    chp.metrics.markDuration(),
+                    chp.metrics.pagesWriteDuration(),
+                    chp.metrics.fsyncDuration(),
+                    chp.metrics.totalDuration()));
+            }
+        }
+
+        /**
+         * Print information if checkpoint was finished.
+         */
+        private void printCheckpointFinish(Checkpoint chp) {
+            if (chp.hasPages() || chp.hasDestroyedPartitions()) {
+                if (log.isInfoEnabled()) {
+                    String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
+
+                    log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
+                            "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, " +
+                            "pagesWrite=%dms, fsync=%dms, partDestroy=%dms, total=%dms]",
+                        chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
+                        chp.pages(),
+                        chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
+                        chp.walFilesDeleted,
+                        walSegsCoveredMsg,
+                        chp.metrics.markDuration(),
+                        chp.metrics.pagesWriteDuration(),
+                        chp.metrics.fsyncDuration(),
+                        chp.metrics.partitionDestroyDuration(),
+                        chp.metrics.totalDuration())
+                    );
+                }
+            }
         }
     }
 
