@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -195,52 +194,26 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        ctx.tracker().onOffheapSaveFreeListMetadataStart();
-
-        reuseList.saveMetadata();
-
-        for (CacheDataStore store : partDataStores.values()) {
-            RowStore rowStore0 = store.rowStore();
-
-            if (rowStore0 != null) {
-                CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-
-                freeList.saveMetadata();
-            }
-        }
-
-        ctx.tracker().onOffheapSaveFreeListMetadataEnd();
-
-        for (CacheDataStore store : partDataStores.values())
-            saveStoreMetadata(store, ctx, false, needSnapshot);
-
-        ctx.tracker().onOffheapSaveMetadataEnd();
+        syncMetadata(ctx, ctx.executor(), needSnapshot);
     }
 
     /** {@inheritDoc} */
     public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        syncMetadata(ctx.executor(), store -> {
-            RowStore rowStore0 = store.rowStore();
-
-            if (rowStore0 != null)
-                ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
-        });
+        syncMetadata(ctx, ctx.executor(), ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName()));
     }
 
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *
      * @param execSvc Executor service to run save process
-     * @param savePartitionMetadata Runner to do saving of partition metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Executor execSvc,
-        IgniteThrowableConsumer<CacheDataStore> savePartitionMetadata) throws IgniteCheckedException {
+    private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
             for (CacheDataStore store : partDataStores.values())
-                savePartitionMetadata.accept(store);
+                saveStoreMetadata(store, ctx, false, needSnapshot);
         }
         else {
             execSvc.execute(() -> {
@@ -255,7 +228,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        savePartitionMetadata.accept(store);
+                        saveStoreMetadata(store, ctx, false, needSnapshot);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -277,9 +250,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 //
         if (rowStore0 != null) {
-//            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
-//
-//            freeList.saveMetadata();
+            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
+
+            freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -399,17 +372,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
-//                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-//                            wal.log(new MetaPageUpdatePartitionDataRecord(
-//                                grpId,
-//                                partMetaId,
-//                                updCntr,
-//                                rmvId,
-//                                (int)size, // TODO: Partition size may be long
-//                                cntrsPageId,
-//                                state == null ? -1 : (byte)state.ordinal(),
-//                                pageCnt
-//                            ));
+                        if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
+                            wal.log(new MetaPageUpdatePartitionDataRecord(
+                                grpId,
+                                partMetaId,
+                                updCntr,
+                                rmvId,
+                                (int)size, // TODO: Partition size may be long
+                                cntrsPageId,
+                                state == null ? -1 : (byte)state.ordinal(),
+                                pageCnt
+                            ));
                     }
                     finally {
                         pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);

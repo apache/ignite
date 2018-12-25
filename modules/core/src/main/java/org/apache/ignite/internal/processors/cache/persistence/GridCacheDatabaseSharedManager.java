@@ -3669,8 +3669,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 "checkpointBeforeLockTime=%sms, " +
                                 "checkpointLockWait=%dms, " +
                                 "checkpointExecuteListenersTime=%sms, " +
-                                "checkpointOffheapSaveFreeListTime=%sms, " +
-                                "checkpointOffheapSaveMetadataTime=%sms, " +
                                 "checkpointCacheGroupStateTime=%sms, " +
                                 "checkpointCalculatePagesTime=%sms, " +
                                 "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
@@ -3679,8 +3677,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
                             tracker.executeListenersDuration(),
-                            tracker.offheapSaveFreeListMetadataDuration(),
-                            tracker.offheapSaveMetadataDuration(),
                             tracker.cacheGroupStateDuration(),
                             tracker.calculatePagesDuration(),
                             tracker.lockHoldDuration(),
