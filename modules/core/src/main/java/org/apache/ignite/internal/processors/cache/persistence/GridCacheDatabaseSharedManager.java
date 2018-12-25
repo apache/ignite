@@ -3171,13 +3171,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
         /** Temporary write buffer. */
-        private final ByteBuffer tmpWriteBuf;
+        private final ByteBuffer checkpointEntryWriteBuffer;
+
+        /** */
+        private final CheckpointWriteOrder writeOrder;
 
         /** Next scheduled checkpoint progress. */
         private volatile CheckpointProgress scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        @Nullable private volatile CheckpointProgress curCpProgress;
+        @Nullable private volatile CheckpointProgress lastCp;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -3193,11 +3196,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         protected Checkpointer(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log, cctx.kernalContext().workersRegistry());
 
-            scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
+            writeOrder = persistenceCfg.getCheckpointWriteOrder();
 
-            tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
+            scheduledCp = new CheckpointProgress(writeOrder, U.currentTimeMillis() + checkpointFreq);
 
-            tmpWriteBuf.order(ByteOrder.nativeOrder());
+            checkpointEntryWriteBuffer = ByteBuffer.allocateDirect(pageSize());
+
+            checkpointEntryWriteBuffer.order(ByteOrder.nativeOrder());
         }
 
         /** {@inheritDoc} */
@@ -3653,7 +3658,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             CheckpointProgress cur;
 
             synchronized (this) {
-                cur = curCpProgress;
+                cur = lastCp;
 
                 if (cur != null)
                     req = cur.destroyQueue.cancelDestroy(grpId, partId);
@@ -3742,9 +3747,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         curr.reason = "timeout";
 
                     // It is important that we assign a new progress object before checkpoint mark in page memory.
-                    scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
+                    scheduledCp = new CheckpointProgress(writeOrder, U.currentTimeMillis() + checkpointFreq);
 
-                    curCpProgress = curr;
+                    lastCp = curr;
                 }
 
                 chp.progress = curr;
@@ -3865,7 +3870,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (hasPages || hasPartitionsToDestroy) {
                     cp = prepareCheckpointEntry(
-                        tmpWriteBuf,
+                        checkpointEntryWriteBuffer,
                         cpTs,
                         chp.cpRec.checkpointId(),
                         cpPtr,
@@ -3900,9 +3905,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 chp.cpEntry = cp;
 
-                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
+                writeCheckpointEntry(checkpointEntryWriteBuffer, cp, CheckpointEntryType.START);
 
-                curCpProgress.cpPages.onCheckpointBegin();
+                chp.progress.cpPages.onCheckpointBegin();
 
                 if (log.isInfoEnabled())
                     log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
@@ -3995,14 +4000,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                 CheckpointEntry cp = prepareCheckpointEntry(
-                    tmpWriteBuf,
+                    checkpointEntryWriteBuffer,
                     chp.cpEntry.timestamp(),
                     chp.cpEntry.checkpointId(),
                     chp.cpEntry.checkpointMark(),
                     null,
                     CheckpointEntryType.END);
 
-                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
+                writeCheckpointEntry(checkpointEntryWriteBuffer, cp, CheckpointEntryType.END);
 
                 cctx.wal().notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
             }
@@ -4520,12 +4525,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
 
-        /** Partitions destroy queue. */
-        private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
-
-        /** Wakeup reason. */
-        private String reason;
-
         /**
          * Chekpoint page Ids wrapper.
          * Contains all page Ids which should be written in the current checkpoint.
@@ -4533,15 +4532,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private final CheckpointBeginPages cpPages;
 
-        // Identity stores set.
-        private final ConcurrentLinkedHashMap<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
+        /**
+         * (PageStore -> Number of written pages.)
+         * Map for tracking which stores should be sync and how many pages was written.
+         */
+        private Map<PageStore, LongAdder> pageStores;
 
         /**
+         * Partitions destroy queue. Contains all partitions which should be destroyed in the current checkpoint.
+         */
+        private final PartitionDestroyQueue destroyQueue;
+
+        /** Partition allocation map. */
+        private final PartitionAllocationMap parts;
+
+        /** Wakeup reason. */
+        private String reason;
+
+        /**
+         * @param order Checkpoint write order.
          * @param nextCpTs Next checkpoint timestamp.
          */
-        private CheckpointProgress(long nextCpTs) {
+        private CheckpointProgress(CheckpointWriteOrder order, long nextCpTs) {
+            cpPages = new CheckpointBeginPages(order);
+            pageStores = new ConcurrentLinkedHashMap<>();
+            destroyQueue = new PartitionDestroyQueue();
+            parts = new PartitionAllocationMap();
+
             this.nextCpTs = nextCpTs;
-            cpPages = new CheckpointBeginPages(CheckpointWriteOrder.SEQUENTIAL);
         }
     }
 
