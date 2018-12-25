@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
@@ -84,22 +85,27 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         else
             filter = tab -> true;
 
-        final AtomicLong keys = new AtomicLong();;
+        final AtomicLong keys = new AtomicLong();
 
         return ctx.cache().publicCacheNames().stream()
             .flatMap(cacheName ->
                 ctx.query().types(cacheName).stream()
-                .filter(filter)
-                .map(tab -> createRow(ses, keys.incrementAndGet(),
-                    tab.schemaName(),
-                    tab.tableName(),
-                    cacheName,
-                    ctx.cache().cacheDescriptor(cacheName).cacheId(),
-                    tab.affinityKey(),
-                    QueryUtils.cacheKeyName(tab),
-                    QueryUtils.cacheValueName(tab))
-                )
-            ).iterator();
+                    .filter(filter)
+                    .map(tab -> Arrays.asList(
+                        tab.schemaName(),
+                        tab.tableName(),
+                        cacheName,
+                        ctx.cache().cacheDescriptor(cacheName).cacheId(),
+                        tab.affinityKey(),
+                        QueryUtils.cacheKeyName(tab),
+                        QueryUtils.cacheValueName(tab))
+                    )
+            )
+            .unordered()
+            .distinct()
+            .map(dataList ->
+                createRow(ses, keys.incrementAndGet(), dataList.toArray(new Object[0])))
+            .iterator();
     }
 
     /** {@inheritDoc} */
