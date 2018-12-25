@@ -648,8 +648,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         DiscoCache discoCache = cctx.discovery().discoCache(topVer);
 
+        ClusterNode node = discoCache.oldestAliveServerNode();
+
         // Resolve coordinator for specific version.
-        boolean crd = discoCache.oldestAliveServerNode().isLocal();
+        boolean crd = node != null && node.isLocal();
 
         Map<Integer, Boolean> startedCaches = null;
         Set<Integer> closedCaches = null;
