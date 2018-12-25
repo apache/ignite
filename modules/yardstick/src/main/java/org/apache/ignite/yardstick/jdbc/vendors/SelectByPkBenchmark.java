@@ -15,33 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited deprecated assertions.
-import junit.framework.TestResult;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Supports compatibility with old tests based on configurations variations.
+ * Benchmark that performs selects with filter by primary key field.
  */
-abstract class LegacyConfigVariationsSupport extends TestCase {
-    /**
-     * Fallback to superclass.
-     */
-    protected int countTestCasesFallback() {
-        return super.countTestCases();
+public class SelectByPkBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        long persId = ThreadLocalRandom.current().nextLong(args.range());
+
+        select.setLong(1, persId);
     }
 
-    /**
-     * Fallback to superclass.
-     */
-    protected void runFallback(TestResult res) {
-        super.run(res);
-    }
-
-    /**
-     * Fallback to superclass.
-     */
-    protected String getNameFallback() {
-        return super.getName();
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectPersonsByPK();
     }
 }

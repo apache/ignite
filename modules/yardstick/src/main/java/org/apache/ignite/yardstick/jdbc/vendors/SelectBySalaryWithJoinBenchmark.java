@@ -15,28 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- * Test suite for JSR-310 Java 8 Date and Time API queries.
+ * Benchmark that performs select with filter by 'salary' field and inner join with Organization table.
  */
-@RunWith(AllTests.class)
-public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("JSR-310 Java 8 Date and Time API Cache Queries Test Suite");
+public class SelectBySalaryWithJoinBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        fillRandomSalaryRange(select);
+    }
 
-        suite.addTest(new JUnit4TestAdapter(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class));
-
-        return suite;
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectPersonsJoinOrgWhereSalary();
     }
 }
