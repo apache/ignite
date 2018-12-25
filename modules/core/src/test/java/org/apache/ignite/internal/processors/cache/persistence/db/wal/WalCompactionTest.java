@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import org.apache.ignite.Ignite;
@@ -41,6 +43,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import static java.nio.file.Files.newDirectoryStream;
 
 /**
  *
@@ -315,7 +319,16 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
-        assertTrue(walSegment.exists()); // Failed to compress WAL segment shoudn't be deleted.
+        if (!walSegment.exists()) {
+            log.info("Files in archive:");
+
+            try (DirectoryStream<Path> files = newDirectoryStream(archiveDir.toPath())) {
+                files.forEach(path-> log.info(path.toString()));
+            }
+
+            // Failed to compress WAL segment shoudn't be deleted.
+            fail("File " + walSegment.getAbsolutePath() + " does not exist.");
+        }
     }
 
     /**
