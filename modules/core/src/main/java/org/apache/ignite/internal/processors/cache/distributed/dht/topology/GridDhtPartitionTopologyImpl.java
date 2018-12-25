@@ -2118,7 +2118,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetLostPartitions(AffinityTopologyVersion resTopVer) {
+    @Override public void resetLostPartitions(AffinityTopologyVersion resTopVer, Map<UUID, CachePartitionPartialCountersMap> node2cntrs) {
         ctx.database().checkpointReadLock();
 
         try {
@@ -2146,9 +2146,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updSeq = updateSeq.incrementAndGet();
 
+                Boolean[] blankCntr = new Boolean[partitions()];
+
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
                         if (e0.getValue() != LOST)
+                            continue;
+
+                        int p = e0.getKey();
+
+                        if (blankCntr[p] == null)
+                            blankCntr[p] = isBlankCounters(p, node2cntrs);
+
+                        if (blankCntr[p] && !grp.affinity().cachedAffinity(resTopVer).idealAssignment().get(p)
+                            .contains(ctx.discovery().node(e.getKey())))
                             continue;
 
                         e0.setValue(OWNING);
@@ -2163,8 +2174,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                                 long updateCntr = locPart.updateCounter();
 
+                                // Set update counters to 0,for full rebalance if owner present.
                                 if (hasOwner.contains(locPart.id())) {
-                                    //Set update counters to 0, for full rebalance.
                                     locPart.updateCounter(updateCntr, -updateCntr);
                                     locPart.initialUpdateCounter(0);
                                 }
@@ -2186,6 +2197,106 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         finally {
             ctx.database().checkpointReadUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitionCounters() {
+        ctx.database().checkpointReadLock();
+
+        try {
+            lock.writeLock().lock();
+
+            try {
+                for (GridDhtLocalPartition part : localPartitions()) {
+                    if (part.state() != LOST)
+                        continue;
+
+                    // Set update counters to 0 for full rebalance if owner present.
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                        if (e.getValue().get(part.id()) != OWNING)
+                            continue;
+
+                        assert !ctx.localNodeId().equals(e.getKey());
+
+                        long updateCntr = part.updateCounter();
+
+                        part.updateCounter(updateCntr, -updateCntr);
+                        part.initialUpdateCounter(0);
+
+                        break;
+                    }
+                }
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @param p Partition ID.
+     * @param node2cntrs Map of partition update counters from remote nodes.
+     * @return {@code True} if LOST partition counters on all nodes are zero.
+     */
+    private boolean isBlankCounters(int p, Map<UUID, CachePartitionPartialCountersMap> node2cntrs) {
+        for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+            if (e.getValue().get(p) != LOST)
+                continue;
+
+            CachePartitionPartialCountersMap cntrs = node2cntrs.get(e.getKey());
+
+            if (cntrs == null)
+                continue;
+
+            int idx = cntrs.partitionIndex(p);
+
+            if (idx >= 0 && cntrs.updateCounterAt(idx) != 0)
+                return false;
+        }
+
+        GridDhtLocalPartition locPart = localPartition(p);
+
+        return locPart == null || locPart.state() != LOST || cntrMap.updateCounter(p) == 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean updateLostPartitions(GridDhtPartitionMap incomeMap) {
+        boolean update = false;
+
+        ctx.database().checkpointReadLock();
+
+        try {
+            lock.writeLock().lock();
+
+            try {
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
+
+                    if (part == null)
+                        continue;
+
+                    GridDhtPartitionState state = incomeMap.get(i);
+
+                    if (part.state() == LOST && (state == OWNING || state == MOVING))
+                        update |= part.own();
+                }
+
+                lostParts = null;
+
+                grp.needsRecovery(false);
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
+
+        return update;
     }
 
     /** {@inheritDoc} */

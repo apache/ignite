@@ -995,8 +995,21 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetLostPartitions(AffinityTopologyVersion affVer) {
+    @Override public void resetLostPartitions(AffinityTopologyVersion affVer, Map<UUID, CachePartitionPartialCountersMap> node2cntrs) {
         assert false : "resetLostPartitions should never be called on client topology";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitionCounters() {
+        assert false : "resetLostPartitionCounters should never be called on client topology";
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean updateLostPartitions(GridDhtPartitionMap incomeMap) {
+        assert false : "updateLostPartitions should never be called on client topology";
+
+        return false;
     }
 
     /** {@inheritDoc} */

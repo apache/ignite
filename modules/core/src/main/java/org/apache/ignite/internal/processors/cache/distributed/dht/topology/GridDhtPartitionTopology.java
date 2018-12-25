@@ -335,8 +335,22 @@ public interface GridDhtPartitionTopology {
      * Resets the state of all LOST partitions to OWNING.
      *
      * @param resTopVer Exchange result version.
+     * @param node2cntrs Map of partition update counters from remote nodes.
      */
-    public void resetLostPartitions(AffinityTopologyVersion resTopVer);
+    public void resetLostPartitions(AffinityTopologyVersion resTopVer, Map<UUID, CachePartitionPartialCountersMap> node2cntrs);
+
+    /**
+     * Resets update counters on non-coordinator nodes.
+     */
+    public void resetLostPartitionCounters();
+
+    /**
+     * Update local lost partitions state to OWNING after reset.
+     *
+     * @param incomeMap Partition map received from coordinator.
+     * @return {@code True} if local partitions state was changed.
+     */
+    public boolean updateLostPartitions(GridDhtPartitionMap incomeMap);
 
     /**
      * @return Collection of lost partitions, if any.
