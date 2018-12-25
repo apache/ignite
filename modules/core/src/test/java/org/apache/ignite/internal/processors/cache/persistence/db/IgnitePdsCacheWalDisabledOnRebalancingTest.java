@@ -45,6 +45,8 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -344,9 +346,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            FileIO fileIO = delegateFactory.create(file, modes);
 
-            return new FileIODecorator(delegate) {
+            if (!file.getName().contains("part-"))
+                return fileIO;
+
+            return new FileIODecorator(fileIO) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (Thread.currentThread().getName().contains("checkpoint")) {
                         try {
