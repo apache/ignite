@@ -37,10 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -54,9 +51,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  */
 @RunWith(JUnit4.class)
 public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Nodes count. */
     private static final int NODES_CNT = 4;
 
@@ -77,11 +71,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
         cfg.setCommunicationSpi(spi);
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

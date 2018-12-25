@@ -40,11 +40,14 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPa
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite6 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite6 {
     /**
      * @return IgniteCache test suite.
      */

@@ -35,6 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
@@ -80,6 +81,7 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHandshakeOnNodeJoining() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
 

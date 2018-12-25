@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,20 +44,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -72,6 +59,17 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
         startGridsMultiThreaded(2);
+
+        // The final topology version after 2 node joins and one CacheAffinityChange message.
+        AffinityTopologyVersion waited = new AffinityTopologyVersion(2, 1);
+
+        // Wait for this topology version on all grids.
+        GridTestUtils.waitForCondition(() -> {
+            boolean verChanged = true;
+            for (Ignite ignite : G.allGrids())
+                verChanged &= ((IgniteEx) ignite).context().discovery().topologyVersionEx().equals(waited);
+            return verChanged;
+        }, 5000);
 
         assertDiscoCacheReuse(new AffinityTopologyVersion(2, 0), new AffinityTopologyVersion(2, 1));
     }
@@ -109,9 +107,11 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
             for (String prop : props)
                 assertSame(U.field(discoCache1, prop), U.field(discoCache2, prop));
 
-            // Do not remove type hint or polymorphic resolution won't work as expected.
-            assertNotSame(U.<Object>field(discoCache1, "alives"), U.field(discoCache2, "alives"));
-            assertEquals(U.<Object>field(discoCache1, "alives"), U.field(discoCache2, "alives"));
+            assertNotSame(U.field(discoCache1, "alives"), U.field(discoCache2, "alives"));
+
+            GridConcurrentHashSet alives1 = U.field(discoCache1, "alives");
+            GridConcurrentHashSet alives2 = U.field(discoCache2, "alives");
+            assertEquals("Discovery caches are not equal", alives1, alives2);
         }
     }
 }
