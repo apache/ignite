@@ -35,7 +35,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     public static final String TABLE_NAME = "TABLE_NAME";
 
     /** Sql schema name (database name). */
-    public static final String SQL_SCHEMA = "SQL_SCHEMA";
+    public static final String TABLE_SCHEMA = "TABLE_SCHEMA";
 
     /** Name of the cache holding that table. */
     public static final String OWNING_CACHE_NAME = "OWNING_CACHE_NAME";
@@ -45,7 +45,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
 
     public SqlSystemViewTables(GridKernalContext ctx) {
         super("TABLES", "Ignite tables", ctx, TABLE_NAME,
-            newColumn(SQL_SCHEMA),
+            newColumn(TABLE_SCHEMA),
             newColumn(TABLE_NAME),
             newColumn(OWNING_CACHE_NAME),
             newColumn(OWNING_CACHE_ID, Value.INT)
