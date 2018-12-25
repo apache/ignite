@@ -42,6 +42,12 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     /** Alias for cache value. {@link QueryUtils#VAL_FIELD_NAME} by default. */
     public static final String VALUE_ALIAS = "VALUE_ALIAS";
 
+    /** Type name of key cache object. */
+    public static final String KEY_TYPE_NAME = "KEY_TYPE_NAME";
+
+    /** Type name of value cache object. */
+    public static final String VALUE_TYPE_NAME = "VALUE_TYPE_NAME";
+
     /** Name of the sql table. */
     public static final String TABLE_NAME = "TABLE_NAME";
 
@@ -67,7 +73,9 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             newColumn(OWNING_CACHE_ID, Value.INT),
             newColumn(AFFINITY_COLUMN),
             newColumn(KEY_ALIAS),
-            newColumn(VALUE_ALIAS)
+            newColumn(VALUE_ALIAS),
+            newColumn(KEY_TYPE_NAME),
+            newColumn(VALUE_TYPE_NAME)
         );
     }
 
@@ -98,7 +106,9 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         ctx.cache().cacheDescriptor(cacheName).cacheId(),
                         tab.affinityKey(),
                         QueryUtils.cacheKeyName(tab),
-                        QueryUtils.cacheValueName(tab))
+                        QueryUtils.cacheValueName(tab),
+                        tab.keyTypeName(),
+                        tab.valueTypeName())
                     )
             )
             .unordered()
