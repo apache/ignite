@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
@@ -533,16 +535,45 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     public void testTablesView() throws Exception {
         IgniteEx ignite = startGrid(getConfiguration());
 
-        // this cache is
+        GridCacheProcessor cacheProc = ignite.context().cache();
+
         execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
             "\"cache_name=cache_sql,template=partitioned,atomicity=atomic\"");
 
-        String schema = ignite.cache("cache_sql").getConfiguration(CacheConfiguration.class).getSqlSchema();
-        System.out.println("+++ schema = " + schema);
+        execSql("CREATE TABLE PUBLIC.ddl_table (ID INT PRIMARY KEY, VAL VARCHAR)");
 
-        List<List<?>> lists = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
+        int cacheSqlId = cacheProc.cacheDescriptor("cache_sql").cacheId();
+        int ddlTabId = cacheProc.cacheDescriptor("SQL_PUBLIC_DDL_TABLE").cacheId();
 
-        System.out.println("+++ : " + lists);
+        List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
+
+
+        List<?> expRow = Arrays.asList(
+            "DEFAULT",      // SQL_SCHEMA
+            "CACHE_SQL",    // TABLE_NAME
+            "cache_sql",    // OWNING_CACHE_NAME
+            cacheSqlId      // OWNING_CACHE_ID
+        );
+
+        assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
+
+        // no more rows are expected.
+        assertEquals("Expected to return only one row", 1, cacheSqlInfos.size());
+
+        List<List<?>> allInfos = execSql("SELECT * FROM IGNITE.TABLES");
+
+        List<?> allExpRows = Arrays.asList(
+            expRow,
+            Arrays.asList(
+                "PUBLIC",               // SQL_SCHEMA
+                "DDL_TABLE",            // TABLE_NAME
+                "SQL_PUBLIC_DDL_TABLE", // OWNING_CACHE_NAME
+                ddlTabId                // OWNING_CACHE_ID
+            )
+        );
+
+        if (!F.eqNotOrdered(allExpRows, allInfos))
+            fail("Returned incorrect rows [expected=" + allExpRows + ", actual="+ allInfos + "].");
     }
 
 

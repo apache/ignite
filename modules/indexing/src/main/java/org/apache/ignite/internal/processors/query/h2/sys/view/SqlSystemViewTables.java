@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.value.Value;
 
 /**
  * View that contains information about all the sql tables in the cluster.
@@ -43,11 +44,11 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     public static final String OWNING_CACHE_ID = "OWNING_CACHE_ID";
 
     public SqlSystemViewTables(GridKernalContext ctx) {
-        super("TABLES", "Ignite tables", ctx, new String[] {TABLE_NAME},
+        super("TABLES", "Ignite tables", ctx, TABLE_NAME,
             newColumn(SQL_SCHEMA),
             newColumn(TABLE_NAME),
             newColumn(OWNING_CACHE_NAME),
-            newColumn(OWNING_CACHE_ID)
+            newColumn(OWNING_CACHE_ID, Value.INT)
         );
     }
 
@@ -60,7 +61,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         if (nameCond.isEquality()) {
             String fltTabName = nameCond.valueForEquality().getString();
 
-            filter = Predicate.isEqual(fltTabName);
+            filter = tab -> fltTabName.equals(tab.tableName());
         }
         else
             filter = tab -> true;
@@ -71,18 +72,22 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             .flatMap(cacheName ->
                 ctx.query().types(cacheName).stream()
                 .filter(filter)
-                .map(tab -> createRow(ses, keys.incrementAndGet(),
-                    tab.schemaName(),
-                    tab.tableName(),
-                    cacheName,
-                    ctx.cache().cacheDescriptor(cacheName).cacheId()))
+                .map(tab -> {
+                    return createRow(ses, keys.incrementAndGet(),
+                        tab.schemaName(),
+                        tab.tableName(),
+                        cacheName,
+                        ctx.cache().cacheDescriptor(cacheName).cacheId());
+                })
             ).iterator();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public long getRowCount() {
         return ctx.cache().publicAndDsCacheNames().stream().mapToLong(c -> ctx.query().types(c).size()).sum();
     }
