@@ -39,8 +39,11 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
@@ -220,6 +223,21 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }
 
         checkCachesData(cacheData, dsCfg);
+    }
+
+    /**
+     * Verifies correctness of BaselineTopology checks when working in persistent mode.
+     */
+    @Override protected void doFinalChecks() {
+        for (int i = 0; i < 4; i++) {
+            int j = i;
+
+            assertThrowsAnyCause(log, () -> {
+                startGrid(j);
+
+                return null;
+            }, IgniteSpiException.class, "not compatible");
+        }
     }
 
     /**
