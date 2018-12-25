@@ -15,33 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited deprecated assertions.
-import junit.framework.TestResult;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- * Supports compatibility with old tests based on configurations variations.
+ * Benchmark that performs select with filter by 'salary' field and inner join with Organization table.
  */
-abstract class LegacyConfigVariationsSupport extends TestCase {
-    /**
-     * Fallback to superclass.
-     */
-    protected int countTestCasesFallback() {
-        return super.countTestCases();
+public class SelectBySalaryWithJoinBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        fillRandomSalaryRange(select);
     }
 
-    /**
-     * Fallback to superclass.
-     */
-    protected void runFallback(TestResult res) {
-        super.run(res);
-    }
-
-    /**
-     * Fallback to superclass.
-     */
-    protected String getNameFallback() {
-        return super.getName();
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectPersonsJoinOrgWhereSalary();
     }
 }

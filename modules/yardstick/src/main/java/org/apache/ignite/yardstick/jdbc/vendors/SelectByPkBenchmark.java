@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
-import org.junit.Ignore;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Test cases for multi-threaded tests.
+ * Benchmark that performs selects with filter by primary key field.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-601")
-public class GridCacheReplicatedMultiNodeLockSelfTest extends GridCacheMultiNodeLockAbstractTest {
+public class SelectByPkBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        long persId = ThreadLocalRandom.current().nextLong(args.range());
 
-        cacheCfg.setCacheMode(REPLICATED);
+        select.setLong(1, persId);
+    }
 
-        return cacheCfg;
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectPersonsByPK();
     }
 }

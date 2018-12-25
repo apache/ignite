@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
-import org.junit.Ignore;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 
 /**
- * Test cases for multi-threaded tests.
+ * Benchmark that fetches all the rows from table of Person inner join Organization table. Specify in the properties
+ * file {@link IgniteBenchmarkArguments#sqlRange()} to be equal to whole Person table size ({@link
+ * IgniteBenchmarkArguments#range()}) since Person table contains more rows than Organization.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-601")
-public class GridCacheReplicatedMultiNodeLockSelfTest extends GridCacheMultiNodeLockAbstractTest {
+public class ScanAllWithJoinBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        //No-op, query doesn't have parameters to fill.
+    }
 
-        cacheCfg.setCacheMode(REPLICATED);
-
-        return cacheCfg;
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectAllPersonsJoinOrg();
     }
 }
