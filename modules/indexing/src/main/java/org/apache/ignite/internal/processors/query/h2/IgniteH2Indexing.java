@@ -457,14 +457,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo runningQryInfo = runningQueryManager().registerUserRunningQuery(qry,
+            GridRunningQueryInfo runningQryInfo = runningQueryManager().register(qry,
                 TEXT, schemaName, true, null);
 
             try {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                runningQueryManager().unregisterRunningQuery(runningQryInfo);
+                runningQueryManager().unregister(runningQryInfo);
             }
         }
 
@@ -1317,7 +1317,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            runningQueryMgr.unregisterRunningQuery(qryId);
+            runningQueryMgr.unregister(qryId);
         }
     }
 
@@ -1630,7 +1630,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
             finally {
-                runningQueryMgr.unregisterRunningQuery(qryId);
+                runningQueryMgr.unregister(qryId);
             }
         }
 
@@ -1655,7 +1655,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
-            runningQueryManager().unregisterRunningQuery(qryId);
+            runningQueryMgr.unregister(qryId);
 
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
                 ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
@@ -1673,7 +1673,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private Long registerRunningQuery(String schemaName, GridQueryCancel cancel, String qry, boolean loc,
         boolean registerAsNewQry) {
         if (registerAsNewQry) {
-            GridRunningQueryInfo runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry,
+            GridRunningQueryInfo runningQryInfo = runningQueryMgr.register(qry,
                 GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
 
             return runningQryInfo.id();
@@ -2037,7 +2037,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return cursor;
         }
         catch (Exception e) {
-            runningQueryMgr.unregisterRunningQuery(qryId);
+            runningQueryMgr.unregister(qryId);
 
             throw e;
         }
@@ -2603,7 +2603,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        return runningQueryMgr.longRunningUserQueries(duration);
+        return runningQueryMgr.longRunningQueries(duration);
     }
 
     /** {@inheritDoc} */

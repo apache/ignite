@@ -113,7 +113,7 @@ public class BulkLoadProcessor implements AutoCloseable {
             outputStreamer.close();
         }
         finally {
-            runningQryMgr.unregisterRunningQuery(qryId);
+            runningQryMgr.unregister(qryId);
         }
     }
 }
