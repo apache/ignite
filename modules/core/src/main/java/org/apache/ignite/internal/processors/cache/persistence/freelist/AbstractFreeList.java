@@ -497,7 +497,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 initIo = ioVersions().latest();
             }
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+            else if (PageIdUtils.flag(pageId) != PageIdAllocator.FLAG_DATA)
                 pageId = initReusedPage(pageId, row.partition(), statHolder);
             else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
