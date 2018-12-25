@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
@@ -170,6 +171,8 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
+
+        suite.addTestSuite();
 
         return suite;
     }
