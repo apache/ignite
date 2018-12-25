@@ -443,14 +443,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     V value;
 
-                    if (writeCoalescing && val.nextEntry() != null) {
+                    if (writeCoalescing && val.nextOperation() != null) {
                         op = val.nextOperation();
 
-                        value = val.nextEntry().getValue();
+                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
                     } else {
                         op = val.operation();
 
-                        value = val.entry().getValue();
+                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                     }
 
                     if (op == StoreOperation.PUT)
@@ -502,14 +502,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                 V value;
 
-                if (writeCoalescing && val.nextEntry() != null) {
+                if (writeCoalescing && val.nextOperation() != null) {
                     op = val.nextOperation();
 
-                    value = val.nextEntry().getValue();
+                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
                 } else {
                     op = val.operation();
 
-                    value = val.entry().getValue();
+                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                 }
 
                 switch (op) {
@@ -810,8 +810,11 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.writeLock().lock();
 
                 try {
-                    if (val.status() == ValueStatus.PENDING_AND_UPDATED)
+                    if (val.status() == ValueStatus.PENDING_AND_UPDATED) {
                         val.update(val.nextEntry(), val.nextOperation(), ValueStatus.NEW);
+
+                        val.setNext(null, null);
+                    }
                     else {
                         val.status(ValueStatus.RETRY);
 
