@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
@@ -165,6 +166,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.AUTOADJUST;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
@@ -291,6 +293,15 @@ public class CommandHandler {
 
     /** */
     private static final String BASELINE_SET_VERSION = "version";
+
+    /** */
+    private static final String BASELINE_AUTO_ADJUST = "autoadjust";
+
+    /** */
+    private static final String BASELINE_AUTO_ADJUST_ENABLE = "enable";
+
+    /** */
+    private static final String BASELINE_AUTO_ADJUST_DISABLE = "disable";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -1236,6 +1247,10 @@ public class CommandHandler {
                 baselineVersion(client, baselineArgs);
                 break;
 
+            case BASELINE_AUTO_ADJUST:
+                baselineAutoAdjust(client, baselineArgs);
+                break;
+
             case BASELINE_COLLECT:
                 baselinePrint(client);
                 break;
@@ -1256,20 +1271,38 @@ public class CommandHandler {
             case SET:
                 List<String> consistentIds = getConsistentIds(s);
 
-                return new VisorBaselineTaskArg(op, -1, consistentIds);
+                return new VisorBaselineTaskArg(op, -1, consistentIds, null);
 
             case VERSION:
                 try {
                     long topVer = Long.parseLong(s);
 
-                    return new VisorBaselineTaskArg(op, topVer, null);
+                    return new VisorBaselineTaskArg(op, topVer, null, null);
                 }
                 catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Invalid topology version: " + s, e);
                 }
 
+            case AUTOADJUST:
+                if (BASELINE_AUTO_ADJUST_DISABLE.equals(s)) {
+                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(false, -1);
+
+                    return new VisorBaselineTaskArg(op, -1, null, settings);
+                }
+                else {
+                    String[] argsArr = s.split(" ");
+
+                    assert argsArr.length == 2;
+
+                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(
+                        true,
+                        Long.parseLong(argsArr[1])
+                    );
+
+                    return new VisorBaselineTaskArg(op, -1, null, settings);
+                }
             default:
-                return new VisorBaselineTaskArg(op, -1, null);
+                return new VisorBaselineTaskArg(op, -1, null, new VisorBaselineAutoAdjustSettings(false, -1));
         }
     }
 
@@ -1296,6 +1329,14 @@ public class CommandHandler {
      */
     private void baselinePrint0(VisorBaselineTaskResult res) {
         log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
+        log("Current topology version: " + res.getTopologyVersion());
+        VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
+
+        log("Baseline auto adjustment " + (autoAdjustSettings.enabled ? "enabled" : "disabled") +
+            ": softTimeout=" + autoAdjustSettings.softTimeout
+        );
+
+        nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
 
@@ -1439,6 +1480,25 @@ public class CommandHandler {
         }
         catch (Throwable e) {
             log("Failed to set baseline with specified topology version.");
+
+            throw e;
+        }
+    }
+
+    /**
+     * Set baseline autoadjustment settings.
+     *
+     * @param client Client.
+     * @param args Argument from command line. Either {@code disable} or {@code enable <softTimeout>}.
+     */
+    private void baselineAutoAdjust(GridClient client, String args) throws GridClientException {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(AUTOADJUST, args));
+
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to update baseline autoadjustment settings.");
 
             throw e;
         }
@@ -1979,13 +2039,44 @@ public class CommandHandler {
                         str = peekNextArg();
 
                         if (str != null) {
-                            str = str.toLowerCase();
+                            switch (str.toLowerCase()) {
+                                case BASELINE_ADD:
+                                case BASELINE_REMOVE:
+                                case BASELINE_SET:
+                                case BASELINE_SET_VERSION:
+                                    baselineAct = nextArg("Expected baseline action");
 
-                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
-                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
-                                baselineAct = nextArg("Expected baseline action");
+                                    baselineArgs = nextArg("Expected baseline arguments");
 
-                                baselineArgs = nextArg("Expected baseline arguments");
+                                    break;
+
+                                case BASELINE_AUTO_ADJUST:
+                                    baselineAct = nextArg("Expected baseline action");
+
+                                    String enableDisable = nextArg("Expected argument for baseline autoadjust (enable|disable)")
+                                        .toLowerCase();
+
+                                    if (BASELINE_AUTO_ADJUST_DISABLE.equals(enableDisable))
+                                        baselineArgs = enableDisable.toLowerCase();
+                                    else {
+                                        if (!BASELINE_AUTO_ADJUST_ENABLE.equals(enableDisable)) {
+                                            String msg = "Argument after \"--baseline autoadjust\" must be" +
+                                                " either \"enable\" or \"disable\"";
+
+                                            throw new IllegalArgumentException(msg);
+                                        }
+
+                                        long softTimeout = nextLongArg("Expected soft timeout" +
+                                            " argument for baseline autoadjust");
+
+                                        if (softTimeout < 0)
+                                            throw new IllegalArgumentException("Soft timeout value for baseline" +
+                                                " autoadjustment can't be negative");
+
+                                        baselineArgs = enableDisable + " " + softTimeout;
+                                    }
+
+                                    break;
                             }
                         }
 
@@ -2771,6 +2862,7 @@ public class CommandHandler {
         usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline autoadjustment settings:"), BASELINE, BASELINE_AUTO_ADJUST, "disable|(enable <softTimeout>)", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
 
         if (enableExperimental) {
