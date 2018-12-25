@@ -18,6 +18,8 @@
 package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -198,7 +200,7 @@ public class ConfigVariationsTestSuiteBuilder {
             addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
                 testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
        else
-            addedSuite = new IgniteConfigVariationsTestSuite(cls, testCfg);
+            addedSuite = makeTestSuite(cls, testCfg);
 
         return addedSuite;
     }
@@ -225,10 +227,26 @@ public class ConfigVariationsTestSuiteBuilder {
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
 
-            suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
+            suite.addTest(makeTestSuite(cls, cfg0));
         }
 
         return suite;
+    }
+
+    /** */
+    private static TestSuite makeTestSuite(Class<? extends IgniteConfigVariationsAbstractTest> cls,
+        VariationsTestsConfig cfg) {
+        TestSuite res = new TestSuite(cls.getSimpleName());
+
+        res.addTest(new JUnit4TestAdapter(cls) {
+            @Override public void run(TestResult tr) {
+                IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfg);
+
+                super.run(tr);
+            }
+        });
+
+        return res;
     }
 
     /**

@@ -4987,6 +4987,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
+                else if (locNodeId.equals(failedNodeId)) {
+                    segmentLocalNodeOnSendFail();
+
+                    return;
+                }
 
                 msg.verify(locNodeId);
             }
