@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * IgniteInternalFuture#get get()} method after all futures complete or fail. Inner exception will contain
  * configurations of failed services.
  */
-public class GridServiceDeploymentCompoundFuture<T> extends GridCompoundFuture<Object, Object> {
+public class GridServiceDeploymentCompoundFuture<T extends Serializable> extends GridCompoundFuture<Object, Object> {
     /** Ids of services written to cache during current deployment. */
     private Collection<T> svcsToRollback;
 

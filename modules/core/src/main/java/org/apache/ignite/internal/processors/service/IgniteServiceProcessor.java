@@ -39,6 +39,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -264,10 +265,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         registeredServices.clear();
 
         // If user requests sent to network but not received back to handle in deployment manager.
-        depFuts.values().forEach(fut -> fut.onDone(stopError));
-        depFuts.clear();
+        Stream.concat(depFuts.values().stream(), undepFuts.values().stream()).forEach(fut -> {
+            try {
+                fut.onDone(stopError);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        });
 
-        undepFuts.values().forEach(fut -> fut.onDone(stopError));
+        depFuts.clear();
         undepFuts.clear();
 
         if (log.isDebugEnabled())

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -24,7 +25,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Service deployment future.
  */
-public class GridServiceDeploymentFuture<T> extends GridFutureAdapter<Object> {
+public class GridServiceDeploymentFuture<T extends Serializable> extends GridFutureAdapter<Object> {
     /** */
     private final ServiceConfiguration cfg;
 

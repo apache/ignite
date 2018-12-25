@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -24,7 +25,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Result of services validation before deployment.
  */
-class PreparedConfigurations<T> {
+class PreparedConfigurations<T extends Serializable> {
     /** */
     final List<ServiceConfiguration> cfgs;
 
