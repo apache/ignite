@@ -17,6 +17,7 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,7 +32,8 @@ import org.junit.runners.JUnit4;
 public class IgniteCacheEntryListenerWithZkDiscoAtomicTest extends IgniteCacheEntryListenerAtomicTest {
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8109")
     @Override public void testConcurrentRegisterDeregister() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8109");
+        // No-op
     }
 }

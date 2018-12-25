@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -93,9 +94,8 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7371")
     public void testMvccSingleGetMessage() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7371");
-
         checkSingleGetMessage(mvccCacheConfigurations());
     }
 

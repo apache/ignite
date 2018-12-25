@@ -104,6 +104,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -285,9 +286,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception if something goes bad.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4380")
     public void testInvokeAllMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
-
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;

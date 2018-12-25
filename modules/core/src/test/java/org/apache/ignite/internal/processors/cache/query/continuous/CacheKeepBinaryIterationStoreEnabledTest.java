@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -56,14 +57,16 @@ public class CacheKeepBinaryIterationStoreEnabledTest extends CacheKeepBinaryIte
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Override public void testMvccTxOnHeap() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+        // No-op
     }
 
     /**

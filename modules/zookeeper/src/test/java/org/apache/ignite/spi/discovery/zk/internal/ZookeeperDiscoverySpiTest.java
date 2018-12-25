@@ -139,6 +139,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -3927,9 +3928,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
-
         reconnectServersRestart(1);
     }
 
@@ -3937,9 +3937,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
-
         reconnectServersRestart(3);
     }
 

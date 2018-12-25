@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -115,9 +116,8 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     public void testInvokeReadThroughMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
     }
 
@@ -125,9 +125,8 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     public void testInvokeReadThroughMvccTxNearCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
     }
 
@@ -135,9 +134,8 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     public void testInvokeReadThroughMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 
@@ -145,9 +143,8 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     public void testInvokeReadThroughMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(LOCAL, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 }

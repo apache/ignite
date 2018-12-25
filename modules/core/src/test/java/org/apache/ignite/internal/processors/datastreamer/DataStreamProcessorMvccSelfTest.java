@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -56,21 +57,22 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Override public void testUpdateStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         super.testUpdateStore();
     }
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
     @Override public void testFlushTimeout() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Override public void testLocal() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+        // No-op
     }
 }

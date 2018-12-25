@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -47,13 +48,15 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Override public void testBackupQueueEvict() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10391")
     @Override public void testFailoverStartStopBackup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+        // No-op
     }
 }

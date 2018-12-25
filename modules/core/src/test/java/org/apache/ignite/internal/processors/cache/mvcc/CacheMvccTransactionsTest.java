@@ -898,9 +898,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     public void testWaitPreviousTxAck() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         testSpi = true;
 
         startGrid(0);
@@ -1216,8 +1215,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     public void testCleanupWaitsForGet2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
         /*
         Simulate case when there are two active transactions modifying the same key
         (it is possible if key lock is released but ack message is delayed), and at this moment
@@ -3390,9 +3389,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     public void testExpiration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));
@@ -3446,9 +3444,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     public void testChangeExpireTime() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));

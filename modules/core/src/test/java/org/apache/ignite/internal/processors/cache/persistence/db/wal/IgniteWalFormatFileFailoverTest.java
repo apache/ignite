@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -113,9 +114,8 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10035")
     public void testFailureHandlerTriggeredFsync() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10035");
-
         fsync = true;
 
         failFormatFileOnClusterActivate();
@@ -125,9 +125,8 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10035")
     public void testFailureHandlerTriggered() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10035");
-
         fsync = false;
 
         failFormatFileOnClusterActivate();

@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -387,9 +388,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5438")
     public void testExecuteQueryTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
         final String sqlText = "select sleep_func(3)";
 
         stmt.setQueryTimeout(1);
@@ -572,9 +572,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5438")
     public void testExecuteUpdateTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
         final String sqlText = "update test set val=1 where _key=sleep_func(3)";
 
         stmt.setQueryTimeout(1);
@@ -707,9 +706,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5440")
     public void testSetEscapeProcessing() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
-
         stmt.setEscapeProcessing(false);
 
         final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";
@@ -1064,9 +1062,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5439")
     public void testCancel() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5439");
-
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {

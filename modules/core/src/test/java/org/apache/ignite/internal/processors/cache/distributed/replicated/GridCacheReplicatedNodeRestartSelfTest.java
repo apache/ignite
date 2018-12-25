@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -54,8 +55,9 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5515")
     @Override protected void beforeTest() throws Exception {
-        //outcommented to get failure on TC: fail("https://issues.apache.org/jira/browse/IGNITE-5515");
+        // No-op
     }
 
     /** {@inheritDoc} */

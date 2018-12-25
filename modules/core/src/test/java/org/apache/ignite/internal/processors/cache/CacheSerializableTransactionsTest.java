@@ -74,6 +74,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -2853,9 +2854,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @param multiNode Multi-node test flag.
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
     private void checkReadWriteTransactionsNoDeadlock(final boolean multiNode) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9226");
-
         final Ignite ignite0 = ignite(0);
 
         for (final CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {

@@ -47,6 +47,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -150,9 +151,8 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     public void testLocalMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -162,9 +162,8 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     public void testLocalMvccTxWithStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,true);
 
         doTestPartitionCounterOperation(ccfg);

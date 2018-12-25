@@ -26,6 +26,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -60,9 +61,8 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
 
     /** Check that dev-only messages appear in the log. */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9328")
     public void testDevOnlyQuietMessage() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9328");
-
         additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=true");
 
         log = new GridStringLogger(false, grid(0).log());

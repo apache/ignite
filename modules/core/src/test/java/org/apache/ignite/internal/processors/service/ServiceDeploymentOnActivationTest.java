@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -166,9 +167,8 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8279")
     public void testClientsStaticConfigWithoutPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8279");
-
         persistence = false;
 
         checkRedeployment(2, 2, CLIENT_FILTER, 2, true, true);

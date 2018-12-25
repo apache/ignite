@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -253,9 +254,8 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5518");
-
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -58,9 +59,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-404")
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-404");
-
         super.beforeTest();
 
         startGrids(gridCount());

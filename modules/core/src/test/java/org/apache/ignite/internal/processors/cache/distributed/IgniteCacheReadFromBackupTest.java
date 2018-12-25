@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -92,9 +93,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
     public void testMvccGetFromBackupStoreReadThroughEnabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10274");
-
         checkGetFromBackupStoreReadThroughEnabled(mvccCacheConfigurations());
     }
 
@@ -154,9 +154,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
     public void testMvccGetFromBackupStoreReadThroughDisabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10274");
-
         checkGetFromBackupStoreReadThroughDisabled(mvccCacheConfigurations());
     }
 
@@ -200,9 +199,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
     public void testMvccGetFromPrimaryPreloadInProgress() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10274");
-
         checkGetFromPrimaryPreloadInProgress(mvccCacheConfigurations());
     }
 
@@ -304,9 +302,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
     public void testMvccNoPrimaryReadPreloadFinished() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10274");
-
         checkNoPrimaryReadPreloadFinished(mvccCacheConfigurations());
 
     }
