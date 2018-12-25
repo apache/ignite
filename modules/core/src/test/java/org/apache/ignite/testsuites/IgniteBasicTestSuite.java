@@ -219,7 +219,7 @@ public class IgniteBasicTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
 
-        suite.addTestSuite(ListeningTestLoggerTest.class);
+        suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
 
         return suite;
     }
