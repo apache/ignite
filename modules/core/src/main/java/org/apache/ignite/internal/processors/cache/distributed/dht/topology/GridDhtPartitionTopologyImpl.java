@@ -284,6 +284,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean initialized() {
+        AffinityTopologyVersion topVer = readyTopVer;
+
+        assert topVer != null;
+
+        return !AffinityTopologyVersion.NONE.equals(topVer);
+    }
+
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readyTopologyVersion() {
         AffinityTopologyVersion topVer = this.readyTopVer;
 
