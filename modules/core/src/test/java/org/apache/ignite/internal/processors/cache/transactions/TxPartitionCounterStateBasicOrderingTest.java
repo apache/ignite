@@ -3,10 +3,8 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
@@ -59,9 +57,9 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
                     }
 
                     @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup,
-                        @Nullable IgniteInternalTx tx,
+                        @Nullable IgniteInternalTx backupTx,
                         IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-                        log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(tx) +
+                        log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(backupTx) +
                             ", nearXidVer=" + nearXidVer);
 
                         return false;

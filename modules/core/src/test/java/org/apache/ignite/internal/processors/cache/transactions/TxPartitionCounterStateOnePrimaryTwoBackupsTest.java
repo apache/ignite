@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -66,21 +65,36 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPrepareCommitReorderFailBackupAfterTx1Commit() throws Exception {
-        doTestPrepareCommitReorder(false);
+        doTestPrepareCommitReorderFailBackupAfterTx1Commit(false);
     }
 
     /** */
     @Test
     public void testPrepareCommitReorderFailBackupAfterTx1Commit2() throws Exception {
-        doTestPrepareCommitReorder(true);
+        doTestPrepareCommitReorderFailBackupAfterTx1Commit(true);
+    }
+
+    /** */
+    @Test
+    public void testPrepareFailOnBackupBecausePrimaryLeft() throws Exception {
+        doTestPrepareFailOnBackupBecausePrimaryLeft(true);
     }
 
     /**
-     * Test scenario
+     * Test scenario:
+     *
+     * 1. Prepare all txs.
+     * 2. Fail backup1 after first commit.
+     * 3. Start failed backup.
+     * 4. Check if the backup is rebalanced correctly from primary node.
+     * 5. Stop primary node.
+     * 6. Put data to remaining nodes.
+     * 7. Start primary node.
+     * 8. Check if primary is rebalanced correctly from new primary node.
      *
      * @param skipCheckpoint Skip checkpoint.
      */
-    private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
+    private void doTestPrepareCommitReorderFailBackupAfterTx1Commit(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
@@ -169,5 +183,25 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertEquals(TOTAL + addCnt, cntr.reserved());
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test scenario:
+     *
+     * @param skipCheckpoint
+     * @throws Exception
+     */
+    private void doTestPrepareFailOnBackupBecausePrimaryLeft(boolean skipCheckpoint) throws Exception {
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+            map -> {
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+                Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
+
+                return new TwoPhaseCommitTxCallbackAdapter(
+                    U.map((IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    U.newHashMap(0),
+                    SIZES.length);
+            },
+            SIZES);
     }
 }

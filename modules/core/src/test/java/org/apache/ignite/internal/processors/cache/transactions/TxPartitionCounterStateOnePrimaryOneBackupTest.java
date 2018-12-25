@@ -411,7 +411,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx tx, IgniteUuid nearXidVer,
+        @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx backupTx, IgniteUuid nearXidVer,
             GridFutureAdapter<?> fut) {
             runAsync(() -> {
                 primFinishFuts.put(nearXidVer, fut);
