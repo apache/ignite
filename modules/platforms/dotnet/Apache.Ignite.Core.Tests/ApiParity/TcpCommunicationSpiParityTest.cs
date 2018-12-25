@@ -65,7 +65,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties = {};
+        private static readonly string[] MissingProperties = {
+            "NeedWaitDelay", // IGNITE-11026
+            "MaxNeedWaitDelay" // IGNITE-11026
+        };
 
         /// <summary>
         /// Tests the cache configuration parity.
