@@ -635,6 +635,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     GridH2QueryContext.set(ctx);
 
+                    ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn = connMgr.detachThreadConnection();
+
                     try {
                         ResultSet rs = executeSqlQueryWithTimer(stmt0, conn, qry0, params, timeout0, cancel);
 
@@ -657,10 +659,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                             enlistFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
                                 @Override public void apply(IgniteInternalFuture<Long> fut) {
-                                    if (fut.error() != null)
-                                        sfuFut0.onResult(IgniteH2Indexing.this.ctx.localNodeId(), 0L, false, fut.error());
-                                    else
-                                        sfuFut0.onResult(IgniteH2Indexing.this.ctx.localNodeId(), fut.result(), false, null);
+                                    if (fut.error() != null) {
+                                        sfuFut0.onResult(
+                                            IgniteH2Indexing.this.ctx.localNodeId(),
+                                            0L,
+                                            false,
+                                            fut.error());
+                                    }
+                                    else {
+                                        sfuFut0.onResult(
+                                            IgniteH2Indexing.this.ctx.localNodeId(),
+                                            fut.result(),
+                                            false,
+                                            null);
+                                    }
                                 }
                             });
 
@@ -679,9 +691,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             }
                         }
 
-                        return new H2FieldsIterator(rs, mvccTracker0, sfuFut0 != null);
+                        return new H2FieldsIterator(rs, mvccTracker0, sfuFut0 != null,
+                            detachedConn);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
+                        detachedConn.recycle();
+
                         try {
                             if (mvccTracker0 != null)
                                 mvccTracker0.onDone();
