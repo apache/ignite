@@ -34,6 +34,8 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 

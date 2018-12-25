@@ -302,6 +302,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
 
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);

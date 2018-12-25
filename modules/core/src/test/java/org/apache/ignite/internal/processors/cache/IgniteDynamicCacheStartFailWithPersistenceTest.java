@@ -75,6 +75,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+        
         super.afterTestsStopped();
 
         cleanPersistenceDir();

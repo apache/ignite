@@ -77,6 +77,9 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 

@@ -134,6 +134,8 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
