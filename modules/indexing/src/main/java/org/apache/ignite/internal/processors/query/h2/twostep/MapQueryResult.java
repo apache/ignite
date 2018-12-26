@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
@@ -110,7 +109,7 @@ class MapQueryResult {
     /**
      * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
      */
-    private ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn;
+    private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
 
     /**
      * @param h2 H2 indexing.

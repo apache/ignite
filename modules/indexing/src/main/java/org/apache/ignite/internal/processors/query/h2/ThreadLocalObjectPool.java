@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -33,60 +34,32 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * @param <E> pooled objects type
  */
 public final class ThreadLocalObjectPool<E extends AutoCloseable> {
-    /**
-     * Wrapper for a pooled object with capability to return the object to a pool.
-     *
-     * @param <T> enclosed object type.
-     */
-    public static class Reusable<T extends AutoCloseable> {
-        /** */
-        private final ThreadLocalObjectPool<T> pool;
-        /** */
-        private T object;
-
-        /** */
-        private Reusable(ThreadLocalObjectPool<T> pool, T object) {
-            this.pool = pool;
-            this.object = object;
-        }
-
-        /**
-         * @return enclosed object.
-         */
-        public T object() {
-            return object;
-        }
-
-        /**
-         * Returns an object to a pool or closes it if the pool is already full.
-         */
-        public void recycle() {
-            assert object != null : "The object is already recycled";
-            Queue<T> bag = pool.bag.get();
-
-            if (bag.size() < pool.poolSize)
-                bag.add(object);
-            else
-                U.closeQuiet(object);
-
-            object = null;
-        }
-    }
-
-    /** */
-    private final Supplier<E> objectFactory;
     /** */
     private final ThreadLocal<Queue<E>> bag = ThreadLocal.withInitial(LinkedList::new);
+
     /** */
     private final int poolSize;
 
+    /** */
+    private final Supplier<E> objFactory;
+
+    /** */
+    private final Consumer<E> closer;
+
+    /** */
+    private final Consumer<E> recycler;
+
     /**
-     * @param objectFactory factory used for new objects creation.
      * @param poolSize number of objects which pool can contain.
+     * @param objFactory factory used for new objects creation.
+     * @param closer close callback.
+     * @param recycler recycle callback.
      */
-    public ThreadLocalObjectPool(Supplier<E> objectFactory, int poolSize) {
-        this.objectFactory = objectFactory;
+    public ThreadLocalObjectPool(int poolSize, Supplier<E> objFactory, Consumer<E> closer, Consumer<E> recycler) {
         this.poolSize = poolSize;
+        this.objFactory = objFactory;
+        this.closer = closer;
+        this.recycler = recycler;
     }
 
     /**
@@ -95,13 +68,13 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
      *
      * @return reusable object wrapper.
      */
-    public Reusable<E> borrow() {
+    public Reusable borrow() {
         E obj = bag.get().poll();
 
         if (obj == null)
-            obj = objectFactory.get();
+            obj = objFactory.get();
 
-        return new Reusable<>(this, obj);
+        return new Reusable(obj);
     }
 
     /**
@@ -111,5 +84,49 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
      */
     int bagSize() {
         return bag.get().size();
+    }
+
+    /**
+     * Wrapper for a pooled object with capability to return the object to a pool.
+     */
+    public class Reusable {
+        /** */
+        private E object;
+
+        /**
+         * @param object Object to detach.
+         */
+        private Reusable(E object) {
+            this.object = object;
+        }
+
+        /**
+         * @return enclosed object.
+         */
+        public E object() {
+            return object;
+        }
+
+        /**
+         * Returns an object to a pool or closes it if the pool is already full.
+         */
+        public void recycle() {
+            assert object != null : "The object is already recycled";
+
+            if (bag.get().size() < poolSize) {
+                if (recycler != null)
+                    recycler.accept(object);
+
+                bag.get().add(object);
+            }
+            else {
+                if (closer != null)
+                    closer.accept(object);
+                else
+                    U.closeQuiet(object);
+            }
+
+            object = null;
+        }
     }
 }

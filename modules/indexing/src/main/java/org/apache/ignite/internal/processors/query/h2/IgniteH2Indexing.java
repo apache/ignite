@@ -634,7 +634,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     GridH2QueryContext.register(ctx);
 
-                    ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn = connMgr.detachThreadConnection();
+                    ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = connMgr.detachThreadConnection();
 
                     try {
                         ResultSet rs = executeSqlQueryWithTimer(stmt0, conn, qry0, params, timeout0, cancel);

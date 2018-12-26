@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool.Reusable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -32,16 +30,17 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /** */
-    private ThreadLocalObjectPool<Obj> pool = new ThreadLocalObjectPool<>(Obj::new, 1);
+    private ThreadLocalObjectPool<Obj> pool = new ThreadLocalObjectPool<>(1, Obj::new, null, null);
 
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testObjectIsReusedAfterRecycling() throws Exception {
-        Reusable<Obj> o1 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o1 = pool.borrow();
         o1.recycle();
-        Reusable<Obj> o2 = pool.borrow();
+
+        ThreadLocalObjectPool<Obj>.Reusable o2 = pool.borrow();
 
         assertSame(o1.object(), o2.object());
         assertFalse(o1.object().isClosed());
@@ -52,8 +51,8 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBorrowedObjectIsNotReturnedTwice() throws Exception {
-        Reusable<Obj> o1 = pool.borrow();
-        Reusable<Obj> o2 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o1 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o2 = pool.borrow();
 
         assertNotSame(o1.object(), o2.object());
     }
@@ -63,8 +62,8 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
-        Reusable<Obj> r1 = pool.borrow();
-        Reusable<Obj> r2 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable r1 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable r2 = pool.borrow();
 
         Obj o1 = r1.object();
         Obj o2 = r2.object();
@@ -81,7 +80,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectShouldNotBeRecycledTwice() throws Exception {
-        final Reusable<Obj> r1 = pool.borrow();
+        final ThreadLocalObjectPool<Obj>.Reusable r1 = pool.borrow();
 
         r1.recycle();
 
@@ -97,8 +96,8 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectShouldNotBeReturnedIfPoolIsFull() throws Exception {
-        Reusable<Obj> o1 = pool.borrow();
-        Reusable<Obj> o2 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o1 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o2 = pool.borrow();
 
         o1.recycle();
 
@@ -114,7 +113,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectShouldReturnedToRecyclingThreadBag() throws Exception {
-        Reusable<Obj> o1 = pool.borrow();
+        ThreadLocalObjectPool<Obj>.Reusable o1 = pool.borrow();
 
         CompletableFuture.runAsync(() -> {
             o1.recycle();

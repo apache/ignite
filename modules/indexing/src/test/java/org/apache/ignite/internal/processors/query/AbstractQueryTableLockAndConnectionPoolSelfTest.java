@@ -204,6 +204,99 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
     }
 
     /**
+     * Test release reserved partition after query complete (results is bigger than one page).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReleasePartitionReservationSeveralPagesResults() throws Exception {
+        checkReleasePartitionReservation(PAGE_SIZE_SMALL);
+    }
+
+    /**
+     * Test release reserved partition after query complete (results is placed on one page).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReleasePartitionReservationOnePageResults() throws Exception {
+        checkReleasePartitionReservation(KEY_CNT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFetchFromRemovedTable() throws Exception {
+        Ignite srv = startGrid(0);
+
+        execute(srv, "CREATE TABLE TEST (id int primary key, val int)");
+
+        for (int i = 0; i < 10; ++i)
+            execute(srv, "INSERT INTO TEST VALUES (" + i + ", " + i + ")");
+
+        FieldsQueryCursor<List<?>> cur = execute(srv, new SqlFieldsQuery("SELECT * from TEST").setPageSize(1));
+
+        Iterator<List<?>> it = cur.iterator();
+
+        it.next();
+
+        execute(srv, "DROP TABLE TEST");
+
+        try {
+            while (it.hasNext())
+                it.next();
+
+            if (lazy())
+                fail("Retry exception must be thrown");
+        }
+        catch (Exception e) {
+            if (!lazy()) {
+                log.error("In lazy=false mode the query must be finished successfully", e);
+
+                fail("In lazy=false mode the query must be finished successfully");
+            }
+            else
+                assertNotNull(X.cause(e, QueryRetryException.class));
+        }
+    }
+
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void _testMemoryLeakOnRestart() throws Exception {
+//        Ignite srv0 = startGrid(0);
+//        Ignite srv1 = startGrid(1);
+//
+//        populateBaseQueryData(srv0, 4);
+//
+//        int iter = 0;
+//        long prevMem = 0;
+//        while (true) {
+//            FieldsQueryCursor<List<?>> cursor = execute(srv1, new SqlFieldsQuery(
+//                "SELECT pers.id, pers.name " +
+//                    "FROM (SELECT DISTINCT p.id, p.name " +
+//                    "FROM \"pers\".PERSON as p) as pers " +
+//                    "JOIN \"pers\".PERSON p on p.id = pers.id " +
+//                    "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+//                    "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+//                .setLazy(lazy())
+//                .setPageSize(PAGE_SIZE_SMALL));
+//
+//            cursor.iterator().next();
+//
+//            stopGrid(1);
+//            U.sleep(50);
+//            srv1 = startGrid(1);
+//
+//            if (iter % 10 == 0)
+//                GridDebug.dumpHeap(String.format("dump%03d.hprof", iter / 10), true);
+//
+//            iter++;
+//        }
+//    }
+
+    /**
      * @throws Exception If failed.
      */
     private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {
@@ -306,61 +399,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         // Test is OK in case DDL operations is passed on hi load queries pressure.
         end.set(true);
         fut.get();
-    }
-
-    /**
-     * Test release reserved partition after query complete (results is bigger than one page).
-     *
-     * @throws Exception If failed.
-     */
-    public void testReleasePartitionReservationSeveralPagesResults() throws Exception {
-        checkReleasePartitionReservation(PAGE_SIZE_SMALL);
-    }
-
-    /**
-     * Test release reserved partition after query complete (results is placed on one page).
-     *
-     * @throws Exception If failed.
-     */
-    public void testReleasePartitionReservationOnePageResults() throws Exception {
-        checkReleasePartitionReservation(KEY_CNT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFetchFromRemovedTable() throws Exception {
-        Ignite srv = startGrid(0);
-
-        execute(srv, "CREATE TABLE TEST (id int primary key, val int)");
-
-        for (int i = 0; i < 10; ++i)
-            execute(srv, "INSERT INTO TEST VALUES (" + i + ", " + i + ")");
-
-        FieldsQueryCursor<List<?>> cur = execute(srv, new SqlFieldsQuery("SELECT * from TEST").setPageSize(1));
-
-        Iterator<List<?>> it = cur.iterator();
-
-        it.next();
-
-        execute(srv, "DROP TABLE TEST");
-
-        try {
-            while (it.hasNext())
-                it.next();
-
-            if (lazy())
-                fail("Retry exception must be thrown");
-        }
-        catch (Exception e) {
-            if (!lazy()) {
-                log.error("In lazy=false mode the query must be finished successfully", e);
-
-                fail("In lazy=false mode the query must be finished successfully");
-            }
-            else
-                assertNotNull(X.cause(e, QueryRetryException.class));
-        }
     }
 
     /**

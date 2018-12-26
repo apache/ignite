@@ -496,7 +496,7 @@ public class GridReduceQueryExecutor {
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
                 qry.mapQueries().size(), qry.pageSize(), sfuFut);
 
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.connections().detachThreadConnection();
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = h2.connections().detachThreadConnection();
 
             Collection<ClusterNode> nodes;
 
