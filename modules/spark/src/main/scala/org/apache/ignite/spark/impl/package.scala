@@ -118,9 +118,17 @@ package object impl {
     def sqlTableInfo(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[GridQueryTypeDescriptor] =
         ignite.asInstanceOf[IgniteEx].context.cache.publicCacheNames.flatMap(
             cacheName => ignite.asInstanceOf[IgniteEx].context.query.types(cacheName))
-            .find(table => !schemaName.isDefined && table.tableName.equalsIgnoreCase(tabName) ||
-                schemaName.isDefined && schemaName.get.equalsIgnoreCase(table.schemaName) ||
-                schemaName.contains(SessionCatalog.DEFAULT_DATABASE) && table.tableName.equalsIgnoreCase(tabName))
+            .find(table => table.tableName.equalsIgnoreCase(tabName) && isValidSchema(table, schemaName))
+
+    /**
+      * @param table GridQueryTypeDescriptor for a given table.
+      * @param schemaName Optional schema name.
+      * @return `True` if schema is valid.
+      */
+    def isValidSchema(table: GridQueryTypeDescriptor, schemaName: Option[String]): Boolean =
+        if (schemaName.isDefined) schemaName.get.equalsIgnoreCase(table.schemaName) ||
+            schemaName.contains(SessionCatalog.DEFAULT_DATABASE)
+        else true
 
     /**
       * @param table Table.

@@ -117,7 +117,7 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
                     schema = schema(table),
                     provider = Some(FORMAT_IGNITE),
                     partitionColumnNames =
-                        if (allKeyFields(table) != null)
+                        if (!allKeyFields(table).isEmpty)
                             allKeyFields(table).toSeq
                         else
                             Seq(table.keyFieldName),
