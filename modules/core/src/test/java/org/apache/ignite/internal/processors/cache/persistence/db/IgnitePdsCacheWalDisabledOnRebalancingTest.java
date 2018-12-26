@@ -352,7 +352,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                             fileIoBlockingSemaphore.acquire();
                         }
                         catch (InterruptedException ignored) {
-                            //No-op
+                            // No-op.
                         }
                     }
 
@@ -365,7 +365,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                             fileIoBlockingSemaphore.acquire();
                         }
                         catch (InterruptedException ignored) {
-                            //No-op
+                            // No-op.
                         }
                     }
 
@@ -378,7 +378,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                             fileIoBlockingSemaphore.acquire();
                         }
                         catch (InterruptedException ignored) {
-                            //No-op
+                            // No-op.
                         }
                     }
 
