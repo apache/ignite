@@ -43,6 +43,8 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
         private final ThreadLocalObjectPool<T> pool;
         /** */
         private final T object;
+        /** */
+        private volatile boolean detached = true;
 
         /** */
         private Reusable(ThreadLocalObjectPool<T> pool, T object) {
@@ -61,11 +63,16 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
          * Returns an object to a pool or closes it if the pool is already full.
          */
         public void recycle() {
+            assert detached : "Object already recycled";
+
             Queue<Reusable<T>> bag = pool.bag.get();
+
             if (bag.size() < pool.poolSize)
                 bag.add(this);
             else
                 U.closeQuiet(object);
+
+            detached = false;
         }
     }
 
@@ -93,10 +100,16 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
      */
     public Reusable<E> borrow() {
         Reusable<E> pooled = bag.get().poll();
-        return pooled != null ? pooled : new Reusable<>(this, objectFactory.get());
+        if (pooled != null) {
+            pooled.detached = true;
+
+            return pooled;
+        }
+        else
+            return new Reusable<>(this, objectFactory.get());
     }
 
-    /** Visible for test */
+    /** Visible for test. */
     int bagSize() {
         return bag.get().size();
     }
