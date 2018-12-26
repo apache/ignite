@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.SchemaManager;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.table.Column;
 import org.h2.value.Value;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * View that contains information about all the sql tables in the cluster.
@@ -60,12 +65,15 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     /** Id of the cache holding that table. */
     public static final String OWNING_CACHE_ID = "OWNING_CACHE_ID";
 
+    /** Api to all known tables. */
+    private final SchemaManager mngr;
+
     /**
      * Creates view with columns.
      *
      * @param ctx kernal context.
      */
-    public SqlSystemViewTables(GridKernalContext ctx) {
+    public SqlSystemViewTables(GridKernalContext ctx, SchemaManager schemaMngr) {
         super("TABLES", "Ignite tables", ctx, TABLE_NAME,
             newColumn(TABLE_SCHEMA),
             newColumn(TABLE_NAME),
@@ -77,18 +85,20 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
             newColumn(KEY_TYPE_NAME),
             newColumn(VALUE_TYPE_NAME)
         );
+
+        mngr = schemaMngr;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn(TABLE_NAME, first, last);
 
-        Predicate<GridQueryTypeDescriptor> filter;
+        Predicate<GridH2Table> filter;
 
         if (nameCond.isEquality()) {
             String fltTabName = nameCond.valueForEquality().getString();
 
-            filter = tab -> fltTabName.equals(tab.tableName());
+            filter = tab -> fltTabName.equals(tab.getName());
         }
         else
             filter = tab -> true;
@@ -96,26 +106,67 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         final AtomicLong keys = new AtomicLong();
 
         return ctx.cache().publicCacheNames().stream()
-            .flatMap(cacheName ->
-                ctx.query().types(cacheName).stream()
-                    .filter(filter)
-                    .map(tab -> Arrays.asList(
-                        tab.schemaName(),
-                        tab.tableName(),
-                        cacheName,
-                        ctx.cache().cacheDescriptor(cacheName).cacheId(),
-                        tab.affinityKey(),
-                        QueryUtils.cacheKeyName(tab),
-                        QueryUtils.cacheValueName(tab),
-                        tab.keyTypeName(),
-                        tab.valueTypeName())
-                    )
-            )
-            .unordered()
-            .distinct()
-            .map(dataList ->
-                createRow(ses, keys.incrementAndGet(), dataList))
-            .iterator();
+            .flatMap(cacheName -> mngr.tablesForCache(cacheName).stream())
+            .map(H2TableDescriptor::table)
+            .filter(filter)
+            .map(tab -> {
+                    Object[] data = new Object[] {
+                        tab.getSchema().getName(),
+                        tab.getName(),
+                        tab.cacheName(),
+                        tab.cacheId(),
+                        tab.getAffinityKeyColumn().columnName,
+                        getKeyAlias(tab),
+                        getValueAlias(tab),
+                        // We use type descriptor because there is no way to get complex type (custom class Person)
+                        // from typeid.
+                        tab.rowDescriptor().type().keyTypeName(),
+                        tab.rowDescriptor().type().valueTypeName()
+                    };
+
+                    return createRow(ses, keys.incrementAndGet(), data);
+                }
+            ).iterator();
+    }
+
+    /**
+     * Returns name of the value column in case of simple value or user defined value alias. If not found - "_val".
+     * TODO: tests for user defined alias.
+     * TODO: copy columns under read lock ?
+     *
+     * @param table table to extract value alias.
+     * @return alias of the value.
+     */
+    public String getValueAlias(GridH2Table table) {
+        GridH2RowDescriptor desc = table.rowDescriptor();
+
+        Column[] cols = table.getColumns();
+
+        for (int i = 0; i < cols.length; i++) {
+            if (desc.isValueAliasColumn(i + DEFAULT_COLUMNS_COUNT))
+                return cols[i].getName();
+        }
+
+        return QueryUtils.KEY_FIELD_NAME;
+    }
+
+    /**
+     * Returns name of the key column in case of simple key or user defined key alias. If not found - "_key".
+     *
+     * @param table table to extract key alias.
+     * @return alias of the key.
+     */
+    public String getKeyAlias(GridH2Table table) {
+        GridH2RowDescriptor desc = table.rowDescriptor();
+
+        Column[] cols = table.getColumns();
+
+        for (int i = 0; i < cols.length; i++) {
+            if (desc.isKeyAliasColumn(i + DEFAULT_COLUMNS_COUNT))
+                return cols[i].getName();
+        }
+
+        return QueryUtils.VAL_FIELD_NAME;
     }
 
     /** {@inheritDoc} */

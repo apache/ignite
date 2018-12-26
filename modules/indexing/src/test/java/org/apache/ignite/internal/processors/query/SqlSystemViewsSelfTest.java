@@ -538,7 +538,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         GridCacheProcessor cacheProc = ignite.context().cache();
 
         execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, MY_VAL VARCHAR) WITH " +
-            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic,wrap_value=true,value_type=random_name\"");
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic,wrap_value=true,value_type=random_name,wrap_key=true\"");
 
         execSql("CREATE TABLE PUBLIC.ddl_table (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
             + "\"affinity_key=ID2,wrap_value=false,key_type=random_name\"");

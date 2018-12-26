@@ -166,7 +166,7 @@ public class SchemaManager {
         views.add(new SqlSystemViewNodeMetrics(ctx));
         views.add(new SqlSystemViewCaches(ctx));
         views.add(new SqlSystemViewCacheGroups(ctx));
-        views.add(new SqlSystemViewTables(ctx));
+        views.add(new SqlSystemViewTables(ctx, this));
 
         return views;
     }
