@@ -259,7 +259,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         for (int k = 0; k < 1024; k++)
             crd.cache(CACHE_NAME).put(k, k);
 
-        // Delay sending single message from new nodes.
+        // Delay sending single messages to ensure exchanges are merged.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
             final int delay = 1_000;
 
@@ -276,7 +276,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         // This should trigger exchanges merge.
         startGridsMultiThreaded(2, 2);
 
-        // Delay sending single messages to ensure exchanges are merged.
+        // Delay sending single message from new node to have time to shutdown coordinator.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
             final int delay = 5_000;
 

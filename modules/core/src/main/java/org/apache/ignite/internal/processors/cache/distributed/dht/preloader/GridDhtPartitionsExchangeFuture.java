@@ -4435,7 +4435,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                             newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
                                         }
                                         catch (Throwable t) {
-                                            U.error(log, "Failed to initialize new coordinator future.");
+                                            U.error(log, "Failed to initialize new coordinator future [topVer=" + initialVersion() + "]", t);
 
                                             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
 
