@@ -200,15 +200,14 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private void doTestPrepareFailOnBackupBecausePrimaryLeft(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             map -> {
+                Ignite primary = map.get(PARTITION_ID).get1();
                 Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)backup1, new int[] {2, 1, 0}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    U.map((IgniteEx)primary, new int[] {2, 1, 0}, (IgniteEx)backup1, new int[] {2, 1, 0}, (IgniteEx)backup2, new int[] {2, 1, 0}),
                     U.newHashMap(0),
-                    SIZES.length) {
-
-                };
+                    SIZES.length);
             },
             SIZES);
     }

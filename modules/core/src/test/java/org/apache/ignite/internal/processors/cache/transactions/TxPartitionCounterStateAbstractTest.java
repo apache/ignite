@@ -1033,7 +1033,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?>
             proceedFut) {
-            if (prepares.get(primary) == null)
+            if (commits.get(primary) == null)
                 return false;
 
             runAsync(() -> {
