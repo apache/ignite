@@ -43,6 +43,7 @@ import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
 import org.hibernate.stat.Statistics;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -88,10 +89,9 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1094")
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try(Ignite ignite =
