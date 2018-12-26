@@ -211,8 +211,9 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     /**
      * @return Test suite.
+     * @throws Exception If failed.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(AffinityKeyNameAndValueFieldNameConflictTest.class));
@@ -238,26 +239,26 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Misc tests.
         // TODO: Enable when IGNITE-1094 is fixed.
-        // suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
-        suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLazyQueryPartitionsReleaseTest.class));
+        // suite.addTest(new JUnit4TestAdapter(QueryEntityValidationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DuplicateKeyValueClassesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheLazyQueryPartitionsReleaseTest.class));
 
         // Dynamic index create/drop tests.
-        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SchemaExchangeSelfTest.class));
 
-        suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFIlterBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexClientBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerCoordinatorBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerNodeFIlterBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexClientBasicSelfTest.class));
 
         // H2 tests.
 
         // TODO: IGNITE-4994: Restore mock.
-        // suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+        // suite.addTest(new JUnit4TestAdapter(GridH2TableSelfTest.class));
 
-        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
-        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridH2IndexingInMemSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridH2IndexingOffheapSelfTest.class));
 
         // Parsing
         suite.addTest(new JUnit4TestAdapter(GridQueryParsingTest.class));
