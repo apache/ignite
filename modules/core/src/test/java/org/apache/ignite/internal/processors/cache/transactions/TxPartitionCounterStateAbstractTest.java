@@ -605,7 +605,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param r Runnable.
      */
     public void runAsync(Runnable r) {
-        IgniteInternalFuture fut = GridTestUtils.runAsync(r);
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                synchronized (TxPartitionCounterStateAbstractTest.this) {
+                    r.run();
+                }
+            }
+        });
 
         // Fail test if future failed to finish normally.
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
