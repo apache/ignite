@@ -188,6 +188,12 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
+     * 1. Start 3 transactions.
+     * 2. Commit tx2 out of order.
+     * 3. Prepare tx1 out of order
+     * 4. Trigger fail of preparing tx0
+     * 5. Check if update counter is correct after processing of left node.
+     *
      * @param skipCheckpoint
      * @throws Exception
      */
@@ -198,9 +204,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    U.map((IgniteEx)backup1, new int[] {2, 1, 0}, (IgniteEx)backup2, new int[] {2, 1, 0}),
                     U.newHashMap(0),
-                    SIZES.length);
+                    SIZES.length) {
+
+                };
             },
             SIZES);
     }
