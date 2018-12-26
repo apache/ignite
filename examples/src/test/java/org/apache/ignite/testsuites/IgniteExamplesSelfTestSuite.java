@@ -98,10 +98,4 @@ import org.junit.runners.Suite;
     EncryptedCacheExampleSelfTest.class,
 })
 public class IgniteExamplesSelfTestSuite {
-//    /** */
-//    @BeforeClass
-//    public static void init() {
-//        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-//            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
-//    }
 }
