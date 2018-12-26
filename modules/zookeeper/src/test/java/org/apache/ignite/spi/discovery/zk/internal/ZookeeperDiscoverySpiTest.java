@@ -138,6 +138,9 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -160,6 +163,7 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  *
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
@@ -521,7 +525,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     private static void waitForZkClusterReady(TestingCluster zkCluster) throws InterruptedException {
         try (CuratorFramework curator = CuratorFrameworkFactory
-            .newClient(zkCluster.getConnectString(), new RetryNTimes(10, 1_000))) {
+            .newClient(zkCluster.getConnectString(), new RetryNTimes(15, 1_000))) {
             curator.start();
 
             assertTrue("Failed to wait for Zookeeper testing cluster ready.",
@@ -540,7 +544,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return res.get() == null;
                 }
-            }, 70_000);
+            }, 90_000);
 
             assertNull(res.get());
         }
@@ -1050,6 +1054,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception { //~~!
         try {
             topologyChangeWithRestarts(true, false);
@@ -1137,7 +1142,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                             log.info("Start node: " + idx);
 
-                            startGrid(idx);
+                            startGrid(idx); // lost connection while starting grid
 
                             synchronized (startedNodes) {
                                 startedNodes.add(idx);
