@@ -2624,7 +2624,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Next node. */
-        @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private TcpDiscoveryNode next;
 
         /** Pending messages. */
@@ -4941,6 +4940,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     spi.stats.onRingMessageReceived(msg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
+
+                    return;
+                }
+                else if (locNodeId.equals(failedNodeId)) {
+                    segmentLocalNodeOnSendFail();
 
                     return;
                 }

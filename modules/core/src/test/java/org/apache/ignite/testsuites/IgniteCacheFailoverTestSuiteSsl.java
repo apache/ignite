@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheFailoverTestSuiteSsl extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheFailoverTestSuiteSsl {
     /**
      * @return Ignite Cache Failover test suite.
      */

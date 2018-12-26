@@ -70,7 +70,7 @@ public class IgniteFunctionDistributedInferenceExample {
 
             System.out.println(">>> Preparing model reader and model parser.");
             InfModelReader reader = new InMemoryInfModelReader(mdl);
-            InfModelParser<Vector, Double> parser = new IgniteFunctionInfModelParser<>();
+            InfModelParser<Vector, Double, ?> parser = new IgniteFunctionInfModelParser<>();
             try (InfModel<Vector, Future<Double>> infMdl = new IgniteDistributedInfModelBuilder(ignite, 4, 4)
                 .build(reader, parser)) {
                 System.out.println(">>> Inference model is ready.");
@@ -85,7 +85,7 @@ public class IgniteFunctionDistributedInferenceExample {
                         Vector inputs = val.copyOfRange(1, val.size());
                         double groundTruth = val.get(0);
 
-                        double prediction = infMdl.predict(inputs).get();
+                        double prediction = infMdl.apply(inputs).get();
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }

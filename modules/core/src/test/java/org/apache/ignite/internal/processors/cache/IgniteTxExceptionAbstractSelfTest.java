@@ -402,7 +402,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @param key Key.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkUnlocked(final Integer key) throws Exception {
         TestIndexingSpi.forceFail(false);
 

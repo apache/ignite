@@ -55,9 +55,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -90,9 +87,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
     /** Proceed put condition. */
     private final Condition putCond = lock.newCondition();
-
-    /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Caches comparison start latch. */
     private CountDownLatch cmpLatch;
@@ -227,11 +221,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(ccfg);
         cfg.setConnectorConfiguration(null);

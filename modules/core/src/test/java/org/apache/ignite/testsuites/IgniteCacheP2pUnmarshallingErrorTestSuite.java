@@ -24,25 +24,26 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNe
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheP2pUnmarshallingErrorTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Tests don't include in the execution.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingErrorTest.class, ignoredTests);

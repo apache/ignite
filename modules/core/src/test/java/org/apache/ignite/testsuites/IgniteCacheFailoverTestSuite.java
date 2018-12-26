@@ -41,11 +41,14 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCacheRemoveFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheFailoverTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheFailoverTestSuite {
     /**
      * @return Ignite Cache Failover test suite.
      * @throws Exception Thrown in case of the failure.

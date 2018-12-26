@@ -32,6 +32,7 @@ import javax.cache.CacheException;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -55,9 +56,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -74,9 +72,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @RunWith(JUnit4.class)
 public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -99,8 +94,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCommunicationSpi(new TestDelayingCommunicationSpi() {
             /** {@inheritDoc} */
@@ -837,9 +830,26 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param parts Partitions.
      */
     protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
-        // TODO Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
-        // TODO Need to add an actual check after https://issues.apache.org/jira/browse/IGNITE-9902 is fixed.
-        // No-op.
+        if (parts.length == 0)
+            return;
+
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+
+        String msg = loc ? "forced local query" : "partition has been lost";
+        GridTestUtils.assertThrows(log, () -> {
+            List res = null;
+            for (int partition : parts) {
+                ScanQuery qry = new ScanQuery();
+                qry.setPartition(partition);
+
+                if (loc)
+                    qry.setLocal(true);
+
+                res = cache.query(qry).getAll();
+            }
+
+            return res;
+        }, IgniteCheckedException.class, msg);
     }
 
     /** */
