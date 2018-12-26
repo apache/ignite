@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spark
 
-import java.util
-
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
-import org.apache.ignite.cache.{CacheMode, QueryEntity}
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.IgniteEx
+import org.apache.ignite.internal.processors.query.{GridQueryTypeDescriptor, QueryTypeDescriptorImpl}
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.ignite.{Ignite, Ignition}
@@ -32,6 +31,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+
 
 package object impl {
     /**
@@ -78,25 +78,18 @@ package object impl {
       * @param ignite Ignite instance.
       * @param tabName Table name.
       * @param schemaName Optional schema name.
-      * @return QueryEntity for a given table.
-      */
-    def igniteSQLTable(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[QueryEntity] =
-        sqlTableInfo[Any, Any](ignite, tabName, schemaName).map(_._2)
-
-    /**
-      * @param ignite Ignite instance.
-      * @param tabName Table name.
-      * @param schemaName Optional schema name.
       * @return Cache name for given table.
       */
     def sqlCacheName(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[String] =
-        sqlTableInfo[Any, Any](ignite, tabName, schemaName).map(_._1.getName)
+        if (sqlTableInfo(ignite, tabName, schemaName).isDefined)
+            Some(sqlTableInfo(ignite, tabName, schemaName).get.asInstanceOf[QueryTypeDescriptorImpl].cacheName)
+        else None
 
     /**
       * @param ignite Ignite instance.
       * @return All schemas in given Ignite instance.
       */
-    def allSchemas(ignite: Ignite): Seq[String] = ignite.cacheNames()
+    def allSchemas(ignite: Ignite): Seq[String] = ignite.cacheNames
         .map(name =>
             normalizeSchemaName(name,
                 ignite.cache[Any,Any](name).getConfiguration(classOf[CacheConfiguration[Any,Any]]).getSqlSchema))
@@ -120,55 +113,29 @@ package object impl {
       * @param ignite Ignite instance.
       * @param tabName Table name.
       * @param schemaName Optional schema name.
-      * @tparam K Key class.
-      * @tparam V Value class.
-      * @return CacheConfiguration and QueryEntity for a given table.
+      * @return GridQueryTypeDescriptor for a given table.
       */
-    def sqlTableInfo[K, V](ignite: Ignite, tabName: String,
-        schemaName: Option[String]): Option[(CacheConfiguration[K, V], QueryEntity)] =
-        cachesForSchema[K,V](ignite, schemaName)
-            .map(ccfg ⇒ refreshQueryEntity(ignite, ccfg,
-                ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName))).map(qe ⇒ (ccfg, qe)))
-            .find(_.isDefined)
-            .flatten
-
-    /**
-      * @param ignite Ignite instance.
-      * @param ccfg Cache Configuration.
-      * @param qe Query Entity.
-      * @tparam K Key class.
-      * @tparam V Value class.
-      * @return QueryEntity for a given table.
-      */
-    def refreshQueryEntity[K, V](ignite: Ignite, ccfg : CacheConfiguration[K, V], qe: Option[QueryEntity]): Option[QueryEntity] =
-        if (qe.isDefined) Some(qe.get.setFields(refreshFields(ignite, ccfg, qe.get.getTableName)))
-        else qe
-
-    /**
-      * @param ignite Ignite instance.
-      * @param ccfg Cache Configuration.
-      * @param tabName Table name.
-      * @tparam K Key class.
-      * @tparam V Value class.
-      * @return HashMap consists of fields and fields type for a given table.
-      */
-	def refreshFields[K, V](ignite: Ignite, ccfg: CacheConfiguration[K, V], tabName: String): util.LinkedHashMap[String, String] = {
-		val ctx = ignite.asInstanceOf[IgniteEx].context
-		val schemaName = if (ccfg.getSqlSchema == null) ccfg.getName else ccfg.getSqlSchema
-		val currentFieldMap = new util.LinkedHashMap[String, String]
-		ctx.cache.publicCacheNames.foreach(cacheName => ctx.query.types(cacheName).foreach(table =>
-			if (table.schemaName.equalsIgnoreCase(schemaName) && table.tableName.equalsIgnoreCase(tabName))
-				table.fields.foreach(field => currentFieldMap.put(field._1, field._2.getName))))
-		currentFieldMap
-	}
+    def sqlTableInfo(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[GridQueryTypeDescriptor] =
+        ignite.asInstanceOf[IgniteEx].context.cache.publicCacheNames.flatMap(
+            cacheName => ignite.asInstanceOf[IgniteEx].context.query.types(cacheName))
+            .find(table => !schemaName.isDefined && table.tableName.equalsIgnoreCase(tabName) ||
+                schemaName.isDefined && schemaName.get.equalsIgnoreCase(table.schemaName) ||
+                schemaName.contains(SessionCatalog.DEFAULT_DATABASE) && table.tableName.equalsIgnoreCase(tabName))
 
     /**
       * @param table Table.
       * @param column Column name.
       * @return `True` if column is key.
       */
-    def isKeyColumn(table: QueryEntity, column: String): Boolean =
-        contains(table.getKeyFields, column) || equalsIgnoreCase(table.getKeyFieldName, column)
+    def isKeyColumn(table: GridQueryTypeDescriptor, column: String): Boolean =
+        contains(allKeyFields(table), column) || equalsIgnoreCase(table.keyFieldName, column)
+
+    /**
+      * @param table Table.
+      * @return All the key fields in a Set.
+      */
+    def allKeyFields(table: GridQueryTypeDescriptor): scala.collection.Set[String] =
+        table.fields.filter(entry => table.property(entry._1).key).keySet
 
     /**
       * Computes spark partitions for a given cache.
