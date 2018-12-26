@@ -128,11 +128,11 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        Map<Thread, Set<H2ConnectionWrapper>> conns = h2Idx.connections().connectionsForThread();
+        Map<Thread, Map<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
         return conns.values().stream()
             .mapToInt(set ->
-                set.stream()
+                set.keySet().stream()
                     .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
     }
 

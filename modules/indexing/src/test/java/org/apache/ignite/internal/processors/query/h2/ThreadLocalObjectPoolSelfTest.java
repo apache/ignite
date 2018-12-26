@@ -37,13 +37,16 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectIsReusedAfterRecycling() throws Exception {
-        ThreadLocalObjectPool<Obj>.Reusable o1 = pool.borrow();
-        o1.recycle();
+        ThreadLocalObjectPool<Obj>.Reusable r1 = pool.borrow();
 
-        ThreadLocalObjectPool<Obj>.Reusable o2 = pool.borrow();
+        Obj o1 = r1.object();
 
-        assertSame(o1.object(), o2.object());
-        assertFalse(o1.object().isClosed());
+        r1.recycle();
+
+        ThreadLocalObjectPool<Obj>.Reusable r2 = pool.borrow();
+
+        assertSame(o1, r2.object());
+        assertFalse(o1.isClosed());
     }
 
     /**
