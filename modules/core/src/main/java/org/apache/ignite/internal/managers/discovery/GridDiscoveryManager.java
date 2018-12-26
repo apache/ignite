@@ -928,7 +928,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        new IgniteThread(discoNtfWrk).start();
+        new DiscoveryMessageNotifierThread(discoNtfWrk).start();
 
         startSpi();
 
@@ -1921,7 +1921,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
+    public List<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(cacheName), topVer).cacheNodes(cacheName);
     }
 
@@ -2465,7 +2465,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheName Cache name.
      * @param rich Node to add
      */
-    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
+    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode node) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
 
         if (cacheNodes == null) {
@@ -2474,7 +2474,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             cacheMap.put(CU.cacheId(cacheName), cacheNodes);
         }
 
-        cacheNodes.add(rich);
+        cacheNodes.add(node);
     }
 
     /**
@@ -2632,10 +2632,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /** */
+    private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** {@inheritDoc} */
+        public DiscoveryMessageNotifierThread(GridWorker worker) {
+            super(worker);
+        }
+    }
+
     /**
      *
      */
-    private class DiscoveryMessageNotifierWorker extends GridWorker implements IgniteDiscoveryThread {
+    private class DiscoveryMessageNotifierWorker extends GridWorker {
         /** Queue. */
         private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
 

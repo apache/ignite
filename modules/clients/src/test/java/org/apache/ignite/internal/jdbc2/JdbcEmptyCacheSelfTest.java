@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.sql.*;
@@ -37,9 +34,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 @RunWith(JUnit4.class)
 public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -65,12 +59,6 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 

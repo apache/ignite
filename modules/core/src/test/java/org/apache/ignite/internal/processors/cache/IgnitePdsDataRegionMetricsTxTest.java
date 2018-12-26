@@ -37,6 +37,7 @@ public class IgnitePdsDataRegionMetricsTxTest extends IgnitePdsDataRegionMetrics
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testMemoryUsageSingleNode() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10591");

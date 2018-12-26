@@ -17,21 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * PureJavaCrc32 previous crc algo realization vs java.util.zip.crc32 test.
  */
-@RunWith(JUnit4.class)
-public class IgnitePureJavaCrcCompatibility extends TestCase {
+public class IgnitePureJavaCrcCompatibility {
     /**
      * Test crc algo equality results.
      * @throws Exception

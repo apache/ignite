@@ -72,11 +72,14 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProto
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite includes all test that concern REST processors.
  */
-public class IgniteClientTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteClientTestSuite {
     /**
      * @return Suite that contains all tests for REST.
      */
@@ -172,7 +175,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 
         // SSL params.
-        suite.addTestSuite(ClientSslParametersTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClientSslParametersTest.class));
 
         return suite;
     }

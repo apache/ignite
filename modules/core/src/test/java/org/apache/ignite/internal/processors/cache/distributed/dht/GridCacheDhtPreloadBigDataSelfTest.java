@@ -27,9 +27,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,9 +71,6 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /** */
     private LifecycleBean lbean;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -97,14 +91,9 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
         if (lbean != null)
             c.setLifecycleBeans(lbean);
 
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
         c.setDeploymentMode(CONTINUOUS);
         c.setNetworkTimeout(1000);
