@@ -16,21 +16,39 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -269,12 +287,75 @@ public class IgniteThrottlingUnitTest {
 
             throttle.onMarkDirty(false);
 
-            if(warnings.get()>0)
+            if (warnings.get() > 0)
                 break;
         }
 
         System.out.println(throttle.throttleWeight());
 
         assertTrue(warnings.get() > 0);
+    }
+
+    //todo may move this test to upper package
+    @Test
+    public void checkWrittenCounterIsIncreased() throws IgniteCheckedException {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+        cfg.setDataStorageConfiguration(dsCfg);
+
+        //instead of init default SPI
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
+        cfg.setGridLogger(new NullLogger());
+
+        GridKernalContext kctx = mock(GridKernalContext.class);
+        when(kctx.config()).thenReturn(cfg);
+
+        when(kctx.internalSubscriptionProcessor()).thenReturn(mock(GridInternalSubscriptionProcessor.class));
+
+        GridEncryptionManager encryptionMgr = mock(GridEncryptionManager.class);
+        when(kctx.encryption()).thenReturn(encryptionMgr);
+
+        when(kctx.log(any(Class.class))).thenReturn(cfg.getGridLogger());
+
+
+        GridCacheDatabaseSharedManager.FileLockHolder lockHolder = mock(GridCacheDatabaseSharedManager.FileLockHolder.class);
+        PdsFolderSettings folders = mock(PdsFolderSettings.class);
+        when(folders.getLockedFileLockHolder()).thenReturn(lockHolder);
+
+        PdsFoldersResolver foldersRslvr = mock(PdsFoldersResolver.class);
+        when(foldersRslvr.resolveFolders()).thenReturn(folders);
+
+        when(kctx.pdsFolderResolver()).thenReturn(foldersRslvr);
+
+        GridCacheSharedContext sctx = mock(GridCacheSharedContext.class);
+        when(sctx.kernalContext()).thenReturn(kctx);
+        when(sctx.gridConfig()).thenReturn(cfg);
+
+        FilePageStoreManager filePageStoreMgr = mock(FilePageStoreManager.class);
+        when(filePageStoreMgr.workDir()).thenReturn(new File(System.getProperty("java.io.tmpdir")));
+
+        when(sctx.pageStore()).thenReturn(filePageStoreMgr);
+
+        FileWriteAheadLogManager wal = mock(FileWriteAheadLogManager.class);
+        when(sctx.wal()).thenReturn(wal);
+
+        when(sctx.logger(any(Class.class))).thenReturn(cfg.getGridLogger());
+
+        //binding
+        GridCacheProcessor cacheProcessor = mock(GridCacheProcessor.class);
+        when(cacheProcessor.context()).thenReturn(sctx);
+        when(kctx.cache()).thenReturn(cacheProcessor);
+
+        //start GCDSM
+        GridCacheDatabaseSharedManager mgr = new GridCacheDatabaseSharedManager(kctx);
+        assertNull(mgr.getCheckpointer());
+        mgr.start(sctx);
+
+        assertNotNull(mgr.getCheckpointer());
+
+        int startCnt = mgr.writtenPagesCounter().get();
+
+
+        assertTrue(mgr.writtenPagesCounter().get() > startCnt);
     }
 }

@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -151,7 +152,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         long cpWrittenPages;
 
-                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(((IgniteEx)ignite(0))
+                        AtomicInteger cntr = ((CheckpointWriteProgressSupplier)(((IgniteEx)ignite(0))
                             .context().cache().context().database())).writtenPagesCounter();
 
                         cpWrittenPages = cntr == null ? 0 : cntr.get();
@@ -169,7 +170,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                         try {
                             Thread.sleep(1000);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             Thread.currentThread().interrupt();
                         }
                     }
