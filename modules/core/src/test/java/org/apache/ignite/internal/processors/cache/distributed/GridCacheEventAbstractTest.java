@@ -82,6 +82,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         super.beforeTestsStarted();
 
         gridCnt = gridCount();
@@ -94,8 +96,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         super.beforeTest();
 
         if (TEST_INFO)
