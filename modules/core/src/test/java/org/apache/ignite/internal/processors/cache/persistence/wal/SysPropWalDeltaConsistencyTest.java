@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.junit.Test;
 
 /**
  * WAL delta records consistency test enabled by system property.
@@ -52,6 +53,7 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     /**
      *
      */
+    @Test
     public final void testPutRemoveMultinode() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
