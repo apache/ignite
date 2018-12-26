@@ -96,6 +96,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        newBarrier(1);
+
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
         ignite = (IgniteEx)startGrids(NODE_CNT);
@@ -192,6 +194,23 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    @Test
+    public void tesctCloseRunningQueriesonNodeStop() throws Exception {
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, i);
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+
+        Assert.assertEquals("Should be one running query",
+            1,
+            ignite.context().query().runningQueries(-1).size());
+
+        ignite.close();
+
+        assertNoRunningQueries();
+    }
     /**
      * Check tracking running queries for Select.
      */
