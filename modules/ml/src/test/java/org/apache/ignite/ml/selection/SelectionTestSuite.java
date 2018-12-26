@@ -23,11 +23,8 @@ import org.apache.ignite.ml.selection.cv.CrossValidationTest;
 import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.evaluator.EvaluatorTest;
 import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsTest;
-import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricsValuesTest;
 import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
 import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
 import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
@@ -43,9 +40,8 @@ import org.junit.runners.AllTests;
 public class SelectionTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(SelectionTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(CrossValidationTest.class));
         suite.addTest(new JUnit4TestAdapter(ParameterSetGeneratorTest.class));
         suite.addTest(new JUnit4TestAdapter(LocalLabelPairCursorTest.class));
@@ -55,12 +51,8 @@ public class SelectionTestSuite {
         suite.addTest(new JUnit4TestAdapter(FmeasureTest.class));
         suite.addTest(new JUnit4TestAdapter(SHA256UniformMapperTest.class));
         suite.addTest(new JUnit4TestAdapter(TrainTestDatasetSplitterTest.class));
-        suite.addTest(new JUnit4TestAdapter(BinaryClassificationMetricsTest.class));
-        suite.addTest(new JUnit4TestAdapter(BinaryClassificationMetricsValuesTest.class));
-        suite.addTest(new JUnit4TestAdapter(BinaryClassificationEvaluatorTest.class));
-        /** JUnit 3 tests. */
-        suite.addTestSuite(EvaluatorTest.class);
-        suite.addTestSuite(CacheBasedLabelPairCursorTest.class);
+        suite.addTest(new JUnit4TestAdapter(EvaluatorTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBasedLabelPairCursorTest.class));
 
         return suite;
     }

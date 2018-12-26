@@ -23,11 +23,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnGetAllTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnScanTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSingleGetTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheBlockExchangeOnReadOperationsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheBlockExchangeOnReadOperationsTestSuite {
     /**
      * @return IgniteCache test suite.
      */
