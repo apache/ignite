@@ -907,16 +907,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 return false;
 
             runAsync(() -> {
-                if (prepares.get(backup) != null) {
-                    if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
-                        return;
-
-                    if (prepares.get(backup).isEmpty())
-                        return;
-
-                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
-                }
-
                 if (prepares.get(primary) != null) {
                     GridCompoundFuture<Object, Object> fut0 = (GridCompoundFuture<Object, Object>)futures.get(new T3<>(primary, TxState.PREPARE, nearXidVer));
 
@@ -934,6 +924,16 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                         futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
                 }
 
+                if (prepares.get(backup) != null) {
+                    if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
+                        return;
+
+                    if (prepares.get(backup).isEmpty())
+                        return;
+
+                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                }
+
             });
 
             return prepares.get(primary) != null;
@@ -942,8 +942,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
             IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-            log.info("TX: beforeBackupFinish: " + backup.name() + ", idx=" + order(nearXidVer));
-
             if (commits.get(backup) == null) // Ignore backup because the order is not specified.
                 return false;
 
