@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheP
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedSnapshotEnabledQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryAbstractDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNoRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
@@ -308,8 +307,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSqlBigIntegerKeyTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheOffheapEvictQueryTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheOffheapIndexScanTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryAbstractDistributedJoinSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridCacheCrossCacheQuerySelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheQuerySerializationSelfTest.class));
