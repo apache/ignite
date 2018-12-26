@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool.Reusable;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,12 +63,33 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
-        Reusable<Obj> o1 = pool.borrow();
-        Reusable<Obj> o2 = pool.borrow();
-        o1.recycle();
-        o2.recycle();
+        Reusable<Obj> r1 = pool.borrow();
+        Reusable<Obj> r2 = pool.borrow();
 
-        assertTrue(o2.object().isClosed());
+        Obj o1 = r1.object();
+        Obj o2 = r2.object();
+
+        r1.recycle();
+        r2.recycle();
+
+        assertFalse(o1.isClosed());
+        assertTrue(o2.isClosed());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testObjectShouldNotBeRecycledTwice() throws Exception {
+        final Reusable<Obj> r1 = pool.borrow();
+
+        r1.recycle();
+
+        GridTestUtils.assertThrows(log, () -> {
+            r1.recycle();
+
+            return null;
+        }, AssertionError.class, null);
     }
 
     /**

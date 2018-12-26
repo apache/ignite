@@ -36,15 +36,13 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
     /**
      * Wrapper for a pooled object with capability to return the object to a pool.
      *
-     * @param <T> enclosed object type
+     * @param <T> enclosed object type.
      */
     public static class Reusable<T extends AutoCloseable> {
         /** */
         private final ThreadLocalObjectPool<T> pool;
         /** */
-        private final T object;
-        /** */
-        private volatile boolean detached = true;
+        private T object;
 
         /** */
         private Reusable(ThreadLocalObjectPool<T> pool, T object) {
@@ -53,7 +51,7 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
         }
 
         /**
-         * @return enclosed object
+         * @return enclosed object.
          */
         public T object() {
             return object;
@@ -63,29 +61,28 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
          * Returns an object to a pool or closes it if the pool is already full.
          */
         public void recycle() {
-            assert detached : "Object already recycled";
-
-            Queue<Reusable<T>> bag = pool.bag.get();
+            assert object != null : "The object is already recycled";
+            Queue<T> bag = pool.bag.get();
 
             if (bag.size() < pool.poolSize)
-                bag.add(this);
+                bag.add(object);
             else
                 U.closeQuiet(object);
 
-            detached = false;
+            object = null;
         }
     }
 
     /** */
     private final Supplier<E> objectFactory;
     /** */
-    private final ThreadLocal<Queue<Reusable<E>>> bag = ThreadLocal.withInitial(LinkedList::new);
+    private final ThreadLocal<Queue<E>> bag = ThreadLocal.withInitial(LinkedList::new);
     /** */
     private final int poolSize;
 
     /**
-     * @param objectFactory factory used for new objects creation
-     * @param poolSize number of objects which pool can contain
+     * @param objectFactory factory used for new objects creation.
+     * @param poolSize number of objects which pool can contain.
      */
     public ThreadLocalObjectPool(Supplier<E> objectFactory, int poolSize) {
         this.objectFactory = objectFactory;
@@ -96,20 +93,22 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
      * Picks an object from the pool if one is present or creates new one otherwise.
      * Returns an object wrapper which could be returned to the pool.
      *
-     * @return reusable object wrapper
+     * @return reusable object wrapper.
      */
     public Reusable<E> borrow() {
-        Reusable<E> pooled = bag.get().poll();
-        if (pooled != null) {
-            pooled.detached = true;
+        E obj = bag.get().poll();
 
-            return pooled;
-        }
-        else
-            return new Reusable<>(this, objectFactory.get());
+        if (obj == null)
+            obj = objectFactory.get();
+
+        return new Reusable<>(this, obj);
     }
 
-    /** Visible for test. */
+    /**
+     * Visible for test.
+     *
+     * @return pool size.
+     */
     int bagSize() {
         return bag.get().size();
     }
