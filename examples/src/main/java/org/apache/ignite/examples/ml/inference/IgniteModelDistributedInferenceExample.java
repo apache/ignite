@@ -43,7 +43,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * This example is based on {@link LinearRegressionLSQRTrainerExample}, but to perform inference it uses an approach
  * implemented in {@link org.apache.ignite.ml.inference} package.
  */
-public class IgniteFunctionDistributedInferenceExample {
+public class IgniteModelDistributedInferenceExample {
     /** Run example. */
     public static void main(String... args) throws IOException, ExecutionException, InterruptedException {
         System.out.println();
