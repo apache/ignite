@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1579,7 +1580,7 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * Mark that free list was changed.
+     * Mark free list was changed.
      */
     private void changed() {
         // Ok to have a race here, see the field javadoc.
@@ -1643,6 +1644,24 @@ public abstract class PagesList extends DataStructure {
         Stripe(long tailId, boolean empty) {
             this.tailId = tailId;
             this.empty = empty;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Stripe stripe = (Stripe)o;
+
+            return F.eq(tailId, stripe.tailId) && F.eq(empty, stripe.empty);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(tailId, empty);
         }
     }
 }

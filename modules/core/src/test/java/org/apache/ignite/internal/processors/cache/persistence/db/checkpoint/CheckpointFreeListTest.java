@@ -21,13 +21,17 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,14 +40,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -63,6 +64,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -74,7 +76,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
     /** Cache size */
-    public static final int CACHE_SIZE = 100000;
+    public static final int CACHE_SIZE = 30000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -125,7 +127,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             .setAtomicityMode(mode)
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
             .setAffinity(new RendezvousAffinityFunction(false, 1024))
             .setIndexedTypes(String.class, String.class);
     }
@@ -156,8 +157,12 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Object> cache = igniteClient.cache(CACHE_NAME);
 
-        for (int j = 0; j < CACHE_SIZE; j++)
+        for (int j = 0; j < CACHE_SIZE; j++) {
             cache.put(j, new byte[random.nextInt(3072)]);
+
+            if (random.nextBoolean())
+                cache.remove(j);
+        }
 
         GridCacheOffheapManager offheap = cacheOffheapManager();
 
@@ -182,23 +187,10 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             AtomicReferenceArray<PagesList.Stripe[]> savedBuckets = bucketsStorage.get(cacheData.partId());
 
             if (savedBuckets != null && restoredBuckets != null) {
-                for (int i = 0; i < restoredBuckets.length(); i++) {
-                    PagesList.Stripe[] restoredStripes = restoredBuckets.get(i);
-                    PagesList.Stripe[] savedStripes = savedBuckets.get(i);
+                assertEquals(restoredBuckets.length(), savedBuckets.length());
 
-                    if (savedStripes != null && restoredStripes != null) {
-                        assertEquals(restoredStripes.length, savedStripes.length);
-
-                        for (int j = 0; j < savedStripes.length; j++) {
-                            if (savedStripes[j] != null && restoredStripes[j] != null)
-                                assertEquals(restoredStripes[j].tailId, savedStripes[j].tailId);
-                            else
-                                assertTrue(savedStripes[j] == null && restoredStripes[j] == null);
-                        }
-                    }
-                    else
-                        assertTrue(savedStripes == null && restoredStripes == null);
-                }
+                for (int i = 0; i < restoredBuckets.length(); i++)
+                    assertTrue(Objects.deepEquals(restoredBuckets.get(i), savedBuckets.get(i)));
             }
             else
                 assertTrue(savedBuckets == null && restoredBuckets == null);
@@ -222,7 +214,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
      * @throws Exception if fail.
      */
     @Test
-    public void testRestorFreeListCorrectlyAfterRandomStop() throws Exception {
+    public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         ignite0.cluster().active(true);
 
@@ -243,14 +235,14 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         Collections.shuffle(cachedEntry);
 
         //Remove half of entries.
-        List<T2<Integer, byte[]>> removedEntry = cachedEntry.stream().limit(cachedEntry.size() / 2).collect(Collectors.toList());
+        Collection<T2<Integer, byte[]>> entriesToRemove = cachedEntry.stream().limit(cachedEntry.size() / 2).collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
 
-        removedEntry.forEach(t2 -> cache.remove(t2.get1()));
+        entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
 
-        //During removing of entries free list grab a lot of free pages to itself so do put/remove again for stabilization of free pages.
-        removedEntry.forEach(t2 -> cache.put(t2.get1(), t2.get2()));
+        //During removing of entries free list grab a lot of free pages to itself so will do put/remove again for stabilization of free pages.
+        entriesToRemove.forEach(t2 -> cache.put(t2.get1(), t2.get2()));
 
-        removedEntry.forEach(t2 -> cache.remove(t2.get1()));
+        entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
 
         forceCheckpoint();
 
@@ -260,24 +252,64 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             CACHE_DIR_PREFIX + CACHE_NAME
         );
 
-        Optional<Long> totalPartSizeBeforeStop = Stream.of(
-            requireNonNull(cacheFolder.toFile().listFiles((dir, name) -> name.startsWith(PART_FILE_PREFIX)))
-        )
-            .map(File::length)
-            .reduce(Long::sum);
+        Optional<Long> totalPartSizeBeforeStop = totalPartitionsSize(cacheFolder);
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        IgniteInternalFuture putDataThread = GridTestUtils.runAsync(() -> {
+        int approximateIterationCount = 10;
+
+        //Approximate count of entries to put per one iteration.
+        int iterationDataCount = entriesToRemove.size() / approximateIterationCount;
+
+        startAsyncPutThread(entriesToRemove, nodeStartBarrier);
+
+        while (true) {
+            stopGrid(0, true);
+
+            ignite0 = startGrid(0);
+
+            ignite0.cluster().active(true);
+
+            if (entriesToRemove.isEmpty())
+                break;
+
+            //Notify put thread that node successfully started.
+            nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
+            nodeStartBarrier.reset();
+
+            int awaitSize = entriesToRemove.size() - iterationDataCount;
+
+            waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.size() == 0, 20000);
+        }
+
+        forceCheckpoint();
+
+        Optional<Long> totalPartSizeAfterRestore = totalPartitionsSize(cacheFolder);
+
+        //Allowed that size after repeated put operations should be not more than on 5%(heuristic value) greater than before operation.
+        long correctedRestoreSize = totalPartSizeAfterRestore.get() - (long)(totalPartSizeBeforeStop.get() * 0.05);
+
+        assertTrue("Size after repeated put operations should be not more than on 5% greater. " +
+                "Size before = " + totalPartSizeBeforeStop.get() + ", Size after = " + totalPartSizeAfterRestore.get(),
+            totalPartSizeBeforeStop.get() > correctedRestoreSize);
+    }
+
+    /**
+     * @param entriesToPut Entiries to put.
+     * @param nodeStartBarrier Marker of node was started.
+     */
+    private void startAsyncPutThread(Collection<T2<Integer, byte[]>> entriesToPut, CyclicBarrier nodeStartBarrier) {
+        GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await();
+                    nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
 
                     Ignite ignite = ignite(0);
 
                     IgniteCache<Integer, Object> cache2 = ignite.cache(CACHE_NAME);
 
-                    Iterator<T2<Integer, byte[]>> iter = removedEntry.iterator();
+                    Iterator<T2<Integer, byte[]>> iter = entriesToPut.iterator();
+
                     while (iter.hasNext()) {
                         T2<Integer, byte[]> next = iter.next();
 
@@ -291,64 +323,21 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                         return;
                 }
 
-                if (removedEntry.isEmpty())
+                if (entriesToPut.isEmpty())
                     break;
             }
         });
+    }
 
-        while (true) {
-            stopGrid(0, true);
-
-            startGrid(0);
-
-            nodeStartBarrier.await();
-
-            nodeStartBarrier.reset();
-
-            try {
-                //Given some time for load data.
-                putDataThread.get(300);
-
-                break;
-            }
-            catch (IgniteFutureTimeoutCheckedException e) {
-                //No op.
-            }
-        }
-
-        forceCheckpoint();
-
-        Optional<Long> totalPartSizeAfterRestore = Stream.of(
+    /**
+     * @param cacheFolder Folder.
+     * @return Total partitinos size.
+     */
+    private Optional<Long> totalPartitionsSize(Path cacheFolder) {
+        return Stream.of(
             requireNonNull(cacheFolder.toFile().listFiles((dir, name) -> name.startsWith(PART_FILE_PREFIX)))
         )
             .map(File::length)
             .reduce(Long::sum);
-
-        //Allowed that size after repeated put operations should be not more than on 5%(heuristic value) greater than before operation.
-        long correctedRestoreSize = totalPartSizeAfterRestore.get() - (long)(totalPartSizeBeforeStop.get() * 0.05);
-
-        assertTrue("Size after repeated put operations should be not more than on 5% greater. " +
-                "Size before = " + totalPartSizeBeforeStop.get() + ", Size after = " + totalPartSizeAfterRestore.get(),
-            totalPartSizeBeforeStop.get() > correctedRestoreSize);
-    }
-
-    @Test
-    public void testRestorFreeListCorrectlyAfterRandomStop2() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
-
-        Random random = new Random();
-
-        List<T2<Integer, byte[]>> cachedEntry = new ArrayList<>();
-
-        IgniteCache<Integer, Object> cache = ignite0.cache(CACHE_NAME);
-
-        for (int j = 0; j < CACHE_SIZE; j++) {
-            byte[] val = new byte[random.nextInt(3072)];
-
-            cache.put(j, val);
-
-//            cachedEntry.add(new T2<>(j, val));
-        }
     }
 }

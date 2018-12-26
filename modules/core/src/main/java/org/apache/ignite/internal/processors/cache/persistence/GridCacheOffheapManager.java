@@ -248,11 +248,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean needSnapshot
     ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
-//
-        if (rowStore0 != null) {
-            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 
-            freeList.saveMetadata();
+        if (rowStore0 != null) {
+            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();

@@ -47,11 +47,6 @@ public interface DbCheckpointListener {
         public boolean needToSnapshot(String cacheOrGrpName);
 
         /**
-         * @return Checkpoint tracker.
-         */
-        public CheckpointMetricsTracker tracker();
-
-        /**
          * @return Context executor.
          */
         @Nullable public Executor executor();

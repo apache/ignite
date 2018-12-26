@@ -3568,7 +3568,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasModifiedPages;
 
-            DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap(), tracker);
+            DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap());
 
             internalReadLock();
             try {
@@ -3601,8 +3601,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, ctx0.partitionStatMap());
 
                 fillCacheGroupState(cpRec);
-
-                tracker.onCacheGroupStateEnd();
 
                 cpPagesTuple = beginAllCheckpoints();
                 
@@ -3666,19 +3664,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, " +
-                                "checkpointBeforeLockTime=%sms, " +
-                                "checkpointLockWait=%dms, " +
-                                "checkpointExecuteListenersTime=%sms, " +
-                                "checkpointCacheGroupStateTime=%sms, " +
-                                "checkpointCalculatePagesTime=%sms, " +
-                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
+                                "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
+                                "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, " +
+                                "walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cp.checkpointMark(),
                             tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
-                            tracker.executeListenersDuration(),
-                            tracker.cacheGroupStateDuration(),
-                            tracker.calculatePagesDuration(),
+                            tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
@@ -3694,8 +3687,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
                         LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
-                                "checkpointLockWait=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                                "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
+                                "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, reason='%s']",
+                            tracker.beforeLockDuration(),
                             tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             curr.reason));
                 }
@@ -3939,21 +3935,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private final PartitionAllocationMap map;
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
-            /** */
-            private final CheckpointMetricsTracker tracker;
 
             /**
              * @param curr Current checkpoint progress.
              * @param map Partition map.
-             * @param tracker Checkpoint tracker.
              */
-            private DbCheckpointContextImpl(
-                CheckpointProgress curr,
-                PartitionAllocationMap map,
-                CheckpointMetricsTracker tracker) {
+            private DbCheckpointContextImpl(CheckpointProgress curr, PartitionAllocationMap map) {
                 this.curr = curr;
                 this.map = map;
-                this.tracker = tracker;
                 this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
             }
 
@@ -3970,11 +3959,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public boolean needToSnapshot(String cacheOrGrpName) {
                 return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
-            }
-
-            /** {@inheritDoc} */
-            @Override public CheckpointMetricsTracker tracker() {
-                return tracker;
             }
 
             /** {@inheritDoc} */
