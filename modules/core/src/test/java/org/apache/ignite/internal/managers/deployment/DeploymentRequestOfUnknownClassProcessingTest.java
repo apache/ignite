@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 
@@ -91,6 +92,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResponseReceivingOnDeploymentRequestOfUnknownClass() throws Exception {
         IgniteEx locNode = grid(0);
         IgniteEx remNode = grid(1);
