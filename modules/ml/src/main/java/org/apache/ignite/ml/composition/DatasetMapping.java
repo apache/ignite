@@ -17,17 +17,45 @@
 
 package org.apache.ignite.ml.composition;
 
+import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 public interface DatasetMapping<L1, L2> {
-    public Vector mapFeatures(Vector v);
+    public default <K, V> DatasetBuilder<K, V> mapBuilder(DatasetBuilder<K, V> builder) {
+        return builder;
+    }
+
+    public default Vector mapFeatures(Vector v) {
+        return v;
+    }
+
     public L2 mapLabels(L1 lbls);
 
     public static <L> DatasetMapping<L, L> mappingFeatures(IgniteFunction<Vector, Vector> mapper) {
         return new DatasetMapping<L, L>() {
+            @Override public <K, V> DatasetBuilder<K, V> mapBuilder(DatasetBuilder<K, V> builder) {
+                return builder;
+            }
+
             @Override public Vector mapFeatures(Vector v) {
                 return mapper.apply(v);
+            }
+
+            @Override public L mapLabels(L lbls) {
+                return lbls;
+            }
+        };
+    }
+
+    public static <K, V, L> DatasetMapping<L, L> mappingBuilder(IgniteFunction<DatasetBuilder<K, V>, DatasetBuilder<K, V>> mapper) {
+        return new DatasetMapping<L, L>() {
+            @Override public DatasetBuilder<K, V> mapBuilder(DatasetBuilder<K, V> builder) {
+                return mapper.apply(builder);
+            }
+
+            @Override public Vector mapFeatures(Vector v) {
+                return v;
             }
 
             @Override public L mapLabels(L lbls) {

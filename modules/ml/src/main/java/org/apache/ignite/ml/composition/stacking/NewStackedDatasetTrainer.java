@@ -28,6 +28,7 @@ import org.apache.ignite.ml.composition.combinators.parallel.SameModelsParallelC
 import org.apache.ignite.ml.composition.combinators.parallel.SameTrainersParallelComposition;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.composition.combinators.sequential.ModelsSequentialComposition;
+import org.apache.ignite.ml.composition.combinators.sequential.SameTrainersSequentialComposition;
 import org.apache.ignite.ml.composition.combinators.sequential.TrainersSequentialComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -264,16 +265,17 @@ public class NewStackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
 
-        Model<IS, O> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
     }
 
-    private DatasetTrainer<Model<IS,O>, L> getTrainer() {
-        return new TrainersSequentialComposition<>(
-            AdaptableDatasetTrainer.of(new SameTrainersParallelComposition<>(submodelsTrainers)).afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get()),
-            aggregatorTrainer,
-            model -> new DatasetMapping<L, L>() {
+    private DatasetTrainer<Model<IS, O>, L> getTrainer() {
+        SameTrainersParallelComposition<IS, IA, L> composition = new SameTrainersParallelComposition<>(submodelsTrainers);
+        return AdaptableDatasetTrainer
+            .of(composition)
+            .afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get())
+            .andThen(aggregatorTrainer, model -> new DatasetMapping<L, L>() {
                 @Override public Vector mapFeatures(Vector v) {
-                    return model.innerModel().models().stream()
+                    return ((SameModelsParallelComposition<IS, IA>)model.innerModel()).models().stream()
                         .map(m -> vector2SubmodelInputConverter.andThen(m).andThen(submodelOutput2VectorConverter).apply(v))
                         .reduce(VectorUtils::concat)
                         .get();

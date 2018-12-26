@@ -27,28 +27,27 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1 extends DatasetTrainer<M1, L>,
-    O2, M2 extends Model<O1, O2>, T2 extends DatasetTrainer<M2, L>>
-    extends DatasetTrainer<ModelsSequentialComposition<I, O1, M1, O2, M2>, L> {
-    private T1 tr1;
-    private T2 tr2;
-    private IgniteFunction<M1, DatasetMapping<L, L>> datasetMapping;
+public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<ModelsSequentialComposition<I, O1, O2>, L> {
+    private DatasetTrainer<? extends Model<I, O1>, L> tr1;
+    private DatasetTrainer<? extends Model<O1, O2>, L> tr2;
+    private IgniteFunction<Model<I, O1>, DatasetMapping<L, L>> datasetMapping;
 
-    public TrainersSequentialComposition(T1 tr1, T2 tr2,
-        IgniteFunction<M1, DatasetMapping<L, L>> datasetMapping) {
+    public TrainersSequentialComposition(DatasetTrainer<? extends Model<I, O1>, L> tr1,
+        DatasetTrainer<? extends Model<O1, O2>, L> tr2,
+        IgniteFunction<? extends Model<I, O1>, DatasetMapping<L, L>> datasetMapping) {
         this.tr1 = tr1;
         this.tr2 = tr2;
         this.datasetMapping = datasetMapping;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
-        M1 mdl1 = tr1.fit(datasetBuilder, featureExtractor, lbExtractor);
+        Model<I, O1> mdl1 = tr1.fit(datasetBuilder, featureExtractor, lbExtractor);
         DatasetMapping<L, L> mapping = datasetMapping.apply(mdl1);
 
-        M2 mdl2 = tr2.fit(datasetBuilder,
+        Model<O1, O2> mdl2 = tr2.fit(datasetBuilder,
             featureExtractor.andThen(mapping::mapFeatures),
             lbExtractor.andThen(mapping::mapLabels));
 
@@ -56,21 +55,21 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> update(
-        ModelsSequentialComposition<I, O1, M1, O2, M2> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
+        ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return super.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsSequentialComposition<I, O1, M1, O2, M2> mdl) {
+    @Override protected boolean checkState(ModelsSequentialComposition<I, O1, O2> mdl) {
         // Never called.
         throw new NotImplementedException();
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsSequentialComposition<I, O1, M1, O2, M2> updateModel(
-        ModelsSequentialComposition<I, O1, M1, O2, M2> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> ModelsSequentialComposition<I, O1, O2> updateModel(
+        ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
         throw new NotImplementedException();
@@ -92,10 +91,9 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
     }
 
     public DatasetTrainer<Model<I, O2>, L> unsafeSimplyTyped() {
-        TrainersSequentialComposition<I, O1, M1, L, T1, O2, M2, T2> self = this;
+        TrainersSequentialComposition<I, O1, O2, L> self = this;
         return new DatasetTrainer<Model<I, O2>, L>() {
-            @Override
-            public <K, V> Model<I, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> Model<I, O2> fit(DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return self.fit(datasetBuilder, featureExtractor, lbExtractor);
@@ -114,7 +112,7 @@ public class TrainersSequentialComposition<I, O1, M1 extends Model<I, O1>, L, T1
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return null;
             }
-        }
+        };
     }
 
     private static <K, V, I, O> IgniteBiFunction<K, V, Vector> getNewExtractor(IgniteBiFunction<K, V, Vector> oldExtractor,

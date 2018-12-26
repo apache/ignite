@@ -19,8 +19,14 @@ package org.apache.ignite.ml.composition.bagging;
 
 import org.apache.ignite.ml.Model;
 
-public class BaggedModel<I, O, M extends Model> implements Model<I,O> {
+public class BaggedModel<I, O> implements Model<I,O> {
+    private Model<I, O> mdl;
+
+    public BaggedModel(Model<I, O> mdl) {
+        this.mdl = mdl;
+    }
+
     @Override public O apply(I i) {
-        return null;
+        return mdl.apply(i);
     }
 }

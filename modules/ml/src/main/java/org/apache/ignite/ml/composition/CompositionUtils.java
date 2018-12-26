@@ -15,21 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.combinators.sequential;
+package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class ModelsSequentialComposition<I, O1, O2> implements
-Model<I, O2>{
-    private Model<I, O1> mdl1;
-    private Model<O1, O2> mdl2;
+public class CompositionUtils {
+    public static <I, O, M extends Model<I, O>, L> DatasetTrainer<Model<I, O>, L> unsafeCoerce(DatasetTrainer<? extends M, L> tr) {
 
-    public ModelsSequentialComposition(Model<I, O1> mdl1, Model<O1, O2> mdl2) {
-        this.mdl1 = mdl1;
-        this.mdl2 = mdl2;
-    }
-
-    @Override public O2 apply(I i1) {
-        return mdl1.andThen(mdl2).apply(i1);
     }
 }

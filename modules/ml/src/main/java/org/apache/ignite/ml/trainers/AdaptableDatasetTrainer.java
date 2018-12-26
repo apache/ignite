@@ -17,8 +17,12 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.util.Map;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.DatasetMapping;
+import org.apache.ignite.ml.composition.combinators.sequential.TrainersSequentialComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -46,6 +50,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
     /** Function used to convert output type of wrapped trainer. */
     private final IgniteFunction<OW, O> after;
 
+    private final IgniteFunction<Vector, Vector> afterFeatureExtractor;
+
     /**
      * Construct instance of this class from a given {@link DatasetTrainer}.
      *
@@ -56,21 +62,28 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
      * @param <L> Type of labels.
      * @return Instance of this class.
      */
-    public static <I, O, M extends Model<I, O>, L> AdaptableDatasetTrainer<I, O, I, O, M, L> of(DatasetTrainer<M, L> wrapped) {
-        return new AdaptableDatasetTrainer<>(IgniteFunction.identity(), wrapped, IgniteFunction.identity());
+    public static <I, O, M extends Model<I, O>, L> AdaptableDatasetTrainer<I, O, I, O, M, L> of(
+        DatasetTrainer<M, L> wrapped) {
+        return new AdaptableDatasetTrainer<>(IgniteFunction.identity(),
+            wrapped,
+            IgniteFunction.identity(),
+            IgniteFunction.identity());
     }
 
     /**
      * Construct instance of this class with specified wrapped trainer and converter functions.
      *
      * @param before Function used to convert input type of wrapped trainer.
-     * @param wrapped  Wrapped trainer.
+     * @param wrapped Wrapped trainer.
      * @param after Function used to convert output type of wrapped trainer.
      */
-    private AdaptableDatasetTrainer(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped, IgniteFunction<OW, O> after) {
+    private AdaptableDatasetTrainer(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped,
+        IgniteFunction<OW, O> after,
+        IgniteFunction<Vector, Vector> afterFeatureExtractor) {
         this.before = before;
         this.wrapped = wrapped;
         this.after = after;
+        this.afterFeatureExtractor = afterFeatureExtractor;
     }
 
     /** {@inheritDoc} */
@@ -86,7 +99,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
+        AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return mdl.withInnerModel(wrapped.updateModel(mdl.innerModel(), datasetBuilder, featureExtractor, lbExtractor));
     }
@@ -115,6 +129,60 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
      */
     public <I1> AdaptableDatasetTrainer<I1, O, IW, OW, M, L> beforeTrainedModel(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
-        return new AdaptableDatasetTrainer<>(function, wrapped, after);
+        return new AdaptableDatasetTrainer<>(function, wrapped, after, afterFeatureExtractor);
+    }
+
+    public <L1> AdaptableDatasetTrainer<I, O, IW, OW, M, L1> withDatasetMapping(DatasetMapping<L, L1> mapping) {
+        return of(new DatasetTrainer<M, L1>() {
+            @Override
+            public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L1> lbExtractor) {
+                return wrapped.fit(datasetBuilder,
+                    featureExtractor.andThen(mapping::mapFeatures),
+                    lbExtractor.andThen(mapping::mapLabels));
+            }
+
+            @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
+                return wrapped.update(mdl, datasetBuilder,
+                    featureExtractor.andThen(mapping::mapFeatures),
+                    lbExtractor.andThen(mapping::mapLabels));;
+            }
+
+            @Override protected boolean checkState(M mdl) {
+                return false;
+            }
+
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
+                return null;
+            }
+        }).beforeTrainedModel(before).afterTrainedModel(after);
+    }
+
+    public <O1, M1 extends Model<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(DatasetTrainer<M1, L> tr,
+        IgniteFunction<AdaptableDatasetModel<I, O, IW, OW, M>, DatasetMapping<L, L>> datasetMapping) {
+        return new TrainersSequentialComposition<>(this,
+            tr,
+            datasetMapping);
+    }
+
+    public <K, V> AdaptableDatasetTrainer<I, O, IW, OW, M, L> afterFeatureExtractor(IgniteFunction<Vector, Vector> after) {
+        return new AdaptableDatasetTrainer<>(before,
+            wrapped,
+            this.after,
+            afterFeatureExtractor);
+    }
+
+    public <K, V> AdaptableDatasetTrainer<I, O, IW, OW, M, L> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> transformer) {
+        return withDatasetMapping(new DatasetMapping<K, V, L, L>() {
+            @Override public DatasetBuilder<K, V> mapBuilder(DatasetBuilder<K, V> builder) {
+                return builder.withUpstreamTransformer(transformer);
+            }
+
+            @Override public L mapLabels(L lbls) {
+                return lbls;
+            }
+        });
     }
 }

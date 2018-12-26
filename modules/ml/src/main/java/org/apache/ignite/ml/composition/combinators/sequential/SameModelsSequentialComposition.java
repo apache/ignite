@@ -22,19 +22,19 @@ import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class SameModelsSequentialComposition<I, O, M extends Model<I, O>>
+public class SameModelsSequentialComposition<I, O>
     implements Model<I, O> {
     private final IgniteFunction<O, I> f;
-    private final List<M> mdls;
+    private final List<Model<I, O>> mdls;
     private final IgniteFunction<I, O> finalMdl;
 
-    public SameModelsSequentialComposition(IgniteFunction<O, I> f, List<M> mdls) {
+    public SameModelsSequentialComposition(IgniteFunction<O, I> f, List<? extends Model<I, O>> mdls) {
         this.f = f;
         this.mdls = new ArrayList<>(mdls);
         IgniteFunction<I, O> fn = mdls.get(0);
 
-        for (M m : mdls.subList(1, mdls.size()))
-            fn = fn.andThen(f).andThen(m);
+        for (Model<I, O> m : mdls.subList(1, mdls.size()))
+            fn = fn.andThenClosed(f).andThenClosed(m);
 
         finalMdl = fn;
     }
@@ -44,7 +44,7 @@ public class SameModelsSequentialComposition<I, O, M extends Model<I, O>>
         return finalMdl.apply(i);
     }
 
-    public SameModelsSequentialComposition<I, O, M> addModel(M mdl) {
+    public SameModelsSequentialComposition<I, O> addModel(Model<I, O> mdl) {
         mdls.add(mdl);
 
         return this;

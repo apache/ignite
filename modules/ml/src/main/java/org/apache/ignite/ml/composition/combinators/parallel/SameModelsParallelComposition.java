@@ -17,15 +17,16 @@
 
 package org.apache.ignite.ml.composition.combinators.parallel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-public class SameModelsParallelComposition<I, O, M extends Model<I, O>> implements Model<I, List<O>> {
-    private final List<M> models;
+public class SameModelsParallelComposition<I, O> implements Model<I, List<O>> {
+    private final List<Model<I, O>> models;
 
-    public SameModelsParallelComposition(List<M> models) {
+    public SameModelsParallelComposition(List<Model<I, O>> models) {
         this.models = models;
     }
 
@@ -36,7 +37,7 @@ public class SameModelsParallelComposition<I, O, M extends Model<I, O>> implemen
             .collect(Collectors.toList());
     }
 
-    public List<M> models() {
-        return models;
+    public List<Model<I, O>> models() {
+        return new ArrayList<>(models);
     }
 }
