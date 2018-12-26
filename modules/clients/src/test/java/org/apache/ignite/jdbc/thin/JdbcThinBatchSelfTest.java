@@ -18,9 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.BatchUpdateException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
@@ -90,12 +88,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
                 + generateValues(idx, i + 1));
         }
 
-        int[] updCnts = stmt.executeBatch();
+        int [] updCnts = stmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", i + 1, updCnts[i]);
+            assertEquals("Invalid update count",i + 1, updCnts[i]);
     }
 
     /**
@@ -181,9 +179,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             stmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        } catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -225,9 +222,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             stmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        } catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -258,12 +254,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
                 + generateValues(idx, i + 1));
         }
 
-        int[] updCnts = stmt.executeBatch();
+        int [] updCnts = stmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", i + 1, updCnts[i]);
+            assertEquals("Invalid update count",i + 1, updCnts[i]);
     }
 
     /**
@@ -289,9 +285,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             stmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        } catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -335,9 +330,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             stmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        } catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -368,7 +362,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
         stmt.addBatch("merge into Person (_key, id, firstName, lastName, age) values ('p0', 2, 'Name2', 'Lastname2', 50)");
         stmt.addBatch("delete from Person where age <= 40");
 
-        int[] updCnts = stmt.executeBatch();
+        int [] updCnts = stmt.executeBatch();
 
         assertEquals("Invalid update counts size", 6, updCnts.length);
         assertArrayEquals("Invalid update count", new int[] {1, 2, 1, 2, 1, 3}, updCnts);
@@ -390,8 +384,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             stmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        }
-        catch (BatchUpdateException e) {
+        } catch(BatchUpdateException e) {
             int[] updCnts = e.getUpdateCounts();
 
             if (!e.getMessage().contains("Value conversion failed")) {
@@ -420,53 +413,13 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
         stmt.clearBatch();
 
-        int[] updates = stmt.executeBatch();
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeBatch();
 
-        assertEquals("Returned update counts array should have no elements for empty batch.",
-            0, updates.length);
-    }
-
-    /**
-     * Check that user can execute empty batch using Statement. Such behaviour is more user friendly than forbidding
-     * empty batches.
-     *
-     * @throws SQLException on error.
-     */
-    @Test
-    public void testEmptyBatchStreaming() throws SQLException {
-        executeUpdateOn(conn, "SET STREAMING ON");
-
-        int[] updates = stmt.executeBatch();
-
-        assertEquals("Returned update counts array should have no elements for empty batch.",
-            0, updates.length);
-
-        executeUpdateOn(conn, "SET STREAMING OFF");
-
-        assertEquals("Test table should be empty after empty batch is performed.", 0L, personsCount());
-    }
-
-    /**
-     * Same as {@link #testEmptyBatchStreaming()} but for PreparedStatement.
-     *
-     * @throws SQLException on error.
-     */
-    @Test
-    public void testEmptyBatchStreamingPrepared() throws SQLException {
-        try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("SET STREAMING ON");
-        }
-
-        int[] updates = pstmt.executeBatch();
-
-        assertEquals("Returned update counts array should have no elements for empty batch.",
-            0, updates.length);
-
-        try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("SET STREAMING OFF");
-        }
-
-        assertEquals("Test table should be empty after empty batch is performed.", 0L, personsCount());
+                return null;
+            }
+        }, SQLException.class, "Batch is empty.");
     }
 
     /**
@@ -488,12 +441,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             pstmt.addBatch();
         }
 
-        int[] updCnts = pstmt.executeBatch();
+        int [] updCnts = pstmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", 1, updCnts[i]);
+            assertEquals("Invalid update count",1, updCnts[i]);
     }
 
     /**
@@ -542,8 +495,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
             fail("BatchUpdateException must be thrown");
         }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -583,12 +536,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             pstmt.addBatch();
         }
 
-        int[] updCnts = pstmt.executeBatch();
+        int [] updCnts = pstmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", 1, updCnts[i]);
+            assertEquals("Invalid update count",1, updCnts[i]);
     }
 
     /**
@@ -640,8 +593,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -689,12 +642,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             pstmt.addBatch();
         }
 
-        int[] updCnts = pstmt.executeBatch();
+        int [] updCnts = pstmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", 1, updCnts[i]);
+            assertEquals("Invalid update count",1, updCnts[i]);
     }
 
     /**
@@ -731,8 +684,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -770,12 +723,12 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             pstmt.addBatch();
         }
 
-        int[] updCnts = pstmt.executeBatch();
+        int [] updCnts = pstmt.executeBatch();
 
         assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
         for (int i = 0; i < BATCH_SIZE; ++i)
-            assertEquals("Invalid update count", 1, updCnts[i]);
+            assertEquals("Invalid update count",1, updCnts[i]);
     }
 
     /**
@@ -812,8 +765,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
-        catch (BatchUpdateException e) {
-            int[] updCnts = e.getUpdateCounts();
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
 
@@ -841,20 +794,27 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     public void testBatchClearPrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 
-        for (int persIdx = 0; persIdx < BATCH_SIZE; ++persIdx) {
-            fillParamsWithPerson(pstmt, persIdx);
+        for (int i = 0; i < BATCH_SIZE; ++i) {
+            int paramCnt = 1;
+
+            pstmt.setString(paramCnt++, "p" + i);
+            pstmt.setInt(paramCnt++, i);
+            pstmt.setString(paramCnt++, "Name" + i);
+            pstmt.setString(paramCnt++, "Lastname" + i);
+            pstmt.setInt(paramCnt++, 20 + i);
 
             pstmt.addBatch();
         }
 
         pstmt.clearBatch();
 
-        int[] updates = pstmt.executeBatch();
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                pstmt.executeBatch();
 
-        assertEquals("Returned update counts array should have no elements for empty batch.",
-            0, updates.length);
-
-        assertEquals("Test table should be empty after empty batch is performed.", 0L, personsCount());
+                return null;
+            }
+        }, SQLException.class, "Batch is empty.");
     }
 
     /**
@@ -881,47 +841,5 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
      */
     private String valuesRow(int idx) {
         return String.format("('p%d', %d, 'Name%d', 'Lastname%d', %d)", idx, idx, idx, idx, 20 + idx);
-    }
-
-    /**
-     * Fills PreparedStatement's parameters with fields of some Person generated by index.
-     *
-     * @param stmt PreparedStatement to fill
-     * @param personIdx number to generate Person's fields.
-     * @throws SQLException on error.
-     */
-    private static void fillParamsWithPerson(PreparedStatement stmt, int personIdx) throws SQLException {
-        int paramCnt = 1;
-
-        stmt.setString(paramCnt++, "p" + personIdx);
-        stmt.setInt(paramCnt++, personIdx);
-        stmt.setString(paramCnt++, "Name" + personIdx);
-        stmt.setString(paramCnt++, "Lastname" + personIdx);
-        stmt.setInt(paramCnt++, 20 + personIdx);
-    }
-
-    /**
-     * @return How many rows Person table contains.
-     * @throws SQLException on error.
-     */
-    private long personsCount() throws SQLException {
-        try (ResultSet cnt = stmt.executeQuery("SELECT COUNT(*) FROM PERSON;")) {
-            cnt.next();
-
-            return cnt.getLong(1);
-        }
-    }
-
-    /**
-     * Executes update query on specified connection.
-     *
-     * @param conn Connection to use.
-     * @param updQry sql update query.
-     * @throws SQLException on error.
-     */
-    private static void executeUpdateOn(Connection conn, String updQry) throws SQLException {
-        try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate(updQry);
-        }
     }
 }
