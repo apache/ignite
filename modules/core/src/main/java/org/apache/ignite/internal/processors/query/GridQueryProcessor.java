@@ -64,8 +64,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -336,7 +336,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         synchronized (stateMux) {
             // Preserve proposals.
@@ -682,7 +681,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.gridCacheContext()))
+            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.cacheContext()))
                 return;
 
             synchronized (stateMux) {
@@ -701,8 +700,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cacheInfo, qryEntity,
-                            mustDeserializeClss, escape);
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(
+                            ctx,
+                            cacheName,
+                            schemaName,
+                            cacheInfo,
+                            qryEntity,
+                            mustDeserializeClss,
+                            escape
+                        );
 
                         cands.add(cand);
                     }
@@ -1448,7 +1454,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor;
 
                 if (cacheInfo.isCacheContextInited()) {
-                    GridCacheContext cctx = cacheInfo.gridCacheContext();
+                    GridCacheContext cctx = cacheInfo.cacheContext();
 
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
@@ -2163,8 +2169,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel = new GridQueryCancel();
 
-                        List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(schemaName, qry, cliCtx,
+                            keepBinary, failOnMultipleStmts, null, cancel, true);
 
                         if (cctx != null)
                             sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx, qryType);

@@ -147,7 +147,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -841,7 +840,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (f.getClass() == FinishMiniFuture.class) {
                     FinishMiniFuture fut = (FinishMiniFuture)f;

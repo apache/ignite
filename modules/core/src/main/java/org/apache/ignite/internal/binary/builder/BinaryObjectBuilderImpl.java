@@ -531,7 +531,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T getField(String name) {
         Object val;
 

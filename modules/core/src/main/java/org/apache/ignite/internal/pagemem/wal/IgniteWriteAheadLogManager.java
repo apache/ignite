@@ -94,6 +94,16 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 
     /**
+     * Reads WAL record by the specified pointer.
+     *
+     * @param ptr WAL pointer.
+     * @return WAL record.
+     * @throws IgniteCheckedException If failed to read.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException;
+
+    /**
      * Invoke this method to iterate over the written log entries.
      *
      * @param start Optional WAL pointer from which to start iteration.

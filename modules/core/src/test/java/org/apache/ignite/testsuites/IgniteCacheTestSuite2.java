@@ -145,13 +145,17 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiTh
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */
@@ -286,6 +290,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, IgniteNoCustomEventsOnNodeStart.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMessageDuplicatedStateTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteContinuousQueryMetadataUpdateTest.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite,NearCacheMultithreadedUpdateTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,NearCachePutAllMultinodeTest.class, ignoredTests);

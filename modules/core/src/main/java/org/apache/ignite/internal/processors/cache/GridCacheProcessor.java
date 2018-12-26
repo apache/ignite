@@ -55,6 +55,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -539,6 +540,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assertParameter(cc.getInterceptor() == null,
                 "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            // Disable in-memory evictions for mvcc cache. TODO IGNITE-10738
+            String memPlcName = cc.getDataRegionName();
+            DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
+
+            if (dataRegion != null && !dataRegion.config().isPersistenceEnabled() &&
+                dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
+                throw new IgniteCheckedException("Data pages evictions cannot be used with TRANSACTIONAL_SNAPSHOT " +
+                    "cache atomicity mode for in-memory regions. Please, either disable evictions or enable " +
+                    "persistence for data regions with TRANSACTIONAL_SNAPSHOT caches. [cacheName=" + cc.getName() +
+                    ", dataRegionName=" + memPlcName + ", pageEvictionMode=" +
+                    dataRegion.config().getPageEvictionMode() + ']');
+            }
         }
 
         if (cc.isWriteBehindEnabled()) {
@@ -1298,7 +1312,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
+        CacheObjectContext coCtx = cacheDesc.cacheObjectContext(ctx.cacheObjects());
+
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
 
         ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }
@@ -4531,7 +4547,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> cache(String name) {
         assert name != null;
 
@@ -4606,7 +4621,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> getOrStartCache(
         String name,
         CacheConfiguration ccfg
@@ -4696,7 +4710,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> publicCache(String name) {
         assert name != null;
 
@@ -4738,7 +4751,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
     @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(String cacheName,
         boolean failIfNotStarted,
         boolean checkThreadTx) throws IgniteCheckedException {
@@ -4964,7 +4976,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> GridCacheAdapter<K, V> internalCache(String name) {
         assert name != null;
 
@@ -5063,7 +5074,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
-    @SuppressWarnings("unchecked")
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)

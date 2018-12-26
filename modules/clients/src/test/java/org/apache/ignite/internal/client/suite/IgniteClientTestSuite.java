@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
@@ -71,11 +72,14 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProto
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite includes all test that concern REST processors.
  */
-public class IgniteClientTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteClientTestSuite {
     /**
      * @return Suite that contains all tests for REST.
      */
@@ -100,6 +104,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(JettyRestProcessorAuthenticationWithCredsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JettyRestProcessorAuthenticationWithTokenSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JettyRestProcessorGetAllAsArrayTest.class));
+        suite.addTest(new JUnit4TestAdapter(JettyRestProcessorBaselineSelfTest.class));
 
         // Test TCP rest processor with original memcache client.
         suite.addTest(new JUnit4TestAdapter(ClientMemcachedProtocolSelfTest.class));
@@ -170,7 +175,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 
         // SSL params.
-        suite.addTestSuite(ClientSslParametersTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClientSslParametersTest.class));
 
         return suite;
     }

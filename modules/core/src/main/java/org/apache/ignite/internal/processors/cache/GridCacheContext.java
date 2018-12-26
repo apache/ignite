@@ -47,7 +47,6 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -110,6 +109,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -256,9 +256,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private boolean deferredDel;
 
-    /** */
-    private boolean customAffMapper;
-
     /** Whether {@link EventType#EVT_CACHE_REBALANCE_STARTED} was sent (used only for REPLICATED cache). */
     private volatile boolean rebalanceStartedEvtSent;
 
@@ -279,6 +276,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** */
+    private final boolean disableTriggeringCacheInterceptorOnConflict =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -462,13 +463,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheGroupContext group() {
         return grp;
-    }
-
-    /**
-     * @return {@code True} if custom {@link AffinityKeyMapper} is configured for cache.
-     */
-    public boolean customAffinityMapper() {
-        return customAffMapper;
     }
 
     /**
@@ -872,6 +866,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if cache interceptor should be skipped in case of conflicts.
+     */
+    public boolean disableTriggeringCacheInterceptorOnConflict() {
+        return disableTriggeringCacheInterceptorOnConflict;
+    }
+
+    /**
      * @return Local node.
      */
     public ClusterNode localNode() {
@@ -1228,13 +1229,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Default affinity key mapper.
-     */
-    public AffinityKeyMapper defaultAffMapper() {
-        return cacheObjCtx.defaultAffMapper();
-    }
-
-    /**
      * @return Compression manager.
      */
     public CacheCompressionManager compress() {
@@ -1248,8 +1242,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
         this.cacheObjCtx = cacheObjCtx;
-
-        customAffMapper = cacheCfg.getAffinityMapper().getClass() != cacheObjCtx.defaultAffMapper().getClass();
     }
 
     /**
@@ -1909,7 +1901,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1935,7 +1926,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         EntryGetResult getRes,
@@ -1963,7 +1953,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -2011,7 +2000,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param needVer Need version flag.
      * @return EntryGetResult or value.
      */
-    @SuppressWarnings("unchecked")
     private <V1> V1 createValue(final GridCacheVersion ver,
         final long expireTime,
         final long ttl,
@@ -2302,7 +2290,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)buider;
 
-        if (!customAffinityMapper()) {
+        if (!cacheObjCtx.customAffinityMapper()) {
             CacheDefaultBinaryAffinityKeyMapper mapper =
                 (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
 

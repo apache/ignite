@@ -22,11 +22,14 @@ import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressi
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
  */
-public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsNativeIoTestSuite2 {
     /**
      * @return Suite.
      */

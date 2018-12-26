@@ -25,11 +25,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutAllRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache stability test suite on changing topology.
  */
-public class IgniteCacheRestartTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheRestartTestSuite2 {
     /**
      * @return Suite.
      */
