@@ -195,7 +195,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void tesctCloseRunningQueriesonNodeStop() throws Exception {
+    public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10000; i++)
