@@ -2593,6 +2593,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private long lastRingMsgTime;
 
         /**
+         * Set to {@code false}, when high priority messages are processed.
+         * Helps to avoid a situation, when only high priority messages are processed, and no overall progress is made.
+         */
+        private volatile boolean hasProgress = true;
+
+        /**
          */
         RingMessageWorker() {
             super("tcp-disco-msg-worker", 10);
@@ -2619,13 +2625,64 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (msg.highPriority())
+            if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
+                dropStaleMetricsUpdate(queue, (TcpDiscoveryMetricsUpdateMessage)msg);
+
+            if (msg.highPriority() && hasProgress)
                 queue.addFirst(msg);
             else
                 queue.add(msg);
 
             if (log.isDebugEnabled())
                 log.debug("Message has been added to queue: " + msg);
+        }
+
+        /**
+         * Removes stale metrics update messages from the queue to avoid their accumulation.
+         *
+         * @param queue Message queue.
+         * @param newMsg Received metrics update message.
+         */
+        private void dropStaleMetricsUpdate(
+            Queue<TcpDiscoveryAbstractMessage> queue,
+            TcpDiscoveryMetricsUpdateMessage newMsg) {
+            assert newMsg.highPriority();
+
+            int newPassedLaps = passedLaps(newMsg);
+
+            for (Iterator<TcpDiscoveryAbstractMessage> it = queue.iterator(); it.hasNext(); ) {
+                TcpDiscoveryAbstractMessage oldMsg = it.next();
+
+                if (oldMsg instanceof TcpDiscoveryMetricsUpdateMessage) {
+                    TcpDiscoveryMetricsUpdateMessage oldMetricMsg = (TcpDiscoveryMetricsUpdateMessage) oldMsg;
+
+                    if (passedLaps(oldMetricMsg) == newPassedLaps) {
+                        it.remove();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Stale message has been replaced. oldMsg=" + oldMsg + "; newMsg=" + newMsg);
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        /**
+         * @param msg Metrics update message.
+         * @return Number of laps, that the provided message passed.
+         */
+        int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
+            UUID locNodeId = getLocalNodeId();
+
+            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
+
+            if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
+                return 2;
+            else if (msg.senderNodeId() == null || !hasLocMetrics)
+                return 0;
+            else
+                return 1;
         }
 
         /** {@inheritDoc} */
@@ -2757,6 +2814,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
+
+            hasProgress = !msg.highPriority();
 
             if (msg.senderNodeId() != null && !msg.senderNodeId().equals(getLocalNodeId())) {
                 // Received a message from remote node.
@@ -5140,7 +5199,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (locNodeId.equals(msg.creatorNodeId()) && !hasMetrics(msg, locNodeId) && msg.senderNodeId() != null) {
+            if (passedLaps(msg) == 2) {
                 if (log.isTraceEnabled())
                     log.trace("Discarding metrics update message that has made two passes: " + msg);
 
@@ -5591,7 +5650,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
+         * then {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
             if (lastTimeStatusMsgSent < locNode.lastUpdateTime())
