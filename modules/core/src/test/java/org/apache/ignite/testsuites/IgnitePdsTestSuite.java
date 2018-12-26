@@ -55,11 +55,14 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutG
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgnitePdsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.
      */

@@ -23,9 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -42,9 +40,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
  */
 @RunWith(JUnit4.class)
 public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTest {
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Constructs test.
      */
@@ -55,12 +50,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -92,6 +81,9 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TooBroadScope"})
     @Test
     public void testNodeRestart() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+
         int keyCnt = 1000;
         int retries = 20;
 

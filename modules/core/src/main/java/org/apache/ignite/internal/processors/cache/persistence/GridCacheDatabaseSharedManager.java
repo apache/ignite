@@ -95,6 +95,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
@@ -174,6 +175,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
@@ -258,7 +260,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile GridFutureAdapter<Void> enableChangeApplied;
 
     /** */
-    private ReentrantReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+    ReentrantReadWriteLock checkpointLock = new ReentrantReadWriteLock();
 
     /** */
     private long checkpointFreq;
@@ -361,6 +363,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Flag allows to log additional information about partitions during recovery phases. */
     private final boolean recoveryVerboseLogging = IgniteSystemProperties.getBoolean(
             IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
+
+    /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
+    private volatile WALPointer memoryRecoveryRecordPtr;
 
     /**
      * @param ctx Kernal context.
@@ -945,6 +950,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Wal logging is now available.
             cctx.wal().resumeLogging(restored);
+
+            // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
+            // next physical recovery.
+            memoryRecoveryRecordPtr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterBinaryMemoryRestore(this, binaryState);
@@ -1554,7 +1563,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         IgniteException e = new IgniteException(msg);
 
-        if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
+        if (cctx.kernalContext().failure().process(new FailureContext(SYSTEM_CRITICAL_OPERATION_TIMEOUT, e)))
             throw e;
 
         throw new CheckpointReadLockTimeoutException(msg);
@@ -2066,6 +2075,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
+        WALPointer recPtr = status.endPtr;
+
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
@@ -2074,6 +2085,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
+
+            WALRecord rec = cctx.wal().read(status.startPtr);
+
+            if (!(rec instanceof CheckpointRecord))
+                throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
+                    "[ptr=" + status.startPtr + ", rec=" + rec + "]");
+
+            WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
+
+            if (cpMark != null) {
+                log.info("Restoring checkpoint after logical recovery, will start physical recovery from " +
+                    "back pointer: " + cpMark);
+
+                recPtr = cpMark;
+            }
         }
         else
             cctx.wal().notchLastCheckpointPtr(status.startPtr);
@@ -2082,7 +2108,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
-        WALIterator it = cctx.wal().replay(status.endPtr, recordTypePredicate);
+        WALIterator it = cctx.wal().replay(recPtr, recordTypePredicate);
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 
@@ -2114,7 +2140,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
@@ -2186,7 +2212,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     r.applyDelta(pageMem, pageAddr);
@@ -3547,7 +3573,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(null);
+            CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
+
+            memoryRecoveryRecordPtr = null;
 
             WALPointer cpPtr = null;
 

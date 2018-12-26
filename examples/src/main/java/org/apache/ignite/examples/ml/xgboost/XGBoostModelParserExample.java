@@ -19,6 +19,7 @@ package org.apache.ignite.examples.ml.xgboost;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -30,8 +31,6 @@ import org.apache.ignite.ml.inference.builder.AsyncInfModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
-import org.apache.ignite.ml.xgboost.MapBasedXGObject;
-import org.apache.ignite.ml.xgboost.XGObject;
 import org.apache.ignite.ml.xgboost.parser.XGModelParser;
 
 /**
@@ -70,7 +69,7 @@ public class XGBoostModelParserExample {
             if (testExpRes == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
-            try (InfModel<XGObject, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (InfModel<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 
@@ -78,7 +77,7 @@ public class XGBoostModelParserExample {
                     String testDataStr = testDataScanner.nextLine();
                     String testExpResultsStr = testExpResultsScanner.nextLine();
 
-                    MapBasedXGObject testObj = new MapBasedXGObject();
+                    HashMap<String, Double> testObj = new HashMap<>();
 
                     for (String keyValueString : testDataStr.split(" ")) {
                         String[] keyVal = keyValueString.split(":");
@@ -87,7 +86,7 @@ public class XGBoostModelParserExample {
                             testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                     }
 
-                    double prediction = mdl.predict(testObj).get();
+                    double prediction = mdl.apply(testObj).get();
 
                     double expPrediction = Double.parseDouble(testExpResultsStr);
 

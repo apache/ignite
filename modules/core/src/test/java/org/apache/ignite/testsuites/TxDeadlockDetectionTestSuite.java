@@ -28,11 +28,14 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDead
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Deadlock detection related tests.
  */
-public class TxDeadlockDetectionTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class TxDeadlockDetectionTestSuite {
     /**
      * @return Test suite.
      */
