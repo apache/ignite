@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -169,8 +170,8 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         ig0.active(true);
 
-        for (int i = 0; i < 3; i++)
-            fillCache(ig0.getOrCreateCache("cache" + i), CACHE_SIZE, GENERATING_FUNC);
+        for (int i = 1; i < 4; i++)
+          fillCache(ig0.dataStreamer("cache" + i), CACHE_SIZE, GENERATING_FUNC);
 
         String ig1Name = "node01-" + grid(1).localNode().consistentId();
 
@@ -223,7 +224,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     public void testServerNodesFromBltLeavesAndJoinsDuringRebalancing() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
 
-        fillCache(ig0.cache(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
 
         List<Integer> nonAffinityKeys1 = nearKeys(grid(1).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
         List<Integer> nonAffinityKeys2 = nearKeys(grid(2).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
@@ -236,7 +237,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         nonAffinityKeysSet.addAll(nonAffinityKeys1);
         nonAffinityKeysSet.addAll(nonAffinityKeys2);
 
-        fillCache(ig0.cache(CACHE3_NAME), nonAffinityKeysSet, GENERATING_FUNC);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffinityKeysSet, GENERATING_FUNC);
 
         int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
 
@@ -275,17 +276,17 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
      */
     public void testRebalancedPartitionsOwningWithConcurrentAffinityChange() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
-        fillCache(ig0.getOrCreateCache(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
 
-        //stop idx=2 to prepare for baseline topology change later
+        // Stop idx=2 to prepare for baseline topology change later.
         stopGrid(2);
 
-        //stop idx=1 and cleanup LFS to trigger full rebalancing after it restart
+        // Stop idx=1 and cleanup LFS to trigger full rebalancing after it restart.
         String ig1Name = "node01-" + grid(1).localNode().consistentId();
         stopGrid(1);
         cleanPersistenceFiles(ig1Name);
 
-        //blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1
+        // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
         useBlockingFileIO = true;
         int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
         blockMessagePredicate = (node, msg) -> {
@@ -295,7 +296,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             return false;
         };
 
-        //enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory)
+        // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
         fileIoBlockingSemaphore.drainPermits();
 
         IgniteEx ig1 = startGrid(1);
@@ -303,14 +304,14 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
         int locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
 
-        //partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked
+        // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
         assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
             locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
 
         blockRebalanceEnabled.set(true);
 
-        //change baseline topology and release checkpointer to verify that
-        //no partitions will be owned after affinity change
+        // Change baseline topology and release checkpointer to verify
+        // that no partitions will be owned after affinity change.
         ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
         fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
 
@@ -321,7 +322,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
 
-        //when we stop blocking demand message rebalancing should complete and all partitions should be owned
+        // When we stop blocking demand message rebalancing should complete and all partitions should be owned.
         commSpi.stopBlock();
 
         boolean res = GridTestUtils.waitForCondition(
@@ -402,23 +403,27 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     }
 
     /** */
-    private void fillCache(IgniteCache cache, int cacheSize, BiFunction<String, Integer, String> generatingFunc) {
-        String name = cache.getName();
+    private void fillCache(
+        IgniteDataStreamer streamer,
+        int cacheSize,
+        BiFunction<String, Integer, String> generatingFunc
+    ) {
+        String name = streamer.cacheName();
 
         for (int i = 0; i < cacheSize; i++)
-            cache.put(i, generatingFunc.apply(name, i));
+            streamer.addData(i, generatingFunc.apply(name, i));
     }
 
     /** */
     private void fillCache(
-        IgniteCache cache,
+        IgniteDataStreamer streamer,
         Collection<Integer> keys,
         BiFunction<String, Integer, String> generatingFunc
     ) {
-        String cacheName = cache.getName();
+        String cacheName = streamer.cacheName();
 
         for (Integer key : keys)
-            cache.put(key, generatingFunc.apply(cacheName, key));
+            streamer.addData(key, generatingFunc.apply(cacheName, key));
     }
 
     /** */
