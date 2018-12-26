@@ -97,7 +97,11 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
+    @Override public void onUpdateMessage(
+        DistributedMetaStorageHistoryItem histItem,
+        Serializable val,
+        boolean notifyListeners
+    ) {
         throw new UnsupportedOperationException("onUpdateMessage");
     }
 
@@ -116,8 +120,11 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         else {
             Long storedVer = (Long)metastorage.read(historyVersionKey());
 
-            if (storedVer == null)
+            if (storedVer == null) {
                 startupExtras.verToSnd = dms.ver = 0;
+
+                startupExtras.locFullData = EMPTY_ARRAY;
+            }
             else {
                 startupExtras.verToSnd = dms.ver = storedVer;
 

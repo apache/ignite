@@ -29,11 +29,19 @@ class DistributedMetaStorageJoiningData implements Serializable {
     public final long ver;
 
     /** */
+    public final DistributedMetaStorageHistoryItem[] fullData;
+
+    /** */
     public final DistributedMetaStorageHistoryItem[] hist;
 
     /** */
-    public DistributedMetaStorageJoiningData(long ver, DistributedMetaStorageHistoryItem[] hist) {
+    public DistributedMetaStorageJoiningData(
+        long ver,
+        DistributedMetaStorageHistoryItem[] fullData,
+        DistributedMetaStorageHistoryItem[] hist
+    ) {
         this.ver = ver;
+        this.fullData = fullData;
         this.hist = hist;
     }
 }

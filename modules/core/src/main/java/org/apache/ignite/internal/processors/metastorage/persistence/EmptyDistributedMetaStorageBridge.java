@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 /** */
 class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
@@ -42,7 +41,11 @@ class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge 
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
+    @Override public void onUpdateMessage(
+        DistributedMetaStorageHistoryItem histItem,
+        Serializable val,
+        boolean notifyListeners
+    ) {
         throw new UnsupportedOperationException("onUpdateMessage");
     }
 

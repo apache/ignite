@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +56,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
@@ -328,7 +330,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             .values()
             .toArray(EMPTY_ARRAY);
 
-        Serializable data = new DistributedMetaStorageJoiningData(startupExtras.verToSnd, hist);
+        Serializable data = new DistributedMetaStorageJoiningData(
+            startupExtras.verToSnd,
+            startupExtras.locFullData,
+            hist
+        );
 
         dataBag.addJoiningNodeData(COMPONENT_ID, data);
     }
@@ -378,7 +384,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
                 else {
-                    //TODO ???
+                    DistributedMetaStorageNodeData nodeData = new DistributedMetaStorageNodeData(
+                        remoteVer,
+                        joiningData.fullData,
+                        joiningData.hist,
+                        EMPTY_ARRAY
+                    );
+
+                    writeFullDataLater(nodeData);
                 }
             }
             else {
@@ -415,7 +428,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         if (startupExtras == null || startupExtras.fullNodeData == null) {
                             ver0 = ver;
 
-                            fullData = localFullData();
+                            fullData = localFullData(bridge);
 
                             hist = history(ver - histCache.size() + 1, actualVer);
                         }
@@ -479,7 +492,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** */
+    @TestOnly
     private DistributedMetaStorageHistoryItem[] localFullData() {
+        return localFullData(bridge);
+    }
+
+    /** */
+    private DistributedMetaStorageHistoryItem[] localFullData(DistributedMetaStorageBridge bridge) {
         if (startupExtras != null && startupExtras.locFullData != null)
             return startupExtras.locFullData;
 
@@ -544,7 +563,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             U.await(writeAvailable);
 
-            completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+            completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
         }
         catch (IgniteCheckedException | Error e) {
             criticalError(e);
@@ -580,14 +599,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** */
     private void completeWrite(
         DistributedMetaStorageBridge bridge,
-        DistributedMetaStorageHistoryItem histItem
+        DistributedMetaStorageHistoryItem histItem,
+        boolean notifyListeners
     ) throws IgniteCheckedException {
         Serializable val = unmarshal(histItem.valBytes);
 
         lock();
 
         try {
-            bridge.onUpdateMessage(histItem, val);
+            bridge.onUpdateMessage(histItem, val, notifyListeners);
 
             bridge.write(histItem.key, histItem.valBytes);
         }
@@ -671,7 +691,62 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
 
         for (DistributedMetaStorageHistoryItem histItem : startupExtras.deferredUpdates)
-            completeWrite(bridge, histItem);
+            completeWrite(bridge, histItem, false);
+
+        notifyListenersBeforeReadyForWrite(bridge);
+    }
+
+    /** */
+    private void notifyListenersBeforeReadyForWrite(
+        DistributedMetaStorageBridge bridge
+    ) throws IgniteCheckedException {
+        DistributedMetaStorageHistoryItem[] oldData = startupExtras.locFullData;
+
+        startupExtras.locFullData = null;
+
+        startupExtras.firstToWrite = null;
+
+        DistributedMetaStorageHistoryItem[] newData = localFullData(bridge);
+
+        int oldIdx = 0, newIdx = 0;
+
+        while (oldIdx < oldData.length && newIdx < newData.length) {
+            String oldKey = oldData[oldIdx].key;
+            byte[] oldValBytes = oldData[oldIdx].valBytes;
+
+            String newKey = newData[newIdx].key;
+            byte[] newValBytes = newData[newIdx].valBytes;
+
+            int c = oldKey.compareTo(newKey);
+
+            if (c < 0) {
+                notifyListeners(oldKey, unmarshal(oldValBytes), null);
+
+                ++oldIdx;
+            }
+            else if (c > 0) {
+                notifyListeners(newKey, null, unmarshal(newValBytes));
+
+                ++newIdx;
+            }
+            else {
+                Serializable oldVal = unmarshal(oldValBytes);
+
+                Serializable newVal = Arrays.equals(oldValBytes, newValBytes) ? oldVal : unmarshal(newValBytes);
+
+                notifyListeners(oldKey, oldVal, newVal);
+
+                ++oldIdx;
+
+                ++newIdx;
+            }
+        }
+
+        for (; oldIdx < oldData.length; ++oldIdx)
+            notifyListeners(oldData[oldIdx].key, unmarshal(oldData[oldIdx].valBytes), null);
+
+        for (; newIdx < newData.length; ++newIdx)
+            notifyListeners(newData[newIdx].key, null, unmarshal(newData[newIdx].valBytes));
     }
 
     /** */
@@ -681,8 +756,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         startupExtras.clearLocData = true;
 
         startupExtras.fullNodeData = nodeData;
-
-        startupExtras.locFullData = null;
 
         startupExtras.firstToWrite = null;
 
@@ -697,18 +770,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** */
-    void notifyListeners(String key, Serializable val) {
+    void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {
                 try {
                     // ClassCastException might be thrown here for crappy listeners.
-                    entry.get2().onUpdate(key, val);
+                    entry.get2().onUpdate(key, oldVal, newVal);
                 }
                 catch (Exception e) {
                     log.error(S.toString(
                         "Failed to notify global metastorage update listener",
                         "key", key, false,
-                        "val", val, false,
+                        "oldVal", oldVal, false,
+                        "newVal", newVal, false,
                         "lsnr", entry.get2(), false
                     ), e);
                 }

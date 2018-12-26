@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTes
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -165,5 +167,7 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         //MetaStorage
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStorageTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
     }
 }

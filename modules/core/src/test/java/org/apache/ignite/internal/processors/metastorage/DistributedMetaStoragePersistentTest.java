@@ -188,6 +188,49 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    public void testJoinNodeWithoutEnoughHistory() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
+
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            startGrid(1);
+
+            ignite.cluster().active(true);
+
+            ignite.context().globalMetastorage().write("key1", "value1");
+
+            stopGrid(1);
+
+            ignite.context().globalMetastorage().write("key2", "value2");
+
+            ignite.context().globalMetastorage().write("key3", "value3");
+
+            stopGrid(0);
+
+            ignite = startGrid(1);
+
+            startGrid(0);
+
+            awaitPartitionMapExchange();
+
+            assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
+
+            assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
+
+            assertEquals("value3", ignite.context().globalMetastorage().read("key3"));
+
+            assertGlobalMetastoragesAreEqual(ignite, grid(0));
+        }
+        finally {
+            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testNamesCollision() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -513,5 +556,33 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
             return null;
         }, IllegalStateException.class, "Ignite cluster is not active");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void test1() throws Exception {
+        startGrid(0);
+
+        startGrid(1);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(0);
+
+        grid(1).context().globalMetastorage().write("key", "value1");
+
+        stopGrid(1);
+
+        startGrid(0);
+
+        grid(0).cluster().active(true);
+
+        grid(0).context().globalMetastorage().write("key", "value2");
+
+        startGrid(1);
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
     }
 }

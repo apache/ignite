@@ -150,8 +150,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
 
-            metastorage.listen(key -> key.startsWith("k"), (key, val) -> {
-                assertEquals("value", val);
+            metastorage.listen(key -> key.startsWith("k"), (key, oldVal, newVal) -> {
+                assertNull(oldVal);
+
+                assertEquals("value", newVal);
 
                 predCntr.incrementAndGet();
             });
@@ -183,8 +185,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
 
-            metastorage.listen(key -> key.startsWith("k"), (key, val) -> {
-                assertNull(val);
+            metastorage.listen(key -> key.startsWith("k"), (key, oldVal, newVal) -> {
+                assertEquals("value", oldVal);
+
+                assertNull(newVal);
 
                 predCntr.incrementAndGet();
             });

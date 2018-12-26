@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -66,10 +65,15 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
+    @Override public void onUpdateMessage(
+        DistributedMetaStorageHistoryItem histItem,
+        Serializable val,
+        boolean notifyListeners
+    ) throws IgniteCheckedException {
         ++dms.ver;
 
-        dms.notifyListeners(histItem.key, val);
+        if (notifyListeners)
+            dms.notifyListeners(histItem.key, read(histItem.key), val);
     }
 
     /** {@inheritDoc} */
@@ -91,9 +95,6 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
 
                 dms.addToHistoryCache(dms.ver + i + 1 - len, histItem);
             }
-
-            for (DistributedMetastorageLifecycleListener lsnr : dms.subscrProcessor.getGlobalMetastorageSubscribers())
-                lsnr.onReInit(dms);
         }
     }
 }

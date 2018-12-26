@@ -39,11 +39,4 @@ public interface DistributedMetastorageLifecycleListener {
      * @param metastorage Global metastorage instance.
      */
     default void onReadyForWrite(DistributedMetaStorage metastorage) {}
-
-    /**
-     * Called when full data snapshot was applied instead of incremental updates.
-     *
-     * @param metastorage Read-only global metastorage.
-     */
-    default void onReInit(ReadableDistributedMetaStorage metastorage) {}
 }

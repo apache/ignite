@@ -33,6 +33,7 @@ public interface ReadOnlyMetastorage {
 
     /**
      * Read all key/value pairs where key has provided prefix.
+     * It is guaranteed that callback will be applied to matching keys in ascending order.
      *
      * @param keyPrefix Key prefix.
      * @param cb Callback to invoke on each matching key/value pair.

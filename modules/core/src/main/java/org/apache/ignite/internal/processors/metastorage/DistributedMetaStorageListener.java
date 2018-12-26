@@ -25,5 +25,5 @@ import org.jetbrains.annotations.Nullable;
 @FunctionalInterface
 public interface DistributedMetaStorageListener<T extends Serializable> {
     /** */
-    void onUpdate(@NotNull String key, @Nullable T val);
+    void onUpdate(@NotNull String key, @Nullable T oldVal, @Nullable T newVal);
 }

@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -78,7 +77,11 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException {
+    @Override public void onUpdateMessage(
+        DistributedMetaStorageHistoryItem histItem,
+        Serializable val,
+        boolean notifyListeners
+    ) throws IgniteCheckedException {
         String histGuardKey = historyGuardKey(dms.ver + 1);
 
         metastorage.write(histGuardKey, DUMMY_VALUE);
@@ -89,9 +92,10 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
         metastorage.write(historyVersionKey(), dms.ver);
 
-        dms.notifyListeners(histItem.key, val);
-
         metastorage.remove(histGuardKey);
+
+        if (notifyListeners)
+            dms.notifyListeners(histItem.key, read(histItem.key), val);
     }
 
     /** {@inheritDoc} */
@@ -138,9 +142,6 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 }
 
                 metastorage.write(historyVersionKey(), dms.ver);
-
-                for (DistributedMetastorageLifecycleListener lsnr : dms.subscrProcessor.getGlobalMetastorageSubscribers())
-                    lsnr.onReInit(dms);
             }
 
             metastorage.remove(cleanupGuardKey);

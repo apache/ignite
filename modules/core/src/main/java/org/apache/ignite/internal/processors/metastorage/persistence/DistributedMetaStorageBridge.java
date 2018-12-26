@@ -38,7 +38,11 @@ interface DistributedMetaStorageBridge {
     void write(String globalKey, @Nullable byte[] valBytes) throws IgniteCheckedException;
 
     /** */
-    void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException;
+    void onUpdateMessage(
+        DistributedMetaStorageHistoryItem histItem,
+        Serializable val,
+        boolean notifyListeners
+    ) throws IgniteCheckedException;
 
     /** */
     void removeHistoryItem(long ver) throws IgniteCheckedException;

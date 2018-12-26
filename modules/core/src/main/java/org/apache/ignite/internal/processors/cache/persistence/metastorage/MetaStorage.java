@@ -27,10 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -138,7 +139,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private FreeListImpl freeList;
 
     /** */
-    private Map<String, byte[]> lastUpdates;
+    private SortedMap<String, byte[]> lastUpdates;
 
     /** */
     private final Marshaller marshaller = JdkMarshaller.DEFAULT;
@@ -280,28 +281,21 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         if (empty)
             return;
 
+        Iterator<Map.Entry<String, byte[]>> updatesIter = null;
+
         if (readOnly) {
             if (lastUpdates != null) {
-                for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
-                    String key = lastUpdate.getKey();
+                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
 
-                    if (key.startsWith(keyPrefix)) {
-                        byte[] valBytes = lastUpdate.getValue();
-
-                        if (valBytes == TOMBSTONE)
-                            continue;
-
-                        if (unmarshal) {
-                            Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
-
-                            cb.accept(key, val);
-                        }
-                        else
-                            cb.accept(key, valBytes);
-                    }
-                }
+                if (!prefixedSubmap.isEmpty())
+                    updatesIter = prefixedSubmap.entrySet().iterator();
             }
         }
+
+        Map.Entry<String, byte[]> curUpdatesEntry = null;
+
+        if (updatesIter != null && updatesIter.hasNext())
+            curUpdatesEntry = updatesIter.next();
 
         MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
 
@@ -315,10 +309,36 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             String key = row.key();
             byte[] valBytes = row.value();
 
-            // Either already added it, or this is a tombstone -> ignore.
-            if (lastUpdates != null && lastUpdates.containsKey(key))
-                continue;
+            while (curUpdatesEntry != null && curUpdatesEntry.getKey().compareTo(key) < 0) {
+                applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
 
+                curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
+            }
+
+            if (curUpdatesEntry != null && curUpdatesEntry.getKey().equals(key)) {
+                applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+
+                curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
+            }
+            else
+                applyCallback(cb, unmarshal, key, valBytes);
+        }
+
+        while (curUpdatesEntry != null) {
+            applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+
+            curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
+        }
+    }
+
+    /** */
+    private void applyCallback(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        String key,
+        byte[] valBytes
+    ) throws IgniteCheckedException {
+        if (valBytes != TOMBSTONE) {
             if (unmarshal) {
                 Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
 
@@ -610,7 +630,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     public void applyUpdate(String key, byte[] value) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates == null)
-                lastUpdates = new HashMap<>();
+                lastUpdates = new TreeMap<>();
 
             lastUpdates.put(key, value != null ? value : TOMBSTONE);
         }
