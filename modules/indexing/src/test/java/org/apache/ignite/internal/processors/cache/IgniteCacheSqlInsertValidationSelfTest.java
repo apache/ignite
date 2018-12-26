@@ -114,13 +114,16 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Check that we can't perform insert without at least one key field specified.
+     * Check forgotten key fields.
+     * If we've forgotten to specify key fields and we don't specify _key, then default key is inserted.
      */
     public void testIncorrectComplex() {
+        execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (2,3,4,5)");
+
         GridTestUtils.assertThrows(log(),
-            () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (2,3,4,5)"),
+            () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (8,9,10,11)"),
             IgniteSQLException.class,
-            "Insert and merge queries requires at least one key column specified.");
+            "Duplicate key during INSERT");
     }
 
     /**
@@ -141,6 +144,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
      * Check that we can't perform insert without at least one key field specified.
      */
     public void testMixedPlaceholderWithOtherKeyFields() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10824");
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO WITH_KEY_FLDS(_key, FK1, _val) VALUES (?, ?, ?)",
                 new Key(1, 2), 42, 43),
