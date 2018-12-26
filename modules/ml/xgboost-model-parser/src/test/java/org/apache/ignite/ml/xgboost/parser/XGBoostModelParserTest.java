@@ -18,14 +18,13 @@
 package org.apache.ignite.ml.xgboost.parser;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Scanner;
-import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
 import org.apache.ignite.ml.inference.builder.SyncInfModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
-import org.apache.ignite.ml.xgboost.MapBasedXGObject;
-import org.apache.ignite.ml.xgboost.XGObject;
+import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +52,7 @@ public class XGBoostModelParserTest {
 
         InfModelReader reader = new FileSystemInfModelReader(url.getPath());
 
-        try (InfModel<XGObject, Double> mdl = mdlBuilder.build(reader, parser);
+        try (XGModelComposition mdl = mdlBuilder.build(reader, parser);
              Scanner testDataScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
                  .getResourceAsStream("datasets/agaricus-test-data.txt"));
              Scanner testExpResultsScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
@@ -65,7 +64,7 @@ public class XGBoostModelParserTest {
                 String testDataStr = testDataScanner.nextLine();
                 String testExpResultsStr = testExpResultsScanner.nextLine();
 
-                MapBasedXGObject testObj = new MapBasedXGObject();
+                HashMap<String, Double> testObj = new HashMap<>();
 
                 for (String keyValueString : testDataStr.split(" ")) {
                     String[] keyVal = keyValueString.split(":");
@@ -74,7 +73,7 @@ public class XGBoostModelParserTest {
                         testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                 }
 
-                double prediction = mdl.predict(testObj);
+                double prediction = mdl.apply(testObj);
 
                 double expPrediction = Double.parseDouble(testExpResultsStr);
 

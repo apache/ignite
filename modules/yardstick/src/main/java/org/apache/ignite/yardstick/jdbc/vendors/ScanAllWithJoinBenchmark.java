@@ -15,39 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import java.util.List;
-import org.apache.ignite.ml.inference.InfModel;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 
 /**
- * XGBoost model.
+ * Benchmark that fetches all the rows from table of Person inner join Organization table. Specify in the properties
+ * file {@link IgniteBenchmarkArguments#sqlRange()} to be equal to whole Person table size ({@link
+ * IgniteBenchmarkArguments#range()}) since Person table contains more rows than Organization.
  */
-public class XGModel implements InfModel<XGObject, Double> {
-    /** List of decision trees. */
-    private final List<XGNode> trees;
-
-    /**
-     * Constructs a new XGBoost model.
-     *
-     * @param trees List of XGBoost trees.
-     */
-    public XGModel(List<XGNode> trees) {
-        this.trees = trees;
+public class ScanAllWithJoinBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        //No-op, query doesn't have parameters to fill.
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(XGObject obj) {
-        double res = 0;
-
-        for (XGNode tree : trees)
-            res += tree.predict(obj);
-
-        return (1.0 / (1.0 + Math.exp(-res)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // Do nothing.
+    @Override protected String testedSqlQuery() {
+        return queries.selectAllPersonsJoinOrg();
     }
 }

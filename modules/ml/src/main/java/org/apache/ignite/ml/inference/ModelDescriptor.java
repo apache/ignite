@@ -39,7 +39,7 @@ public class ModelDescriptor implements Serializable {
     private final InfModelReader reader;
 
     /** Model parser. */
-    private final InfModelParser<byte[], byte[]> parser;
+    private final InfModelParser<byte[], byte[], ?> parser;
 
     /**
      * Constructs a new instance of model descriptor.
@@ -51,7 +51,7 @@ public class ModelDescriptor implements Serializable {
      * @param parser Model parser.
      */
     public ModelDescriptor(String name, String desc, ModelSignature signature, InfModelReader reader,
-        InfModelParser<byte[], byte[]> parser) {
+        InfModelParser<byte[], byte[], ?> parser) {
         this.name = name;
         this.desc = desc;
         this.signature = signature;
@@ -80,7 +80,7 @@ public class ModelDescriptor implements Serializable {
     }
 
     /** */
-    public InfModelParser<byte[], byte[]> getParser() {
+    public InfModelParser<byte[], byte[], ?> getParser() {
         return parser;
     }
 

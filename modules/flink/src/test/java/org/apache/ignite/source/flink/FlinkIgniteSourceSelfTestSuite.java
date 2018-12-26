@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
+package org.apache.ignite.source.flink;
 
-/** XGBoost model leaf node. */
-public class XGLeafNode implements XGNode {
-    /** Value. */
-    private final double val;
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
+/**
+ * Apache Flink source tests.
+ */
+@RunWith(AllTests.class)
+public class FlinkIgniteSourceSelfTestSuite extends TestSuite {
     /**
-     * Constructs a new instance of leaf node.
-     *
-     * @param val Value.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public XGLeafNode(double val) {
-        this.val = val;
-    }
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Flink Source Test Suite");
 
-    /** {@inheritDoc} */
-    @Override public double predict(XGObject obj) {
-        return val;
+        suite.addTest(new JUnit4TestAdapter(FlinkIgniteSourceSelfTest.class));
+
+        return suite;
     }
 }
+

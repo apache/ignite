@@ -15,33 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits;
-
-import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited deprecated assertions.
-import junit.framework.TestResult;
-
 /**
- * Supports compatibility with old tests based on configurations variations.
+ * <!-- Package description. -->
+ * Contains generators of pseudo-random scalars in according to specific disctribution.
  */
-abstract class LegacyConfigVariationsSupport extends TestCase {
-    /**
-     * Fallback to superclass.
-     */
-    protected int countTestCasesFallback() {
-        return super.countTestCases();
-    }
-
-    /**
-     * Fallback to superclass.
-     */
-    protected void runFallback(TestResult res) {
-        super.run(res);
-    }
-
-    /**
-     * Fallback to superclass.
-     */
-    protected String getNameFallback() {
-        return super.getName();
-    }
-}
+package org.apache.ignite.ml.util.generators.primitives.scalar;
