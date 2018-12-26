@@ -21,6 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -29,6 +32,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 /**
  * Test cache permission for Entry processor.
  */
+@RunWith(JUnit4.class)
 public class EntryProcessorCachePermissionTest extends AbstractCachePermissionTest {
     /** Server node. */
     private Ignite srvNode;
@@ -54,6 +58,7 @@ public class EntryProcessorCachePermissionTest extends AbstractCachePermissionTe
     /**
      *
      */
+    @Test
     public void test() {
         invoke(srvNode);
         invoke(clientNode);

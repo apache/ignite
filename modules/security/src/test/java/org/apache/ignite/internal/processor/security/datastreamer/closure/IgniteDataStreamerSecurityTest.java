@@ -28,14 +28,19 @@ import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.stream.StreamVisitor;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing permissions when the closure od DataStreamer is executed cache operations on remote node.
  */
+@RunWith(JUnit4.class)
 public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
     /**
      *
      */
+    @Test
     public void testDataStreamer() {
         assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t));
         assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t));

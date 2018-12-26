@@ -31,10 +31,14 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing permissions when the filter of Load cache is executed cache operations on remote node.
  */
+@RunWith(JUnit4.class)
 public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
@@ -54,6 +58,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     /**
      *
      */
+    @Test
     public void testLoadCache() {
         assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t));
         assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t));

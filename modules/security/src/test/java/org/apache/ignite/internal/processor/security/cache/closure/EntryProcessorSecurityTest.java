@@ -27,12 +27,17 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing permissions when EntryProcessor closure is executed cache operations on remote node.
  */
+@RunWith(JUnit4.class)
 public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     /** */
+    @Test
     public void testEntryProcessor() {
         assertAllowed(clntAllPerms, srvAllPerms);
         assertAllowed(clntAllPerms, srvReadOnlyPerm);

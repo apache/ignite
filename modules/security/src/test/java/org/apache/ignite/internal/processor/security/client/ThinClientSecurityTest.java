@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processor.security.TestSecurityData;
 import org.apache.ignite.internal.processor.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -51,6 +54,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for thin client.
  */
+@RunWith(JUnit4.class)
 public class ThinClientSecurityTest extends AbstractSecurityTest {
     /** Client. */
     private static final String CLIENT = "client";
@@ -151,6 +155,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     /**
      * @throws Exception If error occurs.
      */
+    @Test
     public void testCacheSinglePermOperations() throws Exception {
         for (Consumer<IgniteClient> c : consumers(CACHE))
             executeOperation(CLIENT, c);
@@ -165,6 +170,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testCacheTaskPermOperations() throws Exception {
         executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).removeAll());
         executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).clear());
@@ -176,6 +182,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     /**
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
             assertThat(sysPrmClnt.createCache(DYNAMIC_CACHE), notNullValue());

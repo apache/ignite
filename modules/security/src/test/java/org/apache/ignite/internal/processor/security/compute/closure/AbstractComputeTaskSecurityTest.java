@@ -19,12 +19,17 @@ package org.apache.ignite.internal.processor.security.compute.closure;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Abstract compute security test.
  */
+@RunWith(JUnit4.class)
 public abstract class AbstractComputeTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /** */
+    @Test
     public void test() {
         checkSuccess(srvAllPerms, clntAllPerms);
         checkSuccess(srvAllPerms, srvReadOnlyPerm);

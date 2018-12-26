@@ -32,6 +32,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
@@ -39,6 +42,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 /**
  * Abstract class for task execute permission tests.
  */
+@RunWith(JUnit4.class)
 public abstract class AbstractTaskExecutePermissionTest extends AbstractSecurityTest {
     /** Flag that shows task was executed. */
     protected static final AtomicBoolean IS_EXECUTED = new AtomicBoolean(false);
@@ -83,6 +87,7 @@ public abstract class AbstractTaskExecutePermissionTest extends AbstractSecurity
     /**
      *
      */
+    @Test
     public void test() {
         for (TestRunnable r : runnablesForNodes(srvAllowed, clntAllowed))
             allowRun(r);

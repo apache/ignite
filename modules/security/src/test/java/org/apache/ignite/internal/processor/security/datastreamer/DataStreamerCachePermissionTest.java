@@ -25,6 +25,9 @@ import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -34,10 +37,12 @@ import static org.junit.Assert.assertThat;
 /**
  * Test cache permissions for Data Streamer.
  */
+@RunWith(JUnit4.class)
 public class DataStreamerCachePermissionTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testServerNode() throws Exception {
         testDataStreamer(false);
     }
@@ -45,6 +50,7 @@ public class DataStreamerCachePermissionTest extends AbstractCachePermissionTest
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testClientNode() throws Exception {
         testDataStreamer(true);
     }

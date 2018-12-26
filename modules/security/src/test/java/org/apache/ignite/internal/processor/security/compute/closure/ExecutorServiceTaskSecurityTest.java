@@ -22,14 +22,19 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing permissions when the service task is executed cache operations on remote node.
  */
+@RunWith(JUnit4.class)
 public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /**
      *
      */
+    @Test
     public void testExecute() {
         assertAllowed((t) -> execute(clntAllPerms, clntReadOnlyPerm, t));
         assertAllowed((t) -> execute(clntAllPerms, srvReadOnlyPerm, t));

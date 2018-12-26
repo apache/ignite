@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processor.security.cache;
 import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -29,10 +32,12 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 /**
  * Test CRUD cache permissions.
  */
+@RunWith(JUnit4.class)
 public class CachePermissionsTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testServerNode() throws Exception {
         testCrudCachePermissions(false);
     }
@@ -40,6 +45,7 @@ public class CachePermissionsTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testClientNode() throws Exception {
         testCrudCachePermissions(true);
     }

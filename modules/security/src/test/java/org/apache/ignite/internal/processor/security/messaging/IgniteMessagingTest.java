@@ -30,6 +30,9 @@ import org.apache.ignite.internal.processor.security.AbstractResolveSecurityCont
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -38,6 +41,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Testing permissions when the message listener is executed cache operations on remote node.
  */
+@RunWith(JUnit4.class)
 public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     /** Sever node that has all permissions for TEST_CACHE. */
     private IgniteEx evntAllPerms;
@@ -62,6 +66,7 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     /**
      *
      */
+    @Test
     public void testMessaging() throws Exception {
         awaitPartitionMapExchange();
 

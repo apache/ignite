@@ -35,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -42,6 +45,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 /**
  * Test cache permission for Load cache.
  */
+@RunWith(JUnit4.class)
 public class LoadCachePermissionTest extends AbstractCachePermissionTest {
     /** Entry. */
     private static T2<String, Integer> entry;
@@ -85,6 +89,7 @@ public class LoadCachePermissionTest extends AbstractCachePermissionTest {
     /**
      *
      */
+    @Test
     public void test() {
         load(srvNode);
         load(clientNode);

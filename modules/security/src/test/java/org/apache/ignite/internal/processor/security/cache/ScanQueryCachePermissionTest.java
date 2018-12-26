@@ -22,16 +22,21 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 
 /**
  * Test cache permission for invoking of Scan Query.
  */
+@RunWith(JUnit4.class)
 public class ScanQueryCachePermissionTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testServerNode() throws Exception {
         testScanQuery(false);
     }
@@ -39,6 +44,7 @@ public class ScanQueryCachePermissionTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testClientNode() throws Exception {
         testScanQuery(true);
     }
