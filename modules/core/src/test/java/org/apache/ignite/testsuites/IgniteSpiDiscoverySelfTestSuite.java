@@ -35,6 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
@@ -62,18 +63,20 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for all discovery spi implementations.
  */
-public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiDiscoverySelfTestSuite {
     /**
      * @return Discovery SPI tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteSpiDiscoverySelfTestSuite.class));
 
@@ -84,6 +87,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryJdbcIpFinderSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryMulticastIpFinderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryIpFinderCleanerTest.class));
 
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySpiSelfTest.class));

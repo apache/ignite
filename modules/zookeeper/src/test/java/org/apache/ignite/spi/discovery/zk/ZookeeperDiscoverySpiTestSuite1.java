@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
@@ -26,11 +27,14 @@ import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
+@RunWith(AllTests.class)
+public class ZookeeperDiscoverySpiTestSuite1 {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
      * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.
@@ -51,18 +55,17 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
 
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
-        suite.addTestSuite(ZookeeperClientTest.class);
-        suite.addTestSuite(ZookeeperDiscoverySpiTest.class);
-        suite.addTestSuite(ZookeeperDiscoverySpiSaslFailedAuthTest.class);
-        suite.addTestSuite(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class);
+        suite.addTest(new JUnit4TestAdapter(ZookeeperClientTest.class));
+        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiTest.class));
+        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiSaslFailedAuthTest.class));
+        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class));
 
         return suite;
     }

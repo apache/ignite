@@ -697,7 +697,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param resMap Result map.
      * @param exp Expected results.
      */
-    @SuppressWarnings("unchecked")
     private void checkResult(Map resMap, Map<Object, Object> exp) {
         assertNotNull(resMap);
 

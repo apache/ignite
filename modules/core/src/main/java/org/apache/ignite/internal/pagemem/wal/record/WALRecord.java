@@ -19,8 +19,11 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.*;
 
 /**
  * Log entry abstract class.
@@ -32,126 +35,126 @@ public abstract class WALRecord {
      */
     public enum RecordType {
         /** */
-        TX_RECORD,
+        TX_RECORD (LOGICAL),
 
         /** */
-        PAGE_RECORD,
+        PAGE_RECORD (PHYSICAL),
 
         /** */
-        DATA_RECORD,
+        DATA_RECORD (LOGICAL),
 
         /** Checkpoint (begin) record */
-        CHECKPOINT_RECORD,
+        CHECKPOINT_RECORD (PHYSICAL),
 
         /** WAL segment header record. */
-        HEADER_RECORD,
+        HEADER_RECORD (INTERNAL),
 
         // Delta records.
 
         /** */
-        INIT_NEW_PAGE_RECORD,
+        INIT_NEW_PAGE_RECORD (PHYSICAL),
 
         /** */
-        DATA_PAGE_INSERT_RECORD,
+        DATA_PAGE_INSERT_RECORD (PHYSICAL),
 
         /** */
-        DATA_PAGE_INSERT_FRAGMENT_RECORD,
+        DATA_PAGE_INSERT_FRAGMENT_RECORD (PHYSICAL),
 
         /** */
-        DATA_PAGE_REMOVE_RECORD,
+        DATA_PAGE_REMOVE_RECORD (PHYSICAL),
 
         /** */
-        DATA_PAGE_SET_FREE_LIST_PAGE,
+        DATA_PAGE_SET_FREE_LIST_PAGE (PHYSICAL),
 
         /** */
-        BTREE_META_PAGE_INIT_ROOT,
+        BTREE_META_PAGE_INIT_ROOT (PHYSICAL),
 
         /** */
-        BTREE_META_PAGE_ADD_ROOT,
+        BTREE_META_PAGE_ADD_ROOT (PHYSICAL),
 
         /** */
-        BTREE_META_PAGE_CUT_ROOT,
+        BTREE_META_PAGE_CUT_ROOT (PHYSICAL),
 
         /** */
-        BTREE_INIT_NEW_ROOT,
+        BTREE_INIT_NEW_ROOT (PHYSICAL),
 
         /** */
-        BTREE_PAGE_RECYCLE,
+        BTREE_PAGE_RECYCLE (PHYSICAL),
 
         /** */
-        BTREE_PAGE_INSERT,
+        BTREE_PAGE_INSERT (PHYSICAL),
 
         /** */
-        BTREE_FIX_LEFTMOST_CHILD,
+        BTREE_FIX_LEFTMOST_CHILD (PHYSICAL),
 
         /** */
-        BTREE_FIX_COUNT,
+        BTREE_FIX_COUNT (PHYSICAL),
 
         /** */
-        BTREE_PAGE_REPLACE,
+        BTREE_PAGE_REPLACE (PHYSICAL),
 
         /** */
-        BTREE_PAGE_REMOVE,
+        BTREE_PAGE_REMOVE (PHYSICAL),
 
         /** */
-        BTREE_PAGE_INNER_REPLACE,
+        BTREE_PAGE_INNER_REPLACE (PHYSICAL),
 
         /** */
-        BTREE_FIX_REMOVE_ID,
+        BTREE_FIX_REMOVE_ID (PHYSICAL),
 
         /** */
-        BTREE_FORWARD_PAGE_SPLIT,
+        BTREE_FORWARD_PAGE_SPLIT (PHYSICAL),
 
         /** */
-        BTREE_EXISTING_PAGE_SPLIT,
+        BTREE_EXISTING_PAGE_SPLIT (PHYSICAL),
 
         /** */
-        BTREE_PAGE_MERGE,
+        BTREE_PAGE_MERGE (PHYSICAL),
 
         /** */
-        PAGES_LIST_SET_NEXT,
+        PAGES_LIST_SET_NEXT (PHYSICAL),
 
         /** */
-        PAGES_LIST_SET_PREVIOUS,
+        PAGES_LIST_SET_PREVIOUS (PHYSICAL),
 
         /** */
-        PAGES_LIST_INIT_NEW_PAGE,
+        PAGES_LIST_INIT_NEW_PAGE (PHYSICAL),
 
         /** */
-        PAGES_LIST_ADD_PAGE,
+        PAGES_LIST_ADD_PAGE (PHYSICAL),
 
         /** */
-        PAGES_LIST_REMOVE_PAGE,
+        PAGES_LIST_REMOVE_PAGE (PHYSICAL),
 
         /** */
-        META_PAGE_INIT,
+        META_PAGE_INIT (PHYSICAL),
 
         /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS,
+        PARTITION_META_PAGE_UPDATE_COUNTERS (PHYSICAL),
 
         /** Memory recovering start marker */
         MEMORY_RECOVERY,
 
         /** */
-        TRACKING_PAGE_DELTA,
+        TRACKING_PAGE_DELTA (PHYSICAL),
 
         /** Meta page update last successful snapshot id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID,
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID (MIXED),
 
         /** Meta page update last successful full snapshot id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID,
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID (MIXED),
 
         /** Meta page update next snapshot id. */
-        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID,
+        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID (MIXED),
 
         /** Meta page update last allocated index. */
-        META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
+        META_PAGE_UPDATE_LAST_ALLOCATED_INDEX (MIXED),
 
         /** Partition meta update state. */
-        PART_META_UPDATE_STATE,
+        PART_META_UPDATE_STATE (MIXED),
 
         /** Page list meta reset count record. */
-        PAGE_LIST_META_RESET_COUNT_RECORD,
+        PAGE_LIST_META_RESET_COUNT_RECORD (PHYSICAL),
 
         /** Switch segment record.
          *  Marker record for indicate end of segment.
@@ -160,22 +163,22 @@ public abstract class WALRecord {
          *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
          *  No need write CRC or WAL pointer for this record. It is byte marker record.
          *  */
-        SWITCH_SEGMENT_RECORD,
+        SWITCH_SEGMENT_RECORD (INTERNAL),
 
         /** */
-        DATA_PAGE_UPDATE_RECORD,
+        DATA_PAGE_UPDATE_RECORD (PHYSICAL),
 
         /** init */
-        BTREE_META_PAGE_INIT_ROOT2,
+        BTREE_META_PAGE_INIT_ROOT2 (PHYSICAL),
 
         /** Partition destroy. */
-        PARTITION_DESTROY,
+        PARTITION_DESTROY (PHYSICAL),
 
         /** Snapshot record. */
         SNAPSHOT,
 
         /** Metastore data record. */
-        METASTORE_DATA_RECORD,
+        METASTORE_DATA_RECORD (LOGICAL),
 
         /** Exchange record. */
         EXCHANGE,
@@ -184,31 +187,60 @@ public abstract class WALRecord {
         RESERVED,
 
         /** Rotated id part record. */
-        ROTATED_ID_PART_RECORD,
+        ROTATED_ID_PART_RECORD (PHYSICAL),
 
         /** */
-        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD (PHYSICAL),
 
         /** */
-        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD (PHYSICAL),
 
         /** */
-        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD (PHYSICAL),
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD,
+        ENCRYPTED_RECORD (PHYSICAL),
 
         /** Ecnrypted data record. */
-        ENCRYPTED_DATA_RECORD,
+        ENCRYPTED_DATA_RECORD (LOGICAL),
 
         /** Mvcc data record. */
-        MVCC_DATA_RECORD,
+        MVCC_DATA_RECORD (LOGICAL),
 
         /** Mvcc Tx state change record. */
-        MVCC_TX_RECORD,
+        MVCC_TX_RECORD (LOGICAL),
 
         /** Consistent cut record. */
         CONSISTENT_CUT;
+
+        /**
+         * When you're adding a new record don't forget to choose record purpose explicitly
+         * if record is needed for physical or logical recovery.
+         * By default the purpose of record is {@link RecordPurpose#CUSTOM} and this record will not be used in recovery process.
+         * For more information read description of {@link RecordPurpose}.
+         */
+        private final RecordPurpose purpose;
+
+        /**
+         * @param purpose Purpose.
+         */
+        RecordType(RecordPurpose purpose) {
+            this.purpose = purpose;
+        }
+
+        /**
+         * Default constructor.
+         */
+        RecordType() {
+            this(CUSTOM);
+        }
+
+        /**
+         * @return Purpose of record.
+         */
+        public RecordPurpose purpose() {
+            return purpose;
+        }
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -224,6 +256,37 @@ public abstract class WALRecord {
          * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
+    }
+
+    /**
+     * Record purposes set.
+     */
+    public enum RecordPurpose {
+        /**
+         * Internal records are needed for correct iterating over WAL structure.
+         * These records will never be returned to user during WAL iteration.
+         */
+        INTERNAL,
+        /**
+         * Physical records are needed for correct recovering physical state of {@link org.apache.ignite.internal.pagemem.PageMemory}.
+         * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.
+         */
+        PHYSICAL,
+        /**
+         * Logical records are needed to replay logical updates since last checkpoint.
+         * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CheckpointStatus, org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate, boolean)}
+         */
+        LOGICAL,
+        /**
+         * Physical-logical records are used both for physical and logical recovery.
+         * Usually these records contain meta-information about partitions.
+         * NOTE: Not recommend to use this type without strong reason.
+         */
+        MIXED,
+        /**
+         * Custom records are needed for any custom iterations over WAL in various components.
+         */
+        CUSTOM
     }
 
     /** */

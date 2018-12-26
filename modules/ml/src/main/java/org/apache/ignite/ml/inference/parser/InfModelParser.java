@@ -27,12 +27,12 @@ import org.apache.ignite.ml.inference.InfModel;
  * @param <O> Type of model output.
  */
 @FunctionalInterface
-public interface InfModelParser<I, O> extends Serializable {
+public interface InfModelParser<I, O, M extends InfModel<I, O>> extends Serializable {
     /**
      * Accepts serialized model represented by byte array, parses it and returns {@link InfModel}.
      *
      * @param mdl Serialized model represented by byte array.
      * @return Inference model.
      */
-    public InfModel<I, O> parse(byte[] mdl);
+    public M parse(byte[] mdl);
 }

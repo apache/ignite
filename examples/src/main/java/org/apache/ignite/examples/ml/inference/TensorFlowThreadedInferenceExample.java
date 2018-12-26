@@ -42,7 +42,7 @@ import org.tensorflow.Tensor;
  */
 public class TensorFlowThreadedInferenceExample {
     /** Path to the directory with saved TensorFlow model. */
-    private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
+    private static final String MODEL_PATH = "examples/src/main/resources/models/mnist_tf_model";
 
     /** Path to the MNIST images data. */
     private static final String MNIST_IMG_PATH = "examples/src/main/resources/datasets/t10k-images-idx3-ubyte";
@@ -58,7 +58,7 @@ public class TensorFlowThreadedInferenceExample {
 
         InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
-        InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
+        InfModelParser<double[], Long, ?> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
 
             .withInput("Placeholder", doubles -> {
                 float[][][] reshaped = new float[1][28][28];
@@ -83,7 +83,7 @@ public class TensorFlowThreadedInferenceExample {
             .build(reader, parser)) {
             List<Future<?>> futures = new ArrayList<>(images.size());
             for (MnistUtils.MnistLabeledImage image : images)
-                futures.add(threadedMdl.predict(image.getPixels()));
+                futures.add(threadedMdl.apply(image.getPixels()));
             for (Future<?> f : futures)
                 f.get();
         }

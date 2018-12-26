@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
@@ -62,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreaded
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
@@ -111,11 +111,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite1 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite1 {
     /**
      * @return IgniteCache test suite.
      */
@@ -186,7 +189,6 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(GridCacheMvccSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
         ignoredTests.add(GridCacheMvccPartitionedSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
         ignoredTests.add(GridCacheMvccManagerSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
-        ignoredTests.add(GridCacheSwapPreloadSelfTest.class);
         ignoredTests.add(GridCacheMissingCommitVersionSelfTest.class); // Mvcc tx states resides in TxLog.
 
         // Other non-Tx test.
@@ -237,10 +239,10 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         suite.addTest(IgniteBinaryCacheTestSuite.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheMvccMultiThreadedUpdateSelfTest.class);
-        suite.addTestSuite(CacheMvccTxFastFinishTest.class);
-        suite.addTestSuite(IgniteCacheMvccTxInvokeTest.class);
-        suite.addTestSuite(IgniteCacheMvccTxNearEnabledInvokeTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheMvccMultiThreadedUpdateSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTxFastFinishTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxInvokeTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxNearEnabledInvokeTest.class));
 
         return suite;
     }

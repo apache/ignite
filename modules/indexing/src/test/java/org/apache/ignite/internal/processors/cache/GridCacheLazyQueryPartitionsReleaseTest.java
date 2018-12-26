@@ -34,18 +34,16 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to lazy query partitions has not been released too early.
  */
+@RunWith(JUnit4.class)
 public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractTest {
-    /** IP finder */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name */
     private static final String PERSON_CACHE = "person";
 
@@ -65,12 +63,6 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
 
         cfg.setCacheConfiguration(ccfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -84,6 +76,7 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLazyQueryPartitionsRelease() throws Exception {
         Ignite node1 = startGrid(0);
 
@@ -131,6 +124,7 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLazyQueryPartitionsReleaseOnClose() throws Exception {
         Ignite node1 = startGrid(0);
 

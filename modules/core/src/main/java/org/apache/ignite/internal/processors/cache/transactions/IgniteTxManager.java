@@ -749,7 +749,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Transaction for current thread.
      */
-    @SuppressWarnings({"unchecked"})
     public <T> T tx() {
         IgniteInternalTx tx = txContext();
 
@@ -857,7 +856,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param threadId Id of thread for transaction.
      * @return Transaction for thread with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T tx(GridCacheContext cctx, long threadId) {
         if (cctx == null || !cctx.systemTx())
             return (T)threadMap.get(threadId);
@@ -878,7 +876,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <T extends IgniteInternalTx> T tx(GridCacheVersion txId) {
         return (T)idMap.get(txId);
     }
@@ -887,7 +884,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <T extends IgniteInternalTx> T nearTx(GridCacheVersion txId) {
         return (T)nearIdMap.get(txId);
     }
@@ -1783,7 +1779,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Currently committing transaction.
      */
-    @SuppressWarnings({"unchecked"})
     private IgniteInternalTx txContext() {
         return threadCtx.get();
     }
@@ -2344,7 +2339,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Collection of active transaction deadlock detection futures.
      */
-    @SuppressWarnings("unchecked")
     public Collection<IgniteInternalFuture<?>> deadlockDetectionFutures() {
         Collection<? extends IgniteInternalFuture<?>> values = deadlockDetectFuts.values();
 
@@ -2786,7 +2780,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private class DeadlockDetectionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 

@@ -26,7 +26,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,9 +37,7 @@ import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableCon
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -62,14 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  */
 @RunWith(JUnit4.class)
 public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
-    /** */
-    public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -81,7 +73,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         cfg.setAutoActivationEnabled(false);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }
@@ -100,6 +92,9 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      */
     @Test
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
             testStopNodeWithDisableWAL(nodeStopPoint);
 

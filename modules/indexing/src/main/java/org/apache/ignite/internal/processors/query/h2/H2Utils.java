@@ -388,11 +388,9 @@ public class H2Utils {
      * @param tbl Table to check on not started cache.
      * @return {@code true} in case not started and has been started.
      */
-    public static boolean checkAndStartNotStartedCache(GridH2Table tbl) {
+    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
         if (tbl != null && tbl.isCacheLazy()) {
             String cacheName = tbl.cacheInfo().config().getName();
-
-            GridKernalContext ctx = tbl.cacheInfo().context();
 
             try {
                 Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();

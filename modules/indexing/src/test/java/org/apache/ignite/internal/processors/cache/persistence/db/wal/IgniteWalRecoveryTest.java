@@ -58,8 +58,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -88,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -108,6 +107,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -117,6 +119,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
@@ -249,6 +252,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalBig() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -291,6 +295,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalBigObjectNodeCancel() throws Exception {
         final int MAX_SIZE_POWER = 21;
 
@@ -329,6 +334,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testSwitchClassLoader() throws Exception {
         final IgniteEx igniteEx = startGrid(1);
 
@@ -365,6 +371,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalSimple() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -437,6 +444,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWalLargeValue() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -486,6 +494,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testBinaryRecoverBeforePMEWhenMiddleCheckpoint() throws Exception {
         startGrids(3);
 
@@ -586,6 +595,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRolloverMultithreadedDefault() throws Exception {
         logOnly = false;
 
@@ -595,6 +605,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRolloverMultithreadedLogOnly() throws Exception {
         logOnly = true;
 
@@ -604,6 +615,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testHugeCheckpointRecord() throws Exception {
         long prevFDTimeout = customFailureDetectionTimeout;
 
@@ -683,6 +695,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWalRenameDirSimple() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -741,6 +754,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryNoCheckpoint() throws Exception {
         IgniteEx ctrlGrid = startGrid(0);
 
@@ -789,6 +803,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryLargeNoCheckpoint() throws Exception {
         IgniteEx ctrlGrid = startGrid(0);
 
@@ -839,6 +854,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRandomCrash() throws Exception {
         checkpointFrequency = 2_000 + new Random().nextInt(4_000);
 
@@ -874,6 +890,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLargeRandomCrash() throws Exception {
         checkpointFrequency = 2_000 + new Random().nextInt(4_000);
 
@@ -919,6 +936,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyCache() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -939,6 +957,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testEvictPartition() throws Exception {
         Ignite ignite1 = startGrid("node1");
 
@@ -978,6 +997,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorage() throws Exception {
         int cnt = 5000;
 
@@ -1037,6 +1057,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageLargeArray() throws Exception {
         int cnt = 5000;
         int arraySize = 32_768;
@@ -1078,6 +1099,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageRemove() throws Exception {
         int cnt = 400;
 
@@ -1125,6 +1147,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageUpdate() throws Exception {
         try {
             int cnt = 2000;
@@ -1177,6 +1200,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageWalRestore() throws Exception {
         int cnt = 2000;
 
@@ -1228,6 +1252,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAbsentDeadlock_Iterator_RollOver_Archivation() throws Exception {
         walSegments = 2;
 
@@ -1291,6 +1316,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testApplyDeltaRecords() throws Exception {
         IgniteEx ignite0 = (IgniteEx)startGrid("node0");
 
@@ -1386,8 +1412,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             ignite0.context().cache().context().database().checkpointReadLock();
 
-            try {
-                long page = pageMem.acquirePage(fullId.groupId(), fullId.pageId(), true);
+                try {
+                    long page = pageMem.acquirePage(
+                        fullId.groupId(), fullId.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
 
                 try {
                     long bufPtr = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);
@@ -1423,6 +1450,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
         ignite.cluster().active(true);
@@ -1494,6 +1522,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If any fail.
      */
+    @Test
     public void testTxRecordsConsistency() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 

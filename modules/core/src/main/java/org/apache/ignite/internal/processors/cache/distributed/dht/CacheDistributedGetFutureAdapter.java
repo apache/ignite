@@ -354,7 +354,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futuresStrings = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (isMini(f)) {
                     AbstractMiniFuture mini = (AbstractMiniFuture)f;

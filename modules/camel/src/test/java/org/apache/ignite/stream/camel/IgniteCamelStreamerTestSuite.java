@@ -18,29 +18,31 @@
 package org.apache.ignite.stream.camel;
 
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-public class IgniteCamelStreamerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCamelStreamerTestSuite {
     /**
      * @return {@link IgniteCamelStreamerTest} test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests
+     * @param ignoredTests List of ignored tests.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCamelStreamer Test Suite");
 
-        suite.addTestSuite(IgniteCamelStreamerTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCamelStreamerTest.class));
 
         return suite;
     }

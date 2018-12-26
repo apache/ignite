@@ -16,34 +16,37 @@
  */
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
-import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
  */
-public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsNativeIoTestSuite2 {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         // Direct IO + Page compression.
-        suite.addTestSuite(DiskPageCompressionIntegrationDirectIOTest.class);
+        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationDirectIOTest.class));
 
         //Integrity test with reduced count of pages.
-        suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class));
 
-        suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class));
 
-        suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoWalFlushFsyncSelfTest.class));
 
         return suite;
     }
