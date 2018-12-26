@@ -51,14 +51,11 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageE
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache eviction.
  */
-@RunWith(AllTests.class)
-public class IgniteCacheEvictionSelfTestSuite {
+public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Cache eviction test suite.

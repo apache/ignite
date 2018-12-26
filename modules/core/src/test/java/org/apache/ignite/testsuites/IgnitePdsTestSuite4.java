@@ -17,12 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
-import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
@@ -31,39 +30,34 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageE
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  *
  */
-@RunWith(AllTests.class)
-public class IgnitePdsTestSuite4 {
+public class IgnitePdsTestSuite4 extends TestSuite {
     /**
      * @return Suite.
      */
     public static TestSuite suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Ignored tests.
-     * @return Suite.
-     */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 4");
 
-        addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
+        addRealPageStoreTestsNotForDirectIo(suite);
 
-        GridTestUtils.addTestIfNeeded(suite, FileDownloaderTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsTaskCancelingTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ResetLostPartitionTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
+        suite.addTestSuite(FileDownloaderTest.class);
+
+        suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+
+        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
+
+        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
+
+        suite.addTestSuite(ResetLostPartitionTest.class);
+
+        suite.addTestSuite(IgniteRebalanceOnCachesStoppingOrDestroyingTest.class);
+
+        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheWalDisabledOnRebalancingTest.class);
 
         return suite;
     }
@@ -72,16 +66,16 @@ public class IgnitePdsTestSuite4 {
      * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
      *
      * @param suite suite to add tests into.
-     * @param ignoredTests Ignored tests.
      */
-    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite, Collection<Class> ignoredTests) {
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsTransactionsHangTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageEvictionDuringPartitionClearTest.class, ignoredTests);
+    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
         // Rebalancing test
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class, ignoredTests);
+        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
 
         // Integrity test.
-        GridTestUtils.addTestIfNeeded(suite, IgnitePdsRecoveryAfterFileCorruptionTest.class, ignoredTests);
+        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
     }
 }

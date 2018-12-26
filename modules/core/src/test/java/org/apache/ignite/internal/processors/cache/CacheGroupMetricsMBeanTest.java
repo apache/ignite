@@ -34,6 +34,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -136,21 +137,25 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
             .setGroupName("group1")
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(3)
-            .setAffinity(new RoundRobinVariableSizeAffinityFunction());
+            .setAffinity(new RoundRobinVariableSizeAffinityFunction())
+            .setAtomicityMode(atomicityMode());
 
         CacheConfiguration cCfg2 = new CacheConfiguration()
             .setName("cache2")
             .setGroupName("group2")
-            .setCacheMode(CacheMode.REPLICATED);
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(atomicityMode());
 
         CacheConfiguration cCfg3 = new CacheConfiguration()
             .setName("cache3")
             .setGroupName("group2")
-            .setCacheMode(CacheMode.REPLICATED);
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(atomicityMode());
 
         CacheConfiguration cCfg4 = new CacheConfiguration()
             .setName("cache4")
-            .setCacheMode(CacheMode.PARTITIONED);
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(atomicityMode());
 
         cfg.setCacheConfiguration(cCfg1, cCfg2, cCfg3, cCfg4);
 
@@ -165,6 +170,13 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
     /** {@inheritDoc} */

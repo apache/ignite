@@ -33,14 +33,11 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Topology validator test suite.
  */
-@RunWith(AllTests.class)
-public class IgniteTopologyValidatorTestSuite {
+public class IgniteTopologyValidatorTestSuite extends TestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Topology validator tests suite.

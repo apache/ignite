@@ -98,7 +98,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true);
@@ -109,7 +109,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CacheConfiguration cfg3 = new CacheConfiguration()
             .setName(CACHE3)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true)

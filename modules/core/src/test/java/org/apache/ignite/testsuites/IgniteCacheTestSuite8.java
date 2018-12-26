@@ -27,21 +27,18 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
-public class IgniteCacheTestSuite8 {
+public class IgniteCacheTestSuite8 extends TestSuite {
     /**
      * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
         return suite(null);
     }
-
+    
     /**
      * @return IgniteCache test suite.
      */

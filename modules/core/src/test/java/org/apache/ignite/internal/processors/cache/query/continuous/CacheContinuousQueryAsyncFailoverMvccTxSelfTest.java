@@ -56,4 +56,9 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
     @Override public void testFailoverStartStopBackup() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10391");
     }
+
+    /** {@inheritDoc} */
+    @Override public void testFailoverStartStopBackup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+    }
 }

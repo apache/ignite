@@ -29,7 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
@@ -434,15 +434,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
-        if(dataEntry instanceof EncryptedDataEntry)
+        if (dataEntry instanceof EncryptedDataEntry)
             return dataEntry;
 
         final KeyCacheObject key;
         final CacheObject val;
         boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
-        if (dataEntry instanceof LazyDataEntry) {
-            final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+        if (dataEntry instanceof MarshalledDataEntry) {
+            final MarshalledDataEntry lazyDataEntry = (MarshalledDataEntry)dataEntry;
 
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),
@@ -472,7 +472,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param keepBinary Don't convert non primitive types.
      * @return Unwrapped entry.
      */
-    private @NotNull DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
+    private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
         KeyCacheObject key, CacheObject val, boolean keepBinary) {
         if (dataEntry instanceof MvccDataEntry)
             return new UnwrapMvccDataEntry(

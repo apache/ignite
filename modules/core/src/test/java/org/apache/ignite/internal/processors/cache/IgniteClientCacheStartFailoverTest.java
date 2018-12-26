@@ -192,8 +192,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientStartLastServerFailsMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10262");
-
         clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
     }
 

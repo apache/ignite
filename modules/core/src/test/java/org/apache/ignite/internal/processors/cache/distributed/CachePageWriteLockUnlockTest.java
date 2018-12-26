@@ -21,6 +21,7 @@ import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -55,8 +56,9 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
-            setAffinity(new RendezvousAffinityFunction(false, 32)));
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         cfg.setActiveOnStart(false);
 

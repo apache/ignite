@@ -44,9 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
@@ -54,13 +51,12 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
  * {@link GridCacheWriteBehindStore} only.
  */
-@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
-    protected static final int CNT = 100;
+    protected final static int CNT = 100;
 
     /** */
-    private static final int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
+    private final static int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** */
     private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<OperationType>());
@@ -118,7 +114,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
      * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
      * while {@link IgniteCache#get(Object)} performed.
      */
-    @Test
     public void testLookup() {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -132,7 +127,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
      * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
      * while {@link IgniteCache#put(Object, Object)} performed.
      */
-    @Test
     public void testUpdate() {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -146,7 +140,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
      * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
      * while {@link IgniteCache#remove(Object)} performed.
      */
-    @Test
     public void testRemove() {
         IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -160,7 +153,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     /**
      * Tests that cache store session listeners are notified by write-behind store.
      */
-    @Test
     public void testFlushSingleValue() throws Exception {
         CacheConfiguration cfg = cacheConfiguration(getTestIgniteInstanceName());
 

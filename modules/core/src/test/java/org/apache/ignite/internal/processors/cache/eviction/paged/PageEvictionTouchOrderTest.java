@@ -23,14 +23,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /** Test entries number. */
     private static final int SAFE_ENTRIES = 1000;
@@ -49,7 +45,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionAtomicReplicated() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
     }
@@ -57,7 +52,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionAtomicLocal() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
     }
@@ -65,7 +59,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionTxReplicated() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
     }
@@ -73,7 +66,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionTxLocal() throws Exception {
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
     }
@@ -81,7 +73,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
@@ -92,7 +83,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionMvccTxPartitioned() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
@@ -103,7 +93,6 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testTouchOrderWithFairFifoEvictionMvccTxLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");

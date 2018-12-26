@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -33,7 +29,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -50,7 +45,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughAtomic() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, false));
     }
@@ -58,7 +52,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughAtomicNearCache() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, true));
     }
@@ -66,7 +59,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughAtomicReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, 0, false));
     }
@@ -74,7 +66,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughAtomicLocal() throws Exception {
         invokeReadThrough(cacheConfiguration(LOCAL, ATOMIC, 0, false));
     }
@@ -82,7 +73,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughTx() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, false));
     }
@@ -90,7 +80,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughTxNearCache() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, true));
     }
@@ -98,7 +87,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughTxReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
     }
@@ -106,7 +94,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughTxLocal() throws Exception {
         invokeReadThrough(cacheConfiguration(LOCAL, TRANSACTIONAL, 0, false));
     }
@@ -114,7 +101,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughMvccTx() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -124,7 +110,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughMvccTxNearCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -134,7 +119,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -144,7 +128,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testInvokeReadThroughMvccTxLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,10 +49,20 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheGroupsTest
     /** {@inheritDoc} */
     @Test
     @Override public void testTopologyValidator() throws Exception {
-        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            putValid(CACHE_NAME_1);
-            putValid(CACHE_NAME_3);
-            commitFailed(tx);
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            putInvalid(CACHE_NAME_1);
+        }
+
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            putInvalid(CACHE_NAME_3);
+        }
+
+        if (!MvccFeatureChecker.forcedMvcc()) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                putValid(CACHE_NAME_1);
+                putValid(CACHE_NAME_3);
+                commitFailed(tx);
+            }
         }
 
         assertEmpty(CACHE_NAME_1); // Rolled back.
@@ -74,10 +85,19 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheGroupsTest
 
         startGrid(1);
 
-        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            putValid(CACHE_NAME_1);
-            putValid(CACHE_NAME_3);
-            tx.commit();
+        if (!MvccFeatureChecker.forcedMvcc()) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                putValid(CACHE_NAME_1);
+                putValid(CACHE_NAME_3);
+                tx.commit();
+            }
+        }
+        else {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                putValid(CACHE_NAME_1);
+                putValid(CACHE_NAME_3);
+                tx.commit();
+            }
         }
 
         remove(CACHE_NAME_1);
@@ -101,19 +121,30 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheGroupsTest
 
         assertEmpty(CACHE_NAME_3); // Rolled back.
 
-        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            putValid(CACHE_NAME_1);
-            putValid(CACHE_NAME_3);
-            commitFailed(tx);
+        if (!MvccFeatureChecker.forcedMvcc()) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                putValid(CACHE_NAME_1);
+                putValid(CACHE_NAME_3);
+                commitFailed(tx);
+            }
         }
 
         assertEmpty(CACHE_NAME_1); // Rolled back.
         assertEmpty(CACHE_NAME_3); // Rolled back.
 
-        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-            putValid(DEFAULT_CACHE_NAME);
-            putValid(CACHE_NAME_3);
-            tx.commit();
+        if (!MvccFeatureChecker.forcedMvcc()) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                putValid(DEFAULT_CACHE_NAME);
+                putValid(CACHE_NAME_3);
+                tx.commit();
+            }
+        }
+        else {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                putValid(DEFAULT_CACHE_NAME);
+                putValid(CACHE_NAME_3);
+                tx.commit();
+            }
         }
 
         remove(DEFAULT_CACHE_NAME);

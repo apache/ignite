@@ -26,16 +26,12 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Test for cluster wide offheap cache metrics.
  */
-@RunWith(JUnit4.class)
 public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -68,7 +64,6 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startGrid("client-" + i);
     }
 
-    @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
         IgniteCache<Integer, Integer> cache = grid("client-0").createCache(cacheConfiguration(cacheName));

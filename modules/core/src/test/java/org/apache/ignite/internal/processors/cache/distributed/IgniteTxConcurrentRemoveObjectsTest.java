@@ -36,9 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -49,7 +46,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest {
     /** Cache partitions. */
     private static final int CACHE_PARTITIONS = 16;
@@ -120,7 +116,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testOptimisticTxLeavesObjectsInLocalPartition() throws Exception {
         checkTxLeavesObjectsInLocalPartition(cacheConfiguration(), TransactionConcurrency.OPTIMISTIC, SERIALIZABLE);
     }
@@ -128,7 +123,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testPessimisticTxLeavesObjectsInLocalPartition() throws Exception {
         checkTxLeavesObjectsInLocalPartition(cacheConfiguration(), TransactionConcurrency.PESSIMISTIC, SERIALIZABLE);
     }
@@ -136,7 +130,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testMvccTxLeavesObjectsInLocalPartition() throws Exception {
         checkTxLeavesObjectsInLocalPartition(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
             TransactionConcurrency.PESSIMISTIC, REPEATABLE_READ);

@@ -51,12 +51,12 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -100,7 +100,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -127,14 +126,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
     /** */
     public static final String LABEL = "wLockTx";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10410");
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -226,6 +217,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackSimple() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         startClient();
 
         for (Ignite ignite : G.allGrids()) {
@@ -240,7 +234,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     private void testRollbackSimple0(Ignite near) throws Exception {
         // Normal rollback after put.
-        Transaction tx = near.transactions().txStart(PESSIMISTIC, READ_COMMITTED);
+        Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         near.cache(CACHE_NAME).put(0, 0);
 
@@ -362,14 +356,14 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     private void testSynchronousRollback0(Ignite holdLockNode, final Ignite tryLockNode,
         final boolean useTimeout) throws Exception {
-        final CountDownLatch keyLocked = new CountDownLatch(1);
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
         // Used for passing tx instance to rollback thread.
         IgniteInternalFuture<?> lockFut = lockInTx(holdLockNode, keyLocked, waitCommit, 0);
 
-        U.awaitQuiet(keyLocked);
+        keyLocked.get();
 
         final int txCnt = 1000;
 
@@ -392,8 +386,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                U.awaitQuiet(keyLocked);
-
                 for (int i = 0; i < txCnt; i++) {
                     GridNearTxLocal tx0 = ctx.tm().threadLocalTx(cctx);
 
@@ -405,7 +397,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         txReadyFut.onDone(tx);
 
                         // Will block on lock request until rolled back asynchronously.
-                        Object o = tryLockNode.cache(CACHE_NAME).get(0);
+                        Object o = tryLockNode.cache(CACHE_NAME).getAndPut(0, 0);
 
                         assertNull(o); // If rolled back by close, previous get will return null.
                     }
@@ -498,6 +490,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyReadOptimistic() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return; // Optimistic transactions are not supported by MVCC.
+
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -506,6 +501,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return; // Optimistic transactions are not supported by MVCC.
+
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -551,13 +549,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
 
         final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
-        spi.blockMessages(GridNearLockRequest.class, prim.name());
+        boolean mvcc = MvccFeatureChecker.forcedMvcc();
+
+        Class msgCls = mvcc ? GridNearTxEnlistRequest.class : GridNearLockRequest.class;
+
+        spi.blockMessages(msgCls, prim.name());
 
         final IgniteInternalFuture<Void> rollbackFut = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -575,7 +580,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             fail();
         }
         catch (CacheException e) {
-            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+            assertTrue(X.getFullStackTrace(e),X.hasCause(e, TransactionRollbackException.class));
         }
 
         rollbackFut.get();
@@ -652,6 +657,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedAsyncRollbackTypes() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10434");
+
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -682,6 +690,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids())
             perNodeTxs.put(ignite, new ArrayBlockingQueue<>(1000));
 
+        boolean mvcc = MvccFeatureChecker.forcedMvcc();
+
         IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
             while (!stop.get()) {
                 int nodeId = r.nextInt(GRID_CNT + 1);
@@ -689,8 +699,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 // Choose random node to start tx on.
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
+                TransactionIsolation isolation = mvcc ? REPEATABLE_READ :TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;
@@ -837,7 +847,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackProxy() throws Exception {
-        final CountDownLatch keyLocked = new CountDownLatch(1);
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
@@ -845,7 +855,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = lockInTx(ig, keyLocked, waitCommit, 0);
 
-        U.awaitQuiet(keyLocked);
+        keyLocked.get();
 
         Collection<Transaction> txs = ig.transactions().localActiveTransactions();
 
@@ -1044,29 +1054,31 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * Locks entry in tx and delays commit until signalled.
      *
      * @param node Near node.
-     * @param keyLocked Latch for notifying until key is locked.
+     * @param keyLocked Future to be done when key is locked.
      * @param waitCommit Latch for waiting until commit is allowed.
      * @param timeout Timeout.
      * @return tx completion future.
      */
-    private IgniteInternalFuture<?> lockInTx(final Ignite node, final CountDownLatch keyLocked,
+    private IgniteInternalFuture<?> lockInTx(final Ignite node, final GridFutureAdapter<Void> keyLocked,
         final CountDownLatch waitCommit, final int timeout) throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {
-                Transaction tx = node.transactions().withLabel(LABEL).txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
-
-                node.cache(CACHE_NAME).put(0, 0);
-
-                keyLocked.countDown();
-
                 try {
-                    U.await(waitCommit);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    fail("Lock thread was interrupted while waiting");
-                }
+                    Transaction tx = node.transactions().withLabel(LABEL).txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
 
-                tx.commit();
+                    node.cache(CACHE_NAME).put(0, 0);
+
+                    keyLocked.onDone();
+
+                    U.await(waitCommit);
+
+                    tx.commit();
+                }
+                catch (Throwable e) {
+                    keyLocked.onDone(e);
+
+                    throw new RuntimeException(e);
+                }
             }
         }, 1, "tx-lock-thread");
     }

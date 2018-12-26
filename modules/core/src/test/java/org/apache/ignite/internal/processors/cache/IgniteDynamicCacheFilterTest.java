@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,6 +65,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
         ccfg.setRebalanceMode(SYNC);
 
         ccfg.setNodeFilter(new TestNodeFilter("A"));
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         if (attrVal != null) {
             Map<String, Object> attrs = new HashMap<>();

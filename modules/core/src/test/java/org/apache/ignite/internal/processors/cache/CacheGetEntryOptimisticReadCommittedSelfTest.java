@@ -15,30 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.context;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
- *
+ * Test getEntry and getEntries methods.
  */
-public class IgniteCachePartitionedExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
+public class CacheGetEntryOptimisticReadCommittedSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+    @Override protected TransactionConcurrency concurrency() {
+        return TransactionConcurrency.OPTIMISTIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    @Override protected TransactionIsolation isolation() {
+        return TransactionIsolation.READ_COMMITTED;
     }
 }
