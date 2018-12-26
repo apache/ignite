@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -344,7 +345,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }, sizes.length, "tx-thread");
 
         try {
-            fut.get(TEST_TIMEOUT);
+            fut.get(TEST_TIMEOUT); // TODO verify all created futures.
         }
         catch (IgniteCheckedException e) {
             Throwable err = testFailed.get();
@@ -605,13 +606,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param r Runnable.
      */
     public void runAsync(Runnable r) {
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                synchronized (TxPartitionCounterStateAbstractTest.this) {
-                    r.run();
-                }
-            }
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(r);
 
         // Fail test if future failed to finish normally.
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
@@ -696,13 +691,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         private final int txCnt;
 
         /** */
-        private Map<IgniteUuid, Boolean> allPrimaryCommitted = new HashMap<>();
+        private Map<IgniteUuid, Boolean> allPrimaryCommitted = new ConcurrentHashMap<>();
 
         /** */
-        private boolean allPrimaryCommittedFlag = false;
+        private AtomicBoolean allPrimaryCommittedFlag = new AtomicBoolean();
 
         /** */
-        private Map<T2<IgniteEx, IgniteUuid>, Integer> prepCntr = new HashMap<>();
+        private Map<T2<IgniteEx, IgniteUuid>, Integer> prepCntr = new ConcurrentHashMap<>();
 
         /**
          * @param prepares Map of node to it's prepare order.
@@ -947,13 +942,15 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
             IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+            log.info("TX: beforeBackupFinish: " + backup.name() + ", idx=" + order(nearXidVer));
+
             if (commits.get(backup) == null) // Ignore backup because the order is not specified.
                 return false;
 
             runAsync(() -> {
                 futures.put(new T3<>(backup, TxState.COMMIT, nearXidVer), fut);
 
-                Boolean prev = allPrimaryCommitted.put(nearXidVer, Boolean.TRUE); // First finish message to backup means what tx was committed on primary.
+                Boolean prev = allPrimaryCommitted.putIfAbsent(nearXidVer, Boolean.TRUE); // First finish message to backup means what tx was committed on primary.
 
                 if (prev == null) {
                     if (onPrimaryCommitted(primary, order(nearXidVer)))
@@ -961,11 +958,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 }
 
                 if (countForNode(primary, TxState.COMMIT) == 0 && countForNode(backup, TxState.COMMIT) == txCnt) {
-                    if (!allPrimaryCommittedFlag) {
+                    if (allPrimaryCommittedFlag.compareAndSet(false, true))
                         onAllPrimaryCommitted(primary); // Report all primary committed once.
-
-                        allPrimaryCommittedFlag = true;
-                    }
 
                     // Proceed with commit to backups.
                     futures.remove(new T3<>(backup, TxState.COMMIT, version(commits.get(backup).poll()))).onDone();
