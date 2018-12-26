@@ -1375,25 +1375,30 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             @Override public Object call() throws Exception {
                 IgniteClientDisconnectedException e0 = null;
 
-                try {
-                    assertEquals(id, client.localNode().id());
+                int tries = 0;
 
-                    c.apply(cache);
+                while (e0 == null) {
+                    try {
+                        assertEquals(id, client.localNode().id());
 
-                    fail();
-                }
-                catch (IgniteClientDisconnectedException e) {
-                    log.info("Expected exception: " + e);
+                        c.apply(cache);
 
-                    e0 = e;
-                }
-                catch (CacheException e) {
-                    log.info("Expected exception: " + e);
+                        if (tries++ >= 100_000)
+                            fail();
+                    }
+                    catch (IgniteClientDisconnectedException e) {
+                        log.info("Expected exception: " + e);
 
-                    assertTrue("Unexpected cause: " + e.getCause(),
-                        e.getCause() instanceof IgniteClientDisconnectedException);
+                        e0 = e;
+                    }
+                    catch (CacheException e) {
+                        log.info("Expected exception: " + e);
 
-                    e0 = (IgniteClientDisconnectedException)e.getCause();
+                        assertTrue("Unexpected cause: " + e.getCause(),
+                            e.getCause() instanceof IgniteClientDisconnectedException);
+
+                        e0 = (IgniteClientDisconnectedException)e.getCause();
+                    }
                 }
 
                 assertNotNull(e0);

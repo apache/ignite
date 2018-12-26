@@ -104,7 +104,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -3064,7 +3063,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         private final int connIdx;
 
         /** */
-        private volatile IgniteInternalFuture<GridCommunicationClient> clientFut;
+        private volatile IgniteInternalFuture<GridCommunicationClient> nioClientFut;
+
+        /** */
+        private final ConnectionKey connKey;
 
         /**
          * @param node Node.
@@ -3075,6 +3077,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             this.node = node;
             this.connIdx = connIdx;
+
+            this.connKey = new ConnectionKey(node.id(), connIdx, -1);
         }
 
         /**
@@ -3097,8 +3101,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 // Do not allow concurrent connects.
                 connFut = this;
 
-                final ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
-
                 final GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, connFut);
 
                 if (oldFut == null) {
@@ -3106,9 +3108,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         GridCommunicationClient client0 = nodeClient(nodeId, connIdx);
 
                         if (client0 == null) {
-                            this.clientFut = createNioClient(node, connIdx);
+                            this.nioClientFut = createNioClient(node, connIdx);
 
-                            this.clientFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
+                            this.nioClientFut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut) {
                                     try {
                                         GridCommunicationClient client0 = fut.get();
@@ -3237,9 +3239,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable GridCommunicationClient res, @Nullable Throwable err) {
+            clientFuts.remove(connKey, this);
+
             boolean done = super.onDone(res, err);
 
-            IgniteInternalFuture<GridCommunicationClient> clientFut0 = this.clientFut;
+            IgniteInternalFuture<GridCommunicationClient> clientFut0 = this.nioClientFut;
 
             if (done && err != null && clientFut0 != null && !clientFut0.isDone() && clientFut0 instanceof GridFutureAdapter)
                 ((GridFutureAdapter<GridCommunicationClient>)clientFut0).onDone(res, err);
