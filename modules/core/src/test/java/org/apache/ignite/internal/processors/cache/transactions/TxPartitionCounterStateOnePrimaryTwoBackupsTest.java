@@ -20,16 +20,20 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -199,6 +203,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * @throws Exception
      */
     private void doTestPrepareFailOnBackupBecausePrimaryLeft(boolean skipCheckpoint) throws Exception {
+        AtomicInteger evtCntr = new AtomicInteger();
+
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             map -> {
                 Ignite primary = map.get(PARTITION_ID).get1();
@@ -208,13 +214,46 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 return new TwoPhaseCommitTxCallbackAdapter(
                     U.map((IgniteEx)primary, new int[] {2, 1, 0}),
                     U.map((IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
-                    U.map((IgniteEx)primary, new int[] {2, 1, 0}, (IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    new HashMap<>(),
                     SIZES.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
                         super.onBackupPrepared(backup, tx, idx);
 
-                        if (idx == 2) {
-                            doSleep(100000);
+                        return idx == 0 && backup == backup1;
+                    }
+
+                    @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> fut) {
+                        int idx = order(nearXidVer);
+
+                        log.info("TX: primary prepared: [node=" + primary.name() + ", txId=" + idx + ']');
+
+                        if (evtCntr.getAndIncrement() == 2) {
+                            log.info("Stopping primary [name=" + primary.name() + ']');
+
+                            runAsync(new Runnable() {
+                                @Override public void run() {
+                                    stopGrid(skipCheckpoint, primary.name());
+                                }
+                            });
+
+                        }
+
+                        return idx == 0;
+                    }
+
+                    @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> proceedFut) {
+                        log.info("TX: primary finished: [node=" + primary.name() + ", txId=" + order(nearXidVer) + ']');
+
+                        if (evtCntr.getAndIncrement() == 2) {
+                            log.info("TX: Stopping primary [name=" + primary.name() + ']');
+
+                            runAsync(new Runnable() {
+                                @Override public void run() {
+                                    stopGrid(skipCheckpoint, primary.name());
+                                }
+                            });
                         }
 
                         return false;
@@ -222,5 +261,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 };
             },
             SIZES);
+
+        waitForTopology(3);
+
+        TestRecordingCommunicationSpi.stopBlockAll();
+
+        System.out.println();
     }
 }
