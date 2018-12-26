@@ -760,7 +760,7 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, false, null);
+                            resIter = new H2FieldsIterator(res, mvccTracker, false);
 
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
