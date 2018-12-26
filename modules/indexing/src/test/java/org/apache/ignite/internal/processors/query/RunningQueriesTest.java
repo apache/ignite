@@ -96,8 +96,6 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        newBarrier(1);
-
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
         ignite = (IgniteEx)startGrids(NODE_CNT);
@@ -106,6 +104,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        newBarrier(1);
 
         ignite.destroyCache(DEFAULT_CACHE_NAME);
 
@@ -194,6 +194,11 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Check clenup running queries on node stop.
+     *
+     * @throws Exception Exception in case of failure.
+     */
     @Test
     public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -211,8 +216,11 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         assertNoRunningQueries();
     }
+
     /**
      * Check tracking running queries for Select.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueries() throws Exception {
@@ -248,6 +256,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for DELETE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlDelete() throws Exception {
@@ -256,6 +266,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for INSERT.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlInsert() throws Exception {
@@ -264,6 +276,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for UPDATE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlUpdate() throws Exception {
@@ -274,6 +288,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
      * Check tracking running queries for DML.
      *
      * @param dmlQry DML query.
+     * @throws Exception Exception in case of failure.
      */
     public void testQueryDML(String dmlQry) throws Exception {
         newBarrier(2);
@@ -305,6 +320,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for DROP INDEX.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlDropIndex() throws Exception {
@@ -319,6 +336,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for CREATE INDEX.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlCreateIndex() throws Exception {
@@ -331,6 +350,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for DROP TABLE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlDropTable() throws Exception {
@@ -343,6 +364,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for CREATE TABLE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlCreateTable() throws Exception {
@@ -351,6 +374,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /**
      * Check tracking running queries for DDL.
+     *
+     * @throws Exception Exception in case of failure.
      */
     public void testQueryDDL(String sql) throws Exception {
         newBarrier(2);

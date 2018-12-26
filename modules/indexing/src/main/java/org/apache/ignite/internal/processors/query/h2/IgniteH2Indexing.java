@@ -2504,13 +2504,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2QueryContext.clearLocalNodeStop(nodeId);
 
+        //Need to cancel and deregister all running queries.
+        runningQueryMgr.stop();
+
         schemaMgr.stop();
 
         // Close system H2 connection to INFORMATION_SCHEMA
         connMgr.stop();
-
-        //Need to cancel all running queries.
-        runningQueryMgr.stop();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2651,8 +2651,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mapQryExec.cancelLazyWorkers();
 
         connMgr.onKernalStop();
-
-        runningQueryMgr.stop();
     }
 
     /**
