@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
@@ -39,13 +41,17 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 /** */
 class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
     /** */
+    private static final Comparator<DistributedMetaStorageHistoryItem> KEY_COMPARATOR =
+        Comparator.comparing(item -> item.key);
+
+    /** */
     private DistributedMetaStorageImpl dms;
 
     /** */
     private final ReadOnlyMetastorage metastorage;
 
     /** */
-    private DistributedMetaStorageHistoryItem firstToWrite;
+    private DistributedMetaStorageHistoryItem[] locFullData;
 
     /** */
     public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms, ReadOnlyMetastorage metastorage) {
@@ -55,10 +61,16 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** {@inheritDoc} */
     @Override public Serializable read(String globalKey) throws IgniteCheckedException {
-        if (firstToWrite != null && firstToWrite.key.equals(globalKey))
-            return unmarshal(firstToWrite.valBytes);
+        int idx = Arrays.binarySearch(
+            locFullData,
+            new DistributedMetaStorageHistoryItem(globalKey, null),
+            KEY_COMPARATOR
+        );
 
-        return metastorage.read(localKey(globalKey));
+        if (idx >= 0)
+            return unmarshal(locFullData[idx].valBytes);
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -67,28 +79,17 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
-        if (firstToWrite == null || !firstToWrite.key.startsWith(globalKeyPrefix))
-            metastorage.iterate(
-                localKeyPrefix() + globalKeyPrefix,
-                cb,
-                unmarshal
-            );
-        else {
-            Serializable firstToWriteVal = unmarshal ? unmarshal(firstToWrite.valBytes) : firstToWrite.valBytes;
+        int idx = Arrays.binarySearch(
+            locFullData,
+            new DistributedMetaStorageHistoryItem(globalKeyPrefix, null),
+            KEY_COMPARATOR
+        );
 
-            metastorage.iterate(
-                localKeyPrefix() + globalKeyPrefix,
-                (key, val) -> {
-                    if (firstToWrite.key.equals(key)) {
-                        if (firstToWriteVal != null)
-                            cb.accept(key, firstToWriteVal);
-                    }
-                    else
-                        cb.accept(key, val);
-                },
-                unmarshal
-            );
-        }
+        if (idx < 0)
+            idx = -1 - idx;
+
+        for (; idx < locFullData.length && locFullData[idx].key.startsWith(globalKeyPrefix); ++idx)
+            cb.accept(locFullData[idx].key, unmarshal(locFullData[idx].valBytes));
     }
 
     /** {@inheritDoc} */
@@ -162,24 +163,41 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                     }
                 }
 
-                List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
+                List<DistributedMetaStorageHistoryItem> locFullDataList = new ArrayList<>();
 
-                firstToWrite = startupExtras.firstToWrite;
+                DistributedMetaStorageHistoryItem firstToWrite = startupExtras.firstToWrite;
+
+                boolean[] ftwWritten = {false};
 
                 metastorage.iterate(
                     localKeyPrefix(),
                     (key, val) -> {
-                        if (firstToWrite != null && firstToWrite.key.equals(key)) {
+                        String globalKey = globalKey(key);
+
+                        if (firstToWrite != null && firstToWrite.key.equals(globalKey)) {
                             if (firstToWrite.valBytes != null)
-                                locFullData.add(firstToWrite);
+                                locFullDataList.add(firstToWrite);
+
+                            ftwWritten[0] = true;
+                        }
+                        else if (firstToWrite != null && ftwWritten[0] && firstToWrite.key.compareTo(globalKey) < 0) {
+                            if (firstToWrite.valBytes != null)
+                                locFullDataList.add(firstToWrite);
+
+                            ftwWritten[0] = true;
+
+                            locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));
                         }
                         else
-                            locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val));
+                            locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));
                     },
                     false
                 );
 
-                startupExtras.locFullData = locFullData.toArray(EMPTY_ARRAY);
+                if (firstToWrite != null && !ftwWritten[0])
+                    locFullDataList.add(new DistributedMetaStorageHistoryItem(firstToWrite.key, firstToWrite.valBytes));
+
+                locFullData = startupExtras.locFullData = locFullDataList.toArray(EMPTY_ARRAY);
 
                 metastorage.iterate(
                     historyItemPrefix(),

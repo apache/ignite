@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
@@ -63,7 +64,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     ) throws IgniteCheckedException {
         metastorage.iterate(
             localKeyPrefix() + globalKeyPrefix,
-            cb,
+            (key, val) -> cb.accept(globalKey(key), val),
             unmarshal
         );
     }
@@ -129,7 +130,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 dms.clearHistoryCache();
 
                 for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
-                    metastorage.putData(item.key, item.valBytes);
+                    metastorage.putData(localKey(item.key), item.valBytes);
 
                 for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                     DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
