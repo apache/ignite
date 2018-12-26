@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import org.junit.Ignore;
+
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-5689")
 public class IgniteCommunicationBalanceMultipleConnectionsTest extends IgniteCommunicationBalanceTest {
     /** {@inheritDoc} */
     @Override protected int connectionsPerNode() {
@@ -28,6 +31,6 @@ public class IgniteCommunicationBalanceMultipleConnectionsTest extends IgniteCom
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5689");
+        // No-op.
     }
 }

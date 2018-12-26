@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -148,6 +149,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-614")
     @Test
     public void testSwapReplicatedMultithreaded() throws Exception {
         cacheMode = REPLICATED;
@@ -156,6 +158,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-614")
     @Test
     public void testSwapPartitionedMultithreaded() throws Exception {
         cacheMode = PARTITIONED;
