@@ -4080,6 +4080,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.onDataPageWritten();
                     }
 
+                    writtenPagesCntr.incrementAndGet();
+
                     PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, true);
 
                     updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
