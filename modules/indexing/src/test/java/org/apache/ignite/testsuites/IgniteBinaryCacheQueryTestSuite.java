@@ -33,8 +33,9 @@ import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
      * @return Suite.
+     * @throws Exception In case of error.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
         // Serialization.
