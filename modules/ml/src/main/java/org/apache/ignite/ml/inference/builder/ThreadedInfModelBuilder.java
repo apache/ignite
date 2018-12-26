@@ -44,7 +44,7 @@ public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
 
     /** {@inheritDoc} */
     @Override public <I extends Serializable, O extends Serializable> InfModel<I, Future<O>> build(
-        InfModelReader reader, InfModelParser<I, O> parser) {
+        InfModelReader reader, InfModelParser<I, O, ?> parser) {
         return new ThreadedInfModel<>(parser.parse(reader.read()), threads);
     }
 
@@ -74,8 +74,8 @@ public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
         }
 
         /** {@inheritDoc} */
-        @Override public Future<O> predict(I input) {
-            return threadPool.submit(() -> mdl.predict(input));
+        @Override public Future<O> apply(I input) {
+            return threadPool.submit(() -> mdl.apply(input));
         }
 
         /** {@inheritDoc} */

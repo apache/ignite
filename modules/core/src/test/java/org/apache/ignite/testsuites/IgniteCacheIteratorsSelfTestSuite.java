@@ -23,11 +23,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIteratorsSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache iterators test suite.
  */
-public class IgniteCacheIteratorsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheIteratorsSelfTestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Cache iterators test suite.

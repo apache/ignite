@@ -23,9 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -55,9 +52,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @throws Exception If failed.
      */
@@ -79,12 +73,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
         TransactionConfiguration txCfg = c.getTransactionConfiguration();
 
         txCfg.setDefaultTxTimeout(TIMEOUT);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         return c;
     }

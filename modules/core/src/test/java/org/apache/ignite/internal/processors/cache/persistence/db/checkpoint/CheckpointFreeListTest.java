@@ -263,6 +263,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         startAsyncPutThread(entriesToRemove, nodeStartBarrier);
 
+        //Will stop node during put data several times.
         while (true) {
             stopGrid(0, true);
 
