@@ -407,7 +407,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             completeFuture(
                 null,
                 cctx.shared().cache().isCacheRestarting(cache.name())?
-                    new IgniteCacheRestartingException(null, cache.name()):
+                    new IgniteCacheRestartingException(cache.name()):
                     new CacheStoppedException(cache.name()),
                 null);
 

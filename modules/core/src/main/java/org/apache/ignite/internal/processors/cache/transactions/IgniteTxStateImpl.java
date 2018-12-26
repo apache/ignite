@@ -296,7 +296,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (nonLocCtx.topology().stopping()) {
             fut.onDone(
                 cctx.cache().isCacheRestarting(nonLocCtx.name())?
-                    new IgniteCacheRestartingException(null, nonLocCtx.name()):
+                    new IgniteCacheRestartingException(nonLocCtx.name()):
                     new CacheStoppedException(nonLocCtx.name()));
 
             return null;

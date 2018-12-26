@@ -1763,7 +1763,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         try {
                             if (top.stopping()) {
                                 if (ctx.shared().cache().isCacheRestarting(name()))
-                                    res.addFailedKeys(req.keys(), new IgniteCacheRestartingException(null, name()));
+                                    res.addFailedKeys(req.keys(), new IgniteCacheRestartingException(name()));
                                 else
                                     res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
 

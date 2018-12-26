@@ -114,7 +114,7 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
             if (cctx.topology().stopping()) {
                 onDone(
                     cctx.shared().cache().isCacheRestarting(cctx.name())?
-                        new IgniteCacheRestartingException(null, cctx.name()):
+                        new IgniteCacheRestartingException(cctx.name()):
                         new CacheStoppedException(cctx.name()));
 
                 return;
