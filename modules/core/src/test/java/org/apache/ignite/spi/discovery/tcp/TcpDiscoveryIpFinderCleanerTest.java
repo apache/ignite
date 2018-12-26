@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests IP finder cleaner.
@@ -51,6 +52,7 @@ public class TcpDiscoveryIpFinderCleanerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStops() throws Exception {
         CustomIpFinder ipFinder = new CustomIpFinder(true);
 
