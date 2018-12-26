@@ -77,22 +77,22 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Node UUID which initiated meta data update. */
     private final UUID origNodeId;
 
     /** */
     private BinaryMetadata metadata;
 
-    /** */
+    /** Meta data type id. */
     private final int typeId;
 
-    /** */
+    /** Meta data version which is pending for update. */
     private int pendingVer;
 
-    /** */
+    /** Meta data version which is already accepted by entire cluster. */
     private int acceptedVer;
 
-    /** */
+    /** Message acceptance status. */
     private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
     /** */
@@ -222,7 +222,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         return typeId;
     }
 
-    /** */
+    /** Message acceptance status. */
     private enum ProposalStatus {
         /** */
         SUCCESSFUL,

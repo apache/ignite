@@ -214,8 +214,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     assert newMeta != null;
                     assert newMeta instanceof BinaryTypeImpl;
 
-                    BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
-
                     if (!discoveryStarted) {
                         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
@@ -228,6 +226,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                         return;
                     }
+
+                    BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx), failIfUnregistered);
                 }
@@ -535,14 +535,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
 
-            if (mergedMeta == oldMeta)
+            if (mergedMeta == oldMeta) {
                 // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-                while (true) {
-                    if (metaHolder.pendingVersion() == metaHolder.acceptedVersion())
-                        return;
+                if (metaHolder.pendingVersion() == metaHolder.acceptedVersion()) {
+                    GridFutureAdapter<MetadataUpdateResult> fut =
+                        transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
-                    metaHolder = metadataLocCache.get(typeId);
+                    fut.get();
                 }
+                return;
+            }
 
             if (failIfUnregistered)
                 throw new UnregisteredBinaryTypeException(

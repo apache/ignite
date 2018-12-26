@@ -20,13 +20,15 @@ package org.apache.ignite.internal.binary;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 
 /**
  * Binary meta data handler.
  */
 public interface BinaryMetadataHandler {
     /**
-     * Adds meta data.
+     * Adds a new or updates an existing meta data to the latest version.
+     * See {@link MetadataUpdateProposedMessage} javadoc for detailed protocol description.
      *
      * @param typeId Type ID.
      * @param meta Metadata.
