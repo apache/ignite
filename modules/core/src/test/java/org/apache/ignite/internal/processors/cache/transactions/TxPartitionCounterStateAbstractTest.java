@@ -29,7 +29,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
@@ -697,13 +696,17 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         private AtomicBoolean allPrimaryCommittedFlag = new AtomicBoolean();
 
         /** */
-        private Map<T2<IgniteEx, IgniteUuid>, Integer> prepCntr = new ConcurrentHashMap<>();
+        private Map<T2<IgniteEx, IgniteUuid>, Integer> assignCntr = new ConcurrentHashMap<>();
+
+        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+            this(prepares, prepares, commits, txCnt);
+        }
 
         /**
          * @param prepares Map of node to it's prepare order.
          * @param commits Map of node to it's commit order.
          */
-        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
+        public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> assigns, Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
             this.txCnt = txCnt;
 
             prepares.forEach((ex, ints) -> assertEquals("Wrong order of prepares", txCnt, ints.length));
@@ -713,15 +716,18 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             for (Map.Entry<IgniteEx, int[]> entry : prepares.entrySet()) {
                 this.prepares.put(entry.getKey(),
                     IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
-
-                assigns.put(entry.getKey(),
-                    IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
             }
 
             for (Map.Entry<IgniteEx, int[]> entry : commits.entrySet()) {
                 this.commits.put(entry.getKey(),
                     IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
             }
+
+            for (Map.Entry<IgniteEx, int[]> entry : assigns.entrySet()) {
+                this.assigns.put(entry.getKey(),
+                    IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
+            }
+
         }
 
         /** */
@@ -802,7 +808,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         /** {@inheritDoc} */
         @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
-            if (prepares.get(primary) == null)
+            if (assigns.get(primary) == null)
                 return false;
 
             runAsync(() -> {
@@ -872,12 +878,12 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             assert primary != backup;
 
-            if (prepares.get(backup) == null && prepares.get(primary) == null)
+            if (prepares.get(backup) == null && assigns.get(primary) == null)
                 return false;
 
             runAsync(() -> {
-                if (prepares.get(primary) != null) {
-                    int v0 = prepCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()), (key, val) -> (val == null ? 0 : val) + 1);
+                if (assigns.get(primary) != null) {
+                    int v0 = assignCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()), (key, val) -> (val == null ? 0 : val) + 1);
 
                     if (v0 == 2) {
                         onCounterAssigned(primary, primaryTx, order(primaryTx.nearXidVersion().asGridUuid()));

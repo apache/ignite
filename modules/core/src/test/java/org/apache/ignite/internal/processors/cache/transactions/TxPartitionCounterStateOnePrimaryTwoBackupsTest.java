@@ -206,23 +206,18 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, new int[] {2, 1, 0}, (IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
+                    U.map((IgniteEx)primary, new int[] {2, 1, 0}),
+                    U.map((IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
                     U.map((IgniteEx)primary, new int[] {2, 1, 0}, (IgniteEx)backup1, new int[] {2, 0, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
                     SIZES.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
-                        if (idx == 0 && backup == backup1) {
-                            System.out.println();
-                        }
+                        super.onBackupPrepared(backup, tx, idx);
 
-                        return super.onBackupPrepared(backup, tx, idx);
-                    }
-
-                    @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == 2) {
-                            System.out.println();
+                            doSleep(100000);
                         }
 
-                        return super.onPrimaryCommitted(primary, idx);
+                        return false;
                     }
                 };
             },
