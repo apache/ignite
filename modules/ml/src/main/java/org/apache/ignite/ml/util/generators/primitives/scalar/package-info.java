@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
-
-/** XGBoost model leaf node. */
-public class XGLeafNode implements XGNode {
-    /** Value. */
-    private final double val;
-
-    /**
-     * Constructs a new instance of leaf node.
-     *
-     * @param val Value.
-     */
-    public XGLeafNode(double val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double predict(XGObject obj) {
-        return val;
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains generators of pseudo-random scalars in according to specific disctribution.
+ */
+package org.apache.ignite.ml.util.generators.primitives.scalar;

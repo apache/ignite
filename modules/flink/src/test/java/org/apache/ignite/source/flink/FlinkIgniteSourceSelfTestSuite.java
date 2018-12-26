@@ -15,15 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
+package org.apache.ignite.source.flink;
 
-/** XGBoost model node. */
-public interface XGNode {
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
+
+/**
+ * Apache Flink source tests.
+ */
+@RunWith(AllTests.class)
+public class FlinkIgniteSourceSelfTestSuite extends TestSuite {
     /**
-     * Predicts label for the specified object.
-     *
-     * @param obj Object.
-     * @return Label.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public double predict(XGObject obj);
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Flink Source Test Suite");
+
+        suite.addTest(new JUnit4TestAdapter(FlinkIgniteSourceSelfTest.class));
+
+        return suite;
+    }
 }
+
