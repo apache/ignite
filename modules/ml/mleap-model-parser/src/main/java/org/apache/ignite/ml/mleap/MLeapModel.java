@@ -57,17 +57,15 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
     /** {@inheritDoc} */
     @Override public Double predict(HashMap<String, Double> input) {
         LeapFrameBuilder builder = new LeapFrameBuilder();
-        List<StructField> fs = new ArrayList<>();
+        List<StructField> structFields = new ArrayList<>();
 
         for (String fieldName : input.keySet())
-            fs.add(new StructField(fieldName, ScalarType.Double()));
+            structFields.add(new StructField(fieldName, ScalarType.Double()));
 
-        StructType schema = builder.createSchema(fs);
+        StructType schema = builder.createSchema(structFields);
 
-        List<Object> values = new ArrayList<>(input.values());
         List<Row> rows = new ArrayList<>();
-        rows.add(builder.createRowFromIterable(values));
-
+        rows.add(builder.createRowFromIterable(new ArrayList<>(input.values())));
 
         DefaultLeapFrame inputFrame = builder.createFrame(schema, rows);
 
@@ -82,13 +80,12 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
      */
     public double predict(Double[] input) {
         LeapFrameBuilder builder = new LeapFrameBuilder();
-
-        List<StructField> fs = new ArrayList<>();
+        List<StructField> structFields = new ArrayList<>();
 
         for (String fieldName : schema)
-            fs.add(new StructField(fieldName, ScalarType.Double()));
+            structFields.add(new StructField(fieldName, ScalarType.Double()));
 
-        StructType schema = builder.createSchema(fs);
+        StructType schema = builder.createSchema(structFields);
 
         List<Row> rows = new ArrayList<>();
         rows.add(builder.createRowFromIterable(Arrays.asList(input)));
@@ -107,13 +104,13 @@ public class MLeapModel implements Model<HashMap<String, Double>, Double> {
     public double predict(DefaultLeapFrame inputFrame) {
         DefaultLeapFrame outputFrame = transformer.transform(inputFrame).get();
 
-        Try<DefaultLeapFrame> res = outputFrame.select(new Set.Set1<>("price_prediction").toSeq());
-        DefaultLeapFrame f = res.get();
+        Try<DefaultLeapFrame> resFrame = outputFrame.select(new Set.Set1<>("price_prediction").toSeq());
+        DefaultLeapFrame frame = resFrame.get();
 
-        Stream<?> stream = (Stream<?>)f.productElement(1);
-        Row rrow = (Row)stream.head();
+        Stream<?> stream = (Stream<?>)frame.productElement(1);
+        Row row = (Row)stream.head();
 
-        return (Double)rrow.get(0);
+        return (Double)row.get(0);
     }
 
     /** {@inheritDoc} */

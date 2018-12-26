@@ -79,14 +79,14 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
      * @return List of field names.
      */
     private List<String> checkAndGetSchema(PipelineModel mdl) {
-        List<StructField> fs = new ArrayList<>(JavaConverters.seqAsJavaListConverter(
+        List<StructField> structFields = new ArrayList<>(JavaConverters.seqAsJavaListConverter(
             mdl.transformers().head().schema().fields()).asJava());
 
-        fs.removeIf(sf -> sf.name().equals(INPUT_FEATURES_FIELD_NAME));
+        structFields.removeIf(field -> field.name().equals(INPUT_FEATURES_FIELD_NAME));
 
         List<String> schema = new ArrayList<>();
 
-        for (StructField field : fs) {
+        for (StructField field : structFields) {
             String fieldName = field.name();
 
             if (!INPUT_FEATURES_FIELD_NAME.equals(fieldName)) {
