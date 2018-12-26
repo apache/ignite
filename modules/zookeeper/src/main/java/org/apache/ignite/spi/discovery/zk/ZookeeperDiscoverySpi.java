@@ -595,12 +595,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public UUID getCoordinator() {
+        @Override public long getCommErrorProcNum() {
+            return stats.commErrorCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable UUID getCoordinator() {
             return impl.getCoordinator();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String getCoordinatorNodeFormatted() {
+        @Override public @Nullable String getCoordinatorNodeFormatted() {
             return String.valueOf(impl.node(impl.getCoordinator()));
         }
 

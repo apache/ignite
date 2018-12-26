@@ -24,7 +24,6 @@ import com.twitter.hbc.core.HttpHosts;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import junit.framework.TestResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -35,8 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.runners.JUnit38ClassRunner;
-import org.junit.runner.RunWith;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
@@ -50,7 +47,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Test for {@link TwitterStreamer}. Tests Public Status streaming API https://dev.twitter.com/streaming/public.
  */
-@RunWith(JUnit38ClassRunner.class) // TODO IGNITE-10739 migrate to JUnit 4.
 public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
@@ -66,7 +62,9 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
-    /** See <a href="http://wiremock.org/docs/junit-rule/">The JUnit 4.x Rule </a> */
+    /**
+     * See <a href="http://wiremock.org/docs/junit-rule/">The JUnit 4.x Rule</a>.
+     */
     @ClassRule
     public static WireMockClassRule wireMockClsRule = new WireMockClassRule(WireMockConfiguration.DYNAMIC_PORT);
 
@@ -77,40 +75,13 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /** Embedded mock HTTP server for Twitter API. */
     public final WireMockServer mockSrv = new WireMockServer(); //Starts server on 8080 port.
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public int countTestCases() {
-        return countTestCasesFallback();
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public void run(TestResult res) {
-        runFallback(res);
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public String getName() {
-        return getNameFallback();
-    }
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10_000;
     }
 
-    /** {@inheritDoc} */
-    @Override public void beforeTest() {
+    /** */
+    private void init() {
         grid().getOrCreateCache(defaultCacheConfiguration());
 
         mockSrv.start();
@@ -119,8 +90,8 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             withHeader("Content-Type", "text/plain").withBody(tweet.length() + "\n" + tweet)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void afterTest() {
+    /** */
+    private void cleanup() {
         stopAllGrids();
 
         mockSrv.stop();
@@ -131,6 +102,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStatusesFilterEndpointOAuth1() throws Exception {
+        init();
         try (IgniteDataStreamer<Long, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             TwitterStreamerImpl streamer = newStreamerInstance(dataStreamer);
 
@@ -145,6 +117,8 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             streamer.setThreadsCount(8);
 
             executeStreamer(streamer);
+        } finally {
+            cleanup();
         }
     }
 
