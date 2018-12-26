@@ -33,12 +33,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for validation of inserts sql queries.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTest {
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
@@ -98,6 +103,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
      * Check that if we cannot insert row using sql due to we don't have keyFields in the configuration, we are still
      * able to put using cache api.
      */
+    @Test
     public void testCacheApiIsStillAllowed() {
         cache.put(new Key(1, 2), new Val(3, 4));
 
@@ -107,6 +113,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check that we are able to perform sql insert using special "_key" field. Even in case of non sql key.
      */
+    @Test
     public void testInsertDefaultKeyName() {
         Object cnt = execute("INSERT INTO INT_KEY_TAB (_key, fv1, fv2) VALUES (1 , 2 , 3)").get(0).get(0);
 
@@ -117,6 +124,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
      * Check forgotten key fields.
      * If we've forgotten to specify key fields and we don't specify _key, then default key is inserted.
      */
+    @Test
     public void testIncorrectComplex() {
         execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (2,3,4,5)");
 
@@ -129,6 +137,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check that we can specify only one pk column (out of two). Second one should be of default value for type;
      */
+    @Test
     public void testNotAllKeyColsComplex() {
         execute("INSERT INTO WITH_KEY_FLDS(FK1, _val) VALUES (7, 1)"); // Missing FK2 -> (7, 42, 1)
         execute("INSERT INTO WITH_KEY_FLDS(FK2, _val) VALUES (15, 2)"); // Missing FK1 -> (null, 15, 2)
@@ -143,8 +152,9 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check that we can't perform insert without at least one key field specified.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10824")
+    @Test
     public void testMixedPlaceholderWithOtherKeyFields() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10824");
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO WITH_KEY_FLDS(_key, FK1, _val) VALUES (?, ?, ?)",
                 new Key(1, 2), 42, 43),
@@ -156,6 +166,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
      * Check that key can contain nested field with its own fields. Check that we can insert mixing sql and non sql
      * values.
      */
+    @Test
     public void testSuperKey() {
         execute("INSERT INTO SUPER_TAB (SUPERKEYID, NESTEDKEY, _val) VALUES (?, ?, ?)",
             123, new NestedKey("the name "), "the _val value");
@@ -164,6 +175,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check that key can contain nested field with its own fields. Check that we can insert using _key placeholder.
      */
+    @Test
     public void testSuperKeyNative() {
         execute("INSERT INTO SUPER_TAB (_key, _val) VALUES (?, ?)",
             new SuperKey(1, new NestedKey("the name")),
@@ -173,6 +185,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check we can amend fields list part.
      */
+    @Test
     public void testInsertImplicitAllFields() {
         execute("CREATE TABLE PUBLIC.IMPLICIT_INS (id1 BIGINT, id2 BIGINT, val BIGINT, PRIMARY KEY(id1, id2))");
 
