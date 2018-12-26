@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
-
-/** XGBoost model node. */
-public interface XGNode {
-    /**
-     * Predicts label for the specified object.
-     *
-     * @param obj Object.
-     * @return Label.
-     */
-    public double predict(XGObject obj);
-}
+/**
+ * <!-- Package description. -->
+ * Contains classes for predefined data stream generators.
+ */
+package org.apache.ignite.ml.util.generators.standard;

@@ -78,7 +78,7 @@ public class ModelStorageExample {
 
                 System.out.println("Make inference...");
                 for (int i = 0; i < 10; i++) {
-                    Integer res = deserialize(infMdl.predict(serialize(i)));
+                    Integer res = deserialize(infMdl.apply(serialize(i)));
                     System.out.println(i + " -> " + res);
                 }
             }
