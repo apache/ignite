@@ -485,7 +485,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    @Test
     public void checkRemoteTx(CacheAtomicityMode atomicityMode) throws Exception {
         int timeout = 3500;
 
