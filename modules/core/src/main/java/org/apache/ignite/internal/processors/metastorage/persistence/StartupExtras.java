@@ -24,7 +24,7 @@ import java.util.List;
 @SuppressWarnings("PublicField")
 class StartupExtras {
     /** */
-    public long verToSnd;
+    public DistributedMetaStorageVersion verToSnd;
 
     /** */
     public List<DistributedMetaStorageHistoryItem> deferredUpdates = new ArrayList<>();

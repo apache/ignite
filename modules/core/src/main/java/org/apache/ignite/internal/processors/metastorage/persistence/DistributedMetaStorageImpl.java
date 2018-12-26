@@ -84,13 +84,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private CountDownLatch writeAvailable = new CountDownLatch(1);
 
     /** */
-    long ver;
+    DistributedMetaStorageVersion ver;
 
     /** */
     final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
         new GridConcurrentLinkedHashSet<>();
 
-    /** */ //TODO Change to ArrayBlockingQueue?
+    /** */ //TODO Change to java.util.ArrayDeque?
     private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
 
     /** */
@@ -215,12 +215,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         assert startupExtras != null;
 
-        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge(this, metastorage);
+        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge(this);
 
         lock();
 
         try {
-            readOnlyBridge.readInitialData(startupExtras);
+            readOnlyBridge.readInitialData(metastorage, startupExtras);
         }
         finally {
             unlock();
@@ -355,29 +355,29 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (joiningData == null)
             return;
 
-        long remoteVer = joiningData.ver;
+        DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
         synchronized (innerStateLock) {
-            long actualVer;
+            DistributedMetaStorageVersion locVer;
 
             if (startupExtras == null)
-                actualVer = ver;
+                locVer = ver;
             else if (startupExtras.fullNodeData == null)
-                actualVer = ver + startupExtras.deferredUpdates.size();
+                locVer = ver.nextVersion(startupExtras.deferredUpdates);
             else
-                actualVer = startupExtras.fullNodeData.ver + startupExtras.deferredUpdates.size();
+                locVer = startupExtras.fullNodeData.ver.nextVersion(startupExtras.deferredUpdates);
 
-            if (remoteVer > actualVer) {
+            if (remoteVer.id > locVer.id) {
                 assert startupExtras != null;
 
                 DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
-                if (remoteVer - actualVer <= hist.length) {
+                if (remoteVer.id - locVer.id <= hist.length) {
                     assert bridge instanceof NotAvailableDistributedMetaStorageBridge
                         || bridge instanceof EmptyDistributedMetaStorageBridge;
 
-                    for (long v = actualVer + 1; v <= remoteVer; v++)
-                        updateLater(hist[(int)(v - remoteVer + hist.length - 1)]);
+                    for (long v = locVer.id + 1; v <= remoteVer.id; v++)
+                        updateLater(hist[(int)(v - remoteVer.id + hist.length - 1)]);
 
                     Serializable nodeData = new DistributedMetaStorageNodeData(remoteVer, null, null, null);
 
@@ -398,7 +398,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 if (dataBag.commonDataCollectedFor(COMPONENT_ID))
                     return;
 
-                if (remoteVer == actualVer) {
+                if (remoteVer.id == locVer.id) {
+                    assert remoteVer.equals(locVer) : locVer + " " + remoteVer;
+
                     Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null, null);
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
@@ -413,13 +415,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     else
                         availableHistSize = startupExtras.fullNodeData.hist.length + startupExtras.deferredUpdates.size();
 
-                    if (actualVer - remoteVer <= availableHistSize) {
-                        Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null, history(remoteVer + 1, actualVer));
+                    if (locVer.id - remoteVer.id <= availableHistSize) {
+                        DistributedMetaStorageHistoryItem[] hist = history(remoteVer.id + 1, locVer.id);
+
+                        Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null, hist);
 
                         dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                     }
                     else {
-                        long ver0;
+                        DistributedMetaStorageVersion ver0;
 
                         DistributedMetaStorageHistoryItem[] fullData;
 
@@ -430,7 +434,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                             fullData = localFullData(bridge);
 
-                            hist = history(ver - histCache.size() + 1, actualVer);
+                            hist = history(ver.id - histCache.size() + 1, locVer.id);
                         }
                         else {
                             ver0 = startupExtras.fullNodeData.ver;
@@ -471,11 +475,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
 
             if (fullNodeData == null) {
-                for (long v = startVer; v <= ver; v++)
+                for (long v = startVer; v <= ver.id; v++)
                     hist.add(histCache.get(v));
             }
             else {
-                long fullNodeDataVer = fullNodeData.ver;
+                long fullNodeDataVer = fullNodeData.ver.id;
 
                 for (long v = startVer; v <= fullNodeDataVer; v++)
                     hist.add(fullNodeData.hist[(int)(v - fullNodeDataVer + fullNodeData.hist.length - 1)]);
@@ -615,7 +619,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             unlock();
         }
 
-        addToHistoryCache(ver, histItem);
+        addToHistoryCache(ver.id, histItem);
 
         shrinkHistory(bridge);
     }
@@ -655,9 +659,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             try {
                 while (histSizeApproximation > maxBytes && histCache.size() > 1) {
-                    bridge.removeHistoryItem(ver + 1 - histCache.size());
+                    bridge.removeHistoryItem(ver.id + 1 - histCache.size());
 
-                    removeFromHistoryCache(ver + 1 - histCache.size());
+                    removeFromHistoryCache(ver.id + 1 - histCache.size());
                 }
             }
             finally {

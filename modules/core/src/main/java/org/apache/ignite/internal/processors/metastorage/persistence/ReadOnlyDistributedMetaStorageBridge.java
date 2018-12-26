@@ -41,22 +41,18 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 /** */
 class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
     /** */
-    private static final Comparator<DistributedMetaStorageHistoryItem> KEY_COMPARATOR =
+    private static final Comparator<DistributedMetaStorageHistoryItem> HISTORY_ITEM_KEY_COMPARATOR =
         Comparator.comparing(item -> item.key);
 
     /** */
     private DistributedMetaStorageImpl dms;
 
     /** */
-    private final ReadOnlyMetastorage metastorage;
-
-    /** */
     private DistributedMetaStorageHistoryItem[] locFullData;
 
     /** */
-    public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms, ReadOnlyMetastorage metastorage) {
+    public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms) {
         this.dms = dms;
-        this.metastorage = metastorage;
     }
 
     /** {@inheritDoc} */
@@ -64,7 +60,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         int idx = Arrays.binarySearch(
             locFullData,
             new DistributedMetaStorageHistoryItem(globalKey, null),
-            KEY_COMPARATOR
+            HISTORY_ITEM_KEY_COMPARATOR
         );
 
         if (idx >= 0)
@@ -82,14 +78,17 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         int idx = Arrays.binarySearch(
             locFullData,
             new DistributedMetaStorageHistoryItem(globalKeyPrefix, null),
-            KEY_COMPARATOR
+            HISTORY_ITEM_KEY_COMPARATOR
         );
 
         if (idx < 0)
             idx = -1 - idx;
 
-        for (; idx < locFullData.length && locFullData[idx].key.startsWith(globalKeyPrefix); ++idx)
-            cb.accept(locFullData[idx].key, unmarshal(locFullData[idx].valBytes));
+        for (; idx < locFullData.length && locFullData[idx].key.startsWith(globalKeyPrefix); ++idx) {
+            DistributedMetaStorageHistoryItem item = locFullData[idx];
+
+            cb.accept(item.key, unmarshal ? unmarshal(item.valBytes) : item.valBytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -112,47 +111,54 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** */
-    public void readInitialData(StartupExtras startupExtras) throws IgniteCheckedException {
+    public void readInitialData(
+        ReadOnlyMetastorage metastorage,
+        StartupExtras startupExtras
+    ) throws IgniteCheckedException {
         if (metastorage.getData(cleanupGuardKey()) != null) {
             startupExtras.clearLocData = true;
 
-            startupExtras.verToSnd = dms.ver = 0;
+            startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
         }
         else {
-            Long storedVer = (Long)metastorage.read(historyVersionKey());
+            DistributedMetaStorageVersion storedVer =
+                (DistributedMetaStorageVersion)metastorage.read(historyVersionKey());
 
             if (storedVer == null) {
-                startupExtras.verToSnd = dms.ver = 0;
+                startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
                 startupExtras.locFullData = EMPTY_ARRAY;
             }
             else {
                 startupExtras.verToSnd = dms.ver = storedVer;
 
-                Serializable guard = metastorage.read(historyGuardKey(dms.ver));
+                Serializable guard = metastorage.read(historyGuardKey(storedVer.id));
 
                 if (guard != null) {
                     // New value is already known, but listeners may not have been invoked.
-                    DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver));
+                    DistributedMetaStorageHistoryItem histItem =
+                        (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
 
                     assert histItem != null;
 
                     startupExtras.deferredUpdates.add(histItem);
                 }
                 else {
-                    guard = metastorage.read(historyGuardKey(dms.ver + 1));
+                    guard = metastorage.read(historyGuardKey(storedVer.id + 1));
 
                     if (guard != null) {
-                        DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver + 1));
+                        DistributedMetaStorageHistoryItem histItem =
+                            (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
 
                         if (histItem != null) {
-                            ++startupExtras.verToSnd;
+                            startupExtras.verToSnd = storedVer.nextVersion(histItem);
 
                             startupExtras.deferredUpdates.add(histItem);
                         }
                     }
                     else {
-                        DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver));
+                        DistributedMetaStorageHistoryItem histItem =
+                            (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
 
                         if (histItem != null) {
                             byte[] valBytes = metastorage.getData(localKey(histItem.key));
@@ -184,9 +190,9 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                             if (firstToWrite.valBytes != null)
                                 locFullDataList.add(firstToWrite);
 
-                            ftwWritten[0] = true;
-
                             locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));
+
+                            ftwWritten[0] = true;
                         }
                         else
                             locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));

@@ -70,7 +70,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
         Serializable val,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        ++dms.ver;
+        dms.ver = dms.ver.nextVersion(histItem);
 
         if (notifyListeners)
             dms.notifyListeners(histItem.key, read(histItem.key), val);
@@ -93,7 +93,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
             for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                 DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                dms.addToHistoryCache(dms.ver + i + 1 - len, histItem);
+                dms.addToHistoryCache(dms.ver.id + i + 1 - len, histItem);
             }
         }
     }

@@ -83,13 +83,13 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         Serializable val,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        String histGuardKey = historyGuardKey(dms.ver + 1);
+        String histGuardKey = historyGuardKey(dms.ver.id + 1);
 
         metastorage.write(histGuardKey, DUMMY_VALUE);
 
-        metastorage.write(historyItemKey(dms.ver + 1), histItem);
+        metastorage.write(historyItemKey(dms.ver.id + 1), histItem);
 
-        ++dms.ver;
+        dms.ver = dms.ver.nextVersion(histItem);
 
         metastorage.write(historyVersionKey(), dms.ver);
 
@@ -135,7 +135,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                     DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                    long histItemVer = dms.ver + i + 1 - len;
+                    long histItemVer = dms.ver.id + i + 1 - len;
 
                     metastorage.write(historyItemKey(histItemVer), histItem);
 
@@ -148,18 +148,19 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             metastorage.remove(cleanupGuardKey);
         }
 
-        Long storedVer = (Long)metastorage.read(historyVersionKey());
+        DistributedMetaStorageVersion storedVer = (DistributedMetaStorageVersion)metastorage.read(historyVersionKey());
 
         if (storedVer == null)
-            metastorage.write(historyVersionKey(), 0L);
+            metastorage.write(historyVersionKey(), DistributedMetaStorageVersion.INITIAL_VERSION);
         else {
-            Serializable guard = metastorage.read(historyGuardKey(dms.ver + 1));
+            Serializable guard = metastorage.read(historyGuardKey(dms.ver.id + 1));
 
             if (guard != null) {
-                DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver + 1));
+                DistributedMetaStorageHistoryItem histItem =
+                    (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver.id + 1));
 
                 if (histItem == null)
-                    metastorage.remove(historyGuardKey(dms.ver + 1));
+                    metastorage.remove(historyGuardKey(dms.ver.id + 1));
             }
         }
     }

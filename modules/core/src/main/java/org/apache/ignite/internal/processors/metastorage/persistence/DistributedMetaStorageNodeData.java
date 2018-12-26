@@ -26,7 +26,7 @@ class DistributedMetaStorageNodeData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public final long ver;
+    public final DistributedMetaStorageVersion ver;
 
     /** */
     public final DistributedMetaStorageHistoryItem[] fullData;
@@ -39,7 +39,7 @@ class DistributedMetaStorageNodeData implements Serializable {
 
     /** */
     public DistributedMetaStorageNodeData(
-        long ver,
+        DistributedMetaStorageVersion ver,
         DistributedMetaStorageHistoryItem[] fullData,
         DistributedMetaStorageHistoryItem[] hist,
         DistributedMetaStorageHistoryItem[] updates
