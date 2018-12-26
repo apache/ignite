@@ -73,7 +73,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @param cancel Cancel.
      */
-    public IgnitePdsContinuousRestartTest(boolean cancel) {
+    protected IgnitePdsContinuousRestartTest(boolean cancel) {
         this.cancel = cancel;
     }
 
