@@ -122,12 +122,13 @@
             <version>${javassist.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.jpmml/pmml-evaluator -->
+        <!-- https://mvnrepository.com/artifact/org.jpmml/pmml-model -->
         <dependency>
             <groupId>org.jpmml</groupId>
-            <artifactId>pmml-evaluator</artifactId>
-            <version>1.4.4</version>
+            <artifactId>pmml-model</artifactId>
+            <version>1.4.7</version>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
