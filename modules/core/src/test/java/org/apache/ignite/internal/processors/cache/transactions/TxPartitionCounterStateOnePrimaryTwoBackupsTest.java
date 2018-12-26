@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -206,7 +207,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
                 return new TwoPhaseCommitTxCallbackAdapter(
                     U.map((IgniteEx)primary, new int[] {1, 2, 0}, (IgniteEx)backup1, new int[] {0, 2, 1}, (IgniteEx)backup2, new int[] {2, 1, 0}),
-                    U.map((IgniteEx)primary, new int[] {1, 0, 2}, (IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {2, 0, 1}),
+                    new HashMap(),
                     SIZES.length);
             },
             SIZES);

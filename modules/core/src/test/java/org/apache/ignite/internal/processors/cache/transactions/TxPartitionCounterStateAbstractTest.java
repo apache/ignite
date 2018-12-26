@@ -881,8 +881,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 return false;
 
             runAsync(() -> {
-                log.info("TX: beforeBackupPrepare: order=" + order(primaryTx.nearXidVersion().asGridUuid()) + ", node=" + backup.name());
-
                 if (prepares.get(primary) != null) {
                     int v0 = prepCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()), (key, val) -> (val == null ? 0 : val) + 1);
 
@@ -904,7 +902,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 }
             });
 
-            return true;
+            return prepares.get(backup) != null;
         }
 
         /** {@inheritDoc} */
@@ -914,6 +912,16 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 return false;
 
             runAsync(() -> {
+                if (prepares.get(backup) != null) {
+                    if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
+                        return;
+
+                    if (prepares.get(backup).isEmpty())
+                        return;
+
+                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                }
+
                 if (prepares.get(primary) != null) {
                     GridCompoundFuture<Object, Object> fut0 = (GridCompoundFuture<Object, Object>)futures.get(new T3<>(primary, TxState.PREPARE, nearXidVer));
 
@@ -931,18 +939,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                         futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
                 }
 
-                if (prepares.get(backup) != null) {
-                    if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
-                        return;
-
-                    if (prepares.get(backup).isEmpty())
-                        return;
-
-                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
-                }
             });
 
-            return true;
+            return prepares.get(primary) != null;
         }
 
         /** {@inheritDoc} */
