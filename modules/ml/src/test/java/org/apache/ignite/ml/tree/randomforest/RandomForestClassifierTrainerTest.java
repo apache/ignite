@@ -20,12 +20,14 @@ package org.apache.ignite.ml.tree.randomforest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -52,9 +54,10 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(5)
-            .withFeaturesCountSelectionStrgy(x -> 2);
+            .withFeaturesCountSelectionStrgy(x -> 2)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
@@ -79,9 +82,10 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(100)
-            .withFeaturesCountSelectionStrgy(x -> 2);
+            .withFeaturesCountSelectionStrgy(x -> 2)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         ModelsComposition originalMdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
         ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);

@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQuery
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
+import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
+import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDateKeySelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
@@ -60,11 +62,14 @@ import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetry
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryCacheQueryTestSuite2 {
     /**
      * @return Test suite.
      */
@@ -119,6 +124,8 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
 
         suite.addTest(new JUnit4TestAdapter(CreateTableWithDateKeySelfTest.class));
 
+        suite.addTest(new JUnit4TestAdapter(CacheQueryEntityWithDateTimeApiFieldsTest.class));
+
         suite.addTest(new JUnit4TestAdapter(NonCollocatedRetryMessageSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(RetryCauseMessageSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(DisappearedCacheCauseRetryMessageSelfTest.class));
@@ -127,6 +134,8 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(TableViewSubquerySelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueriesLoadTest1.class));
+
+        suite.addTest(new JUnit4TestAdapter(SqlLocalQueryConnectionAndStatementTest.class));
 
         return suite;
     }

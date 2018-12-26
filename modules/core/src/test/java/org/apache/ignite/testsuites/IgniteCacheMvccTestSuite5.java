@@ -43,11 +43,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite5 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite5 {
     /**
      * @return IgniteCache test suite.
      */

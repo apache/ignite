@@ -539,7 +539,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         return commitDhtLocalAsync();
     }
@@ -663,7 +662,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut;
     }

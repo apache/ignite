@@ -31,16 +31,18 @@ import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiConfig
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Grid SPI checkpoint self test suite.
  */
-public class IgniteSpiCheckpointSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiCheckpointSelfTestSuite {
     /**
      * @return Checkpoint test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Checkpoint Test Suite");
 
         // Cache.

@@ -109,6 +109,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -275,6 +276,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** */
+    private final boolean disableTriggeringCacheInterceptorOnConflict =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -858,6 +863,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean transactionalSnapshot() {
         return cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+    }
+
+    /**
+     * @return {@code True} if cache interceptor should be skipped in case of conflicts.
+     */
+    public boolean disableTriggeringCacheInterceptorOnConflict() {
+        return disableTriggeringCacheInterceptorOnConflict;
     }
 
     /**
@@ -1889,7 +1901,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1915,7 +1926,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         EntryGetResult getRes,
@@ -1943,7 +1953,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1991,7 +2000,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param needVer Need version flag.
      * @return EntryGetResult or value.
      */
-    @SuppressWarnings("unchecked")
     private <V1> V1 createValue(final GridCacheVersion ver,
         final long expireTime,
         final long ttl,

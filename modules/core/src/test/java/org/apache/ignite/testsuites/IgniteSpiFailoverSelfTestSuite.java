@@ -28,16 +28,18 @@ import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiSelf
 import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiStartStopSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Failover SPI self-test suite.
  */
-public class IgniteSpiFailoverSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiFailoverSelfTestSuite {
     /**
      * @return Failover SPI tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Failover SPI Test Suite");
 
         // Always failover.

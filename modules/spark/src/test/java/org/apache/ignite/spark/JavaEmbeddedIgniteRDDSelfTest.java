@@ -280,9 +280,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Finder. */
-    private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @param igniteInstanceName Ignite instance name.
      * @param client Client.
@@ -291,12 +288,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

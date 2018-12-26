@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spark.JavaEmbeddedIgniteRDDSelfTest;
 import org.apache.ignite.spark.JavaStandaloneIgniteRDDSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suit for Ignite RDD
  */
-public class IgniteRDDTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteRDDTestSuite {
     /**
      * @return Java Ignite RDD test suit.
      */
