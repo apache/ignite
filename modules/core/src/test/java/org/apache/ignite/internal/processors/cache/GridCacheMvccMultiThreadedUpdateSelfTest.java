@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -56,6 +57,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformTx() throws Exception {
         testTransformTx(keyForNode(0));
 
@@ -110,6 +112,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTxPessimistic() throws Exception {
         testPutTx(keyForNode(0));
 
@@ -157,6 +160,7 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsentTxPessimistic() throws Exception {
         testPutxIfAbsentTx(keyForNode(0));
 

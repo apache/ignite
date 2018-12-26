@@ -258,6 +258,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccInMemoryEvictionDisabled() throws Exception {
         final String memRegName = "in-memory-evictions";
 

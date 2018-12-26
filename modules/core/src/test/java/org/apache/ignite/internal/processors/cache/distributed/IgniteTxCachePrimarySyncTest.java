@@ -65,6 +65,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -141,8 +142,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleKeyCommitFromPrimary() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10518");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
 
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -408,8 +408,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleKeyCommit() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10518");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
 
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -836,7 +835,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         List<IgniteCache<Object, Object>> caches = new ArrayList<>();
 
         try {
-
             caches.add(createCache(ignite, cacheConfiguration("fullSync1", FULL_SYNC, 1, false, false)));
             caches.add(createCache(ignite, cacheConfiguration("fullSync2", FULL_SYNC, 1, false, false)));
             caches.add(createCache(ignite, cacheConfiguration("fullAsync1", FULL_ASYNC, 1, false, false)));

@@ -52,6 +52,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -64,6 +68,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -111,6 +116,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessages1() throws Exception {
         checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -118,6 +124,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessagesMvcc1() throws Exception {
         checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
@@ -134,6 +141,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiagnosticMessagesMvcc2() throws Exception {
         connectionsPerNode = 5;
 
@@ -143,6 +151,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunning() throws Exception {
         checkLongRunning(TRANSACTIONAL);
     }
@@ -150,6 +159,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunningMvcc() throws Exception {
         checkLongRunning(TRANSACTIONAL_SNAPSHOT);
     }
@@ -227,15 +237,16 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
     public void testSeveralLongRunningMvccTxs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeveralLongRunningTxs() throws Exception {
         checkSeveralLongRunningTxs(TRANSACTIONAL);
     }
@@ -348,15 +359,16 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9322") // Fix diagnostic message or disable test.
+    @Test
     public void testLongRunningMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
-
         checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRunningTx() throws Exception {
         checkLongRunningTx(TRANSACTIONAL);
 
@@ -456,6 +468,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteTx() throws Exception {
         checkRemoteTx(TRANSACTIONAL);
     }
@@ -463,6 +476,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteMvccTx() throws Exception {
         checkRemoteTx(TRANSACTIONAL_SNAPSHOT);
     }
@@ -471,6 +485,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
+    @Test
     public void checkRemoteTx(CacheAtomicityMode atomicityMode) throws Exception {
         int timeout = 3500;
 

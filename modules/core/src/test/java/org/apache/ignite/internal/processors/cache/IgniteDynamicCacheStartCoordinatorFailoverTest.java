@@ -50,7 +50,12 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+/** */
+@RunWith(JUnit4.class)
 public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** Default IP finder for single-JVM cloud grid. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -106,6 +111,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCoordinatorFailure() throws Exception {
         // Start coordinator node.
         appendCustomAttribute = true;

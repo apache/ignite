@@ -70,8 +70,9 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     @Override public void testLocal() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+        // No-op.
     }
 }

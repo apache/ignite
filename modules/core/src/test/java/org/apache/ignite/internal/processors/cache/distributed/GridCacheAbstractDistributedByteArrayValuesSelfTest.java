@@ -177,6 +177,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMvcc() throws Exception {
         testTransaction0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -186,6 +187,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMvccMixed() throws Exception {
         testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
