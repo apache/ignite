@@ -39,9 +39,9 @@ class InfModelBuilderTestUtil {
      *
      * @return Dummy model parser used in tests.
      */
-    static InfModelParser<Integer, Integer> getParser() {
+    static InfModelParser<Integer, Integer, InfModel<Integer, Integer>> getParser() {
         return m -> new InfModel<Integer, Integer>() {
-            @Override public Integer predict(Integer input) {
+            @Override public Integer apply(Integer input) {
                 return input;
             }
 

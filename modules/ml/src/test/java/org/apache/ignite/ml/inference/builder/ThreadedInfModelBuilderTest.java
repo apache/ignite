@@ -39,6 +39,6 @@ public class ThreadedInfModelBuilderTest {
         );
 
         for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.predict(i).get());
+            assertEquals(Integer.valueOf(i), infMdl.apply(i).get());
     }
 }

@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
+package org.apache.ignite.yardstick.jdbc.vendors;
 
-import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- * Base interface for objects processed by XGBoost model.
+ * Benchmark that performs select with filter by 'salary' field and inner join with Organization table.
  */
-public interface XGObject extends Serializable {
-    /**
-     * Returns feature value by the specified name.
-     *
-     * @param featureName Feature name.
-     * @return Feature value.
-     */
-    public Double getFeature(String featureName);
+public class SelectBySalaryWithJoinBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        fillRandomSalaryRange(select);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String testedSqlQuery() {
+        return queries.selectPersonsJoinOrgWhereSalary();
+    }
 }
