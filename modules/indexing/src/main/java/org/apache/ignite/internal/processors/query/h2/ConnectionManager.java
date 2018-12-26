@@ -92,7 +92,7 @@ public class ConnectionManager {
             this::addConnectionToThreaded);
 
     /** Per-thread connections. */
-    private final ConcurrentMap<Thread, Set<H2ConnectionWrapper>> threadConns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, Map<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
 
     /** Track detached connections to close on node stop. */
     private final ConcurrentMap<H2ConnectionWrapper, Boolean> detachedConns = new ConcurrentHashMap<>();
@@ -176,7 +176,7 @@ public class ConnectionManager {
     /**
      * @return Per-thread connections (for testing purposes only).
      */
-    public Map<Thread, Set<H2ConnectionWrapper>> connectionsForThread() {
+    public Map<Thread, Map<H2ConnectionWrapper, Boolean>> connectionsForThread() {
         return threadConns;
     }
 
@@ -190,7 +190,7 @@ public class ConnectionManager {
 
         ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConnection = threadConn.get();
 
-        Set<H2ConnectionWrapper> connSet = threadConns.get(key);
+        Map<H2ConnectionWrapper, Boolean> connSet = threadConns.get(key);
 
         assert connSet != null;
 
@@ -367,14 +367,14 @@ public class ConnectionManager {
      * Clear statement cache when cache is unregistered..
      */
     public void onCacheUnregistered() {
-        threadConns.values().forEach(s -> s.forEach(H2ConnectionWrapper::clearStatementCache));
+        threadConns.values().forEach(set -> set.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
     }
 
     /**
      * Close all connections.
      */
     private void closeConnections() {
-        threadConns.values().forEach(s -> s.forEach(U::closeQuiet));
+        threadConns.values().forEach(set -> set.keySet().forEach(U::closeQuiet));
         detachedConns.keySet().forEach(U::closeQuiet);
 
         threadConns.clear();
@@ -488,15 +488,15 @@ public class ConnectionManager {
     private void addConnectionToThreaded(H2ConnectionWrapper conn) {
         Thread cur = Thread.currentThread();
 
-        Set<H2ConnectionWrapper> setConn = threadConns.get(cur);
+        Map<H2ConnectionWrapper, Boolean> setConn = threadConns.get(cur);
 
         if (setConn == null) {
-            setConn = new HashSet<>();
+            setConn = new ConcurrentHashMap<>();
 
             threadConns.putIfAbsent(cur, setConn);
         }
 
-        setConn.add(conn);
+        setConn.put(conn, false);
     }
 
     /**
@@ -518,7 +518,7 @@ public class ConnectionManager {
             Thread t = e.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                e.getValue().forEach(c -> U.close(c, log));
+                e.getValue().keySet().forEach(c -> U.close(c, log));
 
                 return true;
             }
@@ -533,7 +533,7 @@ public class ConnectionManager {
     private void cleanupStatements() {
         long now = U.currentTimeMillis();
 
-        threadConns.values().forEach(set -> set.forEach(c ->{
+        threadConns.values().forEach(set -> set.keySet().forEach(c ->{
             if (now - c.statementCache().lastUsage() > stmtTimeout)
                 c.clearStatementCache();
         }));
