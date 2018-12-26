@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +28,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
@@ -59,11 +61,11 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -332,8 +334,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                     tx.commit();
                 }
-                catch (Exception ignored) {
+                catch (Throwable ignored) {
                     // No-op.
+                    System.out.println();
                 }
 
                 // TODO FIXME expect rollback for some scenarios.
@@ -584,219 +587,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     }
 
     /**
-     * The callback order prepares and commits on primary node.
-     */
-    protected class TwoPhasePessimisticTxCallbackAdapter extends TxCallbackAdapter {
-        /** */
-        private Queue<Integer> prepOrder;
-
-        /** */
-        private Queue<Integer> primCommitOrder;
-
-        /** */
-        private Queue<Integer> backupCommitOrder;
-
-        /** */
-        private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
-
-        /** */
-        private Map<IgniteUuid, GridFutureAdapter<?>> primFinishFuts = new ConcurrentHashMap<>();
-
-        /** */
-        private Map<IgniteUuid, GridFutureAdapter<?>> backupFinishFuts = new ConcurrentHashMap<>();
-
-        /** */
-        private final Ignite primaryNode;
-
-        /** */
-        private final Ignite backupNode;
-
-        /** */
-        private final int txCnt;
-
-        /**
-         * @param prepOrd Prepare order.
-         * @param primCommitOrder Commit order.
-         */
-        public TwoPhasePessimisticTxCallbackAdapter(int[] prepOrd, Ignite primaryNode, int[] primCommitOrder,
-            Ignite backupNode, int[] backupCommitOrder) {
-            this.primaryNode = primaryNode;
-            this.backupNode = backupNode;
-            this.txCnt = prepOrd.length;
-
-            prepOrder = new ConcurrentLinkedQueue<>();
-
-            for (int aPrepOrd : prepOrd)
-                prepOrder.add(aPrepOrd);
-
-            this.primCommitOrder = new ConcurrentLinkedQueue<>();
-
-            for (int aCommitOrd : primCommitOrder)
-                this.primCommitOrder.add(aCommitOrd);
-
-            this.backupCommitOrder = new ConcurrentLinkedQueue<>();
-
-            for (int aCommitOrd : backupCommitOrder)
-                this.backupCommitOrder.add(aCommitOrd);
-        }
-
-        /** */
-        protected boolean onPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
-            log.info("TX: prepared on primary [name=" + primary.name() + ", txId=" + idx + ", tx=" + CU.txString(tx) + ']');
-
-            return false;
-        }
-
-        /**
-         * @param primary Primary primary.
-         */
-        protected void onAllPrimaryPrepared(IgniteEx primary) {
-            log.info("TX: all primary prepared [name=" + primary.name() + ']');
-        }
-
-        /**
-         * @param primary Primary node.
-         * @param idx Index.
-         */
-        protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
-            log.info("TX: primary committed [name=" + primary.name() + ", txId=" + idx + ']');
-
-            return false;
-        }
-
-        /**
-         * @param backup Backup node.
-         * @param idx Index.
-         */
-        protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-            log.info("TX: backup committed " + idx);
-
-            return false;
-        }
-
-        /**
-         * @param primary Primary node.
-         */
-        protected void onAllPrimaryCommitted(IgniteEx primary) {
-            log.info("TX: all primary committed");
-        }
-
-        /**
-         * @param backup Backup node.
-         */
-        protected void onAllBackupCommitted(IgniteEx backup) {
-            log.info("TX: all backup committed");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> proceedFut) {
-            if (primary != primaryNode) // Ignore events from other tx participants.
-                return false;
-
-            runAsync(() -> {
-                prepFuts.put(nearXidVer, proceedFut);
-
-                // Order prepares.
-                if (prepFuts.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
-                    prepFuts.remove(version(prepOrder.poll())).onDone();
-                }
-            });
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
-            if (primary != primaryNode)
-                return false;
-
-            runAsync(() -> {
-                if (onPrepared(primary, tx, order(tx.nearXidVersion().asGridUuid())))
-                    return;
-
-                if (prepOrder.isEmpty()) {
-                    onAllPrimaryPrepared(primary);
-
-                    return;
-                }
-
-                prepFuts.remove(version(prepOrder.poll())).onDone();
-            });
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?>
-            proceedFut) {
-            if (this.primaryNode != primary) // Ignore events from other tx participants.
-                return false;
-
-            runAsync(() -> {
-                primFinishFuts.put(tx.nearXidVersion().asGridUuid(), proceedFut);
-
-                // Order prepares.
-                if (primFinishFuts.size() == 3)
-                    primFinishFuts.remove(version(primCommitOrder.poll())).onDone();
-            });
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup, @Nullable IgniteInternalTx primaryTx,
-            IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-            if (primary != primaryNode || backup != backupNode)
-                return false;
-
-            runAsync(() -> {
-                backupFinishFuts.put(nearXidVer, fut);
-
-                if (onPrimaryCommitted(primary, order(nearXidVer)))
-                    return;
-
-                if (primCommitOrder.isEmpty() && backupFinishFuts.size() == txCnt) {
-                    onAllPrimaryCommitted(primary);
-
-                    assertEquals(txCnt, backupFinishFuts.size());
-
-                    backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
-
-                    return;
-                }
-
-                primFinishFuts.remove(version(primCommitOrder.poll())).onDone();
-            });
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> fut) {
-            if (primary != primaryNode || backup != backupNode)
-                return false;
-
-            runAsync(() -> {
-                if (onBackupCommitted(backup, order(nearXidVer)))
-                    return;
-
-                if (backupCommitOrder.isEmpty()) {
-                    onAllBackupCommitted(backup);
-
-                    return;
-                }
-
-                backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
-            });
-
-            return false;
-        }
-    }
-
-    /**
      * Find a tx by near xid version.
      *
      * @param n Node.
@@ -888,6 +678,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             futures = new ConcurrentHashMap<>();
 
         /** */
+        private Map<IgniteEx, Queue<Integer>> assigns = new ConcurrentHashMap<>();
+
+        /** */
         private Map<IgniteEx, Queue<Integer>> prepares = new ConcurrentHashMap<>();
 
         /** */
@@ -902,6 +695,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** */
         private boolean allPrimaryCommittedFlag = false;
 
+        /** */
+        private Map<T2<IgniteEx, IgniteUuid>, Integer> prepCntr = new HashMap<>();
+
         /**
          * @param prepares Map of node to it's prepare order.
          * @param commits Map of node to it's commit order.
@@ -913,9 +709,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             commits.forEach((ex, ints) -> assertEquals("Wrong order of commits", txCnt, ints.length));
 
-            for (Map.Entry<IgniteEx, int[]> entry : prepares.entrySet())
+            for (Map.Entry<IgniteEx, int[]> entry : prepares.entrySet()) {
                 this.prepares.put(entry.getKey(),
                     IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
+
+                assigns.put(entry.getKey(),
+                    IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
+            }
 
             for (Map.Entry<IgniteEx, int[]> entry : commits.entrySet()) {
                 this.commits.put(entry.getKey(),
@@ -971,7 +771,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          * @param primary Primary node.
          */
         protected void onAllPrimaryCommitted(IgniteEx primary) {
-            log.info("TX: all primary committed");
+            log.info("TX: all primary committed [name=" + primary.name() + ']');
         }
 
         /**
@@ -979,6 +779,15 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          */
         protected void onAllBackupCommitted(IgniteEx backup) {
             log.info("TX: all backup committed: [name=" + backup.name() + ']');
+        }
+
+        /**
+         *
+         * @param primary Primary node.
+         * @param primaryTx Primary tx.
+         */
+        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx primaryTx, int idx){
+            log.info("TX: primary counter assigned: [name=" + primary.name() + ", txId=" + idx + ']');
         }
 
         /**
@@ -991,17 +800,27 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> proceedFut) {
+        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             if (prepares.get(primary) == null)
                 return false;
 
             runAsync(() -> {
-                futures.put(new T3<>(primary, TxState.PREPARE, nearXidVer), proceedFut);
+                futures.put(new T3<>(primary, TxState.ASSIGN, nearXidVer), proceedFut);
 
-                // Order prepares.
-                if (countForNode(primary, TxState.PREPARE) == txCnt) {// Wait until all prep requests queued and force prepare order.
-                    futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
+                futures.put(new T3<>(primary, TxState.PREPARE, nearXidVer), new GridCompoundFuture() {
+                    @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+                        Collection<IgniteInternalFuture<?>> futures = futures();
+
+                        for (IgniteInternalFuture<?> future : futures)
+                            ((GridFutureAdapter)future).onDone();
+
+                        return super.onDone(res, err);
+                    }
+                });
+
+                // Order counter assigns.
+                if (countForNode(primary, TxState.ASSIGN) == txCnt) {// Wait until all prep requests queued and force prepare order.
+                    futures.remove(new T3<>(primary, TxState.ASSIGN, version(assigns.get(primary).poll()))).onDone();
                 }
             });
 
@@ -1049,15 +868,33 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
             GridFutureAdapter<?> proceedFut) {
-            if (prepares.get(backup) == null)
+
+            assert primary != backup;
+
+            if (prepares.get(backup) == null && prepares.get(primary) == null)
                 return false;
 
             runAsync(() -> {
-                futures.put(new T3<>(backup, TxState.PREPARE, primaryTx.nearXidVersion().asGridUuid()), proceedFut);
+                log.info("TX: beforeBackupPrepare: order=" + order(primaryTx.nearXidVersion().asGridUuid()) + ", node=" + backup.name());
 
-                // Order prepares.
-                if (countForNode(backup, TxState.PREPARE) == txCnt) {// Wait until all prep requests queued and force prepare order.
-                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                if (prepares.get(primary) != null) {
+                    int v0 = prepCntr.compute(new T2<>(primary, primaryTx.nearXidVersion().asGridUuid()), (key, val) -> (val == null ? 0 : val) + 1);
+
+                    if (v0 == 2) {
+                        onCounterAssigned(primary, primaryTx, order(primaryTx.nearXidVersion().asGridUuid()));
+
+                        if (!assigns.get(primary).isEmpty())
+                            futures.remove(new T3<>(primary, TxState.ASSIGN, version(assigns.get(primary).poll()))).onDone();
+                    }
+                }
+
+                if (prepares.get(backup) != null) {
+                    futures.put(new T3<>(backup, TxState.PREPARE, primaryTx.nearXidVersion().asGridUuid()), proceedFut);
+
+                    // Order prepares.
+                    if (countForNode(backup, TxState.PREPARE) == txCnt) {// Wait until all prep requests queued and force prepare order.
+                        futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                    }
                 }
             });
 
@@ -1067,17 +904,39 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx backupTx, IgniteUuid nearXidVer,
             GridFutureAdapter<?> fut) {
-            if (prepares.get(backup) == null)
+            if (prepares.get(backup) == null && prepares.get(primary) == null)
                 return false;
 
             runAsync(() -> {
-                if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
-                    return;
+                if (prepares.get(primary) != null) {
+                    GridCompoundFuture<Object, Object> fut0 = (GridCompoundFuture<Object, Object>)futures.get(new T3<>(primary, TxState.PREPARE, nearXidVer));
 
-                futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                    fut0.add((IgniteInternalFuture<Object>)fut);
+
+                    int sum = futures.entrySet().stream().filter(objects -> objects.getKey().get1() == primary &&
+                        objects.getKey().get2() == TxState.PREPARE).mapToInt(new ToIntFunction<Map.Entry<T3<IgniteEx, TxState, IgniteUuid>, GridFutureAdapter<?>>>() {
+                        @Override public int applyAsInt(
+                            Map.Entry<T3<IgniteEx, TxState, IgniteUuid>, GridFutureAdapter<?>> value) {
+                            return ((GridCompoundFuture)value.getValue()).futures().size();
+                        }
+                    }).sum();
+
+                    if (sum == txCnt * 2)
+                        futures.remove(new T3<>(primary, TxState.PREPARE, version(prepares.get(primary).poll()))).onDone();
+                }
+
+                if (prepares.get(backup) != null) {
+                    if (onBackupPrepared(backup, backupTx, order(nearXidVer)))
+                        return;
+
+                    if (prepares.get(backup).isEmpty())
+                        return;
+
+                    futures.remove(new T3<>(backup, TxState.PREPARE, version(prepares.get(backup).poll()))).onDone();
+                }
             });
 
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -1142,6 +1001,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     /** */
     private enum TxState {
         /** Prepare. */ PREPARE,
+        /** Assign. */ ASSIGN,
         /** Commit. */COMMIT
     }
 }
