@@ -29,22 +29,20 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for query with BinaryMarshaller and different serialization modes and with reflective serializer.
  */
+@RunWith(JUnit4.class)
 public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 2;
 
@@ -61,7 +59,6 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
@@ -77,6 +74,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicated() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -105,6 +103,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedFullSync() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -133,6 +132,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitioned() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -162,6 +162,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedFullSync() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -191,6 +192,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -207,6 +209,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedFullSyncMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -223,6 +226,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -240,6 +244,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedFullSyncMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 

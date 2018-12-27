@@ -33,7 +33,7 @@ import org.tensorflow.Tensor;
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelParser<I, O> {
+public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelParser<I, O, InfModel<I, O>> {
     /** */
     private static final long serialVersionUID = 5574259553625871456L;
 
@@ -143,7 +143,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
         }
 
         /** {@inheritDoc} */
-        @Override public O predict(I input) {
+        @Override public O apply(I input) {
             Session.Runner runner = ses.runner();
 
             runner = feedAll(runner, input);

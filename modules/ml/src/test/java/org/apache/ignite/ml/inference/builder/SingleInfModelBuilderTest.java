@@ -37,6 +37,6 @@ public class SingleInfModelBuilderTest {
         );
 
         for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.predict(i));
+            assertEquals(Integer.valueOf(i), infMdl.apply(i));
     }
 }

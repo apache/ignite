@@ -21,24 +21,24 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.log4j.Level;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TOPOLOGY_SNAPSHOT = "Topology snapshot";
@@ -49,25 +49,17 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CLIENT_NODE = ">>> Number of client nodes";
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-        disc.setIpFinder(IP_FINDER);
 
         if (igniteInstanceName.endsWith("client"))
             cfg.setClientMode(true);
 
         if (igniteInstanceName.endsWith("client_force_server")) {
             cfg.setClientMode(true);
-            disc.setForceServerMode(true);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
-
-        cfg.setDiscoverySpi(disc);
 
         return cfg;
     }
@@ -85,14 +77,10 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             ((MockLogger)log).clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -104,6 +92,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -145,6 +134,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -156,6 +146,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -199,6 +190,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -210,6 +202,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 

@@ -31,7 +31,7 @@ public class IgnitePdsCompressionTestSuite2 {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (with page compression).");
 
         enableCompressionByDefault();
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         return suite;
     }

@@ -33,10 +33,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for distributed queries with node restarts.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** Total nodes. */
     private int totalNodes = 6;
@@ -64,6 +68,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         restarts(false);
     }
@@ -71,6 +76,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartsBroadcast() throws Exception {
         restarts(true);
     }

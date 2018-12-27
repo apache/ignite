@@ -38,7 +38,7 @@ import org.tensorflow.Tensor;
  */
 public class TensorFlowLocalInferenceExample {
     /** Path to the directory with saved TensorFlow model. */
-    private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
+    private static final String MODEL_PATH = "examples/src/main/resources/models/mnist_tf_model";
 
     /** Path to the MNIST images data. */
     private static final String MNIST_IMG_PATH = "examples/src/main/resources/datasets/t10k-images-idx3-ubyte";
@@ -54,7 +54,7 @@ public class TensorFlowLocalInferenceExample {
 
         InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
-        InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
+        InfModelParser<double[], Long, ?> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
             .withInput("Placeholder", doubles -> {
                 float[][][] reshaped = new float[1][28][28];
                 for (int i = 0; i < doubles.length; i++)
@@ -75,7 +75,7 @@ public class TensorFlowLocalInferenceExample {
 
         try (InfModel<double[], Long> locMdl = new SingleInfModelBuilder().build(reader, parser)) {
             for (MnistUtils.MnistLabeledImage image : images)
-                locMdl.predict(image.getPixels());
+                locMdl.apply(image.getPixels());
         }
 
         long t1 = System.currentTimeMillis();

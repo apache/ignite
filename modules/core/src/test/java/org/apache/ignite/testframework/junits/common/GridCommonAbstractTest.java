@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -117,6 +119,8 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -130,6 +134,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /** Cache peek modes array that consist of only ONHEAP mode. */
     protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
+
+    /** Service deployment wait timeout. */
+    protected static final int SERVICE_DEPLOYMENT_WAIT_TIMEOUT = 10_000;
 
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.
@@ -395,12 +402,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
+    }
+
+    /**
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
         throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
@@ -1066,7 +1080,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
         return findKeys(cache, cnt, startFrom, 0);
     }
@@ -1077,7 +1090,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
@@ -1158,7 +1170,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         return findKeys(cache, cnt, startFrom, 1);
     }
@@ -1170,7 +1181,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
@@ -2032,5 +2042,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (!txs.isEmpty())
                 fail("Some transaction are not finished");
         }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param topVer Topology version to wait.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected void waitForServicesReadyTopology(final IgniteEx ignite,
+        final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
+        if (!(ignite.context().service() instanceof IgniteServiceProcessor))
+            return;
+
+        final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();
+
+        GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion readyTopVer = srvcProc.deployment().readyTopologyVersion();
+
+            return topVer.compareTo(readyTopVer) <= 0;
+        }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);
+    }
+
+    /**
+     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
+     * otherwise {@code true}.
+     */
+    protected static boolean isEventDrivenServiceProcessorEnabled() {
+        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
     }
 }

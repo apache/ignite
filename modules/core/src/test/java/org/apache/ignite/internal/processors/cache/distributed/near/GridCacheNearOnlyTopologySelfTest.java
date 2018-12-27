@@ -25,16 +25,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,10 +45,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Near-only cache node startup test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
-    /** Shared ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Near only flag. */
     private boolean cilent;
 
@@ -57,10 +54,8 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     private boolean cache = true;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -81,47 +76,43 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(cacheCfg);
         }
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setForceServerMode(true);
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstOneNode() throws Exception {
         checkStartupNearNode(0, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastOneNode() throws Exception {
         checkStartupNearNode(1, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstTwoNodes() throws Exception {
         checkStartupNearNode(0, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupInMiddleTwoNodes() throws Exception {
         checkStartupNearNode(1, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastTwoNodes() throws Exception {
         checkStartupNearNode(2, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMapping() throws Exception {
         try {
             cache = true;
@@ -144,6 +135,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMappingOnComputeNode() throws Exception {
         try {
             cache = true;
@@ -175,6 +167,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNodeLeave() throws Exception {
         try {
             cache = true;

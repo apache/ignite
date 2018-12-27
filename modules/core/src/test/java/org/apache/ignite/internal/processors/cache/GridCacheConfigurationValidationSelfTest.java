@@ -21,10 +21,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -35,6 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Attribute validation self test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String NON_DFLT_CACHE_NAME = "non-dflt-cache";
@@ -65,9 +66,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
             "reservedForDsCacheGroupNameCheckFails";
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Constructs test.
      */
@@ -78,12 +76,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         // Default cache config.
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
@@ -138,6 +130,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateCacheConfigurations() throws Exception {
         // This grid should not start.
         startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
@@ -149,6 +142,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testCacheAttributesValidation() throws Exception {
         try {
             startGrid(0);

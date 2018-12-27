@@ -204,4 +204,12 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Returns queue that will operate with binary objects. This is similar to {@link IgniteCache#withKeepBinary()} but
+     * for queues.
+     *
+     * @return New queue instance for binary objects.
+     */
+    public <V1> IgniteQueue<V1> withKeepBinary();
 }

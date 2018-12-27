@@ -35,11 +35,15 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link ClusterGroup}.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 4;
@@ -51,7 +55,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
@@ -89,6 +92,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom() throws Exception {
         assertTrue(ignite.cluster().nodes().contains(ignite.cluster().forRandom().node()));
     }
@@ -96,6 +100,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldest() throws Exception {
         ClusterGroup oldest = ignite.cluster().forOldest();
 
@@ -121,6 +126,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testYoungest() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
 
@@ -146,6 +152,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForDaemons() throws Exception {
         assertEquals(4, ignite.cluster().nodes().size());
 
@@ -171,6 +178,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNewNodes() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
         ClusterGroup oldest = ignite.cluster().forOldest();
@@ -194,6 +202,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForPredicate() throws Exception {
         IgnitePredicate<ClusterNode> evenP = new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -237,6 +246,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAgeClusterGroupSerialization() throws Exception {
         Marshaller marshaller = ignite.configuration().getMarshaller();
 
@@ -260,6 +270,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServer() throws Exception {
         ClusterGroup srv = ignite.cluster().forServers();
 
@@ -277,6 +288,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForCacheNodesOnDynamicCacheCreateDestroy() throws Exception {
         Random rnd = ThreadLocalRandom.current();
 
@@ -294,6 +306,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForClientNodesOnDynamicCacheCreateDestroy() throws Exception {
         Random rnd = ThreadLocalRandom.current();
 
@@ -370,6 +383,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyGroup() throws Exception {
         ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
 

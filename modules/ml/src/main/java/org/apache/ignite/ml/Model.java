@@ -18,10 +18,11 @@
 package org.apache.ignite.ml;
 
 import java.util.function.BiFunction;
+import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
+public interface Model<T, V> extends InfModel<T, V>, IgniteFunction<T, V> {
     /**
      * Combines this model with other model via specified combiner
      *
@@ -34,9 +35,25 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     }
 
     /**
+     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     *
+     * @param after Function to apply after this model.
+     * @param <V1> Type of input of function applied before this model.
+     * @return Composition model of the form {@code x -> after(mdl(x))}.
+     */
+    public default <V1> Model<T, V1> andThen(IgniteFunction<V, V1> after) {
+        return t -> after.apply(apply(t));
+    }
+
+    /**
      * @param pretty Use pretty mode.
      */
     public default String toString(boolean pretty) {
         return getClass().getSimpleName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public default void close() {
+        // Do nothing.
     }
 }

@@ -28,10 +28,14 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link IgfsPath} self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
     private final Marshaller marshaller;
@@ -46,6 +50,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testMethods() throws Exception {
         IgfsPath path = new IgfsPath("/a/s/d/f");
 
@@ -96,6 +101,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testConstructors() throws Exception {
         String pathStr = "///";
         URI uri = URI.create(pathStr);

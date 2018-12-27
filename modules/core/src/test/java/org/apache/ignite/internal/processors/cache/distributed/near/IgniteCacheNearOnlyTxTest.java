@@ -31,6 +31,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -40,6 +43,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -84,6 +88,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyPutMultithreaded() throws Exception {
         final Ignite ignite1 = ignite(1);
 
@@ -121,6 +126,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTx() throws Exception {
         txMultithreaded(true);
     }
@@ -128,6 +134,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         txMultithreaded(false);
     }
@@ -182,6 +189,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentTx() throws Exception {
         final Ignite ignite1 = ignite(1);
 

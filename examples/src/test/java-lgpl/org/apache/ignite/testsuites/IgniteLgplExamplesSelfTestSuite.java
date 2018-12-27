@@ -17,35 +17,42 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite. <p> Contains only Spring ignite examples tests.
  */
-public class IgniteLgplExamplesSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteLgplExamplesSelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteLgplExamplesSelfTestSuite.class));
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
-        suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
-        suite.addTest(new TestSuite(SpatialQueryExampleSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SpatialQueryExampleSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ComputeScheduleExampleSelfTest.class));
 
         // Multi-node.
-        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(SpatialQueryExampleMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SpatialQueryExampleMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ComputeScheduleExampleMultiNodeSelfTest.class));
 
         return suite;
     }
