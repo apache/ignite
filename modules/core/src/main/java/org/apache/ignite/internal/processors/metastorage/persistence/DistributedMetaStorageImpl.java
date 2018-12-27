@@ -140,6 +140,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             });
         }
         else {
+            startupExtras.locFullData = EMPTY_ARRAY;
+
+            startupExtras.verToSnd = ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+
             bridge = new EmptyDistributedMetaStorageBridge();
 
             for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())

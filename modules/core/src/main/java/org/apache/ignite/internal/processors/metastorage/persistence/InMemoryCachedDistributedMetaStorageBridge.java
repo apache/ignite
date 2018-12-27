@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /** */
 class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
@@ -30,7 +32,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     private DistributedMetaStorageImpl dms;
 
     /** */
-    private final Map<String, byte[]> cache = new ConcurrentHashMap<>();
+    private final Map<String, byte[]> cache = new ConcurrentSkipListMap<>();
 
     /** */
     public InMemoryCachedDistributedMetaStorageBridge(DistributedMetaStorageImpl dms) {
@@ -41,7 +43,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     @Override public Serializable read(String globalKey) throws IgniteCheckedException {
         byte[] valBytes = cache.get(globalKey);
 
-        return DistributedMetaStorageUtil.unmarshal(valBytes);
+        return unmarshal(valBytes);
     }
 
     /** {@inheritDoc} */
@@ -52,7 +54,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
             if (entry.getKey().startsWith(globalKeyPrefix))
-                cb.accept(entry.getKey(), unmarshal ? DistributedMetaStorageUtil.unmarshal(entry.getValue()) : entry.getValue());
+                cb.accept(entry.getKey(), unmarshal ? unmarshal(entry.getValue()) : entry.getValue());
         }
     }
 

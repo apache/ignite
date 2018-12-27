@@ -44,15 +44,15 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    @Override public void before() throws Exception {
+        super.before();
 
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override public void after() throws Exception {
+        super.after();
 
         cleanPersistenceDir();
     }
@@ -116,40 +116,35 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testJoinDirtyNodeFullData() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            IgniteEx ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
-            startGrid(1);
+        startGrid(1);
 
-            ignite.cluster().active(true);
+        ignite.cluster().active(true);
 
-            ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().globalMetastorage().write("key1", "value1");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            stopGrid(0);
+        stopGrid(0);
 
-            ignite = startGrid(0);
+        ignite = startGrid(0);
 
-            ignite.cluster().active(true);
+        ignite.cluster().active(true);
 
-            ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().globalMetastorage().write("key2", "value2");
 
-            ignite.context().globalMetastorage().write("key3", "value3");
+        ignite.context().globalMetastorage().write("key3", "value3");
 
-            IgniteEx newNode = startGrid(1);
+        IgniteEx newNode = startGrid(1);
 
-            assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
 
-            assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
 
-            assertEquals("value3", newNode.context().globalMetastorage().read("key3"));
+        assertEquals("value3", newNode.context().globalMetastorage().read("key3"));
 
-            assertGlobalMetastoragesAreEqual(ignite, newNode);
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        assertGlobalMetastoragesAreEqual(ignite, newNode);
     }
 
     /**
@@ -191,40 +186,35 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testJoinNodeWithoutEnoughHistory() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            IgniteEx ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
-            startGrid(1);
+        startGrid(1);
 
-            ignite.cluster().active(true);
+        ignite.cluster().active(true);
 
-            ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().globalMetastorage().write("key1", "value1");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().globalMetastorage().write("key2", "value2");
 
-            ignite.context().globalMetastorage().write("key3", "value3");
+        ignite.context().globalMetastorage().write("key3", "value3");
 
-            stopGrid(0);
+        stopGrid(0);
 
-            ignite = startGrid(1);
+        ignite = startGrid(1);
 
-            startGrid(0);
+        startGrid(0);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
+        assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
 
-            assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
+        assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
 
-            assertEquals("value3", ignite.context().globalMetastorage().read("key3"));
+        assertEquals("value3", ignite.context().globalMetastorage().read("key3"));
 
-            assertGlobalMetastoragesAreEqual(ignite, grid(0));
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        assertGlobalMetastoragesAreEqual(ignite, grid(0));
     }
 
     /**
@@ -305,7 +295,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         try {
             for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
-                grid(0).context().globalMetastorage().write(
+                metastorage(0).write(
                     "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
                 );
             }
@@ -321,7 +311,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         Thread.sleep(3_000L); // Remove later.
 
         for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage globalMetastorage = grid(i).context().globalMetastorage();
+            DistributedMetaStorage globalMetastorage = metastorage(i);
 
             assertNull(U.field(globalMetastorage, "startupExtras"));
         }
@@ -337,41 +327,36 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testWrongStartOrder1() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            int cnt = 4;
+        int cnt = 4;
 
-            startGridsMultiThreaded(cnt);
+        startGridsMultiThreaded(cnt);
 
-            grid(0).cluster().active(true);
+        grid(0).cluster().active(true);
 
-            metastorage(2).write("key1", "value1");
+        metastorage(2).write("key1", "value1");
 
-            stopGrid(2);
+        stopGrid(2);
 
-            metastorage(1).write("key2", "value2");
+        metastorage(1).write("key2", "value2");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            metastorage(0).write("key3", "value3");
+        metastorage(0).write("key3", "value3");
 
-            stopGrid(0);
+        stopGrid(0);
 
-            metastorage(3).write("key4", "value4");
+        metastorage(3).write("key4", "value4");
 
-            stopGrid(3);
+        stopGrid(3);
 
 
-            for (int i = 0; i < cnt; i++)
-                startGrid(i);
+        for (int i = 0; i < cnt; i++)
+            startGrid(i);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            for (int i = 1; i < cnt; i++)
-                assertGlobalMetastoragesAreEqual(grid(0), grid(i));
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        for (int i = 1; i < cnt; i++)
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -381,53 +366,48 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testWrongStartOrder2() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            int cnt = 6;
+        int cnt = 6;
 
-            startGridsMultiThreaded(cnt);
+        startGridsMultiThreaded(cnt);
 
-            grid(0).cluster().active(true);
+        grid(0).cluster().active(true);
 
-            metastorage(4).write("key1", "value1");
+        metastorage(4).write("key1", "value1");
 
-            stopGrid(4);
+        stopGrid(4);
 
-            metastorage(3).write("key2", "value2");
+        metastorage(3).write("key2", "value2");
 
-            stopGrid(3);
+        stopGrid(3);
 
-            metastorage(0).write("key3", "value3");
+        metastorage(0).write("key3", "value3");
 
-            stopGrid(0);
+        stopGrid(0);
 
-            stopGrid(2);
+        stopGrid(2);
 
-            metastorage(1).write("key4", "value4");
+        metastorage(1).write("key4", "value4");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            metastorage(5).write("key5", "value5");
+        metastorage(5).write("key5", "value5");
 
-            stopGrid(5);
+        stopGrid(5);
 
 
-            startGrid(1);
+        startGrid(1);
 
-            startGrid(0);
+        startGrid(0);
 
-            stopGrid(1);
+        stopGrid(1);
 
-            for (int i = 1; i < cnt; i++)
-                startGrid(i);
+        for (int i = 1; i < cnt; i++)
+            startGrid(i);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            for (int i = 1; i < cnt; i++)
-                assertGlobalMetastoragesAreEqual(grid(0), grid(i));
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        for (int i = 1; i < cnt; i++)
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -437,49 +417,44 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testWrongStartOrder3() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            int cnt = 5;
+        int cnt = 5;
 
-            startGridsMultiThreaded(cnt);
+        startGridsMultiThreaded(cnt);
 
-            grid(0).cluster().active(true);
+        grid(0).cluster().active(true);
 
-            metastorage(3).write("key1", "value1");
+        metastorage(3).write("key1", "value1");
 
-            stopGrid(3);
+        stopGrid(3);
 
-            stopGrid(0);
+        stopGrid(0);
 
-            metastorage(2).write("key2", "value2");
+        metastorage(2).write("key2", "value2");
 
-            stopGrid(2);
+        stopGrid(2);
 
-            metastorage(1).write("key3", "value3");
+        metastorage(1).write("key3", "value3");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            metastorage(4).write("key4", "value4");
+        metastorage(4).write("key4", "value4");
 
-            stopGrid(4);
+        stopGrid(4);
 
 
-            startGrid(1);
+        startGrid(1);
 
-            startGrid(0);
+        startGrid(0);
 
-            stopGrid(1);
+        stopGrid(1);
 
-            for (int i = 1; i < cnt; i++)
-                startGrid(i);
+        for (int i = 1; i < cnt; i++)
+            startGrid(i);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            for (int i = 1; i < cnt; i++)
-                assertGlobalMetastoragesAreEqual(grid(0), grid(i));
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        for (int i = 1; i < cnt; i++)
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -489,53 +464,48 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testWrongStartOrder4() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            int cnt = 6;
+        int cnt = 6;
 
-            startGridsMultiThreaded(cnt);
+        startGridsMultiThreaded(cnt);
 
-            grid(0).cluster().active(true);
+        grid(0).cluster().active(true);
 
-            metastorage(4).write("key1", "value1");
+        metastorage(4).write("key1", "value1");
 
-            stopGrid(4);
+        stopGrid(4);
 
-            stopGrid(0);
+        stopGrid(0);
 
-            metastorage(3).write("key2", "value2");
+        metastorage(3).write("key2", "value2");
 
-            stopGrid(3);
+        stopGrid(3);
 
-            metastorage(2).write("key3", "value3");
+        metastorage(2).write("key3", "value3");
 
-            stopGrid(2);
+        stopGrid(2);
 
-            metastorage(1).write("key4", "value4");
+        metastorage(1).write("key4", "value4");
 
-            stopGrid(1);
+        stopGrid(1);
 
-            metastorage(5).write("key5", "value5");
+        metastorage(5).write("key5", "value5");
 
-            stopGrid(5);
+        stopGrid(5);
 
 
-            startGrid(2);
+        startGrid(2);
 
-            startGrid(0);
+        startGrid(0);
 
-            stopGrid(2);
+        stopGrid(2);
 
-            for (int i = 1; i < cnt; i++)
-                startGrid(i);
+        for (int i = 1; i < cnt; i++)
+            startGrid(i);
 
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
-            for (int i = 1; i < cnt; i++)
-                assertGlobalMetastoragesAreEqual(grid(0), grid(i));
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        for (int i = 1; i < cnt; i++)
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -546,13 +516,13 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         startGrid(0);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-            grid(0).context().globalMetastorage().write("key", "value");
+            metastorage(0).write("key", "value");
 
             return null;
         }, IllegalStateException.class, "Ignite cluster is not active");
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-            grid(0).context().globalMetastorage().remove("key");
+            metastorage(0).remove("key");
 
             return null;
         }, IllegalStateException.class, "Ignite cluster is not active");
@@ -571,7 +541,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(0);
 
-        grid(1).context().globalMetastorage().write("key", "value1");
+        metastorage(1).write("key", "value1");
 
         stopGrid(1);
 
@@ -579,9 +549,140 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         grid(0).cluster().active(true);
 
-        grid(0).context().globalMetastorage().write("key", "value2");
+        metastorage(0).write("key", "value2");
 
         startGrid(1);
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailover1() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
+
+        startGrid(0);
+
+        startGrid(1);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(1);
+
+        metastorage(0).write("key1", "val1");
+
+        metastorage(0).write("key9", "val9");
+
+        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
+
+        dbSharedMgr.checkpointReadLock();
+
+        try {
+            dbSharedMgr.metaStorage().remove("\u0000key-key9");
+        }
+        finally {
+            dbSharedMgr.checkpointReadUnlock();
+        }
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertEquals("val9", metastorage(1).read("key9"));
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailover2() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
+
+        startGrid(0);
+
+        startGrid(1);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(1);
+
+        metastorage(0).write("key9", "val9");
+
+        metastorage(0).write("key1", "val1");
+
+        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
+
+        dbSharedMgr.checkpointReadLock();
+
+        try {
+            dbSharedMgr.metaStorage().remove("\u0000key-key1");
+        }
+        finally {
+            dbSharedMgr.checkpointReadUnlock();
+        }
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertEquals("val1", metastorage(1).read("key1"));
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailover3() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
+
+        startGrid(0);
+
+        startGrid(1);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(1);
+
+        metastorage(0).write("key1", "val1");
+
+        metastorage(0).write("key9", "val9");
+
+        metastorage(0).write("key5", "val5");
+
+        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
+
+        dbSharedMgr.checkpointReadLock();
+
+        try {
+            dbSharedMgr.metaStorage().write("\u0000key-key5", "wrong-value");
+        }
+        finally {
+            dbSharedMgr.checkpointReadUnlock();
+        }
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertEquals("val5", metastorage(1).read("key5"));
 
         assertGlobalMetastoragesAreEqual(grid(0), grid(1));
     }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -33,6 +34,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -76,14 +79,18 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         return new StopNodeFailureHandler();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    @Before
+    public void before() throws Exception {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    @After
+    public void after() throws Exception {
         stopAllGrids();
+
+        System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
     }
 
     /**
@@ -148,7 +155,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         AtomicInteger predCntr = new AtomicInteger();
 
         for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
+            DistributedMetaStorage metastorage = metastorage(i);
 
             metastorage.listen(key -> key.startsWith("k"), (key, oldVal, newVal) -> {
                 assertNull(oldVal);
@@ -159,7 +166,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             });
         }
 
-        grid(0).context().globalMetastorage().write("key", "value");
+        metastorage(0).write("key", "value");
 
         assertEquals(cnt, predCntr.get());
 
@@ -178,12 +185,12 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        grid(0).context().globalMetastorage().write("key", "value");
+        metastorage(0).write("key", "value");
 
         AtomicInteger predCntr = new AtomicInteger();
 
         for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
+            DistributedMetaStorage metastorage = metastorage(i);
 
             metastorage.listen(key -> key.startsWith("k"), (key, oldVal, newVal) -> {
                 assertEquals("value", oldVal);
@@ -194,7 +201,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             });
         }
 
-        grid(0).context().globalMetastorage().remove("key");
+        metastorage(0).remove("key");
 
         assertEquals(cnt, predCntr.get());
 
@@ -228,26 +235,21 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testJoinCleanNodeFullData() throws Exception {
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
-        try {
-            IgniteEx ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
-            ignite.cluster().active(true);
+        ignite.cluster().active(true);
 
-            ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().globalMetastorage().write("key1", "value1");
 
-            ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().globalMetastorage().write("key2", "value2");
 
-            IgniteEx newNode = startGrid(1);
+        IgniteEx newNode = startGrid(1);
 
-            assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
 
-            assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
 
-            assertGlobalMetastoragesAreEqual(ignite, newNode);
-        }
-        finally {
-            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
-        }
+        assertGlobalMetastoragesAreEqual(ignite, newNode);
     }
 
     /**
@@ -265,7 +267,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         DistributedMetaStorage globalMetastorage2 = ignite2.context().globalMetastorage();
 
-        assertEquals(U.<Object>field(globalMetastorage1, "ver"), U.field(globalMetastorage2, "ver"));
+        Object ver1 = U.field(globalMetastorage1, "ver");
+
+        Object ver2 = U.field(globalMetastorage2, "ver");
+
+        assertEquals(ver1, ver2);
 
         Object histCache1 = U.field(globalMetastorage1, "histCache");
 
@@ -278,6 +284,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         Object[] fullData1 = (Object[])fullDataMtd.invoke(globalMetastorage1);
 
         Object[] fullData2 = (Object[])fullDataMtd.invoke(globalMetastorage2);
+
+        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+
+        // Also check that arrays are sorted.
+        Arrays.sort(fullData1, Comparator.comparing(o -> U.field(o, "key")));
 
         assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
     }
