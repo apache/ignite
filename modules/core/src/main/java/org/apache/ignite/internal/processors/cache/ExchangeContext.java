@@ -54,8 +54,9 @@ public class ExchangeContext {
     /**
      * @param crd Coordinator flag.
      * @param fut Exchange future.
+     * @param forceNoMerge Force no merge flag.
      */
-    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
+    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut, boolean forceNoMerge) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
         if (compatibilityNode || (crd && fut.localJoinExchange())) {
@@ -71,7 +72,8 @@ public class ExchangeContext {
 
             merge = !startCaches &&
                 protocolVer > 1 &&
-                fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
+                fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT &&
+                !forceNoMerge;
         }
 
         evts = new ExchangeDiscoveryEvents(fut);

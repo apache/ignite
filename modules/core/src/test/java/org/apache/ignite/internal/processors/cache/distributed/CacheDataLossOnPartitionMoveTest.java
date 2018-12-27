@@ -65,7 +65,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
     public static final int GRIDS_CNT = 2;
 
     /** */
-    public static final String EVEN_GRP = "event";
+    public static final String EVEN_GRP = "even";
 
     /** */
     public static final String ODD_GRP = "odd";
@@ -150,9 +150,13 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             int c = 0;
 
+            HashMap<Integer, Integer> cacheDump = new HashMap<>();
+
             for (int i = 0; i < 1000; i++) {
                 if (ignite.affinity(DEFAULT_CACHE_NAME).partition(i) == blockPartId) {
                     ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+                    cacheDump.put(i, i);
 
                     c++;
                 }
@@ -190,7 +194,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            while(i < GRIDS_CNT / 2) {
+            while (i < GRIDS_CNT / 2) {
                 stopGrid(GRIDS_CNT / 2 + i);
 
                 i++;
@@ -205,6 +209,11 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
                 assertEquals("Unexpected state", OWNING, locPart.state());
             }
+
+            for (Integer key : cacheDump.keySet())
+                assertEquals(cacheDump.get(key), ignite.cache(DEFAULT_CACHE_NAME).get(key));
+
+            assertEquals(c, ignite.cache(DEFAULT_CACHE_NAME).size());
 
             startGridsMultiThreaded(GRIDS_CNT / 2, GRIDS_CNT / 2);
 
@@ -230,6 +239,11 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
                         fail();
                 }
             }
+
+            for (Integer key : cacheDump.keySet())
+                assertEquals(cacheDump.get(key), ignite.cache(DEFAULT_CACHE_NAME).get(key));
+
+            assertEquals(c, ignite.cache(DEFAULT_CACHE_NAME).size());
         }
         finally {
             stopAllGrids();

@@ -129,6 +129,8 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteFeatures.LOCAL_AFFINITY_RECALCULATION_EXCHANGE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -353,6 +355,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
+
+    /** Flag indicates that affinity can be recalculated locally. */
+    private volatile boolean isLocalAffinityRecalculation;
 
     /**
      * @param cctx Cache context.
@@ -622,6 +627,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert firstDiscoEvt0 != null;
 
+        if (isLocalAffinityRecalculation)
+            return false;
+
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
             || !firstDiscoEvt0.eventNode().isClient()
             || firstDiscoEvt0.eventNode().isLocal()
@@ -749,7 +757,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             boolean crdNode = crd != null && crd.isLocal();
 
-            exchCtx = new ExchangeContext(crdNode, this);
+            isLocalAffinityRecalculation = isLocalAffinityRecalculationExchange();
+
+            exchCtx = new ExchangeContext(crdNode, this, isLocalAffinityRecalculation);
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -791,10 +801,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage) {
-                    exchange = onCustomMessageNoAffinityChange(crdNode);
-                }
-                else if (msg instanceof WalStateAbstractMessage)
+                else if (msg instanceof SnapshotDiscoveryMessage || msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
                     assert affChangeMsg != null : this;
@@ -832,18 +839,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         else {
                             onServerNodeEvent(crdNode);
 
-                            exchange = ExchangeType.ALL;
+                            exchange = ExchangeType.DISTRIBUTED;
                         }
                     }
                     else {
                         if (firstDiscoEvt.eventNode().isClient())
                             exchange = onClientNodeEvent(crdNode);
                         else
-                            exchange = cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+                            exchange = cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.DISTRIBUTED;
                     }
 
                     if (exchId.isLeft())
                         onLeft();
+                }
+                else if (isLocalAffinityRecalculation) {
+                    assert !exchCtx.mergeExchanges();
+
+                    // Local affinity recalculation happens by baseline server node leaving.
+                    onServerNodeEvent(crdNode);
+
+                    exchange = ExchangeType.LOCAL_AFFINITY_RECALCULATION;
                 }
                 else {
                     exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent(crdNode) :
@@ -858,8 +873,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             timeBag.finishGlobalStage("Determine exchange type");
 
             switch (exchange) {
-                case ALL: {
+                case DISTRIBUTED: {
                     distributedExchange();
+
+                    break;
+                }
+
+                case LOCAL_AFFINITY_RECALCULATION: {
+                    localAffinityRecalculationExchange();
 
                     break;
                 }
@@ -928,6 +949,64 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (e instanceof Error)
                 throw (Error)e;
         }
+    }
+
+    /**
+     * Local affinity recalculation exchange. Topology/affinity change behavior in case of {@code
+     * LOCAL_AFFINITY_RECALCULATION} mimics centralizedAff=true flow. The only difference is that {@code
+     * assignmentChange} map will be always empty - that's why there's no need to collect it in distributed way.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void localAffinityRecalculationExchange() throws IgniteCheckedException {
+        assert centralizedAff;
+
+        cctx.affinity().onLocalAffinityRecalculation(this, crd != null && crd.isLocal());
+
+        for (CacheGroupDescriptor desc : cctx.affinity().cacheGroups().values()) {
+            if (desc.config().getCacheMode() == CacheMode.LOCAL)
+                continue;
+
+            CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
+
+            GridDhtPartitionTopology top = grp != null ? grp.topology() :
+                cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
+
+            top.beforeExchange(this, true, false);
+        }
+
+        timeBag.finishGlobalStage("Local affinity recalculation");
+
+        initDone();
+
+        onDone(initialVersion());
+    }
+
+    /**
+     * Checks if affinity can be recalculated locally without distributed exchange.
+     *
+     * @return {@code True} if affinity can be recalculated locally.
+     */
+    private boolean isLocalAffinityRecalculationExchange() {
+        if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
+            return false;
+
+        // Case for baseline node leave.
+        if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
+            && firstEvtDiscoCache.baselineNodes() != null) {
+            // Check that there are no in-memory caches.
+            if (isInMemoryCachesConfigured())
+                return false;
+
+            // Check that there are no moving partitions.
+            if (!cctx.affinity().isLastAffinityIdeal(crd != null && crd.isLocal()))
+                return false;
+
+            return firstEvtDiscoCache.baselineNodes().stream()
+                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
+        }
+
+        return false;
     }
 
     /**
@@ -1248,7 +1327,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        return kctx.clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return kctx.clientNode() ? ExchangeType.CLIENT : ExchangeType.DISTRIBUTED;
     }
 
     /**
@@ -1285,7 +1364,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.DISTRIBUTED;
     }
 
     /**
@@ -1296,7 +1375,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!forceAffReassignment)
             cctx.affinity().onCustomMessageNoAffinityChange(this, crd, exchActions);
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.DISTRIBUTED;
     }
 
     /**
@@ -1312,7 +1391,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (cctx.kernalContext().clientNode())
             return ExchangeType.CLIENT;
 
-        return ExchangeType.ALL;
+        return ExchangeType.DISTRIBUTED;
     }
 
     /**
@@ -1354,7 +1433,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         else
             cctx.affinity().onServerJoin(this, crd);
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.DISTRIBUTED;
     }
 
     /**
@@ -2807,7 +2886,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() : this;
+                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient()
+                        || centralizedAff : fut;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -3263,6 +3343,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         // Currently the rollback process is supported for dynamically started caches only.
         return firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
+    }
+
+    /**
+     * Checks that in-memory caches configured.
+     *
+     * @return {@code true} true if in-memory caches configured.
+     */
+    private boolean isInMemoryCachesConfigured() {
+        return !nonLocalCacheGroupDescriptors().stream().allMatch(
+            grpDesc -> CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()));
     }
 
     /**
@@ -4450,6 +4540,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param node Left node.
      */
     public void onNodeLeft(final ClusterNode node) {
+        // There is no need to handle events and merge changes in case of local affinity recalculation.
+        if (isLocalAffinityRecalculation)
+            return;
+
         if (isDone() || !enterBusy())
             return;
 
@@ -5051,16 +5145,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     *
+     * Enumerates possible types of partition map exchange.
      */
     enum ExchangeType {
-        /** */
+        /** Case for client local join. Local client topologies are initialized; exchange is completed locally. */
         CLIENT,
 
-        /** */
-        ALL,
+        /**
+         * Lightweight exchange for case when baseline server node leaves. Completed locally.
+         * Distributed messaging is not required as every node can recalculate new partition distribution.
+         */
+        LOCAL_AFFINITY_RECALCULATION,
 
-        /** */
+        /**
+         * Regular case for custom or server node events with distributed messaging.
+         * Completed after receiving full partition map assembled on coordinator node.
+         */
+        DISTRIBUTED,
+
+        /** Case for client leave/node events. Exchange is completed locally. */
         NONE
     }
 
