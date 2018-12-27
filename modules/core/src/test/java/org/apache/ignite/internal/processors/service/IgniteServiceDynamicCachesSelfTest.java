@@ -21,10 +21,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -94,13 +96,14 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDeployCalledBeforeCacheStart() throws Exception {
         String cacheName = "cache";
 
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setBackups(1);
 
-        Ignite ig = ignite(0);
+        IgniteEx ig = grid(0);
 
         final IgniteServices svcs = ig.services();
 
@@ -114,11 +117,26 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        if (ig.context().service() instanceof GridServiceProcessor) {
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
-        assert svcs.service(svcName) == null;
+            assertNull(svcs.service(svcName));
 
-        ig.createCache(ccfg);
+            ig.createCache(ccfg);
+        }
+        else if (ig.context().service() instanceof IgniteServiceProcessor) {
+            GridTestUtils.assertThrowsWithCause(() -> {
+                svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+
+                return null;
+            }, ServiceDeploymentException.class);
+
+            ig.createCache(ccfg);
+
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        }
+        else
+            fail("Unexpected service implementation.");
 
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
