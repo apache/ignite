@@ -2209,7 +2209,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-        applyPartitionsUpdatesCounters(req.updateCounters(), false);
+        applyPartitionsUpdatesCounters(req.updateCounters());
 
         try {
             ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
@@ -2242,11 +2242,10 @@ public class IgniteTxHandler {
 
     /**
      * Applies partition counter updates for mvcc transactions.
+     *  @param counters Counter values to be updated.
      *
-     * @param counters Counter values to be updated.
-     * @param primary {@code True} for primary update mode.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters, boolean primary) {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
         if (counters == null)
             return;
 

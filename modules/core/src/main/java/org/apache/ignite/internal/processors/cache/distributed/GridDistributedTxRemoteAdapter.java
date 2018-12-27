@@ -773,7 +773,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         // Apply update counters.
                         if (txCntrs != null)
-                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters(), false);
+                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
@@ -932,7 +932,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 TxCounters counters = txCounters(false);
 
                 if (counters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), false);
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
 

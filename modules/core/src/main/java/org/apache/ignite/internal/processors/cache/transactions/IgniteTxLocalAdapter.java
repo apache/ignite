@@ -930,7 +930,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
 
                 if (!txState.mvccEnabled() && txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();
@@ -1124,7 +1124,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 TxCounters txCounters = txCounters(false);
 
                 if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
             }
 
             cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
