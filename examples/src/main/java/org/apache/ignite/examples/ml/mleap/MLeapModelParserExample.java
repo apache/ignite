@@ -66,7 +66,7 @@ public class MLeapModelParserExample {
 
                 Future<Double> prediction = mdl.predict(input);
 
-                System.out.println(prediction.get());
+                System.out.println("Predicted price: " + prediction.get());
             }
         }
     }

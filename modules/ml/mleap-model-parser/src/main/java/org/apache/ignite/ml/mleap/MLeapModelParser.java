@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import ml.combust.mleap.core.types.BasicType;
+import ml.combust.mleap.core.types.DataType;
 import ml.combust.mleap.core.types.ScalarType;
 import ml.combust.mleap.core.types.StructField;
+import ml.combust.mleap.core.types.StructType;
 import ml.combust.mleap.runtime.MleapContext;
 import ml.combust.mleap.runtime.frame.Transformer;
 import ml.combust.mleap.runtime.javadsl.BundleBuilder;
@@ -40,8 +43,11 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
     /** */
     private static final long serialVersionUID = -370352744966205715L;
 
-    /** Input features field name. */
-    private static final String INPUT_FEATURES_FIELD_NAME = "input_features";
+    /** Temporary file prefix. */
+    private static final String TMP_FILE_PREFIX = "mleap_model";
+
+    /** Temporary file postfix. */
+    private static final String TMP_FILE_POSTFIX = ".zip";
 
     /** {@inheritDoc} */
     @Override public MLeapModel parse(byte[] mdl) {
@@ -50,7 +56,7 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
 
         File file = null;
         try {
-            file = File.createTempFile("mleap_model", ".zip");
+            file = File.createTempFile(TMP_FILE_PREFIX, TMP_FILE_POSTFIX);
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(mdl);
                 fos.flush();
@@ -59,9 +65,10 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
             Transformer transformer = bundleBuilder.load(file, mleapCtx).root();
             PipelineModel pipelineMdl = (PipelineModel)transformer.model();
 
-            List<String> schema = checkAndGetSchema(pipelineMdl);
+            List<String> inputSchema = checkAndGetInputSchema(pipelineMdl);
+            String outputSchema = checkAndGetOutputSchema(pipelineMdl);
 
-            return new MLeapModel(transformer, schema);
+            return new MLeapModel(transformer, inputSchema, outputSchema);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -73,28 +80,44 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
     }
 
     /**
-     * Util method that checks that schema contains only double types and returns list of field names.
+     * Util method that checks that input schema contains only one double type.
+     *
+     * @param mdl Pipeline model.
+     * @return Name of output field.
+     */
+    private String checkAndGetOutputSchema(PipelineModel mdl) {
+        Transformer lastTransformer = mdl.transformers().last();
+        StructType outputSchema = lastTransformer.outputSchema();
+
+        List<StructField> output = new ArrayList<>(JavaConverters.seqAsJavaListConverter(outputSchema.fields()).asJava());
+
+        if (output.size() != 1)
+            throw new IllegalArgumentException("Parser supports only scalar outputs");
+
+        return output.get(0).name();
+    }
+
+    /**
+     * Util method that checks that output schema contains only double types and returns list of field names.
      *
      * @param mdl Pipeline model.
      * @return List of field names.
      */
-    private List<String> checkAndGetSchema(PipelineModel mdl) {
-        List<StructField> structFields = new ArrayList<>(JavaConverters.seqAsJavaListConverter(
-            mdl.transformers().head().schema().fields()).asJava());
+    private List<String> checkAndGetInputSchema(PipelineModel mdl) {
+        Transformer firstTransformer = mdl.transformers().head();
+        StructType inputSchema = firstTransformer.inputSchema();
 
-        structFields.removeIf(field -> field.name().equals(INPUT_FEATURES_FIELD_NAME));
+        List<StructField> input = new ArrayList<>(JavaConverters.seqAsJavaListConverter(inputSchema.fields()).asJava());
 
         List<String> schema = new ArrayList<>();
 
-        for (StructField field : structFields) {
+        for (StructField field : input) {
             String fieldName = field.name();
 
-            if (!INPUT_FEATURES_FIELD_NAME.equals(fieldName)) {
-                schema.add(field.name());
-                if (ScalarType.Double().equals(field.dataType()))
-                    throw new IllegalArgumentException("Parser supports only double types [name=" +
-                        fieldName + ",type=" + field.dataType() + "]");
-            }
+            schema.add(field.name());
+            if (ScalarType.Double().equals(field.dataType()))
+                throw new IllegalArgumentException("Parser supports only double types [name=" +
+                    fieldName + ",type=" + field.dataType() + "]");
         }
 
         return schema;
