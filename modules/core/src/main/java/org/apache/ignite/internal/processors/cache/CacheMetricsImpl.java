@@ -275,7 +275,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return getEntriesStat().size();
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -285,7 +285,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return getEntriesStat().keySize();
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -964,22 +964,22 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapPrimaryEntriesCnt = 0L;
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
-        int size = 0;
         long sizeLong = 0L;
         boolean isEmpty;
 
         try {
+            final GridCacheAdapter<?, ?> cache = cctx.cache();
+
+            if (cache != null) {
+                offHeapEntriesCnt = cache.offHeapEntriesCount();
+                sizeLong = cache.localSizeLong(null);
+            }
+
             if (cctx.isLocal()) {
-                if (cctx.cache() != null) {
-                    offHeapEntriesCnt = cctx.cache().offHeapEntriesCount();
-
+                if (cache != null) {
                     offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
-                    offHeapBackupEntriesCnt = offHeapEntriesCnt;
 
-                    size = cctx.cache().size();
-                    sizeLong = cctx.cache().sizeLong();
-
-                    heapEntriesCnt = sizeLong;
+                    heapEntriesCnt = cache.sizeLong();
                 }
             }
             else {
@@ -988,8 +988,8 @@ public class CacheMetricsImpl implements CacheMetrics {
                 Set<Integer> primaries = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
                 Set<Integer> backups = cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-                if (cctx.isNear() && cctx.cache() != null)
-                    heapEntriesCnt = cctx.cache().nearSize();
+                if (cctx.isNear() && cache != null)
+                    heapEntriesCnt = cache.nearSize();
 
                 for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
                     // Partitions count.
@@ -1002,25 +1002,18 @@ public class CacheMetricsImpl implements CacheMetrics {
                         movingPartCnt++;
 
                     // Offheap entries count
-                    if (cctx.cache() == null)
+                    if (cache == null)
                         continue;
 
                     long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
-                    offHeapEntriesCnt += cacheSize;
-
                     if (primaries.contains(part.id()))
                         offHeapPrimaryEntriesCnt += cacheSize;
-
-                    if (backups.contains(part.id()))
+                    else if (backups.contains(part.id()))
                         offHeapBackupEntriesCnt += cacheSize;
-
-                    size = (int)offHeapEntriesCnt;
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
-
-                sizeLong = offHeapEntriesCnt;
             }
         }
         catch (Exception e) {
@@ -1030,7 +1023,6 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapPrimaryEntriesCnt = -1L;
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
-            size = -1;
             sizeLong = -1L;
         }
 
@@ -1042,9 +1034,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
-        stat.size(size);
         stat.cacheSize(sizeLong);
-        stat.keySize(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
@@ -1266,14 +1256,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         /** Onheap entries count. */
         private long heapEntriesCnt;
 
-        /** Size. */
-        private int size;
-
         /** Long size. */
         private long cacheSize;
-
-        /** Key size. */
-        private int keySize;
 
         /** Is empty. */
         private boolean isEmpty;
@@ -1360,34 +1344,6 @@ public class CacheMetricsImpl implements CacheMetrics {
          */
         public void heapEntriesCount(long heapEntriesCnt) {
             this.heapEntriesCnt = heapEntriesCnt;
-        }
-
-        /**
-         * @return Size.
-         */
-        public int size() {
-            return size;
-        }
-
-        /**
-         * @param size Size.
-         */
-        public void size(int size) {
-            this.size = size;
-        }
-
-        /**
-         * @return Key size.
-         */
-        public int keySize() {
-            return keySize;
-        }
-
-        /**
-         * @param keySize Key size.
-         */
-        public void keySize(int keySize) {
-            this.keySize = keySize;
         }
 
         /**
