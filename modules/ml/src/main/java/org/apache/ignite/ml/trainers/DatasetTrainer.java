@@ -302,7 +302,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
     public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder  = envBuilder;
-        this.environment = envBuilder.buildForTrainer();
+        environment = envBuilder.buildForTrainer();
 
         return this;
     }
