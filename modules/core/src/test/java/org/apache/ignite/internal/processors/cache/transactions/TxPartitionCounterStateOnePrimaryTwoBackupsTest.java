@@ -69,13 +69,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailBackupAfterTx1Commit() throws Exception {
+    public void testPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance() throws Exception {
         doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(false);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailBackupAfterTx1Commit2() throws Exception {
+    public void testPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance2() throws Exception {
         doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(true);
     }
 
@@ -93,8 +93,14 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollback() throws Exception {
-        doTestPartialPrepare_2TxCommitWithRebalance(true);
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance() throws Exception {
+        doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {0, 1});
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollbackWithRebalance2() throws Exception {
+        doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {1, 0});
     }
 
     /**
@@ -380,13 +386,19 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
-     * 1. Start 2 tx.
-     * 2.
+     * 1. Start 2 concurrent txs.
+     * 2. Assign counters in specified order.
+     * 3. Prepare tx0 only on backup2.
+     * 4. Finish tx1 only on backup2.
+     * 5. Stop primary and backup1.
+     * 6. Validate partitions.
+     * 7. Start backup2.
+     * 8. Validate partitions again after (historical) rebalance.
      *
      * @param skipCheckpoint
      * @throws Exception
      */
-    private void doTestPartialPrepare_2TxCommitWithRebalance(boolean skipCheckpoint) throws Exception {
+    private void doTestPartialPrepare_2TxCommitWithRebalance(boolean skipCheckpoint, int[] assignOrder) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         int[] sizes = new int[] {3, 7};
@@ -398,7 +410,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                 Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
                 return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, new int[] {0, 1}),
+                    U.map((IgniteEx)primary, assignOrder),
                     U.map((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
                     new HashMap<>(),
                     sizes.length) {
