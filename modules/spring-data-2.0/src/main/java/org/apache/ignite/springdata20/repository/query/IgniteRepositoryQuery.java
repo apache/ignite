@@ -20,6 +20,7 @@ package org.apache.ignite.springdata20.repository.query;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -196,27 +197,27 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      */
     @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
         if (this.qry.isFieldQuery()) {
-            Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
+            Iterable<List> qryIter = (Iterable<List>)qryCursor;
 
             switch (returnStgy) {
                 case LIST_OF_VALUES:
-                    ArrayList list = new ArrayList();
+                    List list = new ArrayList<>();
 
-                    for (ArrayList entry : qryIter)
+                    for (List entry : qryIter)
                         list.add(entry.get(0));
 
                     return list;
                 case ONE_VALUE:
-                    Iterator<ArrayList> iter = qryIter.iterator();
+                    Iterator<List> iter = qryIter.iterator();
 
                     if (iter.hasNext())
                         return iter.next().get(0);
 
                     return null;
                 case SLICE_OF_VALUES:
-                    ArrayList content = new ArrayList();
+                    List content = new ArrayList<>();
 
-                    for (ArrayList entry : qryIter)
+                    for (List entry : qryIter)
                         content.add(entry.get(0));
 
                     return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
@@ -233,7 +234,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
             switch (returnStgy) {
                 case LIST_OF_VALUES:
-                    ArrayList list = new ArrayList();
+                    List list = new ArrayList<>();
 
                     for (CacheEntryImpl entry : qryIter)
                         list.add(entry.getValue());
@@ -254,7 +255,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
                     return null;
                 case SLICE_OF_VALUES:
-                    ArrayList content = new ArrayList();
+                    List content = new ArrayList<>();
 
                     for (CacheEntryImpl entry : qryIter)
                         content.add(entry.getValue());

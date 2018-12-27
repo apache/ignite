@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgniteFuture;
@@ -37,6 +38,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -132,16 +134,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -185,16 +178,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -430,10 +414,12 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10021")
     @Test
     public void testCancelAllTopologyChange() throws Exception {
-        Ignite client = grid(CLIENT_NODE_NAME);
+        IgniteEx client = grid(CLIENT_NODE_NAME);
+
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10021",
+            client.context().service() instanceof GridServiceProcessor);
 
         int numServices = 500;
 
@@ -660,5 +646,29 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 return null;
             }
         });
+    }
+
+    /**
+     * Test predicate.
+     */
+    private static class TestPredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final String namePrefix;
+
+        /**
+         * @param namePrefix Prefix to match instances name.
+         */
+        public TestPredicate(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
+
+            assert gridName != null;
+
+            return !node.isClient() && gridName.startsWith(namePrefix);
+        }
     }
 }
