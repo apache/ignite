@@ -32,7 +32,6 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
-
 package object impl {
     /**
       * @param g Ignite.
