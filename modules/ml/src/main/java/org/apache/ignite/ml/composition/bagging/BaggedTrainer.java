@@ -28,6 +28,7 @@ import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.SameTrainersParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -85,7 +86,9 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
                         return VectorUtils.of(newFeaturesValues);
                     });
                 }
-                return tr.withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx));
+                return tr
+                    .withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx))
+                    .withEnvironmentBuilder(envBuilder);
             })
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
@@ -124,9 +127,6 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel<I> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        if (featureExtractor == null) {
-            System.out.println("xxxxxxx");
-        }
         Model<I, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
         return new BaggedModel<>(fit, aggregator);
     }
@@ -136,6 +136,11 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         Model<I, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
         return new BaggedModel<>(updated, aggregator);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaggedTrainer<I, M, L, T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (BaggedTrainer<I, M, L, T>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */

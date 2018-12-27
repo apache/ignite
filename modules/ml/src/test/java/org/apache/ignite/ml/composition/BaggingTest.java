@@ -79,15 +79,14 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
-        trainer.withEnvironmentBuilder(TestUtils.testEnvBuilder());
-
         BaggedTrainer<Vector, LogisticRegressionModel, Double, DatasetTrainer<LogisticRegressionModel, Double>> baggedTrainer = TrainerTransformers.makeBagged(
             trainer,
             10,
             0.7,
             2,
             2,
-            new OnMajorityPredictionsAggregator());
+            new OnMajorityPredictionsAggregator())
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         BaggedModel<Vector> mdl = baggedTrainer.fit(
             cacheMock,
