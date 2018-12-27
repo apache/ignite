@@ -95,9 +95,18 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             .setNearConfiguration(new NearCacheConfiguration<>())
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        ccfgs.add(new CacheConfiguration<>()
+            .setName(CACHE_PREFIX + 3)
+            .setStatisticsEnabled(true)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(1)
+            .setOnheapCacheEnabled(true)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
         if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE)) {
             ccfgs.add(new CacheConfiguration<>()
-                .setName(CACHE_PREFIX + 3)
+                .setName(CACHE_PREFIX + 4)
                 .setStatisticsEnabled(true)
                 .setCacheMode(CacheMode.LOCAL)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
@@ -144,7 +153,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         int cacheSize = GRID_CNT * ENTITIES_CNT;
 
         // CacheMode == REPLICATED.
-        checkCache2(0,
+        checkCacheClusterMetrics(0,
             cacheSize,
             cacheSize * GRID_CNT,
             cacheSize,
@@ -152,7 +161,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             0);
 
         // CacheMode == PARTITIONED, Backups == 1.
-        checkCache2(1,
+        checkCacheClusterMetrics(1,
             cacheSize,
             cacheSize * 2,
             cacheSize,
@@ -160,16 +169,24 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             0);
 
         // CacheMode == PARTITIONED, Backups == 1, NearCache.
-        checkCache2(2,
+        checkCacheClusterMetrics(2,
             cacheSize,
             cacheSize * 2,
             cacheSize,
             cacheSize,
             216 /* TODO */);
 
+        // CacheMode == PARTITIONED, Backups == 1, OnheapCache.
+        checkCacheClusterMetrics(3,
+            cacheSize,
+            cacheSize * 2,
+            cacheSize,
+            cacheSize,
+            cacheSize * 2);
+
         // CacheMode == LOCAL
-        if (cacheCnt == 4)
-            checkCache2(3,
+        if (cacheCnt == 5)
+            checkCacheClusterMetrics(4,
                 cacheSize,
                 cacheSize,
                 cacheSize,
@@ -178,7 +195,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
             for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
-                checkCache(igniteIdx, cacheIdx);
+                checkCacheLocalMetrics(igniteIdx, cacheIdx);
     }
 
     /**
@@ -198,7 +215,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
      * @param igniteIdx Ignite index.
      * @param cacheIdx Cache index.
      */
-    private void checkCache(int igniteIdx, int cacheIdx) throws IgniteCheckedException {
+    private void checkCacheLocalMetrics(int igniteIdx, int cacheIdx) throws IgniteCheckedException {
         IgniteInternalCache internalCache = grid(igniteIdx).cachex(CACHE_PREFIX + cacheIdx);
 
         GridCacheContext cctx = internalCache.context();
@@ -207,21 +224,21 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         CacheMetricsImpl metrics = cache.metrics0();
 
-        CacheMetricsImpl.EntriesStatMetrics entriesStatMetrics = metrics.getEntriesStat();
+        long offHeapEntriesCount = cache.offHeapEntriesCount();
 
-        long offHeapEntriesCnt = cache.offHeapEntriesCount();
-
-        long offHeapPrimaryEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapPrimaryEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             true,
             false,
             cctx.affinity().affinityTopologyVersion());
 
-        long offHeapBackupEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapBackupEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             false,
             true,
             cctx.affinity().affinityTopologyVersion());
 
-        long heapEntriesCnt = cache.localSizeLong(ONHEAP_PEEK_MODES);
+        long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
+
+        long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
 
         boolean isEmpty = cache.isEmpty();
 
@@ -229,35 +246,23 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         log.info("Checking cache,  " + cacheInfo);
 
-        log.info(cacheInfo + " offHeapEntriesCnt offHeapEntriesCnt:" + offHeapEntriesCnt +
-            " metrics.getOffHeapEntriesCount(): " + metrics.getOffHeapEntriesCount());
-        log.info(cacheInfo + " offHeapBackupEntriesCnt offHeapBackupEntriesCnt:" + offHeapBackupEntriesCnt +
-            " metrics.getOffHeapBackupEntriesCount(): " + metrics.getOffHeapBackupEntriesCount());
-        log.info(cacheInfo + " offHeapPrimaryEntriesCnt offHeapPrimaryEntriesCnt:" + offHeapPrimaryEntriesCnt +
-            " metrics.getOffHeapPrimaryEntriesCount(): " + metrics.getOffHeapPrimaryEntriesCount());
-        log.info(cacheInfo + " heapEntriesCnt heapEntriesCnt:" + heapEntriesCnt +
-            " metrics.getHeapEntriesCount(): " + metrics.getHeapEntriesCount());
-        log.info(cacheInfo + " CacheSize cache:" + cache.sizeLong() + " metrics.getCacheSize(): " +
-            metrics.getCacheSize());
-
-        //TODO
-//        assertEquals(cacheInfo + " offHeapEntriesCnt", offHeapEntriesCnt,
-//            metrics.getOffHeapEntriesCount());
-//        assertEquals(cacheInfo + " offHeapBackupEntriesCnt", offHeapBackupEntriesCnt,
-//            metrics.getOffHeapBackupEntriesCount());
-//        assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
-//            metrics.getOffHeapPrimaryEntriesCount());
-//        assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
-//        assertEquals(cacheInfo + " size", 0, metrics.getSize());
-//        assertEquals(cacheInfo + " keySize", 0, metrics.getKeySize());
-//        assertEquals(cacheInfo + " CacheSize", cache.sizeLong(), metrics.getCacheSize());
-//        assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
+        assertEquals(cacheInfo + " offHeapEntriesCount",
+            offHeapEntriesCount, metrics.getOffHeapEntriesCount());
+        assertEquals(cacheInfo + " offHeapBackupEntriesCount",
+            offHeapBackupEntriesCount, metrics.getOffHeapBackupEntriesCount());
+        assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
+            offHeapPrimaryEntriesCount, metrics.getOffHeapPrimaryEntriesCount());
+        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, metrics.getHeapEntriesCount());
+        assertEquals(cacheInfo + " size", 0, metrics.getSize());
+        assertEquals(cacheInfo + " keySize", 0, metrics.getKeySize());
+        assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
+        assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
     }
 
     /**
      * @param cacheIdx Cache index.
      */
-    private void checkCache2(int cacheIdx,
+    private void checkCacheClusterMetrics(int cacheIdx,
         long cacheSize,
         long offHeapEntriesCnt,
         long offHeapPrimaryEntriesCnt,
