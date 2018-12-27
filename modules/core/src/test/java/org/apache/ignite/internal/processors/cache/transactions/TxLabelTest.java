@@ -36,11 +36,6 @@ public class TxLabelTest extends GridCommonAbstractTest {
         startGrid(0).getOrCreateCache(defaultCacheConfiguration());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests transaction labels.
      */

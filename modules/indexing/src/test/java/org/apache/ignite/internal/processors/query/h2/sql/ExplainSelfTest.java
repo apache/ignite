@@ -51,12 +51,6 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
         execute("CREATE TABLE PUBLIC.TEST (ID LONG PRIMARY KEY, VAL LONG) WITH \"template=replicated\";", false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-    }
-
     /**
      * Complex negative check that verifies EXPLAINs of update operations are not supported and cause correct
      * exceptions. Used local and non local queries

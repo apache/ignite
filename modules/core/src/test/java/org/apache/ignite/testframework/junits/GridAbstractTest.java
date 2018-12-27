@@ -1155,13 +1155,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             stopGridErr = true;
         }
     }
-    
-    /**
-     * Whether jobs will be cancelled forcibly on stopping grids.
-     */
-    protected boolean cancelJobsAfterTestsStopped() {
-        return false;
-    }
 
     /**
      *

@@ -119,11 +119,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
             fail("https://issues.apache.org/jira/browse/IGNITE-9470");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

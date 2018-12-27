@@ -62,12 +62,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
             "atomicity=transactional_snapshot\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that BEGIN opens a transaction.
      */

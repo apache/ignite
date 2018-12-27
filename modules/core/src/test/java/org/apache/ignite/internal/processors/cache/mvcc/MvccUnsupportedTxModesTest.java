@@ -58,11 +58,6 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /** */
     @Test
     public void testGetAndPutIfAbsent() {

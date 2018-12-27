@@ -100,11 +100,6 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
         startGrid(getServerNodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Server nodes.
      */

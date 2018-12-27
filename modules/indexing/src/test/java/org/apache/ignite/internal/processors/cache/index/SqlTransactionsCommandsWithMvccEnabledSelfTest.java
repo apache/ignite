@@ -60,12 +60,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
             "atomicity=transactional_snapshot\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that BEGIN opens a transaction.
      */

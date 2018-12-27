@@ -54,12 +54,6 @@ public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -46,11 +46,6 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /**
      * Test secondary index with complex PK. Columns for secondary and PK indexes are intersect.
      */
