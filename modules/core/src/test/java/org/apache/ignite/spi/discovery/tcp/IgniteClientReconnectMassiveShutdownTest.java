@@ -90,7 +90,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 2 * 60 * 1000;
+        return 5 * 60 * 1000;
     }
 
     /**
