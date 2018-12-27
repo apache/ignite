@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,6 +84,31 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
 
         it0.next();
     }
+
+    /**
+     */
+    @Test
+    public void testLocalSqlOnException() {
+        sql("CREATE TABLE tbl (id LONG PRIMARY KEY, val LONG)").getAll();
+
+        for (int i = 0; i < 10; i++)
+            sql("insert into tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
+
+
+        try {
+            sql(new SqlFieldsQuery("SELECT CAST (? AS INTEGER)")
+                .setArgs("Q")
+                .setLocal(true)).getAll();
+        }
+        catch (Exception e) {
+            throw e;
+
+        }
+
+        sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
+
+    }
+
 
     /**
      * @param sql SQL query.

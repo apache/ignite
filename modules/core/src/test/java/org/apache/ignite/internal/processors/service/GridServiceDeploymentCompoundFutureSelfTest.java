@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,7 +41,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWaitForCompletionOnFailingFuture() throws Exception {
-        GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture();
+        GridServiceDeploymentCompoundFuture<IgniteUuid> compFut = new GridServiceDeploymentCompoundFuture<>();
 
         int failingFutsNum = 2;
 
@@ -51,7 +52,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
         for (int i = 0; i < failingFutsNum; i++) {
             ServiceConfiguration failingCfg = config("Failed-" + i);
 
-            GridServiceDeploymentFuture failingFut = new GridServiceDeploymentFuture(failingCfg);
+            GridServiceDeploymentFuture<IgniteUuid> failingFut = new GridServiceDeploymentFuture<>(failingCfg, IgniteUuid.randomUuid());
 
             failingFuts.add(failingFut);
 
@@ -61,7 +62,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
         List<GridFutureAdapter<Object>> futs = new ArrayList<>(completingFutsNum);
 
         for (int i = 0; i < completingFutsNum; i++) {
-            GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(config(String.valueOf(i)));
+            GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(config(String.valueOf(i)), IgniteUuid.randomUuid());
 
             futs.add(fut);
 
