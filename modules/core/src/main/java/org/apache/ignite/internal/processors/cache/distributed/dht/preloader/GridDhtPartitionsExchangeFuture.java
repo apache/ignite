@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -1470,6 +1472,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
+        log.info("Created full partition message with affinity assignment = " + U.foldAssignment(fullMsgWithAffinity));
+
+        log.info("Discovery cache version = " + exchCtx.events().discoveryCache().version() + " on sending full partition message = " + exchCtx.events().discoveryCache().serverNodes());
+
         // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
@@ -2835,6 +2841,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             fullMsg.exchangeId(msg.exchangeId());
         }
+
+        log.info("Sending full partition message to node " + node + " with affinity assignment = " + U.foldAssignment(fullMsg));
+
+        log.info("Discovery cache on sending full partition message to single node = " + exchCtx.events().discoveryCache().serverNodes());
 
         try {
             cctx.io().send(node, fullMsg, SYSTEM_POOL);

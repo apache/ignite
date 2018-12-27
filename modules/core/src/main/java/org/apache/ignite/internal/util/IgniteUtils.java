@@ -196,6 +196,8 @@ import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -272,6 +274,41 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
+    /** Empty integers array. */
+    public static final int[] EMPTY_INTS = new int[0];
+
+    /** Empty  longs. */
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Empty  longs. */
+    public static final Field[] EMPTY_FIELDS = new Field[0];
+
+    /** Default user version. */
+    public static final String DFLT_USER_VERSION = "0";
+
+    /** JMX domain as 'xxx.apache.ignite'. */
+    public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
+        indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
+
+    /** Network packet header. */
+    public static final byte[] IGNITE_HEADER = intToBytes(0x00004747);
+
+    /** MAC OS invalid argument socket error message. */
+    public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
+        "(simple restart usually solves the issue)";
+
+    /** Ignite Logging Directory. */
+    public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
+
+    /** Ignite Work Directory. */
+    public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
+
+    /** Empty local Ignite name. */
+    public static final String LOC_IGNITE_NAME_EMPTY = new String();
+
+    /** Mutex. */
+    static final Object mux = new Object();
+
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
@@ -290,20 +327,8 @@ public abstract class IgniteUtils {
     /** All grid events. */
     private static final int[] GRID_EVTS;
 
-    /** Empty integers array. */
-    public static final int[] EMPTY_INTS = new int[0];
-
-    /** Empty  longs. */
-    public static final long[] EMPTY_LONGS = new long[0];
-
-    /** Empty  longs. */
-    public static final Field[] EMPTY_FIELDS = new Field[0];
-
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
-
-    /** Default user version. */
-    public static final String DFLT_USER_VERSION = "0";
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -311,6 +336,77 @@ public abstract class IgniteUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
+
+    /** Default buffer size = 4K. */
+    private static final int BUF_SIZE = 4096;
+
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
+    /** Long date format pattern for log messages. */
+    private static final SimpleDateFormat LONG_DATE_FMT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+
+    /**
+     * Short date format pattern for log messages in "quiet" mode. Only time is included since we don't expect "quiet"
+     * mode to be used for longer runs.
+     */
+    private static final SimpleDateFormat SHORT_DATE_FMT = new SimpleDateFormat("HH:mm:ss");
+
+    /** Debug date format. */
+    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
+
+    /** Primitive class map. */
+    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
+
+    /** Boxed class map. */
+    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+
+    /** Class loader used to load Ignite. */
+    private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
+
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters;
+
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap8<>();
+
+    /** Local Ignite name thread local. */
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
+        @Override protected String initialValue() {
+            return LOC_IGNITE_NAME_EMPTY;
+        }
+    };
+
+    /** */
+    private static final boolean assertionsEnabled;
+
+    /** Empty URL array. */
+    private static final URL[] EMPTY_URL_ARR = new URL[0];
+
+    /**
+     * Builtin class loader class.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+
+    /**
+     * Url class loader field.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Field urlClsLdrField = urlClassLoaderField();
+
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
+    /** */
+    static volatile long curTimeMillis = System.currentTimeMillis();
+
+    /** Grid counter. */
+    static int gridCnt;
 
     /** Correct Mbean cache name pattern. */
     private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
@@ -426,79 +522,17 @@ public abstract class IgniteUtils {
     /** Will be set to {@code true} if detected a 32-bit JVM. */
     private static boolean jvm32Bit;
 
-    /** JMX domain as 'xxx.apache.ignite'. */
-    public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
-        indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
-
-    /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x00004747);
-
-    /** Default buffer size = 4K. */
-    private static final int BUF_SIZE = 4096;
-
-    /** Byte bit-mask. */
-    private static final int MASK = 0xf;
-
-    /** Long date format pattern for log messages. */
-    private static final SimpleDateFormat LONG_DATE_FMT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-
-    /**
-     * Short date format pattern for log messages in "quiet" mode.
-     * Only time is included since we don't expect "quiet" mode to be used
-     * for longer runs.
-     */
-    private static final SimpleDateFormat SHORT_DATE_FMT = new SimpleDateFormat("HH:mm:ss");
-
-    /** Debug date format. */
-    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
-
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
 
-    /** */
-    static volatile long curTimeMillis = System.currentTimeMillis();
-
-    /** Primitive class map. */
-    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
-
-    /** Boxed class map. */
-    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
-
-    /** Class loader used to load Ignite. */
-    private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
-
-    /** MAC OS invalid argument socket error message. */
-    public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
-        "(simple restart usually solves the issue)";
-
-    /** Ignite Logging Directory. */
-    public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
-
-    /** Ignite Work Directory. */
-    public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
-
     /** Clock timer. */
     private static Thread timer;
-
-    /** Grid counter. */
-    static int gridCnt;
-
-    /** Mutex. */
-    static final Object mux = new Object();
-
-    /** Exception converters. */
-    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
 
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddrAllHostNames;
-
-    /** */
-    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
-        new ConcurrentHashMap8<>();
 
     /** */
     private static volatile Boolean hasShmem;
@@ -511,37 +545,6 @@ public abstract class IgniteUtils {
 
     /** Object.toString() */
     private static Method toStringMtd;
-
-    /** Empty local Ignite name. */
-    public static final String LOC_IGNITE_NAME_EMPTY = new String();
-
-    /** Local Ignite name thread local. */
-    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
-        @Override protected String initialValue() {
-            return LOC_IGNITE_NAME_EMPTY;
-        }
-    };
-
-    /** Ignite MBeans disabled flag. */
-    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
-
-    /** */
-    private static final boolean assertionsEnabled;
-
-    /** Empty URL array. */
-    private static final URL[] EMPTY_URL_ARR = new URL[0];
-
-    /** Builtin class loader class.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
-
-    /** Url class loader field.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Field urlClsLdrField = urlClassLoaderField();
 
     /** Dev only logging disabled. */
     private static boolean devOnlyLogDisabled =
@@ -807,7 +810,8 @@ public abstract class IgniteUtils {
      * @param clazz Class.
      * @return The IgniteClosure mapped to this exception class, or null if none.
      */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(
+        Class<? extends IgniteCheckedException> clazz) {
         return exceptionConverters.get(clazz);
     }
 
@@ -817,7 +821,7 @@ public abstract class IgniteUtils {
      * @return Exception converters.
      */
     private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters() {
+    exceptionConverters() {
         Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
@@ -935,8 +939,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
-     * does not wrap passed in exception if none suitable converter found.
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)} does not wrap passed in
+     * exception if none suitable converter found.
      *
      * @param e Ignite checked exception.
      * @return Ignite runtime exception.
@@ -1095,8 +1099,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * This method should be used for adding quick debug statements in code
-     * while debugging. Calls to this method should never be committed to master.
+     * This method should be used for adding quick debug statements in code while debugging. Calls to this method should
+     * never be committed to master.
      *
      * @param msg Message to debug.
      * @deprecated Calls to this method should never be committed to master.
@@ -1107,8 +1111,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * This method should be used for adding quick debug statements in code
-     * while debugging. Calls to this method should never be committed to master.
+     * This method should be used for adding quick debug statements in code while debugging. Calls to this method should
+     * never be committed to master.
      *
      * @param msg Message to debug.
      * @deprecated Calls to this method should never be committed to master.
@@ -1119,12 +1123,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * This method should be used for adding quick debug statements in code
-     * while debugging. Calls to this method should never be committed to master.
+     * This method should be used for adding quick debug statements in code while debugging. Calls to this method should
+     * never be committed to master.
      *
      * @param log Logger.
      * @param msg Message to debug.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1147,7 +1150,6 @@ public abstract class IgniteUtils {
      * Prints stack trace of the current thread to {@code System.out}.
      *
      * @param msg Message to print with the stack.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1168,7 +1170,6 @@ public abstract class IgniteUtils {
      *
      * @param msg Message to print with the stack.
      * @param out Output to dump stack to.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1181,7 +1182,6 @@ public abstract class IgniteUtils {
      *
      * @param log Logger.
      * @param msg Message to print with the stack.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @Deprecated
@@ -1346,6 +1346,7 @@ public abstract class IgniteUtils {
 
     /**
      * Get deadlocks from the thread bean.
+     *
      * @param mxBean the bean
      * @return the set of deadlocked threads (may be empty Set, but never null).
      */
@@ -1446,9 +1447,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets empty constructor for class even if the class does not have empty constructor
-     * declared. This method is guaranteed to work with SUN JDK and other JDKs still need
-     * to be tested.
+     * Gets empty constructor for class even if the class does not have empty constructor declared. This method is
+     * guaranteed to work with SUN JDK and other JDKs still need to be tested.
      *
      * @param cls Class to get empty constructor for.
      * @return Empty constructor if one could be found or {@code null} otherwise.
@@ -1492,7 +1492,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to
+     * int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -1652,8 +1653,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets 8-character substring of {@link org.apache.ignite.lang.IgniteUuid} (for terse logging).
-     * The ID8 will be constructed as follows:
+     * Gets 8-character substring of {@link org.apache.ignite.lang.IgniteUuid} (for terse logging). The ID8 will be
+     * constructed as follows:
      * <ul>
      * <li>Take first 4 digits for global ID, i.e. {@code GridUuid.globalId()}.</li>
      * <li>Take last 4 digits for local ID, i.e. {@code GridUuid.localId()}.</li>
@@ -1669,7 +1670,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param len Number of characters to fill in.
      * @param ch Character to fill with.
      * @return String.
@@ -1747,7 +1747,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param out Output.
      * @param col Set to write.
      * @throws IOException If write failed.
@@ -1764,7 +1763,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param out Output.
      * @param col Set to write.
      * @throws IOException If write failed.
@@ -1812,7 +1810,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param m Map to copy.
      * @param <K> Key type.
      * @param <V> Value type
@@ -1823,7 +1820,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param m Map to seal.
      * @param <K> Key type.
      * @param <V> Value type
@@ -1885,9 +1881,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Tries to resolve host by name, returning local host if input is empty.
-     * This method reflects how {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} should
-     * be handled in most places.
+     * Tries to resolve host by name, returning local host if input is empty. This method reflects how {@link
+     * org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} should be handled in most places.
      *
      * @param hostName Hostname or {@code null} if local host should be returned.
      * @return Address of given host or of localhost.
@@ -1903,8 +1898,7 @@ public abstract class IgniteUtils {
     /**
      * Determines whether current local host is different from previously cached.
      *
-     * @return {@code true} or {@code false} depending on whether or not local host
-     *      has changed from the cached value.
+     * @return {@code true} or {@code false} depending on whether or not local host has changed from the cached value.
      * @throws IOException If attempt to get local host failed.
      */
     public static synchronized boolean isLocalHostChanged() throws IOException {
@@ -1973,9 +1967,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
-     * a common address this method returns single host name, and when a wildcard address passed
-     * this method tries to collect addresses of all available interfaces.
+     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns a common address this
+     * method returns single host name, and when a wildcard address passed this method tries to collect addresses of all
+     * available interfaces.
      *
      * @param locAddr Local address to resolve.
      * @return Resolved available addresses of given local address.
@@ -1988,9 +1982,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
-     * a common address this method returns single host name, and when a wildcard address passed
-     * this method tries to collect addresses of all available interfaces.
+     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns a common address this
+     * method returns single host name, and when a wildcard address passed this method tries to collect addresses of all
+     * available interfaces.
      *
      * @param locAddr Local address to resolve.
      * @param allHostNames If {@code true} then include host names for all addresses.
@@ -2064,11 +2058,10 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets local host. Implementation will first attempt to get a non-loopback
-     * address. If that fails, then loopback address will be returned.
+     * Gets local host. Implementation will first attempt to get a non-loopback address. If that fails, then loopback
+     * address will be returned.
      * <p>
-     * Note that this method is synchronized to make sure that local host
-     * initialization happens only once.
+     * Note that this method is synchronized to make sure that local host initialization happens only once.
      *
      * @return Address representing local host.
      * @throws IOException If attempt to get local host failed.
@@ -2185,9 +2178,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets a list of all local non-loopback IPs known to this JVM.
-     * Note that this will include both IPv4 and IPv6 addresses (even if one "resolves"
-     * into another). Loopbacks will be skipped.
+     * Gets a list of all local non-loopback IPs known to this JVM. Note that this will include both IPv4 and IPv6
+     * addresses (even if one "resolves" into another). Loopbacks will be skipped.
      *
      * @return List of all known local IPs (empty list if no addresses available).
      */
@@ -2222,19 +2214,16 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets a list of all local enabled MACs known to this JVM. It
-     * is using hardware address of the network interface that is not guaranteed to be
-     * MAC addresses (but in most cases it is).
+     * Gets a list of all local enabled MACs known to this JVM. It is using hardware address of the network interface
+     * that is not guaranteed to be MAC addresses (but in most cases it is).
      * <p>
-     * Note that if network interface is disabled - its MAC won't be included. All
-     * local network interfaces are probed including loopbacks. Virtual interfaces
-     * (sub-interfaces) are skipped.
+     * Note that if network interface is disabled - its MAC won't be included. All local network interfaces are probed
+     * including loopbacks. Virtual interfaces (sub-interfaces) are skipped.
      * <p>
-     * Note that on linux getHardwareAddress() can return null from time to time
-     * if NetworkInterface.getHardwareAddress() method is called from many threads.
+     * Note that on linux getHardwareAddress() can return null from time to time if
+     * NetworkInterface.getHardwareAddress() method is called from many threads.
      *
-     * @return List of all known enabled local MACs or empty list
-     *      if no MACs could be found.
+     * @return List of all known enabled local MACs or empty list if no MACs could be found.
      */
     public static synchronized Collection<String> allLocalMACs() {
         List<String> macs = new ArrayList<>(3);
@@ -2342,8 +2331,7 @@ public abstract class IgniteUtils {
     /**
      * Replace password in URI string with a single '*' character.
      * <p>
-     * Parses given URI by applying &quot;.*://(.*:.*)@.*&quot;
-     * regular expression pattern and than if URI matches it
+     * Parses given URI by applying &quot;.*://(.*:.*)@.*&quot; regular expression pattern and than if URI matches it
      * replaces password strings between '/' and '@' with '*'.
      *
      * @param uri URI which password should be replaced.
@@ -2395,17 +2383,15 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return ClassLoader at IgniteConfiguration in case it is not null or
-     * ClassLoader used to start Ignite.
+     * @return ClassLoader at IgniteConfiguration in case it is not null or ClassLoader used to start Ignite.
      */
     public static ClassLoader resolveClassLoader(IgniteConfiguration cfg) {
         return resolveClassLoader(null, cfg);
     }
 
     /**
-     * @return ClassLoader passed as param in case it is not null or
-     * ClassLoader at IgniteConfiguration in case it is not null or
-     * ClassLoader used to start Ignite.
+     * @return ClassLoader passed as param in case it is not null or ClassLoader at IgniteConfiguration in case it is
+     * not null or ClassLoader used to start Ignite.
      */
     public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
@@ -2788,8 +2774,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts primitive {@code double} type to byte array and stores
-     * it in the specified byte array.
+     * Converts primitive {@code double} type to byte array and stores it in the specified byte array.
      *
      * @param d Double to convert.
      * @param bytes Array of bytes.
@@ -2833,8 +2818,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts primitive {@code long} type to byte array and stores it in specified
-     * byte array.
+     * Converts primitive {@code long} type to byte array and stores it in specified byte array.
      *
      * @param l Long value.
      * @param bytes Array of bytes.
@@ -2856,8 +2840,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts primitive {@code int} type to byte array and stores it in specified
-     * byte array.
+     * Converts primitive {@code int} type to byte array and stores it in specified byte array.
      *
      * @param i Integer value.
      * @param bytes Array of bytes.
@@ -2879,8 +2862,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts primitive {@code short} type to byte array and stores it in specified
-     * byte array.
+     * Converts primitive {@code short} type to byte array and stores it in specified byte array.
      *
      * @param s Short value.
      * @param bytes Array of bytes.
@@ -2892,8 +2874,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Encodes {@link java.util.UUID} into a sequence of bytes using the {@link java.nio.ByteBuffer},
-     * storing the result into a new byte array.
+     * Encodes {@link java.util.UUID} into a sequence of bytes using the {@link java.nio.ByteBuffer}, storing the result
+     * into a new byte array.
      *
      * @param uuid Unique identifier.
      * @param arr Byte array to fill with result.
@@ -2995,8 +2977,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads an {@link java.util.UUID} form byte array.
-     * If given array contains all 0s then {@code null} will be returned.
+     * Reads an {@link java.util.UUID} form byte array. If given array contains all 0s then {@code null} will be
+     * returned.
      *
      * @param bytes array of bytes.
      * @param off Offset in {@code bytes} array.
@@ -3051,15 +3033,12 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts an array of characters representing hexidecimal values into an
-     * array of bytes of those same values. The returned array will be half the
-     * length of the passed array, as it takes two characters to represent any
-     * given byte. An exception is thrown if the passed char array has an odd
-     * number of elements.
+     * Converts an array of characters representing hexidecimal values into an array of bytes of those same values. The
+     * returned array will be half the length of the passed array, as it takes two characters to represent any given
+     * byte. An exception is thrown if the passed char array has an odd number of elements.
      *
      * @param data An array of characters containing hexidecimal digits
-     * @return A byte array containing binary data decoded from
-     *         the supplied char array.
+     * @return A byte array containing binary data decoded from the supplied char array.
      * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
     public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
@@ -3102,17 +3081,6 @@ public abstract class IgniteUtils {
         String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
 
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-    }
-
-    /**
-     * Verifier always returns successful result for any host.
-     */
-    private static class DeploymentHostnameVerifier implements HostnameVerifier {
-        /** {@inheritDoc} */
-        @Override public boolean verify(String hostname, SSLSession ses) {
-            // Remote host trusted by default.
-            return true;
-        }
     }
 
     /**
@@ -3323,6 +3291,7 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     *
      * @throws InterruptedException If interrupted.
      */
     public static void onGridStop() throws InterruptedException {
@@ -3475,12 +3444,12 @@ public abstract class IgniteUtils {
 
         return e;
     }
+
     /**
      * Deletes file or directory with all sub-directories and files.
      *
      * @param file File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted,
-     *      {@code false} otherwise
+     * @return {@code true} if and only if the file or directory is successfully deleted, {@code false} otherwise
      */
     public static boolean delete(@Nullable File file) {
         return file != null && delete(file.toPath());
@@ -3490,8 +3459,7 @@ public abstract class IgniteUtils {
      * Deletes file or directory with all sub-directories and files.
      *
      * @param path File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted,
-     *      {@code false} otherwise
+     * @return {@code true} if and only if the file or directory is successfully deleted, {@code false} otherwise
      */
     public static boolean delete(Path path) {
         if (Files.isDirectory(path)) {
@@ -3504,7 +3472,8 @@ public abstract class IgniteUtils {
                             return false;
                     }
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 return false;
             }
         }
@@ -3523,15 +3492,16 @@ public abstract class IgniteUtils {
             Files.delete(path);
 
             return true;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             return false;
         }
     }
 
     /**
      * @param dir Directory to create along with all non-existent parent directories.
-     * @return {@code True} if directory exists (has been created or already existed),
-     *      {@code false} if has not been created and does not exist.
+     * @return {@code True} if directory exists (has been created or already existed), {@code false} if has not been
+     * created and does not exist.
      */
     public static boolean mkdirs(File dir) {
         assert dir != null;
@@ -3632,8 +3602,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
-     * properties or from environment in that order.
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system properties or from environment in
+     * that order.
      *
      * @return {@code IGNITE_HOME} property.
      */
@@ -3715,9 +3685,8 @@ public abstract class IgniteUtils {
     /**
      * Gets file associated with path.
      * <p>
-     * First check if path is relative to {@code IGNITE_HOME}.
-     * If not, check if path is absolute.
-     * If all checks fail, then {@code null} is returned.
+     * First check if path is relative to {@code IGNITE_HOME}. If not, check if path is absolute. If all checks fail,
+     * then {@code null} is returned.
      * <p>
      * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
@@ -3753,11 +3722,10 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets URL representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
-     * If all checks fail,
-     * then {@code null} is returned, otherwise URL representing path is returned.
+     * Gets URL representing the path passed in. First the check is made if path is absolute. If not, then the check is
+     * made if path is relative to {@code META-INF} folder in classpath. If not, then the check is made if path is
+     * relative to ${IGNITE_HOME}. If all checks fail, then {@code null} is returned, otherwise URL representing path is
+     * returned.
      * <p>
      * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
@@ -3813,11 +3781,10 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets URL representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
-     * If all checks fail,
-     * then {@code null} is returned, otherwise URL representing path is returned.
+     * Gets URL representing the path passed in. First the check is made if path is absolute. If not, then the check is
+     * made if path is relative to {@code META-INF} folder in classpath. If not, then the check is made if path is
+     * relative to ${IGNITE_HOME}. If all checks fail, then {@code null} is returned, otherwise URL representing path is
+     * returned.
      * <p>
      * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
@@ -3868,8 +3835,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks for containment of the value in the array.
-     * Both array cells and value may be {@code null}. Two {@code null}s are considered equal.
+     * Checks for containment of the value in the array. Both array cells and value may be {@code null}. Two {@code
+     * null}s are considered equal.
      *
      * @param arr Array of objects.
      * @param val Value to check for containment inside of array.
@@ -3914,8 +3881,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks for containment of given string value in the specified array.
-     * Array's cells and string value can be {@code null}. Tow {@code null}s are considered equal.
+     * Checks for containment of given string value in the specified array. Array's cells and string value can be {@code
+     * null}. Tow {@code null}s are considered equal.
      *
      * @param arr Array of strings.
      * @param val Value to check for containment inside of array.
@@ -3947,8 +3914,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks for containment of given string value in the specified collection.
-     * Collection elements and string value can be {@code null}. Tow {@code null}s are considered equal.
+     * Checks for containment of given string value in the specified collection. Collection elements and string value
+     * can be {@code null}. Tow {@code null}s are considered equal.
      *
      * @param c Array of strings.
      * @param val Value to check for containment inside of array.
@@ -4156,10 +4123,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
-     * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
-     * prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice} category. If {@code log} is {@code
+     * null} or in QUIET mode it will add {@code (courtesy)} prefix to the message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
@@ -4173,10 +4139,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
-     * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
-     * prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice} category. If {@code log} is {@code
+     * null} or in QUIET mode it will add {@code (courtesy)} prefix to the message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param longMsg Message to log using normal logger.
@@ -4194,9 +4159,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log WARN message. If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the
+     * message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
@@ -4234,9 +4199,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (err)} prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log ERROR message. If {@code log} is {@code null} or in QUIET mode it will add {@code (err)} prefix to the
+     * message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
@@ -4257,9 +4222,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log WARN message. If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the
+     * message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param longMsg Message to log using normal logger.
@@ -4277,11 +4242,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
-     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
-     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
-     * is set to true, the message will not be logged.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker. If {@code log} is {@code null} or in
+     * QUIET mode it will add {@code (wrn)} prefix to the message. If property {@link
+     * IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED} is set to true, the
+     * message will not be logged.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
@@ -4301,12 +4266,12 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log INFO message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log INFO message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
-     * therefore no logging will happen - using this method the log will be written
-     * always either via INFO log or quiet mode.
+     * therefore no logging will happen - using this method the log will be written always either via INFO log or quiet
+     * mode.
      * <p>
      * <b>USE IT APPROPRIATELY.</b>
      *
@@ -4327,12 +4292,12 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log INF0 message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log INF0 message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
-     * therefore no logging will happen - using this method the log will be written
-     * always either via INFO log or quiet mode.
+     * therefore no logging will happen - using this method the log will be written always either via INFO log or quiet
+     * mode.
      * <p>
      * <b>USE IT APPROPRIATELY.</b>
      *
@@ -4348,9 +4313,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (err)} prefix to the message.
+     * Depending on whether or not log is provided and quiet mode is enabled logs given messages as quiet message or
+     * normal log ERROR message. If {@code log} is {@code null} or in QUIET mode it will add {@code (err)} prefix to the
+     * message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param longMsg Message to log using normal logger.
@@ -4394,7 +4359,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param err Whether to print to {@code System.err}.
      * @param objs Objects to log in quiet mode.
      */
@@ -4443,8 +4407,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Constructs JMX object name with given properties.
-     * Map with ordered {@code groups} used for proper object name construction.
+     * Constructs JMX object name with given properties. Map with ordered {@code groups} used for proper object name
+     * construction.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param grp Name of the group.
@@ -4555,7 +4519,7 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
-        if(IGNITE_MBEANS_DISABLED)
+        if (IGNITE_MBEANS_DISABLED)
             throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
 
         assert mbeanSrv != null;
@@ -4591,8 +4555,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Waits for completion of a given thread. If thread is {@code null} then
-     * this method returns immediately returning {@code true}
+     * Waits for completion of a given thread. If thread is {@code null} then this method returns immediately returning
+     * {@code true}
      *
      * @param t Thread to join.
      * @param log Logger for logging errors.
@@ -4603,8 +4567,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Waits for completion of a given thread. If thread is {@code null} then
-     * this method returns immediately returning {@code true}
+     * Waits for completion of a given thread. If thread is {@code null} then this method returns immediately returning
+     * {@code true}
      *
      * @param t Thread to join.
      * @param log Logger for logging errors.
@@ -4631,8 +4595,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Waits for completion of a given threads. If thread is {@code null} then
-     * this method returns immediately returning {@code true}
+     * Waits for completion of a given threads. If thread is {@code null} then this method returns immediately returning
+     * {@code true}
      *
      * @param workers Thread to join.
      * @param log Logger for logging errors.
@@ -4712,8 +4676,7 @@ public abstract class IgniteUtils {
      *
      * @param ws Collection of workers to join.
      * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
+     * @return {@code true} if none of the worker have been interrupted, {@code false} if at least one was interrupted.
      */
     public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
         boolean retval = true;
@@ -4765,8 +4728,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes UUIDs to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Writes UUIDs to output stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param out Output stream.
      * @param col UUIDs to write.
@@ -4784,8 +4747,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads UUIDs from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Reads UUIDs from input stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param in Input stream.
      * @return Read UUIDs.
@@ -4807,8 +4770,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes Grid UUIDs to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Writes Grid UUIDs to output stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param out Output stream.
      * @param col Grid UUIDs to write.
@@ -4828,8 +4791,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads Grid UUIDs from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Reads Grid UUIDs from input stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param in Input stream.
      * @return Read Grid UUIDs.
@@ -4852,8 +4815,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes UUID to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Writes UUID to output stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param out Output stream.
      * @param uid UUID to write.
@@ -4870,8 +4833,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads UUID from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
+     * Reads UUID from input stream. This method is meant to be used by implementations of {@link Externalizable}
+     * interface.
      *
      * @param in Input stream.
      * @return Read UUID.
@@ -5096,8 +5059,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Calculates hash code for the given byte buffers contents. Compatible with {@link Arrays#hashCode(byte[])}
-     * with the same content. Does not change buffers positions.
+     * Calculates hash code for the given byte buffers contents. Compatible with {@link Arrays#hashCode(byte[])} with
+     * the same content. Does not change buffers positions.
      *
      * @param bufs Byte buffers.
      * @return Hash code.
@@ -5136,7 +5099,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -5205,7 +5167,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -5423,9 +5384,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes enum to output stream accounting for {@code null} values.
-     * Note: method writes only one byte for every enum. Therefore, this method
-     * only for Enums with maximum count of values equals to 128.
+     * Writes enum to output stream accounting for {@code null} values. Note: method writes only one byte for every
+     * enum. Therefore, this method only for Enums with maximum count of values equals to 128.
      *
      * @param out Output stream to write to.
      * @param e Enum value to write, possibly {@code null}.
@@ -5575,8 +5535,7 @@ public abstract class IgniteUtils {
      *
      * @param base Base map.
      * @param map Map to check.
-     * @return {@code True} if all entries within map are contained in base map,
-     *      {@code false} otherwise.
+     * @return {@code True} if all entries within map are contained in base map, {@code false} otherwise.
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
@@ -5605,8 +5564,8 @@ public abstract class IgniteUtils {
      * Gets task name for the given task class.
      *
      * @param taskCls Task class.
-     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}})
-     *      or task class name if there is no annotation.
+     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}}) or task
+     * class name if there is no annotation.
      */
     public static String getTaskName(Class<? extends ComputeTask<?, ?>> taskCls) {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
@@ -5615,8 +5574,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Creates SPI attribute name by adding prefix to the attribute name.
-     * Prefix is an SPI name + '.'.
+     * Creates SPI attribute name by adding prefix to the attribute name. Prefix is an SPI name + '.'.
      *
      * @param spi SPI.
      * @param attrName attribute name.
@@ -5659,6 +5617,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets OS MBean.
+     *
      * @return OS MBean.
      */
     public static OperatingSystemMXBean getOsMx() {
@@ -5686,14 +5645,14 @@ public abstract class IgniteUtils {
 
         try {
             attr = mBeanSrv.getAttribute(
-                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
-                    "TotalPhysicalMemorySize");
+                ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                "TotalPhysicalMemorySize");
         }
         catch (Exception e) {
             return -1;
         }
 
-        return (attr instanceof Long) ? (Long) attr : -1;
+        return (attr instanceof Long) ? (Long)attr : -1;
     }
 
     /**
@@ -5706,8 +5665,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Tries to detect user class from passed in object inspecting
-     * collections, arrays or maps.
+     * Tries to detect user class from passed in object inspecting collections, arrays or maps.
      *
      * @param obj Object.
      * @return First non-JDK or deployment aware class or passed in object class.
@@ -5764,9 +5722,8 @@ public abstract class IgniteUtils {
     /**
      * Detects class loader for given class.
      * <p>
-     * This method will first check if {@link Thread#getContextClassLoader()} is appropriate.
-     * If yes, then context class loader will be returned, otherwise
-     * the {@link Class#getClassLoader()} will be returned.
+     * This method will first check if {@link Thread#getContextClassLoader()} is appropriate. If yes, then context class
+     * loader will be returned, otherwise the {@link Class#getClassLoader()} will be returned.
      *
      * @param cls Class to find class loader for.
      * @return Class loader for given class (never {@code null}).
@@ -5795,8 +5752,8 @@ public abstract class IgniteUtils {
      * Tests whether or not given class is loadable provided class loader.
      *
      * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead. If System class
+     * loader is not set - this method will return {@code false}.
      * @return {@code True} if class is loadable, {@code false} otherwise.
      */
     public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
@@ -5818,15 +5775,14 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets the peer deploy aware instance for the object with the widest class loader.
-     * If collection is {@code null}, empty or contains only {@code null}s - the peer
-     * deploy aware object based on system class loader will be returned.
+     * Gets the peer deploy aware instance for the object with the widest class loader. If collection is {@code null},
+     * empty or contains only {@code null}s - the peer deploy aware object based on system class loader will be
+     * returned.
      *
      * @param c Collection.
      * @return Peer deploy aware object from this collection with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this collection cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this collection
+     * cannot be found. In such case - peer deployment is not possible.
      */
     public static GridPeerDeployAware peerDeployAware0(@Nullable Iterable<?> c) {
         if (!F.isEmpty(c)) {
@@ -5895,15 +5851,13 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets the peer deploy aware instance for the object with the widest class loader.
-     * If array is {@code null}, empty or contains only {@code null}s - the peer
-     * deploy aware object based on system class loader will be returned.
+     * Gets the peer deploy aware instance for the object with the widest class loader. If array is {@code null}, empty
+     * or contains only {@code null}s - the peer deploy aware object based on system class loader will be returned.
      *
      * @param c Objects.
      * @return Peer deploy aware object from this array with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this array cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this array cannot be
+     * found. In such case - peer deployment is not possible.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public static GridPeerDeployAware peerDeployAware0(@Nullable Object... c) {
@@ -5953,8 +5907,7 @@ public abstract class IgniteUtils {
     /**
      * Creates an instance of {@link GridPeerDeployAware} for object.
      *
-     * Checks, if the object is an instance of collection or object
-     * array.
+     * Checks, if the object is an instance of collection or object array.
      *
      * @param obj Object to deploy.
      * @return {@link GridPeerDeployAware} instance for given object.
@@ -6136,10 +6089,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
-     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
-     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
-     * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
+     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.}, {@code org.apache.ignite.internal.}
+     * with {@code o.a.i.i.}, {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and {@code
+     * org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
@@ -6294,6 +6246,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets JDK name.
+     *
      * @return JDK name.
      */
     public static String jdkName() {
@@ -6582,9 +6535,8 @@ public abstract class IgniteUtils {
      *
      * @param v1 - java implementation version
      * @param v2 - java implementation version
-     * @return the value {@code 0} if {@code v1 == v2};
-     *         a value less than {@code 0} if {@code v1 < v2}; and
-     *         a value greater than {@code 0} if {@code v1 > v2}
+     * @return the value {@code 0} if {@code v1 == v2}; a value less than {@code 0} if {@code v1 < v2}; and a value
+     * greater than {@code 0} if {@code v1 > v2}
      */
     public static int compareVersionNumbers(@Nullable String v1, @Nullable String v2) {
         if (v1 == null && v2 == null)
@@ -6698,8 +6650,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Sets thread context class loader to the given loader, executes the closure, and then
-     * resets thread context class loader to its initial value.
+     * Sets thread context class loader to the given loader, executes the closure, and then resets thread context class
+     * loader to its initial value.
      *
      * @param ldr Class loader to run the closure under.
      * @param c Callable to run.
@@ -6732,8 +6684,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Sets thread context class loader to the given loader, executes the closure, and then
-     * resets thread context class loader to its initial value.
+     * Sets thread context class loader to the given loader, executes the closure, and then resets thread context class
+     * loader to its initial value.
      *
      * @param ldr Class loader to run the closure under.
      * @param c Closure to run.
@@ -6758,8 +6710,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Sets thread context class loader to the given loader, executes the closure, and then
-     * resets thread context class loader to its initial value.
+     * Sets thread context class loader to the given loader, executes the closure, and then resets thread context class
+     * loader to its initial value.
      *
      * @param ldr Class loader to run the closure under.
      * @param c Closure to run.
@@ -6904,10 +6856,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Copies all elements from collection to array and asserts that
-     * array is big enough to hold the collection. This method should
-     * always be preferred to {@link Collection#toArray(Object[])}
-     * method.
+     * Copies all elements from collection to array and asserts that array is big enough to hold the collection. This
+     * method should always be preferred to {@link Collection#toArray(Object[])} method.
      *
      * @param c Collection to convert to array.
      * @param arr Array to populate.
@@ -6937,8 +6887,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns array which is the union of two arrays
-     * (array of elements contained in any of provided arrays).
+     * Returns array which is the union of two arrays (array of elements contained in any of provided arrays).
      * <p/>
      * Note: arrays must be increasing.
      *
@@ -6980,8 +6929,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns array which is the difference between two arrays
-     * (array of elements contained in first array but not contained in second).
+     * Returns array which is the difference between two arrays (array of elements contained in first array but not
+     * contained in second).
      * <p/>
      * Note: arrays must be increasing.
      *
@@ -7068,8 +7017,7 @@ public abstract class IgniteUtils {
      *
      * @param arr Array.
      * @param len Prefix length.
-     * @return Old array if length of {@code arr} is equals to {@code len},
-     *      otherwise copy of array.
+     * @return Old array if length of {@code arr} is equals to {@code len}, otherwise copy of array.
      */
     public static int[] copyIfExceeded(int[] arr, int len) {
         assert arr != null;
@@ -7079,7 +7027,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param t Tokenizer.
      * @param str Input string.
      * @param date Date.
@@ -7099,7 +7046,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param str ISO date.
      * @return Calendar instance.
      * @throws IgniteCheckedException Thrown in case of any errors.
@@ -7315,11 +7261,10 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
-     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
-     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
-     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
-     * is returned.
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br> If {@code t} is a {@link
+     * GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}. If {@code t} is an {@link
+     * IgniteCheckedException}, it is returned. If {@code t} is not a {@link IgniteCheckedException}, a new {@link
+     * IgniteCheckedException} caused by {@code t} is returned.
      *
      * @param t Throwable to cast.
      * @return {@code t} cast to {@link IgniteCheckedException}.
@@ -7399,7 +7344,6 @@ public abstract class IgniteUtils {
      * Dumps stack for given thread.
      *
      * @param t Thread to dump stack for.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings("deprecation")
@@ -7413,7 +7357,6 @@ public abstract class IgniteUtils {
      *
      * @param t Thread to dump stack for.
      * @param s {@code PrintStream} to use for output.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
@@ -7442,7 +7385,6 @@ public abstract class IgniteUtils {
     /**
      * @param cls Class.
      * @return {@code True} if given class represents a primitive or a primitive wrapper class.
-     *
      */
     public static boolean isPrimitiveOrWrapper(Class<?> cls) {
         return cls.isPrimitive() ||
@@ -7527,8 +7469,8 @@ public abstract class IgniteUtils {
      * @param latch Latch to wait for.
      * @param timeout Maximum time to wait.
      * @param unit Time unit for timeout.
-     * @return {@code True} if the count reached zero and {@code false}
-     *      if the waiting time elapsed before the count reached zero.
+     * @return {@code True} if the count reached zero and {@code false} if the waiting time elapsed before the count
+     * reached zero.
      * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
@@ -7544,11 +7486,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Awaits for the latch until it is counted down,
-     * ignoring interruptions.
+     * Awaits for the latch until it is counted down, ignoring interruptions.
      * <p>
-     * If calling thread was interrupted, interrupted status will be
-     * recovered prior to return.
+     * If calling thread was interrupted, interrupted status will be recovered prior to return.
      *
      * @param latch Latch to wait for.
      */
@@ -7742,8 +7682,8 @@ public abstract class IgniteUtils {
      * @param sem Semaphore.
      * @param timeout The maximum time to wait.
      * @param unit The unit of the {@code time} argument.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      * @return {@code True} if acquires a permit, {@code false} another.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
         throws IgniteInterruptedCheckedException {
@@ -7768,13 +7708,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks if given node has near cache enabled for the specified
-     * partitioned cache.
+     * Checks if given node has near cache enabled for the specified partitioned cache.
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @return {@code true} if given node has near cache enabled for the
-     *      specified partitioned cache.
+     * @return {@code true} if given node has near cache enabled for the specified partitioned cache.
      */
     public static boolean hasNearCache(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
@@ -7881,7 +7819,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                        "not be propagated to callee): " + e,
+                            "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -7945,11 +7883,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8071,15 +8009,17 @@ public abstract class IgniteUtils {
      * @param fieldName Field name.
      * @return Boolean flag.
      */
-    public static boolean hasField(Object obj, String fieldName){
+    public static boolean hasField(Object obj, String fieldName) {
         try {
             field(obj, fieldName);
 
             return true;
-        }catch (IgniteException e){
+        }
+        catch (IgniteException e) {
             return false;
         }
     }
+
     /**
      * Gets object field offset.
      *
@@ -8373,8 +8313,8 @@ public abstract class IgniteUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
-     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null} if it did not found
+     * in classpath. Notice that in this case logging is not suppressed.
      * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
      */
     public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
@@ -8516,8 +8456,7 @@ public abstract class IgniteUtils {
      * Creates string for log output.
      *
      * @param msg Message to start string.
-     * @param args Even length array where the odd elements are parameter names
-     *      and even elements are parameter values.
+     * @param args Even length array where the odd elements are parameter names and even elements are parameter values.
      * @return Log message, formatted as recommended by Ignite guidelines.
      */
     public static String fl(String msg, Object... args) {
@@ -8600,7 +8539,8 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8656,14 +8596,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Applies a supplemental hash function to a given hashCode, which
-     * defends against poor quality hash functions.  This is critical
-     * because ConcurrentHashMap uses power-of-two length hash tables,
-     * that otherwise encounter collisions for hashCodes that do not
-     * differ in lower or upper bits.
+     * Applies a supplemental hash function to a given hashCode, which defends against poor quality hash functions.
+     * This is critical because ConcurrentHashMap uses power-of-two length hash tables, that otherwise encounter
+     * collisions for hashCodes that do not differ in lower or upper bits.
      * <p>
-     * This function has been taken from Java 8 ConcurrentHashMap with
-     * slightly modifications.
+     * This function has been taken from Java 8 ConcurrentHashMap with slightly modifications.
      *
      * @param h Value to hash.
      * @return Hash value.
@@ -8671,24 +8608,21 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }
 
     /**
-     * Applies a supplemental hash function to a given hashCode, which
-     * defends against poor quality hash functions.  This is critical
-     * because ConcurrentHashMap uses power-of-two length hash tables,
-     * that otherwise encounter collisions for hashCodes that do not
-     * differ in lower or upper bits.
+     * Applies a supplemental hash function to a given hashCode, which defends against poor quality hash functions.
+     * This is critical because ConcurrentHashMap uses power-of-two length hash tables, that otherwise encounter
+     * collisions for hashCodes that do not differ in lower or upper bits.
      * <p>
-     * This function has been taken from Java 8 ConcurrentHashMap with
-     * slightly modifications.
+     * This function has been taken from Java 8 ConcurrentHashMap with slightly modifications.
      *
      * @param key Value to hash.
      * @return Hash value.
@@ -8734,12 +8668,10 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
+     * As long as array copying uses JVM-private API, which is not guaranteed to be available on all JVM, this method
+     * should be called to ensure logic could work properly.
      *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
+     * @return {@code True} if unsafe copying can work on the current JVM or {@code false} if it can't.
      */
     @SuppressWarnings("TypeParameterExtendsFinalClass")
     private static boolean unsafeByteArrayCopyAvailable() {
@@ -8860,8 +8792,7 @@ public abstract class IgniteUtils {
      * Returns a first non-null value in a given array, if such is present.
      *
      * @param vals Input array.
-     * @return First non-null value, or {@code null}, if array is empty or contains
-     *      only nulls.
+     * @return First non-null value, or {@code null}, if array is empty or contains only nulls.
      */
     @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
         if (vals == null)
@@ -8876,8 +8807,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link LifecycleAware} interface and executes {@link LifecycleAware#start} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link LifecycleAware} interface
+     * and executes {@link LifecycleAware#start} method.
      *
      * @param objs Objects.
      * @throws IgniteCheckedException If {@link LifecycleAware#start} fails.
@@ -8895,8 +8826,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link
+     * org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop}
+     * method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -8917,13 +8849,12 @@ public abstract class IgniteUtils {
     /**
      * Groups given nodes by the node's physical computer (host).
      * <p>
-     * Detection of the same physical computer (host) is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
-     * physical computer.
+     * Detection of the same physical computer (host) is based on comparing set of network interface MACs. If two nodes
+     * have the same set of MACs, Ignite considers these nodes running on the same physical computer.
      *
      * @param nodes Nodes.
-     * @return Collection of projections where each projection represents all nodes (in this projection)
-     *      from a single physical computer. Result collection can be empty if this projection is empty.
+     * @return Collection of projections where each projection represents all nodes (in this projection) from a single
+     * physical computer. Result collection can be empty if this projection is empty.
      */
     public static Map<String, Collection<ClusterNode>> neighborhood(Iterable<ClusterNode> nodes) {
         Map<String, Collection<ClusterNode>> map = new HashMap<>();
@@ -8945,8 +8876,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns tha list of resolved inet addresses. First addresses are resolved by host names, if this attempt fails
+     * then the addresses are resolved by ip addresses.
      *
      * @param node Grid node.
      * @return Inet addresses for given addresses and host names.
@@ -8957,8 +8888,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns tha list of resolved inet addresses. First addresses are resolved by host names, if this attempt fails
+     * then the addresses are resolved by ip addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
@@ -9004,8 +8935,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns tha list of resolved socket addresses. First addresses are resolved by host names, if this attempt fails
+     * then the addresses are resolved by ip addresses.
      *
      * @param node Grid node.
      * @param port Port.
@@ -9016,8 +8947,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns tha list of resolved socket addresses. First addresses are resolved by host names, if this attempt fails
+     * then the addresses are resolved by ip addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
@@ -9264,8 +9195,8 @@ public abstract class IgniteUtils {
      * @param dir Directory to check.
      * @param msg Directory name for the messages.
      * @param log Optional logger to log a message that the directory has been resolved.
-     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
-     *      the same name already exists.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with the same
+     * name already exists.
      */
     public static void ensureDirectory(File dir, String msg, IgniteLogger log) throws IgniteCheckedException {
         if (!dir.exists()) {
@@ -9287,8 +9218,8 @@ public abstract class IgniteUtils {
      * @param dir Directory to check.
      * @param msg Directory name for the messages.
      * @param log Optional logger to log a message that the directory has been resolved.
-     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
-     *      the same name already exists.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with the same
+     * name already exists.
      */
     public static void ensureDirectory(Path dir, String msg, IgniteLogger log) throws IgniteCheckedException {
         if (!Files.exists(dir)) {
@@ -9314,7 +9245,8 @@ public abstract class IgniteUtils {
      * @param suppressed The collections of suppressed exceptions.
      * @return {@code IgniteCheckedException}.
      */
-    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+    public static IgniteCheckedException exceptionWithSuppressed(String msg,
+        @Nullable Collection<Throwable> suppressed) {
         IgniteCheckedException e = new IgniteCheckedException(msg);
 
         if (suppressed != null) {
@@ -9329,8 +9261,8 @@ public abstract class IgniteUtils {
      * Extracts full name of enclosing class from JDK8 lambda class name.
      *
      * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
+     * @return Full name of enclosing class for JDK8 lambda class name or {@code null} if passed in name is not related
+     * to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
         int idx = clsName.indexOf("$$Lambda$");
@@ -9413,9 +9345,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns a capacity that is sufficient to keep the map from being resized as
-     * long as it grows no larger than expSize and the load factor is >= its
-     * default (0.75).
+     * Returns a capacity that is sufficient to keep the map from being resized as long as it grows no larger than
+     * expSize and the load factor is >= its default (0.75).
      *
      * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)
      *
@@ -9505,8 +9436,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
-     * loopback addresses first, last otherwise.
+     * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put loopback
+     * addresses first, last otherwise.
      *
      * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
      * @return Comparator.
@@ -9537,8 +9468,8 @@ public abstract class IgniteUtils {
     /**
      * Finds a method in the class and it parents.
      *
-     * Method.getMethod() does not return non-public method,
-     * Method.getDeclaratedMethod() does not look at parent classes.
+     * Method.getMethod() does not return non-public method, Method.getDeclaratedMethod() does not look at parent
+     * classes.
      *
      * @param cls The class to search,
      * @param name Name of the method.
@@ -9786,8 +9717,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Throws exception with uniform error message if given parameter's assertion condition
-     * is {@code false}.
+     * Throws exception with uniform error message if given parameter's assertion condition is {@code false}.
      *
      * @param cond Assertion condition to check.
      * @param condDesc Description of failed condition.
@@ -9835,8 +9765,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Defines which protocol version to use for
-     * communication with the provided node.
+     * Defines which protocol version to use for communication with the provided node.
      *
      * @param ctx Context.
      * @param nodeId Node ID.
@@ -9912,8 +9841,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
+     * Unmarshals object from the input stream using given class loader. This method should not close given input
+     * stream.
      * <p/>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
@@ -9946,7 +9875,8 @@ public abstract class IgniteUtils {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException
      */
-    public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes,
+        @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert marsh != null;
         assert zipBytes != null;
 
@@ -9966,8 +9896,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
+     * Unmarshals object from the input stream using given class loader. This method should not close given input
+     * stream.
      * <p/>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
@@ -9995,8 +9925,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
+     * Unmarshals object from the input stream using given class loader. This method should not close given input
+     * stream.
      * <p/>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
@@ -10024,8 +9954,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
+     * Unmarshals object from the input stream using given class loader. This method should not close given input
+     * stream.
      * <p/>
      * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
@@ -10225,7 +10155,7 @@ public abstract class IgniteUtils {
     public static int fileCount(Path dir) throws IOException {
         int cnt = 0;
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
             for (Path d : ds) {
                 if (Files.isDirectory(d))
                     cnt += fileCount(d);
@@ -10269,7 +10199,8 @@ public abstract class IgniteUtils {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
         }
 
@@ -10310,7 +10241,8 @@ public abstract class IgniteUtils {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
         }
 
@@ -10319,6 +10251,7 @@ public abstract class IgniteUtils {
 
     /**
      * Returns {@link GridIntIterator} for range of primitive integers.
+     *
      * @param start Start.
      * @param cnt Count.
      */
@@ -10352,7 +10285,7 @@ public abstract class IgniteUtils {
 
         long y = 1;
 
-        while (y < x){
+        while (y < x) {
             if (y * 2 > Integer.MAX_VALUE)
                 return (int)y;
 
@@ -10381,17 +10314,14 @@ public abstract class IgniteUtils {
 
     /**
      * @param ctx Context.
-     *
      * @return instance of current baseline topology if it exists
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridKernalContext ctx) {
         return ctx.state().clusterState().baselineTopology();
     }
 
-
     /**
      * @param cctx Context.
-     *
      * @return instance of current baseline topology if it exists
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridCacheSharedContext cctx) {
@@ -10400,7 +10330,6 @@ public abstract class IgniteUtils {
 
     /**
      * @param cctx Context.
-     *
      * @return instance of current baseline topology if it exists
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
@@ -10410,7 +10339,6 @@ public abstract class IgniteUtils {
     /**
      * @param addr pointer in memory
      * @param len how much byte to read (should divide 8)
-     *
      * @return hex representation of memory region
      */
     public static String toHexString(long addr, int len) {
@@ -10426,7 +10354,6 @@ public abstract class IgniteUtils {
 
     /**
      * @param buf which content should be converted to string
-     *
      * @return hex representation of memory region
      */
     public static String toHexString(ByteBuffer buf) {
@@ -10438,6 +10365,86 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
+    }
+
+    /**
+     * @param affAssignment Affinity assignment.
+     * @return String representation of given {@code affAssignment}.
+     */
+    public static String fold(List<List<ClusterNode>> affAssignment) {
+        SB sb = new SB();
+
+        for (int p = 0; p < affAssignment.size(); p++) {
+            sb.a("Part [");
+            sb.a("id=" + p + ", ");
+
+            SB partOwners = new SB();
+
+            List<ClusterNode> affOwners = affAssignment.get(p);
+
+            for (ClusterNode node : affOwners) {
+                if (node != null)
+                    partOwners.a(node.consistentId());
+                else
+                    partOwners.a("null");
+
+                partOwners.a(' ');
+            }
+
+            sb.a("owners=[");
+            sb.a(partOwners);
+            sb.a(']');
+
+            sb.a("] ");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * @param fullMsgWithAffinity Full message with affinity assignment.
+     * @return String representation of given {@code affinity assignments in full partition message}.
+     */
+    public static String foldAssignment(GridDhtPartitionsFullMessage fullMsgWithAffinity) {
+        SB sb = new SB();
+
+        sb.a("Joined node affinity [");
+
+        if (fullMsgWithAffinity != null && fullMsgWithAffinity.joinedNodeAffinity() != null) {
+            for (Map.Entry<Integer, CacheGroupAffinityMessage> messageEntry : fullMsgWithAffinity.joinedNodeAffinity().entrySet()) {
+                sb.a("Cache group = " + messageEntry.getKey() + "[");
+
+                List<GridLongList> assigns = messageEntry.getValue().assigns;
+
+                for (int i = 0; i < assigns.size(); i++) {
+                    sb.a("Part = " + i + " [");
+
+                    GridLongList assignments = assigns.get(i);
+
+                    for (int j = 0; j < assignments.size(); j++)
+                        sb.a("Node = " + assignments.get(j) + ", ");
+
+                    sb.a("]");
+                }
+
+                sb.a("]");
+
+            }
+            sb.a("]");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Verifier always returns successful result for any host.
+     */
+    private static class DeploymentHostnameVerifier implements HostnameVerifier {
+        /** {@inheritDoc} */
+        @Override public boolean verify(String hostname, SSLSession ses) {
+            // Remote host trusted by default.
+            return true;
+        }
     }
 
     /**
@@ -10505,7 +10512,7 @@ public abstract class IgniteUtils {
         /**
          *
          */
-        private void inc(){
+        private void inc() {
             cnt.incrementAndGet();
 
             String name = Thread.currentThread().getName();
@@ -10525,7 +10532,7 @@ public abstract class IgniteUtils {
         /**
          *
          */
-        private void dec(){
+        private void dec() {
             cnt.decrementAndGet();
 
             String name = Thread.currentThread().getName();

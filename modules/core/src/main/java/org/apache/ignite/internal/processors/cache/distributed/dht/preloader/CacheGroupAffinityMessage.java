@@ -49,7 +49,7 @@ public class CacheGroupAffinityMessage implements Message {
 
     /** */
     @GridDirectCollection(GridLongList.class)
-    private List<GridLongList> assigns;
+    public List<GridLongList> assigns;
 
     /** */
     @GridDirectCollection(GridLongList.class)

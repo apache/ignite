@@ -167,40 +167,6 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param affAssignment Affinity assignment.
-     * @return String representation of given {@code affAssignment}.
-     */
-    private static String fold(List<List<ClusterNode>> affAssignment) {
-        SB sb = new SB();
-
-        for (int p = 0; p < affAssignment.size(); p++) {
-            sb.a("Part [");
-            sb.a("id=" + p + ", ");
-
-            SB partOwners = new SB();
-
-            List<ClusterNode> affOwners = affAssignment.get(p);
-
-            for (ClusterNode node : affOwners) {
-                if (node != null)
-                    partOwners.a(node.consistentId());
-                else
-                    partOwners.a("null");
-
-                partOwners.a(' ');
-            }
-
-            sb.a("owners=[");
-            sb.a(partOwners);
-            sb.a(']');
-
-            sb.a("] ");
-        }
-
-        return sb.toString();
-    }
-
-    /**
      * @return Key to find caches with similar affinity.
      */
     public Object similarAffinityKey() {
@@ -235,11 +201,9 @@ public class GridAffinityAssignmentCache {
         // printed out on each topology assignment
         log.info("Received new affinity assignment [grp=" + cacheOrGrpName
             + ", topVer=" + topVer
-            + ", aff=" + fold(affAssignment) + "]");
+            + ", aff=" + U.fold(affAssignment) + "]");
 
-        log.info("Received new ideal affinity assignment [grp=" + cacheOrGrpName
-            + ", topVer=" + topVer
-            + ", aff=" + fold(idealAssignment) + "]");
+        log.info("Discovery cache version = " + ctx.discovery().discoCache().version() + " on sending full partition message = " + ctx.discovery().discoCache().serverNodes());
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
