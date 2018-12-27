@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -64,6 +65,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -194,10 +196,9 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testMvccTransactionalNearCacheInitialization() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         checkCacheInitialization(NEAR_MVCC_TX_CACHE_NAME);
     }
 
@@ -289,7 +290,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
+            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
+            GridQueryCancel cancel, boolean registerAsNewQry) {
             return null;
         }
 
@@ -307,7 +309,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+            boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
+            Long qryId) throws IgniteCheckedException {
             return null;
         }
 
@@ -345,7 +348,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
             GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.gridCacheContext().kernalContext().clientNode())
+            if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.cacheContext().kernalContext().clientNode())
                 throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
         }
 

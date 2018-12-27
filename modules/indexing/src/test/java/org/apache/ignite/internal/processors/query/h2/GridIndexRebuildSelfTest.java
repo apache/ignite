@@ -34,10 +34,14 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Index rebuild after node restart test.
  */
+@RunWith(JUnit4.class)
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
     protected static final int AMOUNT = 50;
@@ -111,6 +115,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * </ul></p>
      * @throws Exception if failed.
      */
+    @Test
     public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 

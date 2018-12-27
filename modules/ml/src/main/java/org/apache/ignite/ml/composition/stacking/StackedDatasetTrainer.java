@@ -206,7 +206,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return This object.
      */
     public StackedDatasetTrainer<IS, IA, O, AM, L> withAggregatorInputMerger(IgniteBinaryOperator<IA> merger) {
-        this.aggregatingInputMerger = merger;
+        aggregatingInputMerger = merger;
 
         return this;
     }

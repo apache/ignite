@@ -42,10 +42,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -54,10 +54,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Result set test.
  */
 @SuppressWarnings({"FloatingPointEquality", "ThrowableNotThrown", "AssertWithSideEffects"})
+@RunWith(JUnit4.class)
 public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
@@ -84,12 +82,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         );
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -163,6 +155,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -243,6 +236,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -282,6 +276,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -321,6 +316,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInteger() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -360,6 +356,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -399,6 +396,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -438,6 +436,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -477,6 +476,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimal() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -516,6 +516,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimalScale() throws Exception {
         assert "0.12".equals(convertStringToBigDecimalViaJdbc("0.1234", 2).toString());
         assert "1.001".equals(convertStringToBigDecimalViaJdbc("1.0005", 3).toString());
@@ -540,6 +541,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -579,6 +581,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArray() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -600,6 +603,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testDate() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -628,6 +632,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testTime() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -655,6 +660,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -682,6 +688,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectNotSupported() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -695,6 +702,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNavigation() throws Exception {
         ResultSet rs = stmt.executeQuery("select id from TestObject where id > 0");
 
@@ -736,6 +744,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindColumn() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 
@@ -761,6 +770,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotSupportedTypes() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 
@@ -902,6 +912,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateNotSupported() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 
@@ -1409,6 +1420,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExceptionOnClosedResultSet() throws Exception {
         final ResultSet rs = stmt.executeQuery(SQL);
 

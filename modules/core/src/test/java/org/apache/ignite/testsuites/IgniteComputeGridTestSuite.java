@@ -87,16 +87,18 @@ import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeploySharedModeSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Compute grid test suite.
  */
+@RunWith(AllTests.class)
 public class IgniteComputeGridTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Compute Grid Test Suite");
 
         suite.addTest(IgniteTaskSessionSelfTestSuite.suite());

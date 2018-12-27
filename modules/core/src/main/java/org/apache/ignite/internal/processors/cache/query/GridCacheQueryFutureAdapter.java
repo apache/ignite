@@ -324,7 +324,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @param col Collection.
      */
-    @SuppressWarnings({"unchecked"})
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
 
@@ -338,7 +337,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @return If dedup flag is {@code true} deduplicated collection (considering keys),
      *      otherwise passed in collection without any modifications.
      */
-    @SuppressWarnings({"unchecked"})
     private Collection<?> dedupIfRequired(Collection<?> col) {
         if (!qry.query().enableDedup())
             return col;
@@ -360,7 +358,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param err Error (if was).
      * @param finished Finished or not.
      */
-    @SuppressWarnings({"unchecked"})
     public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;

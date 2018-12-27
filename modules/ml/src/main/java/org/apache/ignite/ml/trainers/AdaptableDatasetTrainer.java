@@ -80,6 +80,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
 
     /**
      * Construct instance of this class with specified wrapped trainer and converter functions.
+     *
      * @param before Function used to convert input type of wrapped trainer.
      * @param wrapped Wrapped trainer.
      * @param after Function used to convert output type of wrapped trainer.
@@ -102,9 +103,6 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
     @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
-        if (featureExtractor == null) {
-            System.out.println("zzzzz");
-        }
         M fit = wrapped.fit(
             datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
             featureExtractor.andThen(afterFeatureExtractor),

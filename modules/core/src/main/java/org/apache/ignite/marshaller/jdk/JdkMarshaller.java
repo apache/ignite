@@ -124,7 +124,6 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 

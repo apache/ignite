@@ -213,7 +213,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param <T> Value type.
      */
     private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
-        //noinspection unchecked
         builder.setField(field, (T)val, valType);
     }
 

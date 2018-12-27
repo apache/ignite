@@ -25,9 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -62,9 +59,6 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Test attribute name. */
     private static final String TEST_ATTRIBUTE = "TestAttribute";
 
-    /** VM IP finder for TCP discovery SPI. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name which will be passed to grid configuration. */
     private CacheMode cacheMode = PARTITIONED;
 
@@ -96,12 +90,6 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, cacheName));
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

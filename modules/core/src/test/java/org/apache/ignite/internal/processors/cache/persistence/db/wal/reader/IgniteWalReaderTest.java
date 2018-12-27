@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -55,15 +56,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -78,9 +79,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -106,9 +104,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  */
 @RunWith(JUnit4.class)
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Wal segments count */
     private static final int WAL_SEGMENTS = 10;
 
@@ -130,9 +125,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Custom wal mode. */
     private WALMode customWalMode;
 
-    /** Clear properties in afterTest() method. */
-    private boolean clearProps;
-
     /** Set WAL and Archive path to same value. */
     private boolean setWalAndArchiveToSameVal;
 
@@ -142,8 +134,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -191,11 +181,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10558");
-
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
@@ -205,8 +190,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        if (clearProps)
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /**
@@ -828,6 +812,60 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests WAL iterator which uses shared cache context of currently started Ignite node.
+     */
+    @Test
+    public void testIteratorWithCurrentKernelContext() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        int cntEntries = 100;
+
+        putDummyRecords(ignite, cntEntries);
+
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        IteratorParametersBuilder iterParametersBuilder =
+            createIteratorParametersBuilder(workDir, genDbSubfolderName(ignite, 0))
+                .filesOrDirs(workDir)
+                .binaryMetadataFileStoreDir(null)
+                .marshallerMappingFileStoreDir(null)
+                .sharedContext(ignite.context().cache().context());
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        IgniteBiInClosure<Object, Object> objConsumer = (key, val) -> {
+            if (val instanceof IndexedObject) {
+                assertEquals(key, ((IndexedObject)val).iVal);
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), objConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
+
+        // Test without converting non primary types.
+        iterParametersBuilder.keepBinary(true);
+
+        cnt.set(0);
+
+        IgniteBiInClosure<Object, Object> binObjConsumer = (key, val) -> {
+            if (val instanceof BinaryObject) {
+                assertEquals(key, ((BinaryObject)val).field("iVal"));
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), binObjConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
+    }
+
+    /**
      * Creates and fills cache with data.
      *
      * @param ig Ignite instance.
@@ -1066,8 +1104,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        clearProps = true;
-
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         Ignite ignite = startGrid("node0");
@@ -1335,12 +1371,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Object unwrappedKeyObj;
                             Object unwrappedValObj;
 
-                            if (entry instanceof UnwrapDataEntry || entry instanceof UnwrapMvccDataEntry) {
-                                UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
+                            if (entry instanceof UnwrappedDataEntry) {
+                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
                                 unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
                                 unwrappedValObj = unwrapDataEntry.unwrappedValue();
                             }
-                            else if (entry instanceof LazyDataEntry || entry instanceof LazyMvccDataEntry) {
+                            else if (entry instanceof MarshalledDataEntry) {
                                 unwrappedKeyObj = null;
                                 unwrappedValObj = null;
                                 //can't check value

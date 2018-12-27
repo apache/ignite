@@ -24,8 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,9 +34,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private String nodeVer;
 
@@ -61,7 +56,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        discoSpi.setIpFinder(IP_FINDER).setForceServerMode(true);
+        discoSpi.setIpFinder(sharedStaticIpFinder).setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoSpi);
 

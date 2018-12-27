@@ -37,6 +37,6 @@ public interface SyncInfModelBuilder {
      * @param <O> Type of model output.
      * @return Inference model.
      */
-    public <I extends Serializable, O extends Serializable> InfModel<I, O> build(InfModelReader reader,
-        InfModelParser<I, O> parser);
+    public <I extends Serializable, O extends Serializable, M extends InfModel<I, O>> M build(InfModelReader reader,
+        InfModelParser<I, O, M> parser);
 }

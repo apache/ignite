@@ -49,9 +49,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -85,9 +82,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /** */
     private static final int REBALANCE_BATCH_SIZE = 50 * 1024;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -107,12 +101,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         cfg.setCommunicationSpi(new RebalanceBlockingSPI());
 
@@ -139,6 +127,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     @Test
     public void testStopCachesOnDeactivation() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+
         performTest(ig -> {
             ig.cluster().active(false);
 
@@ -166,6 +157,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     @Test
     public void testDestroySpecificCacheAndCacheGroup() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3, CACHE_4));
 
@@ -258,9 +252,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      *
      */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
-        /** */
-        public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             slowDownMessage(msg);

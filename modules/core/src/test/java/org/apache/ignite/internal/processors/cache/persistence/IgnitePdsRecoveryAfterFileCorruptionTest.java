@@ -49,9 +49,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,9 +59,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Total pages. */
     private static final int totalPages = 512;
 
@@ -98,11 +92,6 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             .setAlwaysWriteFullPages(true);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-                .setIpFinder(ipFinder)
-        );
 
         return cfg;
     }

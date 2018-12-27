@@ -33,18 +33,4 @@ public interface UpstreamTransformer extends Serializable {
      * @return Transformed upstream.
      */
     public Stream<UpstreamEntry> transform(Stream<UpstreamEntry> upstream);
-
-//    /**
-//     * Get composition of this transformer and other transformer which is
-//     * itself is {@link UpstreamTransformer} applying this transformer and then other transformer.
-//     *
-//     * @param other Other transformer.
-//     * @return Composition of this and other transformer.
-//     */
-//    public default <K, V> UpstreamTransformer andThen(UpstreamTransformer other) {
-//        return (Stream<UpstreamEntry<K, V>> upstream) -> {
-//            Stream<UpstreamEntry<K, V>> transform = transform(upstream);
-//            return other.transform(transform);
-//        };
-//    }
 }

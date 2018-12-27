@@ -21,7 +21,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Model which is composition  of form {@code before `andThen` iMdl `andThen` after}.
+ * Model which is composition of form {@code before `andThen` inner Mdl `andThen` after}.
  *
  * @param <I> Type of input of this model.
  * @param <O> Type of output of this model.
@@ -52,7 +52,9 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implem
         this.mdl = mdl;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Result of this model application is a result of composition {@code before `andThen` inner mdl `andThen` after}.
+     */
     @Override public O apply(I i) {
         return before.andThen(mdl).andThen(after).apply(i);
     }
@@ -63,11 +65,11 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implem
     }
 
     /**
-     * Create new {@link AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
+     * Create new {@code AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
      *
      * @param before Function applied before this model.
      * @param <I1> Type of function applied before this model.
-     * @return New {@link AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
+     * @return New {@code AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
      */
     public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
