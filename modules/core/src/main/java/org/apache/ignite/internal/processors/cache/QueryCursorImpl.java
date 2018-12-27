@@ -103,33 +103,23 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
         assert iter != null;
 
-        return iter;
+        return new AutoClosableIterator<>(iter);
     }
 
     /** {@inheritDoc} */
     @Override public List<T> getAll() {
         List<T> all = new ArrayList<>();
 
-        try {
-            for (T t : this) // Implicitly calls iterator() to do all checks.
-                all.add(t);
-        }
-        finally {
-            close();
-        }
+        for (T t : this) // Implicitly calls iterator() to do all checks.
+            all.add(t);
 
         return all;
     }
 
     /** {@inheritDoc} */
     @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
-        try {
             for (T t : this)
                 clo.consume(t);
-        }
-        finally {
-            close();
-        }
     }
 
     /** {@inheritDoc} */
@@ -211,5 +201,66 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         /** Executing. */EXECUTION,
         /** Result ready. */RESULT_READY,
         /** Closed. */CLOSED,
+    }
+
+    /**
+     * Inner implementation of iterator wrapper to close cursor when all data has been read.
+     *
+     * @param <T> The type of elements returned by this iterator.
+     */
+    private class AutoClosableIterator<T> implements Iterator<T> {
+
+        private Iterator<T> it;
+
+        /**
+         * Constructor.
+         *
+         * @param it Wrapped iterator.
+         */
+        public AutoClosableIterator(Iterator<T> it) {
+            this.it = it;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            boolean hasNext;
+
+            try {
+                hasNext = it.hasNext();
+            }
+            catch (Exception e) {
+                try {
+                    close();
+                }
+                catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+
+                throw e;
+            }
+
+            if (!hasNext)
+                close();
+
+            return hasNext;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            try {
+                return it.next();
+            }
+            catch (Exception e) {
+                try {
+                    close();
+                }
+                catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+
+                throw e;
+            }
+        }
     }
 }
