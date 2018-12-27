@@ -65,9 +65,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
 
-    /** IP finder for the grid with the primary file system. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Primary IGFS instances. */
     private static IgniteFileSystem[] igfsPrimary;
 
@@ -153,11 +150,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setIgniteInstanceName("grid-" + idx);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

@@ -29,11 +29,14 @@ import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreNodeRestar
 import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreSelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Hibernate integration tests.
  */
-public class IgniteHibernate5TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteHibernate5TestSuite {
     /**
      * @return Test suite.
      */

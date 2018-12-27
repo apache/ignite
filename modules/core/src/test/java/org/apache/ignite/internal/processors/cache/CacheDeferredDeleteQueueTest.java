@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -86,10 +87,9 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testDeferredDeleteQueueMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         testQueue(TRANSACTIONAL_SNAPSHOT, true);
     }
 

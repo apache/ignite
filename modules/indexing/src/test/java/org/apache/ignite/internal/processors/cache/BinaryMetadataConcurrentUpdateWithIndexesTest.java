@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -92,9 +91,6 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     /** */
     private static final int MB = 1024 * 1024;
 
-    /** */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -108,7 +104,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         rndAddrsField.set(spi, true);
 
-        cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
+        cfg.setDiscoverySpi(spi.setIpFinder(sharedStaticIpFinder));
 
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
 

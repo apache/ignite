@@ -33,10 +33,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class RunningQueryManager {
     /** Keep registered user queries. */
-    private final ConcurrentMap<Long, GridRunningQueryInfo> userQueriesRuns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
     /** Unique id for queries on single node. */
-    private AtomicLong qryIdGen = new AtomicLong();
+    private final AtomicLong qryIdGen = new AtomicLong();
 
     /**
      * Register running query.
@@ -48,19 +48,25 @@ public class RunningQueryManager {
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
      * @return Registered RunningQueryInfo.
      */
-    public GridRunningQueryInfo registerUserRunningQuery(String qry, GridCacheQueryType qryType, String schemaName,
+    public GridRunningQueryInfo register(String qry, GridCacheQueryType qryType, String schemaName,
         boolean loc, @Nullable GridQueryCancel cancel) {
         long qryId = qryIdGen.incrementAndGet();
 
-        long startTime = U.currentTimeMillis();
+        GridRunningQueryInfo run = new GridRunningQueryInfo(
+            qryId,
+            qry,
+            qryType,
+            schemaName,
+            System.currentTimeMillis(),
+            cancel,
+            loc
+        );
 
-        GridRunningQueryInfo info = new GridRunningQueryInfo(qryId, qry, qryType, schemaName, startTime, cancel, loc);
+        GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
 
-        GridRunningQueryInfo prevInfo = userQueriesRuns.putIfAbsent(qryId, info);
+        assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
-        assert prevInfo == null : "Running query already registered [prev_qry=" + prevInfo + ", newQry=" + info + ']';
-
-        return info;
+        return run;
     }
 
     /**
@@ -69,8 +75,8 @@ public class RunningQueryManager {
      * @param runningQryInfo Running query info..
      * @return Unregistered running query info. {@code null} in case running query is not registered.
      */
-    @Nullable public GridRunningQueryInfo unregisterRunningQuery(@Nullable GridRunningQueryInfo runningQryInfo) {
-        return (runningQryInfo != null) ? unregisterRunningQuery(runningQryInfo.id()) : null;
+    @Nullable public GridRunningQueryInfo unregister(@Nullable GridRunningQueryInfo runningQryInfo) {
+        return (runningQryInfo != null) ? unregister(runningQryInfo.id()) : null;
     }
 
     /**
@@ -79,11 +85,11 @@ public class RunningQueryManager {
      * @param qryId Query id.
      * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
-    @Nullable public GridRunningQueryInfo unregisterRunningQuery(Long qryId) {
+    @Nullable public GridRunningQueryInfo unregister(Long qryId) {
         if (qryId == null)
             return null;
 
-        return userQueriesRuns.remove(qryId);
+        return runs.remove(qryId);
     }
 
     /**
@@ -92,12 +98,12 @@ public class RunningQueryManager {
      * @param duration Duration of long query.
      * @return List of queries which running longer than given duration.
      */
-    public Collection<GridRunningQueryInfo> longRunningUserQueries(long duration) {
+    public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
-        long curTime = U.currentTimeMillis();
+        long curTime = System.currentTimeMillis();
 
-        for (GridRunningQueryInfo runningQryInfo : userQueriesRuns.values()) {
+        for (GridRunningQueryInfo runningQryInfo : runs.values()) {
             if (runningQryInfo.longQuery(curTime, duration))
                 res.add(runningQryInfo);
         }
@@ -111,7 +117,7 @@ public class RunningQueryManager {
      * @param qryId Query id.
      */
     public void cancel(Long qryId) {
-        GridRunningQueryInfo run = userQueriesRuns.get(qryId);
+        GridRunningQueryInfo run = runs.get(qryId);
 
         if (run != null)
             run.cancel();

@@ -177,8 +177,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
-import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
@@ -457,14 +457,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo runningQryInfo = runningQueryManager().registerUserRunningQuery(qry,
+            GridRunningQueryInfo runningQryInfo = runningQueryManager().register(qry,
                 TEXT, schemaName, true, null);
 
             try {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                runningQueryManager().unregisterRunningQuery(runningQryInfo);
+                runningQueryManager().unregister(runningQryInfo);
             }
         }
 
@@ -1317,7 +1317,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            runningQueryMgr.unregisterRunningQuery(qryId);
+            runningQueryMgr.unregister(qryId);
         }
     }
 
@@ -1630,7 +1630,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
             finally {
-                runningQueryMgr.unregisterRunningQuery(qryId);
+                runningQueryMgr.unregister(qryId);
             }
         }
 
@@ -1655,7 +1655,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
-            runningQueryManager().unregisterRunningQuery(qryId);
+            runningQueryMgr.unregister(qryId);
 
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
                 ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
@@ -1673,7 +1673,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private Long registerRunningQuery(String schemaName, GridQueryCancel cancel, String qry, boolean loc,
         boolean registerAsNewQry) {
         if (registerAsNewQry) {
-            GridRunningQueryInfo runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry,
+            GridRunningQueryInfo runningQryInfo = runningQueryMgr.register(qry,
                 GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
 
             return runningQryInfo.id();
@@ -1980,53 +1980,66 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
-        int partitions[] = qry.getPartitions();
-
-        if (partitions == null && twoStepQry.derivedPartitions() != null) {
-            try {
-                PartitionNode partTree = twoStepQry.derivedPartitions().tree();
-
-                Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
-
-                if (F.isEmpty(partitions0))
-                    partitions = new int[0];
-                else {
-                    partitions = new int[partitions0.size()];
-
-                    int i = 0;
-
-                    for (Integer part : partitions0)
-                        partitions[i++] = part;
-                }
-
-                if (partitions.length == 0) //here we know that result of requested query is empty
-                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
-                        @Override public Iterator<List<?>> iterator() {
-                            return new Iterator<List<?>>(){
-
-                                @Override public boolean hasNext() {
-                                    return false;
-                                }
-
-                                @Override public List<?> next() {
-                                    return null;
-                                }
-                            };
-                        }
-                    });
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() + ", params=" +
-                    Arrays.deepToString(qry.getArgs()) + "]", e);
-            }
-        }
-
         Long qryId = registerRunningQuery(schemaName, cancel, qry.getSql(), qry.isLocal(), registerAsNewQry);
 
+        boolean cursorCreated = false;
+
         try {
-            Iterable<List<?>> iter = runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
-                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker);
+            // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
+            int partitions[] = qry.getPartitions();
+
+            if (partitions == null && twoStepQry.derivedPartitions() != null) {
+                try {
+                    PartitionNode partTree = twoStepQry.derivedPartitions().tree();
+
+                    Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
+
+                    if (F.isEmpty(partitions0))
+                        partitions = new int[0];
+                    else {
+                        partitions = new int[partitions0.size()];
+
+                        int i = 0;
+
+                        for (Integer part : partitions0)
+                            partitions[i++] = part;
+                    }
+
+                    if (partitions.length == 0) { //here we know that result of requested query is empty
+                        return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
+                            @Override public Iterator<List<?>> iterator() {
+                                return new Iterator<List<?>>() {
+                                    @Override public boolean hasNext() {
+                                        return false;
+                                    }
+
+                                    @Override public List<?> next() {
+                                        return null;
+                                    }
+                                };
+                            }
+                        });
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() +
+                        ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                }
+            }
+
+            Iterable<List<?>> iter = runQueryTwoStep(
+                schemaName,
+                twoStepQry,
+                keepBinary,
+                qry.isEnforceJoinOrder(),
+                startTx,
+                qry.getTimeout(),
+                cancel,
+                qry.getArgs(),
+                partitions,
+                qry.isLazy(),
+                mvccTracker
+            );
 
             QueryCursorImpl<List<?>> cursor = registerAsNewQry
                 ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
@@ -2034,12 +2047,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cursor.fieldsMeta(meta);
 
+            cursorCreated = true;
+
             return cursor;
         }
-        catch (Exception e) {
-            runningQueryMgr.unregisterRunningQuery(qryId);
-
-            throw e;
+        finally {
+            if (!cursorCreated)
+                runningQueryMgr.unregister(qryId);
         }
     }
 
@@ -2296,8 +2310,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return rdcQryExec;
     }
 
-    /** {@inheritDoc} */
-    @Override public RunningQueryManager runningQueryManager() {
+    /**
+     * Return Running query manager.
+     *
+     * @return Running query manager.
+     */
+    public RunningQueryManager runningQueryManager() {
         return runningQueryMgr;
     }
 
@@ -2599,7 +2617,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        return runningQueryMgr.longRunningUserQueries(duration);
+        return runningQueryMgr.longRunningQueries(duration);
     }
 
     /** {@inheritDoc} */
