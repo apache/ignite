@@ -18,8 +18,6 @@
 package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
