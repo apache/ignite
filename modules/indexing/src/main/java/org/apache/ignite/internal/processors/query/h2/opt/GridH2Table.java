@@ -1085,23 +1085,30 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Column[] getColumns() {
-        Boolean insertHack = INSERT_HACK.get();
+        lock(false);
 
-        if (insertHack != null && insertHack) {
-            StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+        try {
+            Boolean insertHack = INSERT_HACK.get();
 
-            StackTraceElement elem = elems[2];
+            if (insertHack != null && insertHack) {
+                StackTraceElement[] elems = Thread.currentThread().getStackTrace();
 
-            if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[columns.length - 3];
+                StackTraceElement elem = elems[2];
 
-                System.arraycopy(columns, 3, columns0, 0, columns0.length);
+                if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
+                    Column[] columns0 = new Column[columns.length - 3];
 
-                return columns0;
+                    System.arraycopy(columns, 3, columns0, 0, columns0.length);
+
+                    return columns0;
+                }
             }
-        }
 
-        return columns;
+            return columns;
+        }
+        finally {
+            unlock(false);
+        }
     }
 
     /**
