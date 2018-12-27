@@ -44,9 +44,4 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitioned() {
-        return true;
-    }
 }

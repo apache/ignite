@@ -733,7 +733,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(0).peekEx(key));
         assertNull(near(1).peekEx(key));
 
-        assertFalse(near(0).isLockedNearOnly(key));
         assertFalse(cache.isLocalLocked(key, true));
     }
 
@@ -802,7 +801,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             lock.unlock();
         }
 
-        assertFalse(near(0).isLockedNearOnly(key));
         assertFalse(near.isLocalLocked(key, true));
     }
 

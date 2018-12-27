@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -182,28 +181,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
         return super.isLocked(key) || dht().isLocked(key);
-    }
-
-    /**
-     * @param key Key.
-     * @return If near entry is locked.
-     */
-    public boolean isLockedNearOnly(K key) {
-        return super.isLocked(key);
-    }
-
-    /**
-     * @param keys Keys.
-     * @return If near entries for given keys are locked.
-     */
-    public boolean isAllLockedNearOnly(Iterable<? extends K> keys) {
-        A.notNull(keys, "keys");
-
-        for (K key : keys)
-            if (!isLockedNearOnly(key))
-                return false;
-
-        return true;
     }
 
     /**

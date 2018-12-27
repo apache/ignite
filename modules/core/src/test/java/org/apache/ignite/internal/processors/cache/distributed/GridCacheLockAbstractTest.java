@@ -33,6 +33,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -156,42 +157,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Partitioned flag.
-     */
-    protected boolean isPartitioned() {
-        return false;
-    }
-
-    /**
-     * @param k Key to check.
-     * @param idx Grid index.
-     * @return {@code True} if locked.
-     */
-    private boolean locked(Integer k, int idx) {
-        if (isPartitioned())
-            return near(idx).isLockedNearOnly(k);
-
-        return jcache(idx).isLocalLocked(k, false);
-    }
-
-    /**
-     * @param keys Keys to check.
-     * @param idx Grid index.
-     * @return {@code True} if locked.
-     */
-    private boolean locked(Iterable<Integer> keys, int idx) {
-        if (isPartitioned())
-            return near(idx).isAllLockedNearOnly(keys);
-
-        for (Integer key : keys) {
-            if (!jcache(idx).isLocalLocked(key, true))
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
@@ -223,8 +188,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             info("Unlocked key: " + k);
         }
 
-        assert !locked(k, 1);
-        assert !cache1.isLocalLocked(k, true);
+        checkUnlocked(cache1, k);
     }
 
     /**
@@ -257,7 +221,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                     cache1.put(kv, Integer.toString(kv));
 
-                    info("Put " + kv + '=' + Integer.toString(kv) + " key pair into cache.");
+                    info("Put " + kv + '=' + kv + " key pair into cache.");
                 }
                 finally {
                     Thread.sleep(1000);
@@ -269,8 +233,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 l2.await();
 
-                assert !cache1.isLocalLocked(kv, true);
-                assert !locked(kv, 1);
+                checkUnlocked(cache1, kv);
 
                 return null;
             }
@@ -297,8 +260,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Unlocked key in thread 2: " + kv);
                 }
 
-                assert !locked(kv, 2);
-                assert !cache2.isLocalLocked(kv, true);
+                checkUnlocked(cache2, kv);
 
                 Thread.sleep(1000);
 
@@ -361,8 +323,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 l2.await();
 
-                assert !locked(1, 1);
-                assert !cache1.isLocalLocked(1, true);
+                checkUnlocked(cache1, 1);
 
                 return null;
             }
@@ -458,7 +419,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                         info("Unlocked entry for keys.");
                     }
 
-                    assert !locked(keys, 1);
+                    for (Integer key : keys)
+                        checkUnlocked(cache1, key);
 
                     return null;
                 }
@@ -570,5 +532,21 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    protected void checkUnlocked(final IgniteCache<Integer, ?> cache, final Integer key) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache.isLocalLocked(key, false);
+            }
+        }, 5000);
+
+        assertFalse(cache.isLocalLocked(key, false));
+        assertFalse(cache.isLocalLocked(key, true));
     }
 }
