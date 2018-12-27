@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -90,8 +91,10 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 2);
     }
 
+    /** */
+    @Test
     public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollback() throws Exception {
-
+        doTestPartialPrepare_2TxCommit(true);
     }
 
     /**
@@ -325,9 +328,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         super.onBackupPrepared(backup, tx, idx);
 
                         if (idx == 1 && backup == backup1) {
-                            log.info("Stopping primary [name=" + primary.name() + ']');
-
                             if (cntr.getAndIncrement() == 1) {
+                                log.info("Stopping primary [name=" + primary.name() + ']');
+
                                 runAsync(new Runnable() {
                                     @Override public void run() {
                                         stopGrid(skipCheckpoint, primary.name());
@@ -364,6 +367,124 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         waitForTopology(3);
 
         TestRecordingCommunicationSpi.stopBlockAll();
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
+    }
+
+    /**
+     * Test scenario:
+     *
+     * 1. Start 2 tx.
+     * 2.
+     *
+     * @param skipCheckpoint
+     * @throws Exception
+     */
+    private void doTestPartialPrepare_2TxCommit(boolean skipCheckpoint) throws Exception {
+        AtomicInteger cntr = new AtomicInteger();
+
+        int[] sizes = new int[] {3, 7};
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
+            map -> {
+                Ignite primary = map.get(PARTITION_ID).get1();
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+                Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
+
+                return new TwoPhaseCommitTxCallbackAdapter(
+                    U.map((IgniteEx)primary, new int[] {0, 1}),
+                    U.map((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
+                    new HashMap<>(),
+                    sizes.length) {
+                    @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
+                        super.onBackupPrepared(backup, tx, idx);
+
+                        if (idx == 1 && backup == backup1) {
+                            if (cntr.getAndIncrement() == 2) {
+                                log.info("Stopping primary [name=" + primary.name() + ']');
+
+                                runAsync(new Runnable() {
+                                    @Override public void run() {
+                                        stopGrid(skipCheckpoint, primary.name());
+
+                                        TestRecordingCommunicationSpi.stopBlockAll();
+                                    }
+                                });
+                            }
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup,
+                        @Nullable IgniteInternalTx primaryTx,
+                        IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+                        int idx = order(nearXidVer);
+
+                        if (idx == 1 && backup == backup1) {
+                            if (cntr.getAndIncrement() == 2) {
+                                log.info("Stopping primary [name=" + primary.name() + ']');
+
+                                runAsync(new Runnable() {
+                                    @Override public void run() {
+                                        stopGrid(skipCheckpoint, primary.name());
+
+                                        TestRecordingCommunicationSpi.stopBlockAll();
+                                    }
+                                });
+                            }
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> fut) {
+                        int idx = order(nearXidVer);
+
+                        if (idx == 1 && backup == backup2) {
+                            log.info("TX: committed on backup [name=" + backup.name() + ", txId=" + idx + ']');
+
+                            if (cntr.getAndIncrement() == 2) {
+                                log.info("Stopping primary [name=" + primary.name() + ']');
+
+                                runAsync(new Runnable() {
+                                    @Override public void run() {
+                                        stopGrid(skipCheckpoint, backup1.name());
+                                        stopGrid(skipCheckpoint, primary.name());
+
+                                        TestRecordingCommunicationSpi.stopBlockAll();
+                                    }
+                                });
+                            }
+
+                            return true;
+                        }
+
+                        return super.afterBackupFinish(primary, backup, nearXidVer, fut);
+                    }
+                };
+            },
+            sizes);
+
+        waitForTopology(2);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
+
+        // Start backup1.
+        startGrid(txTops.get(PARTITION_ID).get2().get(0).name());
 
         awaitPartitionMapExchange();
 
