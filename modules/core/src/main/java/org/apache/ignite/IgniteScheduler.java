@@ -44,9 +44,15 @@ import org.jetbrains.annotations.Nullable;
  *         &#64;Override public Object call() throws IgniteCheckedException {
  *             g.broadcast(new GridCallable() {...}).get();
  *         }
- *     }, "{2, 5} * * * * * ?" // 2 seconds delay with 5 executions only.
+ *     }, "{2, 5} 0 * * * * *" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
+ * <p>
+ * Seconds in Cron expression can be omiited, so the expression above is equivalent to:
+ * <pre name="code" class="java">
+ * "{2, 5} * * * * *"
+ * </pre>
+ *
  */
 public interface IgniteScheduler {
     /**
