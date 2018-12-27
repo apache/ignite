@@ -1031,8 +1031,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param val Update counter value.
      */
     public void updateCounter(long val) {
-        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-            log.error("TX: set node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", val=" + val, new Exception());
+//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
+//            log.error("TX: set node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", val=" + val, new Exception());
 
         store.updateCounter(val);
     }
@@ -1068,8 +1068,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param delta Delta.
      */
     public void updateCounter(long start, long delta) {
-        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
+//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
+//            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
 
         store.updateCounter(start, delta);
     }

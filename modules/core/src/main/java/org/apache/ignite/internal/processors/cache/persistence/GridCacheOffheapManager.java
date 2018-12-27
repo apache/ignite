@@ -309,7 +309,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         long link = io.getGapsLink(partMetaPageAddr);
 
                         if (rawGaps == null && link != 0) {
-                            freeList.removeDataRowByLink(link);
+                            freeList.removeDataRowByLink(link, grp.statisticsHolderData());
 
                             io.setGapsLink(partMetaPageAddr, (link = 0));
 
@@ -318,7 +318,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else if (rawGaps != null && link == 0) {
                             ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
 
-                            freeList.insertDataRow(row);
+                            freeList.insertDataRow(row, grp.statisticsHolderData());
 
                             io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
@@ -326,11 +326,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                         else if (rawGaps != null) {
                             // TODO FIXME update in-place optimization.
-                            freeList.removeDataRowByLink(link);
+                            freeList.removeDataRowByLink(link, grp.statisticsHolderData());
 
                             ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
 
-                            freeList.insertDataRow(row);
+                            freeList.insertDataRow(row, grp.statisticsHolderData());
 
                             io.setGapsLink(partMetaPageAddr, (link = row.link()));
 

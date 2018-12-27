@@ -25,6 +25,12 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectio
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -50,6 +56,13 @@ public class IgniteCacheMvccTestSuite9 {
         // Other non-tx tests.
         ignoredTests.add(IgniteCacheGetCustomCollectionsSelfTest.class);
         ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
+
+        // Non-mvcc counters and history rebalance.
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryOneBackupTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 9");
 
