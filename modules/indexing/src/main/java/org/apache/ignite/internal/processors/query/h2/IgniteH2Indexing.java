@@ -914,11 +914,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             long time = U.currentTimeMillis() - start;
 
             if (time > ctx.config().getLongQueryWarningTimeout()) {
-                String schema = connMgr.connectionForThread().schema();
-
                 // In lazy mode we have to use separate connection to gather plan to print warning.
                 // Otherwise the all tables are unlocked by this query.
-                try (Connection planConn = connMgr.connectionNoCache(schema)) {
+                try (Connection planConn = connMgr.connectionNoCache(conn.getSchema())) {
                     ResultSet plan = executeSqlQuery(planConn, preparedStatementWithParams(planConn, "EXPLAIN " + sql,
                         params, false), 0, null);
 
