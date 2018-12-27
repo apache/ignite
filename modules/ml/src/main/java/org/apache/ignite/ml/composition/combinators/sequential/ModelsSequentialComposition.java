@@ -24,6 +24,14 @@ Model<I, O2>{
     private Model<I, O1> mdl1;
     private Model<O1, O2> mdl2;
 
+    public Model<I, O1> firstModel() {
+        return mdl1;
+    }
+
+    public Model<O1, O2> secondModel() {
+        return mdl2;
+    }
+
     public ModelsSequentialComposition(Model<I, O1> mdl1, Model<O1, O2> mdl2) {
         this.mdl1 = mdl1;
         this.mdl2 = mdl2;

@@ -185,7 +185,7 @@ public class ComputeUtils {
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
         Ignite ignite,
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuilder<K, V> transformerBuilder,
+        UpstreamTransformerBuilder transformerBuilder,
         String datasetCacheName, UUID datasetId,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
         LearningEnvironment env) {
@@ -208,8 +208,8 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            UpstreamTransformer<K, V> transformer = transformerBuilder.build(env);
-            UpstreamTransformer<K, V> transformerCp = Utils.copy(transformer);
+            UpstreamTransformer transformer = transformerBuilder.build(env);
+            UpstreamTransformer transformerCp = Utils.copy(transformer);
 
             long cnt = computeCount(upstreamCache, qry, transformer);
 
@@ -218,7 +218,7 @@ public class ComputeUtils {
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCp.transform(Utils.asStream(it, cnt));
+                    Stream<UpstreamEntry> transformedStream = transformerCp.transform(Utils.asStream(it, cnt).map(x -> (UpstreamEntry)x));
                     it = transformedStream.iterator();
 
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.composition.combinators.sequential;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -28,15 +29,15 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<ModelsSequentialComposition<I, O1, O2>, L> {
-    private DatasetTrainer<? extends Model<I, O1>, L> tr1;
-    private DatasetTrainer<? extends Model<O1, O2>, L> tr2;
-    private IgniteFunction<Model<I, O1>, DatasetMapping<L, L>> datasetMapping;
+    private DatasetTrainer<Model<I, O1>, L> tr1;
+    private DatasetTrainer<Model<O1, O2>, L> tr2;
+    private IgniteFunction<? super Model<I, O1>, DatasetMapping<L, L>> datasetMapping;
 
     public TrainersSequentialComposition(DatasetTrainer<? extends Model<I, O1>, L> tr1,
         DatasetTrainer<? extends Model<O1, O2>, L> tr2,
-        IgniteFunction<? extends Model<I, O1>, DatasetMapping<L, L>> datasetMapping) {
-        this.tr1 = tr1;
-        this.tr2 = tr2;
+        IgniteFunction<? super Model<I, O1>, DatasetMapping<L, L>> datasetMapping) {
+        this.tr1 = CompositionUtils.unsafeCoerce(tr1);
+        this.tr2 = CompositionUtils.unsafeCoerce(tr2);
         this.datasetMapping = datasetMapping;
     }
 
@@ -58,7 +59,16 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return super.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
+
+        Model<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, featureExtractor, lbExtractor);
+        DatasetMapping<L, L> mapping = datasetMapping.apply(firstUpdated);
+
+        Model<O1, O2> secondUpdated = tr2.update(mdl.secondModel(),
+            datasetBuilder,
+            featureExtractor.andThen(mapping::mapFeatures),
+            lbExtractor.andThen(mapping::mapLabels));
+
+        return new ModelsSequentialComposition<>(firstUpdated, secondUpdated);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +111,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
             @Override public <K, V> Model<I, O2> update(Model<I, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return self.update((ModelsSequentialComposition<I, O1, M1, O2, M2>)mdl, datasetBuilder, featureExtractor, lbExtractor);
+                return self.update((ModelsSequentialComposition<I, O1, O2>)mdl, datasetBuilder, featureExtractor, lbExtractor);
             }
 
             @Override protected boolean checkState(Model<I, O2> mdl) {
