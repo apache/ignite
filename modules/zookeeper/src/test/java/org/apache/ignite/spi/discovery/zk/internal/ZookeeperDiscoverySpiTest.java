@@ -3507,7 +3507,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testClientReconnects() throws Exception {
         blockCommSpi = true;
 
