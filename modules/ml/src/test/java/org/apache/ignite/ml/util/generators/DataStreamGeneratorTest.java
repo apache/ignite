@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.util.generators;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,11 +36,15 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
+import org.apache.ignite.ml.util.generators.standard.RegressionDataStream;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -52,7 +57,7 @@ import static org.junit.Assert.assertTrue;
 public class DataStreamGeneratorTest {
     /** */
     @Test
-    public void testUnlabeled() {
+    public void testUnlabeled() throws IOException {
         DataStreamGenerator generator = new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
