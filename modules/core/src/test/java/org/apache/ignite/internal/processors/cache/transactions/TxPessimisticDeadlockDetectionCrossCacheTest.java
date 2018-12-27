@@ -54,7 +54,6 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     private static final int NODES_CNT = 2;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

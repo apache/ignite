@@ -47,9 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -73,9 +70,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @RunWith(JUnit4.class)
 public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 5;
 
     /** */
@@ -87,8 +81,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -523,7 +515,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             try {
                                 assertEquals(val, val0);
 
-                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                if (atomicityMode(cache0) != ATOMIC) {
                                     boolean committed = false;
 
                                     while (!committed && !Thread.currentThread().isInterrupted()) {
@@ -679,7 +671,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             try {
                                 assertEquals(val, val0);
 
-                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                if (atomicityMode(cache0) != ATOMIC) {
                                     boolean committed = false;
 
                                     while (!committed && !Thread.currentThread().isInterrupted()) {

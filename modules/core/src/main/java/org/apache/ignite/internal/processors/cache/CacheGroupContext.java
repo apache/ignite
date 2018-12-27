@@ -49,6 +49,9 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -66,6 +69,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -163,6 +167,13 @@ public class CacheGroupContext {
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
+    /** Statistics holder to track IO operations for PK index pages. */
+    private final IoStatisticsHolder statHolderIdx;
+
+    /** Statistics holder to track IO operations for data pages. */
+    private final IoStatisticsHolder statHolderData;
+
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -225,6 +236,18 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        if (systemCache()) {
+            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
+            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
+        }
+        else {
+            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
+                cacheOrGroupName(), HASH_PK_IDX_NAME);
+
+            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
+                cacheOrGroupName());
+        }
     }
 
     /**
@@ -765,19 +788,20 @@ public class CacheGroupContext {
         UUID originalReceivedFrom,
         boolean affinityNode
     ) throws IgniteCheckedException {
-        if (recoveryMode.compareAndSet(true, false)) {
-            affNode = affinityNode;
+        if (!recoveryMode.compareAndSet(true, false))
+            return;
 
-            rcvdFrom = originalReceivedFrom;
+        affNode = affinityNode;
 
-            locStartVer = startVer;
+        rcvdFrom = originalReceivedFrom;
 
-            persistGlobalWalState(globalWalEnabled);
+        locStartVer = startVer;
 
-            initializeIO();
+        persistGlobalWalState(globalWalEnabled);
 
-            ctx.affinity().onCacheGroupCreated(this);
-        }
+        initializeIO();
+
+        ctx.affinity().onCacheGroupCreated(this);
     }
 
     /**
@@ -1146,5 +1170,19 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderIdx() {
+        return statHolderIdx;
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderData() {
+        return statHolderData;
     }
 }

@@ -31,16 +31,21 @@ import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFac
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests KerberosHadoopFileSystemFactory.
  */
+@RunWith(JUnit4.class)
 public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Test parameters validation.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParameters() throws Exception {
         checkParameters(null, null, -1);
 
@@ -84,6 +89,7 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 

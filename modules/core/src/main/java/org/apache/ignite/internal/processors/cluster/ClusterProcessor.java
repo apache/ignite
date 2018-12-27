@@ -332,7 +332,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /**
      * @param vals collection to seek through.
      */
-    @SuppressWarnings("unchecked")
     private Boolean findLastFlag(Collection<Serializable> vals) {
         Boolean flag = null;
 

@@ -86,15 +86,18 @@ import org.apache.ignite.internal.processors.cache.datastructures.replicated.Ign
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache data structures.
  */
-public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheDataStructuresSelfTestSuite {
     /**
      * @return Cache test suite.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
@@ -189,6 +192,8 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSequenceInternalCleanupTest.class));
 
         suite.addTest(new JUnit4TestAdapter(AtomicCacheAffinityConfigurationTest.class));
+
+        suite.addTest(IgniteCacheDataStructuresBinarySelfTestSuite.suite());
 
         return suite;
     }

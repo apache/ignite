@@ -46,10 +46,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test of integration with Hadoop client via command line interface.
  */
+@RunWith(JUnit4.class)
 public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
     private IgfsEx igfs;
@@ -354,6 +358,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hadoop command line integration.
      */
+    @Test
     public void testHadoopCommandLine() throws Exception {
         assertEquals(0, executeHadoopCmd("fs", "-ls", "/"));
 
@@ -430,6 +435,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hive integration.
      */
+    @Test
     public void testHiveCommandLine() throws Exception {
         assertEquals(0, executeHiveQuery(
             "create table table_a (" +

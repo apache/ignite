@@ -1036,7 +1036,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @param req Prepare request.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
 

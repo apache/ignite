@@ -27,7 +27,7 @@ interface ISigninFormController extends ng.IFormController {
     password: ng.INgModelController
 }
 
-export default class {
+export default class implements ng.IPostLink {
     data: ISiginData = {
         email: null,
         password: null
@@ -37,15 +37,16 @@ export default class {
 
     serverError: string = null;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
-    constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils) {}
+    constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils, private el: JQLite) {}
 
     canSubmitForm(form: ISigninFormController) {
         return form.$error.server ? true : !form.$invalid;
     }
 
     $postLink() {
+        this.el.addClass('public-page');
         this.form.email.$validators.server = () => !this.serverError;
         this.form.password.$validators.server = () => !this.serverError;
     }

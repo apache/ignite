@@ -549,7 +549,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return {@code True} if reader was removed as a result of this operation.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @SuppressWarnings("unchecked")
     public boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -592,7 +591,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * Clears all readers (usually when partition becomes invalid and ready for eviction).
      */
-    @SuppressWarnings("unchecked")
     @Override public void clearReaders() {
         lockEntry();
 
@@ -704,7 +702,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @SuppressWarnings({"unchecked", "ManualArrayToCollectionCopy"})
+    @SuppressWarnings({"ManualArrayToCollectionCopy"})
     protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert lockedByCurrentThread();
 
