@@ -513,32 +513,30 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
         AtomicInteger cnt = new AtomicInteger();
 
-        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
-            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
-                Ignite primary = map.get(PARTITION_ID).get1();
-                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
-                Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, map -> {
+            Ignite primary = map.get(PARTITION_ID).get1();
+            Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+            Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
 
-                return new TwoPhaseCommitTxCallbackAdapter(
-                    U.map((IgniteEx)primary, new int[] {0, 1, 2}),
-                    U.map((IgniteEx)primary, new int[] {0, 1, 2}, (IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {0, 1, 2}),
-                    new HashMap<>(),
-                    SIZES.length) {
-                    @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx,
-                        GridFutureAdapter<?> proceedFut) {
-                        if (cnt.getAndIncrement() == 2) {
-                            runAsync(new Runnable() {
-                                @Override public void run() {
-                                    stopAllGrids();
-                                }
-                            });
-                        }
-
-                        return true;
-
+            return new TwoPhaseCommitTxCallbackAdapter(
+                U.map((IgniteEx)primary, new int[] {0, 1, 2}),
+                U.map((IgniteEx)primary, new int[] {0, 1, 2}, (IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {0, 1, 2}),
+                new HashMap<>(),
+                SIZES.length) {
+                @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx,
+                    GridFutureAdapter<?> proceedFut) {
+                    if (cnt.getAndIncrement() == 2) {
+                        runAsync(new Runnable() {
+                            @Override public void run() {
+                                stopAllGrids();
+                            }
+                        });
                     }
-                };
-            }
+
+                    return true;
+
+                }
+            };
         }, SIZES);
 
         waitForTopology(0);
