@@ -30,7 +30,9 @@ import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
+import org.h2.table.IndexColumn;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
@@ -38,7 +40,10 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * View that contains information about all the sql tables in the cluster.
  */
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
-    /** Name of the affinity column. Columns value could be {@code null} if affinity key is not specified. */
+    /**
+     * Name of the affinity column. Columns value could be {@code null} if affinity key is not known, "_KEY" for
+     * default.
+     */
     public static final String AFFINITY_COLUMN = "AFFINITY_COLUMN";
 
     /** Alias for cache key. {@link QueryUtils#KEY_FIELD_NAME} by default. */
@@ -115,7 +120,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tab.getName(),
                         tab.cacheName(),
                         tab.cacheId(),
-                        tab.getAffinityKeyColumn().columnName,
+                        getAffinityColumn(tab),
                         getKeyAlias(tab),
                         getValueAlias(tab),
                         // We use type descriptor because there is no way to get complex type (custom class Person)
@@ -131,23 +136,22 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
 
     /**
      * Returns name of the value column in case of simple value or user defined value alias. If not found - "_val".
-     * TODO: tests for user defined alias.
-     * TODO: copy columns under read lock ?
+     * TODO: tests for user defined alias. TODO: copy columns under read lock ?
      *
      * @param table table to extract value alias.
      * @return alias of the value.
      */
-    public String getValueAlias(GridH2Table table) {
+    private static String getValueAlias(GridH2Table table) {
         GridH2RowDescriptor desc = table.rowDescriptor();
 
         Column[] cols = table.getColumns();
 
-        for (int i = 0; i < cols.length; i++) {
-            if (desc.isValueAliasColumn(i + DEFAULT_COLUMNS_COUNT))
+        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+            if (desc.isValueAliasColumn(i))
                 return cols[i].getName();
         }
 
-        return QueryUtils.KEY_FIELD_NAME;
+        return QueryUtils.VAL_FIELD_NAME;
     }
 
     /**
@@ -156,17 +160,32 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      * @param table table to extract key alias.
      * @return alias of the key.
      */
-    public String getKeyAlias(GridH2Table table) {
+    private static String getKeyAlias(GridH2Table table) {
         GridH2RowDescriptor desc = table.rowDescriptor();
 
         Column[] cols = table.getColumns();
 
-        for (int i = 0; i < cols.length; i++) {
-            if (desc.isKeyAliasColumn(i + DEFAULT_COLUMNS_COUNT))
+        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+            if (desc.isKeyAliasColumn(i))
                 return cols[i].getName();
         }
 
-        return QueryUtils.VAL_FIELD_NAME;
+        return QueryUtils.KEY_FIELD_NAME;
+    }
+
+    /**
+     * Returns column name of column that defines affinity distribution of table's cache parts.
+     *
+     * @param table table by which to get column.
+     * @return affinity column name if got one, _KEY if default or null if not known.
+     */
+    @Nullable private static String getAffinityColumn(GridH2Table table) {
+        IndexColumn affCol = table.getAffinityKeyColumn();
+
+        if (affCol == null)
+            return null;
+
+        return affCol.columnName;
     }
 
     /** {@inheritDoc} */
