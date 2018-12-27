@@ -262,6 +262,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
                 Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
 
+                Assert.AreEqual(cfg.PeerClassloadingEnabled, resCfg.PeerClassloadingEnabled);
+
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);
                 Assert.IsTrue(resCfg.SqlSchemas.Contains("SCHEMA_3"));

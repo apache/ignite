@@ -660,6 +660,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
         if (in.readBoolean())
+            cfg.setPeerClassLoadingEnabled(in.readBoolean());
+        if (in.readBoolean())
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
@@ -1244,6 +1246,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isPeerClassLoadingEnabled());
         if (cfg.getSystemWorkerBlockedTimeout() != null) {
             w.writeBoolean(true);
             w.writeLong(cfg.getSystemWorkerBlockedTimeout());

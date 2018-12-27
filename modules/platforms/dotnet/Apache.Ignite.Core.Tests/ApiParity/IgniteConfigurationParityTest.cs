@@ -39,7 +39,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "IgfsThreadPoolSize",
             "UtilityCacheKeepAliveTime",
             "MBeanServer",
-            "isPeerClassLoadingEnabled",
             "isMarshalLocalJobs",
             "PeerClassLoadingLocalClassPathExclude",
             "LifecycleBeans",

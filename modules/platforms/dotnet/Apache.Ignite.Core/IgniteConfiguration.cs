@@ -216,6 +216,9 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
+        /** Peer classloading enabled */
+        private bool? _p2pEnabled;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -250,6 +253,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="PeerClassloadingEnabled"/> property.
+        /// </summary>
+        public const bool DefaultPeerClassloadingEnabled = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -332,6 +340,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
+            writer.WriteBooleanNullable(_p2pEnabled);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
 
             if (SqlSchemas == null)
@@ -721,6 +730,7 @@ namespace Apache.Ignite.Core
             _authenticationEnabled = r.ReadBooleanNullable();
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
+            _p2pEnabled = r.ReadBooleanNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
@@ -1632,6 +1642,16 @@ namespace Apache.Ignite.Core
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
             set { _mvccVacuumThreadCnt = value; }
+        }
+        
+        /// <summary>
+        /// Is peer classloading enabled. In .NET it's only needed in order to let node join mixed cluster with enabled p2p.
+        /// </summary>
+        [DefaultValue(DefaultPeerClassloadingEnabled)]
+        public bool PeerClassloadingEnabled
+        {
+            get { return _p2pEnabled ?? DefaultPeerClassloadingEnabled; }
+            set { _p2pEnabled = value; }
         }
 
         /// <summary>
