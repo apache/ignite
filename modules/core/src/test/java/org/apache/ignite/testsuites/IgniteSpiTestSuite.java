@@ -37,7 +37,7 @@ public class IgniteSpiTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite SPIs Test Suite");
 
-        // Failover.
+     /*   // Failover.
         suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
 
         // Collision.
@@ -54,11 +54,11 @@ public class IgniteSpiTestSuite {
 
         // Deployment
         suite.addTest(IgniteSpiDeploymentSelfTestSuite.suite());
-
+*/
         // Discovery.
         suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
 
-        // Communication.
+       /* // Communication.
         suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
 
         // All other tests.
@@ -67,7 +67,7 @@ public class IgniteSpiTestSuite {
         // Local Message Listener tests.
         suite.addTest(new JUnit4TestAdapter(GridManagerLocalMessageListenerSelfTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(KeystoreEncryptionSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(KeystoreEncryptionSpiSelfTest.class));*/
 
         return suite;
     }

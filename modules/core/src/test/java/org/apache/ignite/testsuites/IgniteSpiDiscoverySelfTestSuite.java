@@ -82,7 +82,7 @@ public class IgniteSpiDiscoverySelfTestSuite {
 
         TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
 
-        // Tcp.
+       /* // Tcp.
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryVmIpFinderSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryJdbcIpFinderSelfTest.class));
@@ -130,9 +130,11 @@ public class IgniteSpiDiscoverySelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteDiscoveryMassiveNodeFailTest.class));
 
         // Client connect.
-        suite.addTest(new JUnit4TestAdapter(IgniteClientConnectTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientConnectTest.class));*/
+
+        for (int i = 0; i < 30; i++)
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectMassiveShutdownTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryClientSuspensionSelfTest.class));
+       /* suite.addTest(new JUnit4TestAdapter(TcpDiscoveryClientSuspensionSelfTest.class));
 
         // SSL.
         suite.addTest(new JUnit4TestAdapter(TcpDiscoverySslSelfTest.class));
@@ -149,7 +151,7 @@ public class IgniteSpiDiscoverySelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(FilterDataForClientNodeDiscoveryTest.class));
 
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryPendingMessageDeliveryTest.class));
-
+*/
         return suite;
     }
 }

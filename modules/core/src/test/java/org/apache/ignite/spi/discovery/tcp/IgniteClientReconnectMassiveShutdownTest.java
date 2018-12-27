@@ -104,7 +104,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    @Test
+//    @Test
     public void testMassiveServersShutdown2() throws Exception {
         massiveServersShutdown(StopType.SIMULATE_FAIL);
     }
@@ -112,7 +112,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    @Test
+//    @Test
     public void testMassiveServersShutdown3() throws Exception {
         massiveServersShutdown(StopType.CLOSE);
     }
