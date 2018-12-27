@@ -44,7 +44,6 @@ import './modules/configuration/configuration.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
 import './modules/ace.module';
-import './modules/socket.module';
 import './modules/loading/loading.module';
 import servicesModule from './services';
 // endignite
@@ -177,7 +176,6 @@ export default angular.module('ignite-console', [
     'ngSanitize',
     'ngMessages',
     // Third party libs.
-    'btford.socket-io',
     'dndLists',
     'gridster',
     'mgcrea.ngStrap',
@@ -201,7 +199,6 @@ export default angular.module('ignite-console', [
     'ignite-console.input-dialog',
     'ignite-console.user',
     'ignite-console.branding',
-    'ignite-console.socket',
     'ignite-console.agent',
     'ignite-console.nodes',
     'ignite-console.demo',

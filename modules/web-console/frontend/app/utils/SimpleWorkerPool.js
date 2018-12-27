@@ -90,7 +90,7 @@ export default class SimpleWorkerPool {
         worker.postMessage(task.data);
 
         if (this.__dbg)
-            console.timeEnd('Post message');
+            console.timeEnd(`Post message[pool=${this._name}]`);
     }
 
     terminate() {
