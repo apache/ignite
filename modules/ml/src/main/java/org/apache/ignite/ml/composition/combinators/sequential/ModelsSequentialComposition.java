@@ -19,8 +19,7 @@ package org.apache.ignite.ml.composition.combinators.sequential;
 
 import org.apache.ignite.ml.Model;
 
-public class ModelsSequentialComposition<I, O1, O2> implements
-Model<I, O2>{
+public class ModelsSequentialComposition<I, O1, O2> implements Model<I, O2> {
     private Model<I, O1> mdl1;
     private Model<O1, O2> mdl2;
 

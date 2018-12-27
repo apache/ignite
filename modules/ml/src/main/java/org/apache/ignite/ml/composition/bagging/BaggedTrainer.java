@@ -68,23 +68,25 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
             null;
 
         Stream.generate(this::getTrainer).limit(ensembleSize);
-        mappings.stream();
         List<DatasetTrainer<M, L>> trainers = Collections.nCopies(ensembleSize, tr);
 
         // Generate a list of trainers each each copy of original trainer but on its own subspace and subsample.
         List<DatasetTrainer<Model<I, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
-            .mapToObj(mdlIdx ->
-                AdaptableDatasetTrainer.of(trainers.get(mdlIdx))
-                    .afterFeatureExtractor(featureValues -> {
+            .mapToObj(mdlIdx -> {
+                AdaptableDatasetTrainer<I, Double, I, Double, M, L> tr =
+                    AdaptableDatasetTrainer.of(trainers.get(mdlIdx));
+                if (mappings != null) {
+                    tr = tr.afterFeatureExtractor(featureValues -> {
                         int[] mapping = mappings.get(mdlIdx);
                         double[] newFeaturesValues = new double[mapping.length];
                         for (int j = 0; j < mapping.length; j++)
                             newFeaturesValues[j] = featureValues.get(mapping[j]);
 
                         return VectorUtils.of(newFeaturesValues);
-                    })
-                    .withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx))
-            )
+                    });
+                }
+                return tr.withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx));
+            })
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
 
@@ -122,6 +124,9 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel<I> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        if (featureExtractor == null) {
+            System.out.println("xxxxxxx");
+        }
         Model<I, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
         return new BaggedModel<>(fit, aggregator);
     }

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -52,7 +53,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+    public static <M extends Model<Vector, Double>, L> BaggedTrainer<Vector, M, L, DatasetTrainer<M, L>> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
@@ -71,58 +72,19 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+    public static <M extends Model<Vector, Double>, L> BaggedTrainer<Vector, M, L, DatasetTrainer<M, L>> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         int featureVectorSize,
         int featuresSubspaceDim,
         PredictionsAggregator aggregator) {
-        return new DatasetTrainer<ModelsComposition, L>() {
-            /** {@inheritDoc} */
-            @Override public <K, V> ModelsComposition fit(
-                DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
-                    datasetBuilder,
-                    ensembleSize,
-                    subsampleRatio,
-                    featureVectorSize,
-                    featuresSubspaceDim,
-                    featureExtractor,
-                    aggregator,
-                    environment);
-            }
-
-            /** {@inheritDoc} */
-            @Override protected boolean checkState(ModelsComposition mdl) {
-                return mdl.getModels().stream().allMatch(m -> trainer.checkState((M)m));
-            }
-
-            /** {@inheritDoc} */
-            @Override protected <K, V> ModelsComposition updateModel(
-                ModelsComposition mdl,
-                DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.updateModel(
-                        ((ModelWithMapping<Vector, Double, M>)mdl.getModels().get(i)).model(),
-                        db,
-                        fe,
-                        lbExtractor)),
-                    datasetBuilder,
-                    ensembleSize,
-                    subsampleRatio,
-                    featureVectorSize,
-                    featuresSubspaceDim,
-                    featureExtractor,
-                    aggregator,
-                    environment);
-            }
-        };
+        return new BaggedTrainer<>(trainer,
+            aggregator,
+            ensembleSize,
+            subsampleRatio,
+            featureVectorSize,
+            featuresSubspaceDim);
     }
 
     /**

@@ -102,6 +102,9 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
     @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
+        if (featureExtractor == null) {
+            System.out.println("zzzzz");
+        }
         M fit = wrapped.fit(
             datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
             featureExtractor.andThen(afterFeatureExtractor),
@@ -165,20 +168,23 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
             upstreamTransformerBuilder);
     }
 
-    public <L1> AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L1> mapping) {
+    public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
+                IgniteBiFunction<K, V, Vector> fe = featureExtractor.andThen(mapping::mapFeatures);
+                IgniteBiFunction<K, V, L> le = lbExtractor.andThen(mapping::mapLabels);
+
                 return wrapped.fit(datasetBuilder,
-                    featureExtractor.andThen(mapping::mapFeatures),
-                    lbExtractor.andThen(mapping::mapLabels));
+                    fe,
+                    le);
             }
 
             @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return wrapped.update(mdl, datasetBuilder,
                     featureExtractor.andThen(mapping::mapFeatures),
-                    lbExtractor.andThen((IgniteFunction<L, L1>)mapping::mapLabels));
+                    lbExtractor.andThen((IgniteFunction<L, L>)mapping::mapLabels));
             }
 
             @Override protected boolean checkState(M mdl) {
@@ -195,7 +201,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
     public <O1, M1 extends Model<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(DatasetTrainer<M1, L> tr,
         IgniteFunction<AdaptableDatasetModel<I, O, IW, OW, M>, DatasetMapping<L, L>> datasetMapping) {
         IgniteFunction<Model<I, O>, DatasetMapping<L, L>> coercedMapping = mdl ->
-            datasetMapping.apply((AdaptableDatasetModel<I, O, IW, OW, M>)datasetMapping);
+            datasetMapping.apply((AdaptableDatasetModel<I, O, IW, OW, M>)mdl);
         return new TrainersSequentialComposition<>(this,
             tr,
             coercedMapping);

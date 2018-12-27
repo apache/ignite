@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -38,7 +39,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.composition.stacking.StackedModel;
 import org.junit.Rule;
 import org.junit.Test;
