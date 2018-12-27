@@ -537,7 +537,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (mergedMeta == oldMeta) {
                 // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-                if (metaHolder.pendingVersion() == metaHolder.acceptedVersion()) {
+                if (metaHolder.pendingVersion() != metaHolder.acceptedVersion()) {
                     GridFutureAdapter<MetadataUpdateResult> fut =
                         transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
 
