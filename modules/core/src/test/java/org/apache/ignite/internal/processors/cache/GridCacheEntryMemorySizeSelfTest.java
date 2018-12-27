@@ -109,11 +109,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 

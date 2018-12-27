@@ -79,11 +79,6 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
