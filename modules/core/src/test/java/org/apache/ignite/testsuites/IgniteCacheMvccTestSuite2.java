@@ -87,12 +87,16 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */
@@ -160,6 +164,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteNoCustomEventsOnNodeStart.class);
         ignoredTests.add(CacheExchangeMessageDuplicatedStateTest.class);
         ignoredTests.add(IgniteDynamicCacheAndNodeStop.class);
+        ignoredTests.add(IgniteContinuousQueryMetadataUpdateTest.class);
 
         ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);

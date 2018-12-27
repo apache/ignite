@@ -21,18 +21,14 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
@@ -67,8 +63,17 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     private static final Factory[] serviceFactories = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
         Parameters.factory(TestServiceImplExternalizable.class),
-        Parameters.factory(TestServiceImplBinarylizable.class)
     };
+
+    /** */
+    private static boolean isEventDrivenServiceProcessorEnabled;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        isEventDrivenServiceProcessorEnabled = grid(0).context().service() instanceof IgniteServiceProcessor;
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
@@ -93,8 +98,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployNodeSingleton(svcName, (Service)svc);
 
-                // TODO: Waiting for deployment should be removed after IEP-17 completion
-                GridTestUtils.waitForCondition(() -> services.service(svcName) != null, DEPLOYMENT_WAIT_TIMEOUT);
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -110,8 +114,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployClusterSingleton(svcName, (Service)svc);
 
-                // TODO: Waiting for deployment should be removed after IEP-17 completion
-                GridTestUtils.waitForCondition(() -> services.service(svcName) != null, DEPLOYMENT_WAIT_TIMEOUT);
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -145,8 +148,10 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     @Test
     public void testMultipleDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
-            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployMultiple(svcName, (Service)svc, 0, 1);
+
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -176,8 +181,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 services.deploy(cfg);
 
-                // TODO: Waiting for deployment should be removed after IEP-17 completion
-                GridTestUtils.waitForCondition(() -> services.service(svcName) != null, DEPLOYMENT_WAIT_TIMEOUT);
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -263,7 +267,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             // Expect correct value after being read back.
             int r = 1000;
 
-            while(r-- > 0)
+            while (r-- > 0)
                 assertEquals(expected, proxy.getValue());
 
             assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
@@ -277,6 +281,29 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             else
                 services.cancel(SERVICE_NAME);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isCompatible() throws Exception {
+        switch (dataMode) {
+            case SERIALIZABLE:
+            case CUSTOM_SERIALIZABLE:
+            case EXTERNALIZABLE:
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param services Ignite services.
+     * @param srvcName Service name to wait.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    private void waitForServiceDeploymentIfNeeded(IgniteServices services,
+        String srvcName) throws IgniteInterruptedCheckedException {
+        if (!isEventDrivenServiceProcessorEnabled)
+            GridTestUtils.waitForCondition(() -> services.service(srvcName) != null, DEPLOYMENT_WAIT_TIMEOUT);
     }
 
     /**
@@ -298,7 +325,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * Implementation for {@link TestService}
      */
-    public static class TestServiceImpl implements Service, TestService, Serializable {
+    public static class TestServiceImpl implements Service, TestService {
         /** Test value. */
         protected Object val;
 
@@ -355,29 +382,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             val = in.readObject();
-        }
-    }
-
-    /**
-     * Echo service, binarylizable object
-     */
-    @SuppressWarnings({"PublicInnerClass"})
-    public static class TestServiceImplBinarylizable extends TestServiceImpl implements Binarylizable {
-        /**
-         * Default constructor.
-         */
-        public TestServiceImplBinarylizable() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("arg", val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            val = reader.readObject("arg");
         }
     }
 }

@@ -208,6 +208,10 @@ public final class IgniteNodeAttributes {
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
 
+    /** Ignite services processor mode. */
+    public static final String ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = ATTR_PREFIX +
+        ".event.driven.service.processor.enabled";
+
     /**
      * Enforces singleton.
      */

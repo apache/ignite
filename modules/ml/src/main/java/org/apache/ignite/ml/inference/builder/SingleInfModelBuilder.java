@@ -27,8 +27,8 @@ import org.apache.ignite.ml.inference.reader.InfModelReader;
  */
 public class SingleInfModelBuilder implements SyncInfModelBuilder {
     /** {@inheritDoc} */
-    @Override public <I extends Serializable, O extends Serializable> InfModel<I, O> build(InfModelReader reader,
-        InfModelParser<I, O> parser) {
+    @Override public <I extends Serializable, O extends Serializable, M extends InfModel<I, O>> M build(InfModelReader reader,
+        InfModelParser<I, O, M> parser) {
         return parser.parse(reader.read());
     }
 }

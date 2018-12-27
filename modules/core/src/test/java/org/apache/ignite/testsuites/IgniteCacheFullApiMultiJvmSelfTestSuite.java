@@ -43,11 +43,14 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedM
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedOnheapMultiJvmFullApiSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Multi-JVM test suite.
  */
-public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheFullApiMultiJvmSelfTestSuite {
     /**
      * @return Multi-JVM tests suite.
      */

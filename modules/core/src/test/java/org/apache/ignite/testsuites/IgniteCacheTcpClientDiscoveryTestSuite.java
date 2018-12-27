@@ -21,6 +21,8 @@ import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional;
@@ -34,6 +36,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.GridCacheC
 /**
  * Tests a cache with TcpClientDiscovery SPI being enabled.
  */
+@RunWith(AllTests.class)
 public class IgniteCacheTcpClientDiscoveryTestSuite {
     /**
      * @return Suite.

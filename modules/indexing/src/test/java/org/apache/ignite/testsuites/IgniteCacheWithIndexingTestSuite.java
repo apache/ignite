@@ -43,11 +43,14 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLoca
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache tests using indexing.
  */
-public class IgniteCacheWithIndexingTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheWithIndexingTestSuite {
     /**
      * @return Test suite.
      */

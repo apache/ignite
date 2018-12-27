@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache tests using indexing.
  */
-public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheWithIndexingAndPersistenceTestSuite {
     /**
      * @return Test suite.
      */
