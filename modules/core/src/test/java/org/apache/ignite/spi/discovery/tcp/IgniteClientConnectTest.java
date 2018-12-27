@@ -60,7 +60,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestTcpDiscoverySpi disco = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
+        TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
         if (igniteInstanceName.equals("client")) {
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
@@ -69,10 +69,14 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
             disco.setIpFinder(ipFinder);
         }
+        else
+            disco.setIpFinder(sharedStaticIpFinder);
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
         disco.setNetworkTimeout(2000);
+
+        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheConfiguration = new CacheConfiguration()
                 .setName(DEFAULT_CACHE_NAME)

@@ -53,6 +53,17 @@ import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentNonSerializableStaticConfigurationTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentOnClientDisconnectTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorFailTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorLeftTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesFailTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
+import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessIdSelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -118,6 +129,18 @@ public class IgniteKernalSelfTestSuite {
         // Managed Services. Add only unit-tests which do not depend on the implementation of the service processor.
         // Otherwise IgniteServiceGridTestSuite shoud be used.
         suite.addTest(new JUnit4TestAdapter(GridServiceDeploymentCompoundFutureSelfTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(GridServiceDeploymentExceptionPropagationTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorLeftTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorFailTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesLeftTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesFailTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentOnClientDisconnectTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentDiscoveryListenerNotificationOrderTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentNonSerializableStaticConfigurationTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceInfoSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessIdSelfTest.class));
 
         return suite;
     }
