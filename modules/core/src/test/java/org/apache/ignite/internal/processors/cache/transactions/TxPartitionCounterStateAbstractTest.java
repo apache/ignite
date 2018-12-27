@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -669,6 +671,26 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
     }
 
+    protected void assertCountersSame(int partId, boolean withReserveCntr) {
+        PartitionUpdateCounter cntr0 = null;
+
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            PartitionUpdateCounter cntr = counter(partId, ignite.name());
+
+            if (cntr0 != null) {
+                assertEquals("Expecting same counters", cntr0, cntr);
+
+                if (withReserveCntr)
+                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+            }
+
+            cntr0 = cntr;
+        }
+    }
+
     /**
      * The callback order prepares and commits on primary node.
      */
@@ -747,6 +769,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         /**
          * @param backup Backup node.
          * @param idx Index.
+         *
+         * @return {@code True} to stop processing of next transaction in specified order. TODO javadoc all.
          */
         protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
             log.info("TX: backup prepared [name=" + backup.name() + ", txId=" + idx + ']');
