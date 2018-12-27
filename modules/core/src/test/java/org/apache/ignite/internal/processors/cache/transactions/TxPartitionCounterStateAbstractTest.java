@@ -731,6 +731,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         public TwoPhaseCommitTxCallbackAdapter(Map<IgniteEx, int[]> assigns, Map<IgniteEx, int[]> prepares, Map<IgniteEx, int[]> commits, int txCnt) {
             this.txCnt = txCnt;
 
+            // TODO validate orders (all unique)
+
             prepares.forEach((ex, ints) -> assertEquals("Wrong order of prepares", txCnt, ints.length));
 
             commits.forEach((ex, ints) -> assertEquals("Wrong order of commits", txCnt, ints.length));

@@ -53,7 +53,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private static final int[] BACKUP_COMMIT_ORDER = new int[] {2, 1, 0};
 
     /** */
-    private static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int[] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
@@ -103,21 +103,29 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         doTestPartialPrepare_2TxCommitWithRebalance(true, new int[] {1, 0});
     }
 
+    /** */
+    @Test
+    public void testSkipReservedCountersAfterRecovery() throws Exception {
+        doTestSkipReservedCountersAfterRecovery(false);
+    }
+
+    /** */
+    @Test
+    public void testSkipReservedCountersAfterRecovery2() throws Exception {
+        doTestSkipReservedCountersAfterRecovery(true);
+    }
+
     /**
      * Test scenario:
      *
-     * 1. Prepare all txs.
-     * 2. Fail backup1 after first commit.
-     * 3. Start failed backup.
-     * 4. Check if the backup is rebalanced correctly from primary node.
-     * 5. Stop primary node.
-     * 6. Put data to remaining nodes.
-     * 7. Start primary node.
-     * 8. Check if primary is rebalanced correctly from new primary node.
+     * 1. Prepare all txs. 2. Fail backup1 after first commit. 3. Start failed backup. 4. Check if the backup is
+     * rebalanced correctly from primary node. 5. Stop primary node. 6. Put data to remaining nodes. 7. Start primary
+     * node. 8. Check if primary is rebalanced correctly from new primary node.
      *
      * @param skipCheckpoint Skip checkpoint.
      */
-    private void doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(boolean skipCheckpoint) throws Exception {
+    private void doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(
+        boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
@@ -211,13 +219,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
-     * 1. Start 3 transactions.
-     * 2. Assign counters in given order.
-     * 3. Commit tx2.
-     * 4. Prepare tx0 according to mode.
-     * 5. Prepare tx1 according to mode.
-     * 6. Fail primary.
-     * 7. Validate partitions integrity after node left. No holes are expected.
+     * 1. Start 3 transactions. 2. Assign counters in given order. 3. Commit tx2. 4. Prepare tx0 according to mode. 5.
+     * Prepare tx1 according to mode. 6. Fail primary. 7. Validate partitions integrity after node left. No holes are
+     * expected.
      *
      * @param skipCheckpoint
      * @throws Exception
@@ -253,7 +257,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         return false;
                     }
 
-                    @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+                    @Override
+                    public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
                         GridFutureAdapter<?> fut) {
                         int idx = order(nearXidVer);
 
@@ -304,12 +309,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
-     * 1. Start 2 transactions.
-     * 2. Assign counters in given order.
-     * 3. Commit tx1.
-     * 4. Prepare tx0 only on single backup.
-     * 5. Fail primary.
-     * 6. Validate partitions integrity after node left. No holes are expected.
+     * 1. Start 2 transactions. 2. Assign counters in given order. 3. Commit tx1. 4. Prepare tx0 only on single backup.
+     * 5. Fail primary. 6. Validate partitions integrity after node left. No holes are expected.
      *
      * @param skipCheckpoint
      * @throws Exception
@@ -386,19 +387,15 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
-     * 1. Start 2 concurrent txs.
-     * 2. Assign counters in specified order.
-     * 3. Prepare tx0 only on backup2.
-     * 4. Finish tx1 only on backup2.
-     * 5. Stop primary and backup1.
-     * 6. Validate partitions.
-     * 7. Start backup2.
-     * 8. Validate partitions again after (historical) rebalance.
+     * 1. Start 2 concurrent txs. 2. Assign counters in specified order. 3. Prepare tx0 only on backup2. 4. Finish tx1
+     * only on backup2. 5. Stop primary and backup1. 6. Validate partitions. 7. Start backup2. 8. Validate partitions
+     * again after (historical) rebalance.
      *
      * @param skipCheckpoint
      * @throws Exception
      */
-    private void doTestPartialPrepare_2TxCommitWithRebalance(boolean skipCheckpoint, int[] assignOrder) throws Exception {
+    private void doTestPartialPrepare_2TxCommitWithRebalance(boolean skipCheckpoint,
+        int[] assignOrder) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         int[] sizes = new int[] {3, 7};
@@ -506,5 +503,54 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
 
         assertCountersSame(PARTITION_ID, true);
+    }
+
+    /**
+     * Tests when counter reserved on prepare should never be applied after recovery.
+     *
+     * @throws Exception
+     */
+    private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
+        AtomicInteger cnt = new AtomicInteger();
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                Ignite primary = map.get(PARTITION_ID).get1();
+                Ignite backup1 = map.get(PARTITION_ID).get2().get(0);
+                Ignite backup2 = map.get(PARTITION_ID).get2().get(1);
+
+                return new TwoPhaseCommitTxCallbackAdapter(
+                    U.map((IgniteEx)primary, new int[] {0, 1, 2}),
+                    U.map((IgniteEx)primary, new int[] {0, 1, 2}, (IgniteEx)backup1, new int[] {0, 1, 2}, (IgniteEx)backup2, new int[] {0, 1, 2}),
+                    new HashMap<>(),
+                    SIZES.length) {
+                    @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx,
+                        GridFutureAdapter<?> proceedFut) {
+                        if (cnt.getAndIncrement() == 2) {
+                            runAsync(new Runnable() {
+                                @Override public void run() {
+                                    stopAllGrids();
+                                }
+                            });
+                        }
+
+                        return true;
+
+                    }
+                };
+            }
+        }, SIZES);
+
+        waitForTopology(0);
+
+        IgniteEx crd = startGrid(txTops.get(PARTITION_ID).get1().name());
+
+        crd.cluster().active(true);
+
+        PartitionUpdateCounter cntr = counter(PARTITION_ID, txTops.get(PARTITION_ID).get1().name());
+
+        assertEquals(PRELOAD_KEYS_CNT, cntr.get());
+
+        assertEquals(PRELOAD_KEYS_CNT, cntr.hwm());
     }
 }
