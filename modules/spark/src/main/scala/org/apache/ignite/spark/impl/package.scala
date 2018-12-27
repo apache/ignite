@@ -81,9 +81,10 @@ package object impl {
       * @return Cache name for given table.
       */
     def sqlCacheName(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[String] =
-        if (sqlTableInfo(ignite, tabName, schemaName).isDefined)
-            Some(sqlTableInfo(ignite, tabName, schemaName).get.asInstanceOf[QueryTypeDescriptorImpl].cacheName)
-        else None
+		sqlTableInfo(ignite, tabName, schemaName) match {
+			case Some(table) => Some(table.asInstanceOf[QueryTypeDescriptorImpl].cacheName)
+			case None => None
+		}
 
     /**
       * @param ignite Ignite instance.
@@ -126,9 +127,11 @@ package object impl {
       * @return `True` if schema is valid.
       */
     def isValidSchema(table: GridQueryTypeDescriptor, schemaName: Option[String]): Boolean =
-        if (schemaName.isDefined) schemaName.get.equalsIgnoreCase(table.schemaName) ||
-            schemaName.contains(SessionCatalog.DEFAULT_DATABASE)
-        else true
+		schemaName match {
+			case Some(schema) => schema.equalsIgnoreCase(table.schemaName) ||
+				schemaName.equals(SessionCatalog.DEFAULT_DATABASE)
+			case None => true
+		}
 
     /**
       * @param table Table.
