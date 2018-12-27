@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * );
  * </pre>
  * <p>
- * Seconds in Cron expression can be omiited, so the expression above is equivalent to:
+ * Seconds in Cron expression can be omitted, so the expression above is equivalent to:
  * <pre name="code" class="java">
  * "{2, 5} * * * * *"
  * </pre>

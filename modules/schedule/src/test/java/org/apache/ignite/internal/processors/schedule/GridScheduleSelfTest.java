@@ -572,9 +572,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5, times.length);
 
-        for (long time : times) {
+        for (long time : times)
             info("execution at :" + new Date(time));
-        }
     }
 
     /**
