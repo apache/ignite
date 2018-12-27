@@ -186,21 +186,21 @@ public class ConnectionManager {
     public ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachThreadConnection() {
         Thread key = Thread.currentThread();
 
-        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConnection = threadConn.get();
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConn = threadConn.get();
 
         ConcurrentMap<H2ConnectionWrapper, Boolean> connSet = threadConns.get(key);
 
         assert connSet != null;
 
-        Boolean removed = connSet.remove(reusableConnection.object());
+        Boolean rmv = connSet.remove(reusableConn.object());
 
-        assert removed != null;
+        assert rmv != null;
 
         threadConn.remove();
 
-        detachedConns.putIfAbsent(reusableConnection.object(), false);
+        detachedConns.putIfAbsent(reusableConn.object(), false);
 
-        return reusableConnection;
+        return reusableConn;
     }
 
     /**
