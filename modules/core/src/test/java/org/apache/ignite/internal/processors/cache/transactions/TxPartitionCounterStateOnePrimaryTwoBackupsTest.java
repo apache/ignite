@@ -70,13 +70,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPrepareCommitReorderFailBackupAfterTx1Commit() throws Exception {
-        doTestPrepareCommitReorderFailBackupAfterTx1Commit(false);
+        doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(false);
     }
 
     /** */
     @Test
     public void testPrepareCommitReorderFailBackupAfterTx1Commit2() throws Exception {
-        doTestPrepareCommitReorderFailBackupAfterTx1Commit(true);
+        doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(true);
     }
 
     /** */
@@ -94,7 +94,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPrepareCommitReorderTestRebalanceFromPartitionWithMissedUpdatesDueToRollback() throws Exception {
-        doTestPartialPrepare_2TxCommit(true);
+        doTestPartialPrepare_2TxCommitWithRebalance(true);
     }
 
     /**
@@ -111,7 +111,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      *
      * @param skipCheckpoint Skip checkpoint.
      */
-    private void doTestPrepareCommitReorderFailBackupAfterTx1Commit(boolean skipCheckpoint) throws Exception {
+    private void doTestPrepareCommitReorderFailBackupAfterTx1CommitWithRebalance(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
                 @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
@@ -276,6 +276,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             runAsync(new Runnable() {
                                 @Override public void run() {
                                     stopGrid(skipCheckpoint, primary.name());
+
+                                    TestRecordingCommunicationSpi.stopBlockAll();
                                 }
                             });
                         }
@@ -287,8 +289,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
             SIZES);
 
         waitForTopology(3);
-
-        TestRecordingCommunicationSpi.stopBlockAll();
 
         awaitPartitionMapExchange();
 
@@ -334,6 +334,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                                 runAsync(new Runnable() {
                                     @Override public void run() {
                                         stopGrid(skipCheckpoint, primary.name());
+
+                                        TestRecordingCommunicationSpi.stopBlockAll();
                                     }
                                 });
                             }
@@ -354,6 +356,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             runAsync(new Runnable() {
                                 @Override public void run() {
                                     stopGrid(skipCheckpoint, primary.name());
+
+                                    TestRecordingCommunicationSpi.stopBlockAll();
                                 }
                             });
                         }
@@ -365,8 +369,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
             sizes);
 
         waitForTopology(3);
-
-        TestRecordingCommunicationSpi.stopBlockAll();
 
         awaitPartitionMapExchange();
 
@@ -384,7 +386,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * @param skipCheckpoint
      * @throws Exception
      */
-    private void doTestPartialPrepare_2TxCommit(boolean skipCheckpoint) throws Exception {
+    private void doTestPartialPrepare_2TxCommitWithRebalance(boolean skipCheckpoint) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         int[] sizes = new int[] {3, 7};
@@ -431,6 +433,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             if (cntr.getAndIncrement() == 2) {
                                 log.info("Stopping primary [name=" + primary.name() + ']');
 
+                                // TODO FIXME refactor: stopGridAsync
                                 runAsync(new Runnable() {
                                     @Override public void run() {
                                         stopGrid(skipCheckpoint, primary.name());
