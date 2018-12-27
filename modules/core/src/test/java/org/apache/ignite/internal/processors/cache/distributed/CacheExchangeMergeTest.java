@@ -75,6 +75,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Assert;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -1458,11 +1459,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         for (int i = futs.size() - 1; i >= 0; i--) {
             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-            if (fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
+            if (!fut.isMerged() && fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
                 AffinityTopologyVersion resVer = fut.topologyVersion();
 
-                if (resVer != null)
-                    doneVers.add(resVer);
+                Assert.assertNotNull(resVer);
+
+                doneVers.add(resVer);
             }
         }
 
