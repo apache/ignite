@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -290,7 +290,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
                         reservations.put(grpKey, new GridReservable() {
 
                             @Override public boolean reserve() {
-                                throw new GridH2RetryException("test retry exception");
+                                throw H2Utils.retryException("test retry exception");
                             }
 
                             @Override public void release() {

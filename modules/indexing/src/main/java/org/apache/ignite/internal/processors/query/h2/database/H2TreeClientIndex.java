@@ -68,7 +68,7 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected int segmentsCount() {
+    @Override public int segmentsCount() {
         throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 

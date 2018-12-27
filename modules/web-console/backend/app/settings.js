@@ -61,7 +61,7 @@ module.exports = {
             return v === 'true' || v === true;
         };
 
-        return {
+        const settings = {
             agent: {
                 dists: nconf.get('agent:dists') || dfltAgentDists
             },
@@ -69,15 +69,6 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                // eslint-disable-next-line eqeqeq
-                SSLOptions: _isTrue('server:ssl') && {
-                    enable301Redirects: true,
-                    trustXFPHeader: true,
-                    key: fs.readFileSync(nconf.get('server:key')),
-                    cert: fs.readFileSync(nconf.get('server:cert')),
-                    passphrase: nconf.get('server:keyPassphrase')
-                },
-                // eslint-disable-next-line eqeqeq
                 disableSignup: _isTrue('server:disable:signup')
             },
             mail,
@@ -86,5 +77,60 @@ module.exports = {
             sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
             tokenLength: 20
         };
+
+        // Configure SSL options.
+        if (_isTrue('server:ssl')) {
+            const sslOptions = {
+                enable301Redirects: true,
+                trustXFPHeader: true,
+                isServer: true
+            };
+
+            const setSslOption = (name, fromFile = false) => {
+                const v = nconf.get(`server:${name}`);
+
+                const hasOption = !!v;
+
+                if (hasOption)
+                    sslOptions[name] = fromFile ? fs.readFileSync(v) : v;
+
+                return hasOption;
+            };
+
+            const setSslOptionBoolean = (name) => {
+                const v = nconf.get(`server:${name}`);
+
+                if (v)
+                    sslOptions[name] = v === 'true' || v === true;
+            };
+
+            setSslOption('key', true);
+            setSslOption('cert', true);
+            setSslOption('ca', true);
+            setSslOption('passphrase');
+            setSslOption('ciphers');
+            setSslOption('secureProtocol');
+            setSslOption('clientCertEngine');
+            setSslOption('pfx', true);
+            setSslOption('crl');
+            setSslOption('dhparam');
+            setSslOption('ecdhCurve');
+            setSslOption('maxVersion');
+            setSslOption('minVersion');
+            setSslOption('secureOptions');
+            setSslOption('sessionIdContext');
+
+            setSslOptionBoolean('honorCipherOrder');
+            setSslOptionBoolean('requestCert');
+            setSslOptionBoolean('rejectUnauthorized');
+
+            // Special care for case, when user set password for something like "123456".
+            if (sslOptions.passphrase)
+                sslOptions.passphrase = sslOptions.passphrase.toString();
+
+            settings.server.SSLOptions = sslOptions;
+        }
+
+        return settings;
     }
 };
