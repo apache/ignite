@@ -96,13 +96,6 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         createAndFillServerCache();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Test from client node batch merge through JDBC.
      *

@@ -45,10 +45,6 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() {

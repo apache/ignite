@@ -110,11 +110,6 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** */
     @Test
     public void testAlternativeUsageOfIn(){

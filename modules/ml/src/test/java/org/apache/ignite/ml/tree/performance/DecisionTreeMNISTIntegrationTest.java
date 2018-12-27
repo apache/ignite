@@ -53,11 +53,6 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */

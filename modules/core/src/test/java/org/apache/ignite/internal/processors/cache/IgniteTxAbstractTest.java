@@ -100,13 +100,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Keys.
      */
