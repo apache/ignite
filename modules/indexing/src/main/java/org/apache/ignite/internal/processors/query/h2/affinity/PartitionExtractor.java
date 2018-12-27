@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
 public class PartitionExtractor {
     /**
      * Maximum number of partitions to be used in case of between expression.
-     * In case of excessing all partitions will be used.
+     * In case of exceeding all partitions will be used.
      */
     private static final int MAX_PARTITIONS_COUNT_BETWEEN = 16;
 

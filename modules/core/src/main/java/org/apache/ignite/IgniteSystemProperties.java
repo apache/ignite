@@ -1070,7 +1070,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Maximum number of different partitions to be extracted from between expression within sql query.
-     * In case of limit excessing all partitions will be used.
+     * In case of limit exceeding all partitions will be used.
      */
     public static final String IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN =
         "IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN";

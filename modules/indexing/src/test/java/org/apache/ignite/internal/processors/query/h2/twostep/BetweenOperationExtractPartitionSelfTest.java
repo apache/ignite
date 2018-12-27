@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -40,6 +41,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -462,6 +464,34 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     public void testBetweenConstAgainstDifferentColumns() {
         testRangeConstOperator("select * from Organization org where org._key %s %d and org.debtCapital %s %d",
             1, 3, ">=", "<=", 3, EMPTY_PARTITIONS_ARRAY);
+    }
+
+    /**
+     * Check default partitoins limit exceeding.
+     */
+    @Test
+    public void testBetweenPartitionsDefaultLimitExceeding() {
+        // Default limit (16) not exceeded.
+        testBetweenConstOperator(BETWEEN_QRY, 1, 16,  16);
+
+        // Default limit (16) exceeded.
+        testBetweenConstOperator(BETWEEN_QRY, 1, 17,  17, EMPTY_PARTITIONS_ARRAY);
+    }
+
+    /**
+     * Check custom partitoins limit exceeding.
+     */
+    @Test
+    public void testBetweenPartitionsCustomLimitExceeding() {
+        try (GridTestUtils.SystemProperty ignored = new GridTestUtils.
+            SystemProperty(IgniteSystemProperties.IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN, "4")){
+
+            // Default limit (16) not exceeded.
+            testBetweenConstOperator(BETWEEN_QRY, 1, 4, 4);
+
+            // Default limit (16) exceeded.
+            testBetweenConstOperator(BETWEEN_QRY, 1, 5, 5, EMPTY_PARTITIONS_ARRAY);
+        }
     }
 
     /**
