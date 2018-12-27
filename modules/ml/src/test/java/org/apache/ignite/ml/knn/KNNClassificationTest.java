@@ -85,9 +85,9 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        assertTrue(knnMdl.toString().length() > 0);
-        assertTrue(knnMdl.toString(true).length() > 0);
-        assertTrue(knnMdl.toString(false).length() > 0);
+        assertTrue(!knnMdl.toString().isEmpty());
+        assertTrue(!knnMdl.toString(true).isEmpty());
+        assertTrue(!knnMdl.toString(false).isEmpty());
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         assertEquals(knnMdl.apply(firstVector), 1.0);
