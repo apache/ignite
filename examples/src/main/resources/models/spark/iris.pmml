@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_2" version="4.2">
+    <Header description="logistic regression">
+        <Application name="Apache Spark MLlib" version="2.2.0"/>
+        <Timestamp>2018-12-25T15:09:09</Timestamp>
+    </Header>
+    <DataDictionary numberOfFields="5">
+        <DataField name="field_0" optype="continuous" dataType="double"/>
+        <DataField name="field_1" optype="continuous" dataType="double"/>
+        <DataField name="field_2" optype="continuous" dataType="double"/>
+        <DataField name="field_3" optype="continuous" dataType="double"/>
+        <DataField name="target" optype="categorical" dataType="string"/>
+    </DataDictionary>
+    <RegressionModel modelName="logistic regression" functionName="classification" normalizationMethod="logit">
+        <MiningSchema>
+            <MiningField name="field_0" usageType="active"/>
+            <MiningField name="field_1" usageType="active"/>
+            <MiningField name="field_2" usageType="active"/>
+            <MiningField name="field_3" usageType="active"/>
+            <MiningField name="target" usageType="target"/>
+        </MiningSchema>
+        <RegressionTable intercept="0.0" targetCategory="1">
+            <NumericPredictor name="field_0" coefficient="5.84520630732407"/>
+            <NumericPredictor name="field_1" coefficient="-19.36222130270906"/>
+            <NumericPredictor name="field_2" coefficient="5.66074235971065"/>
+            <NumericPredictor name="field_3" coefficient="16.110585062151788"/>
+        </RegressionTable>
+        <RegressionTable intercept="-0.0" targetCategory="0"/>
+    </RegressionModel>
+</PMML>

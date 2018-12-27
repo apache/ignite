@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public class IgniteFunctionInfModelParser<I, O> implements InfModelParser<I, O> {
+public class IgniteFunctionInfModelParser<I, O> implements InfModelParser<I, O, InfModel<I, O>> {
     /** */
     private static final long serialVersionUID = -4624683614990816434L;
 
@@ -64,7 +64,7 @@ public class IgniteFunctionInfModelParser<I, O> implements InfModelParser<I, O> 
         }
 
         /** {@inheritDoc} */
-        @Override public O predict(I input) {
+        @Override public O apply(I input) {
             return function.apply(input);
         }
 
