@@ -36,7 +36,7 @@ set RANDFILE=_path_where_open_ssl_was_unpacked\.rnd
 set OPENSSL_CONF=_path_where_open_ssl_was_unpacked\openssl.cnf
 
 :: Certificates password.
-set PWD=123456
+set PWD=p123456
 
 :: Server.
 set SERVER_DOMAIN_NAME=localhost
