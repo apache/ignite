@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
 
 /**
  *
@@ -44,6 +43,5 @@ public class IgnitePdsTestSuite3 extends TestSuite {
     public static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
         // Rebalancing test
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
     }
 }
