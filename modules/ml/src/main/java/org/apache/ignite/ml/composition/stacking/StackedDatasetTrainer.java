@@ -257,11 +257,19 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         if (aggregatingInputMerger == null)
             throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
 
+        List<DatasetTrainer<Model<IS, IA>, L>> subs = new ArrayList<>();
+        if (submodelInput2AggregatingInputConverter != null) {
+            DatasetTrainer<Model<IS, IS>, L> id = DatasetTrainer.identityTrainer();
+            DatasetTrainer<Model<IS, IA>, L> mappedId = CompositionUtils.unsafeCoerce(
+                AdaptableDatasetTrainer.of(id).afterTrainedModel(submodelInput2AggregatingInputConverter));
+            subs.add(mappedId);
+        }
 
-        SameTrainersParallelComposition<IS, IA, L> composition = new SameTrainersParallelComposition<>(submodelsTrainers);
+        subs.addAll(submodelsTrainers);
+
+        SameTrainersParallelComposition<IS, IA, L> composition = new SameTrainersParallelComposition<>(subs);
 
         IgniteBiFunction<List<Model<IS, IA>>, Vector, Vector> featureMapper = getFeatureExtractorForAggregator(
-            submodelInput2AggregatingInputConverter,
             submodelOutput2VectorConverter,
             vector2SubmodelInputConverter);
 
@@ -299,21 +307,13 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return Feature extractor which will be used for aggregator trainer from original feature extractor.
      */
     private static <IS, IA, K, V> IgniteBiFunction<List<Model<IS, IA>>, Vector, Vector> getFeatureExtractorForAggregator(
-        IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter) {
-        if (submodelInput2AggregatingInputConverter != null)
-            return (List<Model<IS, IA>> subMdls, Vector v) -> {
-                Vector[] vs = subMdls.stream().map(sm ->
-                    applyToVector(sm, submodelOutput2VectorConverter, vector2SubmodelInputConverter, v)).toArray(Vector[]::new);
-                return VectorUtils.concat(v, vs);
-            };
-        else
-            return (List<Model<IS, IA>> subMdls, Vector v) -> {
-                Vector[] vs = subMdls.stream().map(sm ->
-                    applyToVector(sm, submodelOutput2VectorConverter, vector2SubmodelInputConverter, v)).toArray(Vector[]::new);
-                return VectorUtils.concat(vs);
-            };
+        return (List<Model<IS, IA>> subMdls, Vector v) -> {
+            Vector[] vs = subMdls.stream().map(sm ->
+                applyToVector(sm, submodelOutput2VectorConverter, vector2SubmodelInputConverter, v)).toArray(Vector[]::new);
+            return VectorUtils.concat(vs);
+        };
     }
 
     /**

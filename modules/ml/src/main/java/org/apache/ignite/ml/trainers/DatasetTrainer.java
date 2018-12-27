@@ -361,4 +361,23 @@ public abstract class DatasetTrainer<M extends Model, L> {
             super("Cannot train model on empty dataset");
         }
     }
+
+    public static <I, L> DatasetTrainer<Model<I, I>, L> identityTrainer() {
+        return new DatasetTrainer<Model<I, I>, L>() {
+            @Override public <K, V> Model<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+
+            @Override protected boolean checkState(Model<I, I> mdl) {
+                return true;
+            }
+
+            @Override protected <K, V> Model<I, I> updateModel(Model<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+        };
+    }
 }
