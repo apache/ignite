@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -285,6 +286,9 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
         CacheObjectContext objCtx = cctx.cacheObjectContext();
 
         if (rows != null && keys == null) {
+            if (!addDepInfo && ctx.deploymentEnabled())
+                addDepInfo = true;
+
             keys = new KeyCacheObject[rows.size()];
 
             int i = 0;
@@ -317,9 +321,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
                     if (op.isInvoke()) {
                         GridInvokeValue val0 = (GridInvokeValue)val;
 
-                        assert val0 != null;
-
-                        val0.prepareMarshal(cctx);
+                        prepareInvokeValue(cctx, val0);
 
                         values[i] = val0;
                     }
@@ -340,6 +342,23 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
 
         if (filter != null)
             filter.prepareMarshal(cctx);
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param val0 Invoke value.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void prepareInvokeValue(GridCacheContext cctx, GridInvokeValue val0) throws IgniteCheckedException {
+        assert val0 != null && addDepInfo;
+
+        prepareObject(val0.entryProcessor(), cctx.shared());
+
+        for (Object o : val0.invokeArgs())
+            prepareObject(o, cctx.shared());
+
+        val0.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
@@ -373,7 +392,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
         }
 
         if (filter != null)
-            filter.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
+            filter.finishUnmarshal(ctx.cacheContext(cacheId), U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
