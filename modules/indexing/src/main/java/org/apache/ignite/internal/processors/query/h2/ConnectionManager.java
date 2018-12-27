@@ -23,9 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -92,7 +90,7 @@ public class ConnectionManager {
             this::addConnectionToThreaded);
 
     /** Per-thread connections. */
-    private final ConcurrentMap<Thread, Map<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
 
     /** Track detached connections to close on node stop. */
     private final ConcurrentMap<H2ConnectionWrapper, Boolean> detachedConns = new ConcurrentHashMap<>();
@@ -176,7 +174,7 @@ public class ConnectionManager {
     /**
      * @return Per-thread connections (for testing purposes only).
      */
-    public Map<Thread, Map<H2ConnectionWrapper, Boolean>> connectionsForThread() {
+    public Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> connectionsForThread() {
         return threadConns;
     }
 
@@ -190,13 +188,13 @@ public class ConnectionManager {
 
         ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable reusableConnection = threadConn.get();
 
-        Map<H2ConnectionWrapper, Boolean> connSet = threadConns.get(key);
+        ConcurrentMap<H2ConnectionWrapper, Boolean> connSet = threadConns.get(key);
 
         assert connSet != null;
 
-        boolean removed = connSet.remove(reusableConnection.object());
+        Boolean removed = connSet.remove(reusableConnection.object());
 
-        assert removed;
+        assert removed != null;
 
         threadConn.remove();
 
@@ -487,7 +485,7 @@ public class ConnectionManager {
     private void addConnectionToThreaded(H2ConnectionWrapper conn) {
         Thread cur = Thread.currentThread();
 
-        Map<H2ConnectionWrapper, Boolean> setConn = threadConns.get(cur);
+        ConcurrentMap<H2ConnectionWrapper, Boolean> setConn = threadConns.get(cur);
 
         if (setConn == null) {
             setConn = new ConcurrentHashMap<>();
