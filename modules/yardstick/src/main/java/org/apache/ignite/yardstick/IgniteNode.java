@@ -23,10 +23,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
@@ -317,7 +316,7 @@ public class IgniteNode implements BenchmarkServer {
         if (checkIfNoLocalhost(adrSetFromProp)) {
             Collection<InetSocketAddress> newAdrList = new ArrayList<>(adrSetFromProp.size());
 
-            List<String> toDisplay = new ArrayList<>(adrSetFromProp.size());
+            Collection<String> toDisplay = new TreeSet<>();
 
             String portRange = cfg.customProperties().get("PORT_RANGE") != null ?
                 cfg.customProperties().get("PORT_RANGE") :
@@ -329,8 +328,6 @@ public class IgniteNode implements BenchmarkServer {
 
                 toDisplay.add(String.format("/%s:%s", adr, portRange));
             }
-
-            Collections.sort(toDisplay);
 
             BenchmarkUtils.println("Setting SERVER_HOSTS addresses for IpFinder configuration.");
 
