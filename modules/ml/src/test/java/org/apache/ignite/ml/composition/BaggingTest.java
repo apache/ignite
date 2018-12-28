@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
@@ -95,8 +95,8 @@ public class BaggingTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /**
@@ -120,7 +120,7 @@ public class BaggingTest extends TrainerTest {
             new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);
 
-        Double res = mdl.apply(null);
+        Double res = mdl.predict(null);
 
         TestUtils.assertEquals(twoLinearlySeparableClasses.length * subsampleRatio, res, twoLinearlySeparableClasses.length / 10);
     }
@@ -145,7 +145,7 @@ public class BaggingTest extends TrainerTest {
     /**
      * Trainer used to count entries in context or in data.
      */
-    protected static class CountTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+    protected static class CountTrainer extends DatasetTrainer<IgniteModel<Vector, Double>, Double> {
         /**
          * Function specifying which entries to count.
          */
@@ -161,7 +161,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> Model<Vector, Double> fit(
+        @Override public <K, V> IgniteModel<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor,
             IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -177,13 +177,13 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkState(Model<Vector, Double> mdl) {
+        @Override protected boolean checkState(IgniteModel<Vector, Double> mdl) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override protected <K, V> Model<Vector, Double> updateModel(
-            Model<Vector, Double> mdl,
+        @Override protected <K, V> IgniteModel<Vector, Double> updateModel(
+            IgniteModel<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
             return fit(datasetBuilder, featureExtractor, lbExtractor);

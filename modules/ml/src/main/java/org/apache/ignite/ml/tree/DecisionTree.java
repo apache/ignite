@@ -156,7 +156,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             splitPnt.col,
             splitPnt.threshold,
             split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
-            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc)
+            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc),
+            null
         );
     }
 

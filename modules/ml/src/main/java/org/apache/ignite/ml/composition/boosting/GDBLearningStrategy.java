@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.boosting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
@@ -58,7 +58,7 @@ public class GDBLearningStrategy {
     protected IgniteFunction<Double, Double> externalLbToInternalMapping;
 
     /** Base model trainer builder. */
-    protected IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> baseMdlTrainerBuilder;
+    protected IgniteSupplier<DatasetTrainer<? extends IgniteModel<Vector, Double>, Double>> baseMdlTrainerBuilder;
 
     /** Mean label value. */
     protected double meanLbVal;
@@ -84,7 +84,7 @@ public class GDBLearningStrategy {
      * @param lbExtractor Label extractor.
      * @return list of learned models.
      */
-    public <K, V> List<Model<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
+    public <K, V> List<IgniteModel<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         return update(null, datasetBuilder, featureExtractor, lbExtractor);
@@ -102,18 +102,18 @@ public class GDBLearningStrategy {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.
      */
-    public <K,V> List<Model<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    public <K,V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         if (trainerEnvironment == null)
             throw new IllegalStateException("Learning environment builder is not set.");
 
-        List<Model<Vector, Double>> models = initLearningState(mdlToUpdate);
+        List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 
         ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
             externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
 
-        DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
+        DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, models.size());
 
@@ -124,7 +124,7 @@ public class GDBLearningStrategy {
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
+                Double mdlAnswer = currComposition.predict(featureExtractor.apply(k, v));
                 return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
             };
 
@@ -143,8 +143,8 @@ public class GDBLearningStrategy {
      * @param mdlToUpdate Model to update.
      * @return list of already learned models.
      */
-    @NotNull protected List<Model<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
-        List<Model<Vector, Double>> models = new ArrayList<>();
+    @NotNull protected List<IgniteModel<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
+        List<IgniteModel<Vector, Double>> models = new ArrayList<>();
         if(mdlToUpdate != null) {
             models.addAll(mdlToUpdate.getModels());
             WeightedPredictionsAggregator aggregator = (WeightedPredictionsAggregator) mdlToUpdate.getPredictionsAggregator();
@@ -207,7 +207,7 @@ public class GDBLearningStrategy {
      * @param buildBaseMdlTrainer Build base model trainer.
      */
     public GDBLearningStrategy withBaseModelTrainerBuilder(
-        IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> buildBaseMdlTrainer) {
+        IgniteSupplier<DatasetTrainer<? extends IgniteModel<Vector, Double>, Double>> buildBaseMdlTrainer) {
         this.baseMdlTrainerBuilder = buildBaseMdlTrainer;
         return this;
     }
