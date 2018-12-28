@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
@@ -48,7 +48,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** Model for inference. */
-    private final Model<Vector, L> mdl;
+    private final IgniteModel<Vector, L> mdl;
 
     /**
      * Constructs a new instance of local truth with prediction cursor.
@@ -61,7 +61,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
      */
     public LocalLabelPairCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
                                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-                                Model<Vector, L> mdl) {
+                                IgniteModel<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.featureExtractor = featureExtractor;
@@ -100,7 +100,14 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            findNext();
+            if (filter == null) {
+                Map.Entry<K, V> entry = iter.next();
+                this.nextEntry = entry;
+                return iter.hasNext();
+            }
+
+            else
+                findNext();
 
             return nextEntry != null;
         }
@@ -118,7 +125,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
 
             nextEntry = null;
 
-            return new LabelPair<>(lb, mdl.apply(features));
+            return new LabelPair<>(lb, mdl.predict(features));
         }
 
         /**

@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.stacking;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
@@ -56,7 +56,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <O> Type of aggregator output.
  * @param <L> Type of labels.
  */
-public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
+public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     extends DatasetTrainer<StackedModel<IS, IA, O, AM>, L> {
     /** Operator that merges inputs for aggregating model. */
     private IgniteBinaryOperator<IA> aggregatingInputMerger;
@@ -65,7 +65,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     private IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter;
 
     /** Trainers of submodels with converters from and to {@link Vector}. */
-    private List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers;
+    private List<DatasetTrainer<IgniteModel<IS, IA>, L>> submodelsTrainers;
 
     /** Aggregating trainer. */
     private DatasetTrainer<AM, L> aggregatorTrainer;
@@ -89,7 +89,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     public StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
-        List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers,
+        List<DatasetTrainer<IgniteModel<IS, IA>, L>> submodelsTrainers,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter) {
         this.aggregatorTrainer = aggregatorTrainer;
@@ -218,7 +218,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return This object.
      */
     @SuppressWarnings({"unchecked"})
-    public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
+    public <M1 extends IgniteModel<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         // Unsafely coerce DatasetTrainer<M1, L> to DatasetTrainer<Model<IS, IA>, L>, but we fully control
         // usages of this unsafely coerced object, on the other hand this makes work with
@@ -328,11 +328,11 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return Result of application of {@code submodelOutput2VectorConverter . mdl . vector2SubmodelInputConverter}
      * where dot denotes functions composition.
      */
-    private static <IS, IA> Vector applyToVector(Model<IS, IA> mdl,
+    private static <IS, IA> Vector applyToVector(IgniteModel<IS, IA> mdl,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
         Vector v) {
-        return vector2SubmodelInputConverter.andThen(mdl).andThen(submodelOutput2VectorConverter).apply(v);
+        return vector2SubmodelInputConverter.andThen(mdl::predict).andThen(submodelOutput2VectorConverter).apply(v);
     }
 
     /** {@inheritDoc} */

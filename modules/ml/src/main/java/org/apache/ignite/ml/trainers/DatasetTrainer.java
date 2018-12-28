@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <M> Type of a produced model.
  * @param <L> Type of a label.
  */
-public abstract class DatasetTrainer<M extends Model, L> {
+public abstract class DatasetTrainer<M extends IgniteModel, L> {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
@@ -302,7 +302,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
     // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
     public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder  = envBuilder;
-        this.environment = envBuilder.buildForTrainer();
+        environment = envBuilder.buildForTrainer();
 
         return this;
     }

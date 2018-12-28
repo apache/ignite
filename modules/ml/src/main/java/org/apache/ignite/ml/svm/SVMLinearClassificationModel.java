@@ -21,13 +21,13 @@ import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Base class for SVM linear classification model.
  */
-public class SVMLinearClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
+public class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
@@ -94,7 +94,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector input) {
+    @Override public Double predict(Vector input) {
         final double res = input.dot(weights) + intercept;
         if (isKeepingRawLabels)
             return res;

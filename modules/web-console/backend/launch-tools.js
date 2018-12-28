@@ -55,7 +55,11 @@ const _onError = (addr, error) => {
  */
 const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     // Start rest server.
-    const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
+    const sslOptions = settings.server.SSLOptions;
+
+    console.log(`Starting ${sslOptions ? 'HTTPS' : 'HTTP'} server`);
+
+    const srv = sslOptions ? https.createServer(sslOptions) : http.createServer();
 
     srv.listen(settings.server.port, settings.server.host);
 
