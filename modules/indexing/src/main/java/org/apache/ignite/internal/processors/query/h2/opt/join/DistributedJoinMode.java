@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 /**
  * Defines set of distributed join modes.

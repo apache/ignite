@@ -2003,33 +2003,53 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         assert idx >= 0 && idx < exchFuts.size() - 1 : "Invalid exchange futures state [cur=" + idx +
                             ", total=" + exchFuts.size() + ']';
 
-                        final GridDhtPartitionsExchangeFuture prev = exchFuts.get(idx + 1);
+                        GridDhtPartitionsExchangeFuture futureToFetchAffinity = null;
 
-                        assert prev.isDone() && prev.topologyVersion().compareTo(topVer) < 0 : prev;
+                        for (int i = idx + 1; i < exchFuts.size(); i++) {
+                            GridDhtPartitionsExchangeFuture prev = exchFuts.get(i);
+
+                            assert prev.isDone() && prev.topologyVersion().compareTo(topVer) < 0;
+
+                            if (prev.isMerged())
+                                continue;
+
+                            futureToFetchAffinity = prev;
+
+                            break;
+                        }
+
+                        if (futureToFetchAffinity == null)
+                            throw new IgniteCheckedException("Failed to find completed exchange future to fetch affinity.");
 
                         if (log.isDebugEnabled()) {
                             log.debug("Need initialize affinity on coordinator [" +
                                 "cacheGrp=" + desc.cacheOrGroupName() +
-                                "prevAff=" + prev.topologyVersion() + ']');
+                                "prevAff=" + futureToFetchAffinity.topologyVersion() + ']');
                         }
 
-                        GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                            desc.groupId(),
-                            prev.topologyVersion(),
-                            prev.events().discoveryCache());
+                        GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(
+                                cctx,
+                                desc.groupId(),
+                                futureToFetchAffinity.topologyVersion(),
+                                futureToFetchAffinity.events().discoveryCache()
+                        );
 
                         fetchFut.init(false);
 
                         final GridFutureAdapter<AffinityTopologyVersion> affFut = new GridFutureAdapter<>();
 
+                        final GridDhtPartitionsExchangeFuture futureToFetchAffinity0 = futureToFetchAffinity;
+
                         fetchFut.listen(new IgniteInClosureX<IgniteInternalFuture<GridDhtAffinityAssignmentResponse>>() {
                             @Override public void applyx(IgniteInternalFuture<GridDhtAffinityAssignmentResponse> fetchFut)
-                                throws IgniteCheckedException {
-                                fetchAffinity(prev.topologyVersion(),
-                                    prev.events(),
-                                    prev.events().discoveryCache(),
-                                    aff,
-                                    (GridDhtAssignmentFetchFuture)fetchFut);
+                                    throws IgniteCheckedException {
+                                fetchAffinity(
+                                        futureToFetchAffinity0.topologyVersion(),
+                                        futureToFetchAffinity0.events(),
+                                        futureToFetchAffinity0.events().discoveryCache(),
+                                        aff,
+                                        (GridDhtAssignmentFetchFuture)fetchFut
+                                );
 
                                 aff.calculate(topVer, fut.events(), fut.events().discoveryCache());
 

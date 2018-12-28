@@ -100,7 +100,14 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            findNext();
+            if (filter == null) {
+                Map.Entry<K, V> entry = iter.next();
+                this.nextEntry = entry;
+                return iter.hasNext();
+            }
+
+            else
+                findNext();
 
             return nextEntry != null;
         }
