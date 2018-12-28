@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -170,6 +171,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
+        gen.generateAndWrite(GridNearTxEnlistRequest.class);
 //        gen.generateAndWrite(GridCacheMessage.class);
 
 //        gen.generateAndWrite(GridMessageCollection.class);

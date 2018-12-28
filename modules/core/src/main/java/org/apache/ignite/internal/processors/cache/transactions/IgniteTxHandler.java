@@ -1959,6 +1959,7 @@ public class IgniteTxHandler {
                                                 false,
                                                 needOldVal,
                                                 null,
+                                                false,
                                                 false);
 
                                             break;

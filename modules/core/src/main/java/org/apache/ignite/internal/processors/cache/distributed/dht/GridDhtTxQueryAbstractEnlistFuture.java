@@ -67,7 +67,8 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
             null,
             tx,
             timeout,
-            cctx, null);
+            cctx, null,
+            cctx.keepBinary());
     }
 
     /** {@inheritDoc} */

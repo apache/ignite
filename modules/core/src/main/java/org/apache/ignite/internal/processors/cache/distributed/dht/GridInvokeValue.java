@@ -91,9 +91,8 @@ public class GridInvokeValue implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        if (entryProcessor != null && entryProcessorBytes == null) {
+        if (entryProcessor != null && entryProcessorBytes == null)
             entryProcessorBytes = CU.marshal(ctx, entryProcessor);
-        }
 
         if (invokeArgsBytes == null)
             invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
@@ -110,10 +109,8 @@ public class GridInvokeValue implements Message {
         if (entryProcessorBytes != null && entryProcessor == null)
             entryProcessor = U.unmarshal(ctx.marshaller(), entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        if (invokeArgs == null) {
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
-
-        }
+        if (invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /**
@@ -137,7 +134,7 @@ public class GridInvokeValue implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : U.unmarshal(marsh, byteCol[i], U.resolveClassLoader(ldr, ctx.gridConfig()));
+            args[i] = byteCol[i] == null ? null : U.unmarshal(marsh, byteCol[i], ldr);
 
         return args;
     }

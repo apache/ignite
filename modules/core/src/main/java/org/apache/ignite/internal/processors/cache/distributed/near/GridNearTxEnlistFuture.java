@@ -115,6 +115,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** Need previous value flag. */
     private final boolean needRes;
 
+    /** Keep binary flag. */
+    private final boolean keepBinary;
+
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
@@ -124,6 +127,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param sequential Sequential locking flag.
      * @param filter Filter.
      * @param needRes Need previous value flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridNearTxEnlistFuture(GridCacheContext<?, ?> cctx,
         GridNearTxLocal tx,
@@ -132,7 +136,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         int batchSize,
         boolean sequential,
         @Nullable CacheEntryPredicate filter,
-        boolean needRes) {
+        boolean needRes,
+        boolean keepBinary) {
         super(cctx, tx, timeout, null);
 
         this.it = it;
@@ -140,6 +145,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         this.sequential = sequential;
         this.filter = filter;
         this.needRes = needRes;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -454,6 +460,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             batchFut.rows(),
             it.operation(),
             needRes,
+            keepBinary,
             filter
         );
 
@@ -505,7 +512,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             rows,
             it.operation(),
             filter,
-            needRes);
+            needRes,
+            keepBinary);
 
         updateLocalFuture(fut);
 
