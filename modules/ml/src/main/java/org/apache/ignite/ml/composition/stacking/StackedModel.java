@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.composition.stacking;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 
 /**
  * This is just a wrapper class for model produced by {@link StackedDatasetTrainer}.
@@ -27,15 +27,15 @@ import org.apache.ignite.ml.Model;
  * @param <O>
  * @param <AM>
  */
-public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<IS, O> {
-    private Model<IS, O> mdl;
+public class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements IgniteModel<IS, O> {
+    private IgniteModel<IS, O> mdl;
 
-    StackedModel(Model<IS, O> mdl) {
+    StackedModel(IgniteModel<IS, O> mdl) {
         this.mdl = mdl;
     }
 
     /** {@inheritDoc} */
-    @Override public O apply(IS is) {
-        return mdl.apply(is);
+    @Override public O predict(IS is) {
+        return mdl.predict(is);
     }
 }

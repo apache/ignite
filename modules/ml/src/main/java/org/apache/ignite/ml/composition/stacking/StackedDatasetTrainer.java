@@ -244,7 +244,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, featureExtractor, lbExtractor));
     }
 
-    private DatasetTrainer<Model<IS, O>, L> getTrainer() {
+    private DatasetTrainer<IgniteModel<IS, O>, L> getTrainer() {
         // Make sure there is at least one way for submodel input to propagate to aggregator.
         if (submodelInput2AggregatingInputConverter == null && submodelsTrainers.isEmpty())
             throw new IllegalStateException("There should be at least one way for submodels " +
@@ -257,10 +257,10 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         if (aggregatingInputMerger == null)
             throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
 
-        List<DatasetTrainer<Model<IS, IA>, L>> subs = new ArrayList<>();
+        List<DatasetTrainer<IgniteModel<IS, IA>, L>> subs = new ArrayList<>();
         if (submodelInput2AggregatingInputConverter != null) {
-            DatasetTrainer<Model<IS, IS>, L> id = DatasetTrainer.identityTrainer();
-            DatasetTrainer<Model<IS, IA>, L> mappedId = CompositionUtils.unsafeCoerce(
+            DatasetTrainer<IgniteModel<IS, IS>, L> id = DatasetTrainer.identityTrainer();
+            DatasetTrainer<IgniteModel<IS, IA>, L> mappedId = CompositionUtils.unsafeCoerce(
                 AdaptableDatasetTrainer.of(id).afterTrainedModel(submodelInput2AggregatingInputConverter));
             subs.add(mappedId);
         }
@@ -269,7 +269,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
 
         TrainersParallelComposition<IS, IA, L> composition = new TrainersParallelComposition<>(subs);
 
-        IgniteBiFunction<List<Model<IS, IA>>, Vector, Vector> featureMapper = getFeatureExtractorForAggregator(
+        IgniteBiFunction<List<IgniteModel<IS, IA>>, Vector, Vector> featureMapper = getFeatureExtractorForAggregator(
             submodelOutput2VectorConverter,
             vector2SubmodelInputConverter);
 
@@ -278,7 +278,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
             .afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get())
             .andThen(aggregatorTrainer, model -> new DatasetMapping<L, L>() {
                 @Override public Vector mapFeatures(Vector v) {
-                    List<Model<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).models();
+                    List<IgniteModel<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).models();
                     return featureMapper.apply(models, v);
                 }
 
@@ -306,10 +306,10 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      * @param <V> Type of upstream values.
      * @return Feature extractor which will be used for aggregator trainer from original feature extractor.
      */
-    private static <IS, IA, K, V> IgniteBiFunction<List<Model<IS, IA>>, Vector, Vector> getFeatureExtractorForAggregator(
+    private static <IS, IA, K, V> IgniteBiFunction<List<IgniteModel<IS, IA>>, Vector, Vector> getFeatureExtractorForAggregator(
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter) {
-        return (List<Model<IS, IA>> subMdls, Vector v) -> {
+        return (List<IgniteModel<IS, IA>> subMdls, Vector v) -> {
             Vector[] vs = subMdls.stream().map(sm ->
                 applyToVector(sm, submodelOutput2VectorConverter, vector2SubmodelInputConverter, v)).toArray(Vector[]::new);
             return VectorUtils.concat(vs);

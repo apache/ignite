@@ -17,26 +17,26 @@
 
 package org.apache.ignite.ml.composition.combinators.sequential;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 
-public class ModelsSequentialComposition<I, O1, O2> implements Model<I, O2> {
-    private Model<I, O1> mdl1;
-    private Model<O1, O2> mdl2;
+public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2> {
+    private IgniteModel<I, O1> mdl1;
+    private IgniteModel<O1, O2> mdl2;
 
-    public Model<I, O1> firstModel() {
+    public IgniteModel<I, O1> firstModel() {
         return mdl1;
     }
 
-    public Model<O1, O2> secondModel() {
+    public IgniteModel<O1, O2> secondModel() {
         return mdl2;
     }
 
-    public ModelsSequentialComposition(Model<I, O1> mdl1, Model<O1, O2> mdl2) {
+    public ModelsSequentialComposition(IgniteModel<I, O1> mdl1, IgniteModel<O1, O2> mdl2) {
         this.mdl1 = mdl1;
         this.mdl2 = mdl2;
     }
 
-    @Override public O2 apply(I i1) {
-        return mdl1.andThen(mdl2).apply(i1);
+    @Override public O2 predict(I i1) {
+        return mdl1.andThen(mdl2).predict(i1);
     }
 }

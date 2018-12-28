@@ -362,19 +362,19 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         }
     }
 
-    public static <I, L> DatasetTrainer<Model<I, I>, L> identityTrainer() {
-        return new DatasetTrainer<Model<I, I>, L>() {
-            @Override public <K, V> Model<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+    public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
+        return new DatasetTrainer<IgniteModel<I, I>, L>() {
+            @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return x -> x;
             }
 
-            @Override protected boolean checkState(Model<I, I> mdl) {
+            @Override protected boolean checkState(IgniteModel<I, I> mdl) {
                 return true;
             }
 
-            @Override protected <K, V> Model<I, I> updateModel(Model<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return x -> x;
             }

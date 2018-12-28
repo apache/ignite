@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.combinators.sequential;
 
 import java.util.Collections;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -39,16 +39,16 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <L>
  */
 public class SameTrainersSequentialComposition<I, O, L>
-    extends DatasetTrainer<Model<I, O>, L> {
-    private final DatasetTrainer<Model<I, O>, L> initialTrainer;
-    private final IgniteBiFunction<Integer, Model<I, O>, DatasetTrainer<Model<I, O>, L>> trainerProducer;
-    private IgnitePredicate<Model<I, O>> isConverged;
-    private final IgniteFunction<Model<I, O>, DatasetMapping<L, L>> mappingProducer;
+    extends DatasetTrainer<IgniteModel<I, O>, L> {
+    private final DatasetTrainer<IgniteModel<I, O>, L> initialTrainer;
+    private final IgniteBiFunction<Integer, IgniteModel<I, O>, DatasetTrainer<IgniteModel<I, O>, L>> trainerProducer;
+    private IgnitePredicate<IgniteModel<I, O>> isConverged;
+    private final IgniteFunction<IgniteModel<I, O>, DatasetMapping<L, L>> mappingProducer;
     private final IgniteFunction<O, I> f;
 
     public SameTrainersSequentialComposition(
-        IgniteBiFunction<Integer, Model<I, O>, DatasetTrainer<Model<I, O>, L>> trainerProducer,
-        IgniteFunction<Model<I, O>, DatasetMapping<L, L>> mappingProducer,
+        IgniteBiFunction<Integer, IgniteModel<I, O>, DatasetTrainer<IgniteModel<I, O>, L>> trainerProducer,
+        IgniteFunction<IgniteModel<I, O>, DatasetMapping<L, L>> mappingProducer,
         IgniteFunction<O, I> f) {
         initialTrainer = CompositionUtils.unsafeCoerce(trainerProducer.apply(0, null));
         this.trainerProducer = trainerProducer;
@@ -56,9 +56,9 @@ public class SameTrainersSequentialComposition<I, O, L>
         this.f = f;
     }
 
-    public static <I, O, L> SameTrainersSequentialComposition<I, O, L> of(DatasetTrainer<? extends Model<I, O>, L> tr1,
-        DatasetTrainer<? extends Model<I, O>, L> tr2,
-        IgniteFunction<Model<I, O>, DatasetMapping<L, L>> mappingProducer,
+    public static <I, O, L> SameTrainersSequentialComposition<I, O, L> of(DatasetTrainer<? extends IgniteModel<I, O>, L> tr1,
+        DatasetTrainer<? extends IgniteModel<I, O>, L> tr2,
+        IgniteFunction<IgniteModel<I, O>, DatasetMapping<L, L>> mappingProducer,
         IgniteFunction<O, I> f) {
         return new SameTrainersSequentialComposition<>(
             (integer, model) ->
@@ -68,12 +68,12 @@ public class SameTrainersSequentialComposition<I, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
-        DatasetTrainer<Model<I, O>, L> curTrainer = initialTrainer;
+        DatasetTrainer<IgniteModel<I, O>, L> curTrainer = initialTrainer;
         int i = 0;
-        Model<I, O> curMdl = curTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+        IgniteModel<I, O> curMdl = curTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
         SameModelsSequentialComposition<I, O> curComposition = new SameModelsSequentialComposition<>(
             f,
             Collections.singletonList(curMdl)
@@ -95,13 +95,13 @@ public class SameTrainersSequentialComposition<I, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(Model<I, O> mdl) {
+    @Override protected boolean checkState(IgniteModel<I, O> mdl) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> Model<I, O> updateModel(
-        Model<I, O> mdl,
+    @Override protected <K, V> IgniteModel<I, O> updateModel(
+        IgniteModel<I, O> mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return null;

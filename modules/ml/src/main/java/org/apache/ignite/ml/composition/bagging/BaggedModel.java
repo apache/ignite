@@ -18,26 +18,27 @@
 package org.apache.ignite.ml.composition.bagging;
 
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 // TODO: write about reason why it is not general.
-public class BaggedModel<I> implements Model<I, Double> {
-    private Model<I, List<Double>> mdl;
+public class BaggedModel<I> implements IgniteModel<I, Double> {
+    private IgniteModel<I, List<Double>> mdl;
     private PredictionsAggregator aggregator;
 
-    BaggedModel(Model<I, List<Double>> mdl, PredictionsAggregator aggregator) {
+    BaggedModel(IgniteModel<I, List<Double>> mdl, PredictionsAggregator aggregator) {
         this.mdl = mdl;
         this.aggregator = aggregator;
     }
 
-    Model<I, List<Double>> model() {
+    IgniteModel<I, List<Double>> model() {
         return mdl;
     }
 
-    @Override public Double apply(I i) {
+    /** {@inheritDoc} */
+    @Override public Double predict(I i) {
         return mdl.andThen((IgniteFunction<List<Double>, Double>)l ->
-            aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray())).apply(i);
+            aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray())).predict(i);
     }
 }

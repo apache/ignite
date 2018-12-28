@@ -196,9 +196,9 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
         }).beforeTrainedModel(before).afterTrainedModel(after);
     }
 
-    public <O1, M1 extends Model<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(DatasetTrainer<M1, L> tr,
+    public <O1, M1 extends IgniteModel<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(DatasetTrainer<M1, L> tr,
         IgniteFunction<AdaptableDatasetModel<I, O, IW, OW, M>, DatasetMapping<L, L>> datasetMapping) {
-        IgniteFunction<Model<I, O>, DatasetMapping<L, L>> coercedMapping = mdl ->
+        IgniteFunction<IgniteModel<I, O>, DatasetMapping<L, L>> coercedMapping = mdl ->
             datasetMapping.apply((AdaptableDatasetModel<I, O, IW, OW, M>)mdl);
         return new TrainersSequentialComposition<>(this,
             tr,

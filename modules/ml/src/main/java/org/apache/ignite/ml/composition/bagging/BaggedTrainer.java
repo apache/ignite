@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
@@ -38,7 +38,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
-public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTrainer<M, L>> extends
+public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends DatasetTrainer<M, L>> extends
     DatasetTrainer<BaggedModel<I>, L> {
     private final DatasetTrainer<M, L> tr;
     private final PredictionsAggregator aggregator;
@@ -58,7 +58,7 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
         this.featureSubspaceDim = featureSubspaceDim;
     }
 
-    private DatasetTrainer<Model<I, List<Double>>, L> getTrainer() {
+    private DatasetTrainer<IgniteModel<I, List<Double>>, L> getTrainer() {
         List<int[]> mappings = (featuresVectorSize > 0 && featureSubspaceDim != featuresVectorSize) ?
             IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
@@ -72,7 +72,7 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
         List<DatasetTrainer<M, L>> trainers = Collections.nCopies(ensembleSize, tr);
 
         // Generate a list of trainers each each copy of original trainer but on its own subspace and subsample.
-        List<DatasetTrainer<Model<I, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
+        List<DatasetTrainer<IgniteModel<I, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
             .mapToObj(mdlIdx -> {
                 AdaptableDatasetTrainer<I, Double, I, Double, M, L> tr =
                     AdaptableDatasetTrainer.of(trainers.get(mdlIdx));
@@ -127,14 +127,14 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel<I> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        Model<I, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        IgniteModel<I, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
         return new BaggedModel<>(fit, aggregator);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel<I> update(BaggedModel<I> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        Model<I, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
+        IgniteModel<I, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
         return new BaggedModel<>(updated, aggregator);
     }
 

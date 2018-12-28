@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.trainers;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
@@ -104,10 +104,10 @@ public class StackingTest extends TrainerTest {
                 (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                 (k, v) -> v[v.length - 1]);
 
-        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
-        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(0.0, 1.0)), 0.3);
-        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(1.0, 0.0)), 0.3);
-        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(1.0, 1.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(1.0, 0.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(1.0, 1.0)), 0.3);
     }
 
     /**
@@ -149,10 +149,10 @@ public class StackingTest extends TrainerTest {
                 (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                 (k, v) -> v[v.length - 1]);
 
-        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
-        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(0.0, 1.0)), 0.3);
-        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(1.0, 0.0)), 0.3);
-        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(1.0, 1.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(1.0, 0.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(1.0, 1.0)), 0.3);
     }
 
     /**
@@ -161,7 +161,7 @@ public class StackingTest extends TrainerTest {
      */
     @Test
     public void testINoWaysOfPropagation() {
-        StackedDatasetTrainer<Void, Void, Void, Model<Void, Void>, Void> trainer =
+        StackedDatasetTrainer<Void, Void, Void, IgniteModel<Void, Void>, Void> trainer =
             new StackedDatasetTrainer<>();
         thrown.expect(IllegalStateException.class);
         trainer.fit(null, null, null);

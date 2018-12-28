@@ -19,32 +19,32 @@ package org.apache.ignite.ml.composition.combinators.sequential;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 public class SameModelsSequentialComposition<I, O>
-    implements Model<I, O> {
+    implements IgniteModel<I, O> {
     private final IgniteFunction<O, I> f;
-    private final List<Model<I, O>> mdls;
-    private final IgniteFunction<I, O> finalMdl;
+    private final List<IgniteModel<I, O>> mdls;
+    private final IgniteModel<I, O> finalMdl;
 
-    public SameModelsSequentialComposition(IgniteFunction<O, I> f, List<? extends Model<I, O>> mdls) {
+    public SameModelsSequentialComposition(IgniteFunction<O, I> f, List<? extends IgniteModel<I, O>> mdls) {
         this.f = f;
         this.mdls = new ArrayList<>(mdls);
-        IgniteFunction<I, O> fn = mdls.get(0);
+        IgniteModel<I, O> fn = mdls.get(0);
 
-        for (Model<I, O> m : mdls.subList(1, mdls.size()))
-            fn = fn.andThenClosed(f).andThenClosed(m);
+        for (IgniteModel<I, O> m : mdls.subList(1, mdls.size()))
+            fn = fn.andThen(f).andThen(m);
 
         finalMdl = fn;
     }
 
     /** {@inheritDoc} */
-    @Override public O apply(I i) {
-        return finalMdl.apply(i);
+    @Override public O predict(I i) {
+        return finalMdl.predict(i);
     }
 
-    public SameModelsSequentialComposition<I, O> addModel(Model<I, O> mdl) {
+    public SameModelsSequentialComposition<I, O> addModel(IgniteModel<I, O> mdl) {
         mdls.add(mdl);
 
         return this;

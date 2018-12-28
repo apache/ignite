@@ -20,8 +20,7 @@ package org.apache.ignite.ml.composition.combinators.parallel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.IgniteModel;
 
 /**
  * Parallel composition of models.
@@ -30,21 +29,21 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <I>
  * @param <O>
  */
-public class ModelsParallelComposition<I, O> implements Model<I, List<O>> {
-    private final List<Model<I, O>> models;
+public class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> {
+    private final List<IgniteModel<I, O>> models;
 
-    public ModelsParallelComposition(List<Model<I, O>> models) {
+    public ModelsParallelComposition(List<IgniteModel<I, O>> models) {
         this.models = models;
     }
 
-    @Override public List<O> apply(I i) {
+    @Override public List<O> predict(I i) {
         return models
             .stream()
-            .map(m -> m.apply(i))
+            .map(m -> m.predict(i))
             .collect(Collectors.toList());
     }
 
-    public List<Model<I, O>> models() {
+    public List<IgniteModel<I, O>> models() {
         return new ArrayList<>(models);
     }
 }

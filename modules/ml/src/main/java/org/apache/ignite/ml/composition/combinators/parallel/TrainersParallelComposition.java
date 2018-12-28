@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.combinators.parallel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -46,9 +46,9 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <O> Type of trainers outputs.
  * @param <L> Type of dataset labels.
  */
-public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<Model<I, List<O>>, L> {
+public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteModel<I, List<O>>, L> {
     /** List of trainers. */
-    private final List<DatasetTrainer<Model<I, O>, L>> trainers;
+    private final List<DatasetTrainer<IgniteModel<I, O>, L>> trainers;
 
     /**
      * Construct an instance of this class from a list of trainers.
@@ -57,26 +57,26 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<Model<I
      * @param <M> Type of mode
      * @param <T>
      */
-    public <M extends Model<I, O>, T extends DatasetTrainer<? extends Model<I, O>, L>> TrainersParallelComposition(
+    public <M extends IgniteModel<I, O>, T extends DatasetTrainer<? extends IgniteModel<I, O>, L>> TrainersParallelComposition(
         List<T> trainers) {
         this.trainers = trainers.stream().map(CompositionUtils::unsafeCoerce).collect(Collectors.toList());
     }
 
-    public static <I, O, M extends Model<I, O>, T extends DatasetTrainer<M, L>, L> TrainersParallelComposition<I, O, L> of(List<T> trainers) {
-        List<DatasetTrainer<Model<I, O>, L>> trs =
+    public static <I, O, M extends IgniteModel<I, O>, T extends DatasetTrainer<M, L>, L> TrainersParallelComposition<I, O, L> of(List<T> trainers) {
+        List<DatasetTrainer<IgniteModel<I, O>, L>> trs =
             trainers.stream().map(CompositionUtils::unsafeCoerce).collect(Collectors.toList());
 
         return new TrainersParallelComposition<>(trs);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        List<IgniteSupplier<Model<I, O>>> tasks = trainers.stream()
-            .map(tr -> (IgniteSupplier<Model<I, O>>)(() -> tr.fit(datasetBuilder, featureExtractor, lbExtractor)))
+        List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
+            .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder, featureExtractor, lbExtractor)))
             .collect(Collectors.toList());
 
-        List<Model<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
+        List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
@@ -84,13 +84,13 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<Model<I
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<I, List<O>> update(Model<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Unsafe.
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.models().size() == trainers.size();
-        List<Model<I, O>> mdls = new ArrayList<>();
+        List<IgniteModel<I, O>> mdls = new ArrayList<>();
 
         for (int i = 0; i < trainers.size(); i++)
             mdls.add(trainers.get(i).update(typedMdl.models().get(i), datasetBuilder, featureExtractor, lbExtractor));
@@ -99,13 +99,13 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<Model<I
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(Model<I, List<O>> mdl) {
+    @Override protected boolean checkState(IgniteModel<I, List<O>> mdl) {
         // Never called.
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> Model<I, List<O>> updateModel(Model<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
         return null;
