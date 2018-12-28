@@ -15,15 +15,28 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
-import './style.scss';
+import {default as Auth} from '../../modules/user/Auth.service';
+import {default as MessagesFactory} from '../../services/Messages.service';
 
-/** @type {ng.IComponentOptions} */
-export default {
-    controller,
-    template,
-    bindings: {
-        activationToken: '@?'
+export default class PageSignupConfirmation {
+    email: string;
+
+    static $inject = ['Auth', 'IgniteMessages', '$element'];
+
+    constructor(private auth: Auth, private messages: ReturnType<typeof MessagesFactory>, private el: JQLite) {
     }
-};
+
+    $postLink() {
+        this.el.addClass('public-page');
+    }
+
+    async resendConfirmation() {
+        try {
+            await this.auth.resendSignupConfirmation(this.email);
+            this.messages.showInfo('Signup confirmation sent, check your email');
+        }
+        catch (e) {
+            this.messages.showError(e);
+        }
+    }
+}

@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
-import './style.scss';
-
-/** @type {ng.IComponentOptions} */
-export default {
-    controller,
-    template,
-    bindings: {
-        activationToken: '@?'
-    }
-};
+page-signup-confirmation {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
