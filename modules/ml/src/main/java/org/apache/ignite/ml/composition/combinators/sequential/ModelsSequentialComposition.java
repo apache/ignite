@@ -19,23 +19,50 @@ package org.apache.ignite.ml.composition.combinators.sequential;
 
 import org.apache.ignite.ml.IgniteModel;
 
+/**
+ * Sequential composition of models.
+ * Sequential composition is a model consisting of two models {@code mdl1 :: I -> O1, mdl2 :: O1 -> O2} with prediction
+ * corresponding to application of composition {@code mdl1 `andThen` mdl2} to input.
+ *
+ * @param <I> Type of input of the first model.
+ * @param <O1> Type of output of the first model (and input of second).
+ * @param <O2> Type of output of the second model.
+ */
 public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2> {
+    /** First model. */
     private IgniteModel<I, O1> mdl1;
+
+    /** Second model. */
     private IgniteModel<O1, O2> mdl2;
 
-    public IgniteModel<I, O1> firstModel() {
-        return mdl1;
-    }
-
-    public IgniteModel<O1, O2> secondModel() {
-        return mdl2;
-    }
-
+    /**
+     * Construct instance of this class from two given models.
+     *
+     * @param mdl1 First model.
+     * @param mdl2 Second model.
+     */
     public ModelsSequentialComposition(IgniteModel<I, O1> mdl1, IgniteModel<O1, O2> mdl2) {
         this.mdl1 = mdl1;
         this.mdl2 = mdl2;
     }
 
+    /**
+     * Get first model.
+     * @return First model.
+     */
+    public IgniteModel<I, O1> firstModel() {
+        return mdl1;
+    }
+
+    /**
+     * Get second model.
+     * @return Second model.
+     */
+    public IgniteModel<O1, O2> secondModel() {
+        return mdl2;
+    }
+
+    /** {@inheritDoc} */
     @Override public O2 predict(I i1) {
         return mdl1.andThen(mdl2).predict(i1);
     }
