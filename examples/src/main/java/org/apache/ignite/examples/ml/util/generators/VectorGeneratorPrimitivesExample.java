@@ -20,6 +20,8 @@ package org.apache.ignite.examples.ml.util.generators;
 import java.io.IOException;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.primitives.scalar.DiscreteRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives;
 
@@ -59,5 +61,14 @@ public class VectorGeneratorPrimitivesExample {
             }).rotate(Math.PI / 2);
 
         Tracer.showClassificationDatasetHtml("Axe blade", axeBlade.asDataStream(), 1500, 0, 1, false);
+
+        DataStreamGenerator ringAndGauss = fullRing.concat(gauss).asDataStream();
+        Tracer.showClassificationDatasetHtml("Ring and gauss [x1, x2]", ringAndGauss, 1500, 0, 1, false);
+        Tracer.showClassificationDatasetHtml("Ring and gauss [x2, x3]", ringAndGauss, 1500, 1, 2, false);
+        Tracer.showClassificationDatasetHtml("Ring and gauss [x3, x4]", ringAndGauss, 1500, 2, 3, false);
+        Tracer.showClassificationDatasetHtml("Ring and gauss [x4, x1]", ringAndGauss, 1500, 3, 0, false);
+
+        VectorGenerator noisifiedRing = fullRing.noisify(new DiscreteRandomProducer(0.1, 0.2, 0.3, 0.4));
+        Tracer.showClassificationDatasetHtml("Noisified ring", noisifiedRing.asDataStream(), 1500, 0, 1, false);
     }
 }
