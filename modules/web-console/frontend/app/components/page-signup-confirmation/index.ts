@@ -15,15 +15,9 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
-import './style.scss';
+import {component} from './component';
+import {state} from './state';
 
-/** @type {ng.IComponentOptions} */
-export default {
-    controller,
-    template,
-    bindings: {
-        activationToken: '@?'
-    }
-};
+export default angular.module('ignite-console.page-signup-confirmation', [])
+    .run(state)
+    .component('pageSignupConfirmation', component);
