@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -3464,6 +3465,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                         }
                                         catch (Throwable t) {
                                             U.error(log, "Failed to initialize new coordinator future.");
+
+                                            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), t);
 
                                             throw t;
                                         }
