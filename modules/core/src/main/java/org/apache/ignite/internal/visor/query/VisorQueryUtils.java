@@ -40,6 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  */
 public class VisorQueryUtils {
     /** How long to store future with query in node local map: 5 minutes. */
+    public static final Integer GET_DELAY = 0;
+
+    /** How long to store future with query in node local map: 5 minutes. */
     public static final Integer RMV_DELAY = 5 * 60 * 1000;
 
     /** Prefix for node local key for SQL queries. */
@@ -266,6 +269,31 @@ public class VisorQueryUtils {
         }
 
         return rows;
+    }
+
+    /**
+     * @param qryId Unique query result id.
+     */
+    public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(GET_DELAY) {
+            @Override public void onTimeout() {
+                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+
+                VisorQueryHolder holder = storage.get(qryId);
+
+                if (holder != null) {
+                    VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
+
+                    try {
+                        if (cur.hasNext())
+                            holder.setRows(fetchSqlQueryRows(cur, holder.getPageSize()));
+                    }
+                    catch (Throwable e) {
+                        holder.setErr(e);
+                    }
+                }
+            }
+        });
     }
 
     /**
