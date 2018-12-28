@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
@@ -42,60 +42,67 @@ import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteCh
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheFailoverTestSuite.DynamicSuite.class)
 public class IgniteCacheFailoverTestSuite {
     /**
      * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Tests don't include in the execution.
+     * @param ignoredTests Tests to ignore.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicInvalidPartitionHandlingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionDistributionTest.class));
+        suite.add(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
+        suite.add(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
+        suite.add(GridCacheRebalancingPartitionDistributionTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
+        GridTestUtils./* todo rework */addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
 
         // Failure consistency tests.
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientRemoveFailureTest.class));
+        suite.add(GridCacheAtomicRemoveFailureTest.class);
+        suite.add(GridCacheAtomicClientRemoveFailureTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtAtomicRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheDhtClientRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearRemoveFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineUpCacheRemoveFailoverTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineDownCacheRemoveFailoverTest.class));
+        suite.add(GridCacheDhtAtomicRemoveFailureTest.class);
+        suite.add(GridCacheDhtRemoveFailureTest.class);
+        suite.add(GridCacheDhtClientRemoveFailureTest.class);
+        suite.add(GridCacheNearRemoveFailureTest.class);
+        suite.add(GridCacheAtomicNearRemoveFailureTest.class);
+        suite.add(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
+        suite.add(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicNodeJoinTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheTxNodeJoinTest.class));
+        suite.add(IgniteCacheAtomicNodeJoinTest.class);
+        suite.add(IgniteCacheTxNodeJoinTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheTxNearDisabledPutGetRestartTest.class));
+        suite.add(IgniteCacheTxNearDisabledPutGetRestartTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheSizeFailoverTest.class));
+        suite.add(IgniteCacheSizeFailoverTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteAtomicLongChangingTopologySelfTest.class));
+        suite.add(IgniteAtomicLongChangingTopologySelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheTxNodeFailureSelfTest.class));
+        suite.add(GridCacheTxNodeFailureSelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(AtomicPutAllChangingTopologyTest.class));
+        suite.add(AtomicPutAllChangingTopologyTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

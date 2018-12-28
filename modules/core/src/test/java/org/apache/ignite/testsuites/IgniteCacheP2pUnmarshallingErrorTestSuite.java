@@ -17,34 +17,36 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNearErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheP2pUnmarshallingErrorTestSuite.DynamicSuite.class)
 public class IgniteCacheP2pUnmarshallingErrorTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Tests don't include in the execution.
+     * @param ignoredTests Tests to ignore.
      * @return Test suite.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingErrorTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingNearErrorTest.class, ignoredTests);
@@ -52,5 +54,12 @@ public class IgniteCacheP2pUnmarshallingErrorTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingTxErrorTest.class, ignoredTests);
 
         return suite;
+    }
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

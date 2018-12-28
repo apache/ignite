@@ -17,33 +17,42 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCamelStreamerTestSuite.DynamicSuite.class)
 public class IgniteCamelStreamerTestSuite {
     /**
      * @return {@link IgniteCamelStreamerTest} test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests List of ignored tests.
+     * @param ignoredTests Tests to ignore.
      * @return Test suite.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCamelStreamer Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCamelStreamerTest.class));
+        suite.add(IgniteCamelStreamerTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

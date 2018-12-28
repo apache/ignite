@@ -17,27 +17,36 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.stream.socket.SocketStreamerSelfTest;
 import org.apache.ignite.stream.socket.SocketStreamerUnmarshalVulnerabilityTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Stream test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteStreamSelfTestSuite.DynamicSuite.class)
 public class IgniteStreamSelfTestSuite {
     /**
      * @return Stream tests suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Stream Test Suite");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(SocketStreamerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SocketStreamerUnmarshalVulnerabilityTest.class));
+        suite.add(SocketStreamerSelfTest.class);
+        suite.add(SocketStreamerUnmarshalVulnerabilityTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

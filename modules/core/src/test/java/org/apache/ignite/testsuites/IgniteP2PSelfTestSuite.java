@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
@@ -41,48 +41,57 @@ import org.apache.ignite.p2p.P2PStreamingClassLoaderTest;
 import org.apache.ignite.p2p.SharedDeploymentTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * P2P test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteP2PSelfTestSuite.DynamicSuite.class)
 public class IgniteP2PSelfTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @return P2P tests suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite P2P Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(GridP2PDoubleDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PHotRedeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PClassLoadingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PUndeploySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PRemoteClassLoadersSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PNodeLeftSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PDifferentClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PSameClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PJobClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PRecursionTaskSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PLocalDeploymentSelfTest.class));
-        //suite.addTest(new JUnit4TestAdapter(GridP2PTestTaskExecutionTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PTimeoutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PMissedResourceCacheSizeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PContinuousDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DeploymentClassLoaderCallableTest.class));
-        suite.addTest(new JUnit4TestAdapter(P2PStreamingClassLoaderTest.class));
-        suite.addTest(new JUnit4TestAdapter(SharedDeploymentTest.class));
-        suite.addTest(new JUnit4TestAdapter(P2PScanQueryUndeployTest.class));
+        suite.add(GridP2PDoubleDeploymentSelfTest.class);
+        suite.add(GridP2PHotRedeploymentSelfTest.class);
+        suite.add(GridP2PClassLoadingSelfTest.class);
+        suite.add(GridP2PUndeploySelfTest.class);
+        suite.add(GridP2PRemoteClassLoadersSelfTest.class);
+        suite.add(GridP2PNodeLeftSelfTest.class);
+        suite.add(GridP2PDifferentClassLoaderSelfTest.class);
+        suite.add(GridP2PSameClassLoaderSelfTest.class);
+        suite.add(GridP2PJobClassLoaderSelfTest.class);
+        suite.add(GridP2PRecursionTaskSelfTest.class);
+        suite.add(GridP2PLocalDeploymentSelfTest.class);
+        //suite.add(GridP2PTestTaskExecutionTest.class);
+        suite.add(GridP2PTimeoutSelfTest.class);
+        suite.add(GridP2PMissedResourceCacheSizeSelfTest.class);
+        suite.add(GridP2PContinuousDeploymentSelfTest.class);
+        suite.add(DeploymentClassLoaderCallableTest.class);
+        suite.add(P2PStreamingClassLoaderTest.class);
+        suite.add(SharedDeploymentTest.class);
+        suite.add(P2PScanQueryUndeployTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;
+    }
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

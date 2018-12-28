@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2ByteOrderSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
@@ -33,28 +35,28 @@ import org.apache.ignite.marshaller.MarshallerEnumDeadlockMultiJvmTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.Set;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for all marshallers.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteMarshallerSelfTestSuite.DynamicSuite.class)
 public class IgniteMarshallerSelfTestSuite {
     /**
      * @return Kernal test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
+     * @param ignoredTests Tests to ignore.
      * @return Test suite.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Marshaller Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite, GridUnsafeDataOutputArraySizingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridJdkMarshallerSelfTest.class, ignoredTests);
@@ -71,5 +73,12 @@ public class IgniteMarshallerSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, MarshallerEnumDeadlockMultiJvmTest.class, ignoredTests);
 
         return suite;
+    }
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

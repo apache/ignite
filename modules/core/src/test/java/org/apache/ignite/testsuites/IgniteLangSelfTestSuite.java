@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.util.future.GridCompoundFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
@@ -47,53 +47,62 @@ import org.apache.ignite.lang.utils.IgniteOffheapReadWriteLockSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Ignite language test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteLangSelfTestSuite.DynamicSuite.class)
 public class IgniteLangSelfTestSuite {
     /**
      * @return Kernal test suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Lang Test Suite");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(GridTupleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedPriorityQueueSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridByteArrayListSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLeanMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLeanIdentitySetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridListSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSetWrapperSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentWeakHashSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMetadataAwareAdapterSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSetWrapperSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteUuidSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridXSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedConcurrentOrderedMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedConcurrentLinkedHashMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedDequeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCircularBufferSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedHashMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedHashMapMultiThreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridStripedLockSelfTest.class));
+        suite.add(GridTupleSelfTest.class);
+        suite.add(GridBoundedPriorityQueueSelfTest.class);
+        suite.add(GridByteArrayListSelfTest.class);
+        suite.add(GridLeanMapSelfTest.class);
+        suite.add(GridLeanIdentitySetSelfTest.class);
+        suite.add(GridListSetSelfTest.class);
+        suite.add(GridSetWrapperSelfTest.class);
+        suite.add(GridConcurrentWeakHashSetSelfTest.class);
+        suite.add(GridMetadataAwareAdapterSelfTest.class);
+        suite.add(GridSetWrapperSelfTest.class);
+        suite.add(IgniteUuidSelfTest.class);
+        suite.add(GridXSelfTest.class);
+        suite.add(GridBoundedConcurrentOrderedMapSelfTest.class);
+        suite.add(GridBoundedConcurrentLinkedHashMapSelfTest.class);
+        suite.add(GridConcurrentLinkedDequeSelfTest.class);
+        suite.add(GridCircularBufferSelfTest.class);
+        suite.add(GridConcurrentLinkedHashMapSelfTest.class);
+        suite.add(GridConcurrentLinkedHashMapMultiThreadedSelfTest.class);
+        suite.add(GridStripedLockSelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(GridFutureAdapterSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCompoundFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEmbeddedFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNioFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNioEmbeddedFutureSelfTest.class));
+        suite.add(GridFutureAdapterSelfTest.class);
+        suite.add(GridCompoundFutureSelfTest.class);
+        suite.add(GridEmbeddedFutureSelfTest.class);
+        suite.add(GridNioFutureSelfTest.class);
+        suite.add(GridNioEmbeddedFutureSelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteFutureImplTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheFutureImplTest.class));
+        suite.add(IgniteFutureImplTest.class);
+        suite.add(IgniteCacheFutureImplTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteOffheapReadWriteLockSelfTest.class));
+        suite.add(IgniteOffheapReadWriteLockSelfTest.class);
 
         // Consistent hash tests.
-        suite.addTest(new JUnit4TestAdapter(GridConsistentHashSelfTest.class));
+        suite.add(GridConsistentHashSelfTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }
