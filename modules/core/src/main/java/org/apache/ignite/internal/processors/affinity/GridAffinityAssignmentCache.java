@@ -207,6 +207,18 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
+        return set(topVer, assignment);
+    }
+
+    /**
+     * Adds assignment with given version to affinity cache and completes pending affinity ready futures
+     * with version less or equal than given.
+     *
+     * @param topVer Affinity assignment topology version.
+     * @param assignment Calculated assignment.
+     * @return Calculated assignment.
+     */
+    private GridAffinityAssignment set(AffinityTopologyVersion topVer, GridAffinityAssignment assignment) {
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
 
         head.set(assignment);
@@ -228,10 +240,22 @@ public class GridAffinityAssignmentCache {
         if (log.isTraceEnabled()) {
             log.trace("New affinity assignment [grp=" + cacheOrGrpName
                 + ", topVer=" + topVer
-                + ", aff=" + fold(affAssignment) + "]");
+                + ", aff=" + fold(assignment.assignment()) + "]");
         }
 
         return assignment;
+    }
+
+    /**
+     * Initialize affinity with already calculated affinity assignment.
+     *
+     * @param copy Already calculated assignment for other group with similiar affinity key.
+     * @return Calculated assignment.
+     */
+    public GridAffinityAssignment initialize(GridAffinityAssignment copy) {
+        idealAssignment(copy.idealAssignment());
+
+        return set(copy.topologyVersion(), copy);
     }
 
     /**
