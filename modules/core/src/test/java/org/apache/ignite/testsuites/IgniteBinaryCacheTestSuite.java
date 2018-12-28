@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
@@ -50,7 +51,7 @@ public class IgniteBinaryCacheTestSuite {
      * @return Suite.
      */
     public static List<Class<?>> suite() {
-        return suite(null);
+        return suite(new HashSet<>());
     }
 
     /**
