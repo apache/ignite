@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,6 +47,42 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
     /** Parititions tracked during query execution. */
     private static final ConcurrentSkipListSet<Integer> INTERCEPTED_PARTS = new ConcurrentSkipListSet<>();
+
+    /** IP finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
+
+    /** Client node name. */
+    private static final String CLI_NAME = "cli";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(getConfiguration("srv1"));
+        startGrid(getConfiguration("srv2"));
+        startGrid(getConfiguration("srv3"));
+
+        startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        clearIoState();
+
+        Ignite cli = client();
+
+        cli.destroyCaches(cli.cacheNames());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @return Client node.
+     */
+    private IgniteEx client() {
+        return grid(CLI_NAME);
+    }
 
     /**
      * Clear partitions.
