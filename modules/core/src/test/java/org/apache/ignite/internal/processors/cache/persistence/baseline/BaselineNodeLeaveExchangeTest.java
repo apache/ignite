@@ -61,10 +61,14 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 8;
@@ -104,6 +108,9 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
 
     /** Blocking discovery spi enabled. */
     private static final AtomicBoolean blockingDiscoverySpiEnabled = new AtomicBoolean();
+
+    /** */
+    private volatile PickKeyOption pickKeyOption = PickKeyOption.BACKUP_ON_LEAVING_NODE;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -205,6 +212,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
+    //@Test
     public void testServerLeaveOperationsFromClient() throws Exception {
         testServerLeave(CLIENT_GRID_NAME, true);
     }
@@ -212,6 +220,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
+    //@Test
     public void testServerLeaveOperationsFromDummyCrd() throws Exception {
         testServerLeave(DUMMY_GRID_NAME, true);
     }
@@ -219,6 +228,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
+    //@Test
     public void testServerLeaveOperationsFromRegularCrd() throws Exception {
         testServerLeave(DUMMY_GRID_NAME, false);
     }
@@ -226,6 +236,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
+    //@Test
     public void testServerLeaveOperationsFromServer() throws Exception {
         testServerLeave(getTestIgniteInstanceName(0), true);
     }
@@ -254,36 +265,41 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testServerLeaveUnderLoadFromClient() throws Exception {
-        testBltServerLeaveUnderLoad(CLIENT_GRID_NAME, true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(CLIENT_GRID_NAME, true, pickKeyOption);
     }
 
     /**
      *
      */
+    @Test
     public void testServerLeaveUnderLoadFromDummyCrd() throws Exception {
-        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, true, pickKeyOption);
     }
 
     /**
      *
      */
+    @Test
     public void testServerLeaveUnderLoadFromRegularCrd() throws Exception {
-        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, false, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, false, pickKeyOption);
     }
 
     /**
      *
      */
+    @Test
     public void testServerLeaveUnderLoadFromFirstServer() throws Exception {
-        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(0), true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(0), true, pickKeyOption);
     }
 
     /**
      *
      */
+    @Test
     public void testServerLeaveUnderLoadFromLastServer() throws Exception {
-        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(GRIDS_COUNT - 1), true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(GRIDS_COUNT - 1), true, pickKeyOption);
     }
 
     /**
