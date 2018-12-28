@@ -37,7 +37,7 @@ import org.apache.ignite.ml.mleap.MLeapModelParser;
  */
 public class MLeapModelParserExample {
     /** Test model resource name. */
-    private static final String TEST_MODEL_RES = "examples/src/main/resources/models/mleap/scikit-airbnb.rf.zip";
+    private static final String TEST_MODEL_RES = "examples/src/main/resources/models/mleap/airbnb.model.rf.zip";
 
     /** Parser. */
     private static final MLeapModelParser parser = new MLeapModelParser();
@@ -55,14 +55,14 @@ public class MLeapModelParserExample {
 
             try (Model<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser)) {
                 HashMap<String, Double> input = new HashMap<>();
-                input.put("imp_bathrooms", 1.0);
-                input.put("imp_bedrooms", 1.0);
-                input.put("imp_security_deposit", 1.0);
-                input.put("imp_cleaning_fee", 1.0);
-                input.put("imp_extra_people", 1.0);
-                input.put("imp_number_of_reviews", 1.0);
-                input.put("imp_square_feet", 1.0);
-                input.put("imp_review_scores_rating", 1.0);
+                input.put("bathrooms", 1.0);
+                input.put("bedrooms", 1.0);
+                input.put("security_deposit", 1.0);
+                input.put("cleaning_fee", 1.0);
+                input.put("extra_people", 1.0);
+                input.put("number_of_reviews", 1.0);
+                input.put("square_feet", 1.0);
+                input.put("review_scores_rating", 1.0);
 
                 Future<Double> prediction = mdl.predict(input);
 

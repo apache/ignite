@@ -115,7 +115,7 @@ public class MLeapModelParser implements ModelParser<HashMap<String, Double>, Do
             String fieldName = field.name();
 
             schema.add(field.name());
-            if (ScalarType.Double().equals(field.dataType()))
+            if (!ScalarType.Double().base().equals(field.dataType().base()))
                 throw new IllegalArgumentException("Parser supports only double types [name=" +
                     fieldName + ",type=" + field.dataType() + "]");
         }
