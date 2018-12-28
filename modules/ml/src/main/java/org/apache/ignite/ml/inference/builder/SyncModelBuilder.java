@@ -18,16 +18,16 @@
 package org.apache.ignite.ml.inference.builder;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Builder of synchronous inference model. Uses specified model reader (see {@link InfModelReader}) and mode parser (see
- * {@link InfModelParser}) to build a model.
+ * Builder of synchronous inference model. Uses specified model reader (see {@link ModelReader}) and mode parser (see
+ * {@link ModelParser}) to build a model.
  */
 @FunctionalInterface
-public interface SyncInfModelBuilder {
+public interface SyncModelBuilder {
     /**
      * Builds synchronous inference model using specified model reader and model parser.
      *
@@ -37,6 +37,6 @@ public interface SyncInfModelBuilder {
      * @param <O> Type of model output.
      * @return Inference model.
      */
-    public <I extends Serializable, O extends Serializable, M extends InfModel<I, O>> M build(InfModelReader reader,
-        InfModelParser<I, O, M> parser);
+    public <I extends Serializable, O extends Serializable, M extends Model<I, O>> M build(ModelReader reader,
+        ModelParser<I, O, M> parser);
 }

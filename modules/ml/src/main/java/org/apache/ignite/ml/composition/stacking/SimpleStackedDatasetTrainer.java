@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.composition.stacking;
 
 import java.util.ArrayList;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -33,7 +33,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <AM> Type of aggregator model.
  * @param <L> Type of labels.
  */
-public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
+public class SimpleStackedDatasetTrainer<I, O, AM extends IgniteModel<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
     /**
      * Construct instance of this class.
      *
@@ -75,7 +75,7 @@ public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extend
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
     /** {@inheritDoc} */
-    @Override public <M1 extends Model<I, I>> SimpleStackedDatasetTrainer<I, O, AM, L> addTrainer(
+    @Override public <M1 extends IgniteModel<I, I>> SimpleStackedDatasetTrainer<I, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.addTrainer(trainer);
     }
