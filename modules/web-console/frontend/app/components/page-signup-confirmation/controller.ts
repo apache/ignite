@@ -15,22 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import {default as Auth} from '../../modules/user/Auth.service';
+import {default as MessagesFactory} from '../../services/Messages.service';
 
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+export default class PageSignupConfirmation {
+    email: string;
 
-/**
- * Test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CacheNearDisabledAtomicInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalWriteReadRestartSelfTest.class
-})
-public class IgniteCacheLoadConsistencyTestSuite {
+    static $inject = ['Auth', 'IgniteMessages', '$element'];
+
+    constructor(private auth: Auth, private messages: ReturnType<typeof MessagesFactory>, private el: JQLite) {
+    }
+
+    $postLink() {
+        this.el.addClass('public-page');
+    }
+
+    async resendConfirmation() {
+        try {
+            await this.auth.resendSignupConfirmation(this.email);
+            this.messages.showInfo('Signup confirmation sent, check your email');
+        }
+        catch (e) {
+            this.messages.showError(e);
+        }
+    }
 }

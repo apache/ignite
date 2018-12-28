@@ -15,22 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import {component} from './component';
+import {state} from './state';
 
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CacheNearDisabledAtomicInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalWriteReadRestartSelfTest.class
-})
-public class IgniteCacheLoadConsistencyTestSuite {
-}
+export default angular.module('ignite-console.page-signup-confirmation', [])
+    .run(state)
+    .component('pageSignupConfirmation', component);

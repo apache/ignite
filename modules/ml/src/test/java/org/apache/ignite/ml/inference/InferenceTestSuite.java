@@ -25,12 +25,19 @@ import org.apache.ignite.ml.inference.builder.ThreadedModelBuilderTest;
 import org.apache.ignite.ml.inference.storage.model.DefaultModelStorageTest;
 import org.apache.ignite.ml.inference.util.DirectorySerializerTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for all tests located in {@link org.apache.ignite.ml.inference} package.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    SingleModelBuilderTest.class,
+    ThreadedModelBuilderTest.class,
+    DirectorySerializerTest.class,
+    DefaultModelStorageTest.class,
+    IgniteDistributedModelBuilderTest.class
+})
 public class InferenceTestSuite {
     /** */
     public static TestSuite suite() {

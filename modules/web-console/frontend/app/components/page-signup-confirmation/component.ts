@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import controller from './controller';
+import templateUrl from './template.tpl.pug';
+import './style.scss';
 
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CacheNearDisabledAtomicInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalWriteReadRestartSelfTest.class
-})
-public class IgniteCacheLoadConsistencyTestSuite {
-}
+export const component: ng.IComponentOptions = {
+    controller,
+    templateUrl,
+    bindings: {
+        email: '@'
+    }
+};

@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+'use strict';
 
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+const IllegalAccessError = require('./IllegalAccessError');
 
-/**
- * Test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CacheNearDisabledAtomicInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalInvokeRestartSelfTest.class,
-    CacheNearDisabledTransactionalWriteReadRestartSelfTest.class
-})
-public class IgniteCacheLoadConsistencyTestSuite {
+class MissingConfirmRegistrationException extends IllegalAccessError {
+    constructor(email) {
+        super('User account email not activated');
+
+        this.data = {
+            errorCode: 10104,
+            message: this.message,
+            email
+        };
+    }
 }
+
+module.exports = MissingConfirmRegistrationException;
