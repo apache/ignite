@@ -18,17 +18,26 @@
 package org.apache.ignite.ml.inference.builder;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import java.util.concurrent.Future;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Implementation of synchronous inference model builder that builds a model processed locally in a single thread.
+ * Builder of asynchronous inference model. Uses specified model reader (see {@link ModelReader}) and mode parser
+ * (see {@link ModelParser}) to build a model.
  */
-public class SingleInfModelBuilder implements SyncInfModelBuilder {
-    /** {@inheritDoc} */
-    @Override public <I extends Serializable, O extends Serializable, M extends InfModel<I, O>> M build(InfModelReader reader,
-        InfModelParser<I, O, M> parser) {
-        return parser.parse(reader.read());
-    }
+@FunctionalInterface
+public interface AsyncModelBuilder {
+    /**
+     * Builds asynchronous inference model using specified model reader and model parser.
+     *
+     * @param reader Model reader.
+     * @param parser Model parser.
+     * @param <I> Type of model input.
+     * @param <O> Type of model output.
+     * @return Inference model.
+     */
+    public <I extends Serializable, O extends Serializable> Model<I, Future<O>> build(ModelReader reader,
+        ModelParser<I, O, ?> parser);
 }

@@ -25,7 +25,7 @@ import java.io.Serializable;
 /**
  * Model reader that reads predefined array of bytes.
  */
-public class InMemoryInfModelReader implements InfModelReader {
+public class InMemoryModelReader implements ModelReader {
     /** */
     private static final long serialVersionUID = -5518861989758691500L;
 
@@ -37,7 +37,7 @@ public class InMemoryInfModelReader implements InfModelReader {
      *
      * @param data Data.
      */
-    public InMemoryInfModelReader(byte[] data) {
+    public InMemoryModelReader(byte[] data) {
         this.data = data;
     }
 
@@ -47,7 +47,7 @@ public class InMemoryInfModelReader implements InfModelReader {
      * @param obj Data object.
      * @param <T> Type of data object.
      */
-    public <T extends Serializable> InMemoryInfModelReader(T obj) {
+    public <T extends Serializable> InMemoryModelReader(T obj) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(obj);

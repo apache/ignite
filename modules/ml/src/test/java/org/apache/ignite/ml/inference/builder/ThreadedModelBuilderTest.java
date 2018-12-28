@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.reader;
+package org.apache.ignite.ml.inference.builder;
 
-import java.io.Serializable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import org.apache.ignite.ml.inference.Model;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Model reader that reads model from external or internal storage and returns it in serialized form as byte array.
+ * Tests for {@link ThreadedModelBuilder} class.
  */
-@FunctionalInterface
-public interface InfModelReader extends Serializable {
-    /**
-     * Rads model and returns it in serialized form as byte array.
-     *
-     * @return Inference model in serialized form as byte array.
-     */
-    public byte[] read();
+public class ThreadedModelBuilderTest {
+    /** */
+    @Test
+    public void testBuild() throws ExecutionException, InterruptedException {
+        AsyncModelBuilder mdlBuilder = new ThreadedModelBuilder(10);
+
+        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
+            ModelBuilderTestUtil.getReader(),
+            ModelBuilderTestUtil.getParser()
+        );
+
+        for (int i = 0; i < 100; i++)
+            assertEquals(Integer.valueOf(i), infMdl.predict(i).get());
+    }
 }
