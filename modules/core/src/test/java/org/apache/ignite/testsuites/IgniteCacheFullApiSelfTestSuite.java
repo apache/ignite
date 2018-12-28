@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheClearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledFullApiSelfTest;
@@ -80,101 +78,93 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMu
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache API.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheLocalFullApiSelfTest.class,
+    GridCacheLocalAtomicFullApiSelfTest.class,
+    GridCacheReplicatedFullApiSelfTest.class,
+    GridCachePartitionedFullApiSelfTest.class,
+    GridCacheAtomicFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledFullApiSelfTest.class,
+    GridCachePartitionedFilteredPutSelfTest.class,
+    GridCacheReplicatedAtomicFullApiSelfTest.class,
+    GridCacheAtomicNearEnabledFullApiSelfTest.class,
+    GridCacheAtomicOnheapFullApiSelfTest.class,
+
+    GridCachePartitionedOnheapFullApiSelfTest.class,
+    GridCachePartitionedAtomicOnheapFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledOnheapFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest.class,
+
+    // No primary.
+    GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest.class,
+    GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest.class,
+
+    // Multi-node.
+    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class,
+    GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
+
+    GridCachePartitionedMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest.class,
+    GridCacheAtomicMultiNodeFullApiSelfTest.class,
+    GridCacheAtomicCopyOnReadDisabledMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest.class,
+    GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest.class,
+    GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest.class,
+    CachePartitionedMultiNodeLongTxTimeoutFullApiTest.class,
+    CachePartitionedMultiNodeLongTxTimeout2FullApiTest.class,
+    CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest.class,
+
+    GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledMultiNodeP2PDisabledFullApiSelfTest.class,
+
+    GridCacheNearOnlyMultiNodeFullApiSelfTest.class,
+    GridCacheNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class,
+    GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest.class,
+
+    GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest.class,
+    GridCacheAtomicClientOnlyMultiNodeP2PDisabledFullApiSelfTest.class,
+
+    GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class,
+    GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class,
+
+    CacheReplicatedRendezvousAffinityExcludeNeighborsMultiNodeFullApiSelfTest.class,
+    CacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class,
+
+    GridCacheNearReloadAllSelfTest.class,
+    GridCacheColocatedReloadAllSelfTest.class,
+    GridCacheAtomicReloadAllSelfTest.class,
+    GridCacheNearTxMultiNodeSelfTest.class,
+    GridCachePartitionedMultiNodeCounterSelfTest.class,
+
+    GridCachePartitionedOnheapMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedAtomicOnheapMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledOnheapMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest.class,
+    GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class,
+
+    // Multithreaded.
+    GridCacheLocalFullApiMultithreadedSelfTest.class,
+    GridCacheReplicatedFullApiMultithreadedSelfTest.class,
+    GridCachePartitionedFullApiMultithreadedSelfTest.class,
+
+    // Other.
+    GridCacheClearSelfTest.class,
+
+    GridCacheLocalWithGroupFullApiSelfTest.class,
+    GridCacheLocalAtomicWithGroupFullApiSelfTest.class,
+    GridCacheAtomicMultiNodeWithGroupFullApiSelfTest.class,
+    GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest.class,
+    GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class,
+    GridCachePartitionedNearDisabledMultiNodeWithGroupFullApiSelfTest.class,
+
+    //suite.addTest(new JUnit4TestAdapter(GridActivateExtensionTest.class));
+})
 public class IgniteCacheFullApiSelfTestSuite {
-    /**
-     * @return Cache API test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Cache Full API Test Suite");
-
-        // One node.
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalAtomicFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedFilteredPutSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedAtomicFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearEnabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicOnheapFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedOnheapFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicOnheapFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledOnheapFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest.class));
-
-        // No primary.
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest.class));
-
-        // Multi-node.
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicCopyOnReadDisabledMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CachePartitionedMultiNodeLongTxTimeoutFullApiTest.class));
-        suite.addTest(new JUnit4TestAdapter(CachePartitionedMultiNodeLongTxTimeout2FullApiTest.class));
-        suite.addTest(new JUnit4TestAdapter(CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledMultiNodeP2PDisabledFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearOnlyMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicClientOnlyMultiNodeP2PDisabledFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CacheReplicatedRendezvousAffinityExcludeNeighborsMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearReloadAllSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheColocatedReloadAllSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicReloadAllSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearTxMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeCounterSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedOnheapMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicOnheapMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledOnheapMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class));
-
-        // Multithreaded.
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalFullApiMultithreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedFullApiMultithreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedFullApiMultithreadedSelfTest.class));
-
-        // Other.
-        suite.addTest(new JUnit4TestAdapter(GridCacheClearSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalWithGroupFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalAtomicWithGroupFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicMultiNodeWithGroupFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledMultiNodeWithGroupFullApiSelfTest.class));
-
-        //suite.addTest(new JUnit4TestAdapter(GridActivateExtensionTest.class));
-
-        return suite;
-    }
 }
