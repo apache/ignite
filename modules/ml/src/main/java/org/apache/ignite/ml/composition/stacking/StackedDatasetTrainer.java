@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.DatasetMapping;
-import org.apache.ignite.ml.composition.combinators.parallel.SameModelsParallelComposition;
-import org.apache.ignite.ml.composition.combinators.parallel.SameTrainersParallelComposition;
+import org.apache.ignite.ml.composition.combinators.parallel.ModelsParallelComposition;
+import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -267,7 +267,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
 
         subs.addAll(submodelsTrainers);
 
-        SameTrainersParallelComposition<IS, IA, L> composition = new SameTrainersParallelComposition<>(subs);
+        TrainersParallelComposition<IS, IA, L> composition = new TrainersParallelComposition<>(subs);
 
         IgniteBiFunction<List<Model<IS, IA>>, Vector, Vector> featureMapper = getFeatureExtractorForAggregator(
             submodelOutput2VectorConverter,
@@ -278,7 +278,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
             .afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get())
             .andThen(aggregatorTrainer, model -> new DatasetMapping<L, L>() {
                 @Override public Vector mapFeatures(Vector v) {
-                    List<Model<IS, IA>> models = ((SameModelsParallelComposition<IS, IA>)model.innerModel()).models();
+                    List<Model<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).models();
                     return featureMapper.apply(models, v);
                 }
 

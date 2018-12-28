@@ -23,10 +23,17 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-public class SameModelsParallelComposition<I, O> implements Model<I, List<O>> {
+/**
+ * Parallel composition of models.
+ * Parallel composition of models is a model which contains a list of models with same input and output types.
+ *
+ * @param <I>
+ * @param <O>
+ */
+public class ModelsParallelComposition<I, O> implements Model<I, List<O>> {
     private final List<Model<I, O>> models;
 
-    public SameModelsParallelComposition(List<Model<I, O>> models) {
+    public ModelsParallelComposition(List<Model<I, O>> models) {
         this.models = models;
     }
 

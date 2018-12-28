@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.CompositionUtils;
-import org.apache.ignite.ml.composition.combinators.parallel.SameTrainersParallelComposition;
+import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -93,7 +93,7 @@ public class BaggedTrainer<I, M extends Model<I, Double>, L, T extends DatasetTr
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
 
-        return new SameTrainersParallelComposition<>(subspaceTrainers);
+        return new TrainersParallelComposition<>(subspaceTrainers);
     }
 
     /**
