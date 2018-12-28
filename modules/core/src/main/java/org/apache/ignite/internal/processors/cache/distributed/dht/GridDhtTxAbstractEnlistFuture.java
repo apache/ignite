@@ -900,6 +900,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             m.put(node.id(), mapping = new GridDistributedTxMapping(node));
 
         mapping.markQueryUpdate();
+
+        checkCompleted();
     }
 
     /** */

@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -122,9 +121,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** */
     @GridToStringInclude
     protected IgniteTxRemoteState txState;
-
-    /** {@code True} if tx should skip adding itself to completed version map on finish. */
-    private boolean skipCompletedVers;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -914,7 +910,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false, skipCompletedVers);
+                cctx.tm().rollbackTx(this, false, skipCompletedVersions());
 
                 TxCounters counters = txCounters(false);
 
@@ -957,20 +953,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public void commitError(Throwable e) {
         // No-op.
-    }
-
-    /**
-     * @return {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public boolean skipCompletedVersions() {
-        return skipCompletedVers;
-    }
-
-    /**
-     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public void skipCompletedVersions(boolean skipCompletedVers) {
-        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**
