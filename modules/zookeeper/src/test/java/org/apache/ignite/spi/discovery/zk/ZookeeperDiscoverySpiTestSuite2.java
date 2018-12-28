@@ -25,13 +25,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.util.GridCommandHandlerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-@RunWith(AllTests.class)
 public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
     /** */
     private static TestingCluster testingCluster;
