@@ -85,7 +85,7 @@ public class MLPTrainerMnistTest {
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
             Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
-            Matrix outputMatrix = mdl.apply(input);
+            Matrix outputMatrix = mdl.predict(input);
 
             int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
 

@@ -18,6 +18,7 @@
 'use strict';
 
 const fs = require('fs');
+const _ = require('lodash');
 
 // Fire me up!
 
@@ -61,6 +62,14 @@ module.exports = {
             return v === 'true' || v === true;
         };
 
+        let activationEnabled = _isTrue('activation:enabled');
+
+        if (activationEnabled && _.isEmpty(mail)) {
+            activationEnabled = false;
+
+            console.warn('Mail server settings are required for account confirmation!');
+        }
+
         const settings = {
             agent: {
                 dists: nconf.get('agent:dists') || dfltAgentDists
@@ -72,6 +81,11 @@ module.exports = {
                 disableSignup: _isTrue('server:disable:signup')
             },
             mail,
+            activation: {
+                enabled: activationEnabled,
+                timeout: nconf.get('activation:timeout') || 1800000,
+                sendTimeout: nconf.get('activation:sendTimeout') || 180000
+            },
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
             cookieTTL: 3600000 * 24 * 30,
             sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',

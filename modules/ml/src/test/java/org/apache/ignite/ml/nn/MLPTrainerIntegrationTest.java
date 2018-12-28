@@ -149,7 +149,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
                 (k, v) -> new double[]{ v.lb}
             );
 
-            Matrix predict = mlp.apply(new DenseMatrix(new double[][]{
+            Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},

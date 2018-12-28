@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.reader;
+import controller from './controller';
+import templateUrl from './template.tpl.pug';
+import './style.scss';
 
-import java.io.Serializable;
-
-/**
- * Model reader that reads model from external or internal storage and returns it in serialized form as byte array.
- */
-@FunctionalInterface
-public interface InfModelReader extends Serializable {
-    /**
-     * Rads model and returns it in serialized form as byte array.
-     *
-     * @return Inference model in serialized form as byte array.
-     */
-    public byte[] read();
-}
+export const component: ng.IComponentOptions = {
+    controller,
+    templateUrl,
+    bindings: {
+        email: '@'
+    }
+};

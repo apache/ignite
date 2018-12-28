@@ -41,21 +41,24 @@ Technical details
     On Windows: `ignite-web-console-win.exe --server:port 3000`
 
 All available parameters with defaults:
-    Web Console host:           --server:host 0.0.0.0
-    Web Console port:           --server:port 80
+    Web Console host:                              --server:host 0.0.0.0
+    Web Console port:                              --server:port 80
 
-    Enable HTTPS:               --server:ssl false
+    Enable HTTPS:                                  --server:ssl false
+    Disable self registration:                     --server:disable:signup false
 
-    Disable self registration:  --server:disable:signup false
+    MongoDB URL:                                   --mongodb:url mongodb://localhost/console
 
-    MongoDB URL:                --mongodb:url mongodb://localhost/console
+    Enable account activation:                     --activation:enabled false
+    Activation timeout(milliseconds):              --activation:timeout 1800000
+    Activation send email throttle (milliseconds): --activation:sendTimeout 180000
 
-    Mail service:               --mail:service "gmail"
-    Signature text:             --mail:sign "Kind regards, Apache Ignite Team"
-    Greeting text:              --mail:greeting "Apache Ignite Web Console"
-    Mail FROM:                  --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
-    User to send e-mail:        --mail:auth:user "someusername@somecompany.somedomain"
-    E-mail service password:    --mail:auth:pass ""
+    Mail service:                                  --mail:service "gmail"
+    Signature text:                                --mail:sign "Kind regards, Apache Ignite Team"
+    Greeting text:                                 --mail:greeting "Apache Ignite Web Console"
+    Mail FROM:                                     --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
+    User to send e-mail:                           --mail:auth:user "someusername@somecompany.somedomain"
+    E-mail service password:                       --mail:auth:pass ""
 
 SSL options has no default values:
     --server:key "path to file with server.key"

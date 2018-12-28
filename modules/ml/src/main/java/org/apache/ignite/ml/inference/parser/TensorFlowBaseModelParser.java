@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.inference.InfModel;
+import org.apache.ignite.ml.inference.Model;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
@@ -33,7 +33,7 @@ import org.tensorflow.Tensor;
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelParser<I, O, InfModel<I, O>> {
+public abstract class TensorFlowBaseModelParser<I, O> implements ModelParser<I, O, Model<I, O>> {
     /** */
     private static final long serialVersionUID = 5574259553625871456L;
 
@@ -47,7 +47,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
     private OutputTransformer<O> outputTransformer;
 
     /** {@inheritDoc} */
-    @Override public InfModel<I, O> parse(byte[] mdl) {
+    @Override public Model<I, O> parse(byte[] mdl) {
         return new TensorFlowInfModel(parseModel(mdl));
     }
 
@@ -67,7 +67,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
      * @param transformer Transformer that allows to transform input into tensor.
      * @return This instance.
      */
-    public TensorFlowBaseInfModelParser<I, O> withInput(String name, InputTransformer<I> transformer) {
+    public TensorFlowBaseModelParser<I, O> withInput(String name, InputTransformer<I> transformer) {
         if (inputs.containsKey(name))
             throw new IllegalArgumentException("Inputs already contains specified name [name=" + name + "]");
 
@@ -84,7 +84,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
      * @param transformer Transformer that allow to transform tensors into output.
      * @return This instance.
      */
-    public TensorFlowBaseInfModelParser<I, O> withOutput(List<String> names, OutputTransformer<O> transformer) {
+    public TensorFlowBaseModelParser<I, O> withOutput(List<String> names, OutputTransformer<O> transformer) {
         if (outputNames != null || outputTransformer != null)
             throw new IllegalArgumentException("Outputs already specified");
 
@@ -129,7 +129,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
     /**
      * TensorFlow inference model based on pre-loaded graph and created session.
      */
-    private class TensorFlowInfModel implements InfModel<I, O> {
+    private class TensorFlowInfModel implements Model<I, O> {
         /** TensorFlow session. */
         private final Session ses;
 
@@ -143,7 +143,7 @@ public abstract class TensorFlowBaseInfModelParser<I, O> implements InfModelPars
         }
 
         /** {@inheritDoc} */
-        @Override public O apply(I input) {
+        @Override public O predict(I input) {
             Session.Runner runner = ses.runner();
 
             runner = feedAll(runner, input);

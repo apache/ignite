@@ -26,7 +26,7 @@ import org.apache.ignite.ml.inference.util.DirectorySerializer;
 /**
  * Model reader that reads directory or file and serializes it using {@link DirectorySerializer}.
  */
-public class FileSystemInfModelReader implements InfModelReader {
+public class FileSystemModelReader implements ModelReader {
     /** */
     private static final long serialVersionUID = 7370932792669930039L;
 
@@ -38,7 +38,7 @@ public class FileSystemInfModelReader implements InfModelReader {
      *
      * @param path Path to the directory.
      */
-    public FileSystemInfModelReader(String path) {
+    public FileSystemModelReader(String path) {
         this.path = path;
     }
 
