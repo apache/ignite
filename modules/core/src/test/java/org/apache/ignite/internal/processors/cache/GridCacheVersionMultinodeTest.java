@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -116,10 +117,9 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testVersionMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkVersion();
@@ -128,10 +128,9 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Test
     public void testVersionMvccTxNearEnabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         near = true;

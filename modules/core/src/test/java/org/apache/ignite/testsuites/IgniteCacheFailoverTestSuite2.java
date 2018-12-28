@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheGetFromJobTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverAtomicTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverTxTest;
@@ -33,39 +31,33 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/**
- *
- */
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCachePartitionedTxSalvageSelfTest.class,
+    CacheGetFromJobTest.class,
+
+    GridCacheAtomicFailoverSelfTest.class,
+    GridCacheAtomicReplicatedFailoverSelfTest.class,
+
+    GridCachePartitionedFailoverSelfTest.class,
+    GridCacheColocatedFailoverSelfTest.class,
+    GridCacheReplicatedFailoverSelfTest.class,
+
+    IgniteCacheCrossCacheTxFailoverTest.class,
+
+    CacheAsyncOperationsFailoverAtomicTest.class,
+    CacheAsyncOperationsFailoverTxTest.class,
+
+    CachePutAllFailoverAtomicTest.class,
+    CachePutAllFailoverTxTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCachePutAllFailoverTest.class,
+    //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCacheRemoveFailoverTest.class,
+    IgniteChangingBaselineDownCachePutAllFailoverTest.class,
+    IgniteChangingBaselineUpCachePutAllFailoverTest.class
+})
 public class IgniteCacheFailoverTestSuite2 {
-    /**
-     * @return Suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite2");
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedTxSalvageSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheGetFromJobTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicReplicatedFailoverSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheColocatedFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedFailoverSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheCrossCacheTxFailoverTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CacheAsyncOperationsFailoverAtomicTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheAsyncOperationsFailoverTxTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CachePutAllFailoverAtomicTest.class));
-        suite.addTest(new JUnit4TestAdapter(CachePutAllFailoverTxTest.class));
-        //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCachePutAllFailoverTest.class));
-        //suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCacheRemoveFailoverTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineDownCachePutAllFailoverTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineUpCachePutAllFailoverTest.class));
-
-        return suite;
-    }
 }

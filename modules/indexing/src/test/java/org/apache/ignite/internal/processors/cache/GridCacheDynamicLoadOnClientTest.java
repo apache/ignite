@@ -39,10 +39,14 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test lazy cache start on client nodes with inmemory cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String PERSON_CACHE = "Person";
@@ -104,6 +108,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testBatchMerge() throws Exception {
         final int BATCH_SIZE = 7;
 
@@ -128,6 +133,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcDelete() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -146,6 +152,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcInsert() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -165,6 +172,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcUpdate() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -183,6 +191,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbc() throws Exception {
         try (Connection con = connect(clientNode);
              Statement st = con.createStatement()) {
@@ -197,6 +206,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test from client node to put cache elements through cache API.
      */
+    @Test
     public void testClientPut() {
         clientNode.cache(PERSON_CACHE).put(-100, new Person(-100, "name-"));
 
@@ -206,6 +216,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test DDL operation for not started cache on client node.
      */
+    @Test
     public void testCreateIdxOnClient() {
         getDefaultCacheOnClient().query(new SqlFieldsQuery("CREATE INDEX IDX_11 ON " + FULL_TABLE_NAME + " (name asc)")).getAll();
     }
@@ -213,6 +224,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test DDL operation for not started cache on client node.
      */
+    @Test
     public void testDropIdxOnClient() {
         srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name desc)")).getAll();
 
@@ -226,6 +238,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test from client node to get cache elements through cache API.
      */
+    @Test
     public void testClientSqlFieldsQuery() {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
@@ -235,6 +248,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test from client node to get cache elements through cache API.
      */
+    @Test
     public void testClientSqlQuery() {
         SqlQuery<Integer, Person> qry = new SqlQuery<>(PERSON_CACHE, "FROM " + PERSON_CACHE);
 

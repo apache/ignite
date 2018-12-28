@@ -58,6 +58,14 @@ public interface ZookeeperDiscoverySpiMBean extends IgniteSpiManagementMBean, Di
     public String getZkSessionId();
 
     /**
+     * Gets number of communication resolver called.
+     *
+     * @return Number of communication resolved oparations.
+     */
+    @MXBeanDescription("Communication error resolver call count.")
+    public long getCommErrorProcNum();
+
+    /**
      * Gets root path in ZooKeeper cluster Zk client uses to put data to.
      *
      * @return Zk Root Path.

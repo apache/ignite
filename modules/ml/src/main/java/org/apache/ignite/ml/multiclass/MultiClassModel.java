@@ -25,11 +25,11 @@ import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /** Base class for multi-classification model for set of classifiers. */
-public class MultiClassModel<M extends Model<Vector, Double>> implements Model<Vector, Double>, Exportable<MultiClassModel>, Serializable {
+public class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel>, Serializable {
     /** */
     private static final long serialVersionUID = -114986533359917L;
 
@@ -60,10 +60,10 @@ public class MultiClassModel<M extends Model<Vector, Double>> implements Model<V
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector input) {
+    @Override public Double predict(Vector input) {
         TreeMap<Double, Double> maxMargins = new TreeMap<>();
 
-        models.forEach((k, v) -> maxMargins.put(v.apply(input), k));
+        models.forEach((k, v) -> maxMargins.put(v.predict(input), k));
 
         // returns value the most closest to 1
         return maxMargins.lastEntry().getValue();
