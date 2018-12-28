@@ -128,7 +128,7 @@ package object impl {
     def isValidSchema(table: GridQueryTypeDescriptor, schemaName: Option[String]): Boolean =
 		schemaName match {
 			case Some(schema) => schema.equalsIgnoreCase(table.schemaName) ||
-				schemaName.equals(SessionCatalog.DEFAULT_DATABASE)
+                schema.equals(SessionCatalog.DEFAULT_DATABASE)
 			case None => true
 		}
 
