@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -180,9 +181,14 @@ public class IgniteNode implements BenchmarkServer {
         // Set data storage configuration with persistence only if there is no data storage configuration
         // in configuration file.
         if (args.persistentStoreEnabled() && c.getDataStorageConfiguration() == null) {
+            BenchmarkUtils.println(String.format("Setting 'persistenceEnabled' property to 'true'. WAL mode is %s",
+                args.walMode()));
+
             DataStorageConfiguration pcCfg = new DataStorageConfiguration();
 
             pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+            pcCfg.setWalMode(WALMode.valueOf(args.walMode()));
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
