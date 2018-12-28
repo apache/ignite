@@ -40,11 +40,6 @@ public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractD
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     protected CacheConfiguration createCacheConfiguration(String cacheName) {
         CacheConfiguration cfg = new CacheConfiguration()
             .setName(cacheName)
