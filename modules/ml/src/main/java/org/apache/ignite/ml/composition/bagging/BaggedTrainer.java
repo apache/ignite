@@ -38,8 +38,8 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
-public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends DatasetTrainer<M, L>> extends
-    DatasetTrainer<BaggedModel<I>, L> {
+public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends DatasetTrainer<M, L>> extends
+    DatasetTrainer<BaggedModel, L> {
     private final DatasetTrainer<M, L> tr;
     private final PredictionsAggregator aggregator;
     private final int ensembleSize;
@@ -58,7 +58,7 @@ public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends Dat
         this.featureSubspaceDim = featureSubspaceDim;
     }
 
-    private DatasetTrainer<IgniteModel<I, List<Double>>, L> getTrainer() {
+    private DatasetTrainer<IgniteModel<Vector, List<Double>>, L> getTrainer() {
         List<int[]> mappings = (featuresVectorSize > 0 && featureSubspaceDim != featuresVectorSize) ?
             IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
@@ -72,9 +72,9 @@ public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends Dat
         List<DatasetTrainer<M, L>> trainers = Collections.nCopies(ensembleSize, tr);
 
         // Generate a list of trainers each each copy of original trainer but on its own subspace and subsample.
-        List<DatasetTrainer<IgniteModel<I, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
+        List<DatasetTrainer<IgniteModel<Vector, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
             .mapToObj(mdlIdx -> {
-                AdaptableDatasetTrainer<I, Double, I, Double, M, L> tr =
+                AdaptableDatasetTrainer<Vector, Double, Vector, Double, M, L> tr =
                     AdaptableDatasetTrainer.of(trainers.get(mdlIdx));
                 if (mappings != null) {
                     tr = tr.afterFeatureExtractor(featureValues -> {
@@ -87,6 +87,7 @@ public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends Dat
                     });
                 }
                 return tr
+                    .beforeTrainedModel(getProjector(mappings.get(mdlIdx)))
                     .withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx))
                     .withEnvironmentBuilder(envBuilder);
             })
@@ -125,31 +126,31 @@ public class BaggedTrainer<I, M extends IgniteModel<I, Double>, L, T extends Dat
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel<I> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<I, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
-        return new BaggedModel<>(fit, aggregator);
+        IgniteModel<Vector, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        return new BaggedModel(fit, aggregator);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel<I> update(BaggedModel<I> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<I, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
-        return new BaggedModel<>(updated, aggregator);
+        IgniteModel<Vector, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
+        return new BaggedModel(updated, aggregator);
     }
 
     /** {@inheritDoc} */
-    @Override public BaggedTrainer<I, M, L, T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        return (BaggedTrainer<I, M, L, T>)super.withEnvironmentBuilder(envBuilder);
+    @Override public BaggedTrainer<M, L, T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (BaggedTrainer<M, L, T>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(BaggedModel<I> mdl) {
+    @Override protected boolean checkState(BaggedModel mdl) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> BaggedModel<I> updateModel(BaggedModel<I> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return null;
     }

@@ -79,7 +79,7 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
-        BaggedTrainer<Vector, LogisticRegressionModel, Double, DatasetTrainer<LogisticRegressionModel, Double>> baggedTrainer = TrainerTransformers.makeBagged(
+        BaggedTrainer<LogisticRegressionModel, Double, DatasetTrainer<LogisticRegressionModel, Double>> baggedTrainer = TrainerTransformers.makeBagged(
             trainer,
             10,
             0.7,
@@ -88,7 +88,7 @@ public class BaggingTest extends TrainerTest {
             new OnMajorityPredictionsAggregator())
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
-        BaggedModel<Vector> mdl = baggedTrainer.fit(
+        BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -111,7 +111,7 @@ public class BaggingTest extends TrainerTest {
 
         double subsampleRatio = 0.3;
 
-        BaggedModel<Vector> mdl = TrainerTransformers.makeBagged(
+        BaggedModel mdl = TrainerTransformers.makeBagged(
             cntTrainer,
             100,
             subsampleRatio,

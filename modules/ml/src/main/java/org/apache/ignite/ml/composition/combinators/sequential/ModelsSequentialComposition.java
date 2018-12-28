@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.composition.combinators.sequential;
 
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Sequential composition of models.
@@ -34,6 +36,18 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
 
     /** Second model. */
     private IgniteModel<O1, O2> mdl2;
+
+    public static <I, O> ModelsSequentialComposition<I, I, O> ofSame(List<IgniteModel<I, O>> lst,
+        IgniteFunction<O, I> output2Input) {
+        assert lst.size() >= 2;
+
+        if (lst.size() == 2)
+            return new ModelsSequentialComposition<>(lst.get(0).andThen(output2Input),
+                lst.get(1));
+
+        return new ModelsSequentialComposition<>(lst.get(0).andThen(output2Input),
+            ofSame(lst.subList(1, lst.size()), output2Input));
+    }
 
     /**
      * Construct instance of this class from two given models.

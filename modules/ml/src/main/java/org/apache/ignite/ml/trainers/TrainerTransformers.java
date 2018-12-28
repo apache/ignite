@@ -53,7 +53,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<Vector, M, L, DatasetTrainer<M, L>> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<M, L, DatasetTrainer<M, L>> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
@@ -72,7 +72,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<Vector, M, L, DatasetTrainer<M, L>> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<M, L, DatasetTrainer<M, L>> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
