@@ -174,7 +174,7 @@ public class PartitionExtractor {
             GridSqlJoin join = (GridSqlJoin)from;
 
             List<PartitionJoinTable> leftTbls = prepareTableModel0(join.leftTable(), model);
-            List<PartitionJoinTable> rightTbls = prepareTableModel0(join.leftTable(), model);
+            List<PartitionJoinTable> rightTbls = prepareTableModel0(join.rightTable(), model);
 
             if (join.isLeftOuter()) {
                 // "a LEFT JOIN b" is transformed into "a", and "b" is put into special stop-list.
