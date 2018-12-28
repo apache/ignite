@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.GridLongList;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,8 +39,9 @@ public interface MvccProcessor extends GridProcessor {
      * Local join callback.
      *
      * @param evt Discovery event.
+     * @param discoCache Disco cache.
      */
-    void onLocalJoin(DiscoveryEvent evt);
+    void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache);
 
     /**
      * Exchange done callback.
@@ -51,20 +51,9 @@ public interface MvccProcessor extends GridProcessor {
     void onExchangeDone(DiscoCache discoCache);
 
     /**
-     * @param nodeId Node ID
-     * @param activeQueries Active queries.
-     */
-    void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
-
-    /**
      * @return Coordinator.
      */
-    @Nullable MvccCoordinator currentCoordinator();
-
-    /**
-     * @return Current coordinator node ID.
-     */
-    UUID currentCoordinatorId();
+    @NotNull MvccCoordinator currentCoordinator();
 
     /**
      * @param crdVer Mvcc coordinator version.
@@ -173,36 +162,14 @@ public interface MvccProcessor extends GridProcessor {
 
     /**
      * @param updateVer Transaction update version.
-     * @param readSnapshot Transaction read version.
-     * @param qryId Query tracker id.
-     * @return Acknowledge future.
-     */
-    IgniteInternalFuture<Void> ackTxCommit(MvccVersion updateVer, MvccSnapshot readSnapshot, long qryId);
-
-    /**
-     * @param updateVer Transaction update version.
      */
     void ackTxRollback(MvccVersion updateVer);
-
-    /**
-     * @param updateVer Transaction update version.
-     * @param readSnapshot Transaction read version.
-     * @param qryTrackerId Query tracker id.
-     */
-    void ackTxRollback(MvccVersion updateVer, MvccSnapshot readSnapshot, long qryTrackerId);
 
     /**
      * @param snapshot Query version.
      * @param qryId Query tracker ID.
      */
     void ackQueryDone(MvccSnapshot snapshot, long qryId);
-
-    /**
-     * @param crdId Coordinator ID.
-     * @param txs Transaction IDs.
-     * @return Future.
-     */
-    IgniteInternalFuture<Void> waitTxsFuture(UUID crdId, GridLongList txs);
 
     /**
      * @param log Logger.

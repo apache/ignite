@@ -625,8 +625,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
                                         else {
                                             assert val != null : txEntry;
 
@@ -650,8 +649,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
 
                                             txEntry.updateCounter(updRes.updateCounter());
 
@@ -688,8 +686,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            txEntry.updateCounter(),
-                                            mvccSnapshot());
+                                            txEntry.updateCounter());
 
                                         txEntry.updateCounter(updRes.updateCounter());
 

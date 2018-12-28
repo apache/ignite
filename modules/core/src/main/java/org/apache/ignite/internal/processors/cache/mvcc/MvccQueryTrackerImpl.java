@@ -24,7 +24,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -139,40 +138,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
-        if (!checkDone())
-            return;
-
-        MvccProcessor prc = cctx.shared().coordinators();
-
-        MvccSnapshot snapshot = snapshot();
-
-        if (snapshot != null) {
-            prc.removeQueryTracker(id);
-
-            prc.ackQueryDone(snapshot, id);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
-        MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
-
-        if (!checkDone() || snapshot == null && txSnapshot == null)
-            return commit ? new GridFinishedFuture<>() : null;
-
-        MvccProcessor prc = cctx.shared().coordinators();
-
-        if (snapshot != null)
-            prc.removeQueryTracker(id);
-
-        if (txSnapshot == null)
-            prc.ackQueryDone(snapshot, id);
-        else if (commit)
-            return prc.ackTxCommit(txSnapshot, snapshot, id);
-        else
-            prc.ackTxRollback(txSnapshot, snapshot, id);
-
-        return null;
+        if (checkDone())
+            ackQueryDone(snapshot());
     }
 
     /** {@inheritDoc} */
@@ -180,8 +147,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         if (snapshot != null) {
             assert crdVer != 0 : this;
 
-            if (crdVer != newCrd.coordinatorVersion()) {
-                crdVer = newCrd.coordinatorVersion();
+            if (crdVer != newCrd.version()) {
+                crdVer = newCrd.version();
 
                 return id;
             }
@@ -195,8 +162,21 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     }
 
     /** */
+    private void ackQueryDone(MvccSnapshot snapshot) {
+        MvccProcessor prc = cctx.shared().coordinators();
+
+        if (snapshot != null) {
+            prc.removeQueryTracker(id);
+
+            prc.ackQueryDone(snapshot, id);
+        }
+    }
+
+    /** */
     private void requestSnapshot0(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
         if (checkTopology(topVer, lsnr = decorate(lsnr))) {
+            cctx.shared().coordinators().addQueryTracker(this);
+
             try {
                 MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal();
 
@@ -209,6 +189,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
                 lsnr.onError(e);
             }
         }
+        else
+            cctx.shared().coordinators().removeQueryTracker(id);
     }
 
     /** */
@@ -229,7 +211,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private boolean checkTopology(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
         MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
 
-        if (crd == null) {
+        if (crd.topologyVersion() == AffinityTopologyVersion.ZERO) {
             lsnr.onError(noCoordinatorError(topVer));
 
             return false;
@@ -238,7 +220,10 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         this.topVer = topVer;
 
         synchronized (this) {
-            crdVer = crd.coordinatorVersion();
+            if (done)
+                return false;
+
+            crdVer = crd.version();
         }
 
         return true;
@@ -280,27 +265,30 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code false} if need to remap.
      */
     private boolean onResponse0(@NotNull MvccSnapshot res, MvccSnapshotResponseListener lsnr) {
-        boolean needRemap = false;
+        boolean ackQueryDone = false, needRemap = false;
 
         synchronized (this) {
             assert snapshot() == null : "[this=" + this + ", rcvdVer=" + res + "]";
 
-            if (crdVer != 0) {
+            if (!done && crdVer != 0) {
                 this.snapshot = res;
+
+                return true;
             }
-            else
+
+
+            if (crdVer != 0)
+                ackQueryDone = true;
+            else if (!done)
                 needRemap = true;
         }
 
-        if (needRemap) { // Coordinator failed or reassigned, need remap.
-            tryRemap(lsnr);
+        if (needRemap)
+            tryRemap(lsnr); // Coordinator is failed or reassigned, need remap.
+        else if (ackQueryDone)
+            ackQueryDone(res); // Coordinator is not failed, but the tracker is already closed.
 
-            return false;
-        }
-
-        cctx.shared().coordinators().addQueryTracker(this);
-
-        return true;
+        return false;
     }
 
     /**

@@ -187,8 +187,8 @@ public class MvccUtils {
         byte state = proc.state(mvccCrd, mvccCntr);
 
         if ((state == TxState.NA || state == TxState.PREPARED)
-            && (proc.currentCoordinator() == null // Recovery from WAL.
-            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            && (proc.currentCoordinator().topologyVersion() == AffinityTopologyVersion.ZERO // Recovery from WAL.
+            || mvccCrd < proc.currentCoordinator().version()))
             state = TxState.ABORTED;
 
         return state;
@@ -809,7 +809,7 @@ public class MvccUtils {
 
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
-        else if ((tracker = tx.mvccQueryTracker()) == null)
+        else
             tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx));
 
         if (tracker.snapshot() == null)

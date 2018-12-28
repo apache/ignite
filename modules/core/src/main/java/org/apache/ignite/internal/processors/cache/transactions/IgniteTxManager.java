@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
@@ -320,10 +321,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Rollback all active transactions with acquired Mvcc snapshot.
+     * @param crdVer New coordinator version.
      */
-    public void rollbackMvccTxOnCoordinatorChange() {
-        for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccSnapshot() != null && tx instanceof GridNearTxLocal)
+    public void rollbackMvccTxOnCoordinatorChange(long crdVer) {
+        for (IgniteInternalTx tx : nearIdMap.values()) {
+            MvccSnapshot snapshot = tx.mvccSnapshot();
+
+            if (!tx.local() || snapshot == null)
+                continue;
+
+            if (snapshot.coordinatorVersion() != crdVer)
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }

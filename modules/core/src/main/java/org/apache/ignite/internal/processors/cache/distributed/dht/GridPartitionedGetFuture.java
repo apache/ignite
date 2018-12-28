@@ -440,22 +440,18 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes,
         Map<K, V> locVals
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        if (!affNodes.get(0).isLocal() && forcePrimary)
+            return false; // Neither local primary or read from backup enabled.
 
-        if (fastLocGet) {
-            try {
-                if (localGet(topVer, key, part, locVals))
-                    return true;
-            }
-            finally {
-                cctx.releaseForFastLocalGet(part, topVer);
-            }
+        if (!cctx.reserveForFastLocalGet(part, topVer))
+            return false; // Failed to reserve local partition for read.
+
+        try {
+            return localGet(topVer, key, part, locVals);
         }
-
-        return false;
+        finally {
+            cctx.releaseForFastLocalGet(part, topVer);
+        }
     }
 
     /**
@@ -470,7 +466,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         GridDhtCacheAdapter<K, V> cache = cache();
 
-        boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
+        boolean readNoEntry = cctx.mvccEnabled() || cctx.readNoEntry(expiryPlc, false);
         boolean evt = !skipVals;
 
         while (true) {
@@ -528,7 +524,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccSnapshot(),
                                 null);
 
                             if (getRes != null) {
@@ -547,8 +542,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 taskName,
                                 expiryPlc,
-                                !deserializeBinary,
-                                mvccSnapshot());
+                                !deserializeBinary);
                         }
 
                         entry.touch(topVer);

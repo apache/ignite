@@ -429,7 +429,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         GridDhtCacheAdapter colocated = cctx.dht();
 
-        boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
+        boolean readNoEntry = cctx.mvccEnabled() || cctx.readNoEntry(expiryPlc, false);
         boolean evt = !skipVals;
 
         while (true) {
@@ -486,7 +486,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -505,8 +504,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true,
-                                mvccSnapshot);
+                                true);
                         }
 
                         entry.touch(topVer);

@@ -21,9 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Mvcc tracker.
@@ -82,15 +80,6 @@ public interface MvccQueryTracker {
      * Marks tracker as done.
      */
     public void onDone();
-
-    /**
-     * Marks tracker as done.
-     *
-     * @param tx Transaction.
-     * @param commit Commit flag.
-     * @return Acknowledge future.
-     */
-    @Nullable public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit);
 
     /**
      * Mvcc coordinator change callback.

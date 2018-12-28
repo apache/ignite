@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,11 +76,6 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     /** {@inheritDoc} */
     @Override public void onDone() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
-        throw new UnsupportedOperationException("Operation is not supported.");
     }
 
     /** {@inheritDoc} */

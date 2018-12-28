@@ -35,13 +35,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -297,22 +295,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         else
             // No backup or near nodes to send commit message to (just complete then).
             sync = false;
-
-        GridLongList waitTxs = tx.mvccWaitTransactions();
-
-        if (waitTxs != null) {
-            MvccSnapshot snapshot = tx.mvccSnapshot();
-
-            assert snapshot != null;
-
-            MvccCoordinator crd = cctx.coordinators().currentCoordinator();
-
-            if (crd != null && crd.coordinatorVersion() == snapshot.coordinatorVersion()) {
-                add((IgniteInternalFuture)cctx.coordinators().waitTxsFuture(crd.nodeId(), waitTxs));
-
-                sync = true;
-            }
-        }
 
         markInitialized();
 

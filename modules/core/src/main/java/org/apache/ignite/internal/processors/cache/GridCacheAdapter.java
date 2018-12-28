@@ -1977,8 +1977,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             tx = checkCurrentTx();
         }
 
-        if (tx == null || tx.implicit()) {
-            assert !ctx.mvccEnabled() || mvccSnapshot != null;
+        if (ctx.mvccEnabled() || tx == null || tx.implicit()) {
+            assert (mvccSnapshot == null) == !ctx.mvccEnabled();
 
             Map<KeyCacheObject, EntryGetResult> misses = null;
 
@@ -2003,7 +2003,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
-                boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
+                boolean readNoEntry = ctx.mvccEnabled() || ctx.readNoEntry(expiry, readerArgs != null);
 
                 for (KeyCacheObject key : keys) {
                     while (true) {
@@ -2084,7 +2084,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
-                                        mvccSnapshot,
                                         readerArgs);
 
                                     assert res != null;
@@ -2109,7 +2108,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
-                                        mvccSnapshot,
                                         readerArgs);
 
                                     if (res == null)
@@ -4956,8 +4954,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*transformClo*/null,
             /*taskName*/null,
             /*expiryPlc*/null,
-            !deserializeBinary,
-            null); // TODO IGNITE-7371
+            !deserializeBinary);
 
         if (val == null)
             return null;
