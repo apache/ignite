@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
@@ -171,7 +172,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                     try {
                         int idx = clientIdx.take();
 
-                        Ignite ignite = grid(idx);
+                        IgniteEx ignite = grid(idx);
 
                         Thread.currentThread().setName("client-thread-" + ignite.name());
 
@@ -205,6 +206,10 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                                 tx.commit();
                             }
                             catch (IgniteException | CacheException e) {
+                                // TODO Remove after IGNITE-1758 will be fixed.
+                                if (ignite.context().isStopping())
+                                    return null;
+
                                 retryFut = getRetryFuture(e);
                             }
                         }
