@@ -114,15 +114,6 @@ public class IgniteServiceGridTestSuite {
         suite.addTest(new JUnit4TestAdapter(ServiceDeploymentOnClientDisconnectTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceDeploymentDiscoveryListenerNotificationOrderTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceDeploymentNonSerializableStaticConfigurationTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridServiceDeploymentExceptionPropagationTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorLeftTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorFailTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesLeftTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesFailTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentOnClientDisconnectTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentDiscoveryListenerNotificationOrderTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentNonSerializableStaticConfigurationTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceInfoSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessIdSelfTest.class));
