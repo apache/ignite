@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.engine.Session;
+import org.h2.util.CloseWatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -43,6 +47,9 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODE_CNT = 2;
 
+    /** Iterations count. */
+    private static final int ITERS = 10;
+
     /** Keys count. */
     private static final int KEY_CNT = 100;
 
@@ -50,13 +57,10 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
     private static final int THREAD_CNT = 100;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        Ignite node = startGrids(NODE_CNT);
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
 
-        IgniteCache<Long, String> cache = node.cache(CACHE_NAME);
-
-        for (int i = 0; i < KEY_CNT; i++)
-            cache.put((long)i, String.valueOf(i));
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -79,6 +83,8 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConnectionLeaks() throws Exception {
+        startGridAndPopulateCache(NODE_CNT);
+
         final IgniteCache cache = grid(1).cache(CACHE_NAME);
 
         final CountDownLatch latch = new CountDownLatch(THREAD_CNT);
@@ -105,6 +111,8 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConnectionLeaksOnSqlException() throws Exception {
+        startGridAndPopulateCache(NODE_CNT);
+
         final CountDownLatch latch = new CountDownLatch(THREAD_CNT);
         final CountDownLatch latch2 = new CountDownLatch(1);
 
@@ -139,6 +147,53 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         }
         finally {
             latch2.countDown();
+        }
+    }
+
+    /**
+     * @throws Exception On failed.
+     */
+    @Test
+    public void testDetachedConnectionOfLocalQueryOnNodeRestart() throws Exception {
+        for (int i = 0; i < ITERS; ++i) {
+            startGridAndPopulateCache(1);
+
+            IgniteCache cache = grid(0).cache(CACHE_NAME);
+
+            cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).iterator().next();
+
+            cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).getAll();
+
+            cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).iterator().next();
+
+            stopAllGrids();
+
+            U.sleep(50);
+        }
+
+        stopAllGrids();
+
+        checkAllConnectionAreClosed();
+    }
+
+    /**
+     * Check all H2 connection are closed.
+     */
+    private void checkAllConnectionAreClosed() {
+        Set<Object> refs = GridTestUtils.getFieldValue(CloseWatcher.class, "refs");
+
+        if (!refs.isEmpty()) {
+            for (Object o : refs) {
+                if (o instanceof CloseWatcher
+                    && ((CloseWatcher)o).getCloseable() instanceof Session) {
+                    log.error("Session: " + ((CloseWatcher)o).getCloseable()
+                        + ", open=" + !((Session)((CloseWatcher)o).getCloseable()).isClosed());
+                }
+            }
+
+            GridDebug.dumpHeap("h_conn_heap_dmp.hprof", true);
+
+            fail("Not closed connections. Heap dump is created");
         }
     }
 
@@ -179,5 +234,19 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      */
     private Map<Thread, ?> perThreadConnections(int nodeIdx) {
         return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections().connectionsForThread();
+    }
+
+    /**
+     * @param nodes Nodes count.
+     * @throws Exception On error.
+     */
+    private void startGridAndPopulateCache(int nodes) throws Exception {
+        startGrids(NODE_CNT);
+
+        IgniteCache<Long, String> cache = grid(0).cache(CACHE_NAME);
+
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put((long)i, String.valueOf(i));
+
     }
 }
