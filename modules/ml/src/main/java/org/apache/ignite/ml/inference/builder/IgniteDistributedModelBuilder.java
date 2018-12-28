@@ -30,28 +30,28 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
 /**
  * Builder that allows to start Apache Ignite services for distributed inference and get a facade that allows to work
- * with this distributed inference infrastructure as with a single inference model (see {@link InfModel}).
+ * with this distributed inference infrastructure as with a single inference model (see {@link Model}).
  *
  * The common workflow is based on a request/response queues and multiple workers represented by Apache Ignite services.
- * When the {@link #build(InfModelReader, InfModelParser)} method is called Apache Ignite starts the specified number of
+ * When the {@link #build(ModelReader, ModelParser)} method is called Apache Ignite starts the specified number of
  * service instances and request/response queues. Each service instance reads request queue, processes inbound requests
- * and writes responses to response queue. The facade returned by the {@link #build(InfModelReader, InfModelParser)}
- * method operates with request/response queues. When the {@link InfModel#apply(Object)} method is called the argument
+ * and writes responses to response queue. The facade returned by the {@link #build(ModelReader, ModelParser)}
+ * method operates with request/response queues. When the {@link Model#predict(Object)} method is called the argument
  * is sent as a request to the request queue. When the response is appeared in the response queue the {@link Future}
  * correspondent to the previously sent request is completed and the processing finishes.
  *
- * Be aware that {@link InfModel#close()} method must be called to clear allocated resources, stop services and remove
+ * Be aware that {@link Model#close()} method must be called to clear allocated resources, stop services and remove
  * queues.
  */
-public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
+public class IgniteDistributedModelBuilder implements AsyncModelBuilder {
     /** Template of the inference service name. */
     private static final String INFERENCE_SERVICE_NAME_PATTERN = "inference_service_%s";
 
@@ -83,7 +83,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
      * @param instances Number of service instances maintaining to make distributed inference.
      * @param maxPerNode Max per node number of instances.
      */
-    public IgniteDistributedInfModelBuilder(Ignite ignite, int instances, int maxPerNode) {
+    public IgniteDistributedModelBuilder(Ignite ignite, int instances, int maxPerNode) {
         this.ignite = ignite;
         this.instances = instances;
         this.maxPerNode = maxPerNode;
@@ -92,35 +92,35 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
     /**
      * Starts the specified in constructor number of service instances and request/response queues. Each service
      * instance reads request queue, processes inbound requests and writes responses to response queue. The returned
-     * facade is represented by the {@link InfModel} operates with request/response queues, but hides these details
-     * behind {@link InfModel#apply(Object)} method of {@link InfModel}.
+     * facade is represented by the {@link Model} operates with request/response queues, but hides these details
+     * behind {@link Model#predict(Object)} method of {@link Model}.
      *
-     * Be aware that {@link InfModel#close()} method must be called to clear allocated resources, stop services and
+     * Be aware that {@link Model#close()} method must be called to clear allocated resources, stop services and
      * remove queues.
      *
      * @param reader Inference model reader.
      * @param parser Inference model parser.
      * @param <I> Type of model input.
      * @param <O> Type of model output.
-     * @return Facade represented by {@link InfModel}.
+     * @return Facade represented by {@link Model}.
      */
-    @Override public <I extends Serializable, O extends Serializable> InfModel<I, Future<O>> build(
-        InfModelReader reader, InfModelParser<I, O, ?> parser) {
+    @Override public <I extends Serializable, O extends Serializable> Model<I, Future<O>> build(
+        ModelReader reader, ModelParser<I, O, ?> parser) {
         return new DistributedInfModel<>(ignite, UUID.randomUUID().toString(), reader, parser, instances, maxPerNode);
     }
 
     /**
      * Facade that operates with request/response queues to make distributed inference, but hides these details
-     * behind {@link InfModel#apply(Object)} method of {@link InfModel}.
+     * behind {@link Model#predict(Object)} method of {@link Model}.
      *
-     * Be aware that {@link InfModel#close()} method must be called to clear allocated resources, stop services and
+     * Be aware that {@link Model#close()} method must be called to clear allocated resources, stop services and
      * remove queues.
      *
      * @param <I> Type of model input.
      * @param <O> Type of model output.
      */
     private static class DistributedInfModel<I extends Serializable, O extends Serializable>
-        implements InfModel<I, Future<O>> {
+        implements Model<I, Future<O>> {
         /** Ignite instance. */
         private final Ignite ignite;
 
@@ -155,7 +155,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
          * @param instances Number of service instances maintaining to make distributed inference.
          * @param maxPerNode Max per node number of instances.
          */
-        DistributedInfModel(Ignite ignite, String suffix, InfModelReader reader, InfModelParser<I, O, ?> parser,
+        DistributedInfModel(Ignite ignite, String suffix, ModelReader reader, ModelParser<I, O, ?> parser,
             int instances, int maxPerNode) {
             this.ignite = ignite;
             this.suffix = suffix;
@@ -172,7 +172,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
         }
 
         /** {@inheritDoc} */
-        @Override public Future<O> apply(I input) {
+        @Override public Future<O> predict(I input) {
             if (!running.get())
                 throw new IllegalStateException("Inference model is not running");
 
@@ -198,7 +198,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
          * @param instances Number of service instances maintaining to make distributed inference.
          * @param maxPerNode Max per node number of instances.
          */
-        private void startService(InfModelReader reader, InfModelParser<I, O, ?> parser, int instances, int maxPerNode) {
+        private void startService(ModelReader reader, ModelParser<I, O, ?> parser, int instances, int maxPerNode) {
             ignite.services().deployMultiple(
                 String.format(INFERENCE_SERVICE_NAME_PATTERN, suffix),
                 new IgniteDistributedInfModelService<>(reader, parser, suffix),
@@ -279,8 +279,8 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
 
     /**
      * Apache Ignite service that makes inference reading requests from the request queue and writing responses to the
-     * response queue. This service is assumed to be deployed in {@link #build(InfModelReader, InfModelParser)} method
-     * and cancelled in {@link InfModel#close()} method of the inference model.
+     * response queue. This service is assumed to be deployed in {@link #build(ModelReader, ModelParser)} method
+     * and cancelled in {@link Model#close()} method of the inference model.
      *
      * @param <I> Type of model input.
      * @param <O> Type of model output.
@@ -291,10 +291,10 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
         private static final long serialVersionUID = -3596084917874395597L;
 
         /** Inference model reader. */
-        private final InfModelReader reader;
+        private final ModelReader reader;
 
         /** Inference model parser. */
-        private final InfModelParser<I, O, ?> parser;
+        private final ModelParser<I, O, ?> parser;
 
         /** Suffix that with correspondent templates formats service and queue names. */
         private final String suffix;
@@ -306,7 +306,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
         private transient IgniteQueue<O> resQueue;
 
         /** Inference model, is created in {@link #init(ServiceContext)} method. */
-        private transient InfModel<I, O> mdl;
+        private transient Model<I, O> mdl;
 
         /**
          * Constructs a new instance of Ignite distributed inference model service.
@@ -315,7 +315,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
          * @param parser Inference model parser.
          * @param suffix Suffix that with correspondent templates formats service and queue names.
          */
-        IgniteDistributedInfModelService(InfModelReader reader, InfModelParser<I, O, ?> parser, String suffix) {
+        IgniteDistributedInfModelService(ModelReader reader, ModelParser<I, O, ?> parser, String suffix) {
             this.reader = reader;
             this.parser = parser;
             this.suffix = suffix;
@@ -347,7 +347,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
                     continue;
                 }
 
-                O res = mdl.apply(req);
+                O res = mdl.predict(req);
 
                 try {
                     resQueue.put(res);

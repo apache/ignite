@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference;
+package org.apache.ignite.ml.inference.builder;
 
-import java.util.function.Function;
+import org.apache.ignite.ml.inference.Model;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Inference model that can be used to make predictions.
- *
- * @param <I> Type of model input.
- * @param <O> Type of model output.
+ * Tests for {@link SingleModelBuilder}.
  */
-public interface InfModel<I, O> extends Function<I, O>, AutoCloseable {
-    /**
-     * Make a prediction for the specified input arguments.
-     *
-     * @param input Input arguments.
-     * @return Prediction result.
-     */
-    public O apply(I input);
+public class SingleModelBuilderTest {
+    /** */
+    @Test
+    public void testBuild() {
+        SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
-    /** {@inheritDoc} */
-    public void close();
+        Model<Integer, Integer> infMdl = mdlBuilder.build(
+            ModelBuilderTestUtil.getReader(),
+            ModelBuilderTestUtil.getParser()
+        );
+
+        for (int i = 0; i < 100; i++)
+            assertEquals(Integer.valueOf(i), infMdl.predict(i));
+    }
 }

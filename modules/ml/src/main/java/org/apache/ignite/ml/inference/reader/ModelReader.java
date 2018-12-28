@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.builder;
+package org.apache.ignite.ml.inference.reader;
 
 import java.io.Serializable;
-import java.util.concurrent.Future;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
 
 /**
- * Builder of asynchronous inference model. Uses specified model reader (see {@link InfModelReader}) and mode parser
- * (see {@link InfModelParser}) to build a model.
+ * Model reader that reads model from external or internal storage and returns it in serialized form as byte array.
  */
 @FunctionalInterface
-public interface AsyncInfModelBuilder {
+public interface ModelReader extends Serializable {
     /**
-     * Builds asynchronous inference model using specified model reader and model parser.
+     * Rads model and returns it in serialized form as byte array.
      *
-     * @param reader Model reader.
-     * @param parser Model parser.
-     * @param <I> Type of model input.
-     * @param <O> Type of model output.
-     * @return Inference model.
+     * @return Inference model in serialized form as byte array.
      */
-    public <I extends Serializable, O extends Serializable> InfModel<I, Future<O>> build(InfModelReader reader,
-        InfModelParser<I, O, ?> parser);
+    public byte[] read();
 }

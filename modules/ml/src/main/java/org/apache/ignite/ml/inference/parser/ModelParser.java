@@ -15,15 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering.kmeans;
+package org.apache.ignite.ml.inference.parser;
 
-import org.apache.ignite.ml.IgniteModel;
+import java.io.Serializable;
+import org.apache.ignite.ml.inference.Model;
 
-/** Base interface for all clusterization models. */
-public interface ClusterizationModel<P, V> extends IgniteModel<P, V> {
-    /** Gets the clusters count. */
-    public int getAmountOfClusters();
-
-    /** Get cluster centers. */
-    public P[] getCenters();
+/**
+ * Model parser that accepts a serialized model represented by byte array, parses it and returns {@link Model}.
+ *
+ * @param <I> Type of model input.
+ * @param <O> Type of model output.
+ */
+@FunctionalInterface
+public interface ModelParser<I, O, M extends Model<I, O>> extends Serializable {
+    /**
+     * Accepts serialized model represented by byte array, parses it and returns {@link Model}.
+     *
+     * @param mdl Serialized model represented by byte array.
+     * @return Inference model.
+     */
+    public M parse(byte[] mdl);
 }

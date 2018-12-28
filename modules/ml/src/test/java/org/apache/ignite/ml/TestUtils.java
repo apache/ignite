@@ -405,7 +405,7 @@ public class TestUtils {
      * @param <V> Type of output.
      * @return Model which returns given constant.
      */
-    public static <T, V> Model<T, V> constantModel(V v) {
+    public static <T, V> IgniteModel<T, V> constantModel(V v) {
         return t -> v;
     }
 
@@ -419,7 +419,7 @@ public class TestUtils {
      * @param <L> Type of dataset labels.
      * @return Trainer which independently of dataset outputs given model.
      */
-    public static <I, O, M extends Model<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
+    public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
