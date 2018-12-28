@@ -50,10 +50,13 @@ public class PartitionExtractor {
      * Maximum number of partitions to be used in case of between expression.
      * In case of exceeding all partitions will be used.
      */
-    private static final int MAX_PARTITIONS_COUNT_BETWEEN = 16;
+    private static final int DFL_MAX_PARTITIONS_COUNT_BETWEEN = 16;
 
     /** Indexing. */
     private final IgniteH2Indexing idx;
+
+    /** Maximum number of partitions to be used in case of between expression. */
+    private final int maxPartitionsCountBetween;
 
     /**
      * Constructor.
@@ -62,6 +65,8 @@ public class PartitionExtractor {
      */
     public PartitionExtractor(IgniteH2Indexing idx) {
         this.idx = idx;
+        maxPartitionsCountBetween = Integer.getInteger(
+            IgniteSystemProperties.IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN, DFL_MAX_PARTITIONS_COUNT_BETWEEN);
     }
 
     /**
@@ -211,7 +216,7 @@ public class PartitionExtractor {
     private PartitionNode extractFromAnd(GridSqlOperation op) throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode  betweenNodes = tryExtractBetween(op);
+        PartitionNode betweenNodes = tryExtractBetween(op);
 
         if (betweenNodes != null)
             return betweenNodes;
@@ -381,15 +386,15 @@ public class PartitionExtractor {
     }
 
     /**
-     * Try to extract partitons from {@code op} assuming that it's between opoeration or simple range.
+     * Try to extract partitions from {@code op} assuming that it's between operation or simple range.
      *
      * @param op Sql operation.
      * @return {@code PartitionSingleNode} if operation reduced to one partition,
-     *   {@code PartitionGroupNode} if operation reduced to multiple partitons or null if operation is neither
+     *   {@code PartitionGroupNode} if operation reduced to multiple partitions or null if operation is neither
      *   between nor simple range. Null also returns if it's not possible to extract partitions from given operation.
      * @throws IgniteCheckedException If failed.
      */
-    PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
         // Between operation (or similar range) should contain exact two children.
         if (op.size() != 2)
             return null;
@@ -451,7 +456,7 @@ public class PartitionExtractor {
         if (!leftCol.equals(rightCol))
             return null;
 
-        // Check that columns might be used for partition prunning.
+        // Check that columns might be used for partition pruning.
         if (!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
             return null;
 
@@ -494,6 +499,7 @@ public class PartitionExtractor {
         else
             return null;
 
+        // Tmp. Will be removed when support to params will be added.
         if (leftParam != null || rightParam != null)
             return null;
 
@@ -534,10 +540,7 @@ public class PartitionExtractor {
 
             parts.add(part);
 
-            int maxPartitionsCnt = Integer.getInteger(
-                IgniteSystemProperties.IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN, MAX_PARTITIONS_COUNT_BETWEEN);
-
-            if (parts.size() > maxPartitionsCnt)
+            if (parts.size() > maxPartitionsCountBetween)
                 return null;
         }
 

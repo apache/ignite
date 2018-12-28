@@ -48,7 +48,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Test checks partition exatracion for between (where x beween 10 and 17) and simple range (where x > 10 and x < 17)
+ * Test checks partition extraction for between (where x between 10 and 17) and simple range (where x > 10 and x < 17)
  * expressions.
  */
 @RunWith(JUnit4.class)
@@ -275,7 +275,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
         //        or
         //      /   \
         //     /     \
-        // beween   between
+        // between   between
         //
         testBetweenConstOperator(BETWEEN_OR_BETWEEN_QRY, 11, 13, 9,
             11, 12, 13, 20, 21, 22, 23, 24, 25);
@@ -294,11 +294,11 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
         testRangeConstOperator(RANGE_QRY, 5, 5, 1, false);
         testRangeConstOperator(RANGE_QRY, 7, 8, 2, false);
 
-        // At the moment between-based-partiton-prunung doesn't support range expressesion
+        // At the moment between-based-partition-pruning doesn't support range expression
         // with any extra expressions because of optimisations that change expressions order:
         // org where org._KEY > 10 and org._KEY > 11 and org._KEY < 13 converts to
         // ((ORG__Z0._KEY < 13) AND ((ORG__Z0._KEY > 10) AND (ORG__Z0._KEY > 11)))
-        // So bellow we only check excpected result rows count and not expected partions matching.
+        // So bellow we only check expected result rows count and not expected partitions matching.
 
         // select * from Organization org where org._KEY > 10 and org._KEY %s %d and org._KEY %s %d
         //
@@ -467,7 +467,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     }
 
     /**
-     * Check default partitoins limit exceeding.
+     * Check default partitions limit exceeding.
      */
     @Test
     public void testBetweenPartitionsDefaultLimitExceeding() {
@@ -479,12 +479,12 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     }
 
     /**
-     * Check custom partitoins limit exceeding.
+     * Check custom partitions limit exceeding.
      */
     @Test
     public void testBetweenPartitionsCustomLimitExceeding() {
         try (GridTestUtils.SystemProperty ignored = new GridTestUtils.
-            SystemProperty(IgniteSystemProperties.IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN, "4")){
+            SystemProperty(IgniteSystemProperties.IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN, "4")){
 
             // Default limit (16) not exceeded.
             testBetweenConstOperator(BETWEEN_QRY, 1, 4, 4);
@@ -496,7 +496,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
     /**
      * Check that given sql query with between expression returns expect rows count and that expected partitions set
-     * mathes used one.
+     * matches used one.
      *
      * @param sqlQry SQL query
      * @param from Between from const.
@@ -511,7 +511,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
     /**
      * Check that given sql query with between expression returns expect rows count and that expected partitions set
-     * mathes used one.
+     * matches used one.
      *
      * @param sqlQry SQL query
      * @param from Between from const.
@@ -524,21 +524,21 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
         Set<Integer> expPartitionsSet = new HashSet<>();
 
-        for (int expPatition: expPartitions)
-            expPartitionsSet.add(expPatition);
+        for (int expPartition: expPartitions)
+            expPartitionsSet.add(expPartition);
 
         assertEquals(expPartitionsSet, commSpi.partitionsSet());
     }
 
     /**
      * Check that given sql query with between expression returns expect rows count and that expected partitions set
-     * mathes used one.
+     * matches used one.
      *
      * @param sqlQry SQL query
      * @param from Range from const.
      * @param to Range to const.
      * @param expResCnt Expected result rows count.
-     * @param skipPartitionsCheck Skip partitions mathing check.
+     * @param skipPartitionsCheck Skip partitions matching check.
      */
     private void testRangeConstOperator(String sqlQry, int from, int to, int expResCnt, boolean skipPartitionsCheck) {
         // Range: > <.
@@ -569,7 +569,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
     /**
      * Check that given sql query with range expression returns expect rows count and that expected partitions set
-     * mathes used one.
+     * matches used one.
      *
      * @param sqlQry SQL query
      * @param from Range from const.
@@ -641,19 +641,19 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     }
 
     /**
-     * Extract expected partitons set from between from/to keys.
+     * Extract expected partitions set from between from/to keys.
      *
      * @param keyFrom Key from.
      * @param keyTo Key to.
-     * @return Expected set of partitons.
+     * @return Expected set of partitions.
      */
     private Set<Integer> extractExpectedPartitions(int keyFrom, int keyTo) {
-        Set<Integer> partitons = new HashSet<>();
+        Set<Integer> partitions = new HashSet<>();
 
         for (int i = keyFrom; i <= keyTo; i++)
-            partitons.add(ignite(0).affinity(ORG_CACHE_NAME).partition(i));
+            partitions.add(ignite(0).affinity(ORG_CACHE_NAME).partition(i));
 
-        return partitons;
+        return partitions;
     }
 
     /**
