@@ -33,6 +33,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -90,7 +91,30 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         res.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
         res.setCommunicationSpi(new TrackingTcpCommunicationSpi());
 
+        res.setLocalHost("127.0.0.1");
+
         return res;
+    }
+
+    /**
+     * Test simple join.
+     */
+    @Test
+    public void testSimpleJoin() {
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1");
+
+        assertPartitions(
+            parititon("t2", 1)
+        );
     }
 
     /**
@@ -127,18 +151,10 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         String affCol = null;
 
         StringBuilder sql = new StringBuilder("CREATE TABLE ").append(name).append("(");
-
-        boolean firstCol = true;
-
         for (Object col : cols) {
             Column col0 = col instanceof Column ? (Column)col : new Column((String)col, false, false);
 
-            if (firstCol)
-                firstCol = true;
-            else
-                sql.append(", ");
-
-            sql.append(col0.name()).append(" VARCHAR");
+            sql.append(col0.name()).append(" VARCHAR, ");
 
             if (col0.pk())
                 pkCols.add(col0.name());
@@ -170,9 +186,10 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         sql.append(")");
 
         sql.append(") WITH \"template=" + (replicated ? "replicated" : "partitioned"));
+        sql.append(", CACHE_NAME=" + name);
 
         if (affCol != null)
-            sql.append(", affinityKey=" + affCol);
+            sql.append(", AFFINITY_KEY=" + affCol);
 
         sql.append("\"");
 
@@ -245,6 +262,15 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     private static void assertNoRequests() {
         assertEquals("Requests were sent: " + INTERCEPTED_REQS.get(), 0, INTERCEPTED_REQS.get());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param key Key.
+     * @return Partition.
+     */
+    private int parititon(String cacheName, Object key) {
+        return client().affinity(cacheName).partition(key);
     }
 
     /**
