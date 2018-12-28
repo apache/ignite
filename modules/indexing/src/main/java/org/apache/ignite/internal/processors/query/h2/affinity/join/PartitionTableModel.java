@@ -67,7 +67,7 @@ public class PartitionTableModel {
     @Nullable public PartitionJoinTable table(String alias) {
         PartitionJoinTable res = tbls.get(alias);
 
-        assert res != null || excludedTblNames.contains(alias);
+        assert res != null || (excludedTblNames != null && excludedTblNames.contains(alias));
 
         return res;
     }

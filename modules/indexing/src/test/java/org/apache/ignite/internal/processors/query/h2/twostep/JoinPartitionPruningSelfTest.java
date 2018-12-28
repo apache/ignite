@@ -110,10 +110,19 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             affinityColumn("ak2"),
             "v3");
 
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1");
+//        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1");
+//
+//        assertPartitions(
+//            parititon("t2", 1)
+//        );
+//        clearIoState();
+
+        // TODO: Doesn't work.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1 OR t1.k1 = 2");
 
         assertPartitions(
-            parititon("t2", 1)
+            parititon("t2", 1),
+            parititon("t1", 2)
         );
     }
 
