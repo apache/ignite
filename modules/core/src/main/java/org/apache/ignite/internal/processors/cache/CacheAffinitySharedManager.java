@@ -1334,6 +1334,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
 
+        log.info("Created full partition message with affinity assignment = " + U.foldAssignment(msg));
+
+        log.info("Discovery cache version = " + fut.context().events().discoveryCache().version() + " on sending full partition message = "
+            + fut.context().events().discoveryCache().serverNodes());
+
         assert F.isEmpty(affReq) || (!F.isEmpty(receivedAff) && receivedAff.size() >= affReq.size())
             : ("Requested and received affinity are different " +
                 "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
