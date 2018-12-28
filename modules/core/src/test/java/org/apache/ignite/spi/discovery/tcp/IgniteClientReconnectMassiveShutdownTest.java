@@ -35,11 +35,13 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -289,6 +291,14 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
             done.set(true);
 
             clientsFut.get();
+
+            assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
+                for (int i = 0; i < srvsToKill; i++)
+                    if (grid(i).context().gateway().getState() != GridKernalState.STOPPED)
+                        return false;
+
+                    return true;
+            }, 10_000));
 
             awaitPartitionMapExchange();
 
