@@ -1069,6 +1069,56 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Called on local affinity recalculation exchange.
+     *
+     * @param exchFut Exchange future.
+     * @param crd Coordinator flag.
+     */
+    public void onLocalAffinityRecalculation(GridDhtPartitionsExchangeFuture exchFut, boolean crd) {
+        AffinityTopologyVersion topVer = exchFut.initialVersion();
+
+        Collection<ClusterNode> aliveNodes = exchFut.context().events().discoveryCache().serverNodes();
+
+        Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
+
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                List<List<ClusterNode>> curAssignment = aff.assignments(aff.lastVersion());
+
+                List<List<ClusterNode>> newAssignment = new ArrayList<>(aff.idealAssignment());
+
+                assert newAssignment != null;
+
+                for (int p = 0; p < newAssignment.size(); p++) {
+                    List<ClusterNode> curNodes = curAssignment.get(p);
+                    List<ClusterNode> newNodes = newAssignment.get(p);
+
+                    ClusterNode curPrimary = !curNodes.isEmpty() ? curNodes.get(0) : null;
+                    ClusterNode newPrimary = !newNodes.isEmpty() ? newNodes.get(0) : null;
+
+                    // If new assignment is empty preserve current ownership for alive nodes.
+                    if (curPrimary != null && newPrimary == null) {
+                        List<ClusterNode> newNodes0 = new ArrayList<>(curNodes.size());
+
+                        for (ClusterNode node : curNodes) {
+                            if (aliveNodes.contains(node))
+                                newNodes0.add(node);
+                        }
+
+                        newAssignment.set(p, newNodes0);
+                    }
+
+                }
+
+                aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
+
+                exchFut.timeBag().finishLocalStage("Affinity locally recalculated by exchange " +
+                    "[grp=" + aff.cacheOrGroupName() + "]");
+            }
+        });
+    }
+
+    /**
      * Called when received {@link CacheAffinityChangeMessage} which should complete exchange.
      *
      * @param exchFut Exchange future.

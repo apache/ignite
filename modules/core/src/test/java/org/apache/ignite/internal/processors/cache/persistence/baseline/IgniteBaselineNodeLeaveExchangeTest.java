@@ -1,35 +1,34 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -43,15 +42,20 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestDelayingCommunicationSpi;
+import org.apache.ignite.internal.TestDelayingTcpDiscoverySpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
@@ -61,11 +65,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Test;
 
 /**
- *
+ * Tests the local affinity recalculation exchange in case of leaving a baseline node.
  */
-public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
+public class IgniteBaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 8;
 
@@ -94,7 +99,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     private static final AtomicBoolean atomicStop = new AtomicBoolean();
 
     /** Keys count. */
-    private static final int KEYS_CNT = 50;
+    private static final int KEYS_CNT = 100;
 
     /** Account value bound. */
     private static final long ACCOUNT_VAL_BOUND = 1000;
@@ -103,7 +108,16 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     private static final long ACCOUNT_VAL_ORIGIN = 100;
 
     /** Blocking discovery spi enabled. */
-    private static final AtomicBoolean blockingDiscoverySpiEnabled = new AtomicBoolean();
+    private static final AtomicBoolean delayMsg = new AtomicBoolean();
+
+    /** */
+    private volatile PickKeyOption pickKeyOption = PickKeyOption.NO_DATA_ON_LEAVING_NODE;
+
+    /** */
+    private volatile List<Integer> txKeys;
+
+    /** */
+    private volatile List<Integer> atomicKeys;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -117,6 +131,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
                         .setInitialSize(300L * 1024 * 1024)
                         .setMaxSize(300L * 1024 * 1024)
                 )
+                .setWalSegmentSize(1024 * 1024)
         );
 
         if (igniteInstanceName.contains(DUMMY_GRID_NAME))
@@ -143,7 +158,26 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(txCfg, atomicCfg);
 
-        cfg.setDiscoverySpi(new BlockingDiscoverySpi());
+        cfg.setDiscoverySpi(new TestDelayingTcpDiscoverySpi() {
+            /** {@inheritDoc} */
+            @Override protected boolean delayMessage(TcpDiscoveryAbstractMessage msg) {
+                return delayMsg.get() &&
+                    (msg instanceof TcpDiscoveryNodeFailedMessage || msg instanceof TcpDiscoveryNodeLeftMessage);
+            }
+        });
+
+        cfg.setCommunicationSpi(new TestDelayingCommunicationSpi() {
+            /** {@inheritDoc} */
+            @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
+                return delayMsg.get() &&
+                    (msg instanceof GridDhtPartitionsFullMessage || msg instanceof GridDhtPartitionsSingleMessage);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected int delayMillis() {
+                return 1000;
+            }
+        });
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -163,7 +197,8 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param dummyCrd Dummy grid coordinator.
+     * @throws Exception if failed.
      */
     private void startAndActivateNodes(boolean dummyCrd) throws Exception {
         if (dummyCrd) {
@@ -195,7 +230,7 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
      *
      */
     private void cleanup() throws Exception {
-        blockingDiscoverySpiEnabled.set(false);
+        delayMsg.set(false);
 
         stopAllGrids();
 
@@ -203,91 +238,132 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveOperationsFromClient() throws Exception {
-        testServerLeave(CLIENT_GRID_NAME, true);
+        testUpdatesNotBlockExchangeOnServerLeave(CLIENT_GRID_NAME, true);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveOperationsFromDummyCrd() throws Exception {
-        testServerLeave(DUMMY_GRID_NAME, true);
+        testUpdatesNotBlockExchangeOnServerLeave(DUMMY_GRID_NAME, true);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveOperationsFromRegularCrd() throws Exception {
-        testServerLeave(DUMMY_GRID_NAME, false);
+        testUpdatesNotBlockExchangeOnServerLeave(DUMMY_GRID_NAME, false);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveOperationsFromServer() throws Exception {
-        testServerLeave(getTestIgniteInstanceName(0), true);
+        testUpdatesNotBlockExchangeOnServerLeave(getTestIgniteInstanceName(0), true);
     }
 
     /**
-     *
+     * @param operationsGridName Grid name.
+     * @param dummyCrd Dummy grid coordinator.
+     * @throws Exception if failed.
      */
-    private void testServerLeave(String operationsGridName, boolean dummyCrd) throws Exception {
+    private void testUpdatesNotBlockExchangeOnServerLeave(String operationsGridName,
+        boolean dummyCrd) throws Exception {
         startAndActivateNodes(dummyCrd);
 
         populateData(grid(operationsGridName), TX_CACHE_NAME);
-        populateData(grid(operationsGridName), ATOMIC_CACHE_NAME);
 
         putGetSelfCheck(operationsGridName);
+
+        IgniteInternalCache<Integer, Long> cachex = grid(LEAVING_GRID).cachex(TX_CACHE_NAME);
+
+        ArrayList<Integer> backupKeys = pickKey(cachex.context(), PickKeyOption.BACKUP_ON_LEAVING_NODE);
+
+        assertFalse(backupKeys.isEmpty());
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            IgniteEx ignite = grid(operationsGridName);
+
+            IgniteInternalCache<Integer, Long> cache = ignite.cachex(TX_CACHE_NAME);
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+                cache.put(backupKeys.get(rnd.nextInt(backupKeys.size())), rnd.nextLong());
+
+                assertTrue("Exchange waited for partition released.", latch.await(30, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+
+            return true;
+        });
 
         stopGrid(LEAVING_GRID);
 
         awaitPartitionMapExchange();
 
-        atomicStop.set(true);
-        txStop.set(true);
+        latch.countDown();
+
+        fut.get();
 
         putGetSelfCheck(operationsGridName);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveUnderLoadFromClient() throws Exception {
-        testBltServerLeaveUnderLoad(CLIENT_GRID_NAME, true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(CLIENT_GRID_NAME, true, pickKeyOption);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveUnderLoadFromDummyCrd() throws Exception {
-        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, true, pickKeyOption);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveUnderLoadFromRegularCrd() throws Exception {
-        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, false, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(DUMMY_GRID_NAME, false, pickKeyOption);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveUnderLoadFromFirstServer() throws Exception {
-        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(0), true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(0), true, pickKeyOption);
     }
 
     /**
-     *
+     * @throws Exception if failed.
      */
+    @Test
     public void testServerLeaveUnderLoadFromLastServer() throws Exception {
-        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(GRIDS_COUNT - 1), true, PickKeyOption.NO_DATA_ON_LEAVING_NODE);
+        testBltServerLeaveUnderLoad(getTestIgniteInstanceName(GRIDS_COUNT - 1), true, pickKeyOption);
     }
 
     /**
-     *
+     * @param operationsGridName Grid name.
+     * @param dummyCrd Dummy grid coordinator.
+     * @param pickKeyOption Pick key option.
+     * @throws Exception if failed.
      */
     private void testBltServerLeaveUnderLoad(
         String operationsGridName,
@@ -301,6 +377,15 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
 
         putGetSelfCheck(operationsGridName);
 
+        IgniteInternalCache<Integer, Long> txCache = grid(LEAVING_GRID).cachex(TX_CACHE_NAME);
+        IgniteInternalCache<Integer, Long> aCache = grid(LEAVING_GRID).cachex(ATOMIC_CACHE_NAME);
+
+        txKeys = pickKey(txCache.context(), pickKeyOption);
+        atomicKeys = pickKey(aCache.context(), pickKeyOption);
+
+        assertFalse(txKeys.isEmpty());
+        assertFalse(atomicKeys.isEmpty());
+
         GridCompoundFuture<Long, Void> fut = new GridCompoundFuture<>();
 
         fut.add(startTxLoad(1, operationsGridName, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, pickKeyOption));
@@ -309,26 +394,22 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
         fut.add(startAtomicLoad(1, operationsGridName, pickKeyOption));
 
         fut.markInitialized();
-        
+
         U.sleep(1000);
 
-        blockingDiscoverySpiEnabled.set(true);
+        delayMsg.set(true);
 
-        log.info("@@@ stopping node");
-
-        stopGrid(LEAVING_GRID);
+        stopGrid(LEAVING_GRID, true);
 
         awaitPartitionMapExchange();
 
-        log.info("@@@ awaitPartitionMapExchange() ended");
-
-        blockingDiscoverySpiEnabled.set(false);
+        delayMsg.set(false);
 
         U.sleep(5000);
 
-        atomicStop.set(true);
         txStop.set(true);
-        
+        atomicStop.set(true);
+
         fut.get();
 
         putGetSelfCheck(operationsGridName);
@@ -393,14 +474,13 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
                     IgniteEx ignite = grid(loadGridName);
 
                     IgniteCache<Integer, Long> cache = ignite.cache(TX_CACHE_NAME);
-                    IgniteInternalCache<Integer, Long> cachex = ignite.cachex(TX_CACHE_NAME);
 
                     try (Transaction tx = ignite.transactions().txStart(txConc, txIs)) {
-                        int acc0 = pickKey(cachex.context(), pickKeyOption);
+                        int acc0 = txKeys.get(rnd.nextInt(txKeys.size()));
 
                         int acc1;
 
-                        while ((acc1 = pickKey(cachex.context(), pickKeyOption)) == acc0)
+                        while ((acc1 = txKeys.get(rnd.nextInt(txKeys.size()))) == acc0)
                             ;
 
                         // Avoid deadlocks.
@@ -428,10 +508,10 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
 
                         long now = System.currentTimeMillis();
                         long last = lastCommitTs.getAndSet(now);
-                        
+
                         if (last < now) {
                             long max = maxSla.get();
-                            
+
                             if (max < now - last) {
                                 maxSla.set(now - last);
 
@@ -442,19 +522,18 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
                     catch (TransactionOptimisticException ignored) {
                         // No-op.
                     }
-                    catch (CacheException e) {
-                        if (X.hasCause(e, ClusterTopologyException.class))
+                    catch (Exception e) {
+                        if (X.hasCause(e, ClusterTopologyException.class, ClusterTopologyCheckedException.class))
                             U.warn(log, "User transaction resulted in topology exception", e);
-                    }
-                    catch (IgniteException e) {
-                        U.error(log, "User transaction failed", e);
+                        else
+                            throw e;
                     }
                 }
             },
             threads, "tx-load-thread-" + loadGridName + "-" + txConc.toString() + "-" + txIs.toString()
         );
-        
-        resFut.listen(fut -> log.info("@@@ Max SLA for tx load config " +
+
+        resFut.listen(fut -> log.info("Max SLA for tx load config " +
             "[threads=" + threads +
             ",loadGridName=" + loadGridName +
             ",txConc=" + txConc +
@@ -467,53 +546,63 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Picks key for cache operation, optionally enforces or avoids selecting key
-     * that is present on {@link #LEAVING_GRID}.
+     * Picks key for cache operation, optionally enforces or avoids selecting key that is present on {@link
+     * #LEAVING_GRID}.
      *
      * @param cctx Cctx.
      * @param pickKeyOption Pick key option.
+     * @return Array of keys.
      */
-    private int pickKey(GridCacheContext<Integer, ?> cctx, PickKeyOption pickKeyOption) {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+    private ArrayList<Integer> pickKey(GridCacheContext<Integer, ?> cctx, PickKeyOption pickKeyOption) {
+        ArrayList<Integer> keys = new ArrayList<>();
 
-        while (true) {
-            int res = rnd.nextInt(KEYS_CNT);
+        List<List<ClusterNode>> idealAssignment = cctx.affinity().idealAssignment();
 
-            if (pickKeyOption == PickKeyOption.ANY)
-                return res;
+        AffinityFunction aff = cctx.config().getAffinity();
 
-            List<List<ClusterNode>> idealAssignment = cctx.affinity().idealAssignment();
+        String leaveNodeName = getTestIgniteInstanceName(LEAVING_GRID);
 
-            AffinityFunction aff = cctx.config().getAffinity();
-
-            int part = aff.partition(res);
+        for (int key = 0; key < KEYS_CNT; key++) {
+            int part = aff.partition(key);
 
             List<ClusterNode> nodes = idealAssignment.get(part);
 
-            if (pickKeyOption == PickKeyOption.NO_DATA_ON_LEAVING_NODE) {
-                boolean needRetry = false;
+            switch (pickKeyOption) {
+                case PRIMARY_ON_LEAVING_NODE:
+                    if (leaveNodeName.equals(nodes.get(0).consistentId()))
+                        keys.add(key);
 
-                for (ClusterNode n : nodes) {
-                    if (n.consistentId().equals(getTestIgniteInstanceName(LEAVING_GRID)))
-                        needRetry = true;
-                }
+                    break;
 
-                if (!needRetry)
-                    return res;
+                case BACKUP_ON_LEAVING_NODE:
+                    for (ClusterNode node : nodes.subList(1, nodes.size())) {
+                        if (leaveNodeName.equals(node.consistentId()))
+                            keys.add(key);
+                    }
+
+                    break;
+
+                case NO_DATA_ON_LEAVING_NODE:
+                    boolean needRetry = false;
+
+                    for (ClusterNode node : nodes) {
+                        if (leaveNodeName.equals(node.consistentId()))
+                            needRetry = true;
+                    }
+
+                    if (!needRetry)
+                        keys.add(key);
+
+                    break;
+
+                case ANY:
+                    keys.add(key);
+
+                    break;
             }
-            else if (pickKeyOption == PickKeyOption.PRIMARY_ON_LEAVING_NODE) {
-                if (nodes.get(0).consistentId().equals(getTestIgniteInstanceName(LEAVING_GRID)))
-                    return res;
-            }
-            else if (pickKeyOption == PickKeyOption.BACKUP_ON_LEAVING_NODE) {
-                for (ClusterNode n : nodes.subList(1, nodes.size())) {
-                    if (n.consistentId().equals(getTestIgniteInstanceName(LEAVING_GRID)))
-                        return res;
-                }
-            }
-            else
-                throw new IllegalArgumentException("Unexpected pick key option: " + pickKeyOption);
         }
+
+        return keys;
     }
 
     /**
@@ -538,14 +627,13 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
                 while (!atomicStop.get()) {
                     IgniteEx ignite = grid(loadGridName);
 
-                    IgniteInternalCache<Integer, Long> cachex = ignite.cachex(ATOMIC_CACHE_NAME);
                     IgniteCache<Integer, Long> cache = ignite.cache(ATOMIC_CACHE_NAME);
 
                     int cnt = rnd.nextInt(KEYS_CNT / 10);
 
                     try {
                         for (int i = 0; i < cnt; i++) {
-                            cache.put(pickKey(cachex.context(), pickKeyOption),
+                            cache.put(atomicKeys.get(rnd.nextInt(atomicKeys.size())),
                                 rnd.nextLong(ACCOUNT_VAL_ORIGIN, ACCOUNT_VAL_BOUND + 1));
                         }
 
@@ -570,10 +658,10 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
             threads, "atomic-load-thread"
         );
 
-        resFut.listen(fut -> log.info("@@@ Max SLA for atomic load config " +
+        resFut.listen(fut -> log.info("Max SLA for atomic load config " +
             "[threads=" + threads +
-            ",loadGridName=" + loadGridName +
-            ",pickKeyOption=" + pickKeyOption
+            ", loadGridName=" + loadGridName +
+            ", pickKeyOption=" + pickKeyOption
             + "] is " + maxSla.get() + "ms, " +
             "awaken from max SLA hang " + (System.currentTimeMillis() - maxSlaAwakenTs.get()) + "ms ago."));
 
@@ -621,7 +709,6 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
         return sum;
     }
 
-
     /** */
     private static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
@@ -633,59 +720,13 @@ public class BaselineNodeLeaveExchangeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class BlockingDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            holdMessageIfNeeded(msg);
-
-            super.writeToSocket(msg, sock, res, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            holdMessageIfNeeded(msg);
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            holdMessageIfNeeded(msg);
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        /**
-         * @param msg Message.
-         */
-        private void holdMessageIfNeeded(TcpDiscoveryAbstractMessage msg) {
-            if (blockingDiscoverySpiEnabled.get() &&
-                (msg instanceof TcpDiscoveryNodeFailedMessage || msg instanceof TcpDiscoveryNodeLeftMessage)) {
-                try {
-                    U.warn(log, "Holding message a bit: " + msg.toString());
-
-                    U.sleep(2_000);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    // No-op.
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
     private enum PickKeyOption {
-        /** Key will be selected randomly. */ANY,
+        /** Key will be selected randomly. */ ANY,
 
-        /** Key's primary partition will reside on leaving node. */PRIMARY_ON_LEAVING_NODE,
+        /** Key's primary partition will reside on leaving node. */ PRIMARY_ON_LEAVING_NODE,
 
-        /** Key's backup partition will reside on leaving node. */BACKUP_ON_LEAVING_NODE,
+        /** Key's backup partition will reside on leaving node. */ BACKUP_ON_LEAVING_NODE,
 
-        /** All partitions that contain key will reside anywhere except leaving node. */NO_DATA_ON_LEAVING_NODE
+        /** All partitions that contain key will reside anywhere except leaving node. */ NO_DATA_ON_LEAVING_NODE
     }
 }
