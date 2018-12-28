@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.function.BiFunction;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.inference.Model;
 
 /** Basic interface for all models. */
-public interface Model<T, V> extends InfModel<T, V>, IgniteFunction<T, V> {
+public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     /**
      * Combines this model with other model via specified combiner
      *
@@ -30,8 +30,8 @@ public interface Model<T, V> extends InfModel<T, V>, IgniteFunction<T, V> {
      * @param combiner Combiner.
      * @return Combination of models.
      */
-    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(apply(v), other.apply(v));
+    public default <X, W> IgniteModel<T, X> combine(IgniteModel<T, W> other, BiFunction<V, W, X> combiner) {
+        return v -> combiner.apply(predict(v), other.predict(v));
     }
 
     /**
@@ -41,8 +41,8 @@ public interface Model<T, V> extends InfModel<T, V>, IgniteFunction<T, V> {
      * @param <V1> Type of input of function applied before this model.
      * @return Composition model of the form {@code x -> after(mdl(x))}.
      */
-    public default <V1> Model<T, V1> andThen(IgniteFunction<V, V1> after) {
-        return t -> after.apply(apply(t));
+    public default <V1> IgniteModel<T, V1> andThen(IgniteModel<V, V1> after) {
+        return t -> after.predict(predict(t));
     }
 
     /**

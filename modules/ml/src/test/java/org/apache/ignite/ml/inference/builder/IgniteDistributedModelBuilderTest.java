@@ -20,14 +20,14 @@ package org.apache.ignite.ml.inference.builder;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.inference.InfModel;
+import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Tests for {@link IgniteDistributedInfModelBuilder} class.
+ * Tests for {@link IgniteDistributedModelBuilder} class.
  */
-public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest {
+public class IgniteDistributedModelBuilderTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
 
@@ -54,11 +54,11 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testBuild() {
-        AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1, 1);
+        AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 1, 1);
 
-        InfModel<Integer, Future<Integer>> infMdl = mdlBuilder.build(
-            InfModelBuilderTestUtil.getReader(),
-            InfModelBuilderTestUtil.getParser()
+        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
+            ModelBuilderTestUtil.getReader(),
+            ModelBuilderTestUtil.getParser()
         );
 
         // TODO: IGNITE-10250: Test hangs sometimes because of Ignite queue issue.

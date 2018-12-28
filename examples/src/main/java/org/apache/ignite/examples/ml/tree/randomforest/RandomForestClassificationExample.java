@@ -95,7 +95,7 @@ public class RandomForestClassificationExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = randomForestMdl.apply(inputs);
+                    double prediction = randomForestMdl.predict(inputs);
 
                     totalAmount++;
                     if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))

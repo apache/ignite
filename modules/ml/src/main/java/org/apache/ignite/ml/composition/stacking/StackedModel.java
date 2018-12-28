@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.stacking;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
@@ -40,15 +40,15 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <O> Type of aggregator model output.
  * @param <AM> Type of aggregator model.
  */
-public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<IS, O> {
+public class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements IgniteModel<IS, O> {
     /** Submodels layer. */
-    private Model<IS, IA> subModelsLayer;
+    private IgniteModel<IS, IA> subModelsLayer;
 
     /** Aggregator model. */
     private final AM aggregatorMdl;
 
     /** Models constituting submodels layer. */
-    private List<Model<IS, IA>> submodels;
+    private List<IgniteModel<IS, IA>> submodels;
 
     /** Binary operator merging submodels outputs. */
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
@@ -75,7 +75,7 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
      *
      * @return Submodels constituting first layer of this model.
      */
-    List<Model<IS, IA>> submodels() {
+    List<IgniteModel<IS, IA>> submodels() {
         return submodels;
     }
 
@@ -93,14 +93,14 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
      *
      * @param subMdl Submodel to add.
      */
-    void addSubmodel(Model<IS, IA> subMdl) {
+    void addSubmodel(IgniteModel<IS, IA> subMdl) {
         submodels.add(subMdl);
         subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subMdl, aggregatingInputMerger)
             : subMdl;
     }
 
     /** {@inheritDoc} */
-    @Override public O apply(IS is) {
-        return subModelsLayer.andThen(aggregatorMdl).apply(is);
+    @Override public O predict(IS is) {
+        return subModelsLayer.andThen(aggregatorMdl).predict(is);
     }
 }
