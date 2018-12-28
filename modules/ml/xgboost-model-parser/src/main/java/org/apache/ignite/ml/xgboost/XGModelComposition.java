@@ -20,7 +20,7 @@ package org.apache.ignite.ml.xgboost;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -32,7 +32,7 @@ import static org.apache.ignite.ml.math.StorageConstants.RANDOM_ACCESS_MODE;
 /**
  * XGBoost model composition.
  */
-public class XGModelComposition implements Model<HashMap<String, Double>, Double> {
+public class XGModelComposition implements IgniteModel<HashMap<String, Double>, Double> {
     /** Dictionary used for matching feature names and indexes. */
     private final Map<String, Integer> dict;
 
@@ -50,8 +50,8 @@ public class XGModelComposition implements Model<HashMap<String, Double>, Double
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(HashMap<String, Double> map) {
-        return modelsComposition.apply(toVector(map));
+    @Override public Double predict(HashMap<String, Double> map) {
+        return modelsComposition.predict(toVector(map));
     }
 
     /** */
