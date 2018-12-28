@@ -584,10 +584,10 @@ public class QueryUtils {
             throw new IgniteCheckedException(
                 "Key is of sql type, so 'keyFields' QueryEntity property must be empty, but keyFields=" + keyFields);
 
-        // Non-sql type key and value may contain fields that sql should be aware of. QueryEntity has collection of such
-        // fields. Let's build binary properties for them.
-        // If we have a key or value of sql type, we will not create property for them because key or value
-        // is not a "field" of itself.
+        // We are creating binary properties for all the fields, even if field is of sql type (keyFieldName or
+        // valueFieldName). In that case we rely on the fact, that binary property's methods value() and
+        // setValue() will never get called, because there is no value to extract, key/val object itself is a
+        // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             boolean isKeyField = hasKeyFields && keyFields.contains(entry.getKey());
 
