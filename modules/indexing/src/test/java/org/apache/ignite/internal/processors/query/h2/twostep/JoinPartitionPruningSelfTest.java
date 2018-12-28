@@ -19,20 +19,26 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,6 +81,113 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration res = super.getConfiguration(name);
+
+        res.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        res.setCommunicationSpi(new TrackingTcpCommunicationSpi());
+
+        return res;
+    }
+
+    /**
+     * Create PARTITIONED table.
+     *
+     * @param name Name.
+     * @param cols Columns.
+     */
+    private void createPartitionedTable(String name, Object... cols) {
+        createTable0(name, false, cols);
+    }
+
+    /**
+     * Create REPLICATED table.
+     *
+     * @param name Name.
+     * @param cols Columns.
+     */
+    private void createReplicatedTable(String name, Object... cols) {
+        createTable0(name, true, cols);
+    }
+
+    /**
+     * Internal CREATE TABLE routine.
+     *
+     * @param name Name.
+     * @param replicated Replicated table flag.
+     * @param cols Columns.
+     */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+    private void createTable0(String name, boolean replicated, Object... cols) {
+        List<String> pkCols = new ArrayList<>();
+
+        String affCol = null;
+
+        StringBuilder sql = new StringBuilder("CREATE TABLE ").append(name).append("(");
+
+        boolean firstCol = true;
+
+        for (Object col : cols) {
+            Column col0 = col instanceof Column ? (Column)col : new Column((String)col, false, false);
+
+            if (firstCol)
+                firstCol = true;
+            else
+                sql.append(", ");
+
+            sql.append(col0.name()).append(" VARCHAR");
+
+            if (col0.pk())
+                pkCols.add(col0.name());
+
+            if (col0.affinity()) {
+                if (affCol != null)
+                    throw new IllegalStateException("Only one affinity column is allowed: " + col0.name());
+
+                affCol = col0.name();
+            }
+        }
+
+        if (pkCols.isEmpty())
+            throw new IllegalStateException("No PKs!");
+
+        sql.append("PRIMARY KEY (");
+
+        boolean firstPkCol = true;
+
+        for (String pkCol : pkCols) {
+            if (firstPkCol)
+                firstPkCol = false;
+            else
+                sql.append(", ");
+
+            sql.append(pkCol);
+        }
+
+        sql.append(")");
+
+        sql.append(") WITH \"template=" + (replicated ? "replicated" : "partitioned"));
+
+        if (affCol != null)
+            sql.append(", affinityKey=" + affCol);
+
+        sql.append("\"");
+
+        execute(sql.toString());
+    }
+
+    /**
+     * Execute SQL query.
+     *
+     * @param sql SQL.
+     */
+    private void execute(String sql) {
+        GridQueryProcessor proc = client().context().query();
+
+        proc.querySqlFields(new SqlFieldsQuery(sql), false).getAll();
     }
 
     /**
@@ -157,6 +270,70 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             }
 
             super.sendMessage(node, msg, ackC);
+        }
+    }
+
+    /**
+     * @param name Name.
+     * @return PK column.
+     */
+    public Column pkColumn(String name) {
+        return new Column(name, true, false);
+    }
+
+    /**
+     * @param name Name.
+     * @return Affintiy column.
+     */
+    public Column affinityColumn(String name) {
+        return new Column(name, true, true);
+    }
+
+    /**
+     * Column.
+     */
+    private static class Column {
+        /** Name. */
+        private final String name;
+
+        /** PK. */
+        private final boolean pk;
+
+        /** Affinity key. */
+        private final boolean aff;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param pk PK flag.
+         * @param aff Affinity flag.
+         */
+        public Column(String name, boolean pk, boolean aff) {
+            this.name = name;
+            this.pk = pk;
+            this.aff = aff;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return PK flag.
+         */
+        public boolean pk() {
+            return pk;
+        }
+
+        /**
+         * @return Affintiy flag.
+         */
+        public boolean affinity() {
+            return aff;
         }
     }
 }
