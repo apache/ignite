@@ -380,11 +380,17 @@ public class PartitionExtractor {
         return new PartitionTableDescriptor(tbl.cacheName(), tbl.getName());
     }
 
-    // TODO: 27.12.18 comment
+    /**
+     * Try to extract partitons from {@code op} assuming that it's between opoeration or simple range.
+     *
+     * @param op Sql operation.
+     * @return {@code PartitionSingleNode} if operation reduced to one partition,
+     *   {@code PartitionGroupNode} if operation reduced to multiple partitons or null if operation is neither
+     *   between nor simple range. Null also returns if it's not possible to extract partitions from given operation.
+     * @throws IgniteCheckedException If failed.
+     */
     PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
         // Between operation (or similar range) should contain exact two children.
-
-        // TODO: 26.12.18 ensure that it's actually between or same range
         if (op.size() != 2)
             return null;
 
@@ -445,7 +451,7 @@ public class PartitionExtractor {
         if (!leftCol.equals(rightCol))
             return null;
 
-        // Check that both columns might be used for partition prunning.
+        // Check that columns might be used for partition prunning.
         if (!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
             return null;
 
@@ -494,7 +500,6 @@ public class PartitionExtractor {
         // Check const dataTypes
         int leftConstType = leftConst.value().getType();
 
-        // TODO: 26.12.18 use leftCol.column().getType() instead of leftConstType/rightConstType ?
         if (!(leftConstType == Value.BYTE || leftConstType == Value.SHORT || leftConstType == Value.INT ||
             leftConstType == Value.LONG))
             return null;
@@ -505,56 +510,9 @@ public class PartitionExtractor {
             rightConstType == Value.LONG))
             return null;
 
-//        Long lowerLongVal;
-//        Long upperLongVal;
-//
-//        switch (leftOpType) {
-//            case BIGGER_EQUAL:
-//
-//                break;
-//            case BIGGER:
-//                break;
-//
-//            case SMALLER:
-//
-//                break;
-//
-//            case SMALLER_EQUAL:
-//
-//                break;
-//
-//                default:
-//                    return null;
-//        }
-//
-//        if (leftOpType == GridSqlOperationType.BIGGER)
-//            lowerLongVal = leftConst.value().getLong() + 1;
-//        else if (leftOpType == GridSqlOperationType.BIGGER_EQUAL)
-//            lowerLongVal = leftConst.value().getLong();
-//        else if (leftOpType == GridSqlOperationType.SMALLER)
-//            upperLongVal = leftConst.value().getLong() - 1;
-//        else if (leftOpType == GridSqlOperationType.SMALLER_EQUAL)
-//            upperLongVal = leftConst.value().getLong();
-//
-//        if (rightOpType == GridSqlOperationType.BIGGER)
-//            lowerLongVal = leftConst.value().getLong() + 1;
-//        else if (rightOpType == GridSqlOperationType.BIGGER_EQUAL)
-//            lowerLongVal = leftConst.value().getLong();
-//        else if (rightOpType == GridSqlOperationType.SMALLER)
-//            upperLongVal = leftConst.value().getLong() - 1;
-//        else if (rightOpType == GridSqlOperationType.SMALLER_EQUAL)
-//            upperLongVal = leftConst.value().getLong();
-//
-//        = leftOpType == GridSqlOperationType.BIGGER_EQUAL leftConst.value().getLong();
 
         long leftLongVal = leftConst.value().getLong();
         long rightLongVal = rightConst.value().getLong();
-
-//        // Swap long values if right is less then left.
-//        if (rightLongVal < leftLongVal) {
-//            leftLongVal = rightLongVal;
-//            rightLongVal = leftConst.value().getLong();
-//        }
 
         // Increment left long value if '>' is used.
         if (leftOpType == GridSqlOperationType.BIGGER)
