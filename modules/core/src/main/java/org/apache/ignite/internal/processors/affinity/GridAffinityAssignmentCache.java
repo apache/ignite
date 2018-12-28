@@ -200,7 +200,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment for topology version.
      */
-    public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
+    public GridAffinityAssignment initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
 
         assert idealAssignment != null;
@@ -230,6 +230,8 @@ public class GridAffinityAssignmentCache {
                 + ", topVer=" + topVer
                 + ", aff=" + fold(affAssignment) + "]");
         }
+
+        return assignment;
     }
 
     /**

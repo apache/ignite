@@ -1472,19 +1472,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final GridDhtPartitionsExchangeFuture fut,
         final GridDhtPartitionsFullMessage msg
     ) {
-        // Please do not use following pattern of code (nodesByOrder, affCache). NEVER.
-        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
+        ExchangeDiscoveryEvents evts = fut.context().events();
+
+        final Map<Long, ClusterNode> nodesByOrder = evts.discoveryCache().serverNodes()
+            .stream().collect(Collectors.toMap(ClusterNode::order, node -> node));
 
         final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
-                ExchangeDiscoveryEvents evts = fut.context().events();
-
                 Map<Integer, CacheGroupAffinityMessage> idealAffDiff = msg.idealAffinityDiff();
 
                 CacheGroupAffinityMessage affMsg = idealAffDiff != null ? idealAffDiff.get(aff.groupId()) : null;
 
+                List<List<ClusterNode>> idealAssignment = aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache());
                 List<List<ClusterNode>> newAssignment;
 
                 if (affMsg != null) {
@@ -1492,7 +1493,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     assert !F.isEmpty(diff);
 
-                    newAssignment = new ArrayList<>(diff.size());
+                    newAssignment = new ArrayList<>(idealAssignment);
 
                     for (Map.Entry<Integer, GridLongList> e : diff.entrySet()) {
                         GridLongList assign = e.getValue();
@@ -1503,7 +1504,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     }
                 }
                 else
-                    newAssignment = aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache());
+                    newAssignment = idealAssignment;
 
                 aff.initialize(evts.topologyVersion(), cachedAssignment(aff, newAssignment, affCache));
 
@@ -1533,12 +1534,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
             ", msg=" + msg + "]");
 
-        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
+        final ExchangeDiscoveryEvents evts = fut.context().events();
+
+        final Map<Long, ClusterNode> nodesByOrder = evts.discoveryCache().serverNodes()
+            .stream().collect(Collectors.toMap(ClusterNode::order, node -> node));
 
         forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
-                ExchangeDiscoveryEvents evts = fut.context().events();
-
                 CacheGroupContext grp = cctx.cache().cacheGroup(aff.groupId());
 
                 assert grp != null;
