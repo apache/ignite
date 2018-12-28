@@ -136,7 +136,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
 
     /**
      * Returns name of the value column in case of simple value or user defined value alias. If not found - "_val".
-     * TODO: tests for user defined alias. TODO: copy columns under read lock ?
      *
      * @param table table to extract value alias.
      * @return alias of the value.

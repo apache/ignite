@@ -91,7 +91,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param args Args.
      */
     @SuppressWarnings("unchecked")
-    private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
+    private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
         IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
@@ -106,7 +106,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param sql Sql.
      * @param args Args.
      */
-    private List<List<?>> execSql(String sql, Object ... args) {
+    private List<List<?>> execSql(String sql, Object... args) {
         return execSql(grid(), sql, args);
     }
 
@@ -203,7 +203,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * @param rowData Row data.
      * @param colTypes Column types.
      */
-    private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
+    private void assertColumnTypes(List<?> rowData, Class<?>... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
                 assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
@@ -229,7 +229,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
-                "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
+            "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Integer.class, String.class, String.class);
@@ -374,7 +374,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         // Broadcast jobs to server and client nodes to get non zero metric values.
         for (int i = 0; i < 100; i++) {
-            IgniteFuture<Void > fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
+            IgniteFuture<Void> fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
                 .broadcastAsync(
                     new IgniteRunnable() {
                         @Override public void run() {
@@ -548,7 +548,6 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
-
         List<?> expRow = Arrays.asList(
             "DEFAULT",      // TABLE_SCHEMA
             "CACHE_SQL",    // TABLE_NAME
@@ -585,9 +584,56 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         );
 
         if (!F.eqNotOrdered(allExpRows, allInfos))
-            fail("Returned incorrect rows [expected=" + allExpRows + ", actual="+ allInfos + "].");
+            fail("Returned incorrect rows [expected=" + allExpRows + ", actual=" + allInfos + "].");
     }
 
+    /**
+     * Special test for key/val name and type. Covers most used cases
+     */
+    @Test
+    public void testTablesViewKeyVal() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        {
+            ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_ALIAS_NON_SQL_KEY")
+                .setQueryEntities(Collections.singleton(
+                    // A cache with  no key fields
+                    new QueryEntity(Object.class.getName(), "Object2")
+                        .addQueryField("name", String.class.getName(), null)
+                        .addQueryField("salary", Integer.class.getName(), null)
+                        .setTableName("NO_ALIAS_NON_SQL_KEY")
+                )));
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'NO_ALIAS_NON_SQL_KEY'").get(0);
+
+            assertEquals(Arrays.asList("_KEY", "_VAL"), keyValAliases);
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.SIMPLE_KEY_SIMPLE_VAL (ID INT PRIMARY KEY, NAME VARCHAR) WITH \"wrap_value=false\"");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'SIMPLE_KEY_SIMPLE_VAL'").get(0);
+
+            assertEquals(Arrays.asList("ID", "NAME"), keyValAliases);
+
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.COMPLEX_KEY_COMPLEX_VAL " +
+                "(ID1 INT, " +
+                "ID2 INT, " +
+                "VAL1 VARCHAR, " +
+                "VAL2 VARCHAR, " +
+                "PRIMARY KEY(ID1, ID2))");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'COMPLEX_KEY_COMPLEX_VAL'").get(0);
+
+            assertEquals(Arrays.asList("_KEY", "_VAL"), keyValAliases);
+        }
+    }
 
     /**
      * Test caches system views.
