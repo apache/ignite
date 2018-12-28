@@ -160,10 +160,9 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
 
             IgniteCache cache = grid(0).cache(CACHE_NAME);
 
+            // Execute unfinished & finished queries.
             cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).iterator().next();
-
             cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).getAll();
-
             cache.query(new SqlFieldsQuery("select * from String").setLocal(true)).iterator().next();
 
             stopAllGrids();
@@ -177,7 +176,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check all H2 connection are closed.
+     * Checks all H2 connection are closed.
      */
     private void checkAllConnectionAreClosed() {
         Set<Object> refs = GridTestUtils.getFieldValue(CloseWatcher.class, "refs");
