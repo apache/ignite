@@ -579,7 +579,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw res.error();
         }
         catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
+            throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), e);
         }
     }
 
@@ -618,7 +618,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * @param typeId Type ID.
-     * @return Meta data.
+     * @return Metadata.
      * @throws IgniteException In case of error.
      */
     @Nullable public BinaryMetadata metadata0(final int typeId) {

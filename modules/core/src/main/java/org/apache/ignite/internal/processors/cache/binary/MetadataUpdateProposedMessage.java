@@ -77,19 +77,19 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Node UUID which initiated meta data update. */
+    /** Node UUID which initiated metadata update. */
     private final UUID origNodeId;
 
     /** */
     private BinaryMetadata metadata;
 
-    /** Meta data type id. */
+    /** Metadata type id. */
     private final int typeId;
 
-    /** Meta data version which is pending for update. */
+    /** Metadata version which is pending for update. */
     private int pendingVer;
 
-    /** Meta data version which is already accepted by entire cluster. */
+    /** Metadata version which is already accepted by entire cluster. */
     private int acceptedVer;
 
     /** Message acceptance status. */

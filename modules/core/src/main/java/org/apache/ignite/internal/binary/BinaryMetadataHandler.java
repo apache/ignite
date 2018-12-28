@@ -23,11 +23,11 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 
 /**
- * Binary meta data handler.
+ * Binary metadata handler.
  */
 public interface BinaryMetadataHandler {
     /**
-     * Adds a new or updates an existing meta data to the latest version.
+     * Adds a new or updates an existing metadata to the latest version.
      * See {@link MetadataUpdateProposedMessage} javadoc for detailed protocol description.
      *
      * @param typeId Type ID.
@@ -38,7 +38,7 @@ public interface BinaryMetadataHandler {
     public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
-     * Gets meta data for provided type ID.
+     * Gets metadata for provided type ID.
      *
      * @param typeId Type ID.
      * @return Metadata.
@@ -47,7 +47,7 @@ public interface BinaryMetadataHandler {
     public BinaryType metadata(int typeId) throws BinaryObjectException;
 
     /**
-     * Gets unwrapped meta data for provided type ID.
+     * Gets unwrapped metadata for provided type ID.
      *
      * @param typeId Type ID.
      * @return Metadata.
