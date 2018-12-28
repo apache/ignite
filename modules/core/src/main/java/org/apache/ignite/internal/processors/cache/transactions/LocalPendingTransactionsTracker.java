@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -51,7 +52,7 @@ public class LocalPendingTransactionsTracker {
     private final Set<GridCacheVersion> currentlyCommittingTxs = U.newConcurrentHashSet();
 
     /** Tracker enabled. */
-    private final boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
+    private volatile boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
 
     /** Currently prepared transactions. Counters are incremented on prepare, decremented on commit/rollback. */
     private final ConcurrentHashMap<GridCacheVersion, Integer> preparedCommittedTxsCounters = new ConcurrentHashMap<>();
@@ -82,7 +83,7 @@ public class LocalPendingTransactionsTracker {
     private final AtomicBoolean trackCommitted = new AtomicBoolean(false);
 
     /** Tx finish awaiting. */
-    private volatile TxFinishAwaiting txFinishAwaiting = null;
+    private volatile TxFinishAwaiting txFinishAwaiting;
 
     /**
      * Tx finish awaiting facility.
@@ -238,7 +239,16 @@ public class LocalPendingTransactionsTracker {
     public LocalPendingTransactionsTracker(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
 
-        this.log = cctx.logger(getClass());
+        log = cctx.logger(getClass());
+    }
+
+    /**
+     * Enable pending transactions tracking.
+     */
+    void enable() {
+        assert cctx.kernalContext().gateway().getState() == GridKernalState.STARTING;
+
+        enabled = true;
     }
 
     /**
