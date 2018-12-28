@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
-import './style.scss';
+'use strict';
 
-/** @type {ng.IComponentOptions} */
-export default {
-    controller,
-    template,
-    bindings: {
-        activationToken: '@?'
+const IllegalAccessError = require('./IllegalAccessError');
+
+class MissingConfirmRegistrationException extends IllegalAccessError {
+    constructor(email) {
+        super('User account email not activated');
+
+        this.data = {
+            errorCode: 10104,
+            message: this.message,
+            email
+        };
     }
-};
+}
+
+module.exports = MissingConfirmRegistrationException;

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
 import controller from './controller';
+import templateUrl from './template.tpl.pug';
 import './style.scss';
 
-/** @type {ng.IComponentOptions} */
-export default {
+export const component: ng.IComponentOptions = {
     controller,
-    template,
+    templateUrl,
     bindings: {
-        activationToken: '@?'
+        email: '@'
     }
 };
