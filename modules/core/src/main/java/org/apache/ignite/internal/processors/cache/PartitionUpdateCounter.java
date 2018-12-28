@@ -487,6 +487,8 @@ public class PartitionUpdateCounter {
         return "Counter [init=" + initCntr + ", lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
     }
 
+    /** */
     public static class IllegalUpdateCounterException extends IgniteCheckedException {
+        private static final long serialVersionUID = 1L;
     }
 }
