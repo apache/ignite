@@ -135,7 +135,7 @@ public class VisorQueryInitTask extends VisorOneNodeTask<VisorQueryTaskArg, Viso
                             new VisorQueryHolder(qryId, cur, arg.getPageSize()));
 
                         scheduleResultSetHolderRemoval(qryId, ignite);
-                        scheduleResultSetGet(qryId, ignite);
+                        scheduleResultSetGet(qryId, ignite, false);
                     }
                     else
                         cur.close();

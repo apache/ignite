@@ -58,16 +58,6 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
 
         /** {@inheritDoc} */
         @Override protected VisorQueryResult run(VisorQueryNextPageTaskArg arg) {
-            return arg.getQueryId().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
-        }
-
-        /**
-         * Collect data from SQL query.
-         *
-         * @param arg Query name and page size.
-         * @return Query result with next page.
-         */
-        private VisorQueryResult nextSqlPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
 
             ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
@@ -86,44 +76,6 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
             if (rows != null) {
                 VisorQueryCursor<?> cur = holder.getCursor();
                 hasMore = cur.hasNext();
-
-                if (hasMore)
-                    cur.accessed(true);
-                else {
-                    storage.remove(qryId);
-
-                    cur.close();
-                }
-            }
-
-            return new VisorQueryResult(ignite.localNode().id(), qryId, null, rows, hasMore,
-                U.currentTimeMillis() - start);
-        }
-
-        /**
-         * Collect data from SCAN query
-         *
-         * @param arg Query name and page size.
-         * @return Next page with data.
-         */
-        private VisorQueryResult nextScanPage(VisorQueryNextPageTaskArg arg) {
-            long start = U.currentTimeMillis();
-
-            ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-
-            String qryId = arg.getQueryId();
-
-            VisorQueryHolder holder = storage.get(qryId);
-
-            if (holder == null)
-                throw new IgniteException("SQL query results are expired.");
-
-            List<Object[]> rows = holder.getRows();
-
-            boolean hasMore = true;
-
-            if (rows != null) {
-                VisorQueryCursor<?> cur = holder.getCursor();
 
                 if (hasMore)
                     cur.accessed(true);

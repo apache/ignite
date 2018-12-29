@@ -127,7 +127,7 @@ public class VisorScanQueryInitTask extends VisorOneNodeTask<VisorScanQueryTaskA
                         new VisorQueryHolder(qryId, cur, arg.getPageSize()));
 
                     scheduleResultSetHolderRemoval(qryId, ignite);
-                    scheduleResultSetGet(qryId, ignite);
+                    scheduleResultSetGet(qryId, ignite, true);
                 }
                 else
                     cur.close();

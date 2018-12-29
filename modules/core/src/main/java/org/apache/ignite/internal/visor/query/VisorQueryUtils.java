@@ -274,7 +274,7 @@ public class VisorQueryUtils {
     /**
      * @param qryId Unique query result id.
      */
-    public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite) {
+    public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite, final Boolean scan) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(GET_DELAY) {
             @Override public void onTimeout() {
                 ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
@@ -282,11 +282,19 @@ public class VisorQueryUtils {
                 VisorQueryHolder holder = storage.get(qryId);
 
                 if (holder != null) {
-                    VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
+                    VisorQueryCursor<?> cur = holder.getCursor();
 
                     try {
-                        if (cur.hasNext())
-                            holder.setRows(fetchSqlQueryRows(cur, holder.getPageSize()));
+                        if (cur.hasNext()) {
+                            if (scan) {
+                                holder.setRows(fetchScanQueryRows(
+                                    (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
+                            }
+                            else {
+                                holder.setRows(fetchSqlQueryRows(
+                                    (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
+                            }
+                        }
                     }
                     catch (Throwable e) {
                         holder.setErr(e);
