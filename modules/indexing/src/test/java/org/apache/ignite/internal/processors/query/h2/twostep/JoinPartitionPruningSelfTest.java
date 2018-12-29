@@ -115,23 +115,23 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             affinityColumn("ak2"),
             "v3");
 
-        execute("INSERT INTO t1 VALUES ('1', '1')");
-        execute("INSERT INTO t2 VALUES ('1', '1', '1')");
+        executeSingle("INSERT INTO t1 VALUES ('1', '1')");
+        executeSingle("INSERT INTO t2 VALUES ('1', '1', '1')");
 
-        execute("INSERT INTO t1 VALUES ('2', '2')");
-        execute("INSERT INTO t2 VALUES ('2', '2', '2')");
+        executeSingle("INSERT INTO t1 VALUES ('2', '2')");
+        executeSingle("INSERT INTO t2 VALUES ('2', '2', '2')");
 
-        execute("INSERT INTO t1 VALUES ('3', '3')");
-        execute("INSERT INTO t2 VALUES ('3', '3', '3')");
+        executeSingle("INSERT INTO t1 VALUES ('3', '3')");
+        executeSingle("INSERT INTO t2 VALUES ('3', '3', '3')");
 
-        execute("INSERT INTO t1 VALUES ('4', '4')");
-        execute("INSERT INTO t2 VALUES ('4', '4', '4')");
+        executeSingle("INSERT INTO t1 VALUES ('4', '4')");
+        executeSingle("INSERT INTO t2 VALUES ('4', '4', '4')");
 
-        execute("INSERT INTO t1 VALUES ('5', '5')");
-        execute("INSERT INTO t2 VALUES ('5', '5', '5')");
+        executeSingle("INSERT INTO t1 VALUES ('5', '5')");
+        executeSingle("INSERT INTO t2 VALUES ('5', '5', '5')");
 
         // Key (not alias).
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t1", "1")
@@ -143,7 +143,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Key (alias).
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t1", "2")
@@ -155,7 +155,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Non-affinity key.
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = ?",
             (res) -> {
                 assertNoPartitions();
                 assertEquals(1, res.size());
@@ -165,7 +165,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Affinity key.
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t2", "4")
@@ -179,7 +179,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Complex key.
         BinaryObject key = client().binary().builder("t2_key").setField("k1", "5").setField("ak2", "5").build();
 
-        List<List<?>> res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
+        List<List<?>> res = executeSingle("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
         assertPartitions(
             parititon("t2", "5")
         );
@@ -220,38 +220,38 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Transfer through "AND".
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
             (res) -> assertPartitions(
                 parititon("t1", "1")
             ),
             "1", "1"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
             (res) -> assertNoRequests(),
             "1", "2"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
                 parititon("t1", "1")
             ),
             "1", "1", "2"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
             (res) -> assertNoRequests(),
             "1", "2", "3"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
                 parititon("t1", "2")
             ),
             "1", "2", "2", "3"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
             (res) -> assertNoRequests(),
             "1", "2", "3", "4"
         );
@@ -288,17 +288,17 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             affinityColumn("ak2"),
             "v3");
 
-        execute("INSERT INTO t1 VALUES ('1', '1')");
-        execute("INSERT INTO t2 VALUES ('1', '1', '1')");
+        executeSingle("INSERT INTO t1 VALUES ('1', '1')");
+        executeSingle("INSERT INTO t2 VALUES ('1', '1', '1')");
 
-        execute("INSERT INTO t1 VALUES ('2', '2')");
-        execute("INSERT INTO t2 VALUES ('2', '2', '2')");
+        executeSingle("INSERT INTO t1 VALUES ('2', '2')");
+        executeSingle("INSERT INTO t2 VALUES ('2', '2', '2')");
 
-        execute("INSERT INTO t1 VALUES ('3', '3')");
-        execute("INSERT INTO t2 VALUES ('3', '3', '3')");
+        executeSingle("INSERT INTO t1 VALUES ('3', '3')");
+        executeSingle("INSERT INTO t2 VALUES ('3', '3', '3')");
 
         // Left table, should work.
-        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1 = ?",
+        execute("SELECT * FROM t1, t2 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t1", "1")
@@ -309,7 +309,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "1"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t1", "1")
@@ -321,7 +321,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Right table, should work.
-        executeCombinations("SELECT * FROM t1, t2 WHERE t2.ak2 = ?",
+        execute("SELECT * FROM t1, t2 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t2", "2")
@@ -332,7 +332,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "2"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
                     parititon("t2", "2")
@@ -343,18 +343,18 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "2"
         );
 
-        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
+        execute("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
             (res) -> assertNoPartitions(),
             "3", "3"
         );
 
         // Two tables, should not work.
-        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
+        execute("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
             (res) -> assertNoPartitions(),
             "3", "3"
         );
 
-        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1=? AND t2.ak2 = ?",
+        execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1=? AND t2.ak2 = ?",
             (res) -> assertNoPartitions(),
             "3", "3"
         );
@@ -493,7 +493,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         sql.append("\"");
 
-        execute(sql.toString());
+        executeSingle(sql.toString());
     }
 
     /**
@@ -503,11 +503,11 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param resConsumer Result consumer.
      * @param args Arguments.
      */
-    public void executeCombinations(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
+    public void execute(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
         System.out.println(">>> TEST COMBINATION: " + sql);
 
         // Execute query as is.
-        List<List<?>> res = execute(sql, args);
+        List<List<?>> res = executeSingle(sql, args);
 
         resConsumer.accept(res);
 
@@ -526,7 +526,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param executedSqls Already executed SQLs.
      * @param args Arguments.
      */
-    // TODO: Fix combinatorial checks!
     public void executeCombinations0(
         String sql,
         Consumer<List<List<?>>> resConsumer,
@@ -568,7 +567,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
             // Execute if this combination was never executed before.
             if (executedSqls.add(newSql)) {
-                List<List<?>> res = execute(newSql, newArgs);
+                List<List<?>> res = executeSingle(newSql, newArgs);
 
                 resConsumer.accept(res);
             }
@@ -584,7 +583,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      *
      * @param sql SQL.
      */
-    private List<List<?>> execute(String sql, Object... args) {
+    private List<List<?>> executeSingle(String sql, Object... args) {
         clearIoState();
 
         if (args == null || args.length == 0)
