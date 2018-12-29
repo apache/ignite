@@ -207,6 +207,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test various expressions.
+     */
+    @Test
+    public void testExpressions() {
+        // TODO
+    }
+
+    /**
      * Test simple join.
      */
     @Test
@@ -295,6 +303,53 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThetaJoin() {
+        // TODO
+    }
+
+    /**
+     * Test joins with REPLICTED caches.
+     */
+    @Test
+    public void testJoinWithReplicated() {
+        // TODO
+    }
+
+    /**
+     * Test joins with different affinity functions.
+     */
+    @Test
+    public void testJoinWithDifferentAffinityFunctions() {
+        // Partition count.
+        // TODO
+
+        // Different affinity functions.
+        // TODO
+
+        // Node filters.
+        // TODO
+    }
+
+    /**
+     * Test joins with subqueries.
+     */
+    @Test
+    public void testJoinWithSubquery() {
+        // TODO
+    }
+
+    /**
+     * Test joins when explicit partitions are set.
+     */
+    @Test
+    public void testExplicitParititons() {
+        // TODO
+    }
+
+    /**
+     * Test outer joins.
+     */
+    @Test
+    public void testOuterJoin() {
         // TODO
     }
 
