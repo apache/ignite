@@ -115,8 +115,11 @@ public class PartitionTableModel {
         if (!leftTbl.isAffinityColumn(cond.leftColumn()) || !rightTbl.isAffinityColumn(cond.rightColumn()))
             return;
 
+        // Remember join group of the right table as it will be changed below.
+        int rightGrpId = rightTbl.joinGroup();
+
         PartitionJoinGroup leftGrp = grps.get(leftTbl.joinGroup());
-        PartitionJoinGroup rightGrp = grps.get(rightTbl.joinGroup());
+        PartitionJoinGroup rightGrp = grps.get(rightGrpId);
 
         assert leftGrp != null;
         assert rightGrp != null;
@@ -132,7 +135,7 @@ public class PartitionTableModel {
             leftGrp.addTable(tbl);
         }
 
-        grps.remove(rightTbl.joinGroup());
+        grps.remove(rightGrpId);
     }
 
     /**
