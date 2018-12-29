@@ -73,11 +73,12 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
     /**
      * Construct instance of this class with given parameters.
      *
+     * @param tr Trainer for making bagged.
+     * @param aggregator Aggregator of models.
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Ratio (subsample size) / (initial dataset size).
      * @param featuresVectorSize Dimensionality of feature vector.
      * @param featureSubspaceDim Dimensionality of feature subspace.
-     * @param aggregator Aggregator of models.
      */
     public BaggedTrainer(DatasetTrainer<M, L> tr,
         PredictionsAggregator aggregator, int ensembleSize, double subsampleRatio, int featuresVectorSize,

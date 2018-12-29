@@ -49,4 +49,9 @@ public class BaggedModel implements IgniteModel<Vector, Double> {
     @Override public Double predict(Vector i) {
         return mdl.predict(i);
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        mdl.close();
+    }
 }

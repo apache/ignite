@@ -54,4 +54,9 @@ public class StackedModel<IS, IA, O, AM extends IgniteModel<IA, O>> implements I
     @Override public O predict(IS is) {
         return mdl.predict(is);
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        mdl.close();
+    }
 }

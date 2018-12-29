@@ -101,13 +101,13 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
     /** {@inheritDoc} */
     @Override protected boolean checkState(IgniteModel<I, List<O>> mdl) {
         // Never called.
-        return false;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
-        return null;
+        throw new IllegalStateException();
     }
 }

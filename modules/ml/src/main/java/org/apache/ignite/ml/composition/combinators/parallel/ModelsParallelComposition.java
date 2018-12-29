@@ -59,4 +59,9 @@ public class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> 
     public List<IgniteModel<I, O>> submodels() {
         return new ArrayList<>(submodels);
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        submodels.forEach(IgniteModel::close);
+    }
 }

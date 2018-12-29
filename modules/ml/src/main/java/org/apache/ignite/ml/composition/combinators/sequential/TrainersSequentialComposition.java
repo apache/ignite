@@ -103,7 +103,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     /** {@inheritDoc} */
     @Override protected boolean checkState(ModelsSequentialComposition<I, O1, O2> mdl) {
         // Never called.
-        throw new NotImplementedException();
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
@@ -111,7 +111,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
-        throw new NotImplementedException();
+        throw new IllegalStateException();
     }
 
     /**

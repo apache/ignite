@@ -91,4 +91,10 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
     @Override public O2 predict(I i1) {
         return mdl1.andThen(mdl2).predict(i1);
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        mdl1.close();
+        mdl2.close();
+    }
 }
