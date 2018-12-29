@@ -317,41 +317,66 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("INSERT INTO t2 VALUES ('3', '3', '3')");
 
         // Left table, should work.
-        List<List<?>> res = execute("SELECT * FROM t1, t2 WHERE t1.k1 = '1'");
-        assertPartitions(
-            parititon("t1", "1")
+        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t1", "1")
+                );
+                assertEquals(1, res.size());
+                assertEquals("1", res.get(0).get(0));
+            },
+            "1"
         );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
 
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = '1'");
-        assertPartitions(
-            parititon("t1", "1")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t1", "1")
+                );
+                assertEquals(1, res.size());
+                assertEquals("1", res.get(0).get(0));
+            },
+            "1"
         );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
 
         // Right table, should work.
-        res = execute("SELECT * FROM t1, t2 WHERE t2.ak2 = '2'");
-        assertPartitions(
-            parititon("t2", "2")
+        executeCombinations("SELECT * FROM t1, t2 WHERE t2.ak2 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t2", "2")
+                );
+                assertEquals(1, res.size());
+                assertEquals("2", res.get(0).get(0));
+            },
+            "2"
         );
-        assertEquals(1, res.size());
-        assertEquals("2", res.get(0).get(0));
 
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = '2'");
-        assertPartitions(
-            parititon("t2", "2")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t2", "2")
+                );
+                assertEquals(1, res.size());
+                assertEquals("2", res.get(0).get(0));
+            },
+            "2"
         );
-        assertEquals(1, res.size());
-        assertEquals("2", res.get(0).get(0));
+
+        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "3", "3"
+        );
 
         // Two tables, should not work.
-        res = execute("SELECT * FROM t1, t2 WHERE t1.k1='3' AND t2.ak2 = '3'");
-        assertNoPartitions();
+        executeCombinations("SELECT * FROM t1, t2 WHERE t1.k1=? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "3", "3"
+        );
 
-        res = execute("SELECT * FROM t1, t2 WHERE t1.k1='3' OR t2.ak2 = '3'");
-        assertNoPartitions();
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1=? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "3", "3"
+        );
     }
 
     /**
