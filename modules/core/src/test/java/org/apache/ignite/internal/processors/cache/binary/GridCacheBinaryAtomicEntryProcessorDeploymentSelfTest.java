@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
+import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -126,8 +128,8 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException ignored) {
-                    // No-op.
+                catch (CacheException ex) {
+                    assertTrue(X.hasCause(ex, BinaryInvalidTypeException.class));
                 }
         }
         finally {

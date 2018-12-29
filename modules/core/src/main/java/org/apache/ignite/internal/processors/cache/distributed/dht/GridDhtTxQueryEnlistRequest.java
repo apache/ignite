@@ -213,8 +213,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements G
      * @throws IgniteCheckedException If failed.
      */
     private void prepareInvokeValue(GridCacheContext cctx, GridInvokeValue val0) throws IgniteCheckedException {
-        assert val0 != null && addDepInfo;
-
         prepareObject(val0.entryProcessor(), cctx.shared());
 
         for (Object o : val0.invokeArgs())
