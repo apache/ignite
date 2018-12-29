@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -512,7 +513,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Start filling arguments recursively.
         if (args != null && args.length > 0)
-            executeCombinations0(sql, resConsumer, new TreeSet<>(), new HashSet<>(), args);
+            executeCombinations0(sql, resConsumer, new HashSet<>(), args);
 
         System.out.println();
     }
@@ -522,15 +523,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      *
      * @param sql SQL.
      * @param resConsumer Result consumer.
-     * @param excludedArgs Arguments which are currently excluded.
-     * @param testedExcludedArgs Combinations of excluded arguments which already were tested.
+     * @param executedSqls Already executed SQLs.
      * @param args Arguments.
      */
+    // TODO: Fix combinatorial checks!
     public void executeCombinations0(
         String sql,
         Consumer<List<List<?>>> resConsumer,
-        TreeSet<Integer> excludedArgs,
-        HashSet<String> testedExcludedArgs,
+        Set<String> executedSqls,
         Object... args
     ) {
         assert args != null && args.length > 0;
@@ -567,22 +567,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             }
 
             // Execute if this combination was never executed before.
-            excludedArgs.add(i);
-
-            StringBuilder combinationKey = new StringBuilder();
-
-            boolean first = true;
-
-            for (Integer excludedArg : excludedArgs) {
-                if (first)
-                    first = false;
-                else
-                    combinationKey.append("-");
-
-                combinationKey.append(excludedArg);
-            }
-
-            if (testedExcludedArgs.add(combinationKey.toString())) {
+            if (executedSqls.add(newSql)) {
                 List<List<?>> res = execute(newSql, newArgs);
 
                 resConsumer.accept(res);
@@ -590,9 +575,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
             // Continue recursively.
             if (newArgs.length > 0)
-                executeCombinations0(newSql, resConsumer, excludedArgs, testedExcludedArgs, newArgs);
-
-            excludedArgs.remove(i);
+                executeCombinations0(newSql, resConsumer, executedSqls, newArgs);
         }
     }
 
