@@ -189,6 +189,8 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
         orgCache = null;
 
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
