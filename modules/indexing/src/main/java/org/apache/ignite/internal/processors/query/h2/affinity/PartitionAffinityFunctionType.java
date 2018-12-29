@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.join;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.jetbrains.annotations.Nullable;
 

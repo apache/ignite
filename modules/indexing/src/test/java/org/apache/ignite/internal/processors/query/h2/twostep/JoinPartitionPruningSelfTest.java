@@ -354,6 +354,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Make sure that partition ownership is not merged when tables are "joined" under OR condition.
+     */
+    @Test
+    public void testJoinUnderDisjunction() {
+        // TODO
+    }
+
+    /**
      * Create PARTITIONED table.
      *
      * @param name Name.

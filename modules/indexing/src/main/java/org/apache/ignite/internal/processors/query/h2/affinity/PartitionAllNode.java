@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;

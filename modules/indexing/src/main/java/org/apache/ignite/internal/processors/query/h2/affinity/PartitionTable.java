@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.join;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Single table with affinity info.
  */
-public class PartitionJoinTable {
+public class PartitionTable {
     /** Alias used in the query. */
     private final String alias;
 
@@ -48,7 +48,7 @@ public class PartitionJoinTable {
      * @param affColName Affinity column name.
      * @param secondAffColName Second affinity column name.
      */
-    public PartitionJoinTable(
+    public PartitionTable(
         String alias,
         String cacheName,
         @Nullable String affColName,
@@ -128,6 +128,6 @@ public class PartitionJoinTable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionJoinTable.class, this);
+        return S.toString(PartitionTable.class, this);
     }
 }

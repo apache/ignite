@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.join;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +32,7 @@ public class PartitionTableModel {
     public static final int GRP_NONE = -1;
 
     /** All tables observed during parsing excluding outer. */
-    private final Map<String, PartitionJoinTable> tbls = new HashMap<>();
+    private final Map<String, PartitionTable> tbls = new HashMap<>();
 
     /** Join groups. */
     private final Map<Integer, PartitionJoinGroup> grps = new HashMap<>();
@@ -49,7 +49,7 @@ public class PartitionTableModel {
      * @param tbl Table.
      * @param aff Affinity descriptor.
      */
-    public void addTable(PartitionJoinTable tbl, PartitionJoinAffinityDescriptor aff) {
+    public void addTable(PartitionTable tbl, PartitionTableAffinityDescriptor aff) {
         int grpIdx = grpIdxGen++;
 
         tbl.joinGorup(grpIdx);
@@ -64,8 +64,8 @@ public class PartitionTableModel {
      * @param alias Alias.
      * @return Table or {@code null} if it cannot be used for partition pruning.
      */
-    @Nullable public PartitionJoinTable table(String alias) {
-        PartitionJoinTable res = tbls.get(alias);
+    @Nullable public PartitionTable table(String alias) {
+        PartitionTable res = tbls.get(alias);
 
         assert res != null || (excludedTblNames != null && excludedTblNames.contains(alias));
 
@@ -78,7 +78,7 @@ public class PartitionTableModel {
      * @param alias Alias.
      */
     public void addExcludedTable(String alias) {
-        PartitionJoinTable tbl = tbls.remove(alias);
+        PartitionTable tbl = tbls.remove(alias);
 
         if (tbl != null) {
             PartitionJoinGroup grp = grps.get(tbl.joinGroup());
@@ -101,8 +101,8 @@ public class PartitionTableModel {
      * @param cond Condition.
      */
     public void addJoin(PartitionJoinCondition cond) {
-        PartitionJoinTable leftTbl = tbls.get(cond.leftAlias());
-        PartitionJoinTable rightTbl = tbls.get(cond.rightAlias());
+        PartitionTable leftTbl = tbls.get(cond.leftAlias());
+        PartitionTable rightTbl = tbls.get(cond.rightAlias());
 
         assert leftTbl != null || (excludedTblNames != null && excludedTblNames.contains(cond.leftAlias()));
         assert rightTbl != null || (excludedTblNames != null && excludedTblNames.contains(cond.rightAlias()));
@@ -129,7 +129,7 @@ public class PartitionTableModel {
             return;
 
         // Safe to merge groups.
-        for (PartitionJoinTable tbl : rightGrp.tables()) {
+        for (PartitionTable tbl : rightGrp.tables()) {
             tbl.joinGorup(leftTbl.joinGroup());
 
             leftGrp.addTable(tbl);
@@ -144,7 +144,7 @@ public class PartitionTableModel {
      * @param grpId Group ID.
      * @return Affinity descriptor or {@code null} if there is no affinity descriptor (e.g. for "NONE" result).
      */
-    @Nullable public PartitionJoinAffinityDescriptor joinGroupAffinity(int grpId) {
+    @Nullable public PartitionTableAffinityDescriptor joinGroupAffinity(int grpId) {
         if (grpId == GRP_NONE)
             return null;
 

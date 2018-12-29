@@ -15,36 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.join;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 
 /**
- * Partition join group.
+ * Group of joined tables whose affinity function could be "merged".
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class PartitionJoinGroup {
     /** Tables within a group. */
-    private final Collection<PartitionJoinTable> tbls = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Collection<PartitionTable> tbls = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Affinity function descriptor. */
-    private final PartitionJoinAffinityDescriptor affDesc;
+    private final PartitionTableAffinityDescriptor affDesc;
 
     /**
      * Constructor.
      *
      * @param affDesc Affinity function descriptor.
      */
-    public PartitionJoinGroup(PartitionJoinAffinityDescriptor affDesc) {
+    public PartitionJoinGroup(PartitionTableAffinityDescriptor affDesc) {
         this.affDesc = affDesc;
     }
 
     /**
      * @return Tables in a group.
      */
-    public Collection<PartitionJoinTable> tables() {
+    public Collection<PartitionTable> tables() {
         return tbls;
     }
 
@@ -54,7 +54,7 @@ public class PartitionJoinGroup {
      * @param tbl Table.
      * @return This for chaining.
      */
-    public PartitionJoinGroup addTable(PartitionJoinTable tbl) {
+    public PartitionJoinGroup addTable(PartitionTable tbl) {
         tbls.add(tbl);
 
         return this;
@@ -66,7 +66,7 @@ public class PartitionJoinGroup {
      * @param tbl Table.
      * @return If group is empty after removal.
      */
-    public boolean removeTable(PartitionJoinTable tbl) {
+    public boolean removeTable(PartitionTable tbl) {
         tbls.remove(tbl);
 
         return tbls.isEmpty();
@@ -75,7 +75,7 @@ public class PartitionJoinGroup {
     /**
      * @return Affinity descriptor.
      */
-    public PartitionJoinAffinityDescriptor affinityDescriptor() {
+    public PartitionTableAffinityDescriptor affinityDescriptor() {
         return affDesc;
     }
 }

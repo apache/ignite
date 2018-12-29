@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -46,7 +45,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * @param idx Parameter index.
      * @param dataType Parameter data type.
      */
-    public PartitionParameterNode(PartitionJoinTable tbl, IgniteH2Indexing indexing, int idx,
+    public PartitionParameterNode(PartitionTable tbl, IgniteH2Indexing indexing, int idx,
         int dataType) {
         super(tbl);
 

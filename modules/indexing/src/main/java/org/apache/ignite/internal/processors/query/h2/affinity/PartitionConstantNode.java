@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -33,7 +32,7 @@ public class PartitionConstantNode extends PartitionSingleNode {
      * @param tbl Table.
      * @param part Partition.
      */
-    public PartitionConstantNode(PartitionJoinTable tbl, int part) {
+    public PartitionConstantNode(PartitionTable tbl, int part) {
         super(tbl);
 
         this.part = part;

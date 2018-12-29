@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.join;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
@@ -25,7 +24,7 @@ import java.io.Serializable;
 /**
  * Affinity function descriptor. Used to compare affinity functions of two tables.
  */
-public class PartitionJoinAffinityDescriptor implements Serializable {
+public class PartitionTableAffinityDescriptor implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,7 +44,7 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
      * @param parts Number of partitions.
      * @param hasNodeFilter Whether node filter is set.
      */
-    public PartitionJoinAffinityDescriptor(
+    public PartitionTableAffinityDescriptor(
         PartitionAffinityFunctionType affFunc,
         int parts,
         boolean hasNodeFilter
@@ -61,7 +60,7 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
      * @param other Other descriptor.
      * @return {@code True} if compatible.
      */
-    public boolean isCompatible(PartitionJoinAffinityDescriptor other) {
+    public boolean isCompatible(PartitionTableAffinityDescriptor other) {
         if (other == null)
             return false;
 
@@ -84,6 +83,6 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionJoinAffinityDescriptor.class, this);
+        return S.toString(PartitionTableAffinityDescriptor.class, this);
     }
 }
