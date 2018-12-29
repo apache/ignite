@@ -50,6 +50,7 @@ import java.util.function.Consumer;
 /**
  * Tests for join partition pruning.
  */
+@SuppressWarnings("deprecation")
 @RunWith(JUnit4.class)
 public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     /** Number of intercepted requests. */
@@ -128,80 +129,56 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("INSERT INTO t1 VALUES ('5', '5')");
         execute("INSERT INTO t2 VALUES ('5', '5', '5')");
 
-        // Key (no alias).
-        List<List<?>> res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1");
-        assertPartitions(
-            parititon("t1", "1")
+        // Key (not alias).
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t1", "1")
+                );
+                assertEquals(1, res.size());
+                assertEquals("1", res.get(0).get(0));
+            },
+            "1"
         );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = '1'");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", 1);
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", "1");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        assertEquals(1, res.size());
-        assertEquals("1", res.get(0).get(0));
 
         // Key (alias).
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = '2'");
-        assertPartitions(
-            parititon("t1", "2")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t1", "2")
+                );
+                assertEquals(1, res.size());
+                assertEquals("2", res.get(0).get(0));
+            },
+            "2"
         );
-        assertEquals(1, res.size());
-        assertEquals("2", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?", "2");
-        assertPartitions(
-            parititon("t1", "2")
-        );
-        assertEquals(1, res.size());
-        assertEquals("2", res.get(0).get(0));
 
         // Non-affinity key.
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = 3");
-        assertNoPartitions();
-        assertEquals(1, res.size());
-        assertEquals("3", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = ?", "3");
-        assertNoPartitions();
-        assertEquals(1, res.size());
-        assertEquals("3", res.get(0).get(0));
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = ?",
+            (res) -> {
+                assertNoPartitions();
+                assertEquals(1, res.size());
+                assertEquals("3", res.get(0).get(0));
+            },
+            "3"
+        );
 
         // Affinity key.
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 4");
-        assertPartitions(
-            parititon("t2", "4")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?",
+            (res) -> {
+                assertPartitions(
+                    parititon("t2", "4")
+                );
+                assertEquals(1, res.size());
+                assertEquals("4", res.get(0).get(0));
+            },
+            "4"
         );
-        assertEquals(1, res.size());
-        assertEquals("4", res.get(0).get(0));
-
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?", "4");
-        assertPartitions(
-            parititon("t2", "4")
-        );
-        assertEquals(1, res.size());
-        assertEquals("4", res.get(0).get(0));
 
         // Complex key.
         BinaryObject key = client().binary().builder("t2_key").setField("k1", "5").setField("ak2", "5").build();
 
-        res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
+        List<List<?>> res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
         assertPartitions(
             parititon("t2", "5")
         );
@@ -282,6 +259,9 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // TODO
 
         // No transfer through intermediate table.
+        // TODO
+
+        // No transfer through disjunction.
         // TODO
     }
 
@@ -431,14 +411,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOuterJoin() {
-        // TODO
-    }
-
-    /**
-     * Make sure that partition ownership is not merged when tables are "joined" under OR condition.
-     */
-    @Test
-    public void testJoinUnderDisjunction() {
         // TODO
     }
 
