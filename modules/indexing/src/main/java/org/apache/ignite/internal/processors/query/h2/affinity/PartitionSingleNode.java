@@ -69,12 +69,19 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract int value();
 
+    /**
+     * @return Underlying table.
+     */
+    public PartitionTable table() {
+        return tbl;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.joinGroup();
+        hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }
@@ -90,6 +97,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
         return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
-            F.eq(tbl.joinGroup(), other.tbl.joinGroup());
+            F.eq(tbl.alias(), other.tbl.alias());
     }
 }

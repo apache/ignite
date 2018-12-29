@@ -247,6 +247,12 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 2");
         assertNoRequests();
 
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (1, 2) AND t2.ak2 IN (2, 3)");
+        assertPartitions(
+            parititon("t1", "2")
+        );
+
+
         // Transfer through "OR".
         // TODO
 

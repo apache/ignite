@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
@@ -65,6 +66,8 @@ public class PartitionCompositeNode implements PartitionNode {
                 return null;
 
             // (A, B) and (B, C) -> (B)
+            leftParts = new HashSet<>(leftParts);
+
             leftParts.retainAll(rightParts);
         }
         else {
@@ -77,6 +80,8 @@ public class PartitionCompositeNode implements PartitionNode {
                 return leftParts;
 
             // (A, B) or (B, C) -> (A, B, C)
+            leftParts = new HashSet<>(leftParts);
+
             leftParts.addAll(rightParts);
         }
 
@@ -223,18 +228,46 @@ public class PartitionCompositeNode implements PartitionNode {
             }
 
             if (rightConsts != null) {
-                // {A, B) and (B, C) -> (B).
-                consts.retainAll(rightConsts);
+                // Try to merge nodes if the belong to the same table.
+                boolean sameTbl = true;
+                String curTblAlias = null;
 
-                if (consts.isEmpty())
-                    // {A, B) and (C, D) -> NONE.
-                    return PartitionNoneNode.INSTANCE;
-                else if (consts.size() == 1)
+                for (PartitionSingleNode curConst : consts) {
+                    if (curTblAlias == null)
+                        curTblAlias = curConst.table().alias();
+                    else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                        sameTbl = false;
+
+                        break;
+                    }
+                }
+
+                if (sameTbl) {
+                    for (PartitionSingleNode curConst : rightConsts) {
+                        if (curTblAlias == null)
+                            curTblAlias = curConst.table().alias();
+                        else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                            sameTbl = false;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (sameTbl) {
                     // {A, B) and (B, C) -> (B).
-                    return consts.iterator().next();
-                else
-                    // {A, B, C) and (B, C, D) -> (B, C).
-                    return new PartitionGroupNode(consts);
+                    consts.retainAll(rightConsts);
+
+                    if (consts.isEmpty())
+                        // {A, B) and (C, D) -> NONE.
+                        return PartitionNoneNode.INSTANCE;
+                    else if (consts.size() == 1)
+                        // {A, B) and (B, C) -> (B).
+                        return consts.iterator().next();
+                    else
+                        // {A, B, C) and (B, C, D) -> (B, C).
+                        return new PartitionGroupNode(consts);
+                }
             }
         }
 
@@ -315,8 +348,8 @@ public class PartitionCompositeNode implements PartitionNode {
             // (:X) and (:X) -> :X
             return left;
 
-        // If both sides are constants, and they are not equal, this is empty set.
-        if (left.constant() && right.constant())
+        // If both sides are constants from the same table and they are not equal, this is empty set.
+        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.tbl.alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
