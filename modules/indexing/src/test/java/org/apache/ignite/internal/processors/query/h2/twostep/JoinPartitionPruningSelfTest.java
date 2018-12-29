@@ -24,7 +24,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -141,6 +140,9 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         assertPartitionsAndClear(
             parititon("t2", 3)
         );
+
+        // Complex key.
+        // TODO
     }
 
     /**
