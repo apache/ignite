@@ -211,6 +211,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComplexJoin() {
+        // TODO
         createPartitionedTable("t1",
             pkColumn("k1"),
             "v2");
@@ -226,6 +227,75 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             parititon("t2", "1"),
             parititon("t1", "2")
         );
+    }
+
+    /**
+     * Test cross-joins. They cannot "transfer" partitions between joined tables.
+     */
+    @Test
+    public void testCrossJoin() {
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
+        execute("INSERT INTO t1 VALUES ('1', '1')");
+        execute("INSERT INTO t2 VALUES ('1', '1', '1')");
+
+        execute("INSERT INTO t1 VALUES ('2', '2')");
+        execute("INSERT INTO t2 VALUES ('2', '2', '2')");
+
+        execute("INSERT INTO t1 VALUES ('3', '3')");
+        execute("INSERT INTO t2 VALUES ('3', '3', '3')");
+
+        // Left table, should work.
+        List<List<?>> res = execute("SELECT * FROM t1, t2 WHERE t1.k1 = '1'");
+        assertPartitionsAndClear(
+            parititon("t1", "1")
+        );
+        assertEquals(1, res.size());
+        assertEquals("1", res.get(0).get(0));
+
+        res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = '1'");
+        assertPartitionsAndClear(
+            parititon("t1", "1")
+        );
+        assertEquals(1, res.size());
+        assertEquals("1", res.get(0).get(0));
+
+        // Right table, should work.
+        res = execute("SELECT * FROM t1, t2 WHERE t2.ak2 = '2'");
+        assertPartitionsAndClear(
+            parititon("t2", "2")
+        );
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(0));
+
+        res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = '2'");
+        assertPartitionsAndClear(
+            parititon("t2", "2")
+        );
+        assertEquals(1, res.size());
+        assertEquals("2", res.get(0).get(0));
+
+        // Two tables, should not work.
+        res = execute("SELECT * FROM t1, t2 WHERE t1.k1='3' AND t2.ak2 = '3'");
+        assertNoPartitions();
+
+        res = execute("SELECT * FROM t1, t2 WHERE t1.k1='3' OR t2.ak2 = '3'");
+        assertNoPartitions();
+    }
+
+    /**
+     * Test non-equijoins.
+     */
+    @Test
+    public void testThetaJoin() {
+        // TODO
     }
 
     /**
