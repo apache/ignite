@@ -36,7 +36,7 @@ class StartupExtras {
     public boolean clearLocData;
 
     /** */
-    public DistributedMetaStorageNodeData fullNodeData;
+    public DistributedMetaStorageClusterNodeData fullNodeData;
 
     /** */
     public DistributedMetaStorageHistoryItem[] locFullData;

@@ -123,7 +123,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             }
 
             if (startupExtras.fullNodeData != null) {
-                DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
+                DistributedMetaStorageClusterNodeData fullNodeData = startupExtras.fullNodeData;
 
                 dms.ver = fullNodeData.ver;
 

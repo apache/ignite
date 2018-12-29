@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.LongFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -66,13 +67,33 @@ class DistributedMetaStorageVersion implements Serializable {
     }
 
     /** */
-    public DistributedMetaStorageVersion nextVersion(DistributedMetaStorageHistoryItem... updates) {
+    public DistributedMetaStorageVersion nextVersion(
+        DistributedMetaStorageHistoryItem[] updates,
+        int fromIdx,
+        int toIdx // exclusive
+    ) {
         long hash = this.hash;
 
-        for (DistributedMetaStorageHistoryItem update : updates)
-            hash = nextHash(hash, update);
+        for (int idx = fromIdx; idx < toIdx; idx++)
+            hash = nextHash(hash, updates[idx]);
 
-        return new DistributedMetaStorageVersion(id + updates.length, hash);
+        return new DistributedMetaStorageVersion(id + toIdx - fromIdx, hash);
+    }
+
+    /** */
+    public DistributedMetaStorageVersion nextVersion(
+        LongFunction<DistributedMetaStorageHistoryItem> update,
+        long fromVer,
+        long toVer // inclusive
+    ) {
+        assert fromVer <= toVer;
+
+        long hash = this.hash;
+
+        for (long idx = fromVer; idx <= toVer; idx++)
+            hash = nextHash(hash, update.apply(idx));
+
+        return new DistributedMetaStorageVersion(id + toVer + 1 - fromVer, hash);
     }
 
     /** {@inheritDoc} */

@@ -227,7 +227,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertGlobalMetastoragesAreEqual(ignite, newNode);
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -243,13 +242,41 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         ignite.context().globalMetastorage().write("key2", "value2");
 
-        IgniteEx newNode = startGrid(1);
+        startGrid(1);
 
-        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+        assertEquals("value1", metastorage(1).read("key1"));
 
-        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+        assertEquals("value2", metastorage(1).read("key2"));
 
-        assertGlobalMetastoragesAreEqual(ignite, newNode);
+        assertGlobalMetastoragesAreEqual(ignite, grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateActivate() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
+
+        startGrid(0);
+
+        grid(0).cluster().active(true);
+
+        metastorage(0).write("key1", "value1");
+
+        metastorage(0).write("key2", "value2");
+
+        grid(0).cluster().active(false);
+
+        startGrid(1);
+
+        grid(0).cluster().active(true);
+
+        assertEquals("value1", metastorage(0).read("key1"));
+
+        assertEquals("value2", metastorage(0).read("key2"));
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /**

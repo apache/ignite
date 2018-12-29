@@ -55,6 +55,15 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         this.dms = dms;
     }
 
+    /** */
+    public ReadOnlyDistributedMetaStorageBridge(
+        DistributedMetaStorageImpl dms,
+        DistributedMetaStorageHistoryItem[] locFullData
+    ) {
+        this.dms = dms;
+        this.locFullData = locFullData;
+    }
+
     /** {@inheritDoc} */
     @Override public Serializable read(String globalKey) throws IgniteCheckedException {
         int idx = Arrays.binarySearch(
@@ -119,6 +128,8 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             startupExtras.clearLocData = true;
 
             startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+
+            startupExtras.locFullData = EMPTY_ARRAY;
         }
         else {
             DistributedMetaStorageVersion storedVer =

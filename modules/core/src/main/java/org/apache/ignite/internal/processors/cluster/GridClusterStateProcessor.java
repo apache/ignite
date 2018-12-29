@@ -1011,7 +1011,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
         else if (joiningNodeBlt.id() < clusterBlt.id()) {
-            if (!bltHist.isCompatibleWith(joiningNodeBlt)) {
+            if (!clusterBlt.isCompatibleWith(joiningNodeBlt)) {
                 String msg = "BaselineTopology of joining node ("
                     + node.consistentId()
                     + ") is not compatible with BaselineTopology in the cluster."

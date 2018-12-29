@@ -21,32 +21,32 @@ import java.io.Serializable;
 
 /** */
 @SuppressWarnings("PublicField")
-class DistributedMetaStorageNodeData implements Serializable {
+class DistributedMetaStorageJoiningNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public final DistributedMetaStorageVersion ver;
+    public final int bltId;
 
     /** */
-    public final DistributedMetaStorageHistoryItem[] fullData;
+    public final DistributedMetaStorageVersion ver;
+
+//    /** */
+//    public final DistributedMetaStorageHistoryItem[] fullData;
 
     /** */
     public final DistributedMetaStorageHistoryItem[] hist;
 
     /** */
-    public DistributedMetaStorageHistoryItem[] updates;
-
-    /** */
-    public DistributedMetaStorageNodeData(
+    public DistributedMetaStorageJoiningNodeData(
+        int bltId,
         DistributedMetaStorageVersion ver,
         DistributedMetaStorageHistoryItem[] fullData,
-        DistributedMetaStorageHistoryItem[] hist,
-        DistributedMetaStorageHistoryItem[] updates
+        DistributedMetaStorageHistoryItem[] hist
     ) {
-        this.fullData = fullData;
+        this.bltId = bltId;
         this.ver = ver;
+//        this.fullData = fullData;
         this.hist = hist;
-        this.updates = updates;
     }
 }

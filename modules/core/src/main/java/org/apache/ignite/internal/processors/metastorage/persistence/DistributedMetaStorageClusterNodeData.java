@@ -21,7 +21,7 @@ import java.io.Serializable;
 
 /** */
 @SuppressWarnings("PublicField")
-class DistributedMetaStorageJoiningData implements Serializable {
+class DistributedMetaStorageClusterNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,13 +35,18 @@ class DistributedMetaStorageJoiningData implements Serializable {
     public final DistributedMetaStorageHistoryItem[] hist;
 
     /** */
-    public DistributedMetaStorageJoiningData(
+    public DistributedMetaStorageHistoryItem[] updates;
+
+    /** */
+    public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
         DistributedMetaStorageHistoryItem[] fullData,
-        DistributedMetaStorageHistoryItem[] hist
+        DistributedMetaStorageHistoryItem[] hist,
+        DistributedMetaStorageHistoryItem[] updates
     ) {
-        this.ver = ver;
         this.fullData = fullData;
+        this.ver = ver;
         this.hist = hist;
+        this.updates = updates;
     }
 }

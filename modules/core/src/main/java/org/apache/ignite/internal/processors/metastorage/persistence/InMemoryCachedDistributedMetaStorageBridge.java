@@ -85,7 +85,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     /** */
     public void restore(StartupExtras startupExtras) {
         if (startupExtras.fullNodeData != null) {
-            DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
+            DistributedMetaStorageClusterNodeData fullNodeData = startupExtras.fullNodeData;
 
             dms.ver = fullNodeData.ver;
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -531,8 +532,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void test1() throws Exception {
+    @Test @SuppressWarnings("ThrowableNotThrown")
+    public void testConflictingData() throws Exception {
         startGrid(0);
 
         startGrid(1);
@@ -551,9 +552,12 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         metastorage(0).write("key", "value2");
 
-        startGrid(1);
-
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> startGrid(1),
+            IgniteSpiException.class,
+            "Joining node has conflicting distributed metastorage data"
+        );
     }
 
     /**
