@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryAlbIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 import org.junit.runner.RunWith;
@@ -36,6 +37,7 @@ public class IgniteElbTestSuite {
         TestSuite suite = new IgniteTestSuite("ELB Integration Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(TcpDiscoveryElbIpFinderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryAlbIpFinderSelfTest.class));
 
         return suite;
     }
