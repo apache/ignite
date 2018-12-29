@@ -38,11 +38,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Tests for join partition pruning.
@@ -239,21 +241,73 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Transfer through "AND".
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 1");
-        assertPartitions(
-            parititon("t1", "1")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "1"
         );
 
+
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 2");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = 2", "1");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?", "1", "2");
         assertNoRequests();
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (1, 2)");
         assertPartitions(
             parititon("t1", "1")
         );
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (1, 2)", "1");
+        assertPartitions(
+            parititon("t1", "1")
+        );
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, 2)", "1");
+        assertPartitions(
+            parititon("t1", "1")
+        );
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, 2)", "1", "1");
+        assertPartitions(
+            parititon("t1", "1")
+        );
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, ?)", "1", "2");
+        assertPartitions(
+            parititon("t1", "1")
+        );
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)", "1", "1", "2");
+        assertPartitions(
+            parititon("t1", "1")
+        );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (2, 3)");
         assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (2, 3)", "1");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, 3)", "2");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (2, ?)", "3");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, 3)", "1", "2");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (2, ?)", "1", "3");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, ?)", "2", "3");
+        assertNoRequests();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)", "1", "2", "3");
+        assertNoRequests();
+
+
+
+
+
+
+
+
+
+
+
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (1, 2) AND t2.ak2 IN (2, 3)");
         assertPartitions(
@@ -485,12 +539,87 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Execute query with all possible combinations of argument placeholders.
+     *
+     * @param sql SQL.
+     * @param resConsumer Result consumer.
+     * @param args Arguments.
+     */
+    public void executeCombinations(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
+        // Execute query as is.
+        List<List<?>> res = execute(sql, args);
+
+        resConsumer.accept(res);
+
+        // Start filling arguments recursively.
+        if (args != null && args.length > 0)
+            executeCombinations0(sql, resConsumer, args);
+    }
+
+    /**
+     * Execute query with all possible combinations of argument placeholders.
+     *
+     * @param sql SQL.
+     * @param resConsumer Result consumer.
+     * @param args Arguments.
+     */
+    public void executeCombinations0(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
+        assert args != null && args.length > 0;
+
+        // Get argument positions.
+        List<Integer> paramPoss = new ArrayList<>();
+
+        int pos = 0;
+
+        while (true) {
+            int paramPos = sql.indexOf('?', pos);
+
+            if (paramPos == -1)
+                break;
+
+            paramPoss.add(paramPos);
+
+            pos = paramPos + 1;
+        }
+
+        for (int i = 0; i < args.length; i++) {
+            // Prepare new SQL and arguments.
+            int paramPos = paramPoss.get(i);
+
+            String newSql = sql.substring(0, paramPos) + args[i] + sql.substring(paramPos + 1);
+
+            Object[] newArgs = new Object[args.length - 1];
+
+            int newArgsPos = 0;
+
+            for (int j = 0; j < args.length; j++) {
+                if (j != i)
+                    newArgs[newArgsPos++] = args[j];
+            }
+
+            // Execute.
+            List<List<?>> res = execute(newSql, newArgs);
+
+            resConsumer.accept(res);
+
+            // Continue recursively.
+            if (newArgs.length > 0)
+                executeCombinations0(newSql, resConsumer, newArgs);
+        }
+    }
+
+    /**
      * Execute SQL query.
      *
      * @param sql SQL.
      */
     private List<List<?>> execute(String sql, Object... args) {
         clearIoState();
+
+        if (args == null || args.length == 0)
+            System.out.println(">>> " + sql);
+        else
+            System.out.println(">>> " + sql + " " + Arrays.toString(args));
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
