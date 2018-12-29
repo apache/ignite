@@ -97,7 +97,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            double res = mdl.apply(new DenseVector(e.getPixels()));
+            double res = mdl.predict(new DenseVector(e.getPixels()));
 
             if (res == e.getLabel())
                 correctAnswers++;

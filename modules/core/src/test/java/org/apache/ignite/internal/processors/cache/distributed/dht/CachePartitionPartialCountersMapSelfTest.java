@@ -23,9 +23,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+/**
+ *
+ */
 @RunWith(JUnit4.class)
 public class CachePartitionPartialCountersMapSelfTest extends GridCommonAbstractTest {
-
+    /** */
     @Test
     public void testAddAndRemove() throws Exception {
         CachePartitionPartialCountersMap map = new CachePartitionPartialCountersMap(10);
@@ -59,4 +62,15 @@ public class CachePartitionPartialCountersMapSelfTest extends GridCommonAbstract
         }
     }
 
+    /** */
+    @Test
+    public void testEmptyMap() throws Exception {
+        CachePartitionPartialCountersMap map = CachePartitionPartialCountersMap.EMPTY;
+
+        assertFalse(map.remove(1));
+
+        map.trim();
+
+        assertNotNull(map.toString());
+    }
 }

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest;
@@ -30,32 +28,25 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Continuous queries failover tests.
+    CacheContinuousQueryFailoverAtomicSelfTest.class,
+    CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
+    CacheContinuousQueryFailoverTxSelfTest.class,
+    CacheContinuousQueryFailoverTxReplicatedSelfTest.class,
+    CacheContinuousQueryFailoverMvccTxSelfTest.class,
+    CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class,
+
+    CacheContinuousQueryAsyncFailoverAtomicSelfTest.class,
+    CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class,
+    CacheContinuousQueryAsyncFailoverTxSelfTest.class,
+    CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class
+})
 public class IgniteCacheQuerySelfTestSuite4 {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 4");
-
-        // Continuous queries failover tests.
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverAtomicSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverTxSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverTxReplicatedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverMvccTxSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryAsyncFailoverTxSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class));
-
-        return suite;
-    }
 }

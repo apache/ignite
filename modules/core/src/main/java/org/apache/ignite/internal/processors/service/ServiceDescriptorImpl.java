@@ -29,7 +29,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Service descriptor.
+ *
+ * @deprecated This implementation is based on {@code GridServiceDeployment} which has been deprecated because of
+ * services internals use messages for deployment management instead of the utility cache, since Ignite 2.8.
  */
+@Deprecated
 public class ServiceDescriptorImpl implements ServiceDescriptor {
     /** */
     private static final long serialVersionUID = 0L;

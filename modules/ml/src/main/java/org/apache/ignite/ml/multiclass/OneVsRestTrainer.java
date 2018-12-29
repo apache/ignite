@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -42,7 +42,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * NOTE: The current implementation suffers from unbalanced training over the dataset due to unweighted approach
  * during the process of reassign labels from all range of labels to 0,1.
  */
-public class OneVsRestTrainer<M extends Model<Vector, Double>>
+public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     extends SingleLabelDatasetTrainer<MultiClassModel<M>> {
     /** The common binary classifier with all hyper-parameters to spread them for all separate trainings . */
     private SingleLabelDatasetTrainer<M> classifier;

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -45,9 +44,6 @@ class DistributedUpdateRun {
     /** Accumulates error keys. */
     private HashSet<Object> errorKeys;
 
-    /** Query info. */
-    private final GridRunningQueryInfo qry;
-
     /** Result future. */
     private final GridFutureAdapter<UpdateResult> fut = new GridFutureAdapter<>();
 
@@ -55,20 +51,11 @@ class DistributedUpdateRun {
      * Constructor.
      *
      * @param nodeCount Number of nodes to await results from.
-     * @param qry Query info.
      */
-    DistributedUpdateRun(int nodeCount, GridRunningQueryInfo qry) {
+    DistributedUpdateRun(int nodeCount) {
         this.nodeCount = nodeCount;
-        this.qry = qry;
 
         rspNodes = new HashSet<>(nodeCount);
-    }
-
-    /**
-     * @return Query info.
-     */
-    GridRunningQueryInfo queryInfo() {
-        return qry;
     }
 
     /**
