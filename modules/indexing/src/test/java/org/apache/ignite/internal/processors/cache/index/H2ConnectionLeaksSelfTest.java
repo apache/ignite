@@ -18,20 +18,15 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.engine.Session;
-import org.h2.util.CloseWatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,7 +35,7 @@ import org.junit.runners.JUnit4;
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
  */
 @RunWith(JUnit4.class)
-public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
+public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -173,27 +168,6 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         checkAllConnectionAreClosed();
-    }
-
-    /**
-     * Checks all H2 connection are closed.
-     */
-    private void checkAllConnectionAreClosed() {
-        Set<Object> refs = GridTestUtils.getFieldValue(CloseWatcher.class, "refs");
-
-        if (!refs.isEmpty()) {
-            for (Object o : refs) {
-                if (o instanceof CloseWatcher
-                    && ((CloseWatcher)o).getCloseable() instanceof Session) {
-                    log.error("Session: " + ((CloseWatcher)o).getCloseable()
-                        + ", open=" + !((Session)((CloseWatcher)o).getCloseable()).isClosed());
-                }
-            }
-
-            GridDebug.dumpHeap("h_conn_heap_dmp.hprof", true);
-
-            fail("Not closed connections. Heap dump is created");
-        }
     }
 
     /**

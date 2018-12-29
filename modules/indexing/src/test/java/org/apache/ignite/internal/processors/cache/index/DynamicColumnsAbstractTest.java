@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -47,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 /**
  * Common stuff for dynamic columns tests.
  */
-public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
+public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonTest {
     /** SQL to create test table. */
     static final String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
