@@ -33,9 +33,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -67,9 +64,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** (for convenience). */
     private static IgniteCache<Integer, String> cache2;
 
-    /** Ip-finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
@@ -87,12 +81,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -125,6 +113,17 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite1 = null;
+        ignite2 = null;
+
+        cache1 = null;
+        cache2 = null;
     }
 
     /** {@inheritDoc} */

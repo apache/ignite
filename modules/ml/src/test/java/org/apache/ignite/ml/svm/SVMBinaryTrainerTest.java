@@ -50,8 +50,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
     /** */
@@ -90,7 +90,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         );
 
         Vector v = VectorUtils.of(100, 10);
-        TestUtils.assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), PRECISION);
-        TestUtils.assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), PRECISION);
     }
 }

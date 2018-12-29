@@ -18,11 +18,11 @@
 package org.apache.ignite.ml.inference;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Model descriptor that encapsulates information about model, {@link InfModelReader} and {@link InfModelParser} which
+ * Model descriptor that encapsulates information about model, {@link ModelReader} and {@link ModelParser} which
  * is required to build the model.
  */
 public class ModelDescriptor implements Serializable {
@@ -36,10 +36,10 @@ public class ModelDescriptor implements Serializable {
     private final ModelSignature signature;
 
     /** Model reader. */
-    private final InfModelReader reader;
+    private final ModelReader reader;
 
     /** Model parser. */
-    private final InfModelParser<byte[], byte[]> parser;
+    private final ModelParser<byte[], byte[], ?> parser;
 
     /**
      * Constructs a new instance of model descriptor.
@@ -50,8 +50,8 @@ public class ModelDescriptor implements Serializable {
      * @param reader Model reader.
      * @param parser Model parser.
      */
-    public ModelDescriptor(String name, String desc, ModelSignature signature, InfModelReader reader,
-        InfModelParser<byte[], byte[]> parser) {
+    public ModelDescriptor(String name, String desc, ModelSignature signature, ModelReader reader,
+        ModelParser<byte[], byte[], ?> parser) {
         this.name = name;
         this.desc = desc;
         this.signature = signature;
@@ -75,12 +75,12 @@ public class ModelDescriptor implements Serializable {
     }
 
     /** */
-    public InfModelReader getReader() {
+    public ModelReader getReader() {
         return reader;
     }
 
     /** */
-    public InfModelParser<byte[], byte[]> getParser() {
+    public ModelParser<byte[], byte[], ?> getParser() {
         return parser;
     }
 
