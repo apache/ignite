@@ -624,8 +624,7 @@ public class DmlStatementsProcessor {
                 throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
             }
             finally {
-                if (commit)
-                    cctx.tm().resetContext();
+                cctx.tm().resetContext();
             }
         }
 

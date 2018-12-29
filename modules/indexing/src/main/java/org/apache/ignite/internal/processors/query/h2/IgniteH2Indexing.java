@@ -517,6 +517,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         assert mvccEnabled || mvccTracker == null;
 
+        GridNearTxSelectForUpdateFuture sfuFut = null;
+
         try {
             final Connection conn = connMgr.connectionForThread(schemaName);
 
@@ -561,8 +563,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 checkSecurity(parser.cacheIds());
             }
-
-            GridNearTxSelectForUpdateFuture sfuFut = null;
 
             int opTimeout = qryTimeout;
 
@@ -703,6 +703,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tx.setRollbackOnly();
 
             throw e;
+        }
+        finally {
+            if (sfuFut != null)
+                ctx.cache().context().tm().resetContext();
         }
     }
 
@@ -1551,10 +1555,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (mvccEnabled && (tx = tx(ctx)) != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
-                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) ) {
-
+                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) )
                 tx.setRollbackOnly();
-            }
 
             throw e;
         }
