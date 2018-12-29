@@ -38,13 +38,20 @@ public interface DatasetMapping<L1, L2> {
     }
 
     /**
-     * MEthod used to map labels.
+     * Method used to map labels.
      *
      * @param lbl Label.
      * @return Mapped label.
      */
     public L2 mapLabels(L1 lbl);
 
+    /**
+     * Dataset mapping which maps features, leaving labels unaffected.
+     *
+     * @param mapper Function used to map features.
+     * @param <L> Type of labels.
+     * @return Dataset mapping which maps features, leaving labels unaffected.
+     */
     public static <L> DatasetMapping<L, L> mappingFeatures(IgniteFunction<Vector, Vector> mapper) {
         return new DatasetMapping<L, L>() {
             /** {@inheritDoc} */

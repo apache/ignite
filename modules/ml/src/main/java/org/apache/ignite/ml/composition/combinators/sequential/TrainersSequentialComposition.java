@@ -114,35 +114,12 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         throw new NotImplementedException();
     }
 
+    /**
+     * Performs coersion of this trainer to {@code DatasetTrainer<IgniteModel<I, O2>, L>}.
+     *
+     * @return Trainer coerced to {@code DatasetTrainer<IgniteModel<I, O>, L>}.
+     */
     public DatasetTrainer<IgniteModel<I, O2>, L> unsafeSimplyTyped() {
-        TrainersSequentialComposition<I, O1, O2, L> self = this;
-        return new DatasetTrainer<IgniteModel<I, O2>, L>() {
-            @Override public <K, V> IgniteModel<I, O2> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
-                return self.fit(datasetBuilder, featureExtractor, lbExtractor);
-            }
-
-            @Override public <K, V> IgniteModel<I, O2> update(IgniteModel<I, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return self.update((ModelsSequentialComposition<I, O1, O2>)mdl, datasetBuilder, featureExtractor, lbExtractor);
-            }
-
-            @Override protected boolean checkState(IgniteModel<I, O2> mdl) {
-                return false;
-            }
-
-            @Override protected <K, V> IgniteModel<I, O2> updateModel(IgniteModel<I, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return null;
-            }
-        };
-    }
-
-    private static <K, V, I, O> IgniteBiFunction<K, V, Vector> getNewExtractor(IgniteBiFunction<K, V, Vector> oldExtractor,
-        IgniteModel<I, O> mdl,
-        IgniteFunction<Vector, I> vector2FirstInputConvertor,
-        IgniteFunction<O, Vector> firstOutput2VectorConvertor) {
-        return oldExtractor.andThen(vector2FirstInputConvertor).andThen(mdl::predict).andThen(firstOutput2VectorConvertor);
+        return CompositionUtils.unsafeCoerce(this);
     }
 }

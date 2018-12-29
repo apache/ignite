@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
- * Vario;us utility functions for trainers composition.
+ * Various utility functions for trainers composition.
  */
 public class CompositionUtils {
     /**
