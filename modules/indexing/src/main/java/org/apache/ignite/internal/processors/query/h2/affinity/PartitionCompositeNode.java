@@ -228,7 +228,7 @@ public class PartitionCompositeNode implements PartitionNode {
             }
 
             if (rightConsts != null) {
-                // Try to merge nodes if the belong to the same table.
+                // Try to merge nodes if they belong to the same table.
                 boolean sameTbl = true;
                 String curTblAlias = null;
 
@@ -271,7 +271,7 @@ public class PartitionCompositeNode implements PartitionNode {
             }
         }
 
-        // Otherwise it is a mixed set of concrete partitions and arguments. Cancel optimization.
+        // Otherwise it is a mixed set of concrete partitions and arguments possibly from different caches.
         // Note that in fact we can optimize expression to certain extent (e.g. (A) and (B, :C) -> (A) and (:C)),
         // but resulting expression is always composite node still, which cannot be optimized on upper levels.
         // So we skip any fine-grained optimization in favor of simplicity.

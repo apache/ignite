@@ -179,7 +179,7 @@ public class PartitionExtractor {
 
             if (join.isLeftOuter()) {
                 // "a LEFT JOIN b" is transformed into "a", and "b" is put into special stop-list.
-                // If a condition is met on "b" afterwards, we will stop partition pruning process.
+                // If a condition is met on "b" afterwards, we will ignore it.
                 for (PartitionTable rightTbl : rightTbls)
                     model.addExcludedTable(rightTbl.alias());
 
@@ -305,6 +305,7 @@ public class PartitionExtractor {
             }
 
             PartitionTable tbl = new PartitionTable(alias, cacheName, affColName, secondAffColName);
+
             PartitionTableAffinityDescriptor aff = affinityForCache(tbl0.cacheInfo().config());
 
             if (aff == null) {
@@ -360,7 +361,7 @@ public class PartitionExtractor {
      * @param disjunct Whether current processing frame is located under disjunction ("OR"). In this case we cannot
      *                 rely on join expressions like (A.a = B.b) to build co-location model because another conflicting
      *                 join expression on the same tables migth be located on the other side of the "OR".
-     *                 Example: "JOIN on A.a = B.b OR A.a > B.b".
+     *                 Example: "JOIN ON A.a = B.b OR A.a > B.b".
      * @return Partition tree.
      */
     @SuppressWarnings("EnumSwitchStatementWhichMissesCases")

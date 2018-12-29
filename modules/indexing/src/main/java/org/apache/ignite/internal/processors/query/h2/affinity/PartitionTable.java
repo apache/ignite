@@ -89,20 +89,6 @@ public class PartitionTable {
     }
 
     /**
-     * @return Affinity column name.
-     */
-    public String affinityColumnName() {
-        return affColName;
-    }
-
-    /**
-     * @return Second affinity column name.
-     */
-    public String secondAffinityColumnName() {
-        return secondAffColName;
-    }
-
-    /**
      * Check whether passed column is affinity column.
      *
      * @param colName Column name.

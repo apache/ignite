@@ -1999,7 +1999,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return new QueryCursorImpl<>(new Iterable<List<?>>() {
                     @Override public Iterator<List<?>> iterator() {
                         return new Iterator<List<?>>() {
-
                             @Override public boolean hasNext() {
                                 return false;
                             }
