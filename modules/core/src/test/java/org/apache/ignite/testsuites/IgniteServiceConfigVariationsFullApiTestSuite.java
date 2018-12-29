@@ -19,11 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.service.IgniteServiceConfigVariationsFullApiTest;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
-import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.junit.runner.RunWith;
@@ -37,12 +34,6 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] PARAMS = new ConfigParameter[][] {
-        Parameters.objectParameters("setMarshaller",
-            Parameters.factory(JdkMarshaller.class),
-            Parameters.factory(BinaryMarshaller.class),
-            ConfigVariations.binaryMarshallerFactory()
-        ),
-
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 

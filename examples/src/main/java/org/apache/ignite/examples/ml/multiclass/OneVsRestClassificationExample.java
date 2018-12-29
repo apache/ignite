@@ -120,8 +120,8 @@ public class OneVsRestClassificationExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = mdl.apply(inputs);
-                    double predictionWithMinMaxScaling = mdlWithScaling.apply(inputs);
+                    double prediction = mdl.predict(inputs);
+                    double predictionWithMinMaxScaling = mdlWithScaling.predict(inputs);
 
                     totalAmount++;
 

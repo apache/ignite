@@ -18,26 +18,58 @@
 package org.apache.ignite.ml.xgboost.parser.visitor;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import org.apache.ignite.ml.xgboost.XGModel;
-import org.apache.ignite.ml.xgboost.XGNode;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.apache.ignite.ml.xgboost.parser.XGBoostModelBaseVisitor;
 import org.apache.ignite.ml.xgboost.parser.XGBoostModelParser;
 
 /**
  * XGBoost model visitor that parses model.
  */
-public class XGModelVisitor extends XGBoostModelBaseVisitor<XGModel> {
-    /** Tree visitor. */
-    private final XGTreeVisitor treeVisitor = new XGTreeVisitor();
+public class XGModelVisitor extends XGBoostModelBaseVisitor<XGModelComposition> {
+    /** Tree dictionary visitor. */
+    private final XGTreeDictionaryVisitor treeDictionaryVisitor = new XGTreeDictionaryVisitor();
 
     /** {@inheritDoc} */
-    @Override public XGModel visitXgModel(XGBoostModelParser.XgModelContext ctx) {
-        List<XGNode> trees = new ArrayList<>();
+    @Override public XGModelComposition visitXgModel(XGBoostModelParser.XgModelContext ctx) {
+        List<DecisionTreeNode> trees = new ArrayList<>();
 
+        Set<String> featureNames = new HashSet<>();
         for (XGBoostModelParser.XgTreeContext treeCtx : ctx.xgTree())
-            trees.add(treeVisitor.visitXgTree(treeCtx));
+            featureNames.addAll(treeDictionaryVisitor.visitXgTree(treeCtx));
 
-        return new XGModel(trees);
+        Map<String, Integer> dict = buildDictionary(featureNames);
+
+        XGTreeVisitor treeVisitor = new XGTreeVisitor(dict);
+
+        for (XGBoostModelParser.XgTreeContext treeCtx : ctx.xgTree()) {
+            DecisionTreeNode treeNode = treeVisitor.visitXgTree(treeCtx);
+            trees.add(treeNode);
+        }
+
+        return new XGModelComposition(dict, trees);
+    }
+
+    /**
+     * Build dictionary using specified feature names.
+     *
+     * @param featureNames Feature names.
+     * @return Dictionary.
+     */
+    private Map<String, Integer> buildDictionary(Set<String> featureNames) {
+        List<String> orderedFeatureNames = new ArrayList<>(featureNames);
+        Collections.sort(orderedFeatureNames);
+
+        Map<String, Integer> dict = new HashMap<>();
+        for (int i = 0; i < orderedFeatureNames.size(); i++)
+            dict.put(orderedFeatureNames.get(i), i);
+
+        return dict;
     }
 }
