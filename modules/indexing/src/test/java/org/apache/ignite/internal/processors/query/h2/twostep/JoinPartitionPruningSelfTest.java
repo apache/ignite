@@ -110,14 +110,33 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             affinityColumn("ak2"),
             "v3");
 
-//        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1");
-//
-//        assertPartitions(
-//            parititon("t2", 1)
-//        );
-//        clearIoState();
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1");
 
-        // TODO: Doesn't work.
+        assertPartitionsAndClear(
+            parititon("t1", 1)
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = 2");
+
+        assertPartitionsAndClear(
+            parititon("t2", 2)
+        );
+    }
+
+    /**
+     * Test simple join.
+     */
+    @Test
+    public void testComplexJoin() {
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1 OR t1.k1 = 2");
 
         assertPartitions(
@@ -229,6 +248,17 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     private static void clearIoState() {
         INTERCEPTED_REQS.set(0);
         INTERCEPTED_PARTS.clear();
+    }
+
+    /**
+     * Make sure that expected partitions are logged, then clear IO state.
+     *
+     * @param expParts Expected partitions.
+     */
+    private static void assertPartitionsAndClear(int... expParts) {
+        assertPartitions(expParts);
+
+        clearIoState();
     }
 
     /**
