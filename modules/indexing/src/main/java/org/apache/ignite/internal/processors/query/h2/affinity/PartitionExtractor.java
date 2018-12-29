@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
@@ -431,7 +432,9 @@ public class PartitionExtractor {
             return null;
 
         if (rightConst != null) {
-            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), rightConst.value().getObject());
+            Object constVal = H2Utils.convert(rightConst.value().getObject(), idx, leftCol0.getType());
+
+            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), constVal);
 
             return new PartitionConstantNode(tbl0, part);
         }

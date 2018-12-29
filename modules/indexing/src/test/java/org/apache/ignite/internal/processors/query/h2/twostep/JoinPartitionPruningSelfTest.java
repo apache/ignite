@@ -113,20 +113,20 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1");
 
         assertPartitionsAndClear(
-            parititon("t1", 1)
+            parititon("t1", "1")
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", 1);
 
         assertPartitionsAndClear(
-            parititon("t1", 1)
+            parititon("t1", "1")
         );
 
         // Key (alias).
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = 2");
 
         assertPartitionsAndClear(
-            parititon("t1", 2)
+            parititon("t1", "2")
         );
 
         // Non-affinity key.
@@ -138,7 +138,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 3");
 
         assertPartitionsAndClear(
-            parititon("t2", 3)
+            parititon("t2", "3")
         );
 
         // Complex key.
@@ -162,8 +162,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1 OR t1.k1 = 2");
 
         assertPartitions(
-            parititon("t2", 1),
-            parititon("t1", 2)
+            parititon("t2", "1"),
+            parititon("t1", "2")
         );
     }
 
