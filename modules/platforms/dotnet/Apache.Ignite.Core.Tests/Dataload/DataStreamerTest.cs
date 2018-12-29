@@ -354,6 +354,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Tests that streamer gets collected when there are no references to it.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-8731")]
         public void TestFinalizer()
         {
             var streamer = _grid.GetDataStreamer<int, int>(CacheName);
