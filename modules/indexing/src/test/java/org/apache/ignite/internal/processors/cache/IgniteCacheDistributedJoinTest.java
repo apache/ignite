@@ -221,6 +221,8 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         U.closeQuiet(conn);
+
+        conn = null;
     }
 
     /**
