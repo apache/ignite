@@ -603,8 +603,7 @@ public class QueryUtils {
 
             d.addProperty(prop, false);
         }
-
-        // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
+        
         String keyFieldName = qryEntity.getKeyFieldName();
 
         if (keyFieldName == null)
