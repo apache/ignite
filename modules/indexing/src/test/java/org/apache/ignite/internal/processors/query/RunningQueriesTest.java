@@ -122,6 +122,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         stopAllGrids();
+
+        ignite = null;
     }
 
     /** {@inheritDoc} */
