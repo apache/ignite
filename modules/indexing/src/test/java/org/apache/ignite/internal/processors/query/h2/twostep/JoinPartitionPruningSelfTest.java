@@ -207,34 +207,49 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test various expressions.
+     * Test how partition ownership is transferred in various cases.
      */
     @Test
-    public void testExpressions() {
-        // TODO
-    }
-
-    /**
-     * Test simple join.
-     */
-    @Test
-    public void testComplexJoin() {
-        // TODO
+    public void testPartitionTransfer() {
+        // First co-located table.
         createPartitionedTable("t1",
             pkColumn("k1"),
             "v2");
 
+        // Second co-located table.
         createPartitionedTable("t2",
             pkColumn("k1"),
             affinityColumn("ak2"),
             "v3");
 
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 1 OR t1.k1 = 2");
-
-        assertPartitions(
-            parititon("t2", "1"),
-            parititon("t1", "2")
+        // Replicated table.
+        createReplicatedTable("t3",
+            pkColumn("k1"),
+            "v2",
+            "v3"
         );
+
+        // Transfer through "AND".
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 1");
+        assertPartitions(
+            parititon("t1", "1")
+        );
+
+        // TODO: AND (empty)
+
+        // Transfer through "OR".
+        // TODO
+
+        // No transfer through intermediate table.
+        // TODO
+    }
+
+    /**
+     * Test various expressions.
+     */
+    @Test
+    public void testExpressions() {
+        // TODO
     }
 
     /**
@@ -448,6 +463,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param sql SQL.
      */
     private List<List<?>> execute(String sql, Object... args) {
+        clearIoState();
+
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
         if (args != null && args.length > 0)
