@@ -112,7 +112,7 @@ public class PartitionTableModel {
             return;
 
         // At least one column in condition is not affinity column, return.
-        if (leftTbl.isAffinityColumn(cond.leftColumn()) && rightTbl.isAffinityColumn(cond.rightColumn()))
+        if (!leftTbl.isAffinityColumn(cond.leftColumn()) || !rightTbl.isAffinityColumn(cond.rightColumn()))
             return;
 
         PartitionJoinGroup leftGrp = grps.get(leftTbl.joinGroup());

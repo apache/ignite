@@ -189,7 +189,7 @@ public class PartitionExtractor {
             // cross join here, real join condition will be found in WHERE clause later.
             PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(join.on());
 
-            if (cond != null && cond.cross())
+            if (cond != null && !cond.cross())
                 model.addJoin(cond);
 
             ArrayList<PartitionJoinTable> res = new ArrayList<>(leftTbls.size() + rightTbls.size());
@@ -383,7 +383,7 @@ public class PartitionExtractor {
             if (!disjunct) {
                 PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(op);
 
-                if (cond != null && cond.cross())
+                if (cond != null && !cond.cross())
                     tblModel.addJoin(cond);
             }
 

@@ -170,17 +170,20 @@ public class PartitionExtractorUtils {
      * @return Affinity identifier.
      */
     public static PartitionJoinAffinityDescriptor affinityForCache(CacheConfiguration ccfg) {
-        // Partition could be extracted only from PARTITIONED cache.
+        // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return null;
 
         PartitionAffinityFunctionType aff = ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class) ?
             PartitionAffinityFunctionType.RENDEZVOUS : PartitionAffinityFunctionType.CUSTOM;
 
+        boolean hasNodeFilter = ccfg.getNodeFilter() != null &&
+            !(ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate);
+
         return new PartitionJoinAffinityDescriptor(
             aff,
             ccfg.getAffinity().partitions(),
-            ccfg.getNodeFilter() != null
+            hasNodeFilter
         );
     }
 
