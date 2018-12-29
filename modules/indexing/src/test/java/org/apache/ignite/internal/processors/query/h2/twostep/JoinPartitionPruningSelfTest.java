@@ -280,8 +280,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "1", "1", "2"
         );
 
-
-
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
                 parititon("t1", "1"),
