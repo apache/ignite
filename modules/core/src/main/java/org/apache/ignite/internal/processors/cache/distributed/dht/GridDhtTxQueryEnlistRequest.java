@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -219,8 +220,10 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements G
 
         prepareObject(val0.entryProcessor(), cctx.shared());
 
-        for (Object o : val0.invokeArgs())
-            prepareObject(o, cctx.shared());
+        if (!F.isEmpty(val0.invokeArgs())) {
+            for (Object o : val0.invokeArgs())
+                prepareObject(o, cctx.shared());
+        }
 
         val0.prepareMarshal(cctx);
     }
