@@ -34,8 +34,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * Training is done in following fashion:
  * <pre>
  *     1. First trainer is trained and `mdl1` is produced.
- *     2. From `mdl1` {@link DatasetMapping} is constructed. This mapping `dsM` encapsulates dependency between first training
- *     result and second trainer.
+ *     2. From `mdl1` {@link DatasetMapping} is constructed. This mapping `dsM` encapsulates dependency between first
+ *     training result and second trainer.
  *     3. Second trainer is trained using dataset aquired from application `dsM` to original dataset; `mdl2` is produced.
  *     4. `mdl1` and `mdl2` are composed into {@link ModelsSequentialComposition}.
  * </pre>

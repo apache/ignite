@@ -37,7 +37,16 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
     /** Second model. */
     private IgniteModel<O1, O2> mdl2;
 
-    public static <I, O> ModelsSequentialComposition<I, I, O> ofSame(List<IgniteModel<I, O>> lst,
+    /**
+     * Get sequential composition of submodels with same type.
+     *
+     * @param lst List of submodels.
+     * @param output2Input Function for conversion output to input.
+     * @param <I> Type of input of submodel.
+     * @param <O> Type of output of submodel.
+     * @return Sequential composition of submodels with same type.
+     */
+    public static <I, O> ModelsSequentialComposition<I, I, O> ofSame(List<? extends IgniteModel<I, O>> lst,
         IgniteFunction<O, I> output2Input) {
         assert lst.size() >= 2;
 
@@ -62,6 +71,7 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
 
     /**
      * Get first model.
+     *
      * @return First model.
      */
     public IgniteModel<I, O1> firstModel() {
@@ -70,6 +80,7 @@ public class ModelsSequentialComposition<I, O1, O2> implements IgniteModel<I, O2
 
     /**
      * Get second model.
+     *
      * @return Second model.
      */
     public IgniteModel<O1, O2> secondModel() {
