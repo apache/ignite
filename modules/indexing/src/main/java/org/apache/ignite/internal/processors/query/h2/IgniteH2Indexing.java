@@ -2489,9 +2489,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2QueryContext.clearLocalNodeStop(nodeId);
 
+        runningQueryMgr.stop();
         schemaMgr.stop();
-
-        // Close system H2 connection to INFORMATION_SCHEMA
         connMgr.stop();
 
         if (log.isDebugEnabled())
