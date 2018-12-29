@@ -121,10 +121,9 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
                             newFeaturesValues[j] = featureValues.get(mapping[j]);
 
                         return VectorUtils.of(newFeaturesValues);
-                    });
+                    }).beforeTrainedModel(getProjector(mappings.get(mdlIdx)));
                 }
                 return tr
-                    .beforeTrainedModel(getProjector(mappings.get(mdlIdx)))
                     .withUpstreamTransformerBuilder(BaggingUpstreamTransformer.builder(subsampleRatio, mdlIdx))
                     .withEnvironmentBuilder(envBuilder);
             })
@@ -169,15 +168,15 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, List<Double>> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
-        return new BaggedModel(fit, aggregator);
+        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, List<Double>> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
-        return new BaggedModel(updated, aggregator);
+        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
+        return new BaggedModel(updated);
     }
 
     /** {@inheritDoc} */

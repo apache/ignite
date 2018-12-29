@@ -23,7 +23,21 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
+/**
+ * Vario;us utility functions for trainers composition.
+ */
 public class CompositionUtils {
+    /**
+     * Perform blurring of model type of given trainer to {@code IgniteModel<I, O>}, where I, O are input and output
+     * types of original model.
+     *
+     * @param trainer Trainer to coerce.
+     * @param <I> Type of input of model produced by coerced trainer.
+     * @param <O> Type of output of model produced by coerced trainer.
+     * @param <M> Type of model produced by coerced trainer.
+     * @param <L> Type of labels.
+     * @return Trainer coerced to {@code DatasetTrainer<IgniteModel<I, O>, L>}.
+     */
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<IgniteModel<I, O>, L> unsafeCoerce(
         DatasetTrainer<? extends M, L> trainer) {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {

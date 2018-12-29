@@ -17,34 +17,36 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
-import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * This class represents model produced by {@link BaggedTrainer}.
- *
- * This class consist of m.
+ * It is a wrapper around inner representation of model produced by {@link BaggedTrainer}.
  */
 public class BaggedModel implements IgniteModel<Vector, Double> {
-    /**  */
-    private IgniteModel<Vector, List<Double>> mdl;
-    private PredictionsAggregator aggregator;
+    /** Inner representation of model produced by {@link BaggedTrainer}. */
+    private IgniteModel<Vector, Double> mdl;
 
-    BaggedModel(IgniteModel<Vector, List<Double>> mdl, PredictionsAggregator aggregator) {
+    /**
+     * Construct instance of this class given specified model.
+     * @param mdl Model to wrap.
+     */
+    BaggedModel(IgniteModel<Vector, Double> mdl) {
         this.mdl = mdl;
-        this.aggregator = aggregator;
     }
 
-    IgniteModel<Vector, List<Double>> model() {
+    /**
+     * Get wrapped model.
+     *
+     * @return Wrapped model.
+     */
+    IgniteModel<Vector, Double> model() {
         return mdl;
     }
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector i) {
-        return mdl.andThen((IgniteFunction<List<Double>, Double>)l ->
-            aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray())).predict(i);
+        return mdl.predict(i);
     }
 }

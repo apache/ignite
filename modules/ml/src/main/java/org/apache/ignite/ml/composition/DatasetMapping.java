@@ -17,37 +17,44 @@
 
 package org.apache.ignite.ml.composition;
 
-import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * This class represents dataset mapping. This is just a tuple of two mappings: one for features and one for labels.
+ *
+ * @param <L1> Type of labels before mapping.
+ * @param <L2> Type of labels after mapping.
+ */
 public interface DatasetMapping<L1, L2> {
+    /**
+     * Method used to map feature vectors.
+     *
+     * @param v Feature vector.
+     * @return Mapped feature vector.
+     */
     public default Vector mapFeatures(Vector v) {
         return v;
     }
 
-    public L2 mapLabels(L1 lbls);
+    /**
+     * MEthod used to map labels.
+     *
+     * @param lbl Label.
+     * @return Mapped label.
+     */
+    public L2 mapLabels(L1 lbl);
 
     public static <L> DatasetMapping<L, L> mappingFeatures(IgniteFunction<Vector, Vector> mapper) {
         return new DatasetMapping<L, L>() {
+            /** {@inheritDoc} */
             @Override public Vector mapFeatures(Vector v) {
                 return mapper.apply(v);
             }
 
-            @Override public L mapLabels(L lbls) {
-                return lbls;
-            }
-        };
-    }
-
-    public static <K, V, L> DatasetMapping<L, L> mappingBuilder(IgniteFunction<DatasetBuilder<K, V>, DatasetBuilder<K, V>> mapper) {
-        return new DatasetMapping<L, L>() {
-            @Override public Vector mapFeatures(Vector v) {
-                return v;
-            }
-
-            @Override public L mapLabels(L lbls) {
-                return lbls;
+            /** {@inheritDoc} */
+            @Override public L mapLabels(L lbl) {
+                return lbl;
             }
         };
     }

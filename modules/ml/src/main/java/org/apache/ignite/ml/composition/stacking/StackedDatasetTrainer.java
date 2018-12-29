@@ -287,8 +287,8 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
                     return featureMapper.apply(models, v);
                 }
 
-                @Override public L mapLabels(L lbls) {
-                    return lbls;
+                @Override public L mapLabels(L lbl) {
+                    return lbl;
                 }
             }).unsafeSimplyTyped();
     }
