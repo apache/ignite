@@ -257,7 +257,58 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Transfer through "OR".
-        // TODO
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t2", "2")
+            ),
+            "1", "2"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t2", "2")
+            ),
+            "1", "1", "2"
+        );
+
+
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t2", "2"),
+                parititon("t2", "3")
+            ),
+            "1", "2", "3"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) OR t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t1", "2"),
+                parititon("t2", "3")
+            ),
+            "1", "2", "2", "3"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) OR t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t1", "2"),
+                parititon("t2", "3"),
+                parititon("t2", "4")
+            ),
+            "1", "2", "3", "4"
+        );
 
         // No transfer through intermediate table.
         // TODO
