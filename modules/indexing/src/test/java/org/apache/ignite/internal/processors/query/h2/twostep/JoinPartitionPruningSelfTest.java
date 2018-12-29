@@ -40,6 +40,7 @@ import org.junit.runners.JUnit4;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -248,75 +249,34 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "1", "1"
         );
 
-
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 2");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = 2", "1");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?", "1", "2");
-        assertNoRequests();
-
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (1, 2)");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (1, 2)", "1");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, 2)", "1");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, 2)", "1", "1");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, ?)", "1", "2");
-        assertPartitions(
-            parititon("t1", "1")
-        );
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)", "1", "1", "2");
-        assertPartitions(
-            parititon("t1", "1")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertNoRequests(),
+            "1", "2"
         );
 
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (2, 3)");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (2, 3)", "1");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, 3)", "2");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (2, ?)", "3");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, 3)", "1", "2");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (2, ?)", "1", "3");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 IN (?, ?)", "2", "3");
-        assertNoRequests();
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)", "1", "2", "3");
-        assertNoRequests();
-
-
-
-
-
-
-
-
-
-
-
-
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (1, 2) AND t2.ak2 IN (2, 3)");
-        assertPartitions(
-            parititon("t1", "2")
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "1", "2"
         );
 
-        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (1, 2) AND t2.ak2 IN (3, 4)");
-        assertNoRequests();
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
+            (res) -> assertNoRequests(),
+            "1", "2", "3"
+        );
 
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
+            (res) -> assertPartitions(
+                parititon("t1", "2")
+            ),
+            "1", "2", "2", "3"
+        );
+
+        executeCombinations("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
+            (res) -> assertNoRequests(),
+            "1", "2", "3", "4"
+        );
 
         // Transfer through "OR".
         // TODO
@@ -546,6 +506,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param args Arguments.
      */
     public void executeCombinations(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
+        System.out.println(">>> TEST COMBINATION: " + sql);
+
         // Execute query as is.
         List<List<?>> res = execute(sql, args);
 
@@ -553,7 +515,9 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Start filling arguments recursively.
         if (args != null && args.length > 0)
-            executeCombinations0(sql, resConsumer, args);
+            executeCombinations0(sql, resConsumer, new TreeSet<>(), new HashSet<>(), args);
+
+        System.out.println();
     }
 
     /**
@@ -561,9 +525,17 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      *
      * @param sql SQL.
      * @param resConsumer Result consumer.
+     * @param excludedArgs Arguments which are currently excluded.
+     * @param testedExcludedArgs Combinations of excluded arguments which already were tested.
      * @param args Arguments.
      */
-    public void executeCombinations0(String sql, Consumer<List<List<?>>> resConsumer, Object... args) {
+    public void executeCombinations0(
+        String sql,
+        Consumer<List<List<?>>> resConsumer,
+        TreeSet<Integer> excludedArgs,
+        HashSet<String> testedExcludedArgs,
+        Object... args
+    ) {
         assert args != null && args.length > 0;
 
         // Get argument positions.
@@ -597,14 +569,33 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
                     newArgs[newArgsPos++] = args[j];
             }
 
-            // Execute.
-            List<List<?>> res = execute(newSql, newArgs);
+            // Execute if this combination was never executed before.
+            excludedArgs.add(i);
 
-            resConsumer.accept(res);
+            StringBuilder combinationKey = new StringBuilder();
+
+            boolean first = true;
+
+            for (Integer excludedArg : excludedArgs) {
+                if (first)
+                    first = false;
+                else
+                    combinationKey.append("-");
+
+                combinationKey.append(excludedArg);
+            }
+
+            if (testedExcludedArgs.add(combinationKey.toString())) {
+                List<List<?>> res = execute(newSql, newArgs);
+
+                resConsumer.accept(res);
+            }
 
             // Continue recursively.
             if (newArgs.length > 0)
-                executeCombinations0(newSql, resConsumer, newArgs);
+                executeCombinations0(newSql, resConsumer, excludedArgs, testedExcludedArgs, newArgs);
+
+            excludedArgs.remove(i);
         }
     }
 
