@@ -110,16 +110,36 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             affinityColumn("ak2"),
             "v3");
 
+        // Key (no alias).
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1");
 
         assertPartitionsAndClear(
             parititon("t1", 1)
         );
 
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", 1);
+
+        assertPartitionsAndClear(
+            parititon("t1", 1)
+        );
+
+        // Key (alias).
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = 2");
 
         assertPartitionsAndClear(
-            parititon("t2", 2)
+            parititon("t1", 2)
+        );
+
+        // Non-affinity key.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.k1 = 4");
+
+        assertNoPartitions();
+
+        // Affinity key.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 3");
+
+        assertPartitionsAndClear(
+            parititon("t2", 3)
         );
     }
 
@@ -229,10 +249,13 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      *
      * @param sql SQL.
      */
-    private void execute(String sql) {
-        GridQueryProcessor proc = client().context().query();
+    private List<List<?>> execute(String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        proc.querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+        if (args != null && args.length > 0)
+            qry.setArgs(args);
+
+        return client().context().query().querySqlFields(qry, false).getAll();
     }
 
     /**
@@ -286,6 +309,15 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         assertEquals("Unexpected partitions [exp=" + expParts + ", actual=" + actualParts + ']',
             expParts0, actualParts);
+    }
+
+    /**
+     * Make sure that no partitions were extracted, then clear IO state.
+     */
+    private static void assertNoPartitionsAndClear() {
+        assertNoPartitions();
+
+        clearIoState();
     }
 
     /**
