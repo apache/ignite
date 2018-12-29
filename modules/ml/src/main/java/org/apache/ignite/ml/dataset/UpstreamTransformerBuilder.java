@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 
 /**
- * Builder of {@link UpstreamTransformerBuilder}.
+ * Builder of {@link UpstreamTransformer}.
  */
 @FunctionalInterface
 public interface UpstreamTransformerBuilder extends Serializable {

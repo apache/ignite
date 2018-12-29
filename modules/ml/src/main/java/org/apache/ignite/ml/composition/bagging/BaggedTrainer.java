@@ -38,15 +38,47 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
+/**
+ * Trainer encapsulating logic of bootstrap aggregating (bagging).
+ * This trainer accepts some other trainer and returns bagged version of it.
+ * Resulting model consists of submodels results of which are aggregated by a specified aggregator.
+ * <p>Bagging is done
+ * on both samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
+ * <a href="https://en.wikipedia.org/wiki/Random_subspace_method"></a>Features bagging</a>).</p>
+ *
+ * @param <M> Type of model produced by trainer for which bagged version is created.
+ * @param <L> Type of labels.
+ * @param <T> Type of trainer for which bagged version is created.
+ */
 public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends DatasetTrainer<M, L>> extends
     DatasetTrainer<BaggedModel, L> {
+    /** Trainer for which bagged version is created. */
     private final DatasetTrainer<M, L> tr;
+
+    /** Aggregator of submodels results. */
     private final PredictionsAggregator aggregator;
+
+    /** Count of submodels in the ensemble. */
     private final int ensembleSize;
+
+    /** Ratio determining which part of dataset will be taken as subsample for each submodel training. */
     private final double subsampleRatio;
+
+    /** Dimensionality of feature vectors. */
     private final int featuresVectorSize;
+
+    /** Dimension of subspace on which all samples from subsample are projected. */
     private final int featureSubspaceDim;
 
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param ensembleSize Size of ensemble.
+     * @param subsampleRatio Ratio (subsample size) / (initial dataset size).
+     * @param featuresVectorSize Dimensionality of feature vector.
+     * @param featureSubspaceDim Dimensionality of feature subspace.
+     * @param aggregator Aggregator of models.
+     */
     public BaggedTrainer(DatasetTrainer<M, L> tr,
         PredictionsAggregator aggregator, int ensembleSize, double subsampleRatio, int featuresVectorSize,
         int featureSubspaceDim) {
@@ -58,7 +90,12 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
         this.featureSubspaceDim = featureSubspaceDim;
     }
 
-    private DatasetTrainer<IgniteModel<Vector, List<Double>>, L> getTrainer() {
+    /**
+     * Create trainer bagged trainer.
+     *
+     * @return Bagged trainer.
+     */
+    private DatasetTrainer<IgniteModel<Vector, Double>, L> getTrainer() {
         List<int[]> mappings = (featuresVectorSize > 0 && featureSubspaceDim != featuresVectorSize) ?
             IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
@@ -94,7 +131,11 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
             .map(CompositionUtils::unsafeCoerce)
             .collect(Collectors.toList());
 
-        return new TrainersParallelComposition<>(subspaceTrainers);
+        AdaptableDatasetTrainer<Vector, Double, Vector, List<Double>, IgniteModel<Vector, List<Double>>, L> finalTrainer = AdaptableDatasetTrainer.of(
+            new TrainersParallelComposition<>(
+                subspaceTrainers)).afterTrainedModel(l -> aggregator.apply(l.stream().mapToDouble(Double::valueOf).toArray()));
+
+        return CompositionUtils.unsafeCoerce(finalTrainer);
     }
 
     /**

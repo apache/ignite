@@ -362,6 +362,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         }
     }
 
+    /**
+     * Returns the trainer which returns identity model.
+     *
+     * @param <I> Type of model input.
+     * @param <L> Type of labels in dataset.
+     * @return Trainer which returns identity model.
+     */
     public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
         return new DatasetTrainer<IgniteModel<I, I>, L>() {
             @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,

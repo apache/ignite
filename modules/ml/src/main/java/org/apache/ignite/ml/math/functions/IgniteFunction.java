@@ -40,11 +40,6 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
         return (IgniteFunction<T, R>)t -> r;
     }
 
-    default <V> IgniteFunction<T, V> andThenClosed(IgniteFunction<? super R, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
-    }
-
     /**
      * Identity function.
      *

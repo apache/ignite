@@ -28,11 +28,40 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/**
+ * Sequential composition of trainers.
+ * Sequential composition of trainers is itself trainer which produces {@link ModelsSequentialComposition}.
+ * Training is done in following fashion:
+ * <pre>
+ *     1. First trainer is trained and `mdl1` is produced.
+ *     2. From `mdl1` {@link DatasetMapping} is constructed. This mapping `dsM` encapsulates dependency between first training
+ *     result and second trainer.
+ *     3. Second trainer is trained using dataset aquired from application `dsM` to original dataset; `mdl2` is produced.
+ *     4. `mdl1` and `mdl2` are composed into {@link ModelsSequentialComposition}.
+ * </pre>
+ *
+ * @param <I> Type of input of model produced by first trainer.
+ * @param <O1> Type of output of model produced by first trainer.
+ * @param <O2> Type of output of model produced by second trainer.
+ * @param <L> Type of labels.
+ */
 public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<ModelsSequentialComposition<I, O1, O2>, L> {
+    /** First trainer. */
     private DatasetTrainer<IgniteModel<I, O1>, L> tr1;
+
+    /** Second trainer. */
     private DatasetTrainer<IgniteModel<O1, O2>, L> tr2;
+
+    /** Dataset mapping. */
     private IgniteFunction<? super IgniteModel<I, O1>, DatasetMapping<L, L>> datasetMapping;
 
+    /**
+     * Construct sequential composition of given two trainers.
+     *
+     * @param tr1 First trainer.
+     * @param tr2 Second trainer.
+     * @param datasetMapping Dataset mapping.
+     */
     public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
         DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
         IgniteFunction<? super IgniteModel<I, O1>, DatasetMapping<L, L>> datasetMapping) {
@@ -83,21 +112,6 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
         throw new NotImplementedException();
-    }
-
-    public static <L, I, O> DatasetMapping<L, L> augmentFeatures(IgniteModel<I, O> mdl,
-        IgniteFunction<Vector, I> vector2FirstInputConvertor,
-        IgniteFunction<O, Vector> firstOutput2VectorConvertor) {
-        return new DatasetMapping<L, L>() {
-            @Override public Vector mapFeatures(Vector v) {
-                return VectorUtils.concat(v,
-                    vector2FirstInputConvertor.andThen(mdl::predict).andThen(firstOutput2VectorConvertor).apply(v));
-            }
-
-            @Override public L mapLabels(L lbls) {
-                return lbls;
-            }
-        };
     }
 
     public DatasetTrainer<IgniteModel<I, O2>, L> unsafeSimplyTyped() {

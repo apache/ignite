@@ -23,8 +23,13 @@ import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggrega
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-// TODO: write about reason why it is not general.
+/**
+ * This class represents model produced by {@link BaggedTrainer}.
+ *
+ * This class consist of m.
+ */
 public class BaggedModel implements IgniteModel<Vector, Double> {
+    /**  */
     private IgniteModel<Vector, List<Double>> mdl;
     private PredictionsAggregator aggregator;
 

@@ -24,26 +24,39 @@ import org.apache.ignite.ml.IgniteModel;
 
 /**
  * Parallel composition of models.
- * Parallel composition of models is a model which contains a list of models with same input and output types.
+ * Parallel composition of models is a model which contains a list of submodels with same input and output types.
+ * Result of prediction in such model is a list of predictions of each of submodels.
  *
- * @param <I>
- * @param <O>
+ * @param <I> Type of submodel input.
+ * @param <O> Type of submodel output.
  */
 public class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> {
-    private final List<IgniteModel<I, O>> models;
+    /** List of submodels. */
+    private final List<IgniteModel<I, O>> submodels;
 
-    public ModelsParallelComposition(List<IgniteModel<I, O>> models) {
-        this.models = models;
+    /**
+     * Construc an instance of this class from list of submodels.
+     *
+     * @param submodels List of submodels constituting this model.
+     */
+    public ModelsParallelComposition(List<IgniteModel<I, O>> submodels) {
+        this.submodels = submodels;
     }
 
+    /** {@inheritDoc} */
     @Override public List<O> predict(I i) {
-        return models
+        return submodels
             .stream()
             .map(m -> m.predict(i))
             .collect(Collectors.toList());
     }
 
-    public List<IgniteModel<I, O>> models() {
-        return new ArrayList<>(models);
+    /**
+     * List of submodels constituting this model.
+     *
+     * @return List of submodels constituting this model.
+     */
+    public List<IgniteModel<I, O>> submodels() {
+        return new ArrayList<>(submodels);
     }
 }

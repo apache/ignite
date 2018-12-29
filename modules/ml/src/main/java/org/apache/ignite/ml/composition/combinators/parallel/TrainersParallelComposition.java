@@ -89,11 +89,11 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
         // Unsafe.
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
-        assert typedMdl.models().size() == trainers.size();
+        assert typedMdl.submodels().size() == trainers.size();
         List<IgniteModel<I, O>> mdls = new ArrayList<>();
 
         for (int i = 0; i < trainers.size(); i++)
-            mdls.add(trainers.get(i).update(typedMdl.models().get(i), datasetBuilder, featureExtractor, lbExtractor));
+            mdls.add(trainers.get(i).update(typedMdl.submodels().get(i), datasetBuilder, featureExtractor, lbExtractor));
 
         return new ModelsParallelComposition<>(mdls);
     }

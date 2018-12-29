@@ -244,6 +244,11 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, featureExtractor, lbExtractor));
     }
 
+    /**
+     * Get the trainer for stacking.
+     *
+     * @return Trainer for stacking.
+     */
     private DatasetTrainer<IgniteModel<IS, O>, L> getTrainer() {
         // Make sure there is at least one way for submodel input to propagate to aggregator.
         if (submodelInput2AggregatingInputConverter == null && submodelsTrainers.isEmpty())
@@ -278,7 +283,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
             .afterTrainedModel(lst -> lst.stream().reduce(aggregatingInputMerger).get())
             .andThen(aggregatorTrainer, model -> new DatasetMapping<L, L>() {
                 @Override public Vector mapFeatures(Vector v) {
-                    List<IgniteModel<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).models();
+                    List<IgniteModel<IS, IA>> models = ((ModelsParallelComposition<IS, IA>)model.innerModel()).submodels();
                     return featureMapper.apply(models, v);
                 }
 
