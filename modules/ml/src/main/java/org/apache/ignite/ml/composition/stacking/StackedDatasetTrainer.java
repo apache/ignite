@@ -346,11 +346,12 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         // This method is never called, we override "update" instead.
-        return null;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
-        return true;
+        // Should be never called.
+        throw new IllegalStateException();
     }
 }

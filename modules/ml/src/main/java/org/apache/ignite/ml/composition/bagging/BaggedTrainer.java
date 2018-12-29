@@ -187,12 +187,14 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(BaggedModel mdl) {
-        return false;
+        // Should be never called.
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        return null;
+        // Should be never called.
+        throw new IllegalStateException();
     }
 }
