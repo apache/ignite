@@ -4956,12 +4956,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            UUID locNodeId = getLocalNodeId();
-
-            if (failedNode != null && !failedNode.id().equals(locNodeId)) {
+            if (failedNode != null) {
                 assert !failedNode.isLocal() || !msg.verified() : msg;
 
-                if (!msg.force() || msg.verified() || failedNode.id().equals(resolveCoordinator().id())) {
+                boolean skipUpdateFailedNodes = msg.force() && !msg.verified();
+
+                if (!skipUpdateFailedNodes) {
                     synchronized (mux) {
                         if (!failedNodes.containsKey(failedNode))
                             failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
@@ -4976,6 +4976,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             boolean locNodeCoord = isLocalNodeCoordinator();
+
+            UUID locNodeId = getLocalNodeId();
 
             if (locNodeCoord) {
                 if (msg.verified()) {
