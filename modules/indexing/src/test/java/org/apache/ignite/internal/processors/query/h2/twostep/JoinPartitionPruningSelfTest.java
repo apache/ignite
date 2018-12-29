@@ -127,28 +127,28 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Key (no alias).
         List<List<?>> res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
         assertEquals("1", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = '1'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
         assertEquals("1", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", 1);
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
         assertEquals("1", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?", "1");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
@@ -156,14 +156,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Key (alias).
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = '2'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "2")
         );
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?", "2");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "2")
         );
         assertEquals(1, res.size());
@@ -182,14 +182,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Affinity key.
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = 4");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t2", "4")
         );
         assertEquals(1, res.size());
         assertEquals("4", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?", "4");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t2", "4")
         );
         assertEquals(1, res.size());
@@ -199,7 +199,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         BinaryObject key = client().binary().builder("t2_key").setField("k1", "5").setField("ak2", "5").build();
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t2", "5")
         );
         assertEquals(1, res.size());
@@ -214,16 +214,25 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // First co-located table.
         createPartitionedTable("t1",
             pkColumn("k1"),
-            "v2");
+            "v2"
+        );
 
         // Second co-located table.
         createPartitionedTable("t2",
             pkColumn("k1"),
             affinityColumn("ak2"),
-            "v3");
+            "v3"
+        );
+
+        // Third co-located table.
+        createPartitionedTable("t3",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3"
+        );
 
         // Replicated table.
-        createReplicatedTable("t3",
+        createReplicatedTable("t4",
             pkColumn("k1"),
             "v2",
             "v3"
@@ -235,7 +244,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             parititon("t1", "1")
         );
 
-        // TODO: AND (empty)
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = 1 AND t2.ak2 = 2");
+        assertNoRequests();
 
         // Transfer through "OR".
         // TODO
@@ -277,14 +287,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Left table, should work.
         List<List<?>> res = execute("SELECT * FROM t1, t2 WHERE t1.k1 = '1'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
         assertEquals("1", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = '1'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t1", "1")
         );
         assertEquals(1, res.size());
@@ -292,14 +302,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Right table, should work.
         res = execute("SELECT * FROM t1, t2 WHERE t2.ak2 = '2'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t2", "2")
         );
         assertEquals(1, res.size());
         assertEquals("2", res.get(0).get(0));
 
         res = execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = '2'");
-        assertPartitionsAndClear(
+        assertPartitions(
             parititon("t2", "2")
         );
         assertEquals(1, res.size());
@@ -489,17 +499,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Make sure that expected partitions are logged, then clear IO state.
-     *
-     * @param expParts Expected partitions.
-     */
-    private static void assertPartitionsAndClear(int... expParts) {
-        assertPartitions(expParts);
-
-        clearIoState();
-    }
-
-    /**
      * Make sure that expected partitions are logged.
      *
      * @param expParts Expected partitions.
@@ -524,15 +523,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         assertEquals("Unexpected partitions [exp=" + expParts + ", actual=" + actualParts + ']',
             expParts0, actualParts);
-    }
-
-    /**
-     * Make sure that no partitions were extracted, then clear IO state.
-     */
-    private static void assertNoPartitionsAndClear() {
-        assertNoPartitions();
-
-        clearIoState();
     }
 
     /**

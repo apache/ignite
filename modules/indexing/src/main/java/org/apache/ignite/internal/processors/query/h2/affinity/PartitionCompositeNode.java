@@ -301,7 +301,7 @@ public class PartitionCompositeNode implements PartitionNode {
 
         // Currently we do not merge such nodes because it may violate existing broken (!!!) join semantics.
         // Normally, if we have two non-collocated partition sets, then this should be an empty set for collocated
-        // query mode. Unfortunately, // current semantics of collocated query mode assume that even though both sides
+        // query mode. Unfortunately, current semantics of collocated query mode assume that even though both sides
         // of expression are located on random nodes, there is a slight chance that they may accidentally reside on
         // a single node and hence return some rows. We return "ALL" here to keep this broken semantics consistent
         // irrespective of whether partition pruning is used or not. Once non-collocated joins are fixed, this

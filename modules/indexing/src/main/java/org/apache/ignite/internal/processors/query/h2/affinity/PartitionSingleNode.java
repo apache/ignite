@@ -74,7 +74,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.alias().hashCode();
+        hash = 31 * hash + tbl.joinGroup();
 
         return hash;
     }
@@ -90,6 +90,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
         return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
-            F.eq(tbl.alias(), other.tbl.alias());
+            F.eq(tbl.joinGroup(), other.tbl.joinGroup());
     }
 }
