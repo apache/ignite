@@ -17,28 +17,18 @@
 
 package org.apache.ignite.ml.inference.builder;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import org.apache.ignite.ml.inference.InfModel;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import java.io.Serializable;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Tests for {@link ThreadedInfModelBuilder} class.
+ * Implementation of synchronous inference model builder that builds a model processed locally in a single thread.
  */
-public class ThreadedInfModelBuilderTest {
-    /** */
-    @Test
-    public void testBuild() throws ExecutionException, InterruptedException {
-        AsyncInfModelBuilder mdlBuilder = new ThreadedInfModelBuilder(10);
-
-        InfModel<Integer, Future<Integer>> infMdl = mdlBuilder.build(
-            InfModelBuilderTestUtil.getReader(),
-            InfModelBuilderTestUtil.getParser()
-        );
-
-        for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.apply(i).get());
+public class SingleModelBuilder implements SyncModelBuilder {
+    /** {@inheritDoc} */
+    @Override public <I extends Serializable, O extends Serializable, M extends Model<I, O>> M build(ModelReader reader,
+        ModelParser<I, O, M> parser) {
+        return parser.parse(reader.read());
     }
 }

@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -121,6 +120,22 @@ public class RunningQueryManager {
 
         if (run != null)
             run.cancel();
+    }
+
+    /**
+     * Cancel all executing queries and deregistering all of them.
+     */
+    public void stop() {
+        for (GridRunningQueryInfo r : runs.values()) {
+            try {
+                unregister(r.id());
+
+                r.cancel();
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
     }
 
     /** {@inheritDoc} */
