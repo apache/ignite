@@ -425,8 +425,7 @@ public class PartitionExtractor {
         // Check that both left and right AST use same column.
         if (!F.eq(leftCol.schema(), rightCol.schema()) ||
             !F.eq(leftCol.columnName(), rightCol.columnName()) ||
-            !F.eq(leftCol.tableAlias(), rightCol.tableAlias()) ||
-            !F.eq(leftCol.column().getType(), rightCol.column().getType()))
+            !F.eq(leftCol.tableAlias(), rightCol.tableAlias()))
             return null;
 
         // Check columns type
