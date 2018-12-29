@@ -88,14 +88,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        super.afterTest();
-
         Thread.sleep(5000);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000;
     }
 
     /**
@@ -299,22 +292,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
             done.set(true);
 
-            clientsFut.get();
-
-            assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
-                for (int i = 0; i < srvsToKill; i++) {
-                    try {
-                        grid(i);
-
-                        return false;
-                    }
-                    catch (IgniteIllegalStateException ignored) {
-                        // No-op.
-                    }
-                }
-
-                return true;
-            }, 10_000));
+            clientsFut.get(30_000);
 
             awaitPartitionMapExchange();
 
