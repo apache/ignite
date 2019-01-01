@@ -758,9 +758,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @throws Exception If failed.
      */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-
         assert init >= 0;
         assert cnt > 0;
 

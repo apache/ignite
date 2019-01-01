@@ -16,15 +16,8 @@
  */
 
 import _ from 'lodash';
-
-import {Observable} from 'rxjs/Observable';
-import {Subject} from 'rxjs/Subject';
-import 'rxjs/add/observable/race';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/pluck';
-import 'rxjs/add/operator/take';
-import 'rxjs/add/operator/toPromise';
+import {Subject, race} from 'rxjs';
+import {filter, take, pluck, map} from 'rxjs/operators';
 
 /**
  * Simple implementation of workers pool.
@@ -90,7 +83,7 @@ export default class SimpleWorkerPool {
         worker.postMessage(task.data);
 
         if (this.__dbg)
-            console.timeEnd('Post message');
+            console.timeEnd(`Post message[pool=${this._name}]`);
     }
 
     terminate() {
@@ -112,11 +105,11 @@ export default class SimpleWorkerPool {
 
         this._run();
 
-        return Observable.race(
-            this.messages$.filter((e) => e.tid === tid).take(1).pluck('m', 'data'),
-            this.errors$.filter((e) => e.tid === tid).take(1).map((e) => {
+        return race(
+            this.messages$.pipe(filter((e) => e.tid === tid), take(1), pluck('m', 'data')),
+            this.errors$.pipe(filter((e) => e.tid === tid), take(1), map((e) => {
                 throw e.e;
             }))
-            .take(1).toPromise();
+        ).pipe(take(1)).toPromise();
     }
 }

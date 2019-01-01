@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreaded
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
@@ -190,7 +189,6 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheMvccSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
         ignoredTests.add(GridCacheMvccPartitionedSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
         ignoredTests.add(GridCacheMvccManagerSelfTest.class); // This is about MvccCandidate, but not TxSnapshot.
-        ignoredTests.add(GridCacheSwapPreloadSelfTest.class);
         ignoredTests.add(GridCacheMissingCommitVersionSelfTest.class); // Mvcc tx states resides in TxLog.
 
         // Other non-Tx test.

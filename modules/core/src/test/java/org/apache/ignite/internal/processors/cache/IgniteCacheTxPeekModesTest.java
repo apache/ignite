@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,12 +40,5 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testLocalEntries() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10167", MvccFeatureChecker.forcedMvcc());
-
-        super.testLocalEntries();
     }
 }

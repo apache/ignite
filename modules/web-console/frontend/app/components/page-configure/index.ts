@@ -49,23 +49,15 @@ import pcSplitButton from './components/pc-split-button';
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 
-import 'rxjs/add/operator/withLatestFrom';
-import 'rxjs/add/operator/skip';
-
-import {Observable} from 'rxjs/Observable';
+import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
 import {navigationMenuItem, AppStore} from '../../store';
 import {default as configurationIcon} from './icons/configuration.icon.svg';
 import {default as IconsService} from '../ignite-icon/service';
 
-Observable.prototype.debug = function(l) {
-    return this.do((v) => console.log(l, v), (e) => console.error(l, e), () => console.log(l, 'completed'));
-};
-
 import {
     editReducer2,
     shortObjectsReducer,
-    reducer,
     editReducer,
     loadingReducer,
     itemsEditReducerFactory,
@@ -83,7 +75,6 @@ import {
     refsReducer
 } from './reducer';
 
-import {reducer as reduxDevtoolsReducer, devTools} from './reduxDevtoolsIntegration';
 import {registerStates} from './states';
 
 /**
@@ -156,18 +147,19 @@ export default angular
             }
         });
 
-        const la = ConfigureState.actions$.scan((acc, action) => [...acc, action], []);
+        const la = ConfigureState.actions$.pipe(scan((acc, action) => [...acc, action], []));
 
-        ConfigureState.actions$
-            .filter((a) => a.type === 'UNDO_ACTIONS')
-            .withLatestFrom(la, ({actions}, actionsWindow, initialState) => {
+        ConfigureState.actions$.pipe(
+            filter((a) => a.type === 'UNDO_ACTIONS'),
+            withLatestFrom(la, ({actions}, actionsWindow, initialState) => {
                 return {
                     type: 'APPLY_ACTIONS_UNDO',
                     state: actionsWindow.filter((a) => !actions.includes(a)).reduce(ConfigureState._combinedReducer, {})
                 };
-            })
-            .do((a) => ConfigureState.dispatchAction(a))
-            .subscribe();
+            }),
+            tap((a) => ConfigureState.dispatchAction(a))
+        )
+        .subscribe();
         ConfigEffects.connect();
 
         store.dispatch(navigationMenuItem({
