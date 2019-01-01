@@ -18,6 +18,10 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -25,6 +29,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -42,12 +47,16 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
+    @Test
     @Override public void testBackupQueueEvict() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+        // No-op.
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10391")
+    @Test
     @Override public void testFailoverStartStopBackup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+        // No-op.
     }
 }
