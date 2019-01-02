@@ -821,7 +821,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (txState.mvccEnabled())
                                         txEntry.updateCounter(updRes.updateCounter());
-                                    else {
+                                    else if (txCounters != null) { // Near tx has no counters.
                                         Map<Integer, AtomicLong> map =
                                             txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
 

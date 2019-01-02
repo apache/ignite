@@ -3513,7 +3513,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
 
-                if (!preload)
+                if (!preload && !isLocal() && !isNear())
                     localPartition().updateCounter(updateCntr);
 
                 drReplicate(drType, val, ver, topVer);
@@ -6421,7 +6421,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
 
-            entry.localPartition().updateCounter(updateCntr0);
+            if (!entry.isNear())
+                entry.localPartition().updateCounter(updateCntr0);
 
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
@@ -6510,7 +6511,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
 
-            entry.localPartition().updateCounter(updateCntr0);
+            if (!entry.isNear())
+                entry.localPartition().updateCounter(updateCntr0);
 
             entry.logUpdate(op, null, newVer, 0, updateCntr0);
 

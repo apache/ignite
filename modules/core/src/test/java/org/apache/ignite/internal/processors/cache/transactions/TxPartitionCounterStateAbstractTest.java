@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,6 +85,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toCollection;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -137,11 +140,10 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-            setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
+            setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
+            setCheckpointFrequency(MILLISECONDS.convert(365, DAYS)).
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
-
-        cfg.setFailureDetectionTimeout(600000);
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);

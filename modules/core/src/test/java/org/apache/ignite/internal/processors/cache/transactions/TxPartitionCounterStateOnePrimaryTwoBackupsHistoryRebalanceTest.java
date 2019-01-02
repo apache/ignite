@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -47,5 +49,33 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest ext
 
         // Expecting only one historical rebalance for test scenario.
         assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("The test doesn't trigger rebalance")
+    @Override public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("The test doesn't trigger rebalance")
+    @Override public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("The test doesn't trigger rebalance")
+    @Override public void testSkipReservedCountersAfterRecovery() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("The test doesn't trigger rebalance")
+    @Override public void testSkipReservedCountersAfterRecovery2() throws Exception {
+        // No-op.
     }
 }
