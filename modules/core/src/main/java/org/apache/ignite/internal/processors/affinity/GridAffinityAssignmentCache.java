@@ -93,13 +93,13 @@ public class GridAffinityAssignmentCache {
     private final ConcurrentNavigableMap<AffinityTopologyVersion, HistoryAffinityAssignment> affCache;
 
     /** */
-    private List<List<ClusterNode>> idealAssignment;
+    private IdealAffinityAssignment idealAssignment;
 
     /** */
     private BaselineTopology baselineTopology;
 
     /** */
-    private List<List<ClusterNode>> baselineAssignment;
+    private IdealAffinityAssignment baselineAssignment;
 
     /** Cache item corresponding to the head topology version. */
     private final AtomicReference<GridAffinityAssignment> head;
@@ -205,7 +205,7 @@ public class GridAffinityAssignmentCache {
 
         assert idealAssignment != null;
 
-        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
+        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment.assignment());
 
         return set(topVer, assignment);
     }
@@ -262,14 +262,14 @@ public class GridAffinityAssignmentCache {
      * @param assignment Assignment.
      */
     public void idealAssignment(List<List<ClusterNode>> assignment) {
-        this.idealAssignment = assignment;
+        this.idealAssignment = IdealAffinityAssignment.create(assignment);
     }
 
     /**
      * @return Assignment.
      */
     @Nullable public List<List<ClusterNode>> idealAssignment() {
-        return idealAssignment;
+        return idealAssignment != null ? idealAssignment.assignment() : null;
     }
 
     /**
@@ -307,12 +307,12 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Calculates affinity cache for given topology version.
+     * Calculates ideal assignment for given topology version and events happened since last calculation.
      *
      * @param topVer Topology version to calculate affinity cache for.
      * @param events Discovery events that caused this topology version change.
      * @param discoCache Discovery cache.
-     * @return Affinity assignments.
+     * @return Ideal affinity assignment.
      */
     public List<List<ClusterNode>> calculate(
         AffinityTopologyVersion topVer,
@@ -320,10 +320,10 @@ public class GridAffinityAssignmentCache {
         @Nullable DiscoCache discoCache
     ) {
         if (log.isDebugEnabled())
-            log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
+            log.debug("Calculating ideal affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvts=" + events + ']');
 
-        List<List<ClusterNode>> prevAssignment = idealAssignment;
+        IdealAffinityAssignment prevAssignment = idealAssignment;
 
         // Resolve nodes snapshot for specified topology version.
         List<ClusterNode> sorted;
@@ -346,7 +346,7 @@ public class GridAffinityAssignmentCache {
                 !discoCache.state().baselineTopology().equals(baselineTopology);
         }
 
-        List<List<ClusterNode>> assignment;
+        IdealAffinityAssignment assignment;
 
         if (prevAssignment != null && events != null) {
             /* Skip affinity calculation only when all nodes triggered exchange
@@ -366,19 +366,22 @@ public class GridAffinityAssignmentCache {
             if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
-                if (baselineAssignment == null)
-                    baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
+                if (baselineAssignment == null) {
+                    List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                         discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                        prevAssignment, events.lastEvent(), topVer, backups));
+                        prevAssignment != null ? prevAssignment.assignment() : null, events.lastEvent(), topVer, backups));
 
-                assignment = currentBaselineAssignment(topVer);
+                    baselineAssignment = IdealAffinityAssignment.create(calculated);
+                }
+
+                assignment = new IdealAffinityAssignment(baselineAssignmentWithoutOfflineNodes(topVer);
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                     prevAssignment, events.lastEvent(), topVer, backups));
 
-                assignment = currentBaselineAssignment(topVer);
+                assignment = baselineAssignmentWithoutOfflineNodes(topVer);
             }
             else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
@@ -396,7 +399,7 @@ public class GridAffinityAssignmentCache {
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                     prevAssignment, event, topVer, backups));
 
-                assignment = currentBaselineAssignment(topVer);
+                assignment = baselineAssignmentWithoutOfflineNodes(topVer);
             }
             else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
@@ -430,7 +433,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Baseline assignment with filtered out offline nodes.
      */
-    private List<List<ClusterNode>> currentBaselineAssignment(AffinityTopologyVersion topVer) {
+    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
         Map<Object, ClusterNode> alives = new HashMap<>();
 
         for (ClusterNode node : ctx.discovery().nodes(topVer)) {

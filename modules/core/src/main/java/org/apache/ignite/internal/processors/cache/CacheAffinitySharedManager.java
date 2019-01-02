@@ -1694,7 +1694,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         WaitRebalanceInfo waitRebalanceInfo = createRebalanceInfo(fut);
 
-        ConcurrentMap<Integer, Map<Integer, List<Long>>> assignmentPerGroup = new ConcurrentHashMap<>();
+        ConcurrentMap<Integer, CacheGroupAffinityMessage> assignmentPerGroup = new ConcurrentHashMap<>();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
@@ -1717,7 +1717,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 );
 
                 if (!assignment.getValue().isEmpty())
-                    assignmentPerGroup.put(assignment.getKey(), assignment.getValue());
+                    assignmentPerGroup.put(assignment.getKey(), new CacheGroupAffinityMessage(assignment.getValue()));
 
                 fut.timeBag().finishLocalStage("Affinity calculation (enforced) " +
                     "[grp=" + desc.cacheOrGroupName() + "]");
@@ -1726,7 +1726,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         setRebalanceInfo(waitRebalanceInfo);
 
-        return CacheGroupAffinityMessage.createAffinityDiffMessages(assignmentPerGroup);
+        return assignmentPerGroup;
     }
 
     /**
