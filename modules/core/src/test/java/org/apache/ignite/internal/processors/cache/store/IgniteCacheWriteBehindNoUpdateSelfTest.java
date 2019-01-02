@@ -39,10 +39,14 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String THROTTLES_CACHE_NAME = "test";
@@ -83,6 +87,7 @@ public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorNoUpdate() throws Exception {
         IgniteCache<Object, Object> cache = ignite(0).cache(THROTTLES_CACHE_NAME);
 

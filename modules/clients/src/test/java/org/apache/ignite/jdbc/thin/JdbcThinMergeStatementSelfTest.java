@@ -21,10 +21,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * MERGE statement test.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "merge into Person(_key, id, firstName, lastName, age) values " +
@@ -117,6 +121,7 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         assertEquals(3, stmt.executeUpdate(SQL));
     }
@@ -124,6 +129,7 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         assertFalse(stmt.execute(SQL));
     }

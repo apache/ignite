@@ -38,15 +38,20 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousMapperMethods() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -63,6 +68,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousMapperLifeCycle() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -77,6 +83,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousMapperNegative() throws Exception {
         try {
             Ignite ignite = startGrid(0);

@@ -37,6 +37,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,6 +50,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 /**
  * Tests transaction during cache preloading.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 6;
@@ -78,9 +83,9 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteTxPreloading() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10391", MvccFeatureChecker.forcedMvcc());
 
         IgniteCache<String, Integer> cache = jcache(0);
 
@@ -150,6 +155,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxPreloadingOptimistic() throws Exception {
         if (!MvccFeatureChecker.forcedMvcc()) // Do not check optimistic tx for mvcc.
             testLocalTxPreloading(OPTIMISTIC);
@@ -158,9 +164,9 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxPreloadingPessimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10391", MvccFeatureChecker.forcedMvcc());
 
         testLocalTxPreloading(PESSIMISTIC);
     }

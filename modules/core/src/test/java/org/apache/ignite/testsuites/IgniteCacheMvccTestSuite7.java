@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
@@ -33,11 +34,14 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite7  extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite7 {
     /**
      * @return IgniteCache test suite.
      */
@@ -70,8 +74,8 @@ public class IgniteCacheMvccTestSuite7  extends TestSuite {
         suite.addTest(IgniteCacheTestSuite7.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(MvccCacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionCountersMvccTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccCacheGroupMetricsMBeanTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionCountersMvccTest.class));
 
 
         return suite;

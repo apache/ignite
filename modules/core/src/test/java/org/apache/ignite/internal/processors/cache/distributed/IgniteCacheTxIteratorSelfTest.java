@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -36,9 +35,15 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import javax.cache.Cache;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "testCache";
@@ -85,6 +90,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesSingleNode() throws Exception {
         checkModes(1);
     }
@@ -92,6 +98,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesMultiNode() throws Exception {
         checkModes(3);
     }

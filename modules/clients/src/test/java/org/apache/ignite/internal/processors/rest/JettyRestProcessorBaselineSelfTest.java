@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineC
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -119,9 +120,10 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaseline() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         // Stop one node. It will stay in baseline.
@@ -136,9 +138,10 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineSet() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);
@@ -174,9 +177,10 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAdd() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);
@@ -184,16 +188,17 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
 
         assertBaseline(content(null, GridRestCommand.BASELINE_ADD, "consistentId1",
             grid(sz).localNode().consistentId().toString()), sz + 1, sz + 1);
-        
+
         stopGrid(sz);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineRemove() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);

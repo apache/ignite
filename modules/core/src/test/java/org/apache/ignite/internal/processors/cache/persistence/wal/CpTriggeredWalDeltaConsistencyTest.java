@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
 
 /**
  * Checkpoint triggered WAL delta records consistency test.
@@ -32,6 +33,7 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
     /**
      *
      */
+    @Test
     public final void testPutRemoveCacheDestroy() throws Exception {
         IgniteEx ignite = startGrid(0);
 

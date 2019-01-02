@@ -27,6 +27,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -36,6 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Number of threads for test. */
     private static final int THREAD_CNT = 16;
@@ -69,17 +73,20 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         // Need to increase value set in GridAbstractTest
         sizePropVal = System.getProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
 
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
 
         super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +111,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
@@ -162,6 +170,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
@@ -225,6 +234,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutConsistencyMultithreaded() throws Exception {
         if (nearEnabled())
             fail("https://issues.apache.org/jira/browse/IGNITE-627");
@@ -278,6 +288,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
         if (nearEnabled())
             fail("https://issues.apache.org/jira/browse/IGNITE-627");

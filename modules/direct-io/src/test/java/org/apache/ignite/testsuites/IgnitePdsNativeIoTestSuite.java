@@ -16,13 +16,17 @@
  */
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
-public class IgnitePdsNativeIoTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsNativeIoTestSuite {
     /**
      * @return Suite.
      */
@@ -32,9 +36,9 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         //long running test by design with light parameters
-        suite.addTestSuite(IgnitePdsReplacementNativeIoTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsReplacementNativeIoTest.class));
 
-        suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoWithNoPersistenceTest.class));
 
         return suite;
     }

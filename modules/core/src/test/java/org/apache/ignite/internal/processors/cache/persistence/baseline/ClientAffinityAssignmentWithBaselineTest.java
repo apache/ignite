@@ -53,12 +53,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Checks that client affinity assignment cache is calculated correctly regardless of current baseline topology.
  */
+@RunWith(JUnit4.class)
 public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int DEFAULT_NODES_COUNT = 5;
@@ -225,6 +229,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      *
      */
+    @Test
     public void testPartitionedAtomicCache() throws Exception {
         testChangingBaselineDown(PARTITIONED_ATOMIC_CACHE_NAME, false);
     }
@@ -232,6 +237,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      *
      */
+    @Test
     public void testPartitionedTxCache() throws Exception {
         testChangingBaselineDown(PARTITIONED_TX_CACHE_NAME, false);
     }
@@ -239,6 +245,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      * Test that activation after client join won't break cache.
      */
+    @Test
     public void testLateActivation() throws Exception {
         testChangingBaselineDown(PARTITIONED_TX_CACHE_NAME, true);
     }
@@ -246,6 +253,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      *
      */
+    @Test
     public void testReplicatedAtomicCache() throws Exception {
         testChangingBaselineDown(REPLICATED_ATOMIC_CACHE_NAME, false);
     }
@@ -253,6 +261,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      *
      */
+    @Test
     public void testReplicatedTxCache() throws Exception {
         testChangingBaselineDown(REPLICATED_TX_CACHE_NAME, false);
     }
@@ -328,6 +337,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      * Tests that rejoin of baseline node with clear LFS under load won't break cache.
      */
+    @Test
     public void testRejoinWithCleanLfs() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT - 1);
         startGrid("flaky");
@@ -394,6 +404,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      * Test that changing baseline down under cross-cache txs load won't break cache.
      */
+    @Test
     public void testCrossCacheTxs() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
@@ -455,6 +466,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      * Tests that join of non-baseline node while long transactions are running won't break dynamically started cache.
      */
+    @Test
     public void testDynamicCacheLongTransactionNodeStart() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(4);
 
@@ -526,13 +538,14 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      * Tests that if dynamic cache has no affinity nodes at the moment of start,
      * it will still work correctly when affinity nodes will appear.
      */
+    @Test
     public void testDynamicCacheStartNoAffinityNodes() throws Exception {
         fail("IGNITE-8652");
 
         IgniteEx ig0 = startGrid(0);
 
         ig0.cluster().active(true);
-        
+
         IgniteEx client = (IgniteEx)startGrid("client");
 
         CacheConfiguration<Integer, String> dynamicCacheCfg = new CacheConfiguration<Integer, String>()
@@ -544,7 +557,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             .setNodeFilter(new ConsistentIdNodeFilter((Serializable)ig0.localNode().consistentId()));
 
         IgniteCache<Integer, String> dynamicCache = client.getOrCreateCache(dynamicCacheCfg);
-        
+
         for (int i = 1; i < 4; i++)
             startGrid(i);
 
@@ -552,29 +565,29 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         for (int i = 0; i < ENTRIES; i++)
             dynamicCache.put(i, "abacaba" + i);
-        
+
         AtomicBoolean releaseTx = new AtomicBoolean(false);
         CountDownLatch allTxsDoneLatch = new CountDownLatch(10);
-        
+
         for (int i = 0; i < 10; i++) {
             final int i0 = i;
-            
+
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     try (Transaction tx = client.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                         TransactionIsolation.REPEATABLE_READ)) {
                         dynamicCache.put(i0, "txtxtxtx" + i0);
-                        
+
                         while (!releaseTx.get())
                             LockSupport.parkNanos(1_000_000);
-                        
+
                         tx.commit();
-                        
+
                         System.out.println("Tx #" + i0 + " committed");
                     }
                     catch (Throwable t) {
                         System.out.println("Tx #" + i0 + " failed");
-                        
+
                         t.printStackTrace();
                     }
                     finally {
@@ -583,7 +596,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                 }
             });
         }
-        
+
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -608,6 +621,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     /**
      * Tests that join of non-baseline node while long transactions are running won't break cache started on client join.
      */
+    @Test
     public void testClientJoinCacheLongTransactionNodeStart() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(4);
 

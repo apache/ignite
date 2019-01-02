@@ -20,6 +20,9 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
 
@@ -27,10 +30,12 @@ import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
  * TCP communication SPI config test.
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+@RunWith(JUnit4.class)
 public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpCommunicationSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 1023);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 65636);
@@ -55,6 +60,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPortRange() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 

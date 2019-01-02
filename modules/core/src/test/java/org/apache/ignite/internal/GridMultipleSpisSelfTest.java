@@ -42,11 +42,15 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multiple SPIs test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean isTaskFailoverCalled;
@@ -109,7 +113,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedCatchParameter"})
+    @Test
     public void testFailoverTask() throws Exception {
         // Start local and remote grids.
         Ignite ignite1 = startGrid(1);

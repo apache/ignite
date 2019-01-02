@@ -45,6 +45,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,6 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -84,6 +88,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomic() throws Exception {
         concurrentUpdatePartition(ATOMIC, false);
     }
@@ -91,6 +96,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, false);
     }
@@ -98,6 +104,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -105,6 +112,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
@@ -112,6 +120,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, true);
     }
@@ -119,6 +128,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, true);
     }
@@ -274,6 +284,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, false);
     }
@@ -281,6 +292,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, false);
     }
@@ -288,6 +300,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -295,20 +308,23 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void _testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
+    @Test
+    public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
+    @Test
+    public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
@@ -329,24 +345,24 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         if (cacheGrp) {
             for (int i = 0; i < 3; i++) {
-                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + i);
+                CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + i);
 
                 ccfg.setGroupName("testGroup");
                 ccfg.setWriteSynchronizationMode(FULL_SYNC);
                 ccfg.setAtomicityMode(atomicityMode);
 
-                IgniteCache cache = client.createCache(ccfg);
+                IgniteCache<?, ?> cache = client.createCache(ccfg);
 
                 caches.add(cache.getName());
             }
         }
         else {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+            CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(atomicityMode);
 
-            IgniteCache cache = client.createCache(ccfg);
+            IgniteCache<?, ?> cache = client.createCache(ccfg);
 
             caches.add(cache.getName());
         }
@@ -476,7 +492,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                         return evtCnt.get() >= THREADS * UPDATES;
                     }
-                }, 5000);
+                }, 30000);
 
                 assertEquals(THREADS * UPDATES, qry.get1().get());
 

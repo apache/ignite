@@ -29,9 +29,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureProxy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest {
     /** Affinity function. */
     private AffinityFunction affinityFunction;
@@ -48,6 +52,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      *
      */
+    @Test
     public void testRendezvousAffinity() throws Exception {
         try {
             affinityFunction = new RendezvousAffinityFunction(false, 10);
@@ -80,6 +85,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestAffinity() throws Exception {
         try {
             affinityFunction = new TestAffinityFunction("Some value");
@@ -112,6 +118,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultAffinity() throws Exception {
         try {
             affinityFunction = null;

@@ -80,11 +80,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test simulated chekpoints,
  * Disables integrated check pointer thread
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -146,6 +150,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCheckpointSimulationMultiThreaded() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -203,6 +208,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testGetForInitialWrite() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -303,6 +309,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDataWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -410,6 +417,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -510,6 +518,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDirtyFlag() throws Exception {
         IgniteEx ig = startGrid(0);
 

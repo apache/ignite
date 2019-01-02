@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueriesLoadTest1;
 
@@ -31,7 +32,7 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = IgniteCacheQuerySelfTestSuite2.suite();
 
-        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueriesLoadTest1.class));
 
         return suite;
     }

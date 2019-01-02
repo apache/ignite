@@ -33,6 +33,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,6 +45,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache EntryProcessor + Deployment.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -56,14 +60,12 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     protected boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc()) {
             assert atomicityMode() != ATOMIC;
 
             fail("https://issues.apache.org/jira/browse/IGNITE-10359");
         }
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -130,6 +132,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -139,6 +142,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -148,6 +152,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -157,6 +162,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 

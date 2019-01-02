@@ -61,10 +61,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
+@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -173,6 +177,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -204,6 +209,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -239,6 +245,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
@@ -253,6 +260,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryWithMvccCaches() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10582");
 
@@ -301,6 +309,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -335,6 +344,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 

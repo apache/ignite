@@ -42,6 +42,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,6 +53,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -105,6 +110,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5968")
+    @Test
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
 
@@ -161,6 +168,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryDead() throws Exception {
         startGrid(0);
         startGrid(1);
@@ -195,6 +203,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStableTopology() throws Exception {
         backupCnt = 1;
 
@@ -231,6 +240,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapPartitioned() throws Exception {
         backupCnt = 0;
 

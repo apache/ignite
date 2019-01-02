@@ -41,10 +41,14 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Indexing Spi transactional query test
  */
+@RunWith(JUnit4.class)
 public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -72,6 +76,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxClient() throws Exception {
         IgniteEx client = startGrid("client");
 
@@ -81,6 +86,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
@@ -88,6 +94,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxNotLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 

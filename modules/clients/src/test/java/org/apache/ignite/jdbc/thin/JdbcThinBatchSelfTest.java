@@ -26,12 +26,16 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Statement test.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +
@@ -75,6 +79,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatch() throws SQLException {
         final int BATCH_SIZE = 10;
 
@@ -94,6 +99,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchOnClosedStatement() throws SQLException {
         final Statement stmt2 = conn.createStatement();
         final PreparedStatement pstmt2 = conn.prepareStatement("");
@@ -153,6 +159,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchException() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -195,6 +202,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchParseException() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -237,6 +245,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchMerge() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -256,6 +265,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchMergeParseException() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -295,10 +305,10 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
         }
     }
 
-
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchKeyDuplicatesException() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -343,6 +353,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testHeterogeneousBatch() throws SQLException {
         stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values ('p0', 0, 'Name0', 'Lastname0', 10)");
         stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values ('p1', 1, 'Name1', 'Lastname1', 20), ('p2', 2, 'Name2', 'Lastname2', 30)");
@@ -360,6 +371,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testHeterogeneousBatchException() throws SQLException {
         stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values ('p0', 0, 'Name0', 'Lastname0', 10)");
         stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values ('p1', 1, 'Name1', 'Lastname1', 20), ('p2', 2, 'Name2', 'Lastname2', 30)");
@@ -390,6 +402,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchClear() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -412,6 +425,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchPrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 
@@ -438,6 +452,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchExceptionPrepared() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -502,6 +517,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchMergePrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 
@@ -531,6 +547,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchMergeExceptionPrepared() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -611,6 +628,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchUpdatePrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 
@@ -635,6 +653,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchUpdateExceptionPrepared() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -690,6 +709,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchDeletePrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 
@@ -714,6 +734,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchDeleteExceptionPrepared() throws SQLException {
         final int BATCH_SIZE = 7;
 
@@ -769,6 +790,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatchClearPrepared() throws SQLException {
         final int BATCH_SIZE = 10;
 

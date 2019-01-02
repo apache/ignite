@@ -30,14 +30,19 @@ import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for NIO future.
  */
+@RunWith(JUnit4.class)
 public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnDone() throws Exception {
         GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
@@ -87,6 +92,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnCancelled() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -114,6 +120,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenSyncNotify() throws Exception {
         GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
@@ -165,6 +172,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         GridNioFutureImpl<Object> unfinished = new GridNioFutureImpl<>(null);
         GridNioFutureImpl<Object> finished = new GridNioFutureImpl<>(null);

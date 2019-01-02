@@ -47,6 +47,9 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -54,6 +57,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
+@RunWith(JUnit4.class)
 public class EvaluatorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -83,6 +87,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -129,6 +134,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic2() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -162,6 +168,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic3() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);

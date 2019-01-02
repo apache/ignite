@@ -37,6 +37,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,6 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Tests optimistic prepare on unstable topology.
  */
+@RunWith(JUnit4.class)
 public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "part_cache";
@@ -93,6 +97,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPrepareOnUnstableTopology() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             doPrepareOnUnstableTopology(4, false, isolation, 0);

@@ -47,6 +47,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,6 +60,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 /**
  * The test validates assignment after nodes restart with enabled persistence.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -128,10 +133,10 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAssignmentAfterRestarts() throws Exception {
         try {
-            if (MvccFeatureChecker.forcedMvcc())
-                fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+            Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
 
             System.setProperty(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC, "true");
 
