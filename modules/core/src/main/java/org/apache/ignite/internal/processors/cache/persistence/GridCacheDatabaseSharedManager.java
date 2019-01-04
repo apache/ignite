@@ -3580,7 +3580,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
+            CheckpointRecord cpRec = new CheckpointRecord(UUID.randomUUID(), memoryRecoveryRecordPtr);
 
             memoryRecoveryRecordPtr = null;
 
