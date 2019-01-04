@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Predicate;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -1298,28 +1297,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
-            boolean loc = req.writes().stream().anyMatch(new Predicate<IgniteTxEntry>() {
-                @Override public boolean test(IgniteTxEntry entry) {
-                    return entry.cached().isLocal();
-                }
-            });
+            boolean locCache = false;
 
             for (IgniteTxEntry entry : req.writes()) {
                 if (entry.cached().isLocal()) {
-                    loc = true;
+                    locCache = true;
 
                     break;
                 }
             }
 
-            TxCounters counters = loc ? null : tx.txCounters(true);
+            TxCounters counters = locCache ? null : tx.txCounters(true);
 
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
-                    if (!loc && filterFailedKeys == null || !filterFailedKeys.contains(write.txKey()))
+                    if (!locCache && filterFailedKeys == null || !filterFailedKeys.contains(write.txKey()))
                         counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 
                     map(entry);
@@ -1335,7 +1330,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled() && !loc)
+                if (!tx.txState().mvccEnabled() && !locCache)
                     tx.calculatePartitionUpdateCounters();
 
                 recheckOnePhaseCommit();
