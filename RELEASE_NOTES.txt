@@ -21,7 +21,7 @@ Ignite:
 * Spring Data 2.0 is now supported in the separate module 'ignite-spring-data_2.0'
 * Added monitoring of critical system workers
 * Added ability to provide custom implementations of ExceptionListener for JmsStreamer
-* Ignite KafkaStreamer was upgraded to use new KafkaConsmer configuration
+* Ignite KafkaStreamer was upgraded to use new KafkaConsumer configuration
 * S3 IP Finder now supports subfolder usage instead of bucket root
 * Improved dynamic cache start speed
 * Improved checkpoint performance by decreasing mark duration.
@@ -170,7 +170,7 @@ Ignite:
 * Added Java thin client.
 * Added continuous queries with transformers.
 * Implemented general approach for critical failures handling.
-* Added the new method IgniteMXBean.getCurrentCoordinatorFormatted() which displays formatted information about current coordiantor.
+* Added the new method IgniteMXBean.getCurrentCoordinatorFormatted() which displays formatted information about current coordinator.
 * Added partition update counters verification on partition map exchange.
 * Added ability to disable WAL during initial data rebalancing.
 * Added additional data storage metrics
@@ -277,7 +277,7 @@ ML:
 * Implemented framework for genetic algorithms over Apache Ignite caches.
 * Implemented LSQR-based linear regression.
 * Implemented Linear SVM for binary classification.
-* Implemented distributed version of SVM (support vector machine) algoritm.
+* Implemented distributed version of SVM (support vector machine) algorithm.
 
 Apache Ignite In-Memory Database and Caching Platform 2.4
 ---------------------------------------------------------
@@ -391,7 +391,7 @@ Ignite:
 * Added estimated time for rebalance start and completion to cache metrics.
 * Added API to add binary metadata locally.
 * Added write throttling during an ongoing checkpoint to avoid zero performance drops.
-* Ability to convert WAL to human-redable form.
+* Ability to convert WAL to human-readable form.
 * Ability to handle CacheObject from DataRecord in standalone WAL iterator.
 * Support for uninterruptable writes using AsyncFileIOFactory; enabled with -DIGNITE_USE_ASYNC_FILE_IO_FACTORY=true.
 * Enhanced persistent store path resolving to not rely on automatically generated consistent ID.
@@ -502,7 +502,7 @@ Ignite:
 Ignite.NET:
 * Automatic remote assembly loading
 * NuGet-based standalone node deployment
-* Added conditional data removeal via LINQ DeleteAll
+* Added conditional data removal via LINQ DeleteAll
 * Added TimestampAttribute to control DateTime serialization mode
 * Added local collections joins support to LINQ.
 
