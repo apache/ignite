@@ -43,10 +43,10 @@ public class CheckpointRecord extends WALRecord {
     private WALPointer cpMark;
 
     /**
-     * @param cpMark Checkpoint mark.
+     *
      */
-    public CheckpointRecord(@Nullable WALPointer cpMark) {
-        this(UUID.randomUUID(), cpMark);
+    public CheckpointRecord() {
+        this(UUID.randomUUID(), null);
     }
 
     /**

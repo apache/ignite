@@ -43,7 +43,6 @@ public class FsyncWalRolloverDoesNotBlockTest extends GridCommonAbstractTest {
     private static class RolloverRecord extends CheckpointRecord {
         /** */
         private RolloverRecord() {
-            super(null);
         }
     }
 

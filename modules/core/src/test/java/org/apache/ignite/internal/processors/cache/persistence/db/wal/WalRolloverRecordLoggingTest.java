@@ -55,7 +55,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
     private static class RolloverRecord extends CheckpointRecord {
         /** */
         private RolloverRecord() {
-            super(null);
+            // No-op.
         }
     }
 

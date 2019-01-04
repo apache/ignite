@@ -238,7 +238,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         IgniteWriteAheadLogManager wal = shared.wal();
 
-        WALPointer start = wal.log(new CheckpointRecord(null));
+        WALPointer start = wal.log(new CheckpointRecord());
 
         final FullPageId[] initWrites = new FullPageId[10];
 
@@ -830,7 +830,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         final ReadWriteLock updLock = new ReentrantReadWriteLock();
 
         // Mark the start position.
-        CheckpointRecord cpRec = new CheckpointRecord(null);
+        CheckpointRecord cpRec = new CheckpointRecord();
 
         WALPointer start = wal.log(cpRec);
 

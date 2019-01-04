@@ -67,7 +67,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     private static class AdHocWALRecord extends CheckpointRecord {
         /** */
         private AdHocWALRecord() {
-            super(null);
         }
     }
 
