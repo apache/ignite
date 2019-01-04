@@ -40,7 +40,7 @@ public class PartitionMetaStateRecord extends WALRecord implements WalRecordCach
 
     /**
      * @param grpId Cache group ID.
-     * @param state Page ID.
+     * @param partId Partition ID.
      * @param state State.
      * @param updateCounter Update counter.
      */
