@@ -727,7 +727,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        ctx.evict().evictPartitionAsync(grp,this);
+        ctx.evict().evictPartitionAsync(grp, this);
     }
 
     /**
@@ -997,7 +997,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             nextCntr = primaryCntr;
         }
 
-        // TODO FIXME
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
@@ -1012,12 +1011,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param primaryCntr Primary counter.
      */
     public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        long nextCntr;
+
         if (primaryCntr != null)
-            return primaryCntr;
+            nextCntr = primaryCntr;
+        else {
+            TxCounters txCounters = tx.txCounters(false);
 
-        TxCounters txCounters = tx.txCounters(false);
+            nextCntr = txCounters.generateNextCounter(cacheId, id());
+        }
 
-        return txCounters.generateNextCounter(cacheId, id());
+        if (grp.sharedGroup())
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, tx.topologyVersion(), tx.local());
+
+        return nextCntr;
     }
 
     /**
