@@ -162,9 +162,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     private volatile boolean qryEnlisted;
 
-    /** Whether to skip update of completed versions map during rollback caused by empty update set in MVCC TX. */
-    private boolean forceSkipCompletedVers;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -1127,7 +1124,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
             }
 
-            cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
+            cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
 
             cctx.mvccCaching().onTxFinished(this, false);
 
@@ -1145,14 +1142,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
             }
         }
-    }
-
-    /**
-     * Forces transaction to skip update of completed versions map during rollback caused by empty update set
-     * in MVCC TX.
-     */
-    public void forceSkipCompletedVersions() {
-        forceSkipCompletedVers = true;
     }
 
     /**

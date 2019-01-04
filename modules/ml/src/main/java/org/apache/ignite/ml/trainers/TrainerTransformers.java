@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -52,7 +52,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
@@ -71,7 +71,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
@@ -142,7 +142,7 @@ public class TrainerTransformers {
      * @param <M> Type of model.
      * @return Composition of models trained on bagged dataset.
      */
-    private static <K, V, M extends Model<Vector, Double>> ModelsComposition runOnEnsemble(
+    private static <K, V, M extends IgniteModel<Vector, Double>> ModelsComposition runOnEnsemble(
         IgniteTriFunction<DatasetBuilder<K, V>, Integer, IgniteBiFunction<K, V, Vector>, IgniteSupplier<M>> trainingTaskGenerator,
         DatasetBuilder<K, V> datasetBuilder,
         int ensembleSize,
@@ -257,7 +257,7 @@ public class TrainerTransformers {
      * @param <Y> Output space.
      * @param <M> Model.
      */
-    private static class ModelWithMapping<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
+    private static class ModelWithMapping<X, Y, M extends IgniteModel<X, Y>> implements IgniteModel<X, Y> {
         /** Model. */
         private final M model;
 
@@ -295,8 +295,8 @@ public class TrainerTransformers {
         }
 
         /** {@inheritDoc} */
-        @Override public Y apply(X x) {
-            return model.apply(mapping.apply(x));
+        @Override public Y predict(X x) {
+            return model.predict(mapping.apply(x));
         }
 
         /**

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -59,6 +60,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests that new transactions do not start until partition exchange is completed.
  */
 @RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-807")
 public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstractTest {
     /** Partition does not belong to node. */
     private static final int PARTITION_READER = 0;
@@ -71,7 +73,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-807");
+        // No-op.
     }
 
     /** {@inheritDoc} */

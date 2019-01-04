@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.parser;
+import {component} from './component';
+import {state} from './state';
 
-import java.io.Serializable;
-import org.apache.ignite.ml.inference.InfModel;
-
-/**
- * Model parser that accepts a serialized model represented by byte array, parses it and returns {@link InfModel}.
- *
- * @param <I> Type of model input.
- * @param <O> Type of model output.
- */
-@FunctionalInterface
-public interface InfModelParser<I, O, M extends InfModel<I, O>> extends Serializable {
-    /**
-     * Accepts serialized model represented by byte array, parses it and returns {@link InfModel}.
-     *
-     * @param mdl Serialized model represented by byte array.
-     * @return Inference model.
-     */
-    public M parse(byte[] mdl);
-}
+export default angular.module('ignite-console.page-signup-confirmation', [])
+    .run(state)
+    .component('pageSignupConfirmation', component);
