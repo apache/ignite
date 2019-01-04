@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * TODO FIXME consider rolling bit set implementation.
  * TODO describe ITEM structure
+ * TODO add debugging info
  */
 public class PartitionUpdateCounter {
     /** */

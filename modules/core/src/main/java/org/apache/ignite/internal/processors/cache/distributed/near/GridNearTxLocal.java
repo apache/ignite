@@ -3746,13 +3746,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return chainFinishFuture(finishFut, true, true, false);
 
         if (!fastFinish) {
-            final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
+            IgniteInternalFuture<?> prepareFut;
+            try {
+                prepareFut = prepareNearTxLocal();
+            }
+            catch (Throwable t) {
+                prepareFut = new GridFinishedFuture<>(t); // Process unhandled exceptions during prepare.
+            }
 
             prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         // Make sure that here are no exceptions.
-                        prepareFut.get();
+                        f.get();
 
                         fut.finish(true, true, false);
                     }
