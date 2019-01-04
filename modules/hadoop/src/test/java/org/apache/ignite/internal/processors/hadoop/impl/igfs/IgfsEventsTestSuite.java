@@ -32,6 +32,8 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
@@ -41,7 +43,8 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
  * Test suite for IGFS event tests.
  */
 @SuppressWarnings("PublicInnerClass")
-public class IgfsEventsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgfsEventsTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

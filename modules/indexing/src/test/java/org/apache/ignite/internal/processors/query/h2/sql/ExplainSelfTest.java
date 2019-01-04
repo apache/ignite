@@ -57,6 +57,9 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
         finally {
+            ignite = null;
+            cache = null;
+
             super.afterTestsStopped();
         }
     }

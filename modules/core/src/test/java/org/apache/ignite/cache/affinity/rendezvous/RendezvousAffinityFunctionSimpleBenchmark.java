@@ -97,6 +97,13 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         ignite = startGrid();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @param nodesCnt Count of nodes to generate.
      * @return Nodes list.

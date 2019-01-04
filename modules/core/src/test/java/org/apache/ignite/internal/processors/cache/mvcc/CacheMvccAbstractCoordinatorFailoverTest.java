@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -35,6 +36,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxGet_Server_Backups0_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -46,6 +48,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxGet_SingleNode_CoordinatorFails() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
@@ -55,6 +58,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxScan_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 0, 0, 64,
@@ -96,6 +100,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_Servers_Backups0__PutGet_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -107,9 +112,9 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_SingleNode__PutGet_CoordinatorFails() throws Exception {
-
         updateNObjectsTest(7, 1, 0, 0, 1, DFLT_TEST_TIME,
             null, GET, PUT, RestartMode.RESTART_CRD);
     }

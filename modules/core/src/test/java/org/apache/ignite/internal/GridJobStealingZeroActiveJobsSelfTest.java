@@ -69,6 +69,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite1 = null;
+        ignite2 = null;
 
         stopGrid(1);
         stopGrid(2);

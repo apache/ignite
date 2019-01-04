@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -51,9 +50,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgniteClientConnectTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Latch to stop message sending. */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -74,7 +70,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             disco.setIpFinder(ipFinder);
         }
         else
-            disco.setIpFinder(ipFinder);
+            disco.setIpFinder(sharedStaticIpFinder);
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);

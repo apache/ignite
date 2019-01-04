@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.stacking;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -53,7 +53,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <O> Type of aggregator output.
  * @param <L> Type of labels.
  */
-public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
+public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     extends DatasetTrainer<StackedModel<IS, IA, O, AM>, L> {
     /** Operator that merges inputs for aggregating model. */
     private IgniteBinaryOperator<IA> aggregatingInputMerger;
@@ -62,7 +62,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     private IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter;
 
     /** Trainers of submodels with converters from and to {@link Vector}. */
-    private List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers;
+    private List<DatasetTrainer<IgniteModel<IS, IA>, L>> submodelsTrainers;
 
     /** Aggregating trainer. */
     private DatasetTrainer<AM, L> aggregatorTrainer;
@@ -86,7 +86,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     public StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
-        List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers,
+        List<DatasetTrainer<IgniteModel<IS, IA>, L>> submodelsTrainers,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter) {
         this.aggregatorTrainer = aggregatorTrainer;
@@ -215,32 +215,32 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return This object.
      */
     @SuppressWarnings({"unchecked"})
-    public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
+    public <M1 extends IgniteModel<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         // Unsafely coerce DatasetTrainer<M1, L> to DatasetTrainer<Model<IS, IA>, L>, but we fully control
         // usages of this unsafely coerced object, on the other hand this makes work with
         // submodelTrainers easier.
-        submodelsTrainers.add(new DatasetTrainer<Model<IS, IA>, L>() {
+        submodelsTrainers.add(new DatasetTrainer<IgniteModel<IS, IA>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> Model<IS, IA> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> IgniteModel<IS, IA> fit(DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> Model<IS, IA> update(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> IgniteModel<IS, IA> update(IgniteModel<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                DatasetTrainer<Model<IS, IA>, L> trainer1 = (DatasetTrainer<Model<IS, IA>, L>)trainer;
+                DatasetTrainer<IgniteModel<IS, IA>, L> trainer1 = (DatasetTrainer<IgniteModel<IS, IA>, L>)trainer;
                 return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(Model<IS, IA> mdl) {
+            @Override protected boolean checkState(IgniteModel<IS, IA> mdl) {
                 return true;
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V> Model<IS, IA> updateModel(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override protected <K, V> IgniteModel<IS, IA> updateModel(IgniteModel<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return null;
             }
@@ -263,11 +263,11 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         IgniteBiFunction<K, V, L> lbExtractor) {
         return runOnSubmodels(
             ensemble -> {
-                List<IgniteSupplier<Model<IS, IA>>> res = new ArrayList<>();
+                List<IgniteSupplier<IgniteModel<IS, IA>>> res = new ArrayList<>();
                 for (int i = 0; i < ensemble.size(); i++) {
                     final int j = i;
                     res.add(() -> {
-                        DatasetTrainer<Model<IS, IA>, L> trainer = ensemble.get(j);
+                        DatasetTrainer<IgniteModel<IS, IA>, L> trainer = ensemble.get(j);
                         return mdl == null ?
                             trainer.fit(datasetBuilder, featureExtractor, lbExtractor) :
                             trainer.update(mdl.submodels().get(j), datasetBuilder, featureExtractor, lbExtractor);
@@ -306,7 +306,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return {@link StackedModel}.
      */
     private <K, V> StackedModel<IS, IA, O, AM> runOnSubmodels(
-        IgniteFunction<List<DatasetTrainer<Model<IS, IA>, L>>, List<IgniteSupplier<Model<IS, IA>>>> taskSupplier,
+        IgniteFunction<List<DatasetTrainer<IgniteModel<IS, IA>, L>>, List<IgniteSupplier<IgniteModel<IS, IA>>>> taskSupplier,
         IgniteBiFunction<DatasetTrainer<AM, L>, IgniteBiFunction<K, V, Vector>, AM> aggregatorProcessor,
         IgniteBiFunction<K, V, Vector> featureExtractor) {
 
@@ -322,9 +322,9 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         if (aggregatingInputMerger == null)
             throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
 
-        List<IgniteSupplier<Model<IS, IA>>> mdlSuppliers = taskSupplier.apply(submodelsTrainers);
+        List<IgniteSupplier<IgniteModel<IS, IA>>> mdlSuppliers = taskSupplier.apply(submodelsTrainers);
 
-        List<Model<IS, IA>> subMdls = environment.parallelismStrategy().submit(mdlSuppliers).stream()
+        List<IgniteModel<IS, IA>> subMdls = environment.parallelismStrategy().submit(mdlSuppliers).stream()
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
@@ -342,7 +342,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
             aggregatingInputMerger,
             submodelInput2AggregatingInputConverter);
 
-        for (Model<IS, IA> subMdl : subMdls)
+        for (IgniteModel<IS, IA> subMdl : subMdls)
             res.addSubmodel(subMdl);
 
         return res;
@@ -359,7 +359,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return Feature extractor which will be used for aggregator trainer from original feature extractor.
      */
     private static <IS, IA, K, V> IgniteBiFunction<K, V, Vector> getFeatureExtractorForAggregator(
-        IgniteBiFunction<K, V, Vector> featureExtractor, List<Model<IS, IA>> subMdls,
+        IgniteBiFunction<K, V, Vector> featureExtractor, List<IgniteModel<IS, IA>> subMdls,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter) {
@@ -389,11 +389,11 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @return Result of application of {@code submodelOutput2VectorConverter . mdl . vector2SubmodelInputConverter}
      * where dot denotes functions composition.
      */
-    private static <IS, IA> Vector applyToVector(Model<IS, IA> mdl,
+    private static <IS, IA> Vector applyToVector(IgniteModel<IS, IA> mdl,
         IgniteFunction<IA, Vector> submodelOutput2VectorConverter,
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
         Vector v) {
-        return vector2SubmodelInputConverter.andThen(mdl).andThen(submodelOutput2VectorConverter).apply(v);
+        return vector2SubmodelInputConverter.andThen(mdl::predict).andThen(submodelOutput2VectorConverter).apply(v);
     }
 
     /** {@inheritDoc} */
