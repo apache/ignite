@@ -71,7 +71,7 @@ public class TxWithFilterTest extends GridCommonAbstractTest {
 
         cache.put(key, val);
 
-        try(Transaction tx = client.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE)) {
+        try(Transaction tx = client.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE)) {
             Object prev = cache.getAndPutIfAbsent(key, val + 1);
 
             assertNotNull(prev);
