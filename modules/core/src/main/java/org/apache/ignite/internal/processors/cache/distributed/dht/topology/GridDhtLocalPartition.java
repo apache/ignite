@@ -1018,6 +1018,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         else {
             TxCounters txCounters = tx.txCounters(false);
 
+            assert txCounters != null : "Must have counters for tx [nearXidVer=" + tx.nearXidVersion() + ']';
+
             nextCntr = txCounters.generateNextCounter(cacheId, id());
         }
 
