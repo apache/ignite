@@ -1314,7 +1314,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
-                    if (!locCache && filterFailedKeys == null || !filterFailedKeys.contains(write.txKey()))
+                    if (!locCache && (filterFailedKeys == null || !filterFailedKeys.contains(write.txKey())))
                         counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 
                     map(entry);
