@@ -22,5 +22,8 @@ import './style.scss';
 /** @type {ng.IComponentOptions} */
 export default {
     controller,
-    template
+    template,
+    bindings: {
+        activationToken: '@?'
+    }
 };

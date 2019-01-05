@@ -18,11 +18,10 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/partition';
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/pluck';
+import {BehaviorSubject} from 'rxjs';
+import {first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
+
+import io from 'socket.io-client';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore
@@ -30,6 +29,7 @@ import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
+import {CancellationError} from 'app/errors/CancellationError';
 import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
@@ -119,7 +119,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     /** @type {ng.IScope} */
     $root;
@@ -164,17 +164,15 @@ export default class AgentManager {
      * @param {ng.IRootScopeService} $root
      * @param {ng.IQService} $q
      * @param {import('@uirouter/angularjs').TransitionService} $transitions
-     * @param {unknown} socketFactory
      * @param {import('./AgentModal.service').default} agentModal
      * @param {import('app/components/user-notifications/service').default} UserNotifications
      * @param {import('app/services/Version.service').default} Version
      * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
      */
-    constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
+    constructor($root, $q, $transitions, agentModal, UserNotifications, Version, ClusterLoginSrv) {
         this.$root = $root;
         this.$q = $q;
         this.$transitions = $transitions;
-        this.socketFactory = socketFactory;
         this.agentModal = agentModal;
         this.UserNotifications = UserNotifications;
         this.Version = Version;
@@ -184,14 +182,16 @@ export default class AgentManager {
 
         let prevCluster;
 
-        this.currentCluster$ = this.connectionSbj
-            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
-            .do(({ cluster }) => prevCluster = cluster);
+        this.currentCluster$ = this.connectionSbj.pipe(
+            distinctUntilChanged(({ cluster }) => prevCluster === cluster),
+            tap(({ cluster }) => prevCluster = cluster)
+        );
 
-        this.clusterIsActive$ = this.connectionSbj
-            .map(({ cluster }) => cluster)
-            .filter((cluster) => Boolean(cluster))
-            .pluck('active');
+        this.clusterIsActive$ = this.connectionSbj.pipe(
+            map(({ cluster }) => cluster),
+            filter((cluster) => Boolean(cluster)),
+            pluck('active')
+        );
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
@@ -219,7 +219,9 @@ export default class AgentManager {
         if (nonNil(this.socket))
             return;
 
-        this.socket = this.socketFactory();
+        const options = this.isDemoMode() ? {query: 'IgniteDemoMode=true'} : {};
+
+        this.socket = io.connect(options);
 
         const onDisconnect = () => {
             const conn = this.connectionSbj.getValue();
@@ -379,11 +381,13 @@ export default class AgentManager {
 
                     case State.AGENT_DISCONNECTED:
                         this.agentModal.agentDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
                     case State.CLUSTER_DISCONNECTED:
                         this.agentModal.clusterDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
@@ -521,7 +525,7 @@ export default class AgentManager {
         if (this.isDemoMode())
             return Promise.resolve(this._executeOnActiveCluster({}, {}, event, params));
 
-        return this.connectionSbj.first().toPromise()
+        return this.connectionSbj.pipe(first()).toPromise()
             .then(({cluster}) => {
                 if (_.isNil(cluster))
                     throw new Error('Failed to execute request on cluster.');
@@ -544,7 +548,13 @@ export default class AgentManager {
 
                 return {cluster, credentials: {}};
             })
-            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params));
+            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params))
+            .catch((err) => {
+                if (err instanceof CancellationError)
+                    return;
+
+                throw err;
+            });
     }
 
     /**

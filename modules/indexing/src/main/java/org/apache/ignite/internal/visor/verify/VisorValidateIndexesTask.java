@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.visor.verify;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,6 +62,29 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorValidateIndexesTaskArg, VisorValidateIndexesJobResult> job(VisorValidateIndexesTaskArg arg) {
         return new VisorValidateIndexesJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorValidateIndexesTaskArg> arg) {
+        Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
+        Collection<UUID> ret = new ArrayList<>(srvNodes.size());
+
+        VisorValidateIndexesTaskArg taskArg = arg.getArgument();
+
+        Set<UUID> nodeIds = taskArg.getNodes() != null ? new HashSet<>(taskArg.getNodes()) : null;
+
+        if (nodeIds == null) {
+            for (ClusterNode node : srvNodes)
+                ret.add(node.id());
+        }
+        else {
+            for (ClusterNode node : srvNodes) {
+                if (nodeIds.contains(node.id()))
+                    ret.add(node.id());
+            }
+        }
+
+        return ret;
     }
 
     /**

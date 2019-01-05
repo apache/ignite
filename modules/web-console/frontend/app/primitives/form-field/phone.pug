@@ -29,8 +29,9 @@ mixin form-field__phone({ label, model, name, disabled, required, optional, plac
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
             if block
                 block
 
-            if required
-                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })

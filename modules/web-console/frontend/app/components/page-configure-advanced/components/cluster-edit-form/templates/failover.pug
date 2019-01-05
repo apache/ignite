@@ -47,6 +47,15 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '1',
                     tip: 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed'
                 })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'System workers blocked timeout:',
+                    model: model + '.systemWorkerBlockedTimeout',
+                    name: '"SystemWorkerBlockedTimeout"',
+                    placeholder: 'Failure detection timeout',
+                    min: '1',
+                    tip: 'Maximum inactivity period for system worker'
+                })
 
             .pc-form-grid-col-60
                 mixin clusters-failover-spi

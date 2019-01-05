@@ -412,7 +412,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param retval Flag indicating whether a value should be returned.
      * @return Future for put operation.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
@@ -481,7 +480,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param invokeArgs Optional arguments for entry processor.
      * @return Operation future.
      */
-    @SuppressWarnings("unchecked")
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
@@ -702,19 +700,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Validate Tx mode.
-     *
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If tx mode is not supported.
-     */
-    protected void validateTxMode(GridCacheContext ctx) throws IgniteCheckedException {
-        if(!ctx.mvccEnabled() || pessimistic() && repeatableRead())
-            return;
-
-        throw new IgniteCheckedException("Only pessimistic repeatable read transactions are supported at the moment.");
-    }
-
-    /**
      * Internal method for put and transform operations in Mvcc mode.
      * Note: Only one of {@code map}, {@code transformMap} maps must be non-null.
      *
@@ -735,8 +720,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            validateTxMode(cacheCtx);
-
             MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforePut(cacheCtx, retval, true);
@@ -1919,13 +1902,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            validateTxMode(cacheCtx);
-
-            if (mvccSnapshot == null) {
-                MvccUtils.mvccTracker(cacheCtx, this);
-
-                assert mvccSnapshot != null;
-            }
+            MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforeRemove(cacheCtx, retval, true);
         }
@@ -2112,7 +2089,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     Object val = futRes.value();
 
-                    if (futRes.invokeResult()) {
+                    if (futRes.invokeResult() && val != null) {
                         assert val instanceof Map;
 
                         val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
@@ -2185,13 +2162,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean needVer) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
-
-        try {
-            validateTxMode(cacheCtx);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();
@@ -3945,16 +3915,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
                         if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
-                            if (tx.state() == COMMITTED) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to rollback, transaction is already committed: " + tx);
+                            switch (tx.state()) {
+                                case COMMITTED:
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to rollback, transaction is already committed: " + tx);
 
-                                rollbackFut.forceFinish();
+                                    // Fall-through.
 
-                                assert rollbackFut.isDone() : rollbackFut;
+                                case ROLLED_BACK:
+                                    rollbackFut.forceFinish();
+
+                                    assert rollbackFut.isDone() : rollbackFut;
+
+                                    break;
+
+                                default: // First finish attempt was unsuccessful. Try again.
+                                    rollbackFut.finish(false, clearThreadMap, onTimeout);
                             }
-                            else // First finish attempt was unsuccessful. Try again.
-                                rollbackFut.finish(false, clearThreadMap, onTimeout);
                         }
                         else {
                             finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
@@ -4011,7 +3988,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param req Prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(GridNearTxPrepareRequest req) {
         long timeout = remainingTime();
 

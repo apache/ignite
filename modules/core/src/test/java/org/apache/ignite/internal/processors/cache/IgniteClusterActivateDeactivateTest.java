@@ -50,11 +50,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,10 +65,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     static final String CACHE_NAME_PREFIX = "cache-";
 
@@ -105,7 +105,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             spi.setJoinTimeout(2 * 60_000);
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -120,7 +120,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(150L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
@@ -167,6 +166,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateSimple_SingleNode() throws Exception {
         activateSimple(1, 0, 0);
     }
@@ -174,6 +174,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateSimple_5_Servers() throws Exception {
         activateSimple(5, 0, 0);
     }
@@ -181,6 +182,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateSimple_5_Servers2() throws Exception {
         activateSimple(5, 0, 4);
     }
@@ -188,6 +190,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateSimple_5_Servers_5_Clients() throws Exception {
         activateSimple(5, 4, 0);
     }
@@ -195,6 +198,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
         activateSimple(5, 4, 6);
     }
@@ -261,6 +265,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReActivateSimple_5_Servers_4_Clients_FromClient() throws Exception {
         reactivateSimple(5, 4, 6);
     }
@@ -268,6 +273,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
         reactivateSimple(5, 4, 0);
     }
@@ -341,20 +347,29 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileActivate1_Server() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         joinWhileActivate1(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileActivate1_WithCache_Server() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         joinWhileActivate1(false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileActivate1_Client() throws Exception {
         joinWhileActivate1(true, false);
     }
@@ -489,6 +504,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileDeactivate1_Server() throws Exception {
         joinWhileDeactivate1(false, false);
     }
@@ -496,6 +512,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileDeactivate1_WithCache_Server() throws Exception {
         joinWhileDeactivate1(false, true);
     }
@@ -503,6 +520,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileDeactivate1_Client() throws Exception {
         joinWhileDeactivate1(true, false);
     }
@@ -566,6 +584,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinAndActivate() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
@@ -616,6 +635,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_SingleNode() throws Exception {
         deactivateSimple(1, 0, 0);
     }
@@ -623,6 +643,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_5_Servers() throws Exception {
         deactivateSimple(5, 0, 0);
     }
@@ -630,6 +651,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_5_Servers2() throws Exception {
         deactivateSimple(5, 0, 4);
     }
@@ -637,6 +659,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_5_Servers_5_Clients() throws Exception {
         deactivateSimple(5, 4, 0);
     }
@@ -644,6 +667,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
         deactivateSimple(5, 4, 6);
     }
@@ -733,6 +757,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterActive() throws Exception {
         testReconnectSpi = true;
 
@@ -771,6 +796,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterInactive() throws Exception {
         testReconnectSpi = true;
 
@@ -810,6 +836,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterDeactivated() throws Exception {
         clientReconnectClusterDeactivated(false);
     }
@@ -817,6 +844,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterDeactivateInProgress() throws Exception {
         clientReconnectClusterDeactivated(true);
     }
@@ -845,8 +873,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkCaches1(SRVS + CLIENTS);
 
         // Wait for late affinity assignment to finish.
-        grid(0).context().cache().context().exchange().affinityReadyFuture(
-            new AffinityTopologyVersion(SRVS + CLIENTS, 1)).get();
+        awaitPartitionMapExchange();
 
         final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
 
@@ -911,6 +938,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterActivated() throws Exception {
         clientReconnectClusterActivated(false);
     }
@@ -918,6 +946,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterActivateInProgress() throws Exception {
         clientReconnectClusterActivated(true);
     }
@@ -998,6 +1027,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInactiveTopologyChanges() throws Exception {
         testSpi = true;
 
@@ -1054,6 +1084,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateFailover1() throws Exception {
         stateChangeFailover1(true);
     }
@@ -1061,6 +1092,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateFailover1() throws Exception {
         stateChangeFailover1(false);
     }
@@ -1111,6 +1143,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateFailover2() throws Exception {
         stateChangeFailover2(true);
     }
@@ -1118,6 +1151,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateFailover2() throws Exception {
         stateChangeFailover2(false);
     }
@@ -1179,6 +1213,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateFailover3() throws Exception {
         stateChangeFailover3(true);
     }
@@ -1186,6 +1221,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateFailover3() throws Exception {
         stateChangeFailover3(false);
     }
@@ -1195,21 +1231,19 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover3(boolean activate) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8220");
-
         testReconnectSpi = true;
 
         startNodesAndBlockStatusChange(4, 0, 0, !activate);
 
         client = false;
 
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync((Callable)() -> {
+        IgniteInternalFuture<?> startFut1 = GridTestUtils.runAsync(() -> {
             startGrid(4);
 
             return null;
         }, "start-node1");
 
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync((Callable)() -> {
+        IgniteInternalFuture<?> startFut2 = GridTestUtils.runAsync(() -> {
             startGrid(5);
 
             return null;
@@ -1241,6 +1275,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterStateNotWaitForDeactivation() throws Exception {
         testSpi = true;
 
@@ -1331,6 +1366,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
 
         ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[4].setDiskPageCompression(null);
 
         return ccfgs;
     }

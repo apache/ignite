@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -50,7 +51,9 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+    @Override public SimpleDatasetData build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         // Prepares the matrix of features in flat column-major format.
         int cols = -1;
         double[] features = null;

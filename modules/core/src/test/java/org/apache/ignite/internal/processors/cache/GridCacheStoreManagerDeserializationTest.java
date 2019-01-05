@@ -39,10 +39,11 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -56,15 +57,20 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     https://issues.apache.org/jira/browse/IGNITE-2753
  *     </a>
  */
+@RunWith(JUnit4.class)
 public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache store. */
     protected static final GridCacheLocalTestStore store = new GridCacheLocalTestStore();
 
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      * @return Cache mode.
@@ -88,12 +94,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
             c.setMarshaller(new BinaryMarshaller());
         else
             c.setMarshaller(new JdkMarshaller());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(cacheConfiguration());
 
@@ -123,7 +123,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         cc.setBackups(0);
 
-        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return cc;
     }
@@ -143,6 +143,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStream() throws Exception {
         final Ignite grid = startGrid();
 
@@ -168,6 +169,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");
 
@@ -206,6 +208,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
 

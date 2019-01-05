@@ -17,27 +17,30 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageMultiThreadedSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiConfigSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Event storage test suite.
  */
-public class IgniteSpiEventStorageSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiEventStorageSelfTestSuite {
     /**
      * @return Event storage test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Event Storage Test Suite");
 
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiConfigSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiConfigSelfTest.class));
 
         return suite;
     }

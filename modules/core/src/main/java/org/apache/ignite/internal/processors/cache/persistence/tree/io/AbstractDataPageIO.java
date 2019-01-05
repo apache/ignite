@@ -33,10 +33,12 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
+
 /**
  * Data pages IO.
  */
-public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
+public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
 
     /** */
     private static final int SHOW_ITEM = 0b0001;
@@ -228,7 +230,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @return Free space.
      */
-    private int getRealFreeSpace(long pageAddr) {
+    public int getRealFreeSpace(long pageAddr) {
         return PageUtils.getShort(pageAddr, FREE_SPACE_OFF);
     }
 
@@ -822,9 +824,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @param payload Payload.
      * @param pageSize Page size.
+     * @return Item ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRow(
+    public int addRow(
         long pageAddr,
         byte[] payload,
         int pageSize
@@ -840,7 +843,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
 
         writeRowData(pageAddr, dataOff, payload);
 
-        addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
+        return addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
     }
 
     /**
@@ -1106,6 +1109,62 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         return directCnt; // Previous directCnt will be our itemId.
     }
 
+    /** {@inheritDoc} */
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        // TODO May we compactDataEntries in-place and then copy compacted data to out?
+        copyPage(page, out, pageSize);
+
+        long pageAddr = bufferAddress(out);
+
+        int freeSpace = getRealFreeSpace(pageAddr);
+
+        if (freeSpace == 0)
+            return; // No garbage: nothing to compact here.
+
+        int directCnt = getDirectCount(pageAddr);
+
+        if (directCnt != 0) {
+            int firstOff = getFirstEntryOffset(pageAddr);
+
+            if (firstOff - freeSpace != getHeaderSizeWithItems(pageAddr, directCnt)) {
+                firstOff = compactDataEntries(pageAddr, directCnt, pageSize);
+                setFirstEntryOffset(pageAddr, firstOff, pageSize);
+            }
+
+            // Move all the data entries from page end to the page header to close the gap.
+            moveBytes(pageAddr, firstOff, pageSize - firstOff, -freeSpace, pageSize);
+        }
+
+        out.limit(pageSize - freeSpace); // Here we have only meaningful data of this page.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePage(ByteBuffer page, int pageSize) {
+        assert page.isDirect();
+        assert page.position() == 0;
+        assert page.limit() <= pageSize;
+
+        long pageAddr = bufferAddress(page);
+
+        int freeSpace = getRealFreeSpace(pageAddr);
+
+        if (freeSpace != 0) {
+            int firstOff = getFirstEntryOffset(pageAddr);
+            int cnt = pageSize - firstOff;
+
+            if (cnt != 0) {
+                int off = page.limit() - cnt;
+
+                assert off > PageIO.COMMON_HEADER_END: off;
+                assert cnt > 0 : cnt;
+
+                moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+            }
+        }
+
+        page.limit(pageSize);
+    }
+
     /**
      * @param pageAddr Page address.
      * @param directCnt Direct items count.
@@ -1203,7 +1262,16 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
             entriesSize += entrySize;
         }
 
-        return pageSize - ITEMS_OFF - entriesSize - (directCnt + getIndirectCount(pageAddr)) * ITEM_SIZE;
+        return pageSize - entriesSize - getHeaderSizeWithItems(pageAddr, directCnt);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param directCnt Direct items count.
+     * @return Size of the page header including all items.
+     */
+    private int getHeaderSizeWithItems(long pageAddr, int directCnt) {
+        return ITEMS_OFF + (directCnt + getIndirectCount(pageAddr)) * ITEM_SIZE;
     }
 
     /**
@@ -1214,6 +1282,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageSize Page size.
      */
     private void moveBytes(long addr, int off, int cnt, int step, int pageSize) {
+        assert cnt >= 0: cnt;
         assert step != 0 : step;
         assert off + step >= 0;
         assert off + step + cnt <= pageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +

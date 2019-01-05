@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,20 +41,17 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -73,6 +69,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -170,8 +167,12 @@ public class CacheGroupContext {
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
-    /** Flag indicates that all group partitions have restored their state from page memory / disk. */
-    private volatile boolean partitionStatesRestored;
+    /** Statistics holder to track IO operations for PK index pages. */
+    private final IoStatisticsHolder statHolderIdx;
+
+    /** Statistics holder to track IO operations for data pages. */
+    private final IoStatisticsHolder statHolderData;
+
 
     /**
      * @param ctx Context.
@@ -235,6 +236,18 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        if (systemCache()) {
+            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
+            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
+        }
+        else {
+            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
+                cacheOrGroupName(), HASH_PK_IDX_NAME);
+
+            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
+                cacheOrGroupName());
+        }
     }
 
     /**
@@ -775,157 +788,20 @@ public class CacheGroupContext {
         UUID originalReceivedFrom,
         boolean affinityNode
     ) throws IgniteCheckedException {
-        if (recoveryMode.compareAndSet(true, false)) {
-            affNode = affinityNode;
+        if (!recoveryMode.compareAndSet(true, false))
+            return;
 
-            rcvdFrom = originalReceivedFrom;
+        affNode = affinityNode;
 
-            locStartVer = startVer;
+        rcvdFrom = originalReceivedFrom;
 
-            persistGlobalWalState(globalWalEnabled);
+        locStartVer = startVer;
 
-            initializeIO();
+        persistGlobalWalState(globalWalEnabled);
 
-            ctx.affinity().onCacheGroupCreated(this);
-        }
-    }
+        initializeIO();
 
-    /**
-     * Pre-create partitions that resides in page memory or WAL and restores their state.
-     */
-    public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
-        if (isLocal() || !affinityNode() || !dataRegion().config().isPersistenceEnabled())
-            return 0;
-
-        if (partitionStatesRestored)
-            return 0;
-
-        long processed = 0;
-
-        PageMemoryEx pageMem = (PageMemoryEx)dataRegion().pageMemory();
-
-        for (int p = 0; p < affinity().partitions(); p++) {
-            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grpId, p));
-
-            if (ctx.pageStore().exists(grpId, p)) {
-                ctx.pageStore().ensure(grpId, p);
-
-                if (ctx.pageStore().pages(grpId, p) <= 1) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition on recovery (pages less than 1) " +
-                            "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                    continue;
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Creating partition on recovery (exists in page store) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                processed++;
-
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, 0);
-
-                ctx.database().checkpointReadLock();
-
-                try {
-                    long partMetaId = pageMem.partitionMetaPageId(grpId, p);
-                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                    try {
-                        long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
-
-                        boolean changed = false;
-
-                        try {
-                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                            if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
-
-                                changed = updateState(part, recoverState.stateId());
-
-                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
-                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
-                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
-                                    part.initialUpdateCounter(recoverState.updateCounter());
-
-                                    changed = true;
-                                }
-
-                                if (log.isInfoEnabled())
-                                    log.warning("Restored partition state (from WAL) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + "]");
-                            }
-                            else {
-                                int stateId = (int) io.getPartitionState(pageAddr);
-
-                                changed = updateState(part, stateId);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Restored partition state (from page memory) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
-                            }
-                        }
-                        finally {
-                            pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
-                    }
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
-            }
-            else if (recoverState != null) {
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
-
-                updateState(part, recoverState.stateId());
-
-                processed++;
-
-                if (log.isDebugEnabled())
-                    log.debug("Restored partition state (from WAL) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                        ", updCntr=" + part.initialUpdateCounter() + "]");
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-            }
-        }
-
-        partitionStatesRestored = true;
-
-        return processed;
-    }
-
-    /**
-     * @param part Partition to restore state for.
-     * @param stateId State enum ordinal.
-     * @return Updated flag.
-     */
-    private boolean updateState(GridDhtLocalPartition part, int stateId) {
-        if (stateId != -1) {
-            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
-
-            assert state != null;
-
-            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
-
-            return true;
-        }
-
-        return false;
+        ctx.affinity().onCacheGroupCreated(this);
     }
 
     /**
@@ -1294,5 +1170,19 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderIdx() {
+        return statHolderIdx;
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderData() {
+        return statHolderData;
     }
 }

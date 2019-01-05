@@ -41,9 +41,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -102,10 +103,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -121,6 +122,12 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -128,6 +135,7 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -141,7 +149,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
-public abstract class GridAbstractTest extends TestCase {
+public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -157,6 +165,9 @@ public abstract class GridAbstractTest extends TestCase {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
+    /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
+    protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
+
     /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
@@ -165,6 +176,23 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
+    private final Lock runSerializer = new ReentrantLock();
+
+    /** Manages test execution and reporting. */
+    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            runSerializer.lock();
+            try {
+                assert getName() != null : "getName returned null";
+
+                runTestCase(base);
+            } finally {
+                runSerializer.unlock();
+            }
+        }
+    };
 
     /** */
     private transient boolean startGrid;
@@ -524,46 +552,21 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Called before execution of every test method in class.
-     *
-     * @throws Exception If failed. {@link #afterTest()} will be called in this case.
+     * Will clean and re-create marshaller directory from scratch.
      */
-    protected void beforeTest() throws Exception {
-        // No-op.
-    }
-
-    /**
-     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
-     * execution.
-     *
-     * @throws Exception If failed.
-     */
-    protected void afterTest() throws Exception {
-        // No-op.
-    }
-
-    /**
-     * Called before execution of all test methods in class.
-     *
-     * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
-     */
-    protected void beforeTestsStarted() throws Exception {
-        // Will clean and re-create marshaller directory from scratch.
+    private void resolveWorkDirectory() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
     }
 
     /**
-     * Called after execution of all test methods in class or
-     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
-     *
-     * @throws Exception If failed.
+     * {@inheritDoc}
+     * <p>
+     * Do not annotate with Before in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
      */
-    protected void afterTestsStopped() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
+    @Deprecated
     @Override protected void setUp() throws Exception {
         stopGridErr = false;
 
@@ -594,6 +597,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (isSafeTopology())
@@ -610,6 +615,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 if (!jvmIds.isEmpty())
                     log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+
+                resolveWorkDirectory();
 
                 beforeTestsStarted();
             }
@@ -757,9 +764,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-
         assert init >= 0;
         assert cnt > 0;
 
@@ -1115,7 +1119,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         stopGrid(igniteInstanceName, cancel, true);
     }
@@ -1125,7 +1128,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         try {
             IgniteEx ignite = grid(igniteInstanceName);
@@ -1518,9 +1520,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(getTestTimeout());
 
-        if (isMultiJvm())
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
         return cfg;
     }
 
@@ -1600,7 +1599,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param marshaller Marshaller to get checkpoint path for.
      * @return Path for specific marshaller.
      */
-    @SuppressWarnings({"IfMayBeConditional", "deprecation"})
+    @SuppressWarnings({"IfMayBeConditional"})
     protected String getDefaultCheckpointPath(Marshaller marshaller) {
         if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
@@ -1671,18 +1670,13 @@ public abstract class GridAbstractTest extends TestCase {
         // Set metrics update interval to 1 second to speed up tests.
         cfg.setMetricsUpdateFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
+        if (!isMultiJvm()) {
+            assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
 
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-        if (!F.isEmpty(mcastAddr)) {
-            ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+            discoSpi.setIpFinder(sharedStaticIpFinder);
         }
-
-        discoSpi.setIpFinder(ipFinder);
+        else
+            discoSpi.setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -1718,11 +1712,14 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return New cache configuration with modified defaults.
      */
+    @SuppressWarnings("unchecked")
     public static CacheConfiguration defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(new NearCacheConfiguration());
+        if (MvccFeatureChecker.forcedMvcc())
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        else
+            cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 
@@ -1745,7 +1742,14 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Do not annotate with After in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
+     */
+    @Deprecated
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
@@ -2072,14 +2076,16 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    @Override protected void runTest() throws Throwable {
+    @Override void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
-                    runTestInternal();
+                    if (forceFailure)
+                        fail("Forced failure: " + forceFailureMsg);
+
+                    testRoutine.evaluate();
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
@@ -2156,17 +2162,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @throws Throwable If failed.
-     */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    private void runTestInternal() throws Throwable {
-        if (forceFailure)
-            fail("Forced failure: " + forceFailureMsg);
-        else
-            super.runTest();
-    }
-
-    /**
      * @return Test case timeout.
      */
     protected long getTestTimeout() {
@@ -2188,7 +2183,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @param store Store.
      */
-    protected <T> Factory<T> singletonFactory(T store) {
+    protected static <T> Factory<T> singletonFactory(T store) {
         return notSerializableProxy(new FactoryBuilder.SingletonFactory<>(store), Factory.class);
     }
 
@@ -2196,7 +2191,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that should be wrap proxy
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj) {
+    protected static <T> T notSerializableProxy(final T obj) {
         Class<T> cls = (Class<T>)obj.getClass();
 
         Class<T>[] interfaces = (Class<T>[])cls.getInterfaces();
@@ -2214,7 +2209,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
+    protected static <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;
@@ -2237,7 +2232,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that must not be changed after serialization/deserialization.
      * @return An object to return from writeReplace()
      */
-    private Object supressSerialization(Object obj) {
+    private static Object supressSerialization(Object obj) {
         SerializableProxy res = new SerializableProxy(UUID.randomUUID());
 
         serializedObj.put(res.uuid, obj);
@@ -2344,7 +2339,7 @@ public abstract class GridAbstractTest extends TestCase {
             U.sleep(millis);
         }
         catch (Exception e) {
-            throw new IgniteException();
+            throw new IgniteException(e);
         }
     }
 
@@ -2353,7 +2348,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cacheName Cache name.
      * @return Cache group ID for given cache name.
      */
-    protected final int groupIdForCache(Ignite node, String cacheName) {
+    protected static final int groupIdForCache(Ignite node, String cacheName) {
         for (CacheGroupContext grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
             if (grp.hasCache(cacheName))
                 return grp.groupId();
@@ -2474,6 +2469,12 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * Test counters.
+     *
+     * TODO IGNITE-10179 Try to make this class go away since its primary (possibly even only) purpose appears to
+     * support methods isFirstTest() and isLastTest() which in turn look like JUnit 3-specific workaround for
+     * functionality that is natively available in JUnit 4 via BeforeClass and AfterClass annotations. Along the way,
+     * find out if this will allow to get rid of runSerializer lock which is introduced with sole purpose to
+     * maintain integrity of TestCounters.
      */
     protected class TestCounters {
         /** */
@@ -2590,18 +2591,15 @@ public abstract class GridAbstractTest extends TestCase {
 
                 if (this0.forceTestCnt)
                     cnt = this0.testCnt;
-                else {
-                    cnt = 0;
-
-                    for (Method m : this0.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()) && m.getParameterCount() == 0)
-                            cnt++;
-                }
+                else
+                    cnt = (int)new TestClass(this0.getClass())
+                        .getAnnotatedMethods(Test.class)
+                        .stream()
+                        .filter(method -> method.getAnnotation(Ignore.class) == null)
+                        .count();
 
                 numOfTests = cnt;
             }
-
-            countTestCases();
 
             return numOfTests;
         }

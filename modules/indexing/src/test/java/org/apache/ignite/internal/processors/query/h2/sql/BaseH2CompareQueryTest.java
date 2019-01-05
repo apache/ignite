@@ -39,11 +39,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
  * which have the same data models and data content.
  */
+@RunWith(JUnit4.class)
 public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** Org count. */
     public static final int ORG_CNT = 30;
@@ -223,6 +227,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      *
      */
+    @Test
     public void testSelectStar() {
         assertEquals(1, cachePers.query(new SqlQuery<AffinityKey<?>,Person>(
             Person.class, "\t\r\n  select  \n*\t from Person limit 1")).getAll().size());
@@ -239,6 +244,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidQuery() throws Exception {
         final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName from Person where id <> ? and orgId <> ?");
 
@@ -255,6 +261,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception
      */
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-705", forceFailure = true)
+    @Test
     public void testAllExamples() throws Exception {
 //        compareQueryRes0("select ? limit ? offset ?");
 
@@ -424,6 +431,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParamSubstitution() throws Exception {
         compareQueryRes0(cachePers, "select ? from \"pers\".Person", "Some arg");
     }
@@ -431,6 +439,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testAggregateOrderBy() throws SQLException {
         compareOrderedQueryRes0(cachePers, "select firstName name, count(*) cnt from \"pers\".Person " +
             "group by name order by cnt, name desc");
@@ -439,6 +448,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullParamSubstitution() throws Exception {
         List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", null);
 
@@ -449,6 +459,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      *
      */
+    @Test
     public void testUnion() throws SQLException {
         String base = "select _val v from \"pers\".Person";
 
@@ -464,6 +475,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyResult() throws Exception {
         compareQueryRes0(cachePers, "select id from \"pers\".Person where 0 = 1");
     }
@@ -471,6 +483,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlQueryWithAggregation() throws Exception {
         compareQueryRes0(cachePers, "select avg(salary) from \"pers\".Person, \"org\".Organization " +
             "where Person.orgId = Organization.id and " +
@@ -480,6 +493,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlFieldsQuery() throws Exception {
         compareQueryRes0(cachePers, "select concat(firstName, ' ', lastName) from \"pers\".Person");
     }
@@ -487,6 +501,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlFieldsQueryWithJoin() throws Exception {
         compareQueryRes0(cachePers, "select concat(firstName, ' ', lastName), "
             + "Organization.name from \"pers\".Person, \"org\".Organization where "
@@ -496,6 +511,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOrdered() throws Exception {
         compareOrderedQueryRes0(cachePers, "select firstName, lastName" +
             " from \"pers\".Person" +
@@ -505,6 +521,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleJoin() throws Exception {
         // Have expected results.
         compareQueryRes0(cachePers, String.format("select id, firstName, lastName" +
@@ -520,6 +537,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleReplicatedSelect() throws Exception {
         compareQueryRes0(cacheProd, "select id, name from \"prod\".Product");
     }
@@ -527,6 +545,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCache() throws Exception {
         compareQueryRes0(cachePers, "select firstName, lastName" +
             "  from \"pers\".Person, \"purch\".Purchase" +

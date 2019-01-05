@@ -90,7 +90,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** */
     @GridDirectCollection(PartitionUpdateCountersMessage.class)
-    private Collection<PartitionUpdateCountersMessage> counters;
+    private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
@@ -140,7 +140,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
      * @param mvccSnapshot Mvcc snapshot.
-     * @param counters Update counters for mvcc Tx.
+     * @param updCntrs Update counters for mvcc Tx.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -160,7 +160,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean storeWriteThrough,
         boolean retVal,
         MvccSnapshot mvccSnapshot,
-        Collection<PartitionUpdateCountersMessage> counters) {
+        Collection<PartitionUpdateCountersMessage> updCntrs) {
         super(tx,
             timeout,
             null,
@@ -182,7 +182,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.mvccSnapshot = mvccSnapshot;
-        this.counters = counters;
+        this.updCntrs = updCntrs;
 
         storeWriteThrough(storeWriteThrough);
         needReturnValue(retVal);
@@ -207,7 +207,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Update counters list.
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
-        return counters;
+        return updCntrs;
     }
 
     /**
@@ -436,12 +436,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         switch (writer.state()) {
-            case 20:
-                if (!writer.writeCollection("counters", counters, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
             case 21:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
@@ -521,13 +515,19 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 34:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 35:
                 if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
+            case 36:
+                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -548,14 +548,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         switch (reader.state()) {
-            case 20:
-                counters = reader.readCollection("counters", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 21:
                 futId = reader.readIgniteUuid("futId");
 
@@ -661,7 +653,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 34:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -670,6 +662,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
             case 35:
                 txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 36:
+                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -688,7 +688,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 36;
+        return 37;
     }
 
     /** {@inheritDoc} */
