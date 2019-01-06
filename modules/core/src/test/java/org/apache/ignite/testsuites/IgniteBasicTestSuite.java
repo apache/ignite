@@ -220,7 +220,7 @@ public class IgniteBasicTestSuite {
 
         suite.add(ListeningTestLoggerTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(CacheLocalGetSerializationTest.class));
+        suite.add(CacheLocalGetSerializationTest.class);
 
         return suite;
     }
