@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCo
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
@@ -533,6 +534,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
             addHandler(new GridBaselineCommandHandler(ctx));
+            addHandler(new MemoryMetricsCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();

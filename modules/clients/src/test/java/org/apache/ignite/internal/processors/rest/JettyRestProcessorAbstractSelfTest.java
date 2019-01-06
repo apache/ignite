@@ -145,6 +145,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
@@ -159,6 +160,9 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
+
+    /** */
+    private boolean memoryMetricsEnabled;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -1979,6 +1983,54 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     @Test
+    public void testDataRegionMetrics() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.DATA_REGION_METRICS.key()));
+
+        JsonNode res = validateJsonResponse(ret);
+
+        assertTrue(res.size() > 0);
+
+        info(GridRestCommand.DATA_REGION_METRICS.key().toUpperCase() + " command result: " + ret);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDataStorageMetricsDisabled() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
+
+        JsonNode res = validateJsonResponse(ret);
+
+        assertTrue(res.asText().equalsIgnoreCase("Storage metrics are not enabled"));
+
+        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDataStorageMetricsEnabled() throws Exception {
+        stopAllGrids();
+
+        memoryMetricsEnabled = true;
+
+        startGrids(gridCount());
+        grid(0).cluster().active(true);
+        initCache();
+
+        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
+
+        assertNotNull(validateJsonResponse(ret));
+
+        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testVersion() throws Exception {
         String ret = content(null, GridRestCommand.VERSION);
 
@@ -3078,7 +3130,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         drCfg.setName("testDataRegion");
         drCfg.setMaxSize(100L * 1024 * 1024);
 
+        if (memoryMetricsEnabled)
+            drCfg.setPersistenceEnabled(true);
+
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
+
+        if (memoryMetricsEnabled)
+            dsCfg.setMetricsEnabled(true).setWalMode(NONE);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
