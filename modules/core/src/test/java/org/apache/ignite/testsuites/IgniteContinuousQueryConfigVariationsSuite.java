@@ -17,46 +17,124 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteContinuousQueryConfigVariationsSuite.SingleNodeTest.class,
+    IgniteContinuousQueryConfigVariationsSuite.MultiNodeTest.class
+})
 public class IgniteContinuousQueryConfigVariationsSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+    /** */
+    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suiteSingleNode(
+        List<VariationsTestsConfig> cfgs) {
+        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        TestSuite suite = new TestSuite("Ignite Continuous Query Config Variations Suite");
+        new ConfigVariationsTestSuiteBuilder(
+            "Single node",
+            CacheContinuousQueryVariationsTest.class)
+            .withBasicCacheParams()
+            .gridsCount(1)
+            .appendTo(classes, cfgs);
 
-        CacheContinuousQueryVariationsTest.singleNode = false;
+        return classes;
+    }
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+    /** */
+    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suiteMultiNode(
+        List<VariationsTestsConfig> cfgs) {
+        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
+
+        new ConfigVariationsTestSuiteBuilder(
             "5 nodes 1 backup",
             CacheContinuousQueryVariationsTest.class)
             .withBasicCacheParams()
             .gridsCount(5)
             .backups(2)
-            .build());
+            .appendTo(classes, cfgs);
 
-        CacheContinuousQueryVariationsTest.singleNode = true;
+        return classes;
+    }
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Single node",
-            CacheContinuousQueryVariationsTest.class)
-            .withBasicCacheParams()
-            .gridsCount(1)
-            .build());
+    /** */
+    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteSingleNode.class)
+    public static class SingleNodeTest {
+    }
 
-        return suite;
+    /** */
+    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteMultiNode.class)
+    public static class MultiNodeTest {
+    }
+
+    /** */
+    public static class SuiteSingleNode extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suiteSingleNode(cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public SuiteSingleNode(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+
+            CacheContinuousQueryVariationsTest.singleNode = true;
+
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
+            super.runChild(runner, ntf);
+        }
+    }
+
+    /** */
+    public static class SuiteMultiNode extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suiteMultiNode(cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public SuiteMultiNode(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+
+            CacheContinuousQueryVariationsTest.singleNode = false;
+
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
+            super.runChild(runner, ntf);
+        }
     }
 }
