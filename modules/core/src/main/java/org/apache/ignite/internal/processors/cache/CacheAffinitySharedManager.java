@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -991,8 +992,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpDesc.groupId());
 
-                    if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.initialVersion())) {
-                        assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
+                        if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.initialVersion())) {
+                            assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
 
                         initAffinity(cachesRegistry.group(grp.groupId()), grp.affinity(), fut);
                     }

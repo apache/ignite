@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -87,8 +89,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -548,7 +550,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     "serializer to a new WAL segment [curFile=" + currentHnd + ", newVer=" + serializer.version() +
                     ", oldVer=" + currentHnd.serializer.version() + ']');
 
-            rollOver(currentHnd);
+            rollOver(currentHnd, null);
         }
 
         if (mode == WALMode.BACKGROUND) {
@@ -680,7 +682,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         final FileWriteHandle handle = currentHandle();
 
         try {
-            rollOver(handle);
+            rollOver(handle, null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
@@ -690,8 +692,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("TooBroadScope")
-    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+        return log(record, RolloverType.NONE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer log(WALRecord record, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -707,13 +713,31 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         record.size(serializer.size(record));
 
         while (true) {
-            if (record.rollOver()){
+            WALPointer ptr;
+
+            if (rolloverType == RolloverType.NONE)
+                ptr = currWrHandle.addRecord(record);
+            else {
                 assert cctx.database().checkpointLockIsHeldByThread();
 
-                currWrHandle = rollOver(currWrHandle);
-            }
+                if (rolloverType == RolloverType.NEXT_SEGMENT) {
+                    WALPointer pos = record.position();
 
-            WALPointer ptr = currWrHandle.addRecord(record);
+                    do {
+                        // This will change record.position() unless concurrent rollover happened.
+                        currWrHandle = rollOver(currWrHandle, record);
+                    }
+                    while (Objects.equals(pos, record.position()));
+
+                    ptr = record.position();
+                }
+                else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
+                    if ((ptr = currWrHandle.addRecord(record)) != null)
+                        currWrHandle = rollOver(currWrHandle, null);
+                }
+                else
+                    throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);
+            }
 
             if (ptr != null) {
                 metrics.onWalRecordLogged();
@@ -726,7 +750,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 return ptr;
             }
             else
-                currWrHandle = rollOver(currWrHandle);
+                currWrHandle = rollOver(currWrHandle, null);
 
             checkNode();
 
@@ -784,7 +808,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+    @Override public boolean reserve(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -792,8 +816,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         FileArchiver archiver0 = archiver;
 
-        if (archiver0 == null)
-            throw new IgniteCheckedException("Could not reserve WAL segment: archiver == null");
+        assert archiver0 != null : "Could not reserve WAL segment: archiver == null";
 
         archiver0.reserve(((FileWALPointer)start).index());
 
@@ -1097,9 +1120,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /**
      * @param cur Handle that failed to fit the given entry.
+     * @param rec Optional record to be added to the beginning of the segment.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandle rollOver(FileWriteHandle cur) throws IgniteCheckedException {
+    private FileWriteHandle rollOver(FileWriteHandle cur, @Nullable WALRecord rec) throws IgniteCheckedException {
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1110,6 +1134,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 metrics.onWallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur.getSegmentId());
+
+            if (rec != null) {
+                WALPointer ptr = next.addRecord(rec);
+
+                assert ptr != null;
+            }
 
             if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
@@ -1898,7 +1928,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
@@ -2298,7 +2328,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             buf.position(0);
 
             // This call will move buffer position to the end of the record again.
-            int crcVal = PureJavaCrc32.calcCrc32(buf, curPos);
+            int crcVal = FastCrc.calcCrc(buf, curPos);
 
             buf.putInt(crcVal);
         }
