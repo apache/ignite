@@ -48,8 +48,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     ConfigVariationsTestSuiteBuilderTest.BasicTest.class,
-    ConfigVariationsTestSuiteBuilderTest.TestWithIgnored.class,
-    ConfigVariationsTestSuiteBuilderTest.TestWithExtendsIgnored.class
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteBasic.class,
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteWithIgnored.class,
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
@@ -147,8 +148,28 @@ public class ConfigVariationsTestSuiteBuilderTest {
     }
 
     /** */
+    @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteBasic.class)
+    public static class TestSuiteBasic {
+        /** **/
+        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+
+        /** */
+        @BeforeClass
+        public static void init() {
+            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+        }
+
+        /** */
+        @AfterClass
+        public static void verify() {
+            assertEquals(4, SuiteBasic.cntr.get());
+            assertEquals(SuiteBasic.cntr.get(), SuiteBasic.cfgs.size());
+        }
+    }
+
+    /** */
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteWithIgnored.class)
-    public static class TestWithIgnored {
+    public static class TestSuiteWithIgnored {
         /** **/
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
@@ -168,7 +189,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
     /** */
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteWithExtendsIgnored.class)
-    public static class TestWithExtendsIgnored {
+    public static class TestSuiteWithExtendsIgnored {
         /** **/
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
@@ -183,6 +204,30 @@ public class ConfigVariationsTestSuiteBuilderTest {
         public static void verify() {
             assertEquals(4, SuiteWithExtendsIgnored.cntr.get());
             assertEquals(SuiteWithExtendsIgnored.cntr.get(), SuiteWithExtendsIgnored.cfgs.size());
+        }
+    }
+
+    /** */
+    public static class SuiteBasic extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes
+            = basicBuild(NoopTest.class, cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public SuiteBasic(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+            super.runChild(runner, ntf);
         }
     }
 
