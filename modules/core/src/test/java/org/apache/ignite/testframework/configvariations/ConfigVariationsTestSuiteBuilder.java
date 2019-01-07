@@ -278,7 +278,7 @@ public class ConfigVariationsTestSuiteBuilder {
      */
     public ConfigVariationsTestSuiteBuilder igniteParams(
         ConfigParameter<IgniteConfiguration>[][] igniteParams) {
-        this.igniteParams = igniteParams;
+        this.igniteParams = igniteParams.clone();
 
         return this;
     }
@@ -288,7 +288,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder cacheParams(ConfigParameter<CacheConfiguration>[][] cacheParams) {
-        this.cacheParams = cacheParams;
+        this.cacheParams = cacheParams.clone();
 
         return this;
     }
@@ -322,7 +322,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
-        specificIgniteParam = singleIgniteParam;
+        specificIgniteParam = singleIgniteParam.clone();
 
         return this;
     }
@@ -332,7 +332,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
-        specificCacheParam = singleParam;
+        specificCacheParam = singleParam.clone();
 
         return this;
     }
@@ -342,11 +342,12 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
-        igniteCfgFilters = filters;
+        igniteCfgFilters = filters.clone();
 
         return this;
     }
 
+    /** */
     public ConfigVariationsTestSuiteBuilder skipWaitPartitionMapExchange() {
         skipWaitPartMapExchange = true;
 
@@ -358,7 +359,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigVariationsTestSuiteBuilder withCacheConfigFilters(IgnitePredicate<CacheConfiguration>... filters) {
-        cacheCfgFilters = filters;
+        cacheCfgFilters = filters.clone();
 
         return this;
     }
@@ -388,10 +389,11 @@ public class ConfigVariationsTestSuiteBuilder {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
         @Override public int[] next() {
             hasNext = false;
 
-            return elem;
+            return elem.clone();
         }
     }
 }
