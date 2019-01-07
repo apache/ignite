@@ -17,19 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.service.IgniteServiceConfigVariationsFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Full API service test suit.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteServiceConfigVariationsFullApiTestSuite.DynamicSuite.class)
 public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -37,49 +44,71 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 
-    /**
-     * @return Compute API test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Service Deployment New Full API Test Suite");
+    /** */
+    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
+        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "Single server",
             IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(1)
-            .build());
+            .appendTo(classes, cfgs);
 
         // Tests run on server (node#0) & client(node#1).
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "1 server, 1 client",
             IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(2)
             .testedNodesCount(2)
             .withClients()
-            .build());
+            .appendTo(classes, cfgs);
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1).
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "3 servers, 1 client",
             IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(4)
             .testedNodesCount(2)
             .withClients()
-            .build());
+            .appendTo(classes, cfgs);
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "3 servers, 2 clients",
             IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(5)
             .testedNodesCount(2)
             .withClients()
-            .build());
+            .appendTo(classes, cfgs);
 
-        return suite;
+        return classes;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
+            super.runChild(runner, ntf);
+        }
     }
 }

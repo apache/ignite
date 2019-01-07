@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.messaging.IgniteMessagingConfigVariationFullApiTest;
@@ -26,13 +28,18 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test sute for Messaging process.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteMessagingConfigVariationFullApiTestSuite.DynamicSuite.class)
 public class IgniteMessagingConfigVariationFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -45,28 +52,50 @@ public class IgniteMessagingConfigVariationFullApiTestSuite {
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 
-    /**
-     * @return Messaging test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Compute New Full API Test Suite");
+    /** */
+    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
+        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "Single server",
             IgniteMessagingConfigVariationFullApiTest.class)
             .gridsCount(1)
             .igniteParams(GRID_PARAMETER_VARIATION)
-            .build());
+            .appendTo(classes, cfgs);
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+        new ConfigVariationsTestSuiteBuilder(
             "Multiple servers and client",
             IgniteMessagingConfigVariationFullApiTest.class)
             .testedNodesCount(2)
             .gridsCount(6)
             .withClients()
             .igniteParams(GRID_PARAMETER_VARIATION)
-            .build());
+            .appendTo(classes, cfgs);
 
-        return suite;
+        return classes;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
+            super.runChild(runner, ntf);
+        }
     }
 }
