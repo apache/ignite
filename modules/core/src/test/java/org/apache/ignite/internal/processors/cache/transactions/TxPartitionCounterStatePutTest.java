@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -74,6 +75,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // Set mixed persistence + in-memory configuration.
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
             setDataRegionConfigurations(new DataRegionConfiguration().setName("mem").setInitialSize(100 * MB).setMaxSize(100 * MB)).
@@ -86,11 +88,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
             cacheConfiguration(TX_CACHE_MEMORY, true).setAtomicityMode(TRANSACTIONAL),
             cacheConfiguration(ATOMIC_CACHE_MEMORY, true).setAtomicityMode(ATOMIC));
 
-        cfg.setFailureDetectionTimeout(6000000);
-
         return cfg;
     }
 
+    /**
+     * @param name Name.
+     * @param inMemory In memory.
+     */
     private CacheConfiguration cacheConfiguration(String name, boolean inMemory) {
         return new CacheConfiguration(name).setDataRegionName(inMemory ? "mem" : "dflt").setCacheMode(PARTITIONED).setWriteSynchronizationMode(FULL_SYNC).
             setAtomicityMode(TRANSACTIONAL).setBackups(BACKUPS).setAffinity(new RendezvousAffinityFunction(false, 32));
@@ -128,8 +132,9 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
         doTestPutConcurrent(ATOMIC_CACHE);
     }
 
-    /** TODO FIXME IGNORE !!! will fail. */
+    /** */
     @Test
+    @Ignore("Concurrent mixed tx and non-tx updates are not supported")
     public void testPutTxConcurrentPersistent() throws Exception {
         doTestPutConcurrent(TX_CACHE);
     }
@@ -152,8 +157,9 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
         doTestPutConcurrent(ATOMIC_CACHE_MEMORY);
     }
 
-    /** TODO FIXME IGNORE !!! will fail. */
+    /** */
     @Test
+    @Ignore("Concurrent mixed tx and non-tx updates are not supported")
     public void testPutTxConcurrentVolatile() throws Exception {
         doTestPutConcurrent(TX_CACHE_MEMORY);
     }

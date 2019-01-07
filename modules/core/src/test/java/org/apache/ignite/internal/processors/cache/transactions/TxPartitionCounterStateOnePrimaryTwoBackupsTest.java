@@ -81,14 +81,56 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx() throws Exception {
-        doTestPartialPrepare_2tx(true, new int[] {0, 1});
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_1() throws Exception {
+        doTestPartialPrepare_2tx(true, new int[] {3, 7},  new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx() throws Exception {
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_2() throws Exception {
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_3() throws Exception {
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {1, 0}, new int[] {1, 0}, new int[] {1, 0}, 7);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_1_1() throws Exception {
+        doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_2_1() throws Exception {
+        doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 1);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_3_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 2);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_1_2() throws Exception {
+        doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_2_2() throws Exception {
+        doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 1);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft3Tx_3_2() throws Exception {
+        doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 2);
     }
 
     /** */
@@ -105,22 +147,27 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
     /** */
     @Test
-    public void testSkipReservedCountersAfterRecovery() throws Exception {
-        doTestSkipReservedCountersAfterRecovery(false);
+    public void testSkipReservedCountersAfterRecoveryStopPrimary() throws Exception {
+        doTestSkipReservedCountersAfterRecovery2(false);
     }
 
     /** */
     @Test
-    public void testSkipReservedCountersAfterRecovery2() throws Exception {
-        doTestSkipReservedCountersAfterRecovery(true);
+    public void testSkipReservedCountersAfterRecoveryStopPrimary2() throws Exception {
+        doTestSkipReservedCountersAfterRecovery2(true);
     }
 
     /**
      * Test scenario:
      *
-     * 1. Prepare all txs. 2. Fail backup1 after first commit. 3. Start failed backup. 4. Check if the backup is
-     * rebalanced correctly from primary node. 5. Stop primary node. 6. Put data to remaining nodes. 7. Start primary
-     * node. 8. Check if primary is rebalanced correctly from new primary node.
+     * 1. Prepare all txs.
+     * 2. Fail backup1 after first commit.
+     * 3. Start failed backup.
+     * 4. Check if the backup is rebalanced correctly from primary node.
+     * 5. Stop primary node.
+     * 6. Put data to remaining nodes.
+     * 7. Start primary node.
+     * 8. Check if primary is rebalanced correctly from new primary node.
      *
      * @param skipCheckpoint Skip checkpoint.
      */
@@ -219,11 +266,15 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /**
      * Test scenario:
      *
-     * 1. Start 3 transactions. 2. Assign counters in given order. 3. Commit tx2. 4. Prepare tx0 according to mode. 5.
-     * Prepare tx1 according to mode. 6. Fail primary. 7. Validate partitions integrity after node left. No holes are
-     * expected.
+     * 1. Start 3 transactions.
+     * 2. Assign counters in given order.
+     * 3. Commit tx2.
+     * 4. Prepare tx0 on backup1 (mode=0, 2).
+     * 5. Prepare tx1 on backup2 (mode=1, 2).
+     * 6. Fail primary triggering tx rollback on recovery.
+     * 7. Validate partitions integrity after node left. No holes are expected (they should be closed by message with counters)
      *
-     * @param skipCheckpoint
+     * @param skipCheckpoint Skip checkpoint on node stop.
      * @throws Exception
      */
     private void doTestPartialPrepare_3tx(boolean skipCheckpoint, int[] assignOrder, int mode) throws Exception {
@@ -257,8 +308,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                         return false;
                     }
 
-                    @Override
-                    public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+                    @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
                         GridFutureAdapter<?> fut) {
                         int idx = order(nearXidVer);
 
@@ -274,7 +324,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             });
                         }
 
-                        return idx == 0;
+                        return idx != 2;
                     }
 
                     @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
@@ -304,21 +354,33 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         awaitPartitionMapExchange();
 
         assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
+
+        startGrid(txTops.get(PARTITION_ID).get1().name());
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
     }
 
     /**
      * Test scenario:
      *
-     * 1. Start 2 transactions. 2. Assign counters in given order. 3. Commit tx1. 4. Prepare tx0 only on single backup.
-     * 5. Fail primary. 6. Validate partitions integrity after node left. No holes are expected.
+     * 1. Start 2 transactions.
+     * 2. Assign counters in given order.
+     * 4. Prepare tx0 on backup1.
+     * 4. Prepare tx1 on backup2
+     * 5. Fail primary.
+     * 6. Validate partitions integrity after node left. No holes are expected. No committed data are expected.
      *
      * @param skipCheckpoint
      * @throws Exception
      */
-    private void doTestPartialPrepare_2tx(boolean skipCheckpoint, int[] assignOrder) throws Exception {
+    private void doTestPartialPrepare_2tx(boolean skipCheckpoint, int[] sizes, int[] assignOrder, int[] backup1Order, int[] backup2Order, int expCommSize) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
-
-        int[] sizes = new int[] {3, 7};
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             map -> {
@@ -328,37 +390,14 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
                 return new TwoPhaseCommitTxCallbackAdapter(
                     U.map((IgniteEx)primary, assignOrder),
-                    U.map((IgniteEx)backup1, new int[] {1, 0}, (IgniteEx)backup2, new int[] {1, 0}),
+                    U.map((IgniteEx)backup1, backup1Order, (IgniteEx)backup2, backup2Order),
                     new HashMap<>(),
                     sizes.length) {
                     @Override protected boolean onBackupPrepared(IgniteEx backup, IgniteInternalTx tx, int idx) {
                         super.onBackupPrepared(backup, tx, idx);
 
-                        if (idx == 1 && backup == backup1) {
-                            if (cntr.getAndIncrement() == 1) {
-                                log.info("Stopping primary [name=" + primary.name() + ']');
-
-                                runAsync(new Runnable() {
-                                    @Override public void run() {
-                                        stopGrid(skipCheckpoint, primary.name());
-
-                                        TestRecordingCommunicationSpi.stopBlockAll();
-                                    }
-                                });
-                            }
-
-                            return true;
-                        }
-
-                        return false;
-                    }
-
-                    @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer,
-                        GridFutureAdapter<?> proceedFut) {
-                        log.info("TX: primary finished: [node=" + primary.name() + ", txId=" + order(nearXidVer) + ']');
-
                         if (cntr.getAndIncrement() == 1) {
-                            log.info("TX: Stopping primary [name=" + primary.name() + ']');
+                            log.info("Stopping primary [name=" + primary.name() + ']');
 
                             runAsync(new Runnable() {
                                 @Override public void run() {
@@ -369,7 +408,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             });
                         }
 
-                        return false;
+                        return true;
                     }
                 };
             },
@@ -382,14 +421,30 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
 
         assertCountersSame(PARTITION_ID, true);
+
+        assertEquals(PRELOAD_KEYS_CNT + expCommSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
+
+        // Start primary.
+        startGrid(txTops.get(PARTITION_ID).get1().name());
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid("client"), DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
     }
 
     /**
      * Test scenario:
      *
-     * 1. Start 2 concurrent txs. 2. Assign counters in specified order. 3. Prepare tx0 only on backup2. 4. Finish tx1
-     * only on backup2. 5. Stop primary and backup1. 6. Validate partitions. 7. Start backup2. 8. Validate partitions
-     * again after (historical) rebalance.
+     * 1. Start 2 concurrent txs.
+     * 2. Assign counters in specified order.
+     * 3. Prepare tx0 only on backup2.
+     * 4. Finish tx1only on backup2.
+     * 5. Stop primary and backup1.
+     * 6. Validate partitions.
+     * 7. Start backup2.
+     * 8. Validate partitions again after (historical) rebalance.
      *
      * @param skipCheckpoint
      * @throws Exception
@@ -510,7 +565,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      *
      * @throws Exception
      */
-    private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
+    private void doTestSkipReservedCountersAfterRecovery2(boolean skipCheckpointOnStop) throws Exception {
         AtomicInteger cnt = new AtomicInteger();
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, map -> {
@@ -528,7 +583,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                     if (cnt.getAndIncrement() == 2) {
                         runAsync(new Runnable() {
                             @Override public void run() {
-                                stopAllGrids();
+                                stopGrid(skipCheckpointOnStop, primary.name());
+
+                                TestRecordingCommunicationSpi.stopBlockAll();
                             }
                         });
                     }
@@ -539,16 +596,23 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
             };
         }, SIZES);
 
-        waitForTopology(0);
+        waitForTopology(NODES_CNT);
 
-        IgniteEx crd = startGrid(txTops.get(PARTITION_ID).get1().name());
+        IgniteEx client = grid("client");
 
-        crd.cluster().active(true);
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
-        PartitionUpdateCounter cntr = counter(PARTITION_ID, txTops.get(PARTITION_ID).get1().name());
+        assertCountersSame(PARTITION_ID, true);
 
-        assertEquals(PRELOAD_KEYS_CNT, cntr.get());
+        startGrid(txTops.get(PARTITION_ID).get1().name());
 
-        assertEquals(PRELOAD_KEYS_CNT, cntr.hwm());
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+
+        assertCountersSame(PARTITION_ID, true);
+
+        // Recovery will commit backup transactions and primary will rebalance from all.
+        assertEquals(TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
     }
 }

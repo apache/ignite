@@ -276,7 +276,7 @@ public class PartitionUpdateCounter {
 
         long newCntr = reserveCntr.getAndAdd(delta);
 
-        assert newCntr >= cntr;
+        assert newCntr >= cntr : "Reserve counter lag: cntr=" + cntr + ", reserveCntr=" + newCntr;
 
         return newCntr;
     }

@@ -38,14 +38,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
+ *
  */
 @RunWith(JUnit4.class)
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
-    /** */
+    /** Tx sizes. */
     private static final int [] SIZES = new int[] {5, 7, 3};
-
-    /** */
-    private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
 
     /** */
     private static final int PARTITION_ID = 0;
@@ -80,7 +78,7 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
      * tx[2] committed out of order.
      * tx[0], tx[1] rolled back due to prepare fail.
      *
-     * Pass: counters for rolled back txs are incremented on primary and backup nodes.
+     * Pass condition: counters for rolled back txs are incremented on primary and backup nodes.
      *
      * @param skipCheckpoint Skip checkpoint.
      */

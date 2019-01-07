@@ -45,6 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
@@ -1096,13 +1097,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private DataEntry next;
 
-        /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
-        private boolean reachedPartitionEnd;
-
-        /** Flag indicates that update counters for requested partitions have been reached and done.
-         *  It means that no further iteration is needed. */
-        private boolean doneAllPartitions;
-
         /** Rebalanced counters in the range from initialUpdateCntr to updateCntr. */
         private long[] rebalancedCntrs;
 
@@ -1180,15 +1174,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             CacheDataRow val = new DataEntryRow(next);
 
-            if (reachedPartitionEnd) {
-                doneParts.add(next.partitionId());
-
-                reachedPartitionEnd = false;
-
-                if (doneParts.size() == partMap.size())
-                    doneAllPartitions = true;
-            }
-
             advance();
 
             return val;
@@ -1245,10 +1230,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private void advance() {
             next = null;
 
-            if (doneAllPartitions)
-                return;
-
-            while (true) {
+            outer: while (doneParts.size() != partMap.size()) {
                 if (entryIt != null) {
                     while (entryIt.hasNext()) {
                         DataEntry entry = entryIt.next();
@@ -1263,19 +1245,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long to = partMap.updateCounterAt(idx);
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
-                                if (++rebalancedCntrs[idx] == to) // No entries should be skipped on owner with max counter.
-                                    reachedPartitionEnd = true;
+                                // Invariant: from + rebalancedCntrs[idx] = to
+                                if (++rebalancedCntrs[idx] == to)
+                                    doneParts.add(entry.partitionId());
 
                                 next = entry;
 
-                                return;
+                                break;
                             }
                         }
                     }
                 }
 
-                entryIt = null;
-
+                // Search for next DataEntry while applying rollback counters.
                 while (walIt.hasNext()) {
                     IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
 
@@ -1285,12 +1267,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         entryIt = data.writeEntries().iterator();
                         // Move on to the next valid data entry.
 
-                        break;
+                        continue outer;  // Move to first entry in new DataEntry.
+                    }
+                    else if (rec.get2() instanceof RollbackRecord) {
+                        RollbackRecord rbRec = (RollbackRecord)rec.get2();
+
+                        int idx = partMap.partitionIndex(rbRec.partitionId());
+
+                        if (idx >= 0 && !missingParts.contains(idx)) {
+                            rebalancedCntrs[idx] += rbRec.range();
+
+                            if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
+                                doneParts.add(rbRec.partitionId());
+                        }
                     }
                 }
-
-                if (entryIt == null)
-                    return;
             }
         }
     }

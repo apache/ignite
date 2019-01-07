@@ -224,7 +224,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Log partition creation for further crash recovery purposes.
             if (grp.walEnabled() && !recovery)
-                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
+                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
@@ -543,7 +543,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 stateChanged = true;
 
                 try {
-                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Error while writing to log", e);
@@ -570,7 +570,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     stateChanged = true;
 
                     try {
-                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);

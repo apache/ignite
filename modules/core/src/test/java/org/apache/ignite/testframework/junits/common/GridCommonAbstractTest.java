@@ -2101,7 +2101,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param p Partition.
      * @param cacheName Cache name.
      * @param total Total keys count.
-     * @param returnKeys Return keys count.
+     * @param skip Skip keys from the beginning.
+     * @param putType Optional put type (default putAll).
      *
      * @return List of last keys.
      */

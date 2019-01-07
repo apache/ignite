@@ -818,7 +818,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (txState.mvccEnabled())
                                         txEntry.updateCounter(updRes.updateCounter());
-                                    else if (txCounters != null && !txEntry.cached().isNear()) { // Near tx has no counters.
+                                    else if (txCounters != null && txEntry.op() != NOOP && !txEntry.cached().isNear()) {
+                                        // TODO move gen logic inside txcounters.
                                         Map<Integer, AtomicLong> map =
                                             txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
 
@@ -1121,7 +1122,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 TxCounters txCounters = txCounters(false);
 
                 if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
             }
 
             cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());

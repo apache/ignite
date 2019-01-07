@@ -2650,9 +2650,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Pre-processes partition update counters before exchange.
      */
     @Override public void finalizeUpdateCounters() {
-        if (!grp.mvccEnabled())
-            return;
-
         // It is need to acquire checkpoint lock before topology lock acquiring.
         ctx.database().checkpointReadLock();
 
