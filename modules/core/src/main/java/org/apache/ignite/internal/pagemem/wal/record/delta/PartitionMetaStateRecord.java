@@ -35,7 +35,7 @@ public class PartitionMetaStateRecord extends WALRecord implements WalRecordCach
     /** Partition id. */
     private final int partId;
 
-    /** Rollback counter. */
+    /** @deprecated Update counter. */
     private final long updateCounter;
 
     /**
