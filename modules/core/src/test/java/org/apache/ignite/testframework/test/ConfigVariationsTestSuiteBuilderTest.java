@@ -76,6 +76,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
             classes = new ArrayList<>();
             cfgs = new ArrayList<>();
+
             new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
                 .withBasicCacheParams().appendTo(classes, cfgs);
 
@@ -107,6 +108,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
             List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
             List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
+
             new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
                 .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                     @Override public boolean apply(IgniteConfiguration configuration) {
@@ -125,6 +127,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         public void testCacheConfigFilter() {
             List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
             List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
             new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
                 .withBasicCacheParams()
                 .appendTo(classes, cfgs);
@@ -133,6 +136,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
             List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
             List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
+
             new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
                 .withBasicCacheParams()
                 .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
@@ -227,6 +231,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
             IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
             super.runChild(runner, ntf);
         }
     }
@@ -252,6 +257,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
             IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
             super.runChild(runner, ntf);
         }
     }
@@ -276,6 +282,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
             IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
             super.runChild(runner, ntf);
         }
     }
