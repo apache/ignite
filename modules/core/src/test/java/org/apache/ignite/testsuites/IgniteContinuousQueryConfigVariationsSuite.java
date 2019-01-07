@@ -46,9 +46,7 @@ public class IgniteContinuousQueryConfigVariationsSuite {
         List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Single node",
-            CacheContinuousQueryVariationsTest.class)
+        new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
             .withBasicCacheParams()
             .gridsCount(1)
             .appendTo(classes, cfgs);
@@ -61,9 +59,7 @@ public class IgniteContinuousQueryConfigVariationsSuite {
         List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "5 nodes 1 backup",
-            CacheContinuousQueryVariationsTest.class)
+        new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
             .withBasicCacheParams()
             .gridsCount(5)
             .backups(2)

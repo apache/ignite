@@ -39,9 +39,7 @@ public class InterceptorCacheConfigVariationsFullApiTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Cache New Full API Test Suite with Interceptor",
-            InterceptorCacheConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(InterceptorCacheConfigVariationsFullApiTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()

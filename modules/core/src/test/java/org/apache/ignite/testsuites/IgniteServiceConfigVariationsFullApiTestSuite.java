@@ -48,17 +48,13 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteServiceConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(1)
             .appendTo(classes, cfgs);
 
         // Tests run on server (node#0) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(
-            "1 server, 1 client",
-            IgniteServiceConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(2)
             .testedNodesCount(2)
@@ -66,9 +62,7 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
             .appendTo(classes, cfgs);
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(
-            "3 servers, 1 client",
-            IgniteServiceConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(4)
             .testedNodesCount(2)
@@ -76,9 +70,7 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
             .appendTo(classes, cfgs);
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
-        new ConfigVariationsTestSuiteBuilder(
-            "3 servers, 2 clients",
-            IgniteServiceConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(5)
             .testedNodesCount(2)

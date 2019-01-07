@@ -58,7 +58,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         Class<? extends IgniteConfigVariationsAbstractTest> cls, List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder("testSuite", cls).appendTo(classes, cfgs);
+        new ConfigVariationsTestSuiteBuilder(cls).appendTo(classes, cfgs);
 
         return classes;
     }
@@ -77,20 +77,20 @@ public class ConfigVariationsTestSuiteBuilderTest {
             classes = new ArrayList<>();
             cfgs = new ArrayList<>();
 
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams().appendTo(classes, cfgs);
 
             assertEquals(4 * 4 * 2, classes.size());
             assertEquals(4 * 4 * 2, cfgs.size());
 
             // With clients.
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .testedNodesCount(2).withClients().appendTo(classes, cfgs);
 
             assertEquals(4 * 4 * 2 + 4 * 2, classes.size());
             assertEquals(4 * 4 * 2 + 4 * 2, cfgs.size());
 
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams().testedNodesCount(3).withClients().appendTo(classes, cfgs);
 
             assertEquals((4 * 4 * 2 + 4 * 2) + 4 * 4 * 2 * 3, classes.size());
@@ -109,7 +109,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
             List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
             List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
 
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                     @Override public boolean apply(IgniteConfiguration configuration) {
                         return cnt.getAndIncrement() % 2 == 0;
@@ -128,7 +128,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
             List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
             List<VariationsTestsConfig> cfgs = new ArrayList<>();
 
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams()
                 .appendTo(classes, cfgs);
 
@@ -137,7 +137,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
             List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
             List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
 
-            new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
+            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams()
                 .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
                     @Override public boolean apply(CacheConfiguration configuration) {

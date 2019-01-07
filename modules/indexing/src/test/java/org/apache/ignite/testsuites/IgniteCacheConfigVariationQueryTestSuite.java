@@ -39,9 +39,7 @@ public class IgniteCacheConfigVariationQueryTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Cache Config Variations Query Test Suite",
-            IgniteCacheConfigVariationsQueryTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteCacheConfigVariationsQueryTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()

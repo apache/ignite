@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import junit.framework.TestSuite; // todo remove
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
@@ -74,19 +73,10 @@ public class ConfigVariationsTestSuiteBuilder {
     private boolean skipWaitPartMapExchange;
 
     /**
-     * @param name Name. Todo get rid of this param
      * @param cls Test class.
      */
-    public ConfigVariationsTestSuiteBuilder(String name, Class<? extends IgniteConfigVariationsAbstractTest> cls) {
+    public ConfigVariationsTestSuiteBuilder(Class<? extends IgniteConfigVariationsAbstractTest> cls) {
         this.cls = cls;
-    }
-
-    /**
-     * Todo remove this method.
-     * @return Test suite.
-     */
-    public TestSuite build() {
-        throw new IllegalStateException("this method is to be removed");
     }
 
     /**

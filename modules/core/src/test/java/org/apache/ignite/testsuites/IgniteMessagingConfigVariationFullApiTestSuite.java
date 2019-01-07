@@ -56,16 +56,12 @@ public class IgniteMessagingConfigVariationFullApiTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteMessagingConfigVariationFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteMessagingConfigVariationFullApiTest.class)
             .gridsCount(1)
             .igniteParams(GRID_PARAMETER_VARIATION)
             .appendTo(classes, cfgs);
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Multiple servers and client",
-            IgniteMessagingConfigVariationFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteMessagingConfigVariationFullApiTest.class)
             .testedNodesCount(2)
             .gridsCount(6)
             .withClients()

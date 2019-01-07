@@ -43,9 +43,7 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "With Keep Binary Cache Test Suite",
-            WithKeepBinaryCacheFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(WithKeepBinaryCacheFullApiTest.class)
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 @Override public boolean apply(IgniteConfiguration cfg) {
@@ -57,9 +55,7 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
             .testedNodesCount(3).withClients()
             .appendTo(classes, cfgs);
 
-        new ConfigVariationsTestSuiteBuilder(
-            "With Keep Binary Cache with Interceptor Test Suite",
-            WithKeepBinaryCacheFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(WithKeepBinaryCacheFullApiTest.class)
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 @Override public boolean apply(IgniteConfiguration cfg) {

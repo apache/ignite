@@ -57,17 +57,13 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
     private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
         List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteComputeConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
             .igniteParams(BASIC_COMPUTE_SET)
             .gridsCount(1)
             .appendTo(classes, cfgs);
 
         // Tests run on server (node#0) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(
-            "3 servers, 1 client",
-            IgniteComputeConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
             .igniteParams(BASIC_COMPUTE_SET)
             .gridsCount(4)
             .testedNodesCount(2)
