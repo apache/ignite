@@ -1072,15 +1072,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Updates MVCC cache update counter on backup node.
-     *
-     * @param start Start position
+     *  @param start Start position
      * @param delta Delta.
      */
-    public void updateCounter(long start, long delta) {
+    public boolean updateCounter(long start, long delta) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))
 //            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
 
-        store.updateCounter(start, delta);
+        return store.updateCounter(start, delta);
     }
 
     /**

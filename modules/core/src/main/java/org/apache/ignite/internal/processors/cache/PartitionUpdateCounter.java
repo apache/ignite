@@ -136,17 +136,16 @@ public class PartitionUpdateCounter {
 
     /**
      * Updates counter by delta from start position. Used only in transactions.
-     *
-     * @param start Start.
+     *  @param start Start.
      * @param delta Delta.
      */
-    public synchronized void update(long start, long delta) {
+    public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
         if (cur > start) {
             log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
 
-            return;
+            return false;
         }
 
         if (cur < start) {
@@ -158,7 +157,7 @@ public class PartitionUpdateCounter {
                 if (last.start + last.delta == start)
                     last.delta += delta;
                 else
-                    offer(new Item(start, delta)); // backup node with gaps
+                    return offer(new Item(start, delta)); // backup node with gaps
             }
             else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
                 Item first = set.first();
@@ -167,12 +166,12 @@ public class PartitionUpdateCounter {
                     first.delta += delta;
                 }
                 else
-                    offer(new Item(start, delta)); // backup node with gaps
+                    return offer(new Item(start, delta)); // backup node with gaps
             }
             else
-                offer(new Item(start, delta)); // backup node with gaps
+                return offer(new Item(start, delta)); // backup node with gaps
 
-            return;
+            return true;
         }
 
         while (true) {
@@ -183,7 +182,7 @@ public class PartitionUpdateCounter {
             Item peek = peek();
 
             if (peek == null || peek.start != next)
-                return;
+                return true;
 
             Item item = poll();
 
@@ -235,8 +234,8 @@ public class PartitionUpdateCounter {
     /**
      * @param item Adds update task to priority queue.
      */
-    private void offer(Item item) {
-        queue.add(item);
+    private boolean offer(Item item) {
+        return queue.add(item);
     }
 
     /**

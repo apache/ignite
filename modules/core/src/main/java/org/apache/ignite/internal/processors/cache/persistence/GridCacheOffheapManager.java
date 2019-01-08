@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -975,7 +975,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 
-        WALHistoricalIterator iterator = new WALHistoricalIterator(grp, partCntrs, it);
+        WALHistoricalIterator iterator = new WALHistoricalIterator(log, grp, partCntrs, it);
 
         // Add historical partitions which are unabled to reserve to missing set.
         missing.addAll(iterator.missingParts);
@@ -1073,6 +1073,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Logger. */
+        private IgniteLogger log;
+
         /** Cache context. */
         private final CacheGroupContext grp;
 
@@ -1097,14 +1100,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private DataEntry next;
 
-        /** Rebalanced counters in the range from initialUpdateCntr to updateCntr. */
+        /**
+         * Rebalanced counters in the range from initialUpdateCntr to updateCntr.
+         * Invariant: initUpdCntr[idx] + rebalancedCntrs[idx] = updateCntr[idx]
+         */
         private long[] rebalancedCntrs;
 
+        /** A partition what will be finished on next iteration. */
+        private int donePart = -1;
+
         /**
+         * @param log Logger.
          * @param grp Cache context.
          * @param walIt WAL iterator.
          */
-        private WALHistoricalIterator(CacheGroupContext grp, CachePartitionPartialCountersMap partMap, WALIterator walIt) {
+        private WALHistoricalIterator(IgniteLogger log, CacheGroupContext grp, CachePartitionPartialCountersMap partMap,
+            WALIterator walIt) {
+            this.log = log;
             this.grp = grp;
             this.partMap = partMap;
             this.walIt = walIt;
@@ -1173,6 +1185,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 throw new NoSuchElementException();
 
             CacheDataRow val = new DataEntryRow(next);
+
+            if (donePart != -1) {
+                doneParts.add(donePart);
+
+                donePart = -1;
+            }
 
             advance();
 
@@ -1245,17 +1263,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long to = partMap.updateCounterAt(idx);
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
-                                // Invariant: from + rebalancedCntrs[idx] = to
+                                // Partition will be marked as done for current entry on next iteration.
                                 if (++rebalancedCntrs[idx] == to)
-                                    doneParts.add(entry.partitionId());
+                                    donePart = entry.partitionId();
 
                                 next = entry;
 
-                                break;
+                                return;
                             }
                         }
                     }
                 }
+
+                entryIt = null;
 
                 // Search for next DataEntry while applying rollback counters.
                 while (walIt.hasNext()) {
@@ -1265,23 +1285,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         DataRecord data = (DataRecord)rec.get2();
 
                         entryIt = data.writeEntries().iterator();
-                        // Move on to the next valid data entry.
 
-                        continue outer;  // Move to first entry in new DataEntry.
+                        // Move on to the next valid data entry.
+                        continue outer;
                     }
                     else if (rec.get2() instanceof RollbackRecord) {
                         RollbackRecord rbRec = (RollbackRecord)rec.get2();
 
-                        int idx = partMap.partitionIndex(rbRec.partitionId());
+                        if (cacheIds.contains(rbRec.cacheId())) {
+                            int idx = partMap.partitionIndex(rbRec.partitionId());
 
-                        if (idx >= 0 && !missingParts.contains(idx)) {
-                            rebalancedCntrs[idx] += rbRec.range();
+                            if (idx >= 0 && !missingParts.contains(idx)) {
+                                rebalancedCntrs[idx] += rbRec.range();
 
-                            if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
-                                doneParts.add(rbRec.partitionId());
+                                log.info("TX: rollbacrecord node=" + grp.cacheObjectContext().kernalContext().config().getIgniteInstanceName() +
+                                    ", rebCntr=" + rebalancedCntrs[idx] + ", locCntr=" + grp.topology().localPartition(rbRec.partitionId()).dataStore().partUpdateCounter());
+
+                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
+                                    doneParts.add(rbRec.partitionId()); // Add to done set immediately.
+                            }
                         }
                     }
                 }
+
+                // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
+                assert entryIt != null || doneParts.size() == partMap.size() :
+                    "Reached end of WAL but not all partitions are done";
             }
         }
     }
@@ -1894,12 +1923,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void updateCounter(long start, long delta) {
+        @Override public boolean updateCounter(long start, long delta) {
             try {
                 CacheDataStore delegate0 = init0(false);
 
-                if (delegate0 != null)
-                    delegate0.updateCounter(start, delta);
+                return delegate0 != null && delegate0.updateCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

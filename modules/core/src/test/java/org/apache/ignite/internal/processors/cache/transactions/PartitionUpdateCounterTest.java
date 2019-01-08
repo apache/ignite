@@ -23,11 +23,17 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * TODO FIXME add multithreaded test.
  */
+
+@RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    @Test
     public void testPrimaryModeSimple() {
         PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 
@@ -57,6 +63,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertTrue(pc.get() == pc.reserved());
     }
 
+    @Test
     public void testBackupModeSimple() {
         PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 
@@ -83,6 +90,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
     }
 
+    @Test
     public void testBackupModeBatch() {
         int[][] updates = generateUpdates(1000, 5);
 
@@ -118,6 +126,20 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
                 pc = pc0;
             }
         }
+    }
+
+    @Test
+    public void testStaleUpdate() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        assertTrue(pc.update(0, 1));
+        assertFalse(pc.update(0, 1));
+
+        assertTrue(pc.update(2, 1));
+        assertFalse(pc.update(2, 1));
+
+        assertTrue(pc.update(1, 1));
+        assertFalse(pc.update(1, 1));
     }
 
     /**

@@ -137,6 +137,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         boolean client = igniteInstanceName.startsWith(CLIENT_GRID_NAME);
 
+        cfg.setFailureDetectionTimeout(100000000000000L);
+
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
@@ -262,9 +264,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         clientWrappedSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridNearTxPrepareRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
                     if (!req.last())
@@ -275,6 +277,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
                 }
                 else if (msg instanceof GridNearTxFinishRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
 
                     futMap.put(req.futureId(), req.version());
@@ -368,9 +372,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         TxCallback cb) {
         return new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridDhtTxPrepareRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
                     if (!req.last())
@@ -386,6 +390,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforeBackupPrepare(from, to, primTx, createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridDhtTxFinishRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
 
                     GridCacheVersion nearVer = nearToLocVerMap.get(req.version());
@@ -399,6 +405,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforeBackupFinish(from, to, primTx, backupTx, nearVer.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridNearTxPrepareResponse) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
 
                     IgniteEx from = fromNode(wrappedPrimSpi);
@@ -410,6 +418,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.afterPrimaryPrepare(from, primTx, ver.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridNearTxFinishResponse) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
 
                     IgniteEx from = fromNode(wrappedPrimSpi);
@@ -428,10 +438,10 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         Map<IgniteUuid, GridCacheVersion> futMap, TxCallback cb) {
         return new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx from = fromNode(wrappedBackupSpi);
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridDhtTxPrepareResponse) {
+                    IgniteEx from = fromNode(wrappedBackupSpi);
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxPrepareResponse resp = (GridDhtTxPrepareResponse)msg;
 
                     GridCacheVersion ver = futMap.get(resp.futureId());
@@ -444,6 +454,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.afterBackupPrepare(to, from, backupTx, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
                 }
                 else if (msg instanceof GridDhtTxFinishResponse) {
+                    IgniteEx from = fromNode(wrappedBackupSpi);
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxFinishResponse resp = (GridDhtTxFinishResponse)msg;
 
                     GridCacheVersion ver = futMap.get(resp.futureId());
@@ -753,7 +766,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 this.assigns.put(entry.getKey(),
                     IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
             }
-
         }
 
         /** */

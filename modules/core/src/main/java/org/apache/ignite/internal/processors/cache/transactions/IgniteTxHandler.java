@@ -108,6 +108,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.writes;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -2275,13 +2276,17 @@ public class IgniteTxHandler {
                     if (part != null && part.reserve()) {
                         try {
                             if (part.state() != GridDhtPartitionState.RENTING) {
-                                // Need to log rolled back range for logical recovery.
-                                if (rollback && part.group().persistenceEnabled() && part.group().walEnabled()) {
-                                    ctx.wal().log(new RollbackRecord(part.group().groupId(), part.id(),
-                                        counter.initialCounter(i), counter.updatesCount(i)));
-                                }
+                                boolean updated = part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
 
-                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                                // Need to log rolled back range for logical recovery.
+                                if (updated && rollback && part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                    RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
+                                        counter.initialCounter(i), counter.updatesCount(i));
+
+                                    log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
+
+                                    ctx.wal().log(rec);
+                                }
                             }
                             else
                                 invalid = true;

@@ -82,19 +82,28 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     /** */
     @Test
     public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_1() throws Exception {
-        doTestPartialPrepare_2tx(true, new int[] {3, 7},  new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
+        // Txs not fully prepared and will be rolled back.
+        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
     @Test
     public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_2() throws Exception {
+        // Will generate hole due to skipped tx0. Should be closed by finalizeUpdateCounters.
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
     }
 
     /** */
     @Test
-    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_1_3() throws Exception {
-        doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {1, 0}, new int[] {1, 0}, new int[] {1, 0}, 7);
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_2_1() throws Exception {
+        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
+    }
+
+    /** */
+    @Test
+    public void testPrepareCommitReorderFailOnBackupBecausePrimaryLeft2Tx_2_2() throws Exception {
+        // Will generate hole due to skipped tx0. Should be closed by finalizeUpdateCounters.
+        doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 7);
     }
 
     /** */
@@ -195,7 +204,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                                 assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
                                 assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
 
-                                stopGrid(skipCheckpoint, backup.name()); // Will stop backup node before all commits are applied.
+                                runAsync(new Runnable() {
+                                    @Override public void run() {
+                                        stopGrid(skipCheckpoint, backup.name()); // Will stop backup node before all commits are applied.
+                                    }
+                                });
 
                                 return true;
                             }
@@ -374,12 +387,13 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * 4. Prepare tx0 on backup1.
      * 4. Prepare tx1 on backup2
      * 5. Fail primary.
-     * 6. Validate partitions integrity after node left. No holes are expected. No committed data are expected.
+     * 6. Validate partitions integrity after node left.
      *
      * @param skipCheckpoint
      * @throws Exception
      */
-    private void doTestPartialPrepare_2tx(boolean skipCheckpoint, int[] sizes, int[] assignOrder, int[] backup1Order, int[] backup2Order, int expCommSize) throws Exception {
+    private void doTestPartialPrepare_2tx(boolean skipCheckpoint, int[] sizes, int[] assignOrder, int[] backup1Order,
+        int[] backup2Order, int expCommSize) throws Exception {
         AtomicInteger cntr = new AtomicInteger();
 
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
@@ -440,7 +454,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * 1. Start 2 concurrent txs.
      * 2. Assign counters in specified order.
      * 3. Prepare tx0 only on backup2.
-     * 4. Finish tx1only on backup2.
+     * 4. Finish tx1 only on backup2.
      * 5. Stop primary and backup1.
      * 6. Validate partitions.
      * 7. Start backup2.
@@ -608,11 +622,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
-
         assertCountersSame(PARTITION_ID, true);
 
-        // Recovery will commit backup transactions and primary will rebalance from all.
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+
+        // Recovery will commit backup transactions and primary should sync correctly.
         assertEquals(TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
     }
 }
