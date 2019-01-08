@@ -923,7 +923,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw timeout exception");
         }
         catch (Exception e) {
-            assertTrue(e.getCause() instanceof TimeoutException);
+            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
         }
     }
 

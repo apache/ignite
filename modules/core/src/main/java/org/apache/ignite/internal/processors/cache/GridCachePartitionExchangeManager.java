@@ -1101,6 +1101,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
         }
 
+        if (grps.isEmpty()) {
+            if (log.isDebugEnabled())
+                log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
+
+            return;
+        }
+
         ClusterNode oldest = cctx.discovery().oldestAliveServerNode(NONE);
 
         if (oldest == null) {

@@ -2259,6 +2259,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         initCacheContext(cacheCtx, ccfg, desc.deploymentId());
 
+
         return cacheCtx;
     }
 
@@ -2364,7 +2365,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param affNode {@code true} if it is affinity node for cache.
      * @throws IgniteCheckedException if failed.
      */
-    public void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
+    private void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
         if (sharedCtx.pageStore() != null && affNode)
             initializationProtector.protect(
                 desc.groupDescriptor().groupId(),
@@ -2552,13 +2553,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled()) {
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
-                    ", id=" + cacheCtx.cacheId() +
-                    (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                    ", dataRegionName=" + dataRegion +
-                    ", mode=" + cfg.getCacheMode() +
-                    ", atomicity=" + cfg.getAtomicityMode() +
-                    ", backups=" + cfg.getBackups() +
-                    ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", id=" + cacheCtx.cacheId() +
+                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
+                ", dataRegionName=" + dataRegion +
+                ", mode=" + cfg.getCacheMode() +
+                ", atomicity=" + cfg.getAtomicityMode() +
+                ", backups=" + cfg.getBackups() +
+                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
         }
 
         return cacheCtx;
@@ -5504,6 +5505,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
         }
     }
+
+    /**
 
     /**
      * Handle of fail during cache start.

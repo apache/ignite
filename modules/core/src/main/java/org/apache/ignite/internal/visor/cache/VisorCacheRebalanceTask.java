@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Pre-loads caches. Made callable just to conform common pattern.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheRebalanceTask extends VisorOneNodeTask<VisorCacheRebalanceTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

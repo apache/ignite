@@ -385,7 +385,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean recordIgniteEvt = primary && !internal && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
-            if (preload && !lsnr.notifyExisting())
+            if (preload && !lsnr.notifyExisting() || lsnr.isPrimaryOnly() && !primary)
                 continue;
 
             if (!initialized) {
@@ -722,12 +722,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         final CacheContinuousQueryHandler hnd = clsr.apply();
 
+        boolean locOnly = cctx.isLocal() || loc;
+
         hnd.taskNameHash(taskNameHash);
         hnd.skipPrimaryCheck(skipPrimaryCheck);
         hnd.notifyExisting(notifyExisting);
         hnd.internal(internal);
         hnd.keepBinary(keepBinary);
-        hnd.localCache(cctx.isLocal());
+        hnd.localOnly(locOnly);
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
             F.nodeForNodeId(cctx.localNodeId()) : cctx.group().nodeFilter();
@@ -739,13 +741,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         try {
             id = cctx.kernalContext().continuous().startRoutine(
                 hnd,
-                internal && loc,
+                locOnly,
                 bufSize,
                 timeInterval,
                 autoUnsubscribe,
                 pred).get();
 
-            if (hnd.isQuery() && cctx.userCache() && !onStart)
+            if (hnd.isQuery() && cctx.userCache() && !locOnly && !onStart)
                 hnd.waitTopologyFuture(cctx.kernalContext());
         }
         catch (NodeStoppingException e) {

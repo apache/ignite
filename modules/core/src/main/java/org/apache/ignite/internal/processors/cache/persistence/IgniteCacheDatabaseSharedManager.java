@@ -48,6 +48,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -694,6 +695,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public DataStorageMetrics persistentStoreMetrics() {
         return null;
+    }
+
+    /**
+     * @param cachesToStart Started caches.
+     * @param restoreMetastorageOnly Apply updates only for metastorage.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readCheckpointAndRestoreMemory(
+            List<DynamicCacheDescriptor> cachesToStart,
+            boolean restoreMetastorageOnly
+    ) throws IgniteCheckedException {
+        // No-op.
     }
 
     /**

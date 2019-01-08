@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -71,6 +73,10 @@ class GridDhtPartitionSupplier {
     /** Supply context map. T3: nodeId, topicId, topVer. */
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
 
+    /** Override for rebalance throttle. */
+    private long rebalanceThrottleOverride =
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_REBALANCE_THROTTLE_OVERRIDE, 0);
+
     /**
      * @param grp Cache group.
      */
@@ -82,6 +88,9 @@ class GridDhtPartitionSupplier {
         log = grp.shared().logger(getClass());
 
         top = grp.topology();
+
+        if (rebalanceThrottleOverride > 0)
+            LT.info(log, "Using rebalance throttle override: " + rebalanceThrottleOverride);
     }
 
     /**
@@ -511,7 +520,9 @@ class GridDhtPartitionSupplier {
             grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 
             // Throttle preloading.
-            if (grp.config().getRebalanceThrottle() > 0)
+            if (rebalanceThrottleOverride > 0)
+                U.sleep(rebalanceThrottleOverride);
+            else if (grp.config().getRebalanceThrottle() > 0)
                 U.sleep(grp.config().getRebalanceThrottle());
 
             return true;
