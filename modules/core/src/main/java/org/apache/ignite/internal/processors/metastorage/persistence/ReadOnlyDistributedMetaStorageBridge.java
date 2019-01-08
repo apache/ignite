@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
@@ -143,40 +142,22 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             else {
                 startupExtras.verToSnd = dms.ver = storedVer;
 
-                Serializable guard = metastorage.read(historyGuardKey(storedVer.id));
+                DistributedMetaStorageHistoryItem histItem =
+                    (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
 
-                if (guard != null) {
-                    // New value is already known, but listeners may not have been invoked.
-                    DistributedMetaStorageHistoryItem histItem =
-                        (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
-
-                    assert histItem != null;
+                if (histItem != null) {
+                    startupExtras.verToSnd = storedVer.nextVersion(histItem);
 
                     startupExtras.deferredUpdates.add(histItem);
                 }
                 else {
-                    guard = metastorage.read(historyGuardKey(storedVer.id + 1));
+                    histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
 
-                    if (guard != null) {
-                        DistributedMetaStorageHistoryItem histItem =
-                            (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
+                    if (histItem != null) {
+                        byte[] valBytes = metastorage.getData(localKey(histItem.key));
 
-                        if (histItem != null) {
-                            startupExtras.verToSnd = storedVer.nextVersion(histItem);
-
-                            startupExtras.deferredUpdates.add(histItem);
-                        }
-                    }
-                    else {
-                        DistributedMetaStorageHistoryItem histItem =
-                            (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
-
-                        if (histItem != null) {
-                            byte[] valBytes = metastorage.getData(localKey(histItem.key));
-
-                            if (!Arrays.equals(valBytes, histItem.valBytes))
-                                startupExtras.firstToWrite = histItem;
-                        }
+                        if (!Arrays.equals(valBytes, histItem.valBytes))
+                            startupExtras.firstToWrite = histItem;
                     }
                 }
 

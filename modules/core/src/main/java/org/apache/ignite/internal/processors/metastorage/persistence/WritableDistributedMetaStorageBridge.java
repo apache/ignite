@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
@@ -83,17 +82,11 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         Serializable val,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        String histGuardKey = historyGuardKey(dms.ver.id + 1);
-
-        metastorage.write(histGuardKey, DUMMY_VALUE);
-
         metastorage.write(historyItemKey(dms.ver.id + 1), histItem);
 
         dms.ver = dms.ver.nextVersion(histItem);
 
         metastorage.write(historyVersionKey(), dms.ver);
-
-        metastorage.remove(histGuardKey);
 
         if (notifyListeners)
             dms.notifyListeners(histItem.key, read(histItem.key), val);
@@ -152,16 +145,5 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
         if (storedVer == null)
             metastorage.write(historyVersionKey(), DistributedMetaStorageVersion.INITIAL_VERSION);
-        else {
-            Serializable guard = metastorage.read(historyGuardKey(dms.ver.id + 1));
-
-            if (guard != null) {
-                DistributedMetaStorageHistoryItem histItem =
-                    (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver.id + 1));
-
-                if (histItem == null)
-                    metastorage.remove(historyGuardKey(dms.ver.id + 1));
-            }
-        }
     }
 }

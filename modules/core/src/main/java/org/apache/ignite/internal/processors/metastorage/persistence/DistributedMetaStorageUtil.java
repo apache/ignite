@@ -35,9 +35,6 @@ class DistributedMetaStorageUtil {
     private static final String HISTORY_VER_KEY = "hist-ver";
 
     /** */
-    private static final String HISTORY_GUARD_KEY_PREFIX = "hist-grd-";
-
-    /** */
     private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
 
     /** */
@@ -63,11 +60,6 @@ class DistributedMetaStorageUtil {
     /** */
     public static String localKeyPrefix() {
         return COMMON_KEY_PREFIX + KEY_PREFIX;
-    }
-
-    /** */
-    public static String historyGuardKey(long ver) {
-        return COMMON_KEY_PREFIX + HISTORY_GUARD_KEY_PREFIX + ver;
     }
 
     /** */
