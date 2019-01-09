@@ -29,7 +29,7 @@ public class IgniteIgnoredTestSuite extends TestSuite {
      * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
-        IgniteSpecialBinaryTestSuite suite = new IgniteSpecialBinaryTestSuite(null, "Ignite Ignored Test Suite");
+        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Test Suite");
 
         /* --- AWS --- */
         suite.addTest(IgniteS3TestSuite.suite());

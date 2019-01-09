@@ -27,7 +27,7 @@ public class IgniteIgnoredBinaryTestSuite extends TestSuite {
      * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
-        IgniteSpecialBinaryTestSuite suite = new IgniteSpecialBinaryTestSuite(null, "Ignite Ignored Binary Test Suite");
+        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Binary Test Suite");
 
         /* --- QUERY --- */
         suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());

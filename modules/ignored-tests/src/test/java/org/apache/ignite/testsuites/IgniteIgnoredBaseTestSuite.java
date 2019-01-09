@@ -30,17 +30,17 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Base class for special test suites with ignored tests for Binary mode.
+ * Base class for special test suites with ignored tests.
  *
  * TODO IGNITE-10777 rework this and respective subclasses for JUnit 4.
  */
-class IgniteSpecialBinaryTestSuite extends TestSuite {
+class IgniteIgnoredBaseTestSuite extends TestSuite {
     /**
      * Constructor.
      *
      * @param theCls TestCase class
      */
-    private IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls) {
+    private IgniteIgnoredBaseTestSuite(Class<? extends TestCase> theCls) {
         this(theCls, null);
     }
 
@@ -50,7 +50,7 @@ class IgniteSpecialBinaryTestSuite extends TestSuite {
      * @param theCls TestCase class
      * @param name Test suite name.
      */
-    IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls, String name) {
+    IgniteIgnoredBaseTestSuite(Class<? extends TestCase> theCls, String name) {
         if (theCls != null)
             addTestsFromTestCase(theCls);
 
@@ -61,8 +61,8 @@ class IgniteSpecialBinaryTestSuite extends TestSuite {
     /** {@inheritDoc} */
     @Override public void addTest(Test test) {
         // Ignore empty test suites.
-        if (test instanceof IgniteSpecialBinaryTestSuite) {
-            IgniteSpecialBinaryTestSuite suite = (IgniteSpecialBinaryTestSuite)test;
+        if (test instanceof IgniteIgnoredBaseTestSuite) {
+            IgniteIgnoredBaseTestSuite suite = (IgniteIgnoredBaseTestSuite)test;
 
             if (suite.testCount() == 0)
                 return;
@@ -73,7 +73,7 @@ class IgniteSpecialBinaryTestSuite extends TestSuite {
 
     /** {@inheritDoc} */
     @Override public void addTestSuite(Class<? extends TestCase> testCls) {
-        addTest(new IgniteSpecialBinaryTestSuite(testCls));
+        addTest(new IgniteIgnoredBaseTestSuite(testCls));
     }
 
     /**

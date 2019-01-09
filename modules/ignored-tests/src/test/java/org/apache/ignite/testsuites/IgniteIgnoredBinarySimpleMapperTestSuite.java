@@ -27,7 +27,7 @@ public class IgniteIgnoredBinarySimpleMapperTestSuite extends TestSuite {
      * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
-        IgniteSpecialBinaryTestSuite suite = new IgniteSpecialBinaryTestSuite(null, "Ignite Ignored Binary Simple Mapper Test Suite");
+        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Binary Simple Mapper Test Suite");
 
         /* --- QUERY --- */
         suite.addTest(IgniteBinarySimpleNameMapperCacheQueryTestSuite.suite());
