@@ -1447,7 +1447,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
+        protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
@@ -1480,6 +1480,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
+            pCntr = new PartitionUpdateCounter(log, partId);
         }
 
         /**
@@ -1568,7 +1569,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return pCntr.next();
+            long next = pCntr.next();
+
+            //log.info("TX: next=" + next + ", partId=" + partId + ", cntr=" + pCntr);
+
+            return next;
         }
 
         /** {@inheritDoc} */
@@ -1583,7 +1588,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            return pCntr.reserve(delta);
+            long reserve = pCntr.reserve(delta);
+
+            //log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+
+            return reserve;
         }
 
         /** {@inheritDoc} */

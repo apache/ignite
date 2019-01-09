@@ -992,9 +992,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (primaryCntr == null) // Primary node.
             nextCntr = store.nextUpdateCounter();
         else {
+            // Backup.
             assert primaryCntr != 0;
 
             nextCntr = primaryCntr;
+
+            store.updateCounter(primaryCntr - 1, 1);
         }
 
         if (grp.sharedGroup())
@@ -1037,7 +1040,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update counter value.
+     * @param val Update counter value. Invoke only from
      */
     public void updateCounter(long val) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))

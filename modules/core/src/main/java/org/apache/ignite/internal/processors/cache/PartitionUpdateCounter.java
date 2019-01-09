@@ -59,12 +59,20 @@ public class PartitionUpdateCounter {
     /** Initial counter points to last sequential update after recovery. */
     private long initCntr;
 
+    private int partId;
+
     /**
      * @param log Logger.
      */
     public PartitionUpdateCounter(IgniteLogger log) {
         this.log = log;
     }
+
+    public PartitionUpdateCounter(IgniteLogger log, int partId) {
+        this.log = log;
+        this.partId = partId;
+    }
+
 
     /**
      * @param initUpdCntr Initial update counter.
@@ -104,7 +112,11 @@ public class PartitionUpdateCounter {
      * @return Next update counter.
      */
     public long next() {
-        return cntr.incrementAndGet();
+        long reserved = reserve(1);
+
+        update(reserved, 1);
+
+        return reserved + 1;
     }
 
     /**
@@ -143,7 +155,7 @@ public class PartitionUpdateCounter {
         long cur = cntr.get(), next;
 
         if (cur > start) {
-            log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
+            log.warning("Stale update counter task [partId=" + partId + ", cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
 
             return false;
         }
