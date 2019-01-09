@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -72,6 +73,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+
+    /** */
+    private static final String UNEXPECTED_EXCEPTION_MSG = "Unexpected exception was thrown";
+
+    /** */
+    private static final String EXPECTED_EXCEPTION_MSG = "BaselineTopology of joining node";
+
     /** */
     private static final int DEFAULT_CACHES_COUNT = 2;
 
@@ -358,7 +366,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testJoinWhileActivate1_WithCache_Server() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10421");
@@ -643,7 +651,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateSimple_5_Servers() throws Exception {
         deactivateSimple(5, 0, 0);
     }
@@ -651,7 +659,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateSimple_5_Servers2() throws Exception {
         deactivateSimple(5, 0, 4);
     }
@@ -659,7 +667,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateSimple_5_Servers_5_Clients() throws Exception {
         deactivateSimple(5, 4, 0);
     }
@@ -667,7 +675,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
         deactivateSimple(5, 4, 6);
     }
@@ -757,7 +765,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testClientReconnectClusterActive() throws Exception {
         testReconnectSpi = true;
 
@@ -946,7 +954,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testClientReconnectClusterActivateInProgress() throws Exception {
         clientReconnectClusterActivated(true);
     }
@@ -1266,17 +1274,45 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         ignite(4).cluster().active(true);
 
-        doFinalChecks();
-    }
+        for (int i = 0; i < 4; i++) {
+            if (!persistenceEnabled()) {
+                startGrid(i);
+            }
+            else {
+                int j = i;
 
-    /**
-     * Verifies correctness of cache operations when working in in-memory mode.
-     */
-    protected void doFinalChecks() throws Exception {
-        for (int i = 0; i < 4; i++)
-            startGrid(i);
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try {
+                            startGrid(j);
+                        }
+                        catch (Exception e) {
+                            Throwable cause0 = e.getCause();
 
-        checkCaches1(6);
+                            if (cause0 == null)
+                                throw new Exception(UNEXPECTED_EXCEPTION_MSG, e);
+
+                            Throwable rootCause = cause0.getCause();
+
+                            if (!(rootCause instanceof IgniteSpiException)) {
+                                throw new Exception(UNEXPECTED_EXCEPTION_MSG,
+                                        rootCause == null ? cause0 : rootCause
+                                    );
+                            }
+
+                            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " exception thrown for " + j);
+
+                            throw (IgniteSpiException)rootCause;
+                        }
+
+                        return null;
+                    }
+                }, IgniteSpiException.class, EXPECTED_EXCEPTION_MSG);
+            }
+        }
+
+        if (!persistenceEnabled())
+            checkCaches1(6);
     }
 
     /**

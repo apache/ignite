@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -79,7 +78,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivateCachesRestore_SingleNode() throws Exception {
         activateCachesRestore(1, false);
     }
@@ -87,7 +86,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivateCachesRestore_SingleNode_WithNewCaches() throws Exception {
         activateCachesRestore(1, true);
     }
@@ -95,7 +94,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivateCachesRestore_5_Servers() throws Exception {
         activateCachesRestore(5, false);
     }
@@ -103,7 +102,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
         activateCachesRestore(5, true);
     }
@@ -113,7 +112,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateInactiveCluster() throws Exception {
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
@@ -236,30 +235,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     }
 
     /**
-     * Verifies correctness of BaselineTopology checks when working in persistent mode.
-     */
-    @Override protected void doFinalChecks() {
-        for (int i = 0; i < 4; i++) {
-            try {
-                startGrid(i);
-            }
-            catch (Exception e) {
-                Throwable cause0 = e.getCause();
-                assert cause0 != null;
-
-                Throwable rootCause = cause0.getCause();
-                assert rootCause != null;
-
-                assert rootCause instanceof IgniteSpiException;
-                rootCause.getMessage().contains("not compatible");
-            }
-        }
-    }
-
-    /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7330">IGNITE-7330</a> for more information about context of the test
      */
-    @Test
+//    @Test
     public void testClientJoinsWhenActivationIsInProgress() throws Exception {
         startGridsAndLoadData(5);
 
@@ -318,7 +296,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testActivateCacheRestoreConfigurationConflict() throws Exception {
         final int SRVS = 3;
 
@@ -357,7 +335,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
         IgniteEx srv = (IgniteEx) startGrids(3);
 
