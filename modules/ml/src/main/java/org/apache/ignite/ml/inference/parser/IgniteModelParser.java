@@ -17,24 +17,33 @@
 
 package org.apache.ignite.ml.inference.parser;
 
-import org.tensorflow.Graph;
-import org.tensorflow.Session;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Implementation of TensorFlow model parser that accepts serialized graph definition.
+ * Implementation of model parser that accepts serialized {@link IgniteFunction}.
  *
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public class TensorFlowGraphInfModelParser<I, O> extends TensorFlowBaseInfModelParser<I, O> {
+public class IgniteModelParser<I, O> implements ModelParser<I, O, IgniteModel<I, O>> {
     /** */
-    private static final long serialVersionUID = -1872566748640565856L;
+    private static final long serialVersionUID = -4624683614990816434L;
 
     /** {@inheritDoc} */
-    @Override public Session parseModel(byte[] mdl) {
-        Graph graph = new Graph();
-        graph.importGraphDef(mdl);
+    @Override public IgniteModel<I, O> parse(byte[] mdl) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(mdl);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+            @SuppressWarnings("unchecked")
+            IgniteModel<I, O> res = (IgniteModel<I, O>)ois.readObject();
 
-        return new Session(graph);
+            return res;
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

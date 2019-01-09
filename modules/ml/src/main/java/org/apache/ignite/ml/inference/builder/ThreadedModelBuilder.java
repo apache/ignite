@@ -21,15 +21,15 @@ import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
  * Implementation of asynchronous inference model builder that builds model processed locally utilizing specified number
  * of threads.
  */
-public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
+public class ThreadedModelBuilder implements AsyncModelBuilder {
     /** Number of threads to be utilized for model inference. */
     private final int threads;
 
@@ -38,13 +38,13 @@ public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
      *
      * @param threads Number of threads to be utilized for model inference.
      */
-    public ThreadedInfModelBuilder(int threads) {
+    public ThreadedModelBuilder(int threads) {
         this.threads = threads;
     }
 
     /** {@inheritDoc} */
-    @Override public <I extends Serializable, O extends Serializable> InfModel<I, Future<O>> build(
-        InfModelReader reader, InfModelParser<I, O, ?> parser) {
+    @Override public <I extends Serializable, O extends Serializable> Model<I, Future<O>> build(
+        ModelReader reader, ModelParser<I, O, ?> parser) {
         return new ThreadedInfModel<>(parser.parse(reader.read()), threads);
     }
 
@@ -55,9 +55,9 @@ public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
      * @param <O> Type of model output.
      */
     private static class ThreadedInfModel<I extends Serializable, O extends Serializable>
-        implements InfModel<I, Future<O>> {
+        implements Model<I, Future<O>> {
         /** Inference model. */
-        private final InfModel<I, O> mdl;
+        private final Model<I, O> mdl;
 
         /** Thread pool. */
         private final ExecutorService threadPool;
@@ -68,14 +68,14 @@ public class ThreadedInfModelBuilder implements AsyncInfModelBuilder {
          * @param mdl Inference model.
          * @param threads Thread pool.
          */
-        ThreadedInfModel(InfModel<I, O> mdl, int threads) {
+        ThreadedInfModel(Model<I, O> mdl, int threads) {
             this.mdl = mdl;
             this.threadPool = Executors.newFixedThreadPool(threads);
         }
 
         /** {@inheritDoc} */
-        @Override public Future<O> apply(I input) {
-            return threadPool.submit(() -> mdl.apply(input));
+        @Override public Future<O> predict(I input) {
+            return threadPool.submit(() -> mdl.predict(input));
         }
 
         /** {@inheritDoc} */

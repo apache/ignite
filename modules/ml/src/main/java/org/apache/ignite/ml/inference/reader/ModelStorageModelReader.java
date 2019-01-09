@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 /**
  * Model reader that reads directory or file from model storage and serializes it using {@link DirectorySerializer}.
  */
-public class ModelStorageInfModelReader implements InfModelReader {
+public class ModelStorageModelReader implements ModelReader {
     /** */
     private static final long serialVersionUID = -5878564742783562872L;
 
@@ -41,7 +41,7 @@ public class ModelStorageInfModelReader implements InfModelReader {
      *
      * @param path Path to the directory or file.
      */
-    public ModelStorageInfModelReader(String path, IgniteSupplier<ModelStorage> mdlStorageSupplier) {
+    public ModelStorageModelReader(String path, IgniteSupplier<ModelStorage> mdlStorageSupplier) {
         this.path = path;
         this.mdlStorageSupplier = mdlStorageSupplier;
     }
@@ -51,7 +51,7 @@ public class ModelStorageInfModelReader implements InfModelReader {
      *
      * @param path Path to the directory or file.
      */
-    public ModelStorageInfModelReader(String path) {
+    public ModelStorageModelReader(String path) {
         this(path, () -> new ModelStorageFactory().getModelStorage(Ignition.ignite()));
     }
 
