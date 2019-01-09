@@ -158,7 +158,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\system_dsn.cpp" />
-    <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
@@ -200,10 +199,6 @@
     <ClCompile Include="..\..\src\sql\sql_parser.cpp" />
     <ClCompile Include="..\..\src\sql\sql_set_streaming_command.cpp" />
     <ClCompile Include="..\..\src\sql\sql_utils.cpp" />
-    <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp" />
-    <ClCompile Include="..\..\src\ssl\ssl_api.cpp" />
-    <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
-    <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\streaming\streaming_batch.cpp" />
     <ClCompile Include="..\..\src\streaming\streaming_context.cpp" />
@@ -256,22 +251,17 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_command.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_lexer.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_set_streaming_command.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_token.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_utils.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_api.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h" />
     <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
