@@ -51,6 +51,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -2033,8 +2035,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Finish merged future to allow GridCachePartitionExchangeManager.ExchangeFutureSet cleanup.
      */
-    public void finishMerged() {
-        super.onDone(null, null);
+    public void finishMerged(AffinityTopologyVersion resVer) {
+        synchronized (mux) {
+            if (state == null) state = ExchangeLocalState.MERGED;
+        }
+
+        done.set(true);
+
+        super.onDone(resVer, null);
+    }
+
+    /**
+     * @return {@code True} if future was merged.
+     */
+    public boolean isMerged() {
+        synchronized (mux) {
+            return state == ExchangeLocalState.MERGED;
+        }
     }
 
     /**
@@ -4426,7 +4443,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                                 cctx.kernalContext().closure().callLocal(new Callable<Void>() {
                                     @Override public Void call() throws Exception {
-                                        newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
+                                        try {
+                                            newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
+                                        }
+                                        catch (Throwable t) {
+                                            U.error(log, "Failed to initialize new coordinator future [topVer=" + initialVersion() + "]", t);
+
+                                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+
+                                            throw t;
+                                        }
 
                                         newCrdFut.listen(new CI1<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {

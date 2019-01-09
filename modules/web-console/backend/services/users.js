@@ -53,6 +53,8 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
+                    user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    user.activated = false;
 
                     if (settings.server.disableSignup && !user.admin && !createdByAdmin)
                         throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
@@ -73,15 +75,27 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     });
                 })
                 .then((registered) => {
-                    registered.resetPasswordToken = utilsService.randomString(settings.tokenLength);
+                    return mongo.Space.create({name: 'Personal space', owner: registered._id})
+                        .then(() => registered)
+                })
+                .then((registered) => {
+                    if (settings.activation.enabled) {
+                        registered.activationToken = utilsService.randomString(settings.tokenLength);
+                        registered.activationSentAt = new Date();
 
-                    return registered.save()
-                        .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
-                        .then(() => {
-                            mailsService.emailUserSignUp(host, registered, createdByAdmin);
+                        if (!createdByAdmin) {
+                            return registered.save()
+                                .then(() => {
+                                    mailsService.emailUserActivation(host, registered);
 
-                            return registered;
-                        });
+                                    throw new errors.MissingConfirmRegistrationException(registered.email);
+                                });
+                        }
+                    }
+
+                    mailsService.emailUserSignUp(host, registered, createdByAdmin);
+
+                    return registered;
                 });
         }
 
@@ -93,6 +107,9 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
          */
         static save(changed) {
             delete changed.admin;
+            delete changed.activated;
+            delete changed.activationSentAt;
+            delete changed.activationToken;
 
             return mongo.Account.findById(changed._id).exec()
                 .then((user) => {
@@ -157,6 +174,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                             country: 1,
                             lastLogin: 1,
                             lastActivity: 1,
+                            activated: 1,
                             spaces: {
                                 $filter: {
                                     input: '$spaces',

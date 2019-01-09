@@ -905,7 +905,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
-        final ServiceTopologyCallable call = new ServiceTopologyCallable(name, pendingJobCtxs);
+        final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
 
         return ctx.closure().callAsyncNoFailover(
             GridClosureCallMode.BROADCAST,
@@ -2079,16 +2079,11 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         @LoggerResource
         private transient IgniteLogger log;
 
-        /** */
-        private final List<ComputeJobContext> pendingCtxs;
-
         /**
          * @param svcName Service name.
-         * @param pendingCtxs Pending compute job contexts that waiting for utility cache initialization.
          */
-        public ServiceTopologyCallable(String svcName, List<ComputeJobContext> pendingCtxs) {
+        public ServiceTopologyCallable(String svcName) {
             this.svcName = svcName;
-            this.pendingCtxs = pendingCtxs;
         }
 
         /** {@inheritDoc} */
@@ -2096,6 +2091,8 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             IgniteInternalCache<Object, Object> cache = ignite.context().cache().utilityCache();
 
             if (cache == null) {
+                List<ComputeJobContext> pendingCtxs = ((GridServiceProcessor)ignite.context().service()).pendingJobCtxs;
+
                 synchronized (pendingCtxs) {
                     // Double check cache reference after lock acqusition.
                     cache = ignite.context().cache().utilityCache();

@@ -53,19 +53,19 @@ public class PipelineMdlTest {
     /** */
     private void verifyPredict(PipelineMdl mdl) {
         Vector observation = new DenseVector(new double[] {1.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, 2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {-2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, -2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.predict(observation), PRECISION);
     }
 
     /**

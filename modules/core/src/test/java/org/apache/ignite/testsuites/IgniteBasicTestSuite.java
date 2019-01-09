@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConne
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -73,7 +74,6 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
-import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -144,7 +144,6 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridClosureProcessorRemoteTest.class));
         suite.addTest(new JUnit4TestAdapter(GridClosureSerializationTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClosureServiceClientsNodesTest.class));
         suite.addTest(new JUnit4TestAdapter(GridStartStopSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesOnDaemonNodeSelfTest.class));
@@ -220,6 +219,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
 
         suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(CacheLocalGetSerializationTest.class));
 
         return suite;
     }

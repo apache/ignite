@@ -120,7 +120,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(1_000)) {
             Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
-            Matrix outputMatrix = mdl.apply(input);
+            Matrix outputMatrix = mdl.predict(input);
 
             int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
 
