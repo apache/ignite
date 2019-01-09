@@ -228,7 +228,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCoordinatorChangeAfterExchangesMerge() throws Exception {
         // Delay demand messages sending to suspend late affinity assignment.
         spiFactory = () -> new DynamicDelayingCommunicationSpi(msg -> {
