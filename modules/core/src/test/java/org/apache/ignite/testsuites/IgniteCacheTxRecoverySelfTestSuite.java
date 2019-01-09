@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedTxOriginatingNodeFailureSelfTest;
@@ -32,36 +30,29 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Tx recovery self test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheCommitDelayTxRecoveryTest.class,
+
+    IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class,
+    IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest.class,
+    IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class,
+
+    GridCachePartitionedTxOriginatingNodeFailureSelfTest.class,
+    GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest.class,
+    GridCacheReplicatedTxOriginatingNodeFailureSelfTest.class,
+
+    GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest.class,
+    GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest.class,
+    GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest.class,
+
+    IgniteCacheTxRecoveryRollbackTest.class,
+    TxRecoveryStoreEnabledTest.class
+})
 public class IgniteCacheTxRecoverySelfTestSuite {
-    /**
-     * @return Cache API test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Cache tx recovery test suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheCommitDelayTxRecoveryTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedTxOriginatingNodeFailureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedTxOriginatingNodeFailureSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheTxRecoveryRollbackTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxRecoveryStoreEnabledTest.class));
-
-        return suite;
-    }
 }

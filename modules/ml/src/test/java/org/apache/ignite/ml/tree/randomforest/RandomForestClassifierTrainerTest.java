@@ -27,6 +27,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredicti
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -53,9 +54,10 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(5)
-            .withFeaturesCountSelectionStrgy(x -> 2);
+            .withFeaturesCountSelectionStrgy(x -> 2)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
@@ -80,7 +82,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(100)
             .withFeaturesCountSelectionStrgy(x -> 2)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
@@ -90,7 +92,7 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
-        assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), 0.01);
-        assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), 0.01);
+        assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.01);
+        assertEquals(originalMdl.predict(v), updatedOnEmptyDS.predict(v), 0.01);
     }
 }

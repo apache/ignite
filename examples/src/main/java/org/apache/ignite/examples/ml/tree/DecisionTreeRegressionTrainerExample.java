@@ -81,7 +81,7 @@ public class DecisionTreeRegressionTrainerExample {
 
             // Calculate score.
             for (int x = 0; x < 10; x++) {
-                double predicted = mdl.apply(VectorUtils.of(x));
+                double predicted = mdl.predict(VectorUtils.of(x));
 
                 System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
             }

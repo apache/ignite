@@ -32,11 +32,9 @@ import static org.junit.Assert.assertEquals;
  *
  */
 public class ConfigVariationsTestSuiteBuilderTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testDefaults() throws Exception {
+    public void testDefaults() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         assertEquals(4, dfltSuite.countTestCases());
@@ -58,12 +56,10 @@ public class ConfigVariationsTestSuiteBuilderTest {
         assertEquals(4 * 4 * 2 * 3, dfltCacheSuite.countTestCases());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("serial")
     @Test
-    public void testIgniteConfigFilter() throws Exception {
+    public void testIgniteConfigFilter() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         final AtomicInteger cnt = new AtomicInteger();
@@ -79,12 +75,10 @@ public class ConfigVariationsTestSuiteBuilderTest {
         assertEquals(dfltSuite.countTestCases() / 2, filteredSuite.countTestCases());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("serial")
     @Test
-    public void testCacheConfigFilter() throws Exception {
+    public void testCacheConfigFilter() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()
             .build();
@@ -103,14 +97,11 @@ public class ConfigVariationsTestSuiteBuilderTest {
         assertEquals(dfltSuite.countTestCases() / 2, filteredSuite.countTestCases());
     }
 
-    /**
-     *
-     */
-    private static class NoopTest extends IgniteConfigVariationsAbstractTest {
-        /**
-         * @throws Exception If failed.
-         */
-        public void test1() throws Exception {
+    /** */
+    public static class NoopTest extends IgniteConfigVariationsAbstractTest {
+        /** */
+        @Test
+        public void test1() {
             // No-op.
         }
     }

@@ -25,7 +25,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import junit.framework.TestResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -39,16 +38,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
- * TODO IGNITE-10739 redesign this and related classes to get rid of JUnit 3 features.
- *
- * @deprecated This class uses obsolete methods of JUnit 3 framework and because of that you need to use JUnit 3
- * naming convention for test cases in classes extending it. Also, Junit 4 annotations like {@code Before}
- * and {@code Ignore} may not work. It is expected to be reworked per IGNITE-10739.
  */
-@Deprecated
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int SERVER_NODE_IDX = 0;
@@ -62,47 +56,34 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** */
-    protected VariationsTestsConfig testsCfg;
+    /** Dummy initial stub to just let people launch test classes not from suite. */
+    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 1, false);
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /**
-     * @param testsCfg Tests configuration.
-     */
-    public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
-        assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
-            + ", newTestCfg=" + testsCfg + "]";
+    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
+    private static VariationsTestsConfig testsCfgInjected;
 
-        this.testsCfg = testsCfg;
+    /**
+     * @param testsCfgInjected Tests configuration.
+     */
+    public static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
+        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * Fallback to TestCase functionality.</p>
+     * IMPL NOTE when this override was introduced, alternative was to replace multiple usages of instance member
+     * {@code testsCfg} splattered all over the project with those of static one {@code testsCfgInjected} - kind
+     * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
+     * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
      */
-    @Override public int countTestCases() {
-        return countTestCasesFallback();
-    }
+    @Override protected void runTestCase(Statement testRoutine) throws Throwable {
+        testsCfg = testsCfgInjected;
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public void run(TestResult res) {
-        runFallback(res);
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public String getName() {
-        return getNameFallback();
+        super.runTestCase(testRoutine);
     }
 
     /** {@inheritDoc} */
@@ -191,6 +172,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
+        assert testsCfg != null: "Tests should be run using test suite.";
+
         return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 

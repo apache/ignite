@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQuery
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
+import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDateKeySelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
@@ -121,6 +122,8 @@ public class IgniteBinaryCacheQueryTestSuite2 {
         suite.addTest(new JUnit4TestAdapter(CacheQueryMemoryLeakTest.class));
 
         suite.addTest(new JUnit4TestAdapter(CreateTableWithDateKeySelfTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(CacheQueryEntityWithDateTimeApiFieldsTest.class));
 
         suite.addTest(new JUnit4TestAdapter(NonCollocatedRetryMessageSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(RetryCauseMessageSelfTest.class));

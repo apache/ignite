@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiPredicate;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -127,9 +126,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -151,8 +149,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
-@RunWith(JUnit4.class)
-public abstract class GridAbstractTest extends LegacySupport {
+public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -180,7 +177,7 @@ public abstract class GridAbstractTest extends LegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Lock to maintain integrity of {@link TestCounters}. */
+    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
     private final Lock runSerializer = new ReentrantLock();
 
     /** Manages test execution and reporting. */
@@ -555,63 +552,11 @@ public abstract class GridAbstractTest extends LegacySupport {
     }
 
     /**
-     * Called before execution of every test method in class.
-     * <p>
-     * Do not annotate with Before in overriding methods.</p>
-     *
-     * @throws Exception If failed. {@link #afterTest()} will be called in this case.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @Before} annotation.
+     * Will clean and re-create marshaller directory from scratch.
      */
-    @Deprecated
-    protected void beforeTest() throws Exception {
-        // No-op.
-    }
-
-    /**
-     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
-     * execution.
-     * <p>
-     * Do not annotate with After in overriding methods.</p>
-     *
-     * @throws Exception If failed.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @After} annotation.
-     */
-    @Deprecated
-    protected void afterTest() throws Exception {
-        // No-op.
-    }
-
-    /**
-     * Called before execution of all test methods in class.
-     * <p>
-     * Do not annotate with BeforeClass in overriding methods.</p>
-     *
-     * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @BeforeClass} annotation.
-     */
-    @Deprecated
-    protected void beforeTestsStarted() throws Exception {
-        // Will clean and re-create marshaller directory from scratch.
+    private void resolveWorkDirectory() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
-    }
-
-    /**
-     * Called after execution of all test methods in class or
-     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
-     * <p>
-     * Do not annotate with AfterClass in overriding methods.</p>
-     *
-     * @throws Exception If failed.
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @AfterClass} annotation.
-     */
-    @Deprecated
-    protected void afterTestsStopped() throws Exception {
-        // No-op.
     }
 
     /**
@@ -670,6 +615,8 @@ public abstract class GridAbstractTest extends LegacySupport {
 
                 if (!jvmIds.isEmpty())
                     log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+
+                resolveWorkDirectory();
 
                 beforeTestsStarted();
             }
@@ -2644,16 +2591,12 @@ public abstract class GridAbstractTest extends LegacySupport {
 
                 if (this0.forceTestCnt)
                     cnt = this0.testCnt;
-                else {
-                    BiPredicate<Method, Class<? extends Annotation>> annotated
-                        = (m, cls) -> m.getAnnotation(cls) != null;
-
-                    cnt = 0;
-
-                    for (Method m : this0.getClass().getMethods())
-                        if (annotated.test(m, Test.class) && !annotated.test(m, Ignore.class))
-                            cnt++;
-                }
+                else
+                    cnt = (int)new TestClass(this0.getClass())
+                        .getAnnotatedMethods(Test.class)
+                        .stream()
+                        .filter(method -> method.getAnnotation(Ignore.class) == null)
+                        .count();
 
                 numOfTests = cnt;
             }
