@@ -58,7 +58,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** */
     @AfterClass
-    public static void afterClass() {
+    public static void tearDownClass() {
         System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
     }
 
@@ -443,4 +443,3 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             fail("At least one tx is expected to be aborted");
     }
 }
-

@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongT
  */
 public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** */
-    private final long detectionStartDelay = Long.getLong(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, 500);
+    private final long detectionStartDelay = Long.getLong(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, 10_000);
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
