@@ -20,9 +20,7 @@ package org.apache.ignite.testframework;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.jetbrains.annotations.Nullable;
 import org.junit.internal.MethodSorter;
 
@@ -38,11 +36,7 @@ import java.util.List;
  */
 public class IgniteTestSuite extends TestSuite {
     /** Ignore default flag thread local. */
-    private static final ThreadLocal<Boolean> IGNORE_DFLT = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private static final ThreadLocal<Boolean> IGNORE_DFLT = ThreadLocal.withInitial(() -> false);
 
     /** Whether to execute only ignored tests. */
     private boolean ignoredOnly;
@@ -59,44 +53,35 @@ public class IgniteTestSuite extends TestSuite {
     /**
      * Constructor.
      *
-     * @param theClass TestCase class
-     */
-    public IgniteTestSuite(Class<? extends TestCase> theClass) {
-        this(theClass, ignoreDefault());
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param theClass TestCase class
+     * @param theCls TestCase class
      * @param ignoredOnly Whether to execute only ignored tests.
      */
-    public IgniteTestSuite(Class<? extends TestCase> theClass, boolean ignoredOnly) {
-        this(theClass, null, ignoredOnly);
+    private IgniteTestSuite(Class<? extends TestCase> theCls, boolean ignoredOnly) {
+        this(theCls, null, ignoredOnly);
     }
 
     /**
      * Constructor.
      *
-     * @param theClass TestCase class
+     * @param theCls TestCase class
      * @param name Test suite name.
      */
-    public IgniteTestSuite(Class<? extends TestCase> theClass, String name) {
-        this(theClass, name, ignoreDefault());
+    public IgniteTestSuite(Class<? extends TestCase> theCls, String name) {
+        this(theCls, name, ignoreDefault());
     }
 
     /**
      * Constructor.
      *
-     * @param theClass TestCase class
+     * @param theCls TestCase class
      * @param name Test suite name.
      * @param ignoredOnly Whether to execute only ignored tests.
      */
-    public IgniteTestSuite(@Nullable Class<? extends TestCase> theClass, @Nullable String name, boolean ignoredOnly) {
+    private IgniteTestSuite(@Nullable Class<? extends TestCase> theCls, @Nullable String name, boolean ignoredOnly) {
         this.ignoredOnly = ignoredOnly;
 
-        if (theClass != null)
-            addTestsFromTestCase(theClass);
+        if (theCls != null)
+            addTestsFromTestCase(theCls);
 
         if (name != null)
             setName(name);
@@ -116,33 +101,31 @@ public class IgniteTestSuite extends TestSuite {
     }
 
     /** {@inheritDoc} */
-    @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        addTest(new IgniteTestSuite(testClass, ignoredOnly));
+    @Override public void addTestSuite(Class<? extends TestCase> testCls) {
+        addTest(new IgniteTestSuite(testCls, ignoredOnly));
     }
 
     /**
      *
-     * @param theClass TestCase class
+     * @param theCls TestCase class
      */
-    private void addTestsFromTestCase(Class<?> theClass) {
-        setName(theClass.getName());
+    private void addTestsFromTestCase(Class<?> theCls) {
+        setName(theCls.getName());
 
         try {
-            getTestConstructor(theClass);
+            getTestConstructor(theCls);
         }
         catch (NoSuchMethodException ignored) {
-            addTest(warning("Class " + theClass.getName() +
+            addTest(warning("Class " + theCls.getName() +
                 " has no public constructor TestCase(String name) or TestCase()"));
 
             return;
         }
 
-        if(!Modifier.isPublic(theClass.getModifiers()))
-            addTest(warning("Class " + theClass.getName() + " is not public"));
+        if(!Modifier.isPublic(theCls.getModifiers()))
+            addTest(warning("Class " + theCls.getName() + " is not public"));
         else {
-            IgnoreDescriptor clsIgnore = IgnoreDescriptor.forClass(theClass);
-
-            Class superCls = theClass;
+            Class superCls = theCls;
 
             int testAdded = 0;
             int testSkipped = 0;
@@ -155,7 +138,7 @@ public class IgniteTestSuite extends TestSuite {
                 Method[] methods = MethodSorter.getDeclaredMethods(superCls);
 
                 for (Method each : methods) {
-                    AddResult res = addTestMethod(each, names, theClass, clsIgnore);
+                    AddResult res = addTestMethod(each, names, theCls);
 
                     if (res.added()) {
                         testAdded++;
@@ -168,7 +151,7 @@ public class IgniteTestSuite extends TestSuite {
             }
 
             if(testAdded == 0 && testSkipped == 0)
-                addTest(warning("No tests found in " + theClass.getName()));
+                addTest(warning("No tests found in " + theCls.getName()));
 
             // Populate tests count.
             for (Test test : addedTests) {
@@ -186,12 +169,10 @@ public class IgniteTestSuite extends TestSuite {
      *
      * @param m Test method.
      * @param names Test name list.
-     * @param theClass Test class.
-     * @param clsIgnore Class ignore descriptor (if any).
+     * @param theCls Test class.
      * @return Result.
      */
-    private AddResult addTestMethod(Method m, List<String> names, Class<?> theClass,
-        @Nullable IgnoreDescriptor clsIgnore) {
+    private AddResult addTestMethod(Method m, List<String> names, Class<?> theCls) {
         String name = m.getName();
 
         if (names.contains(name))
@@ -199,42 +180,19 @@ public class IgniteTestSuite extends TestSuite {
 
         if (!isPublicTestMethod(m)) {
             if (isTestMethod(m))
-                addTest(warning("Test method isn't public: " + m.getName() + "(" + theClass.getCanonicalName() + ")"));
+                addTest(warning("Test method isn't public: " + m.getName() + "(" + theCls.getCanonicalName() + ")"));
 
             return new AddResult(false, null);
         }
 
         names.add(name);
 
-        IgnoreDescriptor ignore = IgnoreDescriptor.forMethod(theClass, m);
+        if (!ignoredOnly) {
+            Test test = createTest(theCls, name);
 
-        if (ignore == null)
-            ignore = clsIgnore;
+            addTest(test);
 
-        if (ignoredOnly) {
-            if (ignore != null) {
-                Test test = createTest(theClass, name);
-
-                if (ignore.forceFailure()) {
-                    if (test instanceof GridAbstractTest)
-                        ((GridAbstractTest)test).forceFailure(ignore.reason());
-                    else
-                        test = new ForcedFailure(name, ignore.reason());
-                }
-
-                addTest(test);
-
-                return new AddResult(true, test);
-            }
-        }
-        else {
-            if (ignore == null) {
-                Test test = createTest(theClass, name);
-
-                addTest(test);
-
-                return new AddResult(true, test);
-            }
+            return new AddResult(true, test);
         }
 
         return new AddResult(false, null);
@@ -279,93 +237,6 @@ public class IgniteTestSuite extends TestSuite {
     }
 
     /**
-     * Ignore descriptor.
-     */
-    private static class IgnoreDescriptor {
-        /** Reason. */
-        private final String reason;
-
-        /** Force failure. */
-        private final boolean forceFailure;
-
-        /**
-         * Get descriptor for class (if any).
-         *
-         * @param cls Class.
-         * @return Descriptor or {@code null}.
-         */
-        @Nullable public static IgnoreDescriptor forClass(Class cls) {
-            Class cls0 = cls;
-
-            while (Test.class.isAssignableFrom(cls0)) {
-                if (cls0.isAnnotationPresent(IgniteIgnore.class)) {
-                    IgniteIgnore ignore = (IgniteIgnore)cls0.getAnnotation(IgniteIgnore.class);
-
-                    String reason = ignore.value();
-
-                    if (F.isEmpty(reason))
-                        throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
-                            cls0.getName() + ']');
-
-                    return new IgnoreDescriptor(reason, ignore.forceFailure());
-                }
-
-                cls0 = cls0.getSuperclass();
-            }
-
-            return null;
-        }
-
-        /**
-         * Get descriptor for method (if any).
-         *
-         * @param cls Class.
-         * @param mthd Method.
-         * @return Descriptor or {@code null}.
-         */
-        @Nullable public static IgnoreDescriptor forMethod(Class cls, Method mthd) {
-            if (mthd.isAnnotationPresent(IgniteIgnore.class)) {
-                IgniteIgnore ignore = mthd.getAnnotation(IgniteIgnore.class);
-
-                String reason = ignore.value();
-
-                if (F.isEmpty(reason))
-                    throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
-                        cls.getName() + ", method=" + mthd.getName() + ']');
-
-                return new IgnoreDescriptor(reason, ignore.forceFailure());
-            }
-            else
-                return null;
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param reason Reason.
-         * @param forceFailure Force failure.
-         */
-        private IgnoreDescriptor(String reason, boolean forceFailure) {
-            this.reason = reason;
-            this.forceFailure = forceFailure;
-        }
-
-        /**
-         * @return Reason.
-         */
-        public String reason() {
-            return reason;
-        }
-
-        /**
-         * @return Force failure.
-         */
-        public boolean forceFailure() {
-            return forceFailure;
-        }
-    }
-
-    /**
      * Test add result.
      */
     private static class AddResult {
@@ -398,32 +269,6 @@ public class IgniteTestSuite extends TestSuite {
          */
         public Test test() {
             return test;
-        }
-    }
-
-    /**
-     * Test case simulating failure.
-     */
-    private static class ForcedFailure extends TestCase {
-        /** Message. */
-        private final String msg;
-
-        /**
-         * Constructor.
-         *
-         * @param name Name.
-         * @param msg  Message.
-         */
-        private ForcedFailure(String name, String msg) {
-            super(name);
-
-            this.msg = msg;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void runTest() {
-            fail("Forced failure: " + msg + " (extend " + GridAbstractTest.class.getSimpleName() +
-                " for better output).");
         }
     }
 }
