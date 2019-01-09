@@ -117,8 +117,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOneServerMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
-
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -163,8 +161,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFourServersMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
-
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -174,7 +170,7 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
             isClient = true;
             final IgniteEx client = startGrid(4);
 
-            checkNotMapped(client, PESSIMISTIC, READ_COMMITTED);
+            checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
         }
         finally {
             stopAllGrids();
@@ -186,8 +182,13 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
      */
     private void checkNotMapped(final IgniteEx client, final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) {
-        String msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
-           "Failed to map keys to nodes (partition is not mapped to any node";
+        String msg;
+
+        if (atomicityMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            msg = "Failed to get primary node ";
+        else
+            msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
+                "Failed to map keys to nodes (partition is not mapped to any node";
 
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {

@@ -379,7 +379,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param qry SqlFieldsQuery.
      * @return Cursor.
-     * @see SqlFieldsQuery
+     *
+     * @throws CacheException If any internal failure occurs.
+     * @throws TransactionException If any tx failure occurs.
+     * TODO IGNITE-10377: Fix exceptions description.
+     * @see SqlFieldsQuery for details.
      */
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
 

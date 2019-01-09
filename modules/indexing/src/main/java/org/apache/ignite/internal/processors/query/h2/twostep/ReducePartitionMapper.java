@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -194,7 +195,7 @@ public class ReducePartitionMapper {
         Set<ClusterNode> nodes = map.keySet();
 
         if (F.isEmpty(map))
-            throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
+            throw new CacheServerNotFoundException("Failed to find data nodes for cache: " + cctx.name());
 
         for (int i = 1; i < cacheIds.size(); i++) {
             GridCacheContext<?,?> extraCctx = cacheContext(cacheIds.get(i));
@@ -212,7 +213,7 @@ public class ReducePartitionMapper {
             Set<ClusterNode> extraNodes = stableDataNodesMap(topVer, extraCctx, parts).keySet();
 
             if (F.isEmpty(extraNodes))
-                throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
+                throw new CacheServerNotFoundException("Failed to find data nodes for cache: " + extraCacheName);
 
             boolean disjoint;
 
@@ -353,7 +354,7 @@ public class ReducePartitionMapper {
                     return null; // Retry.
                 }
 
-                throw new CacheException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
+                throw new CacheServerNotFoundException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
             }
 
             partLocs[p] = new HashSet<>(owners);
@@ -389,7 +390,7 @@ public class ReducePartitionMapper {
                             return null; // Retry.
                         }
 
-                        throw new CacheException("Failed to find data nodes [cache=" + extraCctx.name() +
+                        throw new CacheServerNotFoundException("Failed to find data nodes [cache=" + extraCctx.name() +
                             ", part=" + p + "]");
                     }
 
@@ -542,7 +543,7 @@ public class ReducePartitionMapper {
         Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cctx.groupId(), NONE));
 
         if (dataNodes.isEmpty())
-            throw new CacheException("Failed to find data nodes for cache: " + cacheName);
+            throw new CacheServerNotFoundException("Failed to find data nodes for cache: " + cacheName);
 
         // Find all the nodes owning all the partitions for replicated cache.
         for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
