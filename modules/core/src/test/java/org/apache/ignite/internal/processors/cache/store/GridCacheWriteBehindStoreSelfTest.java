@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.store;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -159,12 +160,15 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             assertEquals("v1", store.load(1));
             assertEquals("v2", store.load(2));
             assertNull(store.load(3));
+            assertEquals(store.loadAll(Arrays.asList(3, 4, 5)).size(), 0);
 
             store.delete(1);
 
             assertNull(store.load(1));
+            assertEquals(store.loadAll(Arrays.asList(1)).size(), 0);
             assertEquals("v2", store.load(2));
             assertNull(store.load(3));
+            assertEquals(store.loadAll(Arrays.asList(3)).size(), 0);
         }
         finally {
             shutdownStore();
