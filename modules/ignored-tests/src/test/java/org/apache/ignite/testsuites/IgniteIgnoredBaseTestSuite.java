@@ -71,11 +71,6 @@ class IgniteIgnoredBaseTestSuite extends TestSuite {
         super.addTest(test);
     }
 
-    /** {@inheritDoc} */
-    @Override public void addTestSuite(Class<? extends TestCase> testCls) {
-        addTest(new IgniteIgnoredBaseTestSuite(testCls));
-    }
-
     /**
      *
      * @param theCls TestCase class

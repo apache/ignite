@@ -78,11 +78,6 @@ public class IgniteTestSuite extends TestSuite {
         super.addTest(test);
     }
 
-    /** {@inheritDoc} */
-    @Override public void addTestSuite(Class<? extends TestCase> testCls) {
-        addTest(new IgniteTestSuite(testCls));
-    }
-
     /**
      *
      * @param theCls TestCase class
