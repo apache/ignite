@@ -1970,7 +1970,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      more then one SQL statement.
      * @return Cursor.
      */
-    @SuppressWarnings("unchecked")
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
         @Nullable final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry,
