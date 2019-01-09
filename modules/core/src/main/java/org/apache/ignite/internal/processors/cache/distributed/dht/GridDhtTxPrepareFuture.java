@@ -1314,7 +1314,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
-                    if (!locCache && entry != null && entry.op() != NOOP)
+                    // TODO add test for transforms to WithFilter.
+                    if (!locCache && entry != null && entry.op() != NOOP &&
+                        !(entry.op() == TRANSFORM && entry.entryProcessorCalculatedValue().get1() == NOOP))
                         counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 
                     map(entry);
