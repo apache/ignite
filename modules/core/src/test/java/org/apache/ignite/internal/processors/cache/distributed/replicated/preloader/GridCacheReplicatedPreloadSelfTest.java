@@ -761,6 +761,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleNodes() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+
         preloadMode = ASYNC;
         batchSize = 256;
 

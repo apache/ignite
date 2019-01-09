@@ -171,7 +171,7 @@ public class DeadlockProbe implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 167;
+        return 170;
     }
 
     /** {@inheritDoc} */

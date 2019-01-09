@@ -139,6 +139,9 @@ public enum GridTopic {
     TOPIC_GEN_ENC_KEY,
 
     /** */
+    TOPIC_SERVICES,
+
+    /** */
     TOPIC_DEADLOCK_DETECTION;
 
     /** Enum values. */

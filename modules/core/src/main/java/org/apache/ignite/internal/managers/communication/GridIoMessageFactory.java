@@ -185,6 +185,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
+import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
+import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
@@ -1122,6 +1125,21 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 167:
+                msg = new ServiceDeploymentProcessId();
+
+                break;
+
+            case 168:
+                msg = new ServiceSingleNodeDeploymentResultBatch();
+
+                break;
+
+            case 169:
+                msg = new ServiceSingleNodeDeploymentResult();
+
+                break;
+
+            case 170:
                 msg = new DeadlockProbe();
 
                 break;

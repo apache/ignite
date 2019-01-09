@@ -51,7 +51,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -350,14 +349,14 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     private void testSynchronousRollback0(Ignite holdLockNode, final Ignite tryLockNode,
         final boolean useTimeout) throws Exception {
-        final CountDownLatch keyLocked = new CountDownLatch(1);
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
         // Used for passing tx instance to rollback thread.
         IgniteInternalFuture<?> lockFut = lockInTx(holdLockNode, keyLocked, waitCommit, 0);
 
-        U.awaitQuiet(keyLocked);
+        keyLocked.get();
 
         final int txCnt = SF.applyLB(250, 25);
 
@@ -380,8 +379,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                U.awaitQuiet(keyLocked);
-
                 for (int i = 0; i < txCnt; i++) {
                     GridNearTxLocal tx0 = ctx.tm().threadLocalTx(cctx);
 
@@ -653,9 +650,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedAsyncRollbackTypes() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10434");
-
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -839,7 +833,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackProxy() throws Exception {
-        final CountDownLatch keyLocked = new CountDownLatch(1);
+        final GridFutureAdapter<Void> keyLocked = new GridFutureAdapter<>();
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
@@ -847,7 +841,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = lockInTx(ig, keyLocked, waitCommit, 0);
 
-        U.awaitQuiet(keyLocked);
+        keyLocked.get();
 
         Collection<Transaction> txs = ig.transactions().localActiveTransactions();
 
@@ -1048,29 +1042,31 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * Locks entry in tx and delays commit until signalled.
      *
      * @param node Near node.
-     * @param keyLocked Latch for notifying until key is locked.
+     * @param keyLocked Future to be done when key is locked.
      * @param waitCommit Latch for waiting until commit is allowed.
      * @param timeout Timeout.
      * @return tx completion future.
      */
-    private IgniteInternalFuture<?> lockInTx(final Ignite node, final CountDownLatch keyLocked,
+    private IgniteInternalFuture<?> lockInTx(final Ignite node, final GridFutureAdapter<Void> keyLocked,
         final CountDownLatch waitCommit, final int timeout) throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {
-                Transaction tx = node.transactions().withLabel(LABEL).txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
-
-                node.cache(CACHE_NAME).put(0, 0);
-
-                keyLocked.countDown();
-
                 try {
-                    U.await(waitCommit);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    fail("Lock thread was interrupted while waiting");
-                }
+                    Transaction tx = node.transactions().withLabel(LABEL).txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
 
-                tx.commit();
+                    node.cache(CACHE_NAME).put(0, 0);
+
+                    keyLocked.onDone();
+
+                    U.await(waitCommit);
+
+                    tx.commit();
+                }
+                catch (Throwable e) {
+                    keyLocked.onDone(e);
+
+                    throw new RuntimeException(e);
+                }
             }
         }, 1, "tx-lock-thread");
     }
