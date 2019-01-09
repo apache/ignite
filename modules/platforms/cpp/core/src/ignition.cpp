@@ -136,7 +136,7 @@ namespace ignite
 
             // 4. Set the rest options.
             for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
-                if (i->find(fileEncParam) == 0)
+                if (i->find(fileEncParam) != std::string::npos)
                     hadFileEnc = true;
 
                 opts[idx++] = CopyChars(i->c_str());
