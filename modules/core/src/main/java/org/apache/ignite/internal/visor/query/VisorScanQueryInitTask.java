@@ -124,7 +124,7 @@ public class VisorScanQueryInitTask extends VisorOneNodeTask<VisorScanQueryTaskA
 
                 if (hasNext) {
                     ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
-                        new VisorQueryHolder(qryId, cur, arg.getPageSize()));
+                        new VisorQueryHolder(qryId, cur, arg.getPageSize(), null));
 
                     scheduleResultSetHolderRemoval(qryId, ignite);
                     scheduleResultSetGet(qryId, ignite, true);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
  * Holds identify information of executing query and its result.
@@ -28,6 +29,9 @@ public class VisorQueryHolder {
 
     /** Wrapper for query cursor. */
     private VisorQueryCursor<?> cur;
+
+    /** Cancel query object. */
+    private GridQueryCancel cancel;
 
     /** Rows fetched from query. */
     private List<Object[]> rows;
@@ -47,10 +51,11 @@ public class VisorQueryHolder {
      * @param qryId Query ID for extraction query data result.
      * @param cur Wrapper for query cursor.
      */
-    VisorQueryHolder(String qryId, VisorQueryCursor<?> cur, int pageSize) {
+    VisorQueryHolder(String qryId, VisorQueryCursor<?> cur, int pageSize, GridQueryCancel cancel) {
         this.qryId = qryId;
         this.cur = cur;
         this.pageSize = pageSize;
+        this.cancel = cancel;
         start = System.currentTimeMillis();
     }
 
@@ -75,6 +80,11 @@ public class VisorQueryHolder {
      */
     public int getPageSize() {
         return pageSize;
+    }
+
+    public void cancelQuery() {
+        if (cancel != null)
+            cancel.cancel();
     }
 
     /**

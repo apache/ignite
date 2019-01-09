@@ -116,6 +116,8 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupT
 
                     if (cur != null)
                         cur.close();
+
+                    holder.cancelQuery();
                 }
             }
 

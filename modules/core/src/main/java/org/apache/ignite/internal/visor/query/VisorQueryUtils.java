@@ -295,6 +295,11 @@ public class VisorQueryUtils {
                                     (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
                             }
                         }
+                        else {
+                            // Remove stored cursor otherwise.
+                            storage.remove(qryId);
+                            cur.close();
+                        }
                     }
                     catch (Throwable e) {
                         holder.setErr(e);
@@ -310,22 +315,26 @@ public class VisorQueryUtils {
     public static void scheduleResultSetHolderRemoval(final String qryId, final IgniteEx ignite) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
-                ConcurrentMap<String, VisorQueryCursor> storage = ignite.cluster().nodeLocalMap();
+                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+                VisorQueryHolder holder = storage.get(qryId);
 
-                VisorQueryCursor cur = storage.get(qryId);
+                if (holder != null) {
+                    VisorQueryCursor<?> cur = holder.getCursor();
 
-                if (cur != null) {
-                    // If cursor was accessed since last scheduling, set access flag to false and reschedule.
-                    if (cur.accessed()) {
-                        cur.accessed(false);
+                    if (cur != null) {
+                        // If cursor was accessed since last scheduling, set access flag to false and reschedule.
+                        if (cur.accessed()) {
+                            cur.accessed(false);
 
-                        scheduleResultSetHolderRemoval(qryId, ignite);
-                    }
-                    else {
-                        // Remove stored cursor otherwise.
-                        storage.remove(qryId);
+                            scheduleResultSetHolderRemoval(qryId, ignite);
+                        }
+                        else {
+                            // Remove stored cursor otherwise.
+                            storage.remove(qryId);
 
-                        cur.close();
+                            cur.close();
+                            holder.cancelQuery();
+                        }
                     }
                 }
             }

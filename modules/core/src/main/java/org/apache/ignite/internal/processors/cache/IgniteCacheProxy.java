@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -122,4 +123,13 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      * @see SqlFieldsQuery
      */
     public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry);
+
+    /**
+     * Queries cache with multiple statements. Accepts {@link SqlFieldsQuery} class.
+     *
+     * @param qry SqlFieldsQuery.
+     * @return List of cursors.
+     * @see SqlFieldsQuery
+     */
+    public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry, GridQueryCancel cancel);
 }

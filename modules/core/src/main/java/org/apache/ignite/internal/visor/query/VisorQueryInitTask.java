@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -92,15 +93,17 @@ public class VisorQueryInitTask extends VisorOneNodeTask<VisorQueryTaskArg, Viso
 
                 String cacheName = arg.getCacheName();
 
+                GridQueryCancel cancel = new GridQueryCancel();
+
                 if (F.isEmpty(cacheName))
-                    qryCursors = ignite.context().query().querySqlFields(qry, true, false);
+                    qryCursors = ignite.context().query().querySqlFields(null, qry, null, true, false, cancel);
                 else {
                     IgniteCache<Object, Object> c = ignite.cache(cacheName);
 
                     if (c == null)
                         throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
 
-                    qryCursors = ((IgniteCacheProxy)c.withKeepBinary()).queryMultipleStatements(qry);
+                    qryCursors = ((IgniteCacheProxy)c.withKeepBinary()).queryMultipleStatements(qry, cancel);
                 }
 
                 // In case of multiple statements leave opened only last cursor.
@@ -132,7 +135,7 @@ public class VisorQueryInitTask extends VisorOneNodeTask<VisorQueryTaskArg, Viso
 
                     if (hasNext) {
                         ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
-                            new VisorQueryHolder(qryId, cur, arg.getPageSize()));
+                            new VisorQueryHolder(qryId, cur, arg.getPageSize(), cancel));
 
                         scheduleResultSetHolderRemoval(qryId, ignite);
                         scheduleResultSetGet(qryId, ignite, false);
