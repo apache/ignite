@@ -54,7 +54,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 4 * 60_000;
+        return 3 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -91,8 +91,14 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
         Integer expVal = 0;
 
-        for (int i = 0; i < iterations(); i++) {
-            log.info("Iteration: " + i);
+        final long testTime = GridTestUtils.SF.applyLB(60_000, 10_000);
+
+        final long endTime = System.currentTimeMillis() + testTime;
+
+        int iter = 0;
+
+        while (System.currentTimeMillis() < endTime) {
+            log.info("Iteration: " + iter);
 
             final AtomicInteger gridIdx = new AtomicInteger();
 
@@ -130,27 +136,9 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }
+
+            iter++;
         }
-    }
-
-    /**
-     * @return Number of iterations.
-     */
-    protected int iterations() {
-        switch (atomicityMode()) {
-            case ATOMIC:
-                return 30;
-
-            case TRANSACTIONAL:
-                return 15;
-
-            case TRANSACTIONAL_SNAPSHOT:
-                return 5;
-        }
-
-        fail();
-
-        return 0;
     }
 
     /**
