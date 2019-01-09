@@ -303,7 +303,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                 return topVer.topologyVersion() == 2 && topVer.minorTopologyVersion() == 1;
 
-//                return ignite1.affinity(name).primaryPartitions(ignite1.cluster().localNode()).length <
+//                return ignite1.affinity(name).idealPrimaries(ignite1.cluster().localNode()).length <
 //                    ignite1.affinity(name).partitions();
             }
         }, 10_000));

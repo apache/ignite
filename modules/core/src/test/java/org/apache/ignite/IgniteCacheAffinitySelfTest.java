@@ -139,7 +139,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     }
 
     /**
-     * Check allPartitions, backupPartitions and primaryPartitions methods.
+     * Check allPartitions, backupPartitions and idealPrimaries methods.
      *
      * @param testAff Affinity1.
      * @param aff Affinity2.
