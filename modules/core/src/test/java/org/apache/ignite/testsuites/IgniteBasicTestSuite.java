@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -86,7 +85,6 @@ import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
@@ -104,26 +102,18 @@ public class IgniteBasicTestSuite {
     /**
      * @return Test suite.
      */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+    public static List<Class<?>> suite() { // todo cleanup all "suite()" occurrences if build check passes
         List<Class<?>> suite = new ArrayList<>();
 
-        suite.addAll(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteMarshallerSelfTestSuite.suite());
         suite.addAll(IgniteLangSelfTestSuite.suite());
-        suite.addAll(IgniteUtilSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteUtilSelfTestSuite.suite());
 
-        suite.addAll(IgniteKernalSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteKernalSelfTestSuite.suite());
         suite.addAll(IgniteStartUpTestSuite.suite());
         suite.addAll(IgniteExternalizableSelfTestSuite.suite());
-        suite.addAll(IgniteP2PSelfTestSuite.suite(ignoredTests));
-        suite.addAll(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteP2PSelfTestSuite.suite());
+        suite.addAll(IgniteCacheP2pUnmarshallingErrorTestSuite.suite());
         suite.addAll(IgniteStreamSelfTestSuite.suite());
 
         suite.addAll(IgnitePlatformsTestSuite.suite());
@@ -133,11 +123,11 @@ public class IgniteBasicTestSuite {
         suite.add(IgniteMessagingWithClientTest.class);
         suite.add(IgniteMessagingSendAsyncTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
+        suite.add(ClusterGroupSelfTest.class);
+        suite.add(GridMessagingSelfTest.class);
+        suite.add(GridMessagingNoPeerClassLoadingSelfTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
+        suite.add(GridReleaseTypeSelfTest.class);
         suite.add(GridProductVersionSelfTest.class);
         suite.add(GridAffinityProcessorRendezvousSelfTest.class);
         suite.add(GridAffinityProcessorMemoryLeakTest.class);
@@ -157,7 +147,7 @@ public class IgniteBasicTestSuite {
         suite.add(GridMessageListenSelfTest.class);
         suite.add(GridFailFastNodeFailureDetectionSelfTest.class);
         suite.add(IgniteSlowClientDetectionSelfTest.class);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
+        suite.add(IgniteDaemonNodeMarshallerCacheTest.class);
         suite.add(IgniteMarshallerCacheConcurrentReadWriteTest.class);
         suite.add(GridNodeMetricsLogSelfTest.class);
         suite.add(GridLocalIgniteSerializationTest.class);
@@ -170,7 +160,7 @@ public class IgniteBasicTestSuite {
         suite.add(OdbcConfigurationValidationSelfTest.class);
         suite.add(OdbcEscapeSequenceSelfTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
+        suite.add(DynamicProxySerializationMultiJvmSelfTest.class);
 
         // Tests against configuration variations framework.
         suite.add(ParametersTest.class);
