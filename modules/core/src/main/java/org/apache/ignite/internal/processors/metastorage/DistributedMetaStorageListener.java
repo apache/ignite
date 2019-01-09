@@ -18,12 +18,28 @@
 package org.apache.ignite.internal.processors.metastorage;
 
 import java.io.Serializable;
+import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Listener for distributed metastorage data updates.
+ *
+ * @see ReadableDistributedMetaStorage#listen(Predicate, DistributedMetaStorageListener)
+ */
 @FunctionalInterface
 public interface DistributedMetaStorageListener<T extends Serializable> {
-    /** */
+    /**
+     * Invoked in two cases:
+     * <ul>
+     *     <li>data was dinamicaly updated;</li>
+     *     <li>node was activated. In this case {@code oldVal} and {@code newVal} might be different only if new data
+     *     was received from cluster before activation</li>
+     * </ul>
+     *
+     * @param key The key.
+     * @param oldVal Previous value associated with the key.
+     * @param newVal New value after update.
+     */
     void onUpdate(@NotNull String key, @Nullable T oldVal, @Nullable T newVal);
 }

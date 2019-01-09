@@ -21,22 +21,41 @@ import java.io.Serializable;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * API for distributed data storage. It is guaranteed that every read value is the same on every node in the cluster
+ * all the time.
+ */
 public interface ReadableDistributedMetaStorage {
-    /** */
+    /**
+     * Get value by the key.
+     *
+     * @param key The key.
+     * @throws IgniteCheckedException If read or unmarshalling operation failed.
+     */
     @Nullable <T extends Serializable> T read(@NotNull String key) throws IgniteCheckedException;
 
-    /** */
+    /**
+     * Iterate over all values corresponding to the keys with given prefix. It is guaranteed that iteration will be
+     * executed in ascending keys order.
+     *
+     * @param keyPrefix Prefix for the keys that will be iterated.
+     * @param cb Callback that will be applied to all {@code <key, value>} pairs.
+     * @throws IgniteCheckedException If read or unmarshalling operation failed.
+     */
     void iterate(
         @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException;
 
-    /** */
+    /**
+     * Add listener on data updates.
+     *
+     * @param keyPred Predicate to check whether this listener should be invoked on given key update or not.
+     * @param lsnr Listener object.
+     * @see DistributedMetaStorageListener
+     */
     void listen(@NotNull Predicate<String> keyPred, DistributedMetaStorageListener<?> lsnr);
 }

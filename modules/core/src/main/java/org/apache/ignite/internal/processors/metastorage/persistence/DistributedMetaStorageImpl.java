@@ -82,13 +82,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     final GridInternalSubscriptionProcessor subscrProcessor;
 
     /** */
-    private DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
+    private volatile DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
 
     /** */
-    private CountDownLatch writeAvailable = new CountDownLatch(1);
+    private volatile CountDownLatch writeAvailable = new CountDownLatch(1);
 
     /** */
-    DistributedMetaStorageVersion ver;
+    volatile DistributedMetaStorageVersion ver;
 
     /** */
     final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
@@ -110,7 +110,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
     /** */
-    private StartupExtras startupExtras = new StartupExtras();
+    private volatile StartupExtras startupExtras = new StartupExtras();
 
     /** */
     private final Object innerStateLock = new Object();
@@ -215,6 +215,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 startupExtras.locFullData = locFullData;
             }
+
+            if (writeAvailable.getCount() > 0)
+                writeAvailable.countDown();
 
             writeAvailable = new CountDownLatch(1);
         }
