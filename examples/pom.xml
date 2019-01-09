@@ -90,12 +90,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-mleap-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
             <version>1.2</version>
@@ -161,6 +155,7 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
+        <mleap.folder>src/main/mleap</mleap.folder>
     </properties>
 
     <profiles>
@@ -170,6 +165,7 @@
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
+                <mleap.folder>src/main/mleap</mleap.folder>
             </properties>
 
             <dependencies>
@@ -195,6 +191,12 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-spark</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
