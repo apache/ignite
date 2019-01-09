@@ -361,6 +361,9 @@ public class CommandHandler {
     /** */
     private static final String CONFIG = "--config";
 
+    /** */
+    private static final String IDLE_CHECK_CRC = "--check-crc";
+
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
 
@@ -1031,7 +1034,10 @@ public class CommandHandler {
      */
     private void legacyCacheIdleVerify(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorIdleVerifyTaskResult res = executeTask(
-            client, VisorIdleVerifyTask.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+            client,
+            VisorIdleVerifyTask.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.idleCheckCrc())
+        );
 
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
 
@@ -1164,7 +1170,6 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheResetLostPartitions(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-
         CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(cacheArgs.caches());
 
         CacheResetLostPartitionsTaskResult res = executeTaskByNameOnNode(client, CacheResetLostPartitionsTask.class.getName(), taskArg, null);
@@ -1177,11 +1182,14 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheIdleVerifyDump(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        String path = executeTask(
-            client,
-            VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros(), cacheArgs.getCacheFilterEnum())
+        VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.isSkipZeros(),
+            cacheArgs.getCacheFilterEnum(),
+            cacheArgs.idleCheckCrc()
         );
+
+        String path = executeTask(client, VisorIdleVerifyDumpTask.class, arg);
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
     }
@@ -1192,7 +1200,10 @@ public class CommandHandler {
      */
     private void cacheIdleVerifyV2(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         IdleVerifyResultV2 res = executeTask(
-            client, VisorIdleVerifyTaskV2.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+            client,
+            VisorIdleVerifyTaskV2.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.idleCheckCrc())
+        );
 
         res.print(System.out::print);
     }
@@ -2127,6 +2138,8 @@ public class CommandHandler {
                         cacheArgs.dump(true);
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
+                    else if (IDLE_CHECK_CRC.equals(nextArg))
+                        cacheArgs.idleCheckCrc(true);
                     else if (CACHE_FILTER.equals(nextArg)) {
                         String filter = nextArg("The cache filter should be specified. The following values can be " +
                             "used: " + Arrays.toString(CacheFilterEnum.values()) + '.');

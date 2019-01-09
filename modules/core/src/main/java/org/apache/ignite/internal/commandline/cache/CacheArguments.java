@@ -63,7 +63,10 @@ public class CacheArguments {
     /** Skip zeros partitions. */
     private boolean skipZeros;
 
-    /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
+    /**
+     * Additional user attributes in result. Set of attribute names whose values will be searched in
+     * ClusterNode.attributes().
+     */
     private Set<String> userAttributes;
 
     /** Output format. */
@@ -74,6 +77,9 @@ public class CacheArguments {
 
     /** Cache filter. */
     private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+
+    /** Check CRC sum on idle verify. */
+    private boolean idleCheckCrc;
 
     /**
      * @return Gets filter of caches, which will by checked.
@@ -92,12 +98,16 @@ public class CacheArguments {
     /**
      * @return Full config flag.
      */
-    public boolean fullConfig(){ return fullConfig; }
+    public boolean fullConfig() {
+        return fullConfig;
+    }
 
     /**
      * @param fullConfig New full config flag.
      */
-    public void fullConfig(boolean fullConfig) { this.fullConfig = fullConfig; }
+    public void fullConfig(boolean fullConfig) {
+        this.fullConfig = fullConfig;
+    }
 
     /**
      * @return Command.
@@ -268,7 +278,8 @@ public class CacheArguments {
     }
 
     /**
-     * @return Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes().
+     * @return Additional user attributes in result. Set of attribute names whose values will be searched in
+     * ClusterNode.attributes().
      */
     public Set<String> getUserAttributes() {
         return userAttributes;
@@ -284,10 +295,28 @@ public class CacheArguments {
     /**
      * @return Output format.
      */
-    public OutputFormat outputFormat() { return outputFormat; }
+    public OutputFormat outputFormat() {
+        return outputFormat;
+    }
 
     /**
      * @param outputFormat New output format.
      */
-    public void outputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
+    public void outputFormat(OutputFormat outputFormat) {
+        this.outputFormat = outputFormat;
+    }
+
+    /**
+     * @return Check page CRC sum on idle verify flag.
+     */
+    public boolean idleCheckCrc() {
+        return idleCheckCrc;
+    }
+
+    /**
+     * @param idleCheckCrc Check page CRC sum on idle verify flag.
+     */
+    public void idleCheckCrc(boolean idleCheckCrc) {
+        this.idleCheckCrc = idleCheckCrc;
+    }
 }
