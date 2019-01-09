@@ -382,6 +382,8 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
+        ignite.cluster().active(true);
+
         failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
             @Override public FileIO apply(File file, OpenOption[] options) {
                 if (file.getName().indexOf("-END.bin") >= 0) {
@@ -404,8 +406,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                 return null;
             }
         });
-
-        ignite.cluster().active(true);
 
         try {
             forceCheckpoint(ignite);
