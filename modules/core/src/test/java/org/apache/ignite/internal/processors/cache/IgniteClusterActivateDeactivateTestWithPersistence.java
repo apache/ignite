@@ -45,7 +45,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -59,11 +58,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         return true;
     }
 
-    @BeforeClass public static void setUpClass() {
+    /** */
+    @BeforeClass
+    public static void setUpClass() {
         System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
     }
 
-    @AfterClass public static void tearDownClass() {
+    /** */
+    @AfterClass
+    public static void tearDownClass() {
         System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "true");
     }
 
