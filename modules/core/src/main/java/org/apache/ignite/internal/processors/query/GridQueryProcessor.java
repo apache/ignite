@@ -668,6 +668,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets query history statistics manager.
+     *
+     * @return Query history statistics manager
+     */
+    public QueryHistoryManager queryHistory() throws IgniteException {
+        checkxEnabled();
+
+        return idx.queryHistoryManager();
+    }
+
+    /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
      * @param cacheInfo Cache context info.

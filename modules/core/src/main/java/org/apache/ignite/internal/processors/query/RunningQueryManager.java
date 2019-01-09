@@ -34,8 +34,15 @@ public class RunningQueryManager {
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
+    /** Query history manager. */
+    private final QueryHistoryManager qryHistMgr;
+
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
+
+    public RunningQueryManager(QueryHistoryManager qryHistMgr) {
+        this.qryHistMgr = qryHistMgr;
+    }
 
     /**
      * Register running query.
@@ -72,23 +79,29 @@ public class RunningQueryManager {
      * Unregister running query.
      *
      * @param runningQryInfo Running query info..
+     * @param failed {@code true} In case query was failed.
      * @return Unregistered running query info. {@code null} in case running query is not registered.
      */
-    @Nullable public GridRunningQueryInfo unregister(@Nullable GridRunningQueryInfo runningQryInfo) {
-        return (runningQryInfo != null) ? unregister(runningQryInfo.id()) : null;
+    @Nullable public GridRunningQueryInfo unregister(@Nullable GridRunningQueryInfo runningQryInfo, boolean failed) {
+        return (runningQryInfo != null) ? unregister(runningQryInfo.id(), failed) : null;
     }
 
     /**
      * Unregister running query.
      *
      * @param qryId Query id.
+     * @param failed {@code true} In case query was failed.
      * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
-    @Nullable public GridRunningQueryInfo unregister(Long qryId) {
+    @Nullable public GridRunningQueryInfo unregister(Long qryId, boolean failed) {
         if (qryId == null)
             return null;
 
-        return runs.remove(qryId);
+        GridRunningQueryInfo unregistered = runs.remove(qryId);
+
+        qryHistMgr.collectMetrics(unregistered, failed);
+
+        return unregistered;
     }
 
     /**
@@ -128,7 +141,7 @@ public class RunningQueryManager {
     public void stop() {
         for (GridRunningQueryInfo r : runs.values()) {
             try {
-                unregister(r.id());
+                unregister(r.id(), false);
 
                 r.cancel();
             }

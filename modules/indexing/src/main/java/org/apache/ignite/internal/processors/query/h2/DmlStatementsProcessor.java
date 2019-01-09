@@ -431,6 +431,8 @@ public class DmlStatementsProcessor {
         GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().register(qry,
             GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
+        boolean fail = false;
+
         try {
             idx.checkStatementStreamable(stmt);
 
@@ -499,8 +501,13 @@ public class DmlStatementsProcessor {
 
             return rows.size();
         }
+        catch (IgniteCheckedException e) {
+            fail = true;
+
+            throw e;
+        }
         finally {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(runningQryInfo, fail);
         }
     }
 
@@ -1223,12 +1230,12 @@ public class DmlStatementsProcessor {
 
         }
         catch (IgniteSQLException e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(runningQryInfo, true);
 
             throw e;
         }
         catch (Exception e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(runningQryInfo, true);
 
             throw new IgniteSQLException("Unexpected DML operation failure: " + e.getMessage(), e);
         }

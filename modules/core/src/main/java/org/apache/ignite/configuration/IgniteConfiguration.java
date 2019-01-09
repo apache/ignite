@@ -225,6 +225,9 @@ public class IgniteConfiguration {
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
+    /** Default query history statistics size. */
+    public static final int DFLT_QUERY_HISTORY_STATISTICS_SIZE = 1000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -272,6 +275,9 @@ public class IgniteConfiguration {
 
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
+
+    /** Query history statistics size. */
+    private int qryHistStatSize = DFLT_QUERY_HISTORY_STATISTICS_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -642,6 +648,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        qryHistStatSize = cfg.getQueryHistoryStatisticsSize();
     }
 
     /**
@@ -999,6 +1006,33 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Number of query history statistics to keep in memory. If not provided, then default value {@link
+     * #DFLT_QUERY_HISTORY_STATISTICS_SIZE} is used. If provided value is less or equals 0, then gathering query history
+     * statistics will be switched off.
+     *
+     * @return Query history statistics size.
+     * @see #DFLT_QUERY_HISTORY_STATISTICS_SIZE
+     */
+    public int getQueryHistoryStatisticsSize() {
+        return qryHistStatSize;
+    }
+
+    /**
+     * Sets number of query history statistics kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_QUERY_HISTORY_STATISTICS_SIZE}.
+     *
+     * @param size Number of query history statistics kept in memory. If value is less or equals 0, then gathering query
+     * history statistics will be switched off.
+     * @return {@code this} for chaining.
+     * @see #DFLT_QUERY_HISTORY_STATISTICS_SIZE
+     */
+    public IgniteConfiguration setQueryHistoryStatisticsSize(int size) {
+        qryHistStatSize = size;
+
+        return this;
     }
 
     /**

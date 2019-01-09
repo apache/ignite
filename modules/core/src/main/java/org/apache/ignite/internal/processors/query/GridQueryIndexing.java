@@ -381,4 +381,11 @@ public interface GridQueryIndexing {
      * @return Running query manager.
      */
     public RunningQueryManager runningQueryManager();
+
+    /**
+     * Return query history manager.
+     *
+     * @return Query history manager.
+     */
+    public QueryHistoryManager queryHistoryManager();
 }

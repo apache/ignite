@@ -13,35 +13,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-
-/**
- * Query metrics aggregated by query type and its textual representation.
- *
- * Query detail metrics could be enabled via {@link CacheConfiguration#setQueryDetailMetricsSize(int)} method.
- *
- * @deprecated Use {@link QueryHistoryMetrics} instead.
- */
-@Deprecated
-public interface QueryDetailMetrics {
-    /**
-     * @return Query type.
-     */
-    public String queryType();
-
+public interface QueryHistoryMetrics {
     /**
      * @return Textual representation of query.
      */
     public String query();
 
     /**
-     * @return Cache where query was executed.
+     * @return Schema.
      */
-    public String cache();
+    public String schema();
+
+    /**
+     * @return {@code true} For query with enabled local flag.
+     */
+    public boolean local();
 
     /**
      * Gets total number execution of query.
@@ -49,13 +40,6 @@ public interface QueryDetailMetrics {
      * @return Number of executions.
      */
     public int executions();
-
-    /**
-     * Gets number of completed execution of query.
-     *
-     * @return Number of completed executions.
-     */
-    public int completions();
 
     /**
      * Gets number of times a query execution failed.
@@ -77,20 +61,6 @@ public interface QueryDetailMetrics {
      * @return Maximum execution time of query.
      */
     public long maximumTime();
-
-    /**
-     * Gets average execution time of query.
-     *
-     * @return Average execution time of query.
-     */
-    public double averageTime();
-
-    /**
-     * Gets total time of all query executions.
-     *
-     * @return Total time of all query executions.
-     */
-    public long totalTime();
 
     /**
      * Gets latest query start time.

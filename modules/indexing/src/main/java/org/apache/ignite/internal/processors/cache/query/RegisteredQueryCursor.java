@@ -58,7 +58,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** {@inheritDoc} */
     @Override public void close() {
         if (unregistered.compareAndSet(false, true))
-            runningQryMgr.unregister(qryId);
+            runningQryMgr.unregister(qryId, false);
 
         super.close();
     }

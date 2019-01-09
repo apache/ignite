@@ -13,25 +13,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.cache.query;
-
-import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
-import org.apache.ignite.internal.util.typedef.F;
+package org.apache.ignite.internal.processors.query;
 
 /**
  * Immutable query metrics key used to group metrics.
- *
- * @deprecated Use {@link QueryHistoryMetricsKey} instead.
  */
-@Deprecated
-public class GridCacheQueryDetailMetricsKey {
-    /** Query type to track metrics. */
-    private final GridCacheQueryType qryType;
-
+public class QueryHistoryMetricsKey {
     /** Textual query representation. */
     private final String qry;
+
+    /** Schema. */
+    private final String schema;
+
+    /** Local flag. */
+    private final boolean loc;
 
     /** Pre-calculated hash code. */
     private final int hash;
@@ -39,31 +37,40 @@ public class GridCacheQueryDetailMetricsKey {
     /**
      * Constructor.
      *
-     * @param qryType Query type.
      * @param qry Textual query representation.
+     * @param schema Schema.
+     * @param loc Local flag of execution query.
      */
-    public GridCacheQueryDetailMetricsKey(GridCacheQueryType qryType, String qry) {
-        assert qryType != null;
-        assert qryType != GridCacheQueryType.SQL_FIELDS || qry != null;
+    public QueryHistoryMetricsKey(String qry, String schema, boolean loc) {
+        assert qry != null;
+        assert schema != null;
 
-        this.qryType = qryType;
         this.qry = qry;
+        this.schema = schema;
+        this.loc = loc;
 
-        hash = 31 * qryType.hashCode() + (qry != null ? qry.hashCode() : 0);
-    }
-
-    /**
-     * @return Query type.
-     */
-    public GridCacheQueryType getQueryType() {
-        return qryType;
+        hash = 31 * (31 * qry.hashCode() + schema.hashCode()) + (loc ? 1 : 0);
     }
 
     /**
      * @return Textual representation of query.
      */
-    public String getQuery() {
+    public String query() {
         return qry;
+    }
+
+    /**
+     * @return Textual representation of schema.
+     */
+    public String schema() {
+        return schema;
+    }
+
+    /**
+     * @return Local query flag.
+     */
+    public boolean local() {
+        return loc;
     }
 
     /** {@inheritDoc} */
@@ -79,8 +86,14 @@ public class GridCacheQueryDetailMetricsKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheQueryDetailMetricsKey other = (GridCacheQueryDetailMetricsKey)o;
+        QueryHistoryMetricsKey key = (QueryHistoryMetricsKey)o;
 
-        return qryType == other.qryType && F.eq(qry, other.qry);
+        if (loc != key.loc)
+            return false;
+
+        if (!qry.equals(key.qry))
+            return false;
+
+        return schema.equals(key.schema);
     }
 }
