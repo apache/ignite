@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.apache.ignite.testframework.IgniteSpecialBinaryTestSuite;
 
 /**
  * Special test suite with ignored tests for Binary mode.
@@ -26,12 +26,9 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteIgnoredBinarySimpleMapperTestSuite extends TestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        IgniteTestSuite.ignoreDefault(true);
-
-        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Binary Simple Mapper Test Suite");
+    public static TestSuite suite() {
+        IgniteSpecialBinaryTestSuite suite = new IgniteSpecialBinaryTestSuite(null, "Ignite Ignored Binary Simple Mapper Test Suite");
 
         /* --- QUERY --- */
         suite.addTest(IgniteBinarySimpleNameMapperCacheQueryTestSuite.suite());

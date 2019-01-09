@@ -30,24 +30,17 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Base class for run junit tests.
+ * Base class for special test suites with ignored tests for Binary mode.
+ *
+ * TODO IGNITE-10777 rework this and respective subclasses for JUnit 4.
  */
-public class IgniteTestSuite extends TestSuite {
-    /**
-     * Constructor.
-     *
-     * @param name Name.
-     */
-    public IgniteTestSuite(String name) {
-        this(null, name);
-    }
-
+public class IgniteSpecialBinaryTestSuite extends TestSuite {
     /**
      * Constructor.
      *
      * @param theCls TestCase class
      */
-    private IgniteTestSuite(Class<? extends TestCase> theCls) {
+    private IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls) {
         this(theCls, null);
     }
 
@@ -57,7 +50,7 @@ public class IgniteTestSuite extends TestSuite {
      * @param theCls TestCase class
      * @param name Test suite name.
      */
-    public IgniteTestSuite(Class<? extends TestCase> theCls, String name) {
+    public IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls, String name) {
         if (theCls != null)
             addTestsFromTestCase(theCls);
 
@@ -68,8 +61,8 @@ public class IgniteTestSuite extends TestSuite {
     /** {@inheritDoc} */
     @Override public void addTest(Test test) {
         // Ignore empty test suites.
-        if (test instanceof IgniteTestSuite) {
-            IgniteTestSuite suite = (IgniteTestSuite)test;
+        if (test instanceof IgniteSpecialBinaryTestSuite) {
+            IgniteSpecialBinaryTestSuite suite = (IgniteSpecialBinaryTestSuite)test;
 
             if (suite.testCount() == 0)
                 return;
@@ -80,7 +73,7 @@ public class IgniteTestSuite extends TestSuite {
 
     /** {@inheritDoc} */
     @Override public void addTestSuite(Class<? extends TestCase> testCls) {
-        addTest(new IgniteTestSuite(testCls));
+        addTest(new IgniteSpecialBinaryTestSuite(testCls));
     }
 
     /**
@@ -165,11 +158,7 @@ public class IgniteTestSuite extends TestSuite {
 
         names.add(name);
 
-        Test test = createTest(theCls, name);
-
-        addTest(test);
-
-        return new AddResult(true, test);
+        return new AddResult(false, null);
     }
 
     /**
