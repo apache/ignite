@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueApiSelfAbstractTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalQueueApiSelfTest;
@@ -26,29 +24,26 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for binary cache data structures.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheLocalQueueApiSelfTest.class,
+    GridCacheLocalAtomicQueueApiSelfTest.class,
+    GridCacheReplicatedQueueApiSelfTest.class,
+    GridCachePartitionedQueueApiSelfTest.class,
+    GridCachePartitionedAtomicQueueApiSelfTest.class,
+    IgnitePartitionedQueueNoBackupsTest.class
+})
 public class IgniteCacheDataStructuresBinarySelfTestSuite {
-    /**
-     * @return Cache test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Cache Data Structures Binary Test Suite");
-
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(GridCacheQueueApiSelfAbstractTest.BINARY_QUEUE, "true");
-
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalQueueApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalAtomicQueueApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedQueueApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedQueueApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicQueueApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgnitePartitionedQueueNoBackupsTest.class));
-
-        return suite;
     }
 }

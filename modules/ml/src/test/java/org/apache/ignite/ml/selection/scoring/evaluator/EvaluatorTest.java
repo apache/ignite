@@ -203,12 +203,12 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
     /** */
     private void assertResults(CrossValidationResult res, List<double[]> scores, double accuracy, double accuracy2) {
-        assertTrue(res.toString().length() > 0);
+        assertTrue(!res.toString().isEmpty());
         assertEquals("Best maxDeep", 1.0, res.getBest("maxDeep"));
         assertEquals("Best minImpurityDecrease", 0.0, res.getBest("minImpurityDecrease"));
-        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.4, 0}, res.getBestScore(), 0);
+        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.6, 0}, res.getBestScore(), 0);
         assertEquals("Best hyper params size", 2, res.getBestHyperParams().size());
-        assertEquals("Best average score", 0.35555555555555557, res.getBestAvgScore());
+        assertEquals("Best average score", 0.4222222222222222, res.getBestAvgScore());
 
         assertEquals("Scores amount", 18, scores.size());
 

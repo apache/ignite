@@ -20,7 +20,7 @@ package org.apache.ignite.ml.naivebayes.discrete;
 import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
-public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
+public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
     /**
@@ -74,7 +74,7 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
      * @param vector features vector.
      * @return a label with max probability.
      */
-    @Override public Double apply(Vector vector) {
+    @Override public Double predict(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;
         int maxLabelIndex = -1;
 

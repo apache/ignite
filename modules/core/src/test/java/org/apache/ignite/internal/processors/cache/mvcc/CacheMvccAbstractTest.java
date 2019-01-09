@@ -88,6 +88,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -122,7 +123,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     static final String CRD_ATTR = "testCrd";
 
     /** */
-    static final long DFLT_TEST_TIME = 30_000;
+    static final long DFLT_TEST_TIME = SF.applyLB(30_000, 3_000);
 
     /** */
     protected static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
