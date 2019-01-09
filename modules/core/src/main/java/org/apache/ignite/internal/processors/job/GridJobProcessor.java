@@ -119,10 +119,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> cancelledJobs =
@@ -261,7 +261,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        activeJobs.clear();
+        activeJobs = new ConcurrentLinkedHashMap<>();
         cancelledJobs.clear();
         cancelReqs = new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,

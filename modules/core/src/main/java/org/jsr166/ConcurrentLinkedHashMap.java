@@ -2104,7 +2104,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ConcurrentLinkedHashMap.this.clear();
         }
     }
 
@@ -2144,7 +2143,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ConcurrentLinkedHashMap.this.clear();
         }
     }
 
@@ -2201,7 +2199,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ConcurrentLinkedHashMap.this.clear();
         }
     }
 
