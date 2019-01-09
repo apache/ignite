@@ -46,15 +46,6 @@ public class IgniteTestSuite extends TestSuite {
      * Constructor.
      *
      * @param theCls TestCase class
-     */
-    private IgniteTestSuite(Class<? extends TestCase> theCls) {
-        this(theCls, null);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param theCls TestCase class
      * @param name Test suite name.
      */
     public IgniteTestSuite(Class<? extends TestCase> theCls, String name) {

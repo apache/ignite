@@ -39,15 +39,6 @@ class IgniteIgnoredBaseTestSuite extends TestSuite {
      * Constructor.
      *
      * @param theCls TestCase class
-     */
-    private IgniteIgnoredBaseTestSuite(Class<? extends TestCase> theCls) {
-        this(theCls, null);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param theCls TestCase class
      * @param name Test suite name.
      */
     IgniteIgnoredBaseTestSuite(Class<? extends TestCase> theCls, String name) {
