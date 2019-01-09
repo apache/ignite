@@ -3323,7 +3323,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void doCheckpoint() {
             resetLastCheckpointTimeStamp();
 
-            Checkpoint chp = new Checkpoint(lastCpTs);
+            Checkpoint chp = new Checkpoint(lastCpTs, memoryRecoveryRecordPtr);
+
+            memoryRecoveryRecordPtr = null;
 
             try {
                 markCheckpointBegin(chp);
@@ -3747,16 +3749,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         @SuppressWarnings("TooBroadScope")
-        private Checkpoint markCheckpointBegin(IgnitePdsDestroyCacheTest) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
-
-            memoryRecoveryRecordPtr = null;
-
-            WALPointer cpPtr = null;
-
+        private void markCheckpointBegin(Checkpoint chp) throws IgniteCheckedException {
             final CheckpointProgress curr;
-
-            CheckpointEntry cp = null;
 
             // Represent of initialized snapshot operation under cpWriteLock.
             IgniteFuture snapFut = null;
@@ -4260,7 +4254,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final CheckpointMetricsTracker metrics = new CheckpointMetricsTracker();
 
         /** */
-        private final CheckpointRecord cpRec = new CheckpointRecord();
+        private final CheckpointRecord cpRec;
 
         /** Checkpoint entry. */
         @Nullable private CheckpointEntry cpEntry;
@@ -4278,8 +4272,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final long cpTs;
 
         /** */
-        private Checkpoint(long cpTs) {
+        private Checkpoint(long cpTs, WALPointer memoryRecoveryRecordPtr) {
             this.cpTs = cpTs;
+            this.cpRec = new CheckpointRecord(UUID.randomUUID(), memoryRecoveryRecordPtr);
         }
 
         /**
