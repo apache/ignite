@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.trainers;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -35,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <M> Type of model produced by wrapped model.
  * @param <L> Type of labels.
  */
-public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
+public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>, L>
     extends DatasetTrainer<AdaptableDatasetModel<I, O, IW, OW, M>, L> {
     /** Wrapped trainer. */
     private final DatasetTrainer<M, L> wrapped;
@@ -56,7 +56,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
      * @param <L> Type of labels.
      * @return Instance of this class.
      */
-    public static <I, O, M extends Model<I, O>, L> AdaptableDatasetTrainer<I, O, I, O, M, L> of(DatasetTrainer<M, L> wrapped) {
+    public static <I, O, M extends IgniteModel<I, O>, L> AdaptableDatasetTrainer<I, O, I, O, M, L> of(DatasetTrainer<M, L> wrapped) {
         return new AdaptableDatasetTrainer<>(IgniteFunction.identity(), wrapped, IgniteFunction.identity());
     }
 
