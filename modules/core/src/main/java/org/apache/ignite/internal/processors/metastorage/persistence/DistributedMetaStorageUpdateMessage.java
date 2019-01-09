@@ -83,6 +83,11 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         this.active = active;
     }
 
+    /** */
+    protected boolean isActive() {
+        return active;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return new DistributedMetaStorageUpdateAckMessage(reqId, active);

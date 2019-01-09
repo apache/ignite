@@ -41,6 +41,11 @@ class DistributedMetaStorageUtil {
     private static final String CLEANUP_GUARD_KEY = "clean";
 
     /** */
+    @Nullable public static byte[] marshal(Serializable val) throws IgniteCheckedException {
+        return val == null ? null : JdkMarshaller.DEFAULT.marshal(val);
+    }
+
+    /** */
     @Nullable public static Serializable unmarshal(byte[] valBytes) throws IgniteCheckedException {
         return valBytes == null ? null : JdkMarshaller.DEFAULT.unmarshal(valBytes, U.gridClassLoader());
     }

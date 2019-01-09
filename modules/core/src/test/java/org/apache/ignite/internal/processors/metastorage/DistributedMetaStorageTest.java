@@ -213,6 +213,44 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testCas() throws Exception {
+        startGrids(2);
+
+        grid(0).cluster().active(true);
+
+        assertFalse(metastorage(0).casWrite("key", "expVal", "newVal"));
+
+        assertNull(metastorage(0).read("key"));
+
+        assertFalse(metastorage(0).casRemove("key", "expVal"));
+
+        assertTrue(metastorage(0).casWrite("key", null, "val1"));
+
+        assertEquals("val1", metastorage(0).read("key"));
+
+        assertFalse(metastorage(0).casWrite("key", null, "val2"));
+
+        assertEquals("val1", metastorage(0).read("key"));
+
+        assertTrue(metastorage(0).casWrite("key", "val1", "val3"));
+
+        assertEquals("val3", metastorage(0).read("key"));
+
+        assertFalse(metastorage(0).casRemove("key", "val1"));
+
+        assertEquals("val3", metastorage(0).read("key"));
+
+        assertTrue(metastorage(0).casRemove("key", "val3"));
+
+        assertNull(metastorage(0).read("key"));
+
+        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testJoinCleanNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 

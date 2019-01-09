@@ -18,37 +18,35 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateFuture extends GridFutureAdapter<Boolean> {
+class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
     /** */
-    private final UUID id;
-
-    /** */
-    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    public DistributedMetaStorageUpdateFuture(UUID id, ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts) {
-        this.id = id;
+    private final boolean updated;
 
-        this.updateFuts = updateFuts;
-
-        updateFuts.put(id, this);
+    /** */
+    public DistributedMetaStorageCasAckMessage(UUID reqId, boolean active, boolean updated) {
+        super(reqId, active);
+        this.updated = updated;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-        updateFuts.remove(id);
-
-        return super.onDone(res, err);
+    /** */
+    public boolean updated() {
+        return updated;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DistributedMetaStorageUpdateFuture.class, this);
+        return S.toString(DistributedMetaStorageCasAckMessage.class, this);
     }
 }

@@ -18,37 +18,50 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateFuture extends GridFutureAdapter<Boolean> {
+class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
     /** */
-    private final UUID id;
-
-    /** */
-    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    public DistributedMetaStorageUpdateFuture(UUID id, ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts) {
-        this.id = id;
+    private final byte[] expectedVal;
 
-        this.updateFuts = updateFuts;
+    /** */
+    private boolean matches = true;
 
-        updateFuts.put(id, this);
+    /** */
+    public DistributedMetaStorageCasMessage(UUID reqId, String key, byte[] expValBytes, byte[] valBytes) {
+        super(reqId, key, valBytes);
+
+        expectedVal = expValBytes;
+    }
+
+    /** */
+    public byte[] expectedValue() {
+        return expectedVal;
+    }
+
+    /** */
+    public void setMatches(boolean matches) {
+        this.matches = matches;
+    }
+
+    /** */
+    public boolean matches() {
+        return matches;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-        updateFuts.remove(id);
-
-        return super.onDone(res, err);
+    @Override @Nullable public DiscoveryCustomMessage ackMessage() {
+        return new DistributedMetaStorageCasAckMessage(requestId(), isActive(), matches);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DistributedMetaStorageUpdateFuture.class, this);
+        return S.toString(DistributedMetaStorageCasMessage.class, this);
     }
 }

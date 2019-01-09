@@ -32,10 +32,10 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
     /** */
     boolean casWrite(
         @NotNull String key,
-        @NotNull Serializable oldVal,
+        @NotNull Serializable expVal,
         @NotNull Serializable newVal
     ) throws IgniteCheckedException;
 
     /** */
-    boolean casRemove(@NotNull String key, @NotNull Serializable oldVal) throws IgniteCheckedException;
+    boolean casRemove(@NotNull String key, @NotNull Serializable expVal) throws IgniteCheckedException;
 }

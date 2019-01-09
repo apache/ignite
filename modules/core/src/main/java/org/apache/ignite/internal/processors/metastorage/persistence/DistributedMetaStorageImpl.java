@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.NotNull;
@@ -65,6 +65,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /** */
@@ -106,7 +107,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     );
 
     /** */
-    private final ConcurrentMap<UUID, GridFutureAdapter<?>> updateFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
     /** */
     private StartupExtras startupExtras = new StartupExtras();
@@ -307,7 +308,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null : key;
 
-        startWrite(key, JdkMarshaller.DEFAULT.marshal(val));
+        startWrite(key, marshal(val));
     }
 
     /** {@inheritDoc} */
@@ -318,18 +319,22 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /** {@inheritDoc} */
     @Override public boolean casWrite(
         @NotNull String key,
-        @NotNull Serializable oldVal,
+        @Nullable Serializable expVal,
         @NotNull Serializable newVal
     ) throws IgniteCheckedException {
-        return false;
+        assert newVal != null : key;
+
+        return startCas(key, marshal(expVal), marshal(newVal));
     }
 
     /** {@inheritDoc} */
     @Override public boolean casRemove(
         @NotNull String key,
-        @NotNull Serializable oldVal
+        @NotNull Serializable expVal
     ) throws IgniteCheckedException {
-        return false;
+        assert expVal != null : key;
+
+        return startCas(key, marshal(expVal), null);
     }
 
     /** {@inheritDoc} */
@@ -405,7 +410,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         boolean clusterIsActive = isActive();
 
-        String msg = null; //TODO Make final?
+        String errorMsg;
 
         synchronized (innerStateLock) {
             DistributedMetaStorageVersion locVer = getActualVersion();
@@ -416,6 +421,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             if (remoteVer.id < locVer.id - locHistSize) {
                 // Remote node is too far behind.
+                // Technicaly this situation should be banned because there's no way to prove data consistency.
+                errorMsg = null;
             }
             else if (remoteVer.id < locVer.id) {
                 // Remote node it behind the cluster version and there's enough history.
@@ -426,26 +433,30 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 );
 
                 if (!newRemoteVer.equals(locVer))
-                    msg = "Joining node has conflicting distributed metastorage data.";
+                    errorMsg = "Joining node has conflicting distributed metastorage data.";
+                else
+                    errorMsg = null;
             }
             else if (remoteVer.id == locVer.id) {
                 // Remote and local versions match.
                 if (!remoteVer.equals(locVer)) {
-                    msg = S.toString(
+                    errorMsg = S.toString(
                         "Joining node has conflicting distributed metastorage data:",
                         "clusterVersion", locVer, false,
                         "joiningNodeVersion", remoteVer, false
                     );
                 }
+                else
+                    errorMsg = null;
             }
             else if (remoteVer.id <= locVer.id + remoteHistSize) {
                 // Remote node is ahead of the cluster and has enough history.
                 if (clusterIsActive) {
-                    msg = "Attempting to join node with larger distributed metastorage version id." +
+                    errorMsg = "Attempting to join node with larger distributed metastorage version id." +
                         " The node is most likely in invalid state and can't be joined.";
                 }
                 else if (wasDeactivated || remoteBltId < locBltId)
-                    msg = "Joining node has conflicting distributed metastorage data.";
+                    errorMsg = "Joining node has conflicting distributed metastorage data.";
                 else {
                     DistributedMetaStorageVersion newLocVer = locVer.nextVersion(
                         remoteHist,
@@ -454,7 +465,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     );
 
                     if (!newLocVer.equals(remoteVer))
-                        msg = "Joining node has conflicting distributed metastorage data.";
+                        errorMsg = "Joining node has conflicting distributed metastorage data.";
+                    else
+                        errorMsg = null;
                 }
             }
             else {
@@ -462,19 +475,19 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                 // Remote node is too far ahead.
                 if (clusterIsActive) {
-                    msg = "Attempting to join node with larger distributed metastorage version id." +
+                    errorMsg = "Attempting to join node with larger distributed metastorage version id." +
                         " The node is most likely in invalid state and can't be joined.";
                 }
                 else if (wasDeactivated || remoteBltId < locBltId)
-                    msg = "Joining node has conflicting distributed metastorage data.";
+                    errorMsg = "Joining node has conflicting distributed metastorage data.";
                 else {
-                    msg = "Joining node doesn't have enough history items in distributed metastorage data." +
+                    errorMsg = "Joining node doesn't have enough history items in distributed metastorage data." +
                         " Please check the order in which you start cluster nodes.";
                 }
             }
         }
 
-        return (msg == null) ? null : new IgniteNodeValidationResult(node.id(), msg, msg);
+        return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
     }
 
     /** {@inheritDoc} */
@@ -702,13 +715,26 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<?> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
+        GridFutureAdapter<Boolean> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
 
         ctx.discovery().sendCustomEvent(msg);
 
         fut.get();
+    }
+
+    /** */
+    private boolean startCas(String key, byte[] expValBytes, byte[] newValBytes) throws IgniteCheckedException {
+        UUID reqId = UUID.randomUUID();
+
+        GridFutureAdapter<Boolean> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
+
+        DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
+
+        ctx.discovery().sendCustomEvent(msg);
+
+        return fut.get();
     }
 
     /** */
@@ -726,7 +752,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             U.await(writeAvailable);
 
-            completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
+            if (msg instanceof DistributedMetaStorageCasMessage)
+                completeCas(bridge, (DistributedMetaStorageCasMessage)msg);
+            else
+                completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
         }
         catch (IgniteCheckedException | Error e) {
             criticalError(e);
@@ -739,11 +768,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateAckMessage msg
     ) {
-        GridFutureAdapter<?> fut = updateFuts.remove(msg.requestId());
+        GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
 
         if (fut != null) {
-            if (msg.isActive())
-                fut.onDone();
+            if (msg.isActive()) {
+                Boolean res = msg instanceof DistributedMetaStorageCasAckMessage
+                    ? ((DistributedMetaStorageCasAckMessage)msg).updated()
+                    : null;
+
+                fut.onDone(res);
+            }
             else
                 fut.onDone(clusterIsNotActiveException());
         }
@@ -781,6 +815,34 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         addToHistoryCache(ver.id, histItem);
 
         shrinkHistory(bridge);
+    }
+
+    /** */
+    private void completeCas(
+        DistributedMetaStorageBridge bridge,
+        DistributedMetaStorageCasMessage msg
+    ) throws IgniteCheckedException {
+        if (!msg.matches())
+            return;
+
+        lock();
+
+        try {
+            Serializable oldVal = bridge.read(msg.key());
+
+            Serializable expVal = unmarshal(msg.expectedValue());
+
+            if (!Objects.deepEquals(oldVal, expVal)) {
+                msg.setMatches(false);
+
+                return;
+            }
+        }
+        finally {
+            unlock();
+        }
+
+        completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
     }
 
     /** */
