@@ -19,6 +19,7 @@ package org.apache.ignite.failure;
 
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
@@ -29,6 +30,7 @@ import static org.apache.ignite.testframework.junits.GridAbstractTest.testIsRunn
  */
 public class TestFailingFailureHandler extends StopNodeFailureHandler {
     /** Test. */
+    @GridToStringExclude
     private final GridAbstractTest test;
 
     /**
