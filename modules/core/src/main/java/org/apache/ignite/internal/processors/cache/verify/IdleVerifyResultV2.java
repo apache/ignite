@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,11 +49,34 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private Map<UUID, Exception> exceptions;
 
     /**
+     * Creates idle verify result with exceptions.
+     *
+     * @param exceptions Exceptions.
+     */
+    public IdleVerifyResultV2(Map<UUID, Exception> exceptions) {
+        this(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), exceptions);
+    }
+
+    /**
      * @param cntrConflicts Counter conflicts.
      * @param hashConflicts Hash conflicts.
      * @param movingPartitions Moving partitions.
      */
     public IdleVerifyResultV2(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions
+    ) {
+        this(cntrConflicts, hashConflicts, movingPartitions, Collections.emptyMap());
+    }
+
+    /**
+     * @param cntrConflicts Counter conflicts.
+     * @param hashConflicts Hash conflicts.
+     * @param movingPartitions Moving partitions.
+     * @param exceptions Occured exceptions.
+     */
+    private IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
