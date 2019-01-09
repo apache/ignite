@@ -25,19 +25,15 @@ const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
 /**
  * @param {import('@uirouter/angularjs').StateProvider} $state
  * @param {ng.IHttpProvider} $http
- * @param {unknown} socketFactory
  */
-export function DemoProvider($state, $http, socketFactory) {
+export function DemoProvider($state, $http) {
     if (/(\/demo.*)/ig.test(location.pathname))
         sessionStorage.setItem('IgniteDemoMode', 'true');
 
     const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
 
-    if (enabled) {
-        socketFactory.set({query: 'IgniteDemoMode=true'});
-
+    if (enabled)
         $http.interceptors.push('demoInterceptor');
-    }
 
     function service($root) {
         $root.IgniteDemoMode = enabled;
@@ -50,7 +46,7 @@ export function DemoProvider($state, $http, socketFactory) {
     return this;
 }
 
-DemoProvider.$inject = ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider'];
+DemoProvider.$inject = ['$stateProvider', '$httpProvider'];
 
 /**
  * @param {{enabled: boolean}} Demo
@@ -71,34 +67,7 @@ function demoInterceptor(Demo) {
 
 demoInterceptor.$inject = ['Demo'];
 
-/**
- * @param {ng.IScope} $scope
- * @param {import('@uirouter/angularjs').StateService} $state
- * @param {ng.IWindowService} $window
- * @param {ReturnType<typeof import('app/services/Confirm.service').default>} Confirm
- */
-function demoController($scope, $state, $window, Confirm) {
-    const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
 
-    $scope.startDemo = () => {
-        if (!$scope.user.demoCreated)
-            return _openTab('demo.reset');
-
-        Confirm.confirm('Would you like to continue with previous demo session?', true, false)
-            .then((resume) => {
-                if (resume)
-                    return _openTab('demo.resume');
-
-                _openTab('demo.reset');
-            });
-    };
-
-    $scope.closeDemo = () => {
-        $window.close();
-    };
-}
-
-demoController.$inject = ['$scope', '$state', '$window', 'IgniteConfirm'];
 
 function igniteDemoInfoProvider() {
     const items = DEMO_INFO;
@@ -205,12 +174,9 @@ function config($stateProvider) {
 config.$inject = ['$stateProvider'];
 
 angular
-.module('ignite-console.demo', [
-    'ignite-console.socket'
-])
-.config(config)
-.provider('Demo', DemoProvider)
-.factory('demoInterceptor', demoInterceptor)
-.controller('demoController', demoController)
-.provider('igniteDemoInfo', igniteDemoInfoProvider)
-.service('DemoInfo', DemoInfo);
+    .module('ignite-console.demo', [])
+    .config(config)
+    .provider('Demo', DemoProvider)
+    .factory('demoInterceptor', demoInterceptor)
+    .provider('igniteDemoInfo', igniteDemoInfoProvider)
+    .service('DemoInfo', DemoInfo);

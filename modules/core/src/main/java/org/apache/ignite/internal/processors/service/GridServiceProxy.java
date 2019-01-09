@@ -104,7 +104,6 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      */
-    @SuppressWarnings("unchecked")
     public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
@@ -198,19 +197,15 @@ public class GridServiceProxy<T> implements Serializable {
                             true).get();
                     }
                 }
-                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                }
                 catch (RuntimeException | Error e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     // Check if ignorable exceptions are in the cause chain.
-                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
+                    Throwable ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
 
-                    if (ignorableCause == null)
-                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+                    if (ignorableCause == null && ctx.service() instanceof GridServiceProcessor)
+                        ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
                     if (ignorableCause != null) {
                         if (log.isDebugEnabled())

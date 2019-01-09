@@ -47,7 +47,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> binaryTrainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(1000)
@@ -68,8 +68,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
         Assert.assertTrue(mdl.toString(true).length() > 0);
         Assert.assertTrue(mdl.toString(false).length() > 0);
 
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-100, 0)), PRECISION);
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 0)), PRECISION);
+        TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(-100, 0)), PRECISION);
+        TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 0)), PRECISION);
     }
 
     /** */
@@ -80,7 +80,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> binaryTrainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(1000)
@@ -119,8 +119,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
         );
 
         for (Vector vec : vectors) {
-            TestUtils.assertEquals(originalMdl.apply(vec), updatedOnSameDS.apply(vec), PRECISION);
-            TestUtils.assertEquals(originalMdl.apply(vec), updatedOnEmptyDS.apply(vec), PRECISION);
+            TestUtils.assertEquals(originalMdl.predict(vec), updatedOnSameDS.predict(vec), PRECISION);
+            TestUtils.assertEquals(originalMdl.predict(vec), updatedOnEmptyDS.predict(vec), PRECISION);
         }
     }
 }

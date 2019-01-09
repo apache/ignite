@@ -84,7 +84,7 @@ public class GaussianNaiveBayesTrainerExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = mdl.apply(inputs);
+                    double prediction = mdl.predict(inputs);
 
                     totalAmount++;
                     if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))

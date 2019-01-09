@@ -24,6 +24,7 @@ const IllegalArgumentException = require('./IllegalArgumentException');
 const IllegalAccessError = require('./IllegalAccessError');
 const DuplicateKeyException = require('./DuplicateKeyException');
 const ServerErrorException = require('./ServerErrorException');
+const MissingConfirmRegistrationException = require('./MissingConfirmRegistrationException');
 const MissingResourceException = require('./MissingResourceException');
 const AuthFailedException = require('./AuthFailedException');
 
@@ -35,6 +36,7 @@ module.exports = {
         IllegalArgumentException,
         DuplicateKeyException,
         ServerErrorException,
+        MissingConfirmRegistrationException,
         MissingResourceException,
         AuthFailedException
     })

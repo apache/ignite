@@ -34,7 +34,6 @@ import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
-import org.apache.ignite.ml.trainers.BaggingTest;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -49,22 +48,22 @@ import org.junit.runners.Suite;
     RegressionsTestSuite.class,
     SVMTestSuite.class,
     ClusteringTestSuite.class,
-    DecisionTreeTestSuite.class,
     KNNTestSuite.class,
-    MLPTestSuite.class,
-    DatasetTestSuite.class,
     PipelineTestSuite.class,
     PreprocessingTestSuite.class,
     GAGridTestSuite.class,
-    SelectionTestSuite.class,
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
     StructuresTestSuite.class,
     CommonTestSuite.class,
+    MultiClassTestSuite.class,
+
+    /** JUnit 3 tests. */
+    DecisionTreeTestSuite.class,
+    MLPTestSuite.class,
     InferenceTestSuite.class,
-    BaggingTest.class,
-    MultiClassTestSuite.class
+    DatasetTestSuite.class,
+    SelectionTestSuite.class
 })
 public class IgniteMLTestSuite {
-    // No-op.
 }

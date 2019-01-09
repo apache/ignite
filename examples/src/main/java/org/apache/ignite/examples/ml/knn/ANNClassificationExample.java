@@ -97,7 +97,7 @@ public class ANNClassificationExample {
                     double groundTruth = val[0];
 
                     long startPredictionTime = System.currentTimeMillis();
-                    double prediction = knnMdl.apply(new DenseVector(inputs));
+                    double prediction = knnMdl.predict(new DenseVector(inputs));
                     long endPredictionTime = System.currentTimeMillis();
 
                     totalPredictionTime += (endPredictionTime - startPredictionTime);

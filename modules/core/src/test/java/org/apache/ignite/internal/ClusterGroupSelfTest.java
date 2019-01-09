@@ -55,7 +55,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
@@ -78,6 +77,13 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
     }
 
     /** {@inheritDoc} */

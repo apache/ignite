@@ -160,7 +160,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     private Object peek;
 
     /** */
-    @SuppressWarnings({"FieldCanBeLocal"})
     @GridToStringExclude
     private volatile int skipCntr;
 
@@ -788,7 +787,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param backups Backup nodes.
      * @return {@code True} if there is possible to add this key to batch or send ready batch.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean ensureFreeSlot(KeyCacheObject key, List<ClusterNode> backups) {
         if (F.isEmpty(batches) || F.isEmpty(pending))
             return true;
@@ -900,6 +898,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             m.put(node.id(), mapping = new GridDistributedTxMapping(node));
 
         mapping.markQueryUpdate();
+
+        checkCompleted();
     }
 
     /** */

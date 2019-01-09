@@ -97,6 +97,13 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         ignite = startGrid();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @param nodesCnt Count of nodes to generate.
      * @return Nodes list.
@@ -1042,7 +1049,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             parts = in.readInt();
             exclNeighbors = in.readBoolean();

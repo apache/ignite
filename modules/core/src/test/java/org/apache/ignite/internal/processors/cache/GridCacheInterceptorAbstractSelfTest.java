@@ -37,9 +37,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -60,9 +57,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 @RunWith(JUnit4.class)
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static Interceptor interceptor;
 
@@ -115,12 +109,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(spi);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -1163,7 +1151,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expOld Expected expOld value.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void update(int grid, Operation op, String key, final Integer val, @Nullable final Integer expOld)
         throws Exception {
         cacheUpdate(grid, false, op, key, val, expOld, null);
@@ -1177,7 +1164,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expRmvRet Expected remove result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void remove(int grid, Operation op, String key, @Nullable final Integer expOld,
         @Nullable final Integer expRmvRet) throws Exception {
         cacheUpdate(grid, true, op, key, null, expOld, expRmvRet);
@@ -1193,7 +1179,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expRmvRet Expected remove result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheUpdate(int grid, boolean rmv, Operation op, String key, final Integer val,
         @Nullable final Integer expOld, @Nullable final Integer expRmvRet)
         throws Exception {
@@ -1277,7 +1262,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void batchUpdate(int grid, Operation op, final Map<String, Integer> map) throws Exception {
         cacheBatchUpdate(grid, false, op, map);
     }
@@ -1288,7 +1272,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void batchRemove(int grid, Operation op, final Map<String, Integer> map) throws Exception {
         cacheBatchUpdate(grid, true, op, map);
     }
@@ -1300,7 +1283,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheBatchUpdate(int grid, boolean rmv, Operation op, final Map<String, Integer> map)
         throws Exception {
         IgniteCache<String, Integer> cache = jcache(grid);
