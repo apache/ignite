@@ -79,11 +79,13 @@ namespace ignite
                 if (!ssl0)
                     return false;
 
+                ssl = reinterpret_cast<void*>(ssl0);
+
+                common::MethodGuard<SecureSocketClient> guard(this, &SecureSocketClient::CloseInteral);
+
                 int res = sslGateway.SSL_set_tlsext_host_name_(ssl0, hostname);
                 if (res != OPERATION_SUCCESS)
                 {
-                    sslGateway.SSL_free_(ssl0);
-
                     std::string err = "Can not set host name for secure connection: " + GetSslError(ssl0, res);
 
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
@@ -95,8 +97,6 @@ namespace ignite
 
                 if (!connected)
                 {
-                    sslGateway.SSL_free_(ssl0);
-
                     return false;
                 }
 
@@ -106,8 +106,6 @@ namespace ignite
                     sslGateway.X509_free_(cert);
                 else
                 {
-                    sslGateway.SSL_free_(ssl0);
-
                     std::string err = "Remote host did not provide certificate: " + GetSslError(ssl0, res);
 
                     return false;
@@ -118,14 +116,12 @@ namespace ignite
                 res = sslGateway.SSL_get_verify_result_(ssl0);
                 if (X509_V_OK != res)
                 {
-                    sslGateway.SSL_free_(ssl0);
-
 //                  std::string err = "Certificate chain verification failed: " + GetSslError(ssl0, res);
 
                     return false;
                 }
 
-                ssl = reinterpret_cast<void*>(ssl0);
+                guard.Release();
 
                 return true;
             }
@@ -375,9 +371,7 @@ namespace ignite
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
-                assert(sslGateway.Loaded());
-
-                if (ssl)
+                if (sslGateway.Loaded() && ssl)
                 {
                     sslGateway.SSL_free_(reinterpret_cast<SSL*>(ssl));
 
