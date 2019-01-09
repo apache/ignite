@@ -1671,6 +1671,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /**
+     * For tests only!
+     *
+     * @return Minimal active query number.
+     */
+    public Long minimalActiveQuery() {
+        return activeQueries.activeMinimal();
+    }
+
+    /**
      *
      */
     private class ActiveQueries {
