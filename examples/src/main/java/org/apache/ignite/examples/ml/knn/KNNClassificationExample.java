@@ -83,7 +83,7 @@ public class KNNClassificationExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = knnMdl.apply(inputs);
+                    double prediction = knnMdl.predict(inputs);
 
                     totalAmount++;
                     if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))

@@ -48,10 +48,10 @@ public class KMeansModelTest {
 
         Assert.assertTrue(mdl.toString().contains("KMeansModel"));
 
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, -1.1})), 2.0, PRECISION);
-        Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, -1.1})), 3.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{1.1, -1.1})), 2.0, PRECISION);
+        Assert.assertEquals(mdl.predict(new DenseVector(new double[]{-1.1, -1.1})), 3.0, PRECISION);
 
         Assert.assertEquals(mdl.distanceMeasure(), distanceMeasure);
         Assert.assertEquals(mdl.getAmountOfClusters(), 4);

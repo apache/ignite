@@ -57,11 +57,14 @@ import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindSto
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreAtomicTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreNonCoalescingTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite3 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite3 {
     /**
      * @return IgniteCache test suite.
      */

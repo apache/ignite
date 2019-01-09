@@ -20,16 +20,18 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessorLoadTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Job metrics self test suite.
  */
-public class IgniteJobMetricsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteJobMetricsSelfTestSuite {
     /**
      * @return Job metrics test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Job metrics Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridJobMetricsProcessorLoadTest.class));
