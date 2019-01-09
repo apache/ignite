@@ -56,8 +56,8 @@ done
 # Set 'file.encoding' to UTF-8 default if not specified otherwise
 #
 case "${JVM_OPTS}" in
-  *-Dfile.encoding=*)
-    ;;
-  *)
-    JVM_OPTS="${JVM_OPTS} -Dfile.encoding=UTF-8";;
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS} -Dfile.encoding=UTF-8";;
 esac
