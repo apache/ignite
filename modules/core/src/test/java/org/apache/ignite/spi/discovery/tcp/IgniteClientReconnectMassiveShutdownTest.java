@@ -77,10 +77,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
         cfg.setClientMode(clientMode);
 
-        // TODO Remove after IGNITE-1758 will be fixed.
-        if (clientMode)
-            cfg.setFailureHandler(new StopNodeFailureHandler());
-
         return cfg;
     }
 
@@ -195,9 +191,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                                 retryFut.get();
                             }
                             catch (IgniteException | CacheException e) {
-                                if (checkClientFail(ignite))
-                                    return null;
-
                                 retryFut = getRetryFuture(e);
 
                                 continue;
@@ -209,9 +202,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                                 tx.commit();
                             }
                             catch (IgniteException | CacheException e) {
-                                if (checkClientFail(ignite))
-                                    return null;
-
                                 retryFut = getRetryFuture(e);
                             }
                         }
@@ -356,32 +346,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         }
         else
             throw e;
-    }
-
-    /**
-     * Checks that the client fails by IGNITE-1758.
-     *
-     * TODO Remove method after IGNITE-1758 will be fixed.
-     *
-     * @param ignite Ignite instance.
-     * @return {@code True} if client fails by IGNITE-1758.
-     */
-    private boolean checkClientFail(IgniteEx ignite) {
-        if (ignite.context().failure().nodeStopping()) {
-            Throwable e = ignite.context().failure().failureContext().error();
-
-            StringWriter sw = new StringWriter();
-
-            e.printStackTrace(new PrintWriter(sw));
-
-            if (sw.toString().contains("ClientImpl.updateTopologyHistory")) {
-                log.warning("Ignoring the client fail by IGNITE-1758.");
-
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
