@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testframework.IgniteSpecialBinaryTestSuite;
 
 /**
  * Special test suite with ignored tests for Binary mode.

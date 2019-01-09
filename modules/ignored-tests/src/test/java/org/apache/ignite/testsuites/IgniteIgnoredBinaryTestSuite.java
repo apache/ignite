@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testframework.IgniteSpecialBinaryTestSuite;
 
 /**
  * Special test suite with ignored tests for Binary mode.
@@ -26,9 +25,8 @@ import org.apache.ignite.testframework.IgniteSpecialBinaryTestSuite;
 public class IgniteIgnoredBinaryTestSuite extends TestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         IgniteSpecialBinaryTestSuite suite = new IgniteSpecialBinaryTestSuite(null, "Ignite Ignored Binary Test Suite");
 
         /* --- QUERY --- */

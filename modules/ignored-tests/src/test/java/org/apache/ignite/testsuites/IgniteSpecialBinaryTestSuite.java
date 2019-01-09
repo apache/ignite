@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework;
+package org.apache.ignite.testsuites;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -34,7 +34,7 @@ import java.util.List;
  *
  * TODO IGNITE-10777 rework this and respective subclasses for JUnit 4.
  */
-public class IgniteSpecialBinaryTestSuite extends TestSuite {
+class IgniteSpecialBinaryTestSuite extends TestSuite {
     /**
      * Constructor.
      *
@@ -50,7 +50,7 @@ public class IgniteSpecialBinaryTestSuite extends TestSuite {
      * @param theCls TestCase class
      * @param name Test suite name.
      */
-    public IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls, String name) {
+    IgniteSpecialBinaryTestSuite(Class<? extends TestCase> theCls, String name) {
         if (theCls != null)
             addTestsFromTestCase(theCls);
 

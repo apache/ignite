@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
-import org.apache.ignite.testframework.IgniteSpecialBinaryTestSuite;
 
 /**
  * Special test suite with ignored tests.
