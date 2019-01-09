@@ -52,8 +52,8 @@ public class VisorMvccConfiguration extends VisorDataTransferObject {
     public VisorMvccConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
-        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
-        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
+        mvccVacuumThreadCnt = 0;
+        mvccVacuumFreq = 0;
     }
 
     /**
