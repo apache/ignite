@@ -17,34 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.internal.GridTopicExternalizableSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Externalizable self-test suite.
  */
-@RunWith(IgniteExternalizableSelfTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({GridTopicExternalizableSelfTest.class})
 public class IgniteExternalizableSelfTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(GridTopicExternalizableSelfTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

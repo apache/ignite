@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
@@ -54,75 +51,50 @@ import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Kernal self test suite.
  */
-@RunWith(IgniteKernalSelfTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridGetOrStartSelfTest.class,
+    GridSameVmStartupSelfTest.class,
+    GridSpiExceptionSelfTest.class,
+    GridRuntimeExceptionSelfTest.class,
+    GridFailedInputParametersSelfTest.class,
+    GridNodeFilterSelfTest.class,
+    GridNodeVisorAttributesSelfTest.class,
+    GridDiscoverySelfTest.class,
+    GridCommunicationSelfTest.class,
+    GridEventStorageManagerSelfTest.class,
+    GridCommunicationSendMessageSelfTest.class,
+    GridCacheMessageSelfTest.class,
+    GridDeploymentManagerStopSelfTest.class,
+    GridManagerStopSelfTest.class,
+    GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class,
+    GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class,
+    GridDiscoveryManagerAliveCacheSelfTest.class,
+    GridDiscoveryEventSelfTest.class,
+    GridPortProcessorSelfTest.class,
+    GridHomePathSelfTest.class,
+    GridStartupWithUndefinedIgniteHomeSelfTest.class,
+    GridVersionSelfTest.class,
+    GridListenActorSelfTest.class,
+    GridNodeLocalSelfTest.class,
+    GridKernalConcurrentAccessStopSelfTest.class,
+    IgniteConcurrentEntryProcessorAccessStopTest.class,
+    GridUpdateNotifierSelfTest.class,
+    GridAddressResolverSelfTest.class,
+    IgniteUpdateNotifierPerClusterSettingSelfTest.class,
+    GridLocalEventListenerSelfTest.class,
+    IgniteTopologyPrintFormatSelfTest.class,
+    IgniteConnectionConcurrentReserveAndRemoveTest.class,
+    LongJVMPauseDetectorTest.class,
+    ClusterMetricsSelfTest.class,
+    DeploymentRequestOfUnknownClassProcessingTest.class,
+})
 public class IgniteKernalSelfTestSuite {
-    /**
-     * @return Kernal test suite.
-     */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(GridGetOrStartSelfTest.class);
-        suite.add(GridSameVmStartupSelfTest.class);
-        suite.add(GridSpiExceptionSelfTest.class);
-        suite.add(GridRuntimeExceptionSelfTest.class);
-        suite.add(GridFailedInputParametersSelfTest.class);
-        suite.add(GridNodeFilterSelfTest.class);
-        suite.add(GridNodeVisorAttributesSelfTest.class);
-        suite.add(GridDiscoverySelfTest.class);
-        suite.add(GridCommunicationSelfTest.class);
-        suite.add(GridEventStorageManagerSelfTest.class);
-        suite.add(GridCommunicationSendMessageSelfTest.class);
-        suite.add(GridCacheMessageSelfTest.class);
-        suite.add(GridDeploymentManagerStopSelfTest.class);
-        suite.add(GridManagerStopSelfTest.class);
-        suite.add(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
-        suite.add(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
-        suite.add(GridDiscoveryManagerAliveCacheSelfTest.class);
-        suite.add(GridDiscoveryEventSelfTest.class);
-        suite.add(GridPortProcessorSelfTest.class);
-        suite.add(GridHomePathSelfTest.class);
-        suite.add(GridStartupWithUndefinedIgniteHomeSelfTest.class);
-        GridTestUtils.addTestIfNeeded(suite, GridVersionSelfTest.class, ignoredTests);
-        suite.add(GridListenActorSelfTest.class);
-        suite.add(GridNodeLocalSelfTest.class);
-        suite.add(GridKernalConcurrentAccessStopSelfTest.class);
-        suite.add(IgniteConcurrentEntryProcessorAccessStopTest.class);
-        suite.add(GridUpdateNotifierSelfTest.class);
-        suite.add(GridAddressResolverSelfTest.class);
-        suite.add(IgniteUpdateNotifierPerClusterSettingSelfTest.class);
-        suite.add(GridLocalEventListenerSelfTest.class);
-        suite.add(IgniteTopologyPrintFormatSelfTest.class);
-        suite.add(IgniteConnectionConcurrentReserveAndRemoveTest.class);
-        suite.add(LongJVMPauseDetectorTest.class);
-        suite.add(ClusterMetricsSelfTest.class);
-        suite.add(DeploymentRequestOfUnknownClassProcessingTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

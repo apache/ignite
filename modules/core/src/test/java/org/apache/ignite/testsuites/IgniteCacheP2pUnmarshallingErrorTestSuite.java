@@ -17,49 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNearErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
-@RunWith(IgniteCacheP2pUnmarshallingErrorTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheP2pUnmarshallingErrorTest.class,
+    IgniteCacheP2pUnmarshallingNearErrorTest.class,
+    IgniteCacheP2pUnmarshallingRebalanceErrorTest.class,
+    IgniteCacheP2pUnmarshallingTxErrorTest.class,
+})
 public class IgniteCacheP2pUnmarshallingErrorTestSuite {
-    /**
-     * @return Suite.
-     */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
-        List<Class<?>> suite = new ArrayList<>();
-
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingErrorTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingNearErrorTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingRebalanceErrorTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingTxErrorTest.class, ignoredTests);
-
-        return suite;
-    }
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

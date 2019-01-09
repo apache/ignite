@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
@@ -92,134 +90,118 @@ import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Basic test suite.
  */
-@RunWith(IgniteBasicTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteMarshallerSelfTestSuite.class,
+        IgniteLangSelfTestSuite.class,
+    IgniteUtilSelfTestSuite.class,
+
+    IgniteKernalSelfTestSuite.class,
+    IgniteStartUpTestSuite.class,
+    IgniteExternalizableSelfTestSuite.class,
+    IgniteP2PSelfTestSuite.class,
+    IgniteCacheP2pUnmarshallingErrorTestSuite.class,
+    IgniteStreamSelfTestSuite.class,
+
+    IgnitePlatformsTestSuite.class,
+
+    GridSelfTest.class,
+    ClusterGroupHostsSelfTest.class,
+    IgniteMessagingWithClientTest.class,
+    IgniteMessagingSendAsyncTest.class,
+
+    ClusterGroupSelfTest.class,
+    GridMessagingSelfTest.class,
+    GridMessagingNoPeerClassLoadingSelfTest.class,
+
+    GridReleaseTypeSelfTest.class,
+    GridProductVersionSelfTest.class,
+    GridAffinityProcessorRendezvousSelfTest.class,
+    GridAffinityProcessorMemoryLeakTest.class,
+    GridClosureProcessorSelfTest.class,
+    GridClosureProcessorRemoteTest.class,
+    GridClosureSerializationTest.class,
+    GridStartStopSelfTest.class,
+    GridProjectionForCachesSelfTest.class,
+    GridProjectionForCachesOnDaemonNodeSelfTest.class,
+    GridSpiLocalHostInjectionTest.class,
+    GridLifecycleBeanSelfTest.class,
+    GridStopWithCancelSelfTest.class,
+    GridReduceSelfTest.class,
+    GridEventConsumeSelfTest.class,
+    GridSuppressedExceptionSelfTest.class,
+    GridLifecycleAwareSelfTest.class,
+    GridMessageListenSelfTest.class,
+    GridFailFastNodeFailureDetectionSelfTest.class,
+    IgniteSlowClientDetectionSelfTest.class,
+    IgniteDaemonNodeMarshallerCacheTest.class,
+    IgniteMarshallerCacheConcurrentReadWriteTest.class,
+    GridNodeMetricsLogSelfTest.class,
+    GridLocalIgniteSerializationTest.class,
+    GridMBeansTest.class,
+    TransactionsMXBeanImplTest.class,
+    SetTxTimeoutOnPartitionMapExchangeTest.class,
+
+    IgniteExceptionInNioWorkerSelfTest.class,
+    IgniteLocalNodeMapBeforeStartTest.class,
+    OdbcConfigurationValidationSelfTest.class,
+    OdbcEscapeSequenceSelfTest.class,
+
+    DynamicProxySerializationMultiJvmSelfTest.class,
+
+    // Tests against configuration variations framework.
+    ParametersTest.class,
+    VariationsIteratorTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
+    NotStringSystemPropertyTest.class,
+
+    MarshallerContextLockingSelfTest.class,
+    MarshallerContextSelfTest.class,
+
+    SecurityPermissionSetBuilderTest.class,
+
+    AttributeNodeFilterSelfTest.class,
+
+    // Basic DB data structures.
+    BPlusTreeSelfTest.class,
+    BPlusTreeFakeReuseSelfTest.class,
+    BPlusTreeReuseSelfTest.class,
+    IndexStorageSelfTest.class,
+    CacheFreeListImplSelfTest.class,
+    DataRegionMetricsSelfTest.class,
+    SwapPathConstructionSelfTest.class,
+
+    IgniteMarshallerCacheFSRestoreTest.class,
+    IgniteMarshallerCacheClassNameConflictTest.class,
+    IgniteMarshallerCacheClientRequestsMappingOnMissTest.class,
+
+    IgniteDiagnosticMessagesTest.class,
+    IgniteDiagnosticMessagesMultipleConnectionsTest.class,
+
+    IgniteRejectConnectOnNodeStopTest.class,
+
+    GridCleanerTest.class,
+
+    ClassSetTest.class,
+
+    // Basic failure handlers.
+    FailureHandlerTriggeredTest.class,
+    StopNodeFailureHandlerTest.class,
+    StopNodeOrHaltFailureHandlerTest.class,
+    OomFailureHandlerTest.class,
+    TransactionIntegrityWithSystemWorkerDeathTest.class,
+
+    AtomicOperationsInTxTest.class,
+
+    CacheRebalanceConfigValidationTest.class,
+
+    ListeningTestLoggerTest.class,
+
+    CacheLocalGetSerializationTest.class,
+})
 public class IgniteBasicTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite() { // todo cleanup all "suite()" occurrences if build check passes
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.addAll(IgniteMarshallerSelfTestSuite.suite());
-        suite.addAll(IgniteLangSelfTestSuite.suite());
-        suite.addAll(IgniteUtilSelfTestSuite.suite());
-
-        suite.addAll(IgniteKernalSelfTestSuite.suite());
-        suite.addAll(IgniteStartUpTestSuite.suite());
-        suite.addAll(IgniteExternalizableSelfTestSuite.suite());
-        suite.addAll(IgniteP2PSelfTestSuite.suite());
-        suite.addAll(IgniteCacheP2pUnmarshallingErrorTestSuite.suite());
-        suite.addAll(IgniteStreamSelfTestSuite.suite());
-
-        suite.addAll(IgnitePlatformsTestSuite.suite());
-
-        suite.add(GridSelfTest.class);
-        suite.add(ClusterGroupHostsSelfTest.class);
-        suite.add(IgniteMessagingWithClientTest.class);
-        suite.add(IgniteMessagingSendAsyncTest.class);
-
-        suite.add(ClusterGroupSelfTest.class);
-        suite.add(GridMessagingSelfTest.class);
-        suite.add(GridMessagingNoPeerClassLoadingSelfTest.class);
-
-        suite.add(GridReleaseTypeSelfTest.class);
-        suite.add(GridProductVersionSelfTest.class);
-        suite.add(GridAffinityProcessorRendezvousSelfTest.class);
-        suite.add(GridAffinityProcessorMemoryLeakTest.class);
-        suite.add(GridClosureProcessorSelfTest.class);
-        suite.add(GridClosureProcessorRemoteTest.class);
-        suite.add(GridClosureSerializationTest.class);
-        suite.add(GridStartStopSelfTest.class);
-        suite.add(GridProjectionForCachesSelfTest.class);
-        suite.add(GridProjectionForCachesOnDaemonNodeSelfTest.class);
-        suite.add(GridSpiLocalHostInjectionTest.class);
-        suite.add(GridLifecycleBeanSelfTest.class);
-        suite.add(GridStopWithCancelSelfTest.class);
-        suite.add(GridReduceSelfTest.class);
-        suite.add(GridEventConsumeSelfTest.class);
-        suite.add(GridSuppressedExceptionSelfTest.class);
-        suite.add(GridLifecycleAwareSelfTest.class);
-        suite.add(GridMessageListenSelfTest.class);
-        suite.add(GridFailFastNodeFailureDetectionSelfTest.class);
-        suite.add(IgniteSlowClientDetectionSelfTest.class);
-        suite.add(IgniteDaemonNodeMarshallerCacheTest.class);
-        suite.add(IgniteMarshallerCacheConcurrentReadWriteTest.class);
-        suite.add(GridNodeMetricsLogSelfTest.class);
-        suite.add(GridLocalIgniteSerializationTest.class);
-        suite.add(GridMBeansTest.class);
-        suite.add(TransactionsMXBeanImplTest.class);
-        suite.add(SetTxTimeoutOnPartitionMapExchangeTest.class);
-
-        suite.add(IgniteExceptionInNioWorkerSelfTest.class);
-        suite.add(IgniteLocalNodeMapBeforeStartTest.class);
-        suite.add(OdbcConfigurationValidationSelfTest.class);
-        suite.add(OdbcEscapeSequenceSelfTest.class);
-
-        suite.add(DynamicProxySerializationMultiJvmSelfTest.class);
-
-        // Tests against configuration variations framework.
-        suite.add(ParametersTest.class);
-        suite.add(VariationsIteratorTest.class);
-        suite.add(ConfigVariationsTestSuiteBuilderTest.class);
-        suite.add(NotStringSystemPropertyTest.class);
-
-        suite.add(MarshallerContextLockingSelfTest.class);
-        suite.add(MarshallerContextSelfTest.class);
-
-        suite.add(SecurityPermissionSetBuilderTest.class);
-
-        suite.add(AttributeNodeFilterSelfTest.class);
-
-        // Basic DB data structures.
-        suite.add(BPlusTreeSelfTest.class);
-        suite.add(BPlusTreeFakeReuseSelfTest.class);
-        suite.add(BPlusTreeReuseSelfTest.class);
-        suite.add(IndexStorageSelfTest.class);
-        suite.add(CacheFreeListImplSelfTest.class);
-        suite.add(DataRegionMetricsSelfTest.class);
-        suite.add(SwapPathConstructionSelfTest.class);
-
-        suite.add(IgniteMarshallerCacheFSRestoreTest.class);
-        suite.add(IgniteMarshallerCacheClassNameConflictTest.class);
-        suite.add(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
-
-        suite.add(IgniteDiagnosticMessagesTest.class);
-        suite.add(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
-
-        suite.add(IgniteRejectConnectOnNodeStopTest.class);
-
-        suite.add(GridCleanerTest.class);
-
-        suite.add(ClassSetTest.class);
-
-        // Basic failure handlers.
-        suite.add(FailureHandlerTriggeredTest.class);
-        suite.add(StopNodeFailureHandlerTest.class);
-        suite.add(StopNodeOrHaltFailureHandlerTest.class);
-        suite.add(OomFailureHandlerTest.class);
-        suite.add(TransactionIntegrityWithSystemWorkerDeathTest.class);
-
-        suite.add(AtomicOperationsInTxTest.class);
-
-        suite.add(CacheRebalanceConfigValidationTest.class);
-
-        suite.add(ListeningTestLoggerTest.class);
-
-        suite.add(CacheLocalGetSerializationTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

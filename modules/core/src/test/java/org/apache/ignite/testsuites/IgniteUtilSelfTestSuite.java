@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
@@ -42,7 +39,6 @@ import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
@@ -65,91 +61,67 @@ import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 import org.apache.ignite.util.mbeans.WorkersControlMXBeanTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for Ignite utility classes.
  */
-@RunWith(IgniteUtilSelfTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridThreadPoolExecutorServiceSelfTest.class,
+    IgniteThreadPoolSizeTest.class,
+    IgniteUtilsSelfTest.class,
+    GridSpinReadWriteLockSelfTest.class,
+    GridQueueSelfTest.class,
+    GridStringBuilderFactorySelfTest.class,
+    GridToStringBuilderSelfTest.class,
+    CircularStringBuilderSelfTest.class,
+    GridByteArrayListSelfTest.class,
+    GridMBeanSelfTest.class,
+    GridMBeanDisableSelfTest.class,
+    GridMBeanExoticNamesSelfTest.class,
+    GridLongListSelfTest.class,
+    GridThreadTest.class,
+    GridIntListSelfTest.class,
+    GridArraysSelfTest.class,
+    GridCacheUtilsSelfTest.class,
+    IgniteExceptionRegistrySelfTest.class,
+    GridMessageCollectionTest.class,
+    WorkersControlMXBeanTest.class,
+    GridConcurrentLinkedDequeMultiThreadedTest.class,
+    GridLogThrottleTest.class,
+    GridRandomSelfTest.class,
+    GridSnapshotLockSelfTest.class,
+    GridTopologyHeapSizeSelfTest.class,
+    GridTransientTest.class,
+    IgniteDevOnlyLogTest.class,
+
+    // Sensitive toString.
+    IncludeSensitiveAtomicTest.class,
+    IncludeSensitiveTransactionalTest.class,
+
+    // Metrics.
+    ClusterMetricsSnapshotSerializeSelfTest.class,
+
+    // Unsafe.
+    GridUnsafeMemorySelfTest.class,
+    GridUnsafeStripedLruSefTest.class,
+    GridUnsafeMapSelfTest.class,
+    GridUnsafePartitionedMapSelfTest.class,
+
+    // NIO.
+    GridNioSessionMetaKeySelfTest.class,
+    GridNioSelfTest.class,
+    GridNioFilterChainSelfTest.class,
+    GridNioSslSelfTest.class,
+    GridNioDelimitedBufferSelfTest.class,
+
+    GridPartitionMapSelfTest.class,
+
+    //dbx
+    PageIdUtilsSelfTest.class,
+
+    // control.sh
+    CommandHandlerParsingTest.class,
+})
 public class IgniteUtilSelfTestSuite {
-    /**
-     * @return Grid utility methods tests suite.
-     */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(GridThreadPoolExecutorServiceSelfTest.class);
-        suite.add(IgniteThreadPoolSizeTest.class);
-        GridTestUtils.addTestIfNeeded(suite, IgniteUtilsSelfTest.class, ignoredTests);
-        suite.add(GridSpinReadWriteLockSelfTest.class);
-        suite.add(GridQueueSelfTest.class);
-        suite.add(GridStringBuilderFactorySelfTest.class);
-        suite.add(GridToStringBuilderSelfTest.class);
-        suite.add(CircularStringBuilderSelfTest.class);
-        suite.add(GridByteArrayListSelfTest.class);
-        suite.add(GridMBeanSelfTest.class);
-        suite.add(GridMBeanDisableSelfTest.class);
-        suite.add(GridMBeanExoticNamesSelfTest.class);
-        suite.add(GridLongListSelfTest.class);
-        suite.add(GridThreadTest.class);
-        suite.add(GridIntListSelfTest.class);
-        suite.add(GridArraysSelfTest.class);
-        suite.add(GridCacheUtilsSelfTest.class);
-        suite.add(IgniteExceptionRegistrySelfTest.class);
-        suite.add(GridMessageCollectionTest.class);
-        suite.add(WorkersControlMXBeanTest.class);
-        suite.add(GridConcurrentLinkedDequeMultiThreadedTest.class);
-        suite.add(GridLogThrottleTest.class);
-        suite.add(GridRandomSelfTest.class);
-        suite.add(GridSnapshotLockSelfTest.class);
-        suite.add(GridTopologyHeapSizeSelfTest.class);
-        suite.add(GridTransientTest.class);
-        suite.add(IgniteDevOnlyLogTest.class);
-
-        // Sensitive toString.
-        suite.add(IncludeSensitiveAtomicTest.class);
-        suite.add(IncludeSensitiveTransactionalTest.class);
-
-        // Metrics.
-        suite.add(ClusterMetricsSnapshotSerializeSelfTest.class);
-
-        // Unsafe.
-        suite.add(GridUnsafeMemorySelfTest.class);
-        suite.add(GridUnsafeStripedLruSefTest.class);
-        suite.add(GridUnsafeMapSelfTest.class);
-        suite.add(GridUnsafePartitionedMapSelfTest.class);
-
-        // NIO.
-        suite.add(GridNioSessionMetaKeySelfTest.class);
-        GridTestUtils.addTestIfNeeded(suite, GridNioSelfTest.class, ignoredTests);
-        suite.add(GridNioFilterChainSelfTest.class);
-        GridTestUtils.addTestIfNeeded(suite, GridNioSslSelfTest.class, ignoredTests);
-        suite.add(GridNioDelimitedBufferSelfTest.class);
-
-        suite.add(GridPartitionMapSelfTest.class);
-
-        //dbx
-        suite.add(PageIdUtilsSelfTest.class);
-
-        // control.sh
-        suite.add(CommandHandlerParsingTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

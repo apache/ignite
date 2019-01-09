@@ -17,34 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Loaders self-test suite.
  */
-@RunWith(IgniteStartUpTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({GridCommandLineTransformerSelfTest.class})
 public class IgniteStartUpTestSuite {
-    /**
-     * @return  Loaders tests suite.
-     */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(GridCommandLineTransformerSelfTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }

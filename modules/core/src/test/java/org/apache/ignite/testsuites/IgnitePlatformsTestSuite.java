@@ -17,37 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
 import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Suite for platform tests.
  */
-@RunWith(IgnitePlatformsTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    PlatformDefaultJavaObjectFactorySelfTest.class,
+    PlatformJavaObjectFactoryProxySelfTest.class,
+})
 public class IgnitePlatformsTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        // LocalDeploymentSpi tests
-        suite.add(PlatformDefaultJavaObjectFactorySelfTest.class);
-        suite.add(PlatformJavaObjectFactoryProxySelfTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }
