@@ -230,9 +230,6 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
         qryEntity.addQueryField("id", Integer.class.getName(), null);
         qryEntity.addQueryField("val", Integer.class.getName(), null);
 
-
-        qryEntity.setKeyFieldName("id");
-
         qryEntity.setKeyFields(Collections.singleton("id"));
 
         qryEntity.setIndexes(F.asList(new QueryIndex("id"), new QueryIndex("val")));
