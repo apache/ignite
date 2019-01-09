@@ -94,7 +94,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     final Set<IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>>> lsnrs =
         new GridConcurrentLinkedHashSet<>();
 
-    /** */ //TODO Change to java.util.ArrayDeque?
+    /** */ //TODO Use something similar to java.util.ArrayDeque.
     private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
 
     /** */
@@ -369,6 +369,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+//        if (ctx.clientNode())
+//            return;
+
         assert startupExtras != null;
 
         DistributedMetaStorageHistoryItem[] hist = new TreeMap<>(histCache) // Sorting might be avoided if histCache is a queue

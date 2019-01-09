@@ -294,8 +294,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         Map.Entry<String, byte[]> curUpdatesEntry = null;
 
-        if (updatesIter != null && updatesIter.hasNext())
+        if (updatesIter != null) {
+            assert updatesIter.hasNext();
+
             curUpdatesEntry = updatesIter.next();
+        }
 
         MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
 
