@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
@@ -40,69 +37,44 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCacheRemoveFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheFailoverTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheAtomicInvalidPartitionHandlingSelfTest.class,
+    GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class,
+    GridCacheRebalancingPartitionDistributionTest.class,
+
+    GridCacheIncrementTransformTest.class,
+
+    // Failure consistency tests.
+    GridCacheAtomicRemoveFailureTest.class,
+    GridCacheAtomicClientRemoveFailureTest.class,
+
+    GridCacheDhtAtomicRemoveFailureTest.class,
+    GridCacheDhtRemoveFailureTest.class,
+    GridCacheDhtClientRemoveFailureTest.class,
+    GridCacheNearRemoveFailureTest.class,
+    GridCacheAtomicNearRemoveFailureTest.class,
+    IgniteChangingBaselineUpCacheRemoveFailoverTest.class,
+    IgniteChangingBaselineDownCacheRemoveFailoverTest.class,
+
+    IgniteCacheAtomicNodeJoinTest.class,
+    IgniteCacheTxNodeJoinTest.class,
+
+    IgniteCacheTxNearDisabledPutGetRestartTest.class,
+
+    IgniteCacheSizeFailoverTest.class,
+
+    IgniteAtomicLongChangingTopologySelfTest.class,
+
+    GridCacheTxNodeFailureSelfTest.class,
+
+    AtomicPutAllChangingTopologyTest.class,
+})
 public class IgniteCacheFailoverTestSuite {
-    /**
-     * @return Ignite Cache Failover test suite.
-     */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
-        suite.add(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
-        suite.add(GridCacheRebalancingPartitionDistributionTest.class);
-
-        GridTestUtils./* todo rework */addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
-
-        // Failure consistency tests.
-        suite.add(GridCacheAtomicRemoveFailureTest.class);
-        suite.add(GridCacheAtomicClientRemoveFailureTest.class);
-
-        suite.add(GridCacheDhtAtomicRemoveFailureTest.class);
-        suite.add(GridCacheDhtRemoveFailureTest.class);
-        suite.add(GridCacheDhtClientRemoveFailureTest.class);
-        suite.add(GridCacheNearRemoveFailureTest.class);
-        suite.add(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.add(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
-        suite.add(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
-
-        suite.add(IgniteCacheAtomicNodeJoinTest.class);
-        suite.add(IgniteCacheTxNodeJoinTest.class);
-
-        suite.add(IgniteCacheTxNearDisabledPutGetRestartTest.class);
-
-        suite.add(IgniteCacheSizeFailoverTest.class);
-
-        suite.add(IgniteAtomicLongChangingTopologySelfTest.class);
-
-        suite.add(GridCacheTxNodeFailureSelfTest.class);
-
-        suite.add(AtomicPutAllChangingTopologyTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }
