@@ -74,6 +74,13 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        pCache = null;
+    }
+
     /**
      * @throws Exception If failed.
      */

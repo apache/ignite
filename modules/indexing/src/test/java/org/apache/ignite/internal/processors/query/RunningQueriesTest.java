@@ -105,6 +105,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        newBarrier(1);
+
         ignite.destroyCache(DEFAULT_CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
@@ -118,6 +120,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        ignite = null;
 
         super.afterTestsStopped();
     }
@@ -193,7 +197,32 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Check clenup running queries on node stop.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
+    public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 10000; i++)
+            cache.put(i, i);
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+
+        Assert.assertEquals("Should be one running query",
+            1,
+            ignite.context().query().runningQueries(-1).size());
+
+        ignite.close();
+
+        assertNoRunningQueries();
+    }
+
+    /**
      * Check tracking running queries for Select.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueries() throws Exception {
@@ -229,6 +258,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for DELETE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlDelete() throws Exception {
@@ -237,6 +268,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for INSERT.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlInsert() throws Exception {
@@ -245,6 +278,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for UPDATE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDmlUpdate() throws Exception {
@@ -255,6 +290,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      * Check tracking running queries for DML.
      *
      * @param dmlQry DML query.
+     * @throws Exception Exception in case of failure.
      */
     public void testQueryDML(String dmlQry) throws Exception {
         newBarrier(2);
@@ -286,6 +322,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for DROP INDEX.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlDropIndex() throws Exception {
@@ -300,6 +338,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for CREATE INDEX.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlCreateIndex() throws Exception {
@@ -312,6 +352,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for DROP TABLE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlDropTable() throws Exception {
@@ -324,6 +366,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for CREATE TABLE.
+     *
+     * @throws Exception Exception in case of failure.
      */
     @Test
     public void testQueryDdlCreateTable() throws Exception {
@@ -332,6 +376,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
     /**
      * Check tracking running queries for DDL.
+     *
+     * @throws Exception Exception in case of failure.
      */
     public void testQueryDDL(String sql) throws Exception {
         newBarrier(2);

@@ -62,6 +62,8 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        node = null;
     }
 
     /**

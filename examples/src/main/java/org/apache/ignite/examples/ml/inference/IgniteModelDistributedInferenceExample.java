@@ -27,12 +27,12 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.regression.linear.LinearRegressionLSQRTrainerExample;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
-import org.apache.ignite.ml.inference.parser.IgniteFunctionInfModelParser;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InMemoryInfModelReader;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
+import org.apache.ignite.ml.inference.parser.IgniteModelParser;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.InMemoryModelReader;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
@@ -43,7 +43,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * This example is based on {@link LinearRegressionLSQRTrainerExample}, but to perform inference it uses an approach
  * implemented in {@link org.apache.ignite.ml.inference} package.
  */
-public class IgniteFunctionDistributedInferenceExample {
+public class IgniteModelDistributedInferenceExample {
     /** Run example. */
     public static void main(String... args) throws IOException, ExecutionException, InterruptedException {
         System.out.println();
@@ -69,9 +69,9 @@ public class IgniteFunctionDistributedInferenceExample {
             System.out.println(">>> Linear regression model: " + mdl);
 
             System.out.println(">>> Preparing model reader and model parser.");
-            InfModelReader reader = new InMemoryInfModelReader(mdl);
-            InfModelParser<Vector, Double, ?> parser = new IgniteFunctionInfModelParser<>();
-            try (InfModel<Vector, Future<Double>> infMdl = new IgniteDistributedInfModelBuilder(ignite, 4, 4)
+            ModelReader reader = new InMemoryModelReader(mdl);
+            ModelParser<Vector, Double, ?> parser = new IgniteModelParser<>();
+            try (Model<Vector, Future<Double>> infMdl = new IgniteDistributedModelBuilder(ignite, 4, 4)
                 .build(reader, parser)) {
                 System.out.println(">>> Inference model is ready.");
 
@@ -85,7 +85,7 @@ public class IgniteFunctionDistributedInferenceExample {
                         Vector inputs = val.copyOfRange(1, val.size());
                         double groundTruth = val.get(0);
 
-                        double prediction = infMdl.apply(inputs).get();
+                        double prediction = infMdl.predict(inputs).get();
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }

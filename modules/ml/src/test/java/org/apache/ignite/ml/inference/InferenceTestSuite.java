@@ -17,9 +17,11 @@
 
 package org.apache.ignite.ml.inference;
 
-import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilderTest;
-import org.apache.ignite.ml.inference.builder.ThreadedInfModelBuilderTest;
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
+import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilderTest;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilderTest;
+import org.apache.ignite.ml.inference.builder.ThreadedModelBuilderTest;
 import org.apache.ignite.ml.inference.storage.model.DefaultModelStorageTest;
 import org.apache.ignite.ml.inference.util.DirectorySerializerTest;
 import org.junit.runner.RunWith;
@@ -30,11 +32,23 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    SingleInfModelBuilderTest.class,
-    ThreadedInfModelBuilderTest.class,
+    SingleModelBuilderTest.class,
+    ThreadedModelBuilderTest.class,
     DirectorySerializerTest.class,
     DefaultModelStorageTest.class,
-    IgniteDistributedInfModelBuilderTest.class
+    IgniteDistributedModelBuilderTest.class
 })
 public class InferenceTestSuite {
+    /** */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite(InferenceTestSuite.class.getSimpleName());
+
+        suite.addTest(new JUnit4TestAdapter(SingleModelBuilderTest.class));
+        suite.addTest(new JUnit4TestAdapter(ThreadedModelBuilderTest.class));
+        suite.addTest(new JUnit4TestAdapter(DirectorySerializerTest.class));
+        suite.addTest(new JUnit4TestAdapter(DefaultModelStorageTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDistributedModelBuilderTest.class));
+
+        return suite;
+    }
 }

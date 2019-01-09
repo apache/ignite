@@ -57,6 +57,9 @@ public class ExplainSelfTest extends AbstractIndexingCommonTest {
             stopAllGrids();
         }
         finally {
+            ignite = null;
+            cache = null;
+
             super.afterTestsStopped();
         }
     }

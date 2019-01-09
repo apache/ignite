@@ -17,22 +17,24 @@
 
 package org.apache.ignite.ml.inference.parser;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.inference.InfModel;
+import org.tensorflow.Graph;
+import org.tensorflow.Session;
 
 /**
- * Model parser that accepts a serialized model represented by byte array, parses it and returns {@link InfModel}.
+ * Implementation of TensorFlow model parser that accepts serialized graph definition.
  *
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-@FunctionalInterface
-public interface InfModelParser<I, O, M extends InfModel<I, O>> extends Serializable {
-    /**
-     * Accepts serialized model represented by byte array, parses it and returns {@link InfModel}.
-     *
-     * @param mdl Serialized model represented by byte array.
-     * @return Inference model.
-     */
-    public M parse(byte[] mdl);
+public class TensorFlowGraphModelParser<I, O> extends TensorFlowBaseModelParser<I, O> {
+    /** */
+    private static final long serialVersionUID = -1872566748640565856L;
+
+    /** {@inheritDoc} */
+    @Override public Session parseModel(byte[] mdl) {
+        Graph graph = new Graph();
+        graph.importGraphDef(mdl);
+
+        return new Session(graph);
+    }
 }

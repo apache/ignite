@@ -174,6 +174,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         checkNoLeaks();
+
+        client = null;
     }
 
     /** {@inheritDoc} */
