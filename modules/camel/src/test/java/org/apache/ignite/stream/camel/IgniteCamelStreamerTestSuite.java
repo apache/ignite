@@ -17,33 +17,13 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-@RunWith(IgniteCamelStreamerTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
 public class IgniteCamelStreamerTestSuite {
-    /**
-     * @return {@link IgniteCamelStreamerTest} test suite.
-     */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(IgniteCamelStreamerTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }
