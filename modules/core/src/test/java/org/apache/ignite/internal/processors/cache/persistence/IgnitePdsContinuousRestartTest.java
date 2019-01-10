@@ -116,13 +116,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
-
-        super.beforeTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 

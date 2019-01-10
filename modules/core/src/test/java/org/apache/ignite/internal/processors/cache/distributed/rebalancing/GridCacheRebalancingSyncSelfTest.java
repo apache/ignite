@@ -502,8 +502,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComplexRebalancing() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
-
         final Ignite ignite = startGrid(0);
 
         generateData(ignite, 0, 0);
