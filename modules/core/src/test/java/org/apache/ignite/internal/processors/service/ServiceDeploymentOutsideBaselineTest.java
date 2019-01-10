@@ -32,9 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -44,9 +41,6 @@ import org.junit.runners.JUnit4;
 /** */
 @RunWith(JUnit4.class)
 public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String SERVICE_NAME = "test-service";
 
@@ -59,10 +53,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-        discoverySpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoverySpi);
 
         if (persistence) {
             cfg.setDataStorageConfiguration(
@@ -170,14 +160,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testStaticDeployFromEachPersistentNodes() throws Exception {
-        checkDeployFromEachNodes(true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -204,9 +186,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite ignite0 = deployServiceFromNewNode(staticDeploy, 0);
 
-        if (persistence)
-            ignite0.cluster().active(true);
-        else {
+        if (!staticDeploy) {
             IgniteCluster cluster = ignite0.cluster();
 
             cluster.setBaselineTopology(cluster.topologyVersion());

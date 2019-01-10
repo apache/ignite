@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.boosting;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
@@ -124,7 +124,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
             .withDefaultGradStepSize(gradientStep)
             .withCheckConvergenceStgyFactory(checkConvergenceStgyFactory);
 
-        List<Model<Vector, Double>> models;
+        List<IgniteModel<Vector, Double>> models;
         if (mdl != null)
             models = stgy.update((GDBModel)mdl, datasetBuilder, featureExtractor, lbExtractor);
         else
@@ -165,7 +165,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Returns regressor model trainer for one step of GDB.
      */
     @NotNull
-    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    protected abstract DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.
@@ -263,7 +263,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
          * @param predictionsAggregator Predictions aggregator.
          * @param internalToExternalLblMapping Internal to external lbl mapping.
          */
-        public GDBModel(List<? extends Model<Vector, Double>> models,
+        public GDBModel(List<? extends IgniteModel<Vector, Double>> models,
             WeightedPredictionsAggregator predictionsAggregator,
             IgniteFunction<Double, Double> internalToExternalLblMapping) {
 
@@ -272,8 +272,8 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         }
 
         /** {@inheritDoc} */
-        @Override public Double apply(Vector features) {
-            return internalToExternalLblMapping.apply(super.apply(features));
+        @Override public Double predict(Vector features) {
+            return internalToExternalLblMapping.apply(super.predict(features));
         }
     }
 }

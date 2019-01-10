@@ -28,9 +28,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.io.BufferedWriter;
@@ -52,9 +49,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 @RunWith(JUnit4.class)
 public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @param igfs If {@code true} created IGFS configuration.
      * @param idx Node index.
@@ -62,12 +56,6 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
      */
     private IgniteConfiguration config(boolean igfs, int idx) {
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         if (igfs) {
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
