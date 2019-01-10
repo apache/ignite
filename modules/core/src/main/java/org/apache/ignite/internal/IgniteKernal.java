@@ -3039,7 +3039,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             Boolean res = false;
 
-            if (ctx.cache().cache(cacheName) == null) {
+            IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName, false, true);
+
+            if (cache == null) {
                 res =
                     sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
                         ctx.cache().dynamicStartCache(cacheCfg,
@@ -3048,9 +3050,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             false,
                             true,
                             true).get();
-            }
 
-            return new IgniteBiTuple<>(ctx.cache().publicJCache(cacheName), res);
+                return new IgniteBiTuple<>(ctx.cache().publicJCache(cacheName), res);
+            }
+            else
+                return new IgniteBiTuple<>(cache, res);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -3298,7 +3302,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false);
+            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false, null);
         }
         finally {
             unguard();
@@ -3318,7 +3322,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx, false);
+            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx);
         }
         finally {
             unguard();
@@ -3334,10 +3338,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            if (ctx.cache().cache(cacheName) == null)
+            IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName, false, true);
+
+            if (cache == null) {
                 ctx.cache().getOrCreateFromTemplate(cacheName, true).get();
 
-            return ctx.cache().publicJCache(cacheName);
+                return ctx.cache().publicJCache(cacheName);
+            }
+
+            return cache;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

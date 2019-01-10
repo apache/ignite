@@ -60,7 +60,7 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-n", "--node-uri"},
-        description = "Comma-separated URIs for connect to Ignite node via REST" +
+        description = "Comma-separated list of URIs for connect to Ignite node via REST" +
             "                        " +
             "      Default value: " + DFLT_NODE_URI)
     private List<String> nodeURIs;
@@ -102,7 +102,7 @@ public class AgentConfiguration {
     private String nodeKeyStore;
 
     /** */
-    @Parameter(names = {"-nkp", "--node-key-store-password"},
+    @Parameter(names = {"-nksp", "--node-key-store-password"},
         description = "Optional password for node key store")
     private String nodeKeyStorePass;
 
@@ -112,7 +112,7 @@ public class AgentConfiguration {
     private String nodeTrustStore;
 
     /** */
-    @Parameter(names = {"-ntp", "--node-trust-store-password"},
+    @Parameter(names = {"-ntsp", "--node-trust-store-password"},
         description = "Optional password for node trust store")
     private String nodeTrustStorePass;
 
@@ -122,7 +122,7 @@ public class AgentConfiguration {
     private String srvKeyStore;
 
     /** */
-    @Parameter(names = {"-skp", "--server-key-store-password"},
+    @Parameter(names = {"-sksp", "--server-key-store-password"},
         description = "Optional password for server key store")
     private String srvKeyStorePass;
 
@@ -132,7 +132,7 @@ public class AgentConfiguration {
     private String srvTrustStore;
 
     /** */
-    @Parameter(names = {"-stp", "--server-trust-store-password"},
+    @Parameter(names = {"-stsp", "--server-trust-store-password"},
         description = "Optional password for server trust store")
     private String srvTrustStorePass;
 
