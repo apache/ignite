@@ -45,8 +45,6 @@ public class IgnitePdsDataRegionMetricsTxTest extends IgnitePdsDataRegionMetrics
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10662")
     @Test
     @Override public void testMemoryUsageMultipleNodes() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10583", MvccFeatureChecker.forcedMvcc());
-
         super.testMemoryUsageMultipleNodes();
     }
 }
