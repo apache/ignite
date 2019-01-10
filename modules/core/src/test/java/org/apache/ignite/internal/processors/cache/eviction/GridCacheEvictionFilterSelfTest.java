@@ -32,10 +32,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -46,10 +47,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Base class for eviction tests.
  */
+@RunWith(JUnit4.class)
 public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Replicated cache. */
     private CacheMode mode = REPLICATED;
 
@@ -94,23 +93,21 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(cc);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         return c;
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = LOCAL;
 
         checkEvictionFilter();
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
 
@@ -118,7 +115,10 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitioned() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         mode = PARTITIONED;
         nearEnabled = true;
 
@@ -126,6 +126,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -190,6 +191,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedMixed() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;

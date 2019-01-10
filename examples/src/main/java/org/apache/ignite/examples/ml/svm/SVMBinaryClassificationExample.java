@@ -20,16 +20,17 @@ package org.apache.ignite.examples.ml.svm;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run SVM binary-class classification model ({@link SVMLinearClassificationModel}) over distributed dataset.
@@ -84,10 +85,10 @@ public class SVMBinaryClassificationExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = mdl.apply(inputs);
+                    double prediction = mdl.predict(inputs);
 
                     totalAmount++;
-                    if(groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     int idx1 = prediction == 0.0 ? 0 : 1;

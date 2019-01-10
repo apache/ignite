@@ -24,6 +24,9 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -36,6 +39,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -52,6 +56,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#get(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalLookup() {
         testTransactionalLookup(OPTIMISTIC, READ_COMMITTED);
         testTransactionalLookup(OPTIMISTIC, REPEATABLE_READ);
@@ -82,6 +87,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#put(Object, Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalUpdate() {
         testTransactionalUpdate(OPTIMISTIC, READ_COMMITTED);
         testTransactionalUpdate(OPTIMISTIC, REPEATABLE_READ);
@@ -112,6 +118,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#remove(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalRemove() {
         testTransactionalRemove(OPTIMISTIC, READ_COMMITTED);
         testTransactionalRemove(OPTIMISTIC, REPEATABLE_READ);

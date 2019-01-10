@@ -28,16 +28,16 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.yield;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -48,15 +48,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests an ability to rollback transactions on topology change.
  */
+@RunWith(JUnit4.class)
 public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /** */
     public static final int ROLLBACK_TIMEOUT = 500;
 
     /** */
     private static final String CACHE_NAME = "test";
-
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int SRV_CNT = 6;
@@ -77,8 +75,6 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         cfg.setTransactionConfiguration(new TransactionConfiguration().
             setTxTimeoutOnPartitionMapExchange(ROLLBACK_TIMEOUT));
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) >= SRV_CNT);
@@ -96,6 +92,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9322"); //Won't start nodes if the only test mutes.
+
         super.beforeTest();
 
         startGridsMultiThreaded(TOTAL_CNT);
@@ -108,14 +107,10 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * Tests rollbacks on topology change.
      */
+    @Test
     public void testRollbackOnTopologyChange() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 

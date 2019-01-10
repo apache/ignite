@@ -42,8 +42,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -56,10 +54,11 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -70,6 +69,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 5;
@@ -98,9 +98,6 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         return client != null ? client : clientFlagGlobal;
     }
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @throws Exception If fails.
      */
@@ -125,10 +122,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         if (client())
             cfg.setClientMode(true);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().
-            setIpFinder(ipFinder).
-            setJoinTimeout(60_000).
-            setNetworkTimeout(10_000));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(60_000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setNetworkTimeout(10_000);
 
         int[] evts = {EVT_NODE_FAILED, EVT_NODE_LEFT};
 
@@ -167,11 +162,6 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60 * 1000;
     }
@@ -179,6 +169,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsRestart() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -227,6 +218,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
@@ -236,6 +228,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
@@ -433,6 +426,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testTopologyVersion() throws Exception {
         clientFlagGlobal = false;
 
@@ -457,6 +451,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultipleStartOnCoordinatorStop() throws Exception{
         for (int k = 0; k < 3; k++) {
             log.info("Iteration: " + k);
@@ -506,6 +501,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomEventOnJoinCoordinatorStop() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10198");
 
@@ -604,6 +600,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientContinuousQueryCoordinatorStop() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10198");
 
@@ -675,6 +672,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomEventNodeRestart() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10249");
 

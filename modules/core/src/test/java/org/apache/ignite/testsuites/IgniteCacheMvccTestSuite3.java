@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterLocalSanityTest;
@@ -56,11 +57,14 @@ import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindSto
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreAtomicTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreNonCoalescingTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite3 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite3 {
     /**
      * @return IgniteCache test suite.
      */
@@ -124,9 +128,9 @@ public class IgniteCacheMvccTestSuite3 extends TestSuite {
         suite.addTest(IgniteBinaryObjectsCacheTestSuite3.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheReplicatedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMvccTxTimeoutSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxSingleThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxTimeoutSelfTest.class));
 
         return suite;
     }

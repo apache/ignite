@@ -24,28 +24,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests DataStreamer reconnect behaviour when client nodes arrives at the same or different topVer than it left.
  */
+@RunWith(JUnit4.class)
 public class DataStreamerClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
-    /** */
-    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean clientMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(new CacheConfiguration<>("test"));
 
@@ -54,27 +49,26 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /** */
+    @Test
     public void testOneClient() throws Exception {
         clusterRestart(false, false);
     }
 
     /** */
+    @Test
     public void testOneClientAllowOverwrite() throws Exception {
         clusterRestart(false, true);
     }
 
     /** */
+    @Test
     public void testTwoClients() throws Exception {
         clusterRestart(true, false);
     }
 
     /** */
+    @Test
     public void testTwoClientsAllowOverwrite() throws Exception {
         clusterRestart(true, true);
     }

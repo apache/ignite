@@ -21,16 +21,18 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String HOST = "127.0.0.1";
@@ -50,11 +52,6 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
         }
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**
@@ -90,6 +87,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoFailedReconnection() throws Exception {
         for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
             runServer(i, false);
@@ -147,6 +145,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectInit() throws Exception {
         for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
             runServer(i, i == 0);
@@ -164,6 +163,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedInit() throws Exception {
         for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
             runServer(i, true);
@@ -191,9 +191,10 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = true)
+    @Test
     public void testIdleConnection() throws Exception {
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.
-        
+
         for (int i = 0; i < srvsCnt; i++)
             runServer(i, false);
 

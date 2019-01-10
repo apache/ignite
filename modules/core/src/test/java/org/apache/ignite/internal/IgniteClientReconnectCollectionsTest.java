@@ -29,6 +29,9 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -37,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static final CollectionConfiguration TX_CFGS = new CollectionConfiguration();
@@ -65,6 +69,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionsReconnectClusterRestart() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -113,6 +118,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnect() throws Exception {
         queueReconnect(TX_CFGS);
 
@@ -122,6 +128,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnectRemoved() throws Exception {
         queueReconnectRemoved(TX_CFGS);
 
@@ -131,6 +138,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnectInProgress() throws Exception {
         queueReconnectInProgress(TX_CFGS);
 
@@ -140,6 +148,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnect() throws Exception {
         setReconnect(TX_CFGS);
 
@@ -149,6 +158,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnectRemoved() throws Exception {
         setReconnectRemove(TX_CFGS);
 
@@ -158,6 +168,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnectInProgress() throws Exception {
         setReconnectInProgress(TX_CFGS);
 
@@ -167,6 +178,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerReconnect() throws Exception {
         serverNodeReconnect(TX_CFGS);
 

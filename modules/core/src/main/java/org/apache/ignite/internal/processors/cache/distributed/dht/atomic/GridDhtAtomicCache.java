@@ -31,6 +31,7 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartition
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
@@ -223,7 +225,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional"})
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
@@ -1722,9 +1723,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param completionCb Completion callback.
      */
     private void updateAllAsyncInternal0(
-        ClusterNode node,
-        GridNearAtomicAbstractUpdateRequest req,
-        UpdateReplyClosure completionCb
+        final ClusterNode node,
+        final GridNearAtomicAbstractUpdateRequest req,
+        final UpdateReplyClosure completionCb
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             node.id(),
@@ -1761,7 +1762,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         try {
                             if (top.stopping()) {
-                                res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
+                                if (ctx.shared().cache().isCacheRestarting(name()))
+                                    res.addFailedKeys(req.keys(), new IgniteCacheRestartingException(name()));
+                                else
+                                    res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
 
                                 completionCb.apply(req, res);
 
@@ -1784,6 +1788,51 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                 if (validateCache) {
                                     GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                                    // Cache validation should use topology version from the update request
+                                    // in case of the topology version was locked on near node.
+                                    if (req.topologyLocked()) {
+                                        // affinityReadyFuture() can return GridFinishedFuture under some circumstances
+                                        // and therefore it cannot be used for validation.
+                                        IgniteInternalFuture<AffinityTopologyVersion> affFut =
+                                            ctx.shared().exchange().affinityReadyFuture(req.topologyVersion());
+
+                                        if (affFut.isDone()) {
+                                            List<GridDhtPartitionsExchangeFuture> futs =
+                                                ctx.shared().exchange().exchangeFutures();
+
+                                            boolean found = false;
+
+                                            for (int i = 0; i < futs.size(); ++i) {
+                                                GridDhtPartitionsExchangeFuture fut = futs.get(i);
+
+                                                // We have to check fut.exchangeDone() here -
+                                                // otherwise attempt to get topVer will throw error.
+                                                // We won't skip needed future as per affinity ready future is done.
+                                                if (fut.exchangeDone() &&
+                                                    fut.topologyVersion().equals(req.topologyVersion())) {
+                                                    topFut = fut;
+
+                                                    found = true;
+
+                                                    break;
+                                                }
+                                            }
+
+                                            assert found: "The requested topology future cannot be found [topVer="
+                                                + req.topologyVersion() + ']';
+                                        }
+                                        else {
+                                            affFut.listen(f -> updateAllAsyncInternal0(node, req, completionCb));
+
+                                            return;
+                                        }
+
+                                        assert req.topologyVersion().equals(topFut.topologyVersion()) :
+                                            "The requested topology version cannot be found [" +
+                                                "reqTopFut=" + req.topologyVersion()
+                                                + ", topFut=" + topFut + ']';
+                                    }
 
                                     assert topFut.isDone() : topFut;
 
@@ -2684,7 +2733,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param expiry Expiry policy.
      * @param sndPrevVal If {@code true} sends previous value to backups.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable private void updatePartialBatch(
         final boolean hasNear,
         final int firstEntryIdx,
@@ -2938,7 +2986,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
      * are released.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
         if (req.size() == 1) {

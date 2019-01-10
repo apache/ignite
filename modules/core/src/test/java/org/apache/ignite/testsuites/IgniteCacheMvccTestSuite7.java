@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
@@ -31,12 +32,17 @@ import org.apache.ignite.internal.processors.cache.MvccCacheGroupMetricsMBeanTes
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersMvccTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingMvccTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite7  extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite7 {
     /**
      * @return IgniteCache test suite.
      */
@@ -44,6 +50,9 @@ public class IgniteCacheMvccTestSuite7  extends TestSuite {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
+
+        // Skip classes that already contains Mvcc tests
+        ignoredTests.add(PageEvictionMultinodeMixedRegionsTest.class);
 
         // Other non-tx tests.
         ignoredTests.add(CheckpointBufferDeadlockTest.class);//
@@ -66,8 +75,9 @@ public class IgniteCacheMvccTestSuite7  extends TestSuite {
         suite.addTest(IgniteCacheTestSuite7.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(MvccCacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionCountersMvccTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccCacheGroupMetricsMBeanTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionCountersMvccTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingWithAsyncClearingMvccTest.class));
 
 
         return suite;

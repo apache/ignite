@@ -39,10 +39,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,15 +53,13 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test hadoop file system implementation.
  */
+@RunWith(JUnit4.class)
 public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Path to the default hadoop configuration. */
     public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Node count. */
     private int cnt;
@@ -79,8 +77,6 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -164,6 +160,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testContentsConsistency() throws Exception {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<IgniteBiTuple<String, Long>> files = F.asList(

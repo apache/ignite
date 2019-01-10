@@ -27,10 +27,14 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Disabling MBeans test.
  */
+@RunWith(JUnit4.class)
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -51,6 +55,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testCorrectMBeanInfo() throws Exception {
         // Node should start and stopped with no errors.
         try (final Ignite ignite = startGrid(0)) {
@@ -84,6 +89,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     }
 
     /** Check that a cache can be started when MBeans are disabled. */
+    @Test
     public void testCacheStart() throws Exception {
         try (
             Ignite ignite = startGrid(0);

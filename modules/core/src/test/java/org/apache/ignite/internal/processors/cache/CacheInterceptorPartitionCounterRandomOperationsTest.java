@@ -48,15 +48,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -73,10 +73,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 5;
 
@@ -103,8 +101,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setClientMode(client);
 
@@ -138,6 +134,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -150,6 +147,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -162,6 +160,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -174,6 +173,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicatedWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -186,6 +186,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicNoBackups() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -198,6 +199,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -210,6 +212,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -222,6 +225,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxExplicit() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -234,6 +238,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -246,6 +251,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -258,6 +264,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoBackups() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -270,6 +277,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoBackupsWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -282,6 +290,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoBackupsExplicit() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -294,6 +303,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -306,6 +316,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -318,6 +329,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxExplicit() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -330,6 +342,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -342,6 +355,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxReplicatedWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
@@ -354,6 +368,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxNoBackups() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -366,6 +381,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxNoBackupsWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -378,6 +394,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxNoBackupsExplicit() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -445,7 +462,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
 
         Transaction tx = null;
 
-        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
+        CacheAtomicityMode atomicityMode = GridCommonAbstractTest.atomicityMode(cache);
 
         if (atomicityMode == TRANSACTIONAL && rnd.nextBoolean())
             tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
@@ -680,8 +697,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         Object key,
         boolean rmv
     ) {
-        Collection<ClusterNode> nodes =
-            cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+        Collection<ClusterNode> nodes = atomicityMode(cache) == TRANSACTIONAL ?
                 affinity(cache).mapKeyToPrimaryAndBackups(key) :
                 Collections.singletonList(affinity(cache).mapKeyToNode(key));
 

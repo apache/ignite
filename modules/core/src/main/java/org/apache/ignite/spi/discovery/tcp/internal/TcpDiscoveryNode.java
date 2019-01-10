@@ -240,7 +240,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))

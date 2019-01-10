@@ -81,7 +81,6 @@ public final class GridTestIoUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialization failed.
      */
-    @SuppressWarnings({"unchecked"})
     public static <T extends Serializable> T deserializeJdk(byte[] bytes) throws IOException, ClassNotFoundException {
         ObjectInputStream in = null;
 
@@ -105,7 +104,6 @@ public final class GridTestIoUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialization failed.
      */
-    @SuppressWarnings({"unchecked"})
     public static <T> T deserializeJdk(byte[] bytes, final ClassLoader clsLdr)
         throws IOException, ClassNotFoundException {
         ObjectInputStream in = null;
@@ -131,7 +129,6 @@ public final class GridTestIoUtils {
      * @return The same object, but passed through marshaller: obj->marshal->buf->unmarshal->copy.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <T> T externalize(Externalizable obj, Marshaller marshaller) throws Exception {
         assert marshaller != null;
 
