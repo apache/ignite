@@ -283,14 +283,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             unlock();
         }
 
-        DistributedMetaStorageBridge oldBridge = bridge;
-
         bridge = readOnlyBridge;
 
         for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
             subscriber.onReadyForRead(this);
-
-        bridge = oldBridge;
     }
 
     /**
@@ -561,7 +557,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
                 if (remoteVer.id - actualVer.id <= hist.length) {
-                    assert bridge instanceof NotAvailableDistributedMetaStorageBridge
+                    assert bridge instanceof ReadOnlyDistributedMetaStorageBridge
                         || bridge instanceof EmptyDistributedMetaStorageBridge;
 
                     for (long v = actualVer.id + 1; v <= remoteVer.id; v++)
@@ -781,11 +777,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Common implementation for {@link #write(String, Serializable)} and {@link #remove(String)}. Synchronously waits
+     * for operation to be completed.
+     *
+     * @param key The key.
+     * @param valBytes Value bytes to write. Null if value needs to be removed.
+     * @throws IgniteCheckedException If there was an error while sending discovery message or message was sent but
+     *      cluster is not active.
+     */
     private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        updateFuts.put(reqId, fut);
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
 
@@ -794,11 +800,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         fut.get();
     }
 
-    /** */
+    /**
+     * Basically the same as {@link #startWrite(String, byte[])} but for CAS operations.
+     */
     private boolean startCas(String key, byte[] expValBytes, byte[] newValBytes) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        updateFuts.put(reqId, fut);
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
 
@@ -807,7 +817,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         return fut.get();
     }
 
-    /** */
+    /**
+     * Invoked when {@link DistributedMetaStorageUpdateMessage} received. Attempts to store received data (depends on
+     * current {@link #bridge} value). Invokes failure handler with critical error if attempt failed for some reason.
+     *
+     * @param topVer Ignored.
+     * @param node Ignored.
+     * @param msg Received message.
+     */
     private void onUpdateMessage(
         AffinityTopologyVersion topVer,
         ClusterNode node,
@@ -832,7 +849,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Invoked when {@link DistributedMetaStorageUpdateAckMessage} received. Completes future if local node is the node
+     * that initiated write operation.
+     *
+     * @param topVer Ignored.
+     * @param node Ignored.
+     * @param msg Received message.
+     */
     private void onAckMessage(
         AffinityTopologyVersion topVer,
         ClusterNode node,
@@ -853,7 +877,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Invoke failure handler and rethrow passed exception, possibly wrapped into the unchecked one.
+     */
     private void criticalError(Throwable e) {
         ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -863,7 +889,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         throw U.convertException((IgniteCheckedException)e);
     }
 
-    /** */
+    /**
+     * Store data in local metastorage or in memory.
+     *
+     * @param bridge Bridge to get the access to the storage.
+     * @param histItem {@code <key, value>} pair to process.
+     * @param notifyListeners Whether listeners should be notified or not. {@code false} for data restore on activation.
+     * @throws IgniteCheckedException In case of IO/unmarshalling errors.
+     */
     private void completeWrite(
         DistributedMetaStorageBridge bridge,
         DistributedMetaStorageHistoryItem histItem,
@@ -887,7 +920,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         shrinkHistory(bridge);
     }
 
-    /** */
+    /**
+     * Store data in local metastorage or in memory.
+     *
+     * @param bridge Bridge to get the access to the storage.
+     * @param msg Message with all required data.
+     * @see #completeWrite(DistributedMetaStorageBridge, DistributedMetaStorageHistoryItem, boolean)
+     */
     private void completeCas(
         DistributedMetaStorageBridge bridge,
         DistributedMetaStorageCasMessage msg
@@ -915,7 +954,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
     }
 
-    /** */
+    /**
+     * Store current update into the in-memory history cache. {@link #histSizeApproximation} is recalculated during this
+     * process.
+     *
+     * @param ver Version for the update.
+     * @param histItem Update itself.
+     */
     void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
         DistributedMetaStorageHistoryItem old = histCache.put(ver, histItem);
 
@@ -924,7 +969,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         histSizeApproximation += histItem.estimateSize();
     }
 
-    /** */
+    /**
+     * Remove specific update from the in-memory history cache. {@link #histSizeApproximation} is recalculated during
+     * this process.
+     *
+     * @param ver Version of the update.
+     */
     void removeFromHistoryCache(long ver) {
         DistributedMetaStorageHistoryItem old = histCache.remove(ver);
 
@@ -932,14 +982,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             histSizeApproximation -= old.estimateSize();
     }
 
-    /** */
+    /**
+     * Clear in-memory history cache.
+     */
     void clearHistoryCache() {
         histCache.clear();
 
         histSizeApproximation = 0L;
     }
 
-    /** */
+    /**
+     * Shrikn history so that its estimating size doesn't exceed {@link #histMaxBytes}.
+     */
     private void shrinkHistory(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
@@ -961,14 +1015,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Add update into the list of deferred updates. Works for inactive nodes only.
+     */
     private void updateLater(DistributedMetaStorageHistoryItem update) {
         assert startupExtras != null;
 
         startupExtras.deferredUpdates.add(update);
     }
 
-    /** */
+    /**
+     * Invoked at the end of activation.
+     *
+     * @param bridge Bridge to access data storage.
+     * @throws IgniteCheckedException In case of IO/unmarshalling errors.
+     */
     private void executeDeferredUpdates(DistributedMetaStorageBridge bridge) throws IgniteCheckedException {
         assert startupExtras != null;
 
@@ -991,7 +1052,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         notifyListenersBeforeReadyForWrite(bridge);
     }
 
-    /** */
+    /**
+     * Notify listeners at the end of activation. Even if there was no data restoring.
+     *
+     * @param bridge Bridge to access data storage.
+     */
     private void notifyListenersBeforeReadyForWrite(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
@@ -1044,7 +1109,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             notifyListeners(newData[newIdx].key, null, unmarshal(newData[newIdx].valBytes));
     }
 
-    /** */
+    /**
+     * Ultimate version of {@link #updateLater(DistributedMetaStorageHistoryItem)}.
+     *
+     * @param nodeData Data received from remote node.
+     */
     private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
         assert nodeData.fullData != null;
 
@@ -1064,7 +1133,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
     }
 
-    /** */
+    /**
+     * Notify listeners.
+     *
+     * @param key The key.
+     * @param oldVal Old value.
+     * @param newVal New value.
+     */
     void notifyListeners(String key, Serializable oldVal, Serializable newVal) {
         for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
             if (entry.get1().test(key)) {

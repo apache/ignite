@@ -22,10 +22,7 @@ package org.apache.ignite.internal.processors.metastorage;
  */
 public interface DistributedMetastorageLifecycleListener {
     /**
-     * Called when global metastorage is ready for reading. {@code metastorage} object is
-     * guaranteed to be valid only within this method and should not be used outside of it.
-     * The only exception is when {@link #onReadyForWrite(DistributedMetaStorage)} has been
-     * already executed.<br>
+     * Called when global metastorage is ready for reading.
      * <br>
      * Normally this is the place where you should add listeners and read required data.
      * Note that this data might be outdated.
