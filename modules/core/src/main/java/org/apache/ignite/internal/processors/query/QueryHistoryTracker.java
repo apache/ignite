@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
@@ -61,7 +61,7 @@ class QueryHistoryTracker {
         String schema = runningQryInfo.schemaName();
         boolean loc = runningQryInfo.local();
         long startTime = runningQryInfo.startTime();
-        long duration = U.currentTimeMillis() - startTime;
+        long duration = System.currentTimeMillis() - startTime;
 
         QueryHistoryMetrics m = new QueryHistoryMetrics(qry, schema, loc, startTime, duration, failed);
 
@@ -160,7 +160,10 @@ class QueryHistoryTracker {
         // We need filter possible duplicates which can appear due to concurrent update.
         Set<QueryHistoryMetricsKey> addedKeysSet = new HashSet<>(histSz);
 
-        for (QueryHistoryMetrics metrics : evictionQueue) {
+        Iterator<QueryHistoryMetrics> itr = evictionQueue.descendingIterator();
+
+        while (itr.hasNext()) {
+            QueryHistoryMetrics metrics = itr.next();
             //Skip not fully applied changes and duplicates
             if (metrics.link() != null && addedKeysSet.add(metrics.key()))
                 latestMetrics.add(metrics);

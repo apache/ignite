@@ -330,6 +330,11 @@ public interface GridQueryIndexing {
     public Collection<QueryHistoryMetrics> queryHistoryMetrics();
 
     /**
+     * Reset query history metrics.
+     */
+    public void resetQueryHistoryMetrics();
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.

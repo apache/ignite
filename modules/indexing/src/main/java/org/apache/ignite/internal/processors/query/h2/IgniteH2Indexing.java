@@ -2643,6 +2643,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void resetQueryHistoryMetrics() {
+        runningQueryMgr.resetQueryHistoryMetrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public void cancelQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
             for (Long qryId : queries)

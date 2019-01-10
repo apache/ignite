@@ -63,6 +63,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     private final GridQueryCancel cancel;
 
     /**
+     *
+     */
+    protected boolean failed;
+
+    /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
      */
@@ -114,6 +119,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             for (T t : this) // Implicitly calls iterator() to do all checks.
                 all.add(t);
         }
+        catch (Exception e) {
+            failed = true;
+
+            throw e;
+        }
         finally {
             close();
         }
@@ -126,6 +136,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         try {
             for (T t : this)
                 clo.consume(t);
+        }
+        catch (Exception e) {
+            failed = true;
+
+            throw e;
         }
         finally {
             close();
