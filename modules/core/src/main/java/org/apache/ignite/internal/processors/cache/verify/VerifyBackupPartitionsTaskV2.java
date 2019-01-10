@@ -119,10 +119,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         reduceResults(results, clusterHashes, exceptions);
 
-        if(!F.isEmpty(exceptions))
-            return new IdleVerifyResultV2(exceptions);
-
-        return checkConflicts(clusterHashes);
+        return checkConflicts(clusterHashes, exceptions);
     }
 
     /** {@inheritDoc} */
@@ -151,7 +148,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** */
-    private IdleVerifyResultV2 checkConflicts(Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes) {
+    private IdleVerifyResultV2 checkConflicts(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        Map<UUID, Exception> exceptions
+    ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> updateCntrConflicts = new HashMap<>();
@@ -187,7 +187,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
     }
 
     /** */
@@ -536,7 +536,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 U.error(log, "Can't calculate partition hash [grpId=" + grpCtx.groupId() +
                     ", partId=" + part.id() + "]", e);
 
-                return Collections.emptyMap();
+                throw new IgniteException("Can't calculate partition hash [grpId=" + grpCtx.groupId() +
+                    ", partId=" + part.id() + "]", e);
             }
             finally {
                 part.release();

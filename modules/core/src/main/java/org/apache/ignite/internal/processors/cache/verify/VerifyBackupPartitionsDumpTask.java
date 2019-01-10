@@ -89,16 +89,11 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
     /** {@inheritDoc} */
     @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
-        boolean hasExceptions = false;
-
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
         for (ComputeJobResult res : results) {
-            if (res.getException() != null) {
-                hasExceptions = true;
-
-                break;
-            }
+            if (res.getException() != null)
+                continue;
 
             Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
 
@@ -115,16 +110,14 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         int skippedRecords = 0;
 
-        if (!hasExceptions) {
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
-                if (needToAdd(entry.getValue())) {
-                    entry.getValue().sort(recordComp);
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
+            if (needToAdd(entry.getValue())) {
+                entry.getValue().sort(recordComp);
 
-                    partitions.put(entry.getKey(), entry.getValue());
-                }
-                else
-                    skippedRecords++;
+                partitions.put(entry.getKey(), entry.getValue());
             }
+            else
+                skippedRecords++;
         }
 
         return writeHashes(partitions, delegate.reduce(results), skippedRecords);
@@ -186,10 +179,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
-            if (!F.isEmpty(conflictRes.exceptions()))
-                writeExceptions(conflictRes.exceptions(), writer);
-            else
-                writeResult(partitions, conflictRes, skippedRecords, writer);
+            writeResult(partitions, conflictRes, skippedRecords, writer);
 
             writer.flush();
 
@@ -211,6 +201,12 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         int skippedRecords,
         PrintWriter writer
     ) {
+        if(!F.isEmpty(conflictRes.exceptions())) {
+            int size = conflictRes.exceptions().size();
+
+            writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+        }
+
         writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
 
         if (skippedRecords > 0)
@@ -230,18 +226,6 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             conflictRes.print(writer::write);
         }
     }
-
-    /** */
-    private void writeExceptions(Map<UUID, Exception> exceptions, PrintWriter writer) {
-        writer.write("idle_verify check has finished, " + exceptions.size() + " nodes return error\n");
-
-        for (Map.Entry<UUID, Exception> entry : exceptions.entrySet()) {
-            writer.write("Node ID: " + entry.getKey() + "\n");
-
-            entry.getValue().printStackTrace(writer);
-        }
-    }
-
 
     /**
      * @return Comparator for {@link PartitionHashRecordV2}.

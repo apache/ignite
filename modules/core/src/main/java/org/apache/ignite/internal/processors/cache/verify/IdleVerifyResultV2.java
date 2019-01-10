@@ -50,34 +50,12 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private Map<UUID, Exception> exceptions;
 
     /**
-     * Creates idle verify result with exceptions.
-     *
-     * @param exceptions Exceptions.
-     */
-    public IdleVerifyResultV2(Map<UUID, Exception> exceptions) {
-        this(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), exceptions);
-    }
-
-    /**
-     * @param cntrConflicts Counter conflicts.
-     * @param hashConflicts Hash conflicts.
-     * @param movingPartitions Moving partitions.
-     */
-    public IdleVerifyResultV2(
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions
-    ) {
-        this(cntrConflicts, hashConflicts, movingPartitions, Collections.emptyMap());
-    }
-
-    /**
      * @param cntrConflicts Counter conflicts.
      * @param hashConflicts Hash conflicts.
      * @param movingPartitions Moving partitions.
      * @param exceptions Occured exceptions.
      */
-    private IdleVerifyResultV2(
+    public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
@@ -154,16 +132,17 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         return exceptions;
     }
 
+
     /**
      * Print formatted result to given printer.
      *
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        if(!F.isEmpty(exceptions)){
-            printExceptions(printer);
+        if(!F.isEmpty(exceptions)) {
+            int size = exceptions.size();
 
-            return;
+            printer.accept("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
         }
 
         if (!hasConflicts())
@@ -181,6 +160,16 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             }
 
             printer.accept("\n");
+        }
+
+        if (!F.isEmpty(exceptions())) {
+            printer.accept("Idle verify failed on nodes:\n");
+
+            for (Map.Entry<UUID, Exception> e : exceptions().entrySet()) {
+                printer.accept("Node ID: " + e.getKey() + "\n");
+                printer.accept("Exception message:" + "\n");
+                printer.accept(e.getValue().getMessage() + "\n");
+            }
         }
     }
 
@@ -215,39 +204,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             }
 
             printer.accept("\n");
-        }
-    }
-
-    /** */
-    private void printExceptions(Consumer<String> printer) {
-        Map<UUID, Exception> notIdleExceptions = exceptions.entrySet().stream()
-            .filter(e -> e.getValue() instanceof GridNotIdleException)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        if(!F.isEmpty(notIdleExceptions)) {
-            printer.accept("idle_verify check finished, cluster not idle.\n");
-
-            printer.accept("nodes with started checkpoint:\n");
-
-            for(Map.Entry<UUID, Exception> e : notIdleExceptions.entrySet())
-                printer.accept("Node ID:" + e.getKey() + "\n");
-        } else {
-            printer.accept("idle_verify check finished with errors on " + exceptions.size() + " nodes:\n");
-
-            for(Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-                String msg;
-
-                if(e.getValue() instanceof IdleVerifyException) {
-                    IdleVerifyException ex = (IdleVerifyException)e.getValue();
-
-                    msg = ex.exceptions().stream()
-                        .map(Throwable::getMessage)
-                        .collect(Collectors.toList()).toString();
-                } else
-                    msg = e.getValue().getMessage();
-
-                printer.accept("Node ID:" + e.getKey() + ", error message: " + msg + "\n");
-            }
         }
     }
 

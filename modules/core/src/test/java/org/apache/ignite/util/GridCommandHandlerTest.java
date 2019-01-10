@@ -1201,13 +1201,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String out = testOut.toString();
 
-        assertTrue(out.contains("idle_verify check has finished, from 1 nodes were got errors."));
+        assertTrue(out.contains("idle_verify failed on 1 node."));
         assertTrue(out.contains("CRC check of partition"));
         assertTrue(out.contains("for cache group default failed"));
-
-        testOut.reset();
-
-        log.error("output: " + out);
     }
 
     @Test
@@ -1220,13 +1216,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String dumpFile = parts[1].split("\\.")[0]+".txt";
 
+        for(String line : Files.readAllLines(new File(dumpFile).toPath()))
+            System.out.println(line);
+
         try(BufferedReader br = new BufferedReader(new FileReader(dumpFile))){
-            assertEquals("idle_verify check has finished, 1 nodes return error", br.readLine());
+            assertEquals("idle_verify failed on 1 node.", br.readLine());
             assertTrue(br.readLine().contains("Node ID"));
             assertTrue(br.readLine().contains("CRC check of partition"));
         }
-
-        testOut.reset();
     }
 
     /** */

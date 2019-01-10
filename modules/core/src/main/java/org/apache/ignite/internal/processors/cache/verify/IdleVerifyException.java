@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -22,14 +23,9 @@ public class IdleVerifyException extends IgniteException {
         this.exceptions = exceptions;
     }
 
-    /** */
-    public IdleVerifyException(String msg, Collection<IgniteException> exceptions) {
-        super(msg);
-
-        if(F.isEmpty(exceptions))
-            throw new IllegalArgumentException("Exceptions can't be empty!");
-
-        this.exceptions = exceptions;
+    /** {@inheritDoc} */
+    @Override public String getMessage() {
+        return exceptions.stream().map(e->e.getMessage()).collect(Collectors.joining(", "));
     }
 
     /**
