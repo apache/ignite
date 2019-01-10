@@ -50,6 +50,13 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
         ignite = G.ignite(getTestIgniteInstanceName());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @throws Exception If failed.
      */

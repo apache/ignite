@@ -73,7 +73,7 @@ public class TreeNodeTest {
         });
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
-        assertEquals(0.0, root.apply(features1), 0.001);
-        assertEquals(1.0, root.apply(features2), 0.001);
+        assertEquals(0.0, root.predict(features1), 0.001);
+        assertEquals(1.0, root.predict(features2), 0.001);
     }
 }

@@ -19,6 +19,10 @@ import Auth from '../../modules/user/Auth.service';
 import MessagesFactory from '../../services/Messages.service';
 import FormUtilsFactoryFactory from '../../services/FormUtils.service';
 import {ISignupData} from '../form-signup';
+import {get, eq, pipe} from 'lodash/fp';
+
+const EMAIL_NOT_CONFIRMED_ERROR_CODE = 10104;
+const isEmailConfirmationError = pipe(get('data.errorCode'), eq(EMAIL_NOT_CONFIRMED_ERROR_CODE));
 
 export default class PageSignup implements ng.IPostLink {
     form: ng.IFormController;
@@ -64,6 +68,9 @@ export default class PageSignup implements ng.IPostLink {
             return;
 
         return this.Auth.signup(this.data).catch((res) => {
+            if (isEmailConfirmationError(res))
+                return;
+
             this.IgniteMessages.showError(null, res.data);
             this.setServerError(res.data);
         });

@@ -86,7 +86,7 @@ public class KNNRegressionExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = knnMdl.apply(inputs);
+                    double prediction = knnMdl.predict(inputs);
 
                     mse += Math.pow(prediction - groundTruth, 2.0);
                     mae += Math.abs(prediction - groundTruth);
