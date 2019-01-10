@@ -99,7 +99,7 @@ done
 
 # Script variables.
 if [ "${APACHE_GIT}" = "" ]; then
-    APACHE_GIT="https://git-wip-us.apache.org/repos/asf/ignite"
+    APACHE_GIT="https://gitbox.apache.org/repos/asf/ignite.git"
 fi
 
 if [ "${GITHUB_MIRROR}" = "" ]; then

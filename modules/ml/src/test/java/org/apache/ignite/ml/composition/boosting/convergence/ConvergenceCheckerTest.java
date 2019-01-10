@@ -32,14 +32,14 @@ import org.junit.Before;
 public abstract class ConvergenceCheckerTest {
     /** Not converged model. */
     protected ModelsComposition notConvergedMdl = new ModelsComposition(Collections.emptyList(), null) {
-        @Override public Double apply(Vector features) {
+        @Override public Double predict(Vector features) {
             return 2.1 * features.get(0);
         }
     };
 
     /** Converged model. */
     protected ModelsComposition convergedMdl = new ModelsComposition(Collections.emptyList(), null) {
-        @Override public Double apply(Vector features) {
+        @Override public Double predict(Vector features) {
             return 2 * (features.get(0) + 1);
         }
     };

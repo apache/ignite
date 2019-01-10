@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridTaskUriDeploymentDeadlockSelfTest;
 import org.apache.ignite.p2p.GridP2PDisabledSelfTest;
 import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassLoaderMultiThreadedSelfTest;
@@ -33,39 +31,35 @@ import org.apache.ignite.spi.deployment.uri.GridUriDeploymentSimpleSelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.file.GridFileDeploymentSelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.file.GridFileDeploymentUndeploySelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.http.GridHttpDeploymentSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Tests against {@link org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}.
  */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridUriDeploymentConfigSelfTest.class,
+    GridUriDeploymentSimpleSelfTest.class,
+    GridUriDeploymentClassloaderRegisterSelfTest.class,
+    GridUriDeploymentFileProcessorSelfTest.class,
+    GridUriDeploymentClassLoaderSelfTest.class,
+    GridUriDeploymentClassLoaderMultiThreadedSelfTest.class,
+    GridUriDeploymentMultiScannersSelfTest.class,
+    GridUriDeploymentConfigSelfTest.class,
+
+    GridFileDeploymentUndeploySelfTest.class,
+    GridHttpDeploymentSelfTest.class,
+
+    GridFileDeploymentSelfTest.class,
+    GridUriDeploymentMultiScannersErrorThrottlingTest.class,
+    GridUriDeploymentMd5CheckSelfTest.class,
+
+    // GAR Ant task tests.
+    IgniteToolsSelfTestSuite.class,
+
+    GridTaskUriDeploymentDeadlockSelfTest.class,
+    GridP2PDisabledSelfTest.class
+})
 public class IgniteUriDeploymentTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("URI Deployment Spi Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentSimpleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentClassloaderRegisterSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentFileProcessorSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentClassLoaderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentClassLoaderMultiThreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentMultiScannersSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentConfigSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridFileDeploymentUndeploySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridHttpDeploymentSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridFileDeploymentSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentMultiScannersErrorThrottlingTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridUriDeploymentMd5CheckSelfTest.class));
-
-        // GAR Ant task tests.
-        suite.addTest(IgniteToolsSelfTestSuite.suite());
-
-        suite.addTest(new JUnit4TestAdapter(GridTaskUriDeploymentDeadlockSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridP2PDisabledSelfTest.class));
-
-        return suite;
-    }
 }

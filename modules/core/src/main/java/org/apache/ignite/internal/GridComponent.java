@@ -72,6 +72,9 @@ public interface GridComponent {
         /** Encryption manager. */
         ENCRYPTION_MGR,
 
+        /** Service processor. */
+        SERVICE_PROC,
+
         /** Transactional data replication processor. */
         TX_DR_PROC
     }
