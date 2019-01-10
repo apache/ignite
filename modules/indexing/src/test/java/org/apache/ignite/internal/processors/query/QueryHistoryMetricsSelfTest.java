@@ -19,7 +19,9 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -158,6 +160,39 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testQueryMetricsForDmlAndDdl() throws Exception {
+        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+
+        List<String> cmds = Arrays.asList(
+            "create table TST(id int PRIMARY KEY, name varchar)",
+            "insert into TST(id) values(1)",
+            "commit"
+        );
+
+        cmds.forEach((cmd) ->
+            cache.query(new SqlFieldsQuery(cmd)).getAll()
+        );
+
+        waitingFor("size", QUERY_HISTORY_SIZE);
+
+        for (int i = 0; i < QUERY_HISTORY_SIZE; i++)
+            checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
+
+        // Check that collected metrics contains correct items: metrics for last N queries.
+        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)grid(0).context().query().queryHistory();
+
+        assertEquals(QUERY_HISTORY_SIZE, metrics.size());
+
+        for (int i = 0; i < cmds.size(); i++)
+            assertEquals(cmds.get(QUERY_HISTORY_SIZE - 1 - i), metrics.get(i).query());
+    }
+
+    /**
+     * Test metrics eviction.
+     *
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testQueryMetricsEviction() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -177,56 +212,13 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        Collection<QueryHistoryMetrics> metrics = grid(0).context().query().queryHistory();
+        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)grid(0).context().query().queryHistory();
 
-        String lastMetrics = "";
+        assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
-        for (QueryHistoryMetrics m : metrics)
-            lastMetrics += m.query() + ";";
-
-        assertTrue(lastMetrics.contains("select * from String limit 2;"));
-        assertTrue(lastMetrics.contains("SELECT \"A\".\"STRING\"._KEY, \"A\".\"STRING\"._VAL from String;"));
-
-        cache = grid(0).context().cache().jcache("B");
-
-        cache.query(new SqlFieldsQuery("select * from String")).getAll();
-        cache.query(new SqlFieldsQuery("select count(*) from String")).getAll();
-        cache.query(new SqlFieldsQuery("select * from String limit 1")).getAll();
-        cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
-        cache.query(new SqlQuery("String", "from String")).getAll();
-
-        waitingFor("size", QUERY_HISTORY_SIZE);
-
-        for (int i = 0; i < QUERY_HISTORY_SIZE; i++)
-            checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
-
-        if (gridCnt > 1) {
-            cache = grid(1).context().cache().jcache("A");
-
-            cache.query(new SqlFieldsQuery("select * from String")).getAll();
-            cache.query(new SqlFieldsQuery("select count(*) from String")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 1")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
-            cache.query(new SqlQuery("String", "from String")).getAll();
-
-            waitingFor("size", QUERY_HISTORY_SIZE);
-
-            for (int i = 0; i < QUERY_HISTORY_SIZE; i++)
-                checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
-
-            cache = grid(1).context().cache().jcache("B");
-
-            cache.query(new SqlFieldsQuery("select * from String")).getAll();
-            cache.query(new SqlFieldsQuery("select count(*) from String")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 1")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
-            cache.query(new SqlQuery("String", "from String")).getAll();
-
-            waitingFor("size", QUERY_HISTORY_SIZE);
-
-            for (int i = 0; i < QUERY_HISTORY_SIZE; i++)
-                checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
-        }
+        assertEquals("SELECT \"A\".\"STRING\"._KEY, \"A\".\"STRING\"._VAL from String", metrics.get(0).query());
+        assertEquals("select * from String limit 2", metrics.get(1).query());
+        assertEquals("select * from String limit 1", metrics.get(2).query());
     }
 
     /**
@@ -401,12 +393,11 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         Collection<QueryHistoryMetrics> metrics = grid(0).context().query().queryHistory();
 
-        metrics.forEach(System.out::println);
-        if (sz == 0)
-            return;
-
         assertNotNull(metrics);
         assertEquals(sz, metrics.size());
+
+        if (sz == 0)
+            return;
 
         QueryHistoryMetrics m = new ArrayList<>(metrics).get(idx);
 
@@ -418,7 +409,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(m.minimumTime() >= 0);
 
         if (first)
-            assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
+            assertEquals("On first execution minTime == maxTime", m.minimumTime(), m.maximumTime());
     }
 
     /**
@@ -487,7 +478,6 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
             cache.query(qry).getAll();
         }
         catch (Exception ignored) {
-            ignored.printStackTrace();
             // No-op.
         }
 
