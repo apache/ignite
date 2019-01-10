@@ -123,8 +123,17 @@ public class ImmutableBitSet implements Set<Integer> {
     }
 
     /** @{inheritDoc} */
-    @Override public @NotNull <I> I[] toArray(@NotNull I[] a) {
-        throw new UnsupportedOperationException();
+    @Override public @NotNull <T> T[] toArray(@NotNull T[] a) {
+        T[] r = a.length >= size
+            ? a
+            :(T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+
+        Iterator it = iterator();
+
+        for (int i = 0; i < r.length; i++)
+            r[i] = it.hasNext() ? (T)it.next() : null;
+
+        return r;
     }
 
     /**
