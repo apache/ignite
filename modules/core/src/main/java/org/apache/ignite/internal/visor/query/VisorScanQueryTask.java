@@ -38,7 +38,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchScanQueryRows;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleResultSetGet;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleResultSetHolderRemoval;
 
 /**
@@ -115,8 +115,6 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
                 VisorQueryCursor<Cache.Entry<Object, Object>> cur =
                     new VisorQueryCursor<>(arg.isNear() ? near(c) : scan(c, arg, filter));
 
-                List<Object[]> rows = fetchScanQueryRows(cur, arg.getPageSize());
-
                 long duration = U.currentTimeMillis() - start; // Scan duration + fetch duration.
 
                 boolean hasNext = cur.hasNext();
@@ -125,14 +123,16 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
                 String qryId = SCAN_QRY_NAME + "-" + UUID.randomUUID();
 
                 if (hasNext) {
-                    ignite.cluster().<String, VisorQueryCursor>nodeLocalMap().put(qryId, cur);
+                    ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
+                        new VisorQueryHolder(qryId, cur, arg.getPageSize(), null));
 
                     scheduleResultSetHolderRemoval(qryId, ignite);
+                    scheduleResultSetGet(qryId, ignite, true);
                 }
                 else
                     cur.close();
 
-                return new VisorEither<>(new VisorQueryResult(nid, qryId, SCAN_COL_NAMES, rows, hasNext,
+                return new VisorEither<>(new VisorQueryResult(nid, qryId, SCAN_COL_NAMES, null, hasNext,
                     duration));
             }
             catch (Throwable e) {

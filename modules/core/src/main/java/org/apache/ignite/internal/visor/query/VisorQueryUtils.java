@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  * Contains utility methods for Visor query tasks and jobs.
  */
 public class VisorQueryUtils {
-    /** How long to store future with query in node local map: 5 minutes. */
+    /** Immediatelly get first result page. */
     public static final Integer GET_DELAY = 0;
 
     /** How long to store future with query in node local map: 5 minutes. */
