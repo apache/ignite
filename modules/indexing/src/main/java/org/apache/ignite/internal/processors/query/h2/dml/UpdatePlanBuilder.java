@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -310,18 +311,7 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-//        boolean hasEntireKeyCol = keyColIdx != -1;
-//        boolean hasEntireValcol = valColIdx != -1;
-//
-//        if (hasEntireKeyCol && hasKeyProps)
-//            throw new IgniteSQLException("Column " + colNames[keyColIdx] + " refers to entire key cache object. " +
-//                "It must not be mixed with other columns that refer to parts of key.",
-//                IgniteQueryErrorCode.PARSING);
-//
-//        if (hasEntireValcol && hasValProps)
-//            throw new IgniteSQLException("Column " + colNames[valColIdx] + " refers to entire value cache object. " +
-//                "It must not be mixed with other columns that refer to parts of value.",
-//                IgniteQueryErrorCode.PARSING);
+        verifyDmlColumns(tbl.dataTable(), Arrays.asList(colNames));
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
@@ -603,6 +593,8 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
+        verifyDmlColumns(tbl, Arrays.asList(colNames));
+
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
             true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps,
@@ -649,15 +641,6 @@ public final class UpdatePlanBuilder {
             : desc.valueClass();
 
         boolean isSqlType = QueryUtils.isSqlType(cls);
-
-        String objName = key? "key" : "value";
-
-        if (hasProps && colIdx != -1)
-            throw new IgniteSQLException("Column that refer to entire " + objName + " object must not be mixed " +
-                "with other columns that refer to parts of " + objName + ".",
-                IgniteQueryErrorCode.PARSING);
-
-
 
         // If we don't need to construct anything from scratch, just return value from given list.
         if (isSqlType || !hasProps) {
@@ -805,6 +788,10 @@ public final class UpdatePlanBuilder {
         if (gridTbl != null && updateAffectsKeyColumns(gridTbl, update.set().keySet()))
             throw new IgniteSQLException("SQL UPDATE can't modify key or its fields directly",
                 IgniteQueryErrorCode.KEY_UPDATE);
+
+        // FIXME: Do we have cases when we got it null?
+        if (gridTbl != null)
+            verifyDmlColumns(gridTbl, update.set().keySet());
     }
 
     /**
@@ -831,6 +818,65 @@ public final class UpdatePlanBuilder {
             }
         }
         return false;
+    }
+
+
+    //TODO: rewrite using cols!
+    /**
+     * Checks DML query (insert, merge, update, bulk load) columns: <br/>
+     * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>
+     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. </>
+     *
+     * @param tab - updated table.
+     * @param affectedColumns - table's column names affected by dml query.
+     * @throws IgniteSQLException if check failed.
+     */
+    private static void verifyDmlColumns(GridH2Table tab, Collection<String> affectedColumns) {
+        GridH2RowDescriptor desc = tab.rowDescriptor();
+
+        // _key (_val) or it alias exist in the update columns.
+        String keyColName = null;
+        String valColName = null;
+
+        // Whether fields that are part of the key (value) exist in the updated columns.
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        for (String colName: affectedColumns) {
+            int colId = tab.getColumn(colName).getColumnId();
+
+            if (desc.isKeyColumn(colId)) {
+                keyColName = colName;
+                continue;
+            }
+
+            if (desc.isValueColumn(colId)) {
+                valColName = colName;
+                continue;
+            }
+
+            // column ids 0..2 are _key, _val, _ver
+            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + colName + ", id=" + colId +"].";
+
+            if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        boolean hasEntireKeyCol = keyColName != null;
+        boolean hasEntireValcol = valColName != null;
+
+        if (hasEntireKeyCol && hasKeyProps)
+            throw new IgniteSQLException("Column " + keyColName + " refers to entire key cache object. " +
+                "It must not be mixed with other columns that refer to parts of key.",
+                IgniteQueryErrorCode.PARSING);
+
+        if (hasEntireValcol && hasValProps)
+            throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
+                "It must not be mixed with other columns that refer to parts of value.",
+                IgniteQueryErrorCode.PARSING);
+
     }
 
     /**
