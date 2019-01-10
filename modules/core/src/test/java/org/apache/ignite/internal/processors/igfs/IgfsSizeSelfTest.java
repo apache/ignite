@@ -81,9 +81,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** IGFS name. */
     private static final String IGFS_NAME = "test";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** IGFS management port */
     private static int mgmtPort;
 
@@ -147,11 +144,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheConfiguration(metaCfg);
         igfsCfg.setDataCacheConfiguration(dataCfg);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         if (memIgfsdDataPlcSetter != null)

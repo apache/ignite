@@ -50,8 +50,14 @@ public class Step_1_Read_and_Learn {
             try {
                 IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                IgniteBiFunction<Integer, Object[], Vector> featureExtractor
-                    = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
+                    double[] data = new double[]{(double) v[0], (double) v[5], (double) v[6]};
+                    data[0] = Double.isNaN(data[0]) ? 0 : data[0];
+                    data[1] = Double.isNaN(data[1]) ? 0 : data[1];
+                    data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+
+                    return VectorUtils.of(data);
+                };
 
                 IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 

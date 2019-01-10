@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheBlockExchangeOnSqlReadOperationsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheBlockExchangeOnSqlReadOperationsTestSuite {
     /**
      * @return Test suite.
      */

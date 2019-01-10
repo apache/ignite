@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,9 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * IgniteInternalFuture#get get()} method after all futures complete or fail. Inner exception will contain
  * configurations of failed services.
  */
-public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Object, Object> {
-    /** Names of services written to cache during current deployment. */
-    private Collection<String> svcsToRollback;
+public class GridServiceDeploymentCompoundFuture<T extends Serializable> extends GridCompoundFuture<Object, Object> {
+    /** Ids of services written to cache during current deployment. */
+    private Collection<T> svcsToRollback;
 
     /** */
     private volatile ServiceDeploymentException err;
@@ -71,21 +72,21 @@ public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Obje
      * @param fut Child future.
      * @param own If {@code true}, then corresponding service will be cancelled on failure.
      */
-    public void add(GridServiceDeploymentFuture fut, boolean own) {
+    public void add(GridServiceDeploymentFuture<T> fut, boolean own) {
         super.add(fut);
 
         if (own) {
             if (svcsToRollback == null)
                 svcsToRollback = new ArrayList<>();
 
-            svcsToRollback.add(fut.configuration().getName());
+            svcsToRollback.add(fut.serviceId());
         }
     }
 
     /**
-     * @return Collection of names of services that were written to cache during current deployment.
+     * @return Collection of ids of services that were written to cache during current deployment.
      */
-    public Collection<String> servicesToRollback() {
+    public Collection<T> servicesToRollback() {
         if (svcsToRollback != null)
             return svcsToRollback;
         else

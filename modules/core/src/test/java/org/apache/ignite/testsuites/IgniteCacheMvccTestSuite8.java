@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
@@ -57,11 +58,14 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite8  extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite8 {
     /**
      * @return IgniteCache test suite.
      */
@@ -123,7 +127,7 @@ public class IgniteCacheMvccTestSuite8  extends TestSuite {
         suite.addTest(IgniteCacheTestSuite8.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheMvccNearEvictionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheMvccNearEvictionSelfTest.class));
 
         return suite;
     }

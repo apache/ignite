@@ -17,22 +17,16 @@
 
 package org.apache.ignite;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.yarn.IgniteApplicationMasterSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Apache Hadoop Yarn integration tests.
  */
-public class IgniteYarnTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Apache Yarn Integration Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteApplicationMasterSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteApplicationMasterSelfTest.class
+})
+public class IgniteYarnTestSuite {
 }

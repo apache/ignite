@@ -64,8 +64,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -2127,7 +2127,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             cliCtx,
             keepBinary,
             failOnMultipleStmts,
-            GridCacheQueryType.SQL_FIELDS
+            GridCacheQueryType.SQL_FIELDS,
+            null
+        );
+    }
+
+    /**
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param cliCtx Client context.
+     * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @param cancel Hook for query cancellation.
+     * @return Cursor.
+     */
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry,
+        final SqlClientContext cliCtx,
+        final boolean keepBinary,
+        final boolean failOnMultipleStmts,
+        @Nullable final GridQueryCancel cancel
+    ) {
+        return querySqlFields(
+            cctx,
+            qry,
+            cliCtx,
+            keepBinary,
+            failOnMultipleStmts,
+            GridCacheQueryType.SQL_FIELDS,
+            cancel
         );
     }
 
@@ -2141,6 +2173,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @param qryType Real query type.
+     * @param cancel Hook for query cancellation.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -2149,7 +2182,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final SqlClientContext cliCtx,
         final boolean keepBinary,
         final boolean failOnMultipleStmts,
-        GridCacheQueryType qryType
+        GridCacheQueryType qryType,
+        @Nullable final GridQueryCancel cancel
     ) {
         // Validate.
         checkxEnabled();
@@ -2167,10 +2201,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                     @Override public List<FieldsQueryCursor<List<?>>> applyx() {
-                        GridQueryCancel cancel = new GridQueryCancel();
+                        GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
 
                         List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
+                            idx.querySqlFields(
+                                schemaName,
+                                qry,
+                                cliCtx,
+                                keepBinary,
+                                failOnMultipleStmts,
+                                null,
+                                cancel0,
+                                true
+                            );
 
                         if (cctx != null)
                             sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx, qryType);
@@ -2298,7 +2341,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             null,
             keepBinary,
             true,
-            GridCacheQueryType.SQL
+            GridCacheQueryType.SQL,
+            null
         ).get(0);
 
         // Convert.

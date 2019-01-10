@@ -18,14 +18,13 @@
 package org.apache.ignite.ml.xgboost.parser;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Scanner;
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
-import org.apache.ignite.ml.inference.builder.SyncInfModelBuilder;
-import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
-import org.apache.ignite.ml.xgboost.MapBasedXGObject;
-import org.apache.ignite.ml.xgboost.XGObject;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
+import org.apache.ignite.ml.inference.builder.SyncModelBuilder;
+import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
+import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +41,7 @@ public class XGBoostModelParserTest {
     private final XGModelParser parser = new XGModelParser();
 
     /** Model builder. */
-    private final SyncInfModelBuilder mdlBuilder = new SingleInfModelBuilder();
+    private final SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
     /** End-to-end test for {@code parse()} and {@code predict()} methods. */
     @Test
@@ -51,9 +50,9 @@ public class XGBoostModelParserTest {
         if (url == null)
             throw new IllegalStateException("File not found [resource_name=" + TEST_MODEL_RESOURCE + "]");
 
-        InfModelReader reader = new FileSystemInfModelReader(url.getPath());
+        ModelReader reader = new FileSystemModelReader(url.getPath());
 
-        try (InfModel<XGObject, Double> mdl = mdlBuilder.build(reader, parser);
+        try (XGModelComposition mdl = mdlBuilder.build(reader, parser);
              Scanner testDataScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
                  .getResourceAsStream("datasets/agaricus-test-data.txt"));
              Scanner testExpResultsScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
@@ -65,7 +64,7 @@ public class XGBoostModelParserTest {
                 String testDataStr = testDataScanner.nextLine();
                 String testExpResultsStr = testExpResultsScanner.nextLine();
 
-                MapBasedXGObject testObj = new MapBasedXGObject();
+                HashMap<String, Double> testObj = new HashMap<>();
 
                 for (String keyValueString : testDataStr.split(" ")) {
                     String[] keyVal = keyValueString.split(":");
