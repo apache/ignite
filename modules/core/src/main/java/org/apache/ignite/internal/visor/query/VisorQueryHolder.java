@@ -139,7 +139,9 @@ public class VisorQueryHolder {
      */
     public void setErr(Throwable err) {
         this.err = err;
-        cur.close();
+
+        if (cur != null)
+            cur.close();
     }
 
     /**
