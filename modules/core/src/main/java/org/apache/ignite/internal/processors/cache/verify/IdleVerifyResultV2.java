@@ -225,16 +225,14 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if(!F.isEmpty(notIdleExceptions)) {
-            printer.accept("idle_verify check has finished, cluster not idle.\n");
+            printer.accept("idle_verify check finished, cluster not idle.\n");
 
-            printer.accept("nodes with started checkpoint are following:\n");
+            printer.accept("nodes with started checkpoint:\n");
 
             for(Map.Entry<UUID, Exception> e : notIdleExceptions.entrySet())
                 printer.accept("Node ID:" + e.getKey() + "\n");
         } else {
-            printer.accept("idle_verify check has finished, from " + exceptions.size() + " nodes were got errors.\n");
-
-            printer.accept("nodes with errors are following:\n");
+            printer.accept("idle_verify check finished with errors on " + exceptions.size() + " nodes:\n");
 
             for(Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
                 String msg;

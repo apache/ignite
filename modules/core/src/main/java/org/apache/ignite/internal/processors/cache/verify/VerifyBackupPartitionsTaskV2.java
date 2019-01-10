@@ -137,8 +137,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             if (superRes == ComputeJobResultPolicy.FAILOVER) {
                 superRes = ComputeJobResultPolicy.WAIT;
 
-                log.warning("VerifyBackupPartitionsJobV2 failed on node " +
-                    "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+                if(log != null) {
+                    log.warning("VerifyBackupPartitionsJobV2 failed on node " +
+                        "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+                }
             }
 
             return superRes;
@@ -267,7 +269,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             db.addCheckpointListener(lsnr);
 
             try {
-                if (isCheckpointNow(db))
+                if(arg.isCheckCrc() && isCheckpointNow(db))
                     throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
 
                 List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =

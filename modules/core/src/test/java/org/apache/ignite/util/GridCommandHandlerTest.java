@@ -1303,11 +1303,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
-
             assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
-                "Exception message:\n" +
-                "Node has left grid: " + unstableNodeId));
+                "class org.apache.ignite.cluster.ClusterTopologyException: Node has left grid: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
