@@ -23,10 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
  * Query metrics aggregated by query type and its textual representation.
  *
  * Query detail metrics could be enabled via {@link CacheConfiguration#setQueryDetailMetricsSize(int)} method.
- *
- * @deprecated Use {@link QueryHistoryMetrics} instead.
  */
-@Deprecated
 public interface QueryDetailMetrics {
     /**
      * @return Query type.

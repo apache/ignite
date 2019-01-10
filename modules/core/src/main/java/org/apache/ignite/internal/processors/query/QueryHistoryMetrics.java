@@ -23,23 +23,22 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.cache.query.QueryHistoryMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
- * Adapter for {@link QueryHistoryMetrics}.
+ * Query history metrics.
  */
-public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, Externalizable {
+public class QueryHistoryMetrics implements Externalizable {
     /**
      *
      */
     private static final long serialVersionUID = 0L;
 
     /** Link to internal node in eviction deque. */
-    private AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter>> linkRef;
+    private AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
 
     /** Textual query representation. */
     private String qry;
@@ -71,7 +70,7 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
     /**
      * Required by {@link Externalizable}.
      */
-    public QueryHistoryMetricsAdapter() {
+    public QueryHistoryMetrics() {
         // No-op.
     }
 
@@ -85,7 +84,7 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param duration Duration of queue execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
      */
-    public QueryHistoryMetricsAdapter(String qry, String schema, boolean loc, long startTime,
+    public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime,
         long duration, boolean failed) {
         this.qry = qry;
         this.schema = schema;
@@ -117,9 +116,9 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param lastStartTime Time of last start of execution.
      * @param key Key of query history metrics.
      */
-    private QueryHistoryMetricsAdapter(String qry, String schema, boolean loc, int execs, int failures, long minTime,
+    private QueryHistoryMetrics(String qry, String schema, boolean loc, int execs, int failures, long minTime,
         long maxTime, long lastStartTime, QueryHistoryMetricsKey key,
-        AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter>> linkRef) {
+        AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef) {
         this.qry = qry;
         this.schema = schema;
         this.loc = loc;
@@ -148,10 +147,10 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param m Other metrics to take into account.
      * @return Aggregated metrics.
      */
-    public QueryHistoryMetricsAdapter aggregateWithNew(QueryHistoryMetricsAdapter m) {
+    public QueryHistoryMetrics aggregateWithNew(QueryHistoryMetrics m) {
         assert m.linkRef.get() == null;
 
-        return new QueryHistoryMetricsAdapter(
+        return new QueryHistoryMetrics(
             qry,
             schema,
             loc,
@@ -165,50 +164,76 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
         );
     }
 
-    /** {@inheritDoc} */
-    @Override public String query() {
+    /**
+     * @return Textual representation of query.
+     */
+    public String query() {
         return qry;
     }
 
-    /** {@inheritDoc} */
-    @Override public String schema() {
+    /**
+     * @return Schema.
+     */
+    public String schema() {
         return schema;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean local() {
+    /**
+     * @return {@code true} For query with enabled local flag.
+     */
+    public boolean local() {
         return loc;
     }
 
-    /** {@inheritDoc} */
-    @Override public int executions() {
+    /**
+     * Gets total number execution of query.
+     *
+     * @return Number of executions.
+     */
+    public int executions() {
         return execs;
     }
 
-    /** {@inheritDoc} */
-    @Override public int failures() {
+    /**
+     * Gets number of times a query execution failed.
+     *
+     * @return Number of times a query execution failed.
+     */
+    public int failures() {
         return failures;
     }
 
-    /** {@inheritDoc} */
-    @Override public long minimumTime() {
+    /**
+     * Gets minimum execution time of query.
+     *
+     * @return Minimum execution time of query.
+     */
+    public long minimumTime() {
         return minTime < 0 ? 0 : minTime;
     }
 
-    /** {@inheritDoc} */
-    @Override public long maximumTime() {
+    /**
+     * Gets maximum execution time of query.
+     *
+     * @return Maximum execution time of query.
+     */
+    public long maximumTime() {
         return maxTime;
     }
 
-    /** {@inheritDoc} */
-    @Override public long lastStartTime() {
+    /**
+     * Gets latest query start time.
+     *
+     * @return Latest time query was stared.
+     */
+    public long lastStartTime() {
         return lastStartTime;
     }
 
     /**
      * @return Link to internal node in eviction deque.
      */
-    @Nullable public ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> link() {
+    @Nullable public ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link() {
         return linkRef.get();
     }
 
@@ -218,7 +243,7 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param link Link to internal node in eviction deque.
      * @return {@code true} in case link has been set, {@code false} otherwise.
      */
-    public boolean setLinkIfAbsent(ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> link) {
+    public boolean setLinkIfAbsent(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
         return linkRef.compareAndSet(null, link);
     }
 
@@ -228,7 +253,7 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param link Link to internal node in eviction deque.
      * @return {@code true} if given link has been removed, {@code false} otherwise.
      */
-    public boolean unlink(ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> link) {
+    public boolean unlink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
         return linkRef.compareAndSet(link, null);
     }
 
@@ -239,8 +264,8 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
      * @param updatedLink New link which should be set.
      * @return {@code true} If link has been updated.
      */
-    public boolean replaceLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> expLink,
-        ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> updatedLink) {
+    public boolean replaceLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> expLink,
+        ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> updatedLink) {
         return linkRef.compareAndSet(expLink, updatedLink);
     }
 
@@ -270,6 +295,6 @@ public class QueryHistoryMetricsAdapter implements QueryHistoryMetrics, External
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryHistoryMetricsAdapter.class, this);
+        return S.toString(QueryHistoryMetrics.class, this);
     }
 }

@@ -323,6 +323,13 @@ public interface GridQueryIndexing {
     public Collection<GridRunningQueryInfo> runningQueries(long duration);
 
     /**
+     * Gets query history statistics.
+     *
+     * @return Queries history statistics.
+     */
+    public Collection<QueryHistoryMetrics> queryHistoryMetrics();
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.
@@ -374,18 +381,4 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Return Running query manager.
-     *
-     * @return Running query manager.
-     */
-    public RunningQueryManager runningQueryManager();
-
-    /**
-     * Return query history manager.
-     *
-     * @return Query history manager.
-     */
-    public QueryHistoryManager queryHistoryManager();
 }

@@ -22,16 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetricsAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Adapter for {@link QueryDetailMetrics}.
- *
- * @deprecated Use {@link QueryHistoryMetricsAdapter} instead.
  */
-@Deprecated
 public class GridCacheQueryDetailMetricsAdapter implements QueryDetailMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

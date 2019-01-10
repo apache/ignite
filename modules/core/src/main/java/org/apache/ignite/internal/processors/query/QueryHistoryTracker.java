@@ -18,34 +18,34 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
- * Keep statistic history information about run queries.
+ *
  */
-public class QueryHistoryManager implements QueryHistory {
+class QueryHistoryTracker {
+    /** Query metrics. */
+    private final ConcurrentHashMap<QueryHistoryMetricsKey, QueryHistoryMetrics> qryMetrics;
+
+    /** Queue. */
+    private final ConcurrentLinkedDeque8<QueryHistoryMetrics> evictionQueue = new ConcurrentLinkedDeque8<>();
+
     /** History size. */
     private final int histSz;
 
-    /** Query metrics. */
-    private final ConcurrentHashMap<QueryHistoryMetricsKey, QueryHistoryMetricsAdapter> qryMetrics;
-
-    /** Queue. */
-    private final ConcurrentLinkedDeque8<QueryHistoryMetricsAdapter> evictionQueue = new ConcurrentLinkedDeque8<>();
-
     /**
-     * Constructor.
-     *
-     * @param ctx Context.
+     * @param histSz History size.
      */
-    public QueryHistoryManager(GridKernalContext ctx) {
-        histSz = ctx.config().getQueryHistoryStatisticsSize();
+    QueryHistoryTracker(int histSz) {
+        this.histSz = histSz;
 
         qryMetrics = histSz > 0 ? new ConcurrentHashMap<>(histSz) : null;
     }
@@ -53,7 +53,7 @@ public class QueryHistoryManager implements QueryHistory {
     /**
      * @param failed {@code True} if query execution failed.
      */
-    public void collectMetrics(GridRunningQueryInfo runningQryInfo, boolean failed) {
+    void collectMetrics(GridRunningQueryInfo runningQryInfo, boolean failed) {
         if (histSz <= 0)
             return;
 
@@ -63,17 +63,11 @@ public class QueryHistoryManager implements QueryHistory {
         long startTime = runningQryInfo.startTime();
         long duration = U.currentTimeMillis() - startTime;
 
-        // Do not collect metrics for EXPLAIN queries.
-        if (explain(qry))
-            return;
+        QueryHistoryMetrics m = new QueryHistoryMetrics(qry, schema, loc, startTime, duration, failed);
 
-        boolean metricsFull = qryMetrics.size() >= histSz;
+        QueryHistoryMetrics mergedMetrics = qryMetrics.merge(m.key(), m, QueryHistoryMetrics::aggregateWithNew);
 
-        QueryHistoryMetricsAdapter m = new QueryHistoryMetricsAdapter(qry, schema, loc, startTime, duration, failed);
-
-        QueryHistoryMetricsAdapter mergedMetrics = qryMetrics.merge(m.key(), m, QueryHistoryMetricsAdapter::aggregateWithNew);
-
-        if (touch(mergedMetrics) && metricsFull)
+        if (touch(mergedMetrics) && qryMetrics.size() >= histSz)
             shrink();
     }
 
@@ -81,8 +75,8 @@ public class QueryHistoryManager implements QueryHistory {
      * @param entry Entry Which was updated
      * @return {@code true} In case entry is new and has been added, {@code false} otherwise.
      */
-    private boolean touch(QueryHistoryMetricsAdapter entry) {
-        ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> node = entry.link();
+    private boolean touch(QueryHistoryMetrics entry) {
+        ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node = entry.link();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -105,11 +99,20 @@ public class QueryHistoryManager implements QueryHistory {
         }
         else if (removeLink(node)) {
             // Move node to tail.
-            ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> newNode = evictionQueue.offerLastx(entry);
+            ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> newNode = evictionQueue.offerLastx(entry);
 
-            if (!entry.replaceLink(node, newNode))
+            if (!entry.replaceLink(node, newNode)) {
                 // Was concurrently added, need to clear it from queue.
                 removeLink(newNode);
+
+                return false;
+            }
+            else if (qryMetrics.get(entry.key()) != entry) {
+                // Was concurrently evicted, need to clear it from queue.
+                removeLink(node);
+
+                return false;
+            }
         }
 
         // Entry is already in queue.
@@ -121,7 +124,7 @@ public class QueryHistoryManager implements QueryHistory {
      */
     private void shrink() {
         while (true) {
-            QueryHistoryMetricsAdapter entry = evictionQueue.poll();
+            QueryHistoryMetrics entry = evictionQueue.poll();
 
             if (entry == null)
                 return;
@@ -138,53 +141,35 @@ public class QueryHistoryManager implements QueryHistory {
      * @param node Node wchi should be unlinked from eviction queue.
      * @return {@code true} If node was unlinked.
      */
-    private boolean removeLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetricsAdapter> node) {
+    private boolean removeLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node) {
         return evictionQueue.unlinkx(node);
     }
 
     /**
-     * @param qry Textual query representation.
-     * @return {@code true} in case query is explain.
+     * Gets query history statistics. Size of history could be configured via {@link
+     * IgniteConfiguration#setQueryHistoryStatisticsSize(int)}
+     *
+     * @return Queries history statistics aggregated by query text, schema and local flag.
      */
-    private boolean explain(String qry) {
-        int off = 0;
-        int len = qry.length();
-
-        while (off < len && Character.isWhitespace(qry.charAt(off)))
-            off++;
-
-        return qry.regionMatches(true, off, "EXPLAIN", 0, 7);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<QueryHistoryMetricsAdapter> queryHistoryMetrics() {
+    Collection<QueryHistoryMetrics> queryHistoryMetrics() {
         if (histSz <= 0)
             return Collections.emptyList();
 
-        Object[] metrics = evictionQueue.toArray();
+        ArrayList<QueryHistoryMetrics> latestMetrics = new ArrayList<>(histSz);
 
-        int cnt = metrics.length;
-        int firstIdx = Math.min(0, Math.max(0, cnt - histSz));
-        int resCnt = Math.min(histSz, cnt);
+        // We need filter possible duplicates which can appear due to concurrent update.
+        Set<QueryHistoryMetricsKey> addedKeysSet = new HashSet<>(histSz);
 
-        QueryHistoryMetricsAdapter[] latestMetrics = new QueryHistoryMetricsAdapter[resCnt];
+        for (QueryHistoryMetrics metrics : evictionQueue) {
+            //Skip not fully applied changes and duplicates
+            if (metrics.link() != null && addedKeysSet.add(metrics.key()))
+                latestMetrics.add(metrics);
 
-        for (int i = 0; i < resCnt; i++) {
-            QueryHistoryMetricsAdapter item = (QueryHistoryMetricsAdapter)metrics[firstIdx + i];
+            if (latestMetrics.size() == histSz)
+                break;
 
-            latestMetrics[cnt - 1 - i] = item;
         }
 
-        return Arrays.asList(latestMetrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetQueryHistoryMetrics() {
-        if (histSz <= 0)
-            return;
-
-        evictionQueue.clear();
-
-        qryMetrics.clear();
+        return latestMetrics;
     }
 }

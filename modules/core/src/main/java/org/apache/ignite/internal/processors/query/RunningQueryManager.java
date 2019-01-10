@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -34,14 +36,24 @@ public class RunningQueryManager {
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
-    /** Query history manager. */
-    private final QueryHistoryManager qryHistMgr;
-
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
 
-    public RunningQueryManager(QueryHistoryManager qryHistMgr) {
-        this.qryHistMgr = qryHistMgr;
+    /** History size. */
+    private final int histSz;
+
+    /** Query history tracker. */
+    private volatile QueryHistoryTracker queryHistoryTracker;
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     */
+    public RunningQueryManager(GridKernalContext ctx) {
+        histSz = ctx.config().getQueryHistoryStatisticsSize();
+
+        queryHistoryTracker = new QueryHistoryTracker(histSz);
     }
 
     /**
@@ -94,12 +106,25 @@ public class RunningQueryManager {
      * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
     @Nullable public GridRunningQueryInfo unregister(Long qryId, boolean failed) {
+        return unregister(qryId, failed, true);
+    }
+
+    /**
+     * Unregister running query.
+     *
+     * @param qryId Query id.
+     * @param failed {@code true} In case query was failed.
+     * @param collectMetrics {@code true} In case metrics should be collected.
+     * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
+     */
+    @Nullable public GridRunningQueryInfo unregister(Long qryId, boolean failed, boolean collectMetrics) {
         if (qryId == null)
             return null;
 
         GridRunningQueryInfo unregistered = runs.remove(qryId);
 
-        qryHistMgr.collectMetrics(unregistered, failed);
+        if (collectMetrics)
+            queryHistoryTracker.collectMetrics(unregistered, failed);
 
         return unregistered;
     }
@@ -141,7 +166,7 @@ public class RunningQueryManager {
     public void stop() {
         for (GridRunningQueryInfo r : runs.values()) {
             try {
-                unregister(r.id(), false);
+                unregister(r.id(), false, false);
 
                 r.cancel();
             }
@@ -149,6 +174,26 @@ public class RunningQueryManager {
                 // No-op.
             }
         }
+    }
+
+    /**
+     * Gets query history statistics. Size of history could be configured via {@link
+     * IgniteConfiguration#setQueryHistoryStatisticsSize(int)}
+     *
+     * @return Queries history statistics aggregated by query text, schema and local flag.
+     */
+    public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+        return queryHistoryTracker.queryHistoryMetrics();
+    }
+
+    /**
+     * Reset query history metrics.
+     */
+    public void resetQueryHistoryMetrics() {
+        if (histSz <= 0)
+            return;
+
+        queryHistoryTracker = new QueryHistoryTracker(histSz);
     }
 
     /** {@inheritDoc} */

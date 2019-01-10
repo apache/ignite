@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryHistoryManager;
+import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -250,11 +250,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private DdlStatementsProcessor ddlProc;
 
     /** */
-    private QueryHistoryManager qryHistMgr;
-
-    /**
-     *
-     */
     private RunningQueryManager runningQueryMgr;
 
     /** */
@@ -466,18 +461,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridRunningQueryInfo runningQryInfo = runningQueryManager().register(qry,
                 TEXT, schemaName, true, null);
 
-            boolean fail = false;
-
             try {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
-            catch (Exception e) {
-                fail = true;
-
-                throw e;
-            }
             finally {
-                runningQueryManager().unregister(runningQryInfo, fail);
+                runningQueryManager().unregister(runningQryInfo.id(), false, false);
             }
         }
 
@@ -2348,11 +2336,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryHistoryManager queryHistoryManager() {
-        return qryHistMgr;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -2387,9 +2370,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         dmlProc = new DmlStatementsProcessor(ctx, this);
         ddlProc = new DdlStatementsProcessor(ctx, schemaMgr);
 
-        qryHistMgr = new QueryHistoryManager(ctx);
-
-        runningQueryMgr = new RunningQueryManager(qryHistMgr);
+        runningQueryMgr = new RunningQueryManager(ctx);
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2654,6 +2635,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQueryMgr.longRunningQueries(duration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+        return runningQueryMgr.queryHistoryMetrics();
     }
 
     /** {@inheritDoc} */

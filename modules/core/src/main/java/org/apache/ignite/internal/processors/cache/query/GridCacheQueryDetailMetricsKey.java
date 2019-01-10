@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Immutable query metrics key used to group metrics.
- *
- * @deprecated Use {@link QueryHistoryMetricsKey} instead.
  */
-@Deprecated
 public class GridCacheQueryDetailMetricsKey {
     /** Query type to track metrics. */
     private final GridCacheQueryType qryType;

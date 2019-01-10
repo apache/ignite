@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryHistoryManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
@@ -1746,10 +1745,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param startTime Query start size.
      * @param duration Execution duration.
      * @param failed {@code True} if query execution failed.
-     *
-     * @deprecated Use {@link QueryHistoryManager#collectMetrics} instead.
      */
-    @Deprecated
     public void collectMetrics(GridCacheQueryType qryType, String qry, long startTime, long duration, boolean failed) {
         metrics.update(duration, failed);
 
