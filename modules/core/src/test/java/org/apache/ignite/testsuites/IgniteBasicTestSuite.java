@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConne
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -218,6 +219,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
 
         suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(CacheLocalGetSerializationTest.class));
 
         return suite;
     }
