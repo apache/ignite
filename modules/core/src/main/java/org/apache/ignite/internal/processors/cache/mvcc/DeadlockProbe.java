@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -33,9 +36,11 @@ public class DeadlockProbe implements Message {
     private static final long serialVersionUID = 0;
 
     /** */
+    // t0d0 do we still need initiator version?
     private GridCacheVersion initiatorVer;
     /** */
-    private GridCacheVersion waitingVer;
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> waitingVers;
     /** */
     private GridCacheVersion blockerVer;
     /** */
@@ -46,10 +51,11 @@ public class DeadlockProbe implements Message {
     }
 
     /** */
-    public DeadlockProbe(
-        GridCacheVersion initiatorVer, GridCacheVersion waitingVer, GridCacheVersion blockerVer, boolean nearCheck) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public DeadlockProbe(GridCacheVersion initiatorVer, Collection<GridCacheVersion> waitingVers,
+        GridCacheVersion blockerVer, boolean nearCheck) {
         this.initiatorVer = initiatorVer;
-        this.waitingVer = waitingVer;
+        this.waitingVers = waitingVers;
         this.blockerVer = blockerVer;
         this.nearCheck = nearCheck;
     }
@@ -62,10 +68,12 @@ public class DeadlockProbe implements Message {
     }
 
     /**
+     * // t0d0
      * @return Identifier of a transaction identified as waiting during deadlock detection.
      */
-    public GridCacheVersion waitingVersion() {
-        return waitingVer;
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public Collection<GridCacheVersion> waitingVersions() {
+        return waitingVers;
     }
 
     /**
@@ -114,7 +122,7 @@ public class DeadlockProbe implements Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMessage("waitingVer", waitingVer))
+                if (!writer.writeCollection("waitingVers", waitingVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -157,7 +165,7 @@ public class DeadlockProbe implements Message {
                 reader.incrementState();
 
             case 3:
-                waitingVer = reader.readMessage("waitingVer");
+                waitingVers = reader.readCollection("waitingVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
