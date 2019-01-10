@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.compute.IgniteComputeConfigVariationsFullApiTest;
@@ -26,13 +28,18 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Full API compute test.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteComputeBasicConfigVariationsFullApiTestSuite.DynamicSuite.class)
 public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -46,29 +53,47 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
         Parameters.booleanParameters("setMarshalLocalJobs"),
     };
 
-    /**
-     * @return Compute API test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Compute New Full API Test Suite");
+    /** */
+    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
+        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteComputeConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
             .igniteParams(BASIC_COMPUTE_SET)
             .gridsCount(1)
-            .build());
+            .appendTo(classes, cfgs);
 
         // Tests run on server (node#0) & client(node#1).
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "3 servers, 1 client",
-            IgniteComputeConfigVariationsFullApiTest.class)
+        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
             .igniteParams(BASIC_COMPUTE_SET)
             .gridsCount(4)
             .testedNodesCount(2)
             .withClients()
-            .build());
+            .appendTo(classes, cfgs);
 
-        return suite;
+        return classes;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
+
+        /** */
+        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
+
+        /** */
+        private static final AtomicInteger cntr = new AtomicInteger(0);
+
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, classes.toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+
+            super.runChild(runner, ntf);
+        }
     }
 }
