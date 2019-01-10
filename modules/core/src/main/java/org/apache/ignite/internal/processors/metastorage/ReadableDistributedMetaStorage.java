@@ -33,7 +33,8 @@ public interface ReadableDistributedMetaStorage {
      * Get value by the key.
      *
      * @param key The key.
-     * @throws IgniteCheckedException If read or unmarshalling operation failed.
+     * @return Value associated with the key.
+     * @throws IgniteCheckedException If reading or unmarshalling failed.
      */
     @Nullable <T extends Serializable> T read(@NotNull String key) throws IgniteCheckedException;
 
@@ -43,7 +44,7 @@ public interface ReadableDistributedMetaStorage {
      *
      * @param keyPrefix Prefix for the keys that will be iterated.
      * @param cb Callback that will be applied to all {@code <key, value>} pairs.
-     * @throws IgniteCheckedException If read or unmarshalling operation failed.
+     * @throws IgniteCheckedException If reading or unmarshalling failed.
      */
     void iterate(
         @NotNull String keyPrefix,

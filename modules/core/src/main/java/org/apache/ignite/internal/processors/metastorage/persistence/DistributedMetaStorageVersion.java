@@ -20,43 +20,67 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.LongFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** */
+/** Version class for distributed metastorage. */
 class DistributedMetaStorageVersion implements Serializable {
-    /** */
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public static final DistributedMetaStorageVersion INITIAL_VERSION = new DistributedMetaStorageVersion(0, 0);
+    /** Version with id "0". */
+    public static final DistributedMetaStorageVersion INITIAL_VERSION = new DistributedMetaStorageVersion(0L, 1L);
 
-    /** */
-    public static long nextHash(long hash, DistributedMetaStorageHistoryItem update) {
-        return hash * 31 + ((long)update.key.hashCode() << 32) + Arrays.hashCode(update.valBytes);
+    /** Incremental rehashing considering new update information. */
+    private static long nextHash(long hash, DistributedMetaStorageHistoryItem update) {
+        return hash * 31L + ((long)update.key.hashCode() << 32) + Arrays.hashCode(update.valBytes);
     }
 
-    /** */
+    /**
+     * Id is basically a total number of distributed metastorage updates in current cluster.
+     * Increases incrementally on every update starting with zero.
+     *
+     * @see #INITIAL_VERSION
+     */
     @GridToStringInclude
     public final long id;
 
-    /** */
+    /**
+     * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
+     * {@code long} value instead of {@code int}.
+     */
     @GridToStringInclude
     public final long hash;
 
-    /** */
+    /**
+     * Constructor with all fields.
+     *
+     * @param id Id.
+     * @param hash Hash.
+     */
     private DistributedMetaStorageVersion(long id, long hash) {
         this.id = id;
         this.hash = hash;
     }
 
-    /** */
+    /**
+     * Calculate next version considering passed update information.
+     *
+     * @param update Single update.
+     * @return Next version.
+     */
     public DistributedMetaStorageVersion nextVersion(DistributedMetaStorageHistoryItem update) {
         return new DistributedMetaStorageVersion(id + 1, nextHash(hash, update));
     }
 
-    /** */
+    /**
+     * Calculate next version considering passed update information.
+     *
+     * @param updates Updates collection.
+     * @return Next version.
+     */
     public DistributedMetaStorageVersion nextVersion(Collection<DistributedMetaStorageHistoryItem> updates) {
         long hash = this.hash;
 
@@ -66,7 +90,14 @@ class DistributedMetaStorageVersion implements Serializable {
         return new DistributedMetaStorageVersion(id + updates.size(), hash);
     }
 
-    /** */
+    /**
+     * Calculate next version considering passed update information.
+     *
+     * @param updates Updates array.
+     * @param fromIdx Index of the first required update in the array.
+     * @param toIdx Index after the last required update in the array.
+     * @return Next version.
+     */
     public DistributedMetaStorageVersion nextVersion(
         DistributedMetaStorageHistoryItem[] updates,
         int fromIdx,
@@ -80,7 +111,14 @@ class DistributedMetaStorageVersion implements Serializable {
         return new DistributedMetaStorageVersion(id + toIdx - fromIdx, hash);
     }
 
-    /** */
+    /**
+     * Calculate next version considering passed update information.
+     *
+     * @param update Function that provides the update by specific version.
+     * @param fromVer Starting version, inclusive.
+     * @param toVer Ending version, inclusive.
+     * @return Next version.
+     */
     public DistributedMetaStorageVersion nextVersion(
         LongFunction<DistributedMetaStorageHistoryItem> update,
         long fromVer,

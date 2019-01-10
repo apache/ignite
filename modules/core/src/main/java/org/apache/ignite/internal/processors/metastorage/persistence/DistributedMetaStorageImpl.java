@@ -902,7 +902,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageHistoryItem histItem,
         boolean notifyListeners
     ) throws IgniteCheckedException {
-        Serializable val = unmarshal(histItem.valBytes);
+        Serializable val = notifyListeners ? unmarshal(histItem.valBytes) : null;
 
         lock();
 
