@@ -30,10 +30,11 @@ interface DistributedMetaStorageBridge {
      * Get data by key.
      *
      * @param globalKey The key.
+     * @param unmarshal Whether the value should be unmarshalled or not.
      * @return Value associated with the key.
      * @throws IgniteCheckedException If reading or unmarshalling failed.
      */
-    Serializable read(String globalKey) throws IgniteCheckedException;
+    Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException;
 
     /**
      * Iterate over all values corresponding to the keys with given prefix. It is guaranteed that iteration will be

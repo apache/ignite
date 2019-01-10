@@ -312,26 +312,31 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             String key = row.key();
             byte[] valBytes = row.value();
 
-            while (curUpdatesEntry != null && curUpdatesEntry.getKey().compareTo(key) < 0) {
-                applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+            int c = 0;
 
-                curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
-            }
+            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
 
-            if (curUpdatesEntry != null && curUpdatesEntry.getKey().equals(key)) {
-                applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
-
-                curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
-            }
+            if (curUpdatesEntry != null && c == 0)
+                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
             else
                 applyCallback(cb, unmarshal, key, valBytes);
         }
 
-        while (curUpdatesEntry != null) {
-            applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+        while (curUpdatesEntry != null)
+            curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+    }
 
-            curUpdatesEntry = updatesIter.hasNext() ? updatesIter.next() : null;
-        }
+    /** */
+    private Map.Entry<String, byte[]> advanceCurrentUpdatesEntry(
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal,
+        Iterator<Map.Entry<String, byte[]>> updatesIter,
+        Map.Entry<String, byte[]> curUpdatesEntry
+    ) throws IgniteCheckedException {
+        applyCallback(cb, unmarshal, curUpdatesEntry.getKey(), curUpdatesEntry.getValue());
+
+        return updatesIter.hasNext() ? updatesIter.next() : null;
     }
 
     /** */

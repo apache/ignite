@@ -66,6 +66,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
@@ -178,9 +180,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             });
         }
         else {
-            startupExtras.locFullData = EMPTY_ARRAY;
-
-            startupExtras.verToSnd = ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+            ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
             bridge = new EmptyDistributedMetaStorageBridge();
 
@@ -240,11 +240,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (isPersistenceEnabled(ctx.config())) {
                 DistributedMetaStorageHistoryItem[] locFullData = localFullData(bridge);
 
-                bridge = new ReadOnlyDistributedMetaStorageBridge(this, locFullData);
+                bridge = new ReadOnlyDistributedMetaStorageBridge(locFullData);
 
                 startupExtras = new StartupExtras();
-
-                startupExtras.locFullData = locFullData;
             }
 
             if (writeAvailable.getCount() > 0)
@@ -272,12 +270,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         assert startupExtras != null;
 
-        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge(this);
+        ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge();
 
         lock();
 
         try {
-            readOnlyBridge.readInitialData(metastorage, startupExtras);
+            ver = readOnlyBridge.readInitialData(metastorage, startupExtras);
+
+            metastorage.iterate(
+                historyItemPrefix(),
+                (key, val) -> addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
+                true
+            );
         }
         finally {
             unlock();
@@ -336,7 +340,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock();
 
         try {
-            return (T)bridge.read(key);
+            return (T)bridge.read(key, true);
         }
         finally {
             unlock();
@@ -414,9 +418,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             .values()
             .toArray(EMPTY_ARRAY);
 
+        DistributedMetaStorageVersion verToSnd = bridge instanceof ReadOnlyDistributedMetaStorageBridge
+            ? ((ReadOnlyDistributedMetaStorageBridge)bridge).version()
+            : ver;
+
         Serializable data = new DistributedMetaStorageJoiningNodeData(
             getBaselineTopologyId(),
-            startupExtras.verToSnd,
+            verToSnd,
             null,//startupExtras.locFullData,
             hist
         );
@@ -741,8 +749,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @return Array of all keys and values.
      */
     private DistributedMetaStorageHistoryItem[] localFullData(DistributedMetaStorageBridge bridge) {
-        if (startupExtras != null && startupExtras.locFullData != null)
-            return startupExtras.locFullData;
+        if (bridge instanceof EmptyDistributedMetaStorageBridge)
+            return EMPTY_ARRAY;
+
+        if (bridge instanceof ReadOnlyDistributedMetaStorageBridge)
+            return ((ReadOnlyDistributedMetaStorageBridge)bridge).localFullData();
 
         List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
 
@@ -937,7 +948,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock();
 
         try {
-            Serializable oldVal = bridge.read(msg.key());
+            Serializable oldVal = bridge.read(msg.key(), true);
 
             Serializable expVal = unmarshal(msg.expectedValue());
 
@@ -1033,16 +1044,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void executeDeferredUpdates(DistributedMetaStorageBridge bridge) throws IgniteCheckedException {
         assert startupExtras != null;
 
-        DistributedMetaStorageHistoryItem firstToWrite = startupExtras.firstToWrite;
+        DistributedMetaStorageHistoryItem lastUpdate = histCache.get(ver.id);
 
-        if (firstToWrite != null) {
-            lock();
+        if (lastUpdate != null) {
+            byte[] valBytes = (byte[])bridge.read(lastUpdate.key, false);
 
-            try {
-                bridge.write(firstToWrite.key, firstToWrite.valBytes);
-            }
-            finally {
-                unlock();
+            if (!Arrays.equals(valBytes, lastUpdate.valBytes)) {
+                lock();
+
+                try {
+                    bridge.write(lastUpdate.key, lastUpdate.valBytes);
+                }
+                finally {
+                    unlock();
+                }
             }
         }
 
@@ -1060,11 +1075,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void notifyListenersBeforeReadyForWrite(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
-        DistributedMetaStorageHistoryItem[] oldData = startupExtras.locFullData;
-
-        startupExtras.locFullData = null;
-
-        startupExtras.firstToWrite = null;
+        DistributedMetaStorageHistoryItem[] oldData = localFullData(this.bridge);
 
         DistributedMetaStorageHistoryItem[] newData = localFullData(bridge);
 
@@ -1117,11 +1128,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
         assert nodeData.fullData != null;
 
-        startupExtras.clearLocData = true;
-
         startupExtras.fullNodeData = nodeData;
-
-        startupExtras.firstToWrite = null;
 
         startupExtras.deferredUpdates.clear();
 

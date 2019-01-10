@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
 /** */
 class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
     /** {@inheritDoc} */
-    @Override public Serializable read(String globalKey) {
+    @Override public Serializable read(String globalKey, boolean unmarshal) {
         return null;
     }
 

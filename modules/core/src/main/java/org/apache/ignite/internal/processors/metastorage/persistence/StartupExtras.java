@@ -24,20 +24,8 @@ import java.util.List;
 @SuppressWarnings("PublicField")
 class StartupExtras {
     /** */
-    public DistributedMetaStorageVersion verToSnd;
-
-    /** */
     public List<DistributedMetaStorageHistoryItem> deferredUpdates = new ArrayList<>();
 
     /** */
-    public DistributedMetaStorageHistoryItem firstToWrite;
-
-    /** */
-    public boolean clearLocData;
-
-    /** */
     public DistributedMetaStorageClusterNodeData fullNodeData;
-
-    /** */
-    public DistributedMetaStorageHistoryItem[] locFullData;
 }

@@ -51,8 +51,8 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable read(String globalKey) throws IgniteCheckedException {
-        return metastorage.read(localKey(globalKey));
+    @Override public Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException {
+        return unmarshal ? metastorage.read(localKey(globalKey)) : metastorage.readRaw(localKey(globalKey));
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         metastorage.write(historyVersionKey(), dms.ver);
 
         if (notifyListeners)
-            dms.notifyListeners(histItem.key, read(histItem.key), val);
+            dms.notifyListeners(histItem.key, read(histItem.key, true), val);
     }
 
     /** {@inheritDoc} */
@@ -101,19 +101,17 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     public void restore(StartupExtras startupExtras) throws IgniteCheckedException {
         assert startupExtras != null;
 
-        if (startupExtras.clearLocData || startupExtras.fullNodeData != null) {
-            String cleanupGuardKey = cleanupGuardKey();
+        String cleanupGuardKey = cleanupGuardKey();
 
+        if (metastorage.readRaw(cleanupGuardKey) != null || startupExtras.fullNodeData != null) {
             metastorage.writeRaw(cleanupGuardKey, DUMMY_VALUE);
 
-            if (startupExtras.clearLocData) {
-                Set<String> allKeys = new HashSet<>();
+            Set<String> allKeys = new HashSet<>();
 
-                metastorage.iterate(COMMON_KEY_PREFIX, (key, val) -> allKeys.add(key), false);
+            metastorage.iterate(COMMON_KEY_PREFIX, (key, val) -> allKeys.add(key), false);
 
-                for (String key : allKeys)
-                    metastorage.remove(key);
-            }
+            for (String key : allKeys)
+                metastorage.remove(key);
 
             if (startupExtras.fullNodeData != null) {
                 DistributedMetaStorageClusterNodeData fullNodeData = startupExtras.fullNodeData;

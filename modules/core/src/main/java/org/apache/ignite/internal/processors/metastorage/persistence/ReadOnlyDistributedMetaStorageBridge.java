@@ -30,8 +30,6 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
@@ -44,27 +42,24 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         Comparator.comparing(item -> item.key);
 
     /** */
-    private DistributedMetaStorageImpl dms;
-
-    /** */
     private DistributedMetaStorageHistoryItem[] locFullData;
 
     /** */
-    public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms) {
-        this.dms = dms;
+    private DistributedMetaStorageVersion ver;
+
+    /** */
+    public ReadOnlyDistributedMetaStorageBridge() {
     }
 
     /** */
     public ReadOnlyDistributedMetaStorageBridge(
-        DistributedMetaStorageImpl dms,
         DistributedMetaStorageHistoryItem[] locFullData
     ) {
-        this.dms = dms;
         this.locFullData = locFullData;
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable read(String globalKey) throws IgniteCheckedException {
+    @Override public Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException {
         int idx = Arrays.binarySearch(
             locFullData,
             new DistributedMetaStorageHistoryItem(globalKey, null),
@@ -72,7 +67,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         );
 
         if (idx >= 0)
-            return unmarshal(locFullData[idx].valBytes);
+            return unmarshal ? unmarshal(locFullData[idx].valBytes) : locFullData[idx].valBytes;
 
         return null;
     }
@@ -119,34 +114,48 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     }
 
     /** */
-    public void readInitialData(
+    public DistributedMetaStorageHistoryItem[] localFullData() {
+        return locFullData;
+    }
+
+    /** */
+    public DistributedMetaStorageVersion version() {
+        return ver;
+    }
+
+    /** */
+    public DistributedMetaStorageVersion readInitialData(
         ReadOnlyMetastorage metastorage,
         StartupExtras startupExtras
     ) throws IgniteCheckedException {
         if (metastorage.readRaw(cleanupGuardKey()) != null) {
-            startupExtras.clearLocData = true;
+            ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
-            startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+            locFullData = EMPTY_ARRAY;
 
-            startupExtras.locFullData = EMPTY_ARRAY;
+            return ver;
         }
         else {
             DistributedMetaStorageVersion storedVer =
                 (DistributedMetaStorageVersion)metastorage.read(historyVersionKey());
 
             if (storedVer == null) {
-                startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
+                ver = DistributedMetaStorageVersion.INITIAL_VERSION;
 
-                startupExtras.locFullData = EMPTY_ARRAY;
+                locFullData = EMPTY_ARRAY;
+
+                return ver;
             }
             else {
-                startupExtras.verToSnd = dms.ver = storedVer;
+                ver = storedVer;
 
                 DistributedMetaStorageHistoryItem histItem =
                     (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
 
+                DistributedMetaStorageHistoryItem[] firstToWrite = {null};
+
                 if (histItem != null) {
-                    startupExtras.verToSnd = storedVer.nextVersion(histItem);
+                    ver = storedVer.nextVersion(histItem);
 
                     startupExtras.deferredUpdates.add(histItem);
                 }
@@ -157,34 +166,30 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                         byte[] valBytes = metastorage.readRaw(localKey(histItem.key));
 
                         if (!Arrays.equals(valBytes, histItem.valBytes))
-                            startupExtras.firstToWrite = histItem;
+                            firstToWrite[0] = histItem;
                     }
                 }
 
                 List<DistributedMetaStorageHistoryItem> locFullDataList = new ArrayList<>();
-
-                DistributedMetaStorageHistoryItem firstToWrite = startupExtras.firstToWrite;
-
-                boolean[] ftwWritten = {false};
 
                 metastorage.iterate(
                     localKeyPrefix(),
                     (key, val) -> {
                         String globalKey = globalKey(key);
 
-                        if (firstToWrite != null && firstToWrite.key.equals(globalKey)) {
-                            if (firstToWrite.valBytes != null)
-                                locFullDataList.add(firstToWrite);
+                        if (firstToWrite[0] != null && firstToWrite[0].key.equals(globalKey)) {
+                            if (firstToWrite[0].valBytes != null)
+                                locFullDataList.add(firstToWrite[0]);
 
-                            ftwWritten[0] = true;
+                            firstToWrite[0] = null;
                         }
-                        else if (firstToWrite != null && ftwWritten[0] && firstToWrite.key.compareTo(globalKey) < 0) {
-                            if (firstToWrite.valBytes != null)
-                                locFullDataList.add(firstToWrite);
+                        else if (firstToWrite[0] != null && firstToWrite[0].key.compareTo(globalKey) < 0) {
+                            if (firstToWrite[0].valBytes != null)
+                                locFullDataList.add(firstToWrite[0]);
+
+                            firstToWrite[0] = null;
 
                             locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));
-
-                            ftwWritten[0] = true;
                         }
                         else
                             locFullDataList.add(new DistributedMetaStorageHistoryItem(globalKey, (byte[])val));
@@ -192,16 +197,15 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                     false
                 );
 
-                if (firstToWrite != null && !ftwWritten[0])
-                    locFullDataList.add(new DistributedMetaStorageHistoryItem(firstToWrite.key, firstToWrite.valBytes));
+                if (firstToWrite[0] != null && firstToWrite[0].valBytes != null) {
+                    locFullDataList.add(
+                        new DistributedMetaStorageHistoryItem(firstToWrite[0].key, firstToWrite[0].valBytes)
+                    );
+                }
 
-                locFullData = startupExtras.locFullData = locFullDataList.toArray(EMPTY_ARRAY);
+                locFullData = locFullDataList.toArray(EMPTY_ARRAY);
 
-                metastorage.iterate(
-                    historyItemPrefix(),
-                    (key, val) -> dms.addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
-                    true
-                );
+                return storedVer;
             }
         }
     }
