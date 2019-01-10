@@ -268,6 +268,10 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         grid(0).cluster().active(true);
 
+        stopGrid(0);
+
+        startGrid(0);
+
         AtomicInteger gridIdxCntr = new AtomicInteger(0);
 
         AtomicBoolean stop = new AtomicBoolean();

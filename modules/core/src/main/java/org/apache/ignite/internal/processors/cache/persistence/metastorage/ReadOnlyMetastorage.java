@@ -28,8 +28,7 @@ public interface ReadOnlyMetastorage {
     Serializable read(String key) throws IgniteCheckedException;
 
     /** */
-    //TODO Rename to "readData".
-    byte[] getData(String key) throws IgniteCheckedException;
+    byte[] readRaw(String key) throws IgniteCheckedException;
 
     /**
      * Read all key/value pairs where key has provided prefix.

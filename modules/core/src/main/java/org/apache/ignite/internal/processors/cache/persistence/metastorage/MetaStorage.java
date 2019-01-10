@@ -224,7 +224,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = tmpStorage.stream().iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> t = it.next();
 
-            putData(t.get1(), t.get2());
+            writeRaw(t.get1(), t.get2());
         }
 
         try {
@@ -261,7 +261,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
     /** {@inheritDoc} */
     @Override public Serializable read(String key) throws IgniteCheckedException {
-        byte[] data = getData(key);
+        byte[] data = readRaw(key);
 
         Serializable res = null;
 
@@ -375,7 +375,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         byte[] data = marshaller.marshal(val);
 
-        putData(key, data);
+        writeRaw(key, data);
     }
 
     /** {@inheritDoc} */
@@ -384,7 +384,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void putData(String key, byte[] data) throws IgniteCheckedException {
+    @Override public void writeRaw(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
@@ -406,7 +406,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] getData(String key) throws IgniteCheckedException {
+    @Override public byte[] readRaw(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
                 byte[] res = lastUpdates.get(key);
@@ -639,7 +639,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         }
         else {
             if (value != null)
-                putData(key, value);
+                writeRaw(key, value);
             else
                 removeData(key);
         }

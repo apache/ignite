@@ -28,10 +28,8 @@ public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
     public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
 
     /** */
-    //TODO Rename to "writeData".
-    public void putData(String key, byte[] data) throws IgniteCheckedException;
+    public void writeRaw(String key, byte[] data) throws IgniteCheckedException;
 
     /** */
-    //TODO Rename to "delete"?
     public void remove(@NotNull String key) throws IgniteCheckedException;
 }

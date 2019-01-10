@@ -123,7 +123,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         ReadOnlyMetastorage metastorage,
         StartupExtras startupExtras
     ) throws IgniteCheckedException {
-        if (metastorage.getData(cleanupGuardKey()) != null) {
+        if (metastorage.readRaw(cleanupGuardKey()) != null) {
             startupExtras.clearLocData = true;
 
             startupExtras.verToSnd = dms.ver = DistributedMetaStorageVersion.INITIAL_VERSION;
@@ -154,7 +154,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                     histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
 
                     if (histItem != null) {
-                        byte[] valBytes = metastorage.getData(localKey(histItem.key));
+                        byte[] valBytes = metastorage.readRaw(localKey(histItem.key));
 
                         if (!Arrays.equals(valBytes, histItem.valBytes))
                             startupExtras.firstToWrite = histItem;

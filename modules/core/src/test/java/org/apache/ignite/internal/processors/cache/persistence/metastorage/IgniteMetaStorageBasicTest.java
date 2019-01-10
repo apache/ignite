@@ -115,7 +115,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
                 metaStorage.remove(key);
 
-                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+                metaStorage.writeRaw(key, arr/*b.toString().getBytes()*/);
             }
         }
         finally {
@@ -154,7 +154,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
                 metaStorage.remove(key);
 
-                metaStorage.putData(key, arr);
+                metaStorage.writeRaw(key, arr);
             }
         }
         finally {
@@ -174,7 +174,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = generateTestData(size, from).iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> d = it.next();
 
-            metaStorage.putData(d.getKey(), d.getValue());
+            metaStorage.writeRaw(d.getKey(), d.getValue());
 
             res.put(d.getKey(), d.getValue());
         }
@@ -318,7 +318,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             try {
                 for (Map.Entry<String, byte[]> v : testData.entrySet())
-                    metaStorage.putData(v.getKey(), v.getValue());
+                    metaStorage.writeRaw(v.getKey(), v.getValue());
             }
             finally {
                 db.checkpointReadUnlock();

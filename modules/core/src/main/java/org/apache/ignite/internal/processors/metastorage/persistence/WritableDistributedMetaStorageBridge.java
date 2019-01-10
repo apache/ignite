@@ -73,7 +73,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         if (valBytes == null)
             metastorage.remove(localKey(globalKey));
         else
-            metastorage.putData(localKey(globalKey), valBytes);
+            metastorage.writeRaw(localKey(globalKey), valBytes);
     }
 
     /** {@inheritDoc} */
@@ -104,7 +104,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         if (startupExtras.clearLocData || startupExtras.fullNodeData != null) {
             String cleanupGuardKey = cleanupGuardKey();
 
-            metastorage.putData(cleanupGuardKey, DUMMY_VALUE);
+            metastorage.writeRaw(cleanupGuardKey, DUMMY_VALUE);
 
             if (startupExtras.clearLocData) {
                 Set<String> allKeys = new HashSet<>();
@@ -123,7 +123,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 dms.clearHistoryCache();
 
                 for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
-                    metastorage.putData(localKey(item.key), item.valBytes);
+                    metastorage.writeRaw(localKey(item.key), item.valBytes);
 
                 for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                     DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
