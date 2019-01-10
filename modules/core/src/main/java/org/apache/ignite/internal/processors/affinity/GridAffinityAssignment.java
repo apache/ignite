@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.ImmutableBitSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -44,10 +47,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     private List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
-    private final Map<UUID, Set<Integer>> primary;
+    private final Map<UUID, BitSet> primary;
 
     /** Map of backup node partitions. */
-    private final Map<UUID, Set<Integer>> backup;
+    private final Map<UUID, BitSet> backup;
 
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
@@ -68,8 +71,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
-        primary = new HashMap<>();
-        backup = new HashMap<>();
+        primary = Collections.emptyMap();
+        backup = Collections.emptyMap();
     }
 
     /**
@@ -85,13 +88,34 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = assignment;
+        this.assignment = Collections.unmodifiableList(assignment);
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
-        primary = new HashMap<>();
-        backup = new HashMap<>();
+        // Temporary mirrors with modifiable partition's collections.
+        Map<UUID, BitSet> tmpPrimary = new HashMap<>();
+        Map<UUID, BitSet> tmpBackup = new HashMap<>();
+        boolean isFirst;
 
-        initPrimaryBackupMaps();
+        for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
+            isFirst = true;
+
+            for (ClusterNode node : assignment.get(p)) {
+                UUID id = node.id();
+
+                Map<UUID, BitSet> tmp = isFirst ? tmpPrimary : tmpBackup;
+
+                tmp.computeIfAbsent(id, new Function<UUID, BitSet>() {
+                    @Override public BitSet apply(UUID uuid) {
+                        return new BitSet(partsCnt);
+                    }
+                }).set(p);
+
+                isFirst =  false;
+            }
+        }
+
+        primary = Collections.unmodifiableMap(tmpPrimary);
+        backup = Collections.unmodifiableMap(tmpBackup);
     }
 
     /**
@@ -111,14 +135,14 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @return Affinity assignment computed by affinity function.
      */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return idealAssignment;
+        return Collections.unmodifiableList(idealAssignment);
     }
 
     /**
      * @return Affinity assignment.
      */
     @Override public List<List<ClusterNode>> assignment() {
-        return assignment;
+        return Collections.unmodifiableList(assignment);
     }
 
     /**
@@ -176,7 +200,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<ClusterNode> res = nodes;
 
         if (res == null) {
-            res = new HashSet<>();
+            res = new HashSet<>(assignment.size());
 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
@@ -196,7 +220,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<ClusterNode> res = primaryPartsNodes;
 
         if (res == null) {
-            res = new HashSet<>();
+            res = new HashSet<>(assignment.size());
 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
@@ -218,9 +242,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @return Primary partitions for specified node ID.
      */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> set = primary.get(nodeId);
+        BitSet set = primary.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : set;
+        return set == null ? Collections.emptySet() : new ImmutableBitSet(set);
     }
 
     /**
@@ -230,41 +254,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @return Backup partitions for specified node ID.
      */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> set = backup.get(nodeId);
+        BitSet set = backup.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : set;
-    }
-
-    /**
-     * Initializes primary and backup maps.
-     */
-    private void initPrimaryBackupMaps() {
-        // Temporary mirrors with modifiable partition's collections.
-        Map<UUID, Set<Integer>> tmpPrm = new HashMap<>();
-        Map<UUID, Set<Integer>> tmpBkp = new HashMap<>();
-
-        for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
-            // Use the first node as primary, other - backups.
-            Map<UUID, Set<Integer>> tmp = tmpPrm;
-            Map<UUID, Set<Integer>> map = primary;
-
-            for (ClusterNode node : assignment.get(p)) {
-                UUID id = node.id();
-
-                Set<Integer> set = tmp.get(id);
-
-                if (set == null) {
-                    tmp.put(id, set = new HashSet<>());
-                    map.put(id, Collections.unmodifiableSet(set));
-                }
-
-                set.add(p);
-
-                // Use the first node as primary, other - backups.
-                tmp = tmpBkp;
-                map = backup;
-            }
-        }
+        return set == null ? Collections.emptySet() : new ImmutableBitSet(set);
     }
 
     /** {@inheritDoc} */
@@ -278,7 +270,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         if (o == this)
             return true;
 
-        if (o == null || !(o instanceof AffinityAssignment))
+        if (!(o instanceof AffinityAssignment))
             return false;
 
         return topVer.equals(((AffinityAssignment)o).topologyVersion());

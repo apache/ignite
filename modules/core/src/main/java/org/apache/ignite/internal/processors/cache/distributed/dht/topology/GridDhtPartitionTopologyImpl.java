@@ -1229,7 +1229,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", node2part=" + node2part + ']';
 
             // Node IDs can be null if both, primary and backup, nodes disappear.
-            List<ClusterNode> nodes = new ArrayList<>();
+            // Empirical size to reduce growing of ArrayList.
+            // We bear in mind that most of the time we filter OWNING partitions.
+            List<ClusterNode> nodes = new ArrayList<>(allIds.size() / 4);
 
             for (UUID id : allIds) {
                 if (hasState(p, id, state, states)) {
