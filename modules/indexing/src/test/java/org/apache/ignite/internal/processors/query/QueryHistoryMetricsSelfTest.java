@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -45,7 +46,7 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Tests for cache query details metrics.
+ * Check query history metrics from server node.
  */
 @RunWith(JUnit4.class)
 public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
@@ -54,29 +55,34 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static final int QUERY_HISTORY_SIZE = 3;
 
-    /** Grid count. */
-    private int gridCnt = 2;
-
     /**
      *
      */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(gridCnt);
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startTestGrid();
 
         IgniteCache<Integer, String> cacheA = grid(0).cache("A");
         IgniteCache<Integer, String> cacheB = grid(0).cache("B");
+
         for (int i = 0; i < 100; i++) {
             cacheA.put(i, String.valueOf(i));
             cacheB.put(i, String.valueOf(i));
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        queryNode().context().query().resetQueryHistoryMetrics();
     }
 
     /**
@@ -118,7 +124,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from String");
 
@@ -132,7 +138,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryNotFullyFetchedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from String");
         qry.setPageSize(10);
@@ -147,7 +153,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from String where fail()=1");
 
@@ -161,7 +167,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryMetricsForDmlAndDdl() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         List<String> cmds = Arrays.asList(
             "create table TST(id int PRIMARY KEY, name varchar)",
@@ -179,7 +185,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)grid(0).context().query().queryHistory();
+        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)queryNode().context().query().queryHistory();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
@@ -194,7 +200,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryMetricsEviction() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         cache.query(new SqlFieldsQuery("select * from String")).getAll();
 
@@ -212,7 +218,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)grid(0).context().query().queryHistory();
+        ArrayList<QueryHistoryMetrics> metrics = (ArrayList<QueryHistoryMetrics>)queryNode().context().query().queryHistory();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
@@ -256,7 +262,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryMetricsMultithreaded() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         Collection<Worker> workers = new ArrayList<>();
 
@@ -285,7 +291,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testScanQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         ScanQuery<Integer, String> qry = new ScanQuery<>();
 
@@ -299,7 +305,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlQuery<Integer, String> qry = new SqlQuery<>("String", "from String");
 
@@ -313,7 +319,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlQueryNotFullyFetchedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlQuery<Integer, String> qry = new SqlQuery<>("String", "from String");
         qry.setPageSize(10);
@@ -328,7 +334,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         TextQuery qry = new TextQuery<>("String", "1");
 
@@ -342,7 +348,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryNotFullyFetchedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         TextQuery qry = new TextQuery<>("String", "1");
         qry.setPageSize(10);
@@ -357,7 +363,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsCrossCacheQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".String");
 
@@ -371,7 +377,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsCrossCacheQueryNotFullyFetchedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".String");
         qry.setPageSize(10);
@@ -391,7 +397,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
     private void checkMetrics(int sz, int idx, int execs, int failures,
         boolean first) {
 
-        Collection<QueryHistoryMetrics> metrics = grid(0).context().query().queryHistory();
+        Collection<QueryHistoryMetrics> metrics = queryNode().context().query().queryHistory();
 
         assertNotNull(metrics);
         assertEquals(sz, metrics.size());
@@ -501,7 +507,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
     private void waitingFor(final String cond, final int exp) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                Collection<QueryHistoryMetrics> metrics = grid(0).context().query().queryHistory();
+                Collection<QueryHistoryMetrics> metrics = queryNode().context().query().queryHistory();
 
                 switch (cond) {
                     case "size":
@@ -519,7 +525,25 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
                         return true;
                 }
             }
-        }, 5000);
+        }, 2000);
+    }
+
+    /**
+     * @return Ignite instance for quering.
+     */
+    protected IgniteEx queryNode() {
+        IgniteEx node = grid(0);
+
+        assertFalse(node.context().clientNode());
+
+        return node;
+    }
+
+    /**
+     * @throws Exception In case of failure.
+     */
+    protected void startTestGrid() throws Exception {
+        startGridsMultiThreaded(2);
     }
 
     /**
