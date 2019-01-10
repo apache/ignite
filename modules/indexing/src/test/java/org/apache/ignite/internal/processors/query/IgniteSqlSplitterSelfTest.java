@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1797,7 +1796,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
@@ -2540,7 +2539,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public class PromoContract implements Serializable {
+    public static class PromoContract implements Serializable {
         /** */
         @QuerySqlField(index = true, orderedGroups = {
             @QuerySqlField.Group(name = "myIdx", order = 1)})
@@ -2559,7 +2558,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public class AvgDataTypes {
+    public static class AvgDataTypes {
         /** */
         @QuerySqlField
         private Byte byteField;
