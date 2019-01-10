@@ -128,6 +128,7 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      * Queries cache with multiple statements. Accepts {@link SqlFieldsQuery} class.
      *
      * @param qry SqlFieldsQuery.
+     * @param cancel Object to cancel query execution.
      * @return List of cursors.
      * @see SqlFieldsQuery
      */

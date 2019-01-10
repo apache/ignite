@@ -17,30 +17,18 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleResultSetHolderRemoval;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleResultSetGet;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleQueryStart;
 
 /**
  * Task for execute SQL fields query and get first page of results.
@@ -77,74 +65,16 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
         @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
                 UUID nid = ignite.localNode().id();
-
-                SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
-                qry.setPageSize(arg.getPageSize());
-                qry.setLocal(arg.isLocal());
-                qry.setDistributedJoins(arg.isDistributedJoins());
-                qry.setCollocated(arg.isCollocated());
-                qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
-                qry.setReplicatedOnly(arg.isReplicatedOnly());
-                qry.setLazy(arg.getLazy());
-
-                long start = U.currentTimeMillis();
-
-                List<FieldsQueryCursor<List<?>>> qryCursors;
-
-                String cacheName = arg.getCacheName();
-
+                // Generate query ID to store query cursor in node local storage.
+                String qryId = SQL_QRY_NAME + "-" + UUID.randomUUID();
                 GridQueryCancel cancel = new GridQueryCancel();
 
-                if (F.isEmpty(cacheName))
-                    qryCursors = ignite.context().query().querySqlFields(null, qry, null, true, false, cancel);
-                else {
-                    IgniteCache<Object, Object> c = ignite.cache(cacheName);
+                ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
+                    new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel));
 
-                    if (c == null)
-                        throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
+                scheduleQueryStart(qryId, ignite, arg, cancel);
 
-                    qryCursors = ((IgniteCacheProxy)c.withKeepBinary()).queryMultipleStatements(qry, cancel);
-                }
-
-                // In case of multiple statements leave opened only last cursor.
-                for (int i = 0; i < qryCursors.size() - 1; i++)
-                    U.closeQuiet(qryCursors.get(i));
-
-                // In case of multiple statements return last cursor as result.
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
-
-                Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
-
-                if (meta == null)
-                    return new VisorEither<>(
-                        new VisorExceptionWrapper(new SQLException("Fail to execute query. No metadata available.")));
-                else {
-                    List<VisorQueryField> names = new ArrayList<>(meta.size());
-
-                    for (GridQueryFieldMetadata col : meta)
-                        names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                            col.fieldName(), col.fieldTypeName()));
-
-                    // Query duration + fetch duration.
-                    long duration = U.currentTimeMillis() - start;
-
-                    boolean hasNext = cur.hasNext();
-
-                    // Generate query ID to store query cursor in node local storage.
-                    String qryId = SQL_QRY_NAME + "-" + UUID.randomUUID();
-
-                    if (hasNext) {
-                        ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
-                            new VisorQueryHolder(qryId, cur, arg.getPageSize(), cancel));
-
-                        scheduleResultSetHolderRemoval(qryId, ignite);
-                        scheduleResultSetGet(qryId, ignite, false);
-                    }
-                    else
-                        cur.close();
-
-                    return new VisorEither<>(new VisorQueryResult(nid, qryId, names, null, hasNext, duration));
-                }
+                return new VisorEither<>(new VisorQueryResult(nid, qryId, null, null, false, 0));
             }
             catch (Throwable e) {
                 return new VisorEither<>(new VisorExceptionWrapper(e));

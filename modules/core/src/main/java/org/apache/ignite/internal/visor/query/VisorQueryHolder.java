@@ -33,6 +33,9 @@ public class VisorQueryHolder {
     /** Cancel query object. */
     private GridQueryCancel cancel;
 
+    /** Query column descriptors. */
+    private List<VisorQueryField> cols;
+
     /** Rows fetched from query. */
     private List<Object[]> rows;
 
@@ -44,6 +47,9 @@ public class VisorQueryHolder {
 
     /** Query start time in ms. */
     private long start;
+
+    /** Query duration in ms. */
+    private Long duration = null;
 
     /**
      * Constructor.
@@ -70,9 +76,32 @@ public class VisorQueryHolder {
      * @return Wrapper for query cursor.
      */
     public VisorQueryCursor<?> getCursor() {
-        cur.accessed(true);
-
         return cur;
+    }
+
+    /**
+     * Set wrapper for query cursor.
+     *
+     * @param cur Wrapper for query cursor.
+     */
+    public void setCursor(VisorQueryCursor<?> cur) {
+        this.cur = cur;
+    }
+
+    /**
+     * @return Query column descriptors.
+     */
+    public List<VisorQueryField> getColumns() {
+        return cols;
+    }
+
+    /**
+     * Get query column descriptors.
+     *
+     * @param cols Query column descriptors.
+     */
+    public void setColumns(List<VisorQueryField> cols) {
+        this.cols = cols;
     }
 
     /**
@@ -119,6 +148,8 @@ public class VisorQueryHolder {
      * @param rows Rows fetched from query.
      */
     public void setRows(List<Object[]> rows) {
+        duration = System.currentTimeMillis() - start;
+
         this.rows = rows;
     }
 
@@ -126,6 +157,9 @@ public class VisorQueryHolder {
      * @return Duration of query execution.
      */
     public long duration() {
+        if (duration != null)
+            return duration;
+
         return System.currentTimeMillis() - start;
     }
 }

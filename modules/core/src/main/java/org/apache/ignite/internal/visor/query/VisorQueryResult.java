@@ -98,14 +98,6 @@ public class VisorQueryResult extends VisorDataTransferObject {
     }
 
     /**
-     * Set columns.
-     * @param cols Columns.
-     */
-    public void setColumns(List<VisorQueryField> cols) {
-        this.cols = cols;
-    }
-
-    /**
      * @return Columns.
      */
     public Collection<VisorQueryField> getColumns() {

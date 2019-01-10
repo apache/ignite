@@ -19,28 +19,38 @@ package org.apache.ignite.internal.visor.query;
 
 import java.math.BigDecimal;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Contains utility methods for Visor query tasks and jobs.
  */
 public class VisorQueryUtils {
-    /** Immediatelly get first result page. */
-    public static final Integer GET_DELAY = 0;
+    /** Immediately get first result page. */
+    public static final Integer IMMEDIATELY_DELAY = 0;
 
     /** How long to store future with query in node local map: 5 minutes. */
     public static final Integer RMV_DELAY = 5 * 60 * 1000;
@@ -272,13 +282,16 @@ public class VisorQueryUtils {
     }
 
     /**
+     * Schedule recieving of first query result page.
+     *
      * @param qryId Unique query result id.
+     * @param ignite IgniteEx instance.
+     * @param scan {@code True} for scan query of {@code false} otherwise.
      */
     public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite, final Boolean scan) {
-        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(GET_DELAY) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
             @Override public void onTimeout() {
                 ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-
                 VisorQueryHolder holder = storage.get(qryId);
 
                 if (holder != null) {
@@ -310,7 +323,91 @@ public class VisorQueryUtils {
     }
 
     /**
+     * Schedule start of SQL query execution.
+     *
      * @param qryId Unique query result id.
+     * @param ignite IgniteEx instance.
+     * @param arg Query task argument with query properties.
+     * @param cancel Object to cancel query.
+     */
+    public static void scheduleQueryStart(
+        final String qryId,
+        final IgniteEx ignite,
+        final VisorQueryTaskArg arg,
+        final GridQueryCancel cancel) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
+            @Override public void onTimeout() {
+                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+                VisorQueryHolder holder = storage.get(qryId);
+
+                if (holder != null) {
+                    try {
+                        SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
+
+                        qry.setPageSize(arg.getPageSize());
+                        qry.setLocal(arg.isLocal());
+                        qry.setDistributedJoins(arg.isDistributedJoins());
+                        qry.setCollocated(arg.isCollocated());
+                        qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
+                        qry.setReplicatedOnly(arg.isReplicatedOnly());
+                        qry.setLazy(arg.getLazy());
+
+                        String cacheName = arg.getCacheName();
+
+                        if (!F.isEmpty(cacheName))
+                            qry.setSchema(cacheName);
+
+                        List<FieldsQueryCursor<List<?>>> qryCursors = ignite
+                            .context()
+                            .query()
+                            .querySqlFields(null, qry, null, true, false, cancel);
+
+                        if (qryCursors != null) {
+                            // In case of multiple statements leave opened only last cursor.
+                            for (int i = 0; i < qryCursors.size() - 1; i++)
+                                U.closeQuiet(qryCursors.get(i));
+
+                            // In case of multiple statements return last cursor as result.
+                            VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
+                            Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
+
+                            if (meta == null)
+                                holder.setErr(new SQLException("Fail to execute query. No metadata available."));
+                            else {
+                                holder.setCursor(cur);
+
+                                List<VisorQueryField> names = new ArrayList<>(meta.size());
+
+                                for (GridQueryFieldMetadata col : meta)
+                                    names.add(new VisorQueryField(col.schemaName(), col.typeName(),
+                                        col.fieldName(), col.fieldTypeName()));
+
+                                holder.setColumns(names);
+
+                                boolean hasNext = cur.hasNext();
+
+                                if (hasNext) {
+                                    scheduleResultSetHolderRemoval(qryId, ignite);
+                                    scheduleResultSetGet(qryId, ignite, false);
+                                }
+                                else
+                                    cur.close();
+                            }
+                        }
+                    }
+                    catch (Throwable e) {
+                        holder.setErr(e);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Schedule clearing of query context by timeout.
+     *
+     * @param qryId Unique query result id.
+     * @param ignite IgniteEx instance.
      */
     public static void scheduleResultSetHolderRemoval(final String qryId, final IgniteEx ignite) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
