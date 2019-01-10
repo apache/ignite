@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,7 +82,7 @@ public class ImmutableBitSet implements Set<Integer> {
      */
     @Override public @NotNull Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
-            private int next;
+            private int next = -1;
 
             /** @{inheritDoc} */
             @Override public boolean hasNext() {
@@ -97,6 +98,9 @@ public class ImmutableBitSet implements Set<Integer> {
 
             /** @{inheritDoc} */
             @Override public Integer next() {
+                if (next == -1)
+                    throw new NoSuchElementException();
+
                 return next;
             }
         };
@@ -106,17 +110,21 @@ public class ImmutableBitSet implements Set<Integer> {
      * @{inheritDoc}
      */
     @Override public @NotNull Object[] toArray() {
-        final Object[] copy = new Object[bitSet.length()];
+        Object[] arr = new Object[size];
 
-        for(int i = 0; i < bitSet.length(); i++)
-            copy[i] = bitSet.get(i) ? i : 0;
+        Iterator<Integer> iterator = iterator();
 
-        return copy;
+        int idx = 0;
+
+        while (iterator.hasNext())
+            arr[idx++] = iterator.next();
+
+        return arr;
     }
 
     /** @{inheritDoc} */
     @Override public @NotNull <I> I[] toArray(@NotNull I[] a) {
-        return (I[])toArray();
+        throw new UnsupportedOperationException();
     }
 
     /**

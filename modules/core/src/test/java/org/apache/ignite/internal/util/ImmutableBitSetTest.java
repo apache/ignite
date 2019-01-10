@@ -5,6 +5,7 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -75,6 +76,34 @@ public class ImmutableBitSetTest extends GridCommonAbstractTest {
         assertEquals(10, (int)list.get(1));
         assertEquals(11, (int)list.get(2));
         assertEquals(1025, (int)list.get(3));
+    }
+
+    @Test
+    public void testToArray() {
+        BitSet bitSet = new BitSet(1024);
+
+        ImmutableBitSet immutable = new ImmutableBitSet(bitSet);
+
+        assertEquals(0, immutable.toArray().length);
+
+        bitSet = new BitSet(1024);
+
+        bitSet.set(1);
+        bitSet.set(10);
+        bitSet.set(10);
+        bitSet.set(11);
+        bitSet.set(1025);
+
+        immutable = new ImmutableBitSet(bitSet);
+
+        Object[] arr = immutable.toArray();
+
+        assertEquals(4, arr.length);
+
+        assertEquals(1, (int)arr[0]);
+        assertEquals(10, (int)arr[1]);
+        assertEquals(11, (int)arr[2]);
+        assertEquals(1025, (int)arr[3]);
     }
 
 }
