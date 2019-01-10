@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -259,6 +260,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private static final String CHECKPOINT_RUNNER_THREAD_PREFIX = "checkpoint-runner";
+
+    /** Throttle logging threshold. Warning will be raised if thread is being parked for this long. */
+    private static final long THROTTLE_LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(5);
+
+    /** Throttle queue size threshold. Async applying will be throttled starting from this queue size. */
+    private static final int THROTTLE_QUEUE_SIZE_THRESHOLD = 10_000;
 
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
@@ -2340,6 +2347,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
 
+        int[] stripesThrottleAccumulator = new int[exec.stripes()];
+
         while (it.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.next();
 
@@ -2365,27 +2374,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     if (cacheCtx != null) {
                                         if (asyncApply) {
-                                            if (applyError.get() != null)
-                                                throw applyError.get();
-
-                                            exec.execute(dataEntry.partitionId(), () -> {
-                                                try {
-                                                    if (applyError.get() != null)
-                                                        return;
-
-                                                    checkpointReadLock();
-
-                                                    try {
-                                                        applyUpdate(cacheCtx, dataEntry, lockEntries);
-                                                    }
-                                                    finally {
-                                                        checkpointReadUnlock();
-                                                    }
-                                                }
-                                                catch (IgniteCheckedException e) {
-                                                    applyError.compareAndSet(null, e);
-                                                }
-                                            });
+                                            applyUpdateAsync(cacheCtx, dataEntry, lockEntries, exec,
+                                                applyError, stripesThrottleAccumulator);
                                         }
                                         else
                                             applyUpdate(cacheCtx, dataEntry, lockEntries);
@@ -2456,6 +2446,66 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (applyError.get() != null)
             throw new IgniteException(applyError.get());
+    }
+
+    /**
+     * Applies update in given striped executor.
+     *
+     * @param cacheCtx Cache context.
+     * @param dataEntry Data entry.
+     * @param lockEntries Lock entries.
+     * @param exec Executor.
+     * @param applyError Apply error reference.
+     * @param stripesThrottleAccumulator Array with accumulated throttle powers for each stripe.
+     */
+    private void applyUpdateAsync(
+        GridCacheContext cacheCtx,
+        DataEntry dataEntry,
+        boolean lockEntries,
+        StripedExecutor exec,
+        AtomicReference<IgniteCheckedException> applyError,
+        int[] stripesThrottleAccumulator
+    ) throws IgniteCheckedException {
+        if (applyError.get() != null)
+            throw applyError.get();
+
+        int stripeIdx = dataEntry.partitionId() % exec.stripes();
+
+        assert stripeIdx >= 0 : "Stripe index should be non-negative: " + stripeIdx;
+
+        if (exec.queueSize(stripeIdx) > THROTTLE_QUEUE_SIZE_THRESHOLD) {
+            int throttlePower = ++stripesThrottleAccumulator[stripeIdx];
+
+            long throttleParkTimeNs = (long)(1000L * Math.pow(1.05, throttlePower));
+
+            if (throttleParkTimeNs > THROTTLE_LOGGING_THRESHOLD) {
+                U.warn(log, "Parking thread=" + Thread.currentThread().getName()
+                    + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
+            }
+
+            LockSupport.parkNanos(throttleParkTimeNs);
+        }
+        else
+            stripesThrottleAccumulator[stripeIdx] = 0;
+
+        exec.execute(stripeIdx, () -> {
+            try {
+                if (applyError.get() != null)
+                    return;
+
+                checkpointReadLock();
+
+                try {
+                    applyUpdate(cacheCtx, dataEntry, lockEntries);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+            }
+            catch (IgniteCheckedException e) {
+                applyError.compareAndSet(null, e);
+            }
+        });
     }
 
     /**
