@@ -310,6 +310,19 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
+//        boolean hasEntireKeyCol = keyColIdx != -1;
+//        boolean hasEntireValcol = valColIdx != -1;
+//
+//        if (hasEntireKeyCol && hasKeyProps)
+//            throw new IgniteSQLException("Column " + colNames[keyColIdx] + " refers to entire key cache object. " +
+//                "It must not be mixed with other columns that refer to parts of key.",
+//                IgniteQueryErrorCode.PARSING);
+//
+//        if (hasEntireValcol && hasValProps)
+//            throw new IgniteSQLException("Column " + colNames[valColIdx] + " refers to entire value cache object. " +
+//                "It must not be mixed with other columns that refer to parts of value.",
+//                IgniteQueryErrorCode.PARSING);
+
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
@@ -636,6 +649,15 @@ public final class UpdatePlanBuilder {
             : desc.valueClass();
 
         boolean isSqlType = QueryUtils.isSqlType(cls);
+
+        String objName = key? "key" : "value";
+
+        if (hasProps && colIdx != -1)
+            throw new IgniteSQLException("Column that refer to entire " + objName + " object must not be mixed " +
+                "with other columns that refer to parts of " + objName + ".",
+                IgniteQueryErrorCode.PARSING);
+
+
 
         // If we don't need to construct anything from scratch, just return value from given list.
         if (isSqlType || !hasProps) {
