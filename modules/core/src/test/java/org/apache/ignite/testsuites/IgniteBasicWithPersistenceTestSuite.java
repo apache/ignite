@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersBlockingTest;
@@ -40,57 +37,33 @@ import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Basic test suite.
  */
-@RunWith(IgniteBasicWithPersistenceTestSuite.DynamicSuite.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IoomFailureHandlerTest.class,
+    ClusterBaselineNodesMetricsSelfTest.class,
+    GridMarshallerMappingConsistencyTest.class,
+    SystemWorkersTerminationTest.class,
+    FailureHandlingConfigurationTest.class,
+    SystemWorkersBlockingTest.class,
+    CheckpointReadLockFailureTest.class,
+
+    GridCommandHandlerTest.class,
+    GridCommandHandlerSslTest.class,
+    GridInternalTaskUnusedWalSegmentsTest.class,
+
+    GridNodeMetricsLogPdsSelfTest.class,
+
+    EncryptedCacheBigEntryTest.class,
+    EncryptedCacheCreateTest.class,
+    EncryptedCacheDestroyTest.class,
+    EncryptedCacheGroupCreateTest.class,
+    EncryptedCacheNodeJoinTest.class,
+    EncryptedCacheRestartTest.class,
+    EncryptedCachePreconfiguredRestartTest.class,
+})
 public class IgniteBasicWithPersistenceTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests to ignore.
-     * @return Test suite.
-     */
-    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
-        List<Class<?>> suite = new ArrayList<>();
-
-        suite.add(IoomFailureHandlerTest.class);
-        suite.add(ClusterBaselineNodesMetricsSelfTest.class);
-        suite.add(GridMarshallerMappingConsistencyTest.class);
-        suite.add(SystemWorkersTerminationTest.class);
-        suite.add(FailureHandlingConfigurationTest.class);
-        suite.add(SystemWorkersBlockingTest.class);
-        suite.add(CheckpointReadLockFailureTest.class);
-
-        suite.add(GridCommandHandlerTest.class);
-        suite.add(GridCommandHandlerSslTest.class);
-        suite.add(GridInternalTaskUnusedWalSegmentsTest.class);
-
-        suite.add(GridNodeMetricsLogPdsSelfTest.class);
-
-        suite.add(EncryptedCacheBigEntryTest.class);
-        suite.add(EncryptedCacheCreateTest.class);
-        suite.add(EncryptedCacheDestroyTest.class);
-        suite.add(EncryptedCacheGroupCreateTest.class);
-        suite.add(EncryptedCacheNodeJoinTest.class);
-        suite.add(EncryptedCacheRestartTest.class);
-        suite.add(EncryptedCachePreconfiguredRestartTest.class);
-
-        return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
-    }
 }
