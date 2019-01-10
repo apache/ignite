@@ -61,7 +61,6 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -981,17 +980,33 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Returns new update counter for primary node or passed counter for backup node.
+     * <p>
+     * Used for atomic caches, during preloading, or isolated updates.
      *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
+     * @param init {@code True} if initial update.
      * @return Next update index.
      */
-    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
+    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, boolean init,
+        @Nullable Long primaryCntr) {
         long nextCntr;
 
-        if (primaryCntr == null) // Primary node.
-            nextCntr = store.nextUpdateCounter();
+        if (primaryCntr == null) {// Primary node.
+            if (init) {
+                nextCntr = store.nextUpdateCounter();
+
+                store.updateCounter(nextCntr);
+            }
+            else {
+                nextCntr = store.partUpdateCounter().reserve(1) + 1; // Needed for mixed tx/atomic cache group.
+
+                store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
+            }
+        }
         else {
+            assert !init : "Initial update must generate a counter for partition " + this;
+
             // Backup.
             assert primaryCntr != 0;
 
@@ -1008,6 +1023,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * TODO FIXME could tx be really null ?
+     * Used for transactions.
      *
      * @param cacheId Cache id.
      * @param tx Tx.

@@ -112,11 +112,11 @@ public class PartitionUpdateCounter {
      * @return Next update counter.
      */
     public long next() {
-        long reserved = reserve(1);
+        return cntr.incrementAndGet();
+    }
 
-        update(reserved, 1);
-
-        return reserved + 1;
+    public void forceUpdate(long val) throws IllegalUpdateCounterException {
+        cntr.set(val);
     }
 
     /**
@@ -287,7 +287,7 @@ public class PartitionUpdateCounter {
 
         long newCntr = reserveCntr.getAndAdd(delta);
 
-        assert newCntr >= cntr : "Reserve counter lag: cntr=" + cntr + ", reserveCntr=" + newCntr;
+        assert newCntr >= cntr : "Reserve counter lag: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
 
         return newCntr;
     }

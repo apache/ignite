@@ -2102,7 +2102,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @param total Total keys count.
      * @param skip Skip keys from the beginning.
-     * @param putType Optional put type (default putAll).
+     * @param putType Optional put type (default putAll). Possible values 0, 1, 2, 3.
      *
      * @return List of last keys.
      */
@@ -2120,16 +2120,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 cache.putAll(map);
 
                 break;
+
             case 1:
+                for (Map.Entry<Integer, Integer> entry : map.entrySet())
+                    cache.put(entry.getKey(), entry.getValue());
+
+                break;
+
+            default:
                 try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                    ds.allowOverwrite(mode == 2);
+
                     ds.addData(map);
                 }
 
-                break;
-            case 2:
-                for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
-                    cache.put(entry.getKey(), entry.getValue());
-                }
 
                 break;
         }

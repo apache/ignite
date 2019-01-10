@@ -1610,7 +1610,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 pCntr.update(val);
             }
             catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
-                U.error(log, "Partition inconsistency is detected. " +
+                U.error(log, "Partition counter inconsistency is detected. " +
                     "Most probably a node with most actual data is out of topology or data streamer on " +
                     "transactional cache in allowOverwrite=false mode is used concurrently with transactions in the same time.");
 
@@ -1620,7 +1620,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean updateCounter(long start, long delta) {
-            return pCntr.update(start, delta);
+            boolean update = pCntr.update(start, delta);
+
+            //log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+
+            return update;
         }
 
         /** {@inheritDoc} */

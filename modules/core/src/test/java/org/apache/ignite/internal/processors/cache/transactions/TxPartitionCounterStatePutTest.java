@@ -129,14 +129,27 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutAtomicConcurrentPersistent() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE);
+        doTestPutConcurrent(ATOMIC_CACHE, true);
     }
 
     /** */
     @Test
-    @Ignore("Concurrent mixed tx and non-tx updates are not supported")
     public void testPutTxConcurrentPersistent() throws Exception {
-        doTestPutConcurrent(TX_CACHE);
+        doTestPutConcurrent(TX_CACHE, true);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(ATOMIC_CACHE, false);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(TX_CACHE, false);
     }
 
     /** */
@@ -154,14 +167,27 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutAtomicConcurrentVolatile() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE_MEMORY);
+        doTestPutConcurrent(ATOMIC_CACHE_MEMORY, true);
     }
 
     /** */
     @Test
-    @Ignore("Concurrent mixed tx and non-tx updates are not supported")
     public void testPutTxConcurrentVolatile() throws Exception {
-        doTestPutConcurrent(TX_CACHE_MEMORY);
+        doTestPutConcurrent(TX_CACHE_MEMORY, true);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(TX_CACHE_MEMORY, false);
     }
 
     /** */
@@ -185,9 +211,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
             assertCountersSame(cache);
 
+            loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 3000, 3);
+
+            assertCountersSame(cache);
+
             assertPartitionsSame(idleVerify(grid(0), cache));
 
-            assertEquals(3000, grid(0).cache(cache).size());
+            assertEquals(4000, grid(0).cache(cache).size());
         }
         finally {
             stopAllGrids();
@@ -195,13 +225,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestPutConcurrent(String cache) throws Exception {
+    private void doTestPutConcurrent(String cache, boolean skipIsolatedMode) throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(3);
 
             AtomicInteger idx = new AtomicInteger();
 
-            CyclicBarrier b = new CyclicBarrier(3);
+            CyclicBarrier b = new CyclicBarrier(4);
 
             multithreadedAsync(() -> {
                 switch (idx.getAndIncrement()) {
@@ -223,14 +253,22 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
                         loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 2000, 2);
 
                         break;
+
+                    case 3:
+                        U.awaitQuiet(b);
+
+                        if (!skipIsolatedMode)
+                            loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 3000, 3);
+
+                        break;
                 }
-            }, 3, "put-thread").get();
+            }, 4, "put-thread").get();
 
             assertCountersSame(cache);
 
             assertPartitionsSame(idleVerify(grid(0), cache));
 
-            assertEquals(3000, grid(0).cache(cache).size());
+            assertEquals(skipIsolatedMode ? 3000 : 4000, grid(0).cache(cache).size());
         }
         finally {
             stopAllGrids();
