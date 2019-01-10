@@ -80,6 +80,28 @@ public class ImmutableBitSetTest extends GridCommonAbstractTest {
     }
 
     @Test
+    public void testContains() {
+        BitSet bitSet = new BitSet(1024);
+
+        bitSet.set(1);
+        bitSet.set(10);
+        bitSet.set(10);
+        bitSet.set(11);
+        bitSet.set(1025);
+
+        ImmutableBitSet immutable = new ImmutableBitSet(bitSet);
+
+        assertTrue(immutable.contains(1));
+        assertFalse(immutable.contains(2));
+        assertFalse(immutable.contains(3));
+        assertFalse(immutable.contains(4));
+        assertTrue(immutable.contains(10));
+        assertTrue(immutable.contains(11));
+        assertFalse(immutable.contains(1024));
+        assertTrue(immutable.contains(1025));
+    }
+
+    @Test
     public void testToArray() {
         BitSet bitSet = new BitSet(1024);
 
