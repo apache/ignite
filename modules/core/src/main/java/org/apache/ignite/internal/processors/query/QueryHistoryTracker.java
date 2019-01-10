@@ -67,7 +67,7 @@ class QueryHistoryTracker {
 
         QueryHistoryMetrics mergedMetrics = qryMetrics.merge(m.key(), m, QueryHistoryMetrics::aggregateWithNew);
 
-        if (touch(mergedMetrics) && qryMetrics.size() >= histSz)
+        if (touch(mergedMetrics) && qryMetrics.size() > histSz)
             shrink();
     }
 
