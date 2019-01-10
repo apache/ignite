@@ -31,7 +31,8 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class DistributedConfigurationTest extends GridCommonAbstractTest {
-    public static final String TEST_PROP = "someLong";
+    /** */
+    private static final String TEST_PROP = "someLong";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -139,6 +140,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testReadLocalValueOnInactiveGrid() throws Exception {
         IgniteEx ignite0 = startGrid(0);
+        startGrid(1);
 
         ignite0.cluster().active(true);
 
@@ -146,7 +148,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
 
         assertEquals(0, long0.value().longValue());
 
-        long0.propagate(2L);
+        assertTrue(long0.propagate(2L));
 
         stopAllGrids();
 
@@ -165,23 +167,6 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRegisterExistedProperty() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
-
-        assertEquals(0, long0.value().longValue());
-
-        assertFalse(long0.propagate(2L));
-
-        DistributedLongProperty long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP, 0L);
-
-        //Already changed to 2.
-        assertEquals(0, long1.value().longValue());
-    }
-
-    @Test
-    public void testRegisterExistedProperty3() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
@@ -214,7 +199,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRegisterExistedProperty2() throws Exception {
+    public void testReadInitValueBeforeOnReadyForReady() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
@@ -233,6 +218,7 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
             try {
                 longProperty = ctx.distributedConfiguration().registerLong(TEST_PROP, -1L);
 
+                //Read init value because onReadyForReady have not happened yet.
                 assertEquals(-1, longProperty.value().longValue());
             }
             catch (IgniteCheckedException e) {
@@ -250,9 +236,11 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
         ignite0 = startGrid(0);
         ignite1 = startGrid(1);
 
+        long0 = ignite0.context().distributedConfiguration().getProperty(TEST_PROP);
         DistributedLongProperty long1 = ignite1.context().distributedConfiguration().getProperty(TEST_PROP);
 
-        //Already changed to 2.
+        //After start it should read from local storage.
+        assertEquals(2, long0.value().longValue());
         assertEquals(2, long1.value().longValue());
     }
 
