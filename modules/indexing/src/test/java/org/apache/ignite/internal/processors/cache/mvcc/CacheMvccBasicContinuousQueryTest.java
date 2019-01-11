@@ -546,7 +546,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         assertEquals(range * 2, arrivedEvts.size());
 
         cur.close();
-        nearNode.close();
     }
 
     /**

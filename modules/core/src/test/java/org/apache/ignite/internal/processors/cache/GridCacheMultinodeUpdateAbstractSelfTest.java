@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
@@ -92,8 +91,12 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
         Integer expVal = 0;
 
-        for (int i = 0; i < iterations(); i++) {
-            log.info("Iteration: " + i);
+        final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
+
+        int iter = 0;
+
+        while (System.currentTimeMillis() < endTime) {
+            log.info("Iteration: " + iter++);
 
             final AtomicInteger gridIdx = new AtomicInteger();
 
@@ -132,13 +135,6 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }
         }
-    }
-
-    /**
-     * @return Number of iterations.
-     */
-    protected int iterations() {
-        return atomicityMode() == ATOMIC ? 30 : 15;
     }
 
     /**
