@@ -425,9 +425,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertFalse(ignite.cluster().active());
 
-        ignite.cluster().active(true);
-
         String offlineNodeConsId = consistentIds(other);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "remove", offlineNodeConsId));
+
+        ignite.cluster().active(true);
 
         stopGrid("nodeToStop");
 
