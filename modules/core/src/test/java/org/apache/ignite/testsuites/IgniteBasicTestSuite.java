@@ -97,7 +97,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     IgniteMarshallerSelfTestSuite.class,
-        IgniteLangSelfTestSuite.class,
+    IgniteLangSelfTestSuite.class,
     IgniteUtilSelfTestSuite.class,
 
     IgniteKernalSelfTestSuite.class,

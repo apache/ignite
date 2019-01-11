@@ -55,6 +55,7 @@ public class IgniteCacheMvccTestSuite9 {
 
         return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
     }
+
     /** */
     public static class DynamicSuite extends Suite {
         /** */
