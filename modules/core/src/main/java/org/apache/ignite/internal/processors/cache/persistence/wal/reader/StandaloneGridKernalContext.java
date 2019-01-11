@@ -307,8 +307,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
-        return null; // TODO: CODE: implement.
+        return null;
     }
 
     /** {@inheritDoc} */

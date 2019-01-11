@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Lifecycle listener for distributed configuration.
  */
+@FunctionalInterface
 public interface DistributedConfigurationLifecycleListener {
     /**
      * Notify about processor ready to register properties.
      */
-    void onReadyToRegister(DistributedPropertyDispatcher dispatcher) throws IgniteCheckedException;
+    void onReadyToRegister(DistributedPropertyDispatcher dispatcher);
 }

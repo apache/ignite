@@ -66,19 +66,23 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 globalMetastorage = ctx.globalMetastorage();
 
+                //Listener for handling of cluster wide change of specific properties. Do local update.
+                globalMetastorage.listen(
+                    (key) -> key.startsWith(DIST_CONF_PREFIX),
+                    (String key, Serializable oldVal, Serializable newVal) -> {
+                        DistributedProperty prop = props.get(toPropertyKey(key));
+
+                        if (prop != null)
+                            prop.localUpdate(newVal);
+                    }
+                );
+
                 //Switch to actualize action and actualize already registered properties.
                 switchCurrentActionTo(ACTUALIZE);
 
                 //Register and actualize properties waited for this service.
                 isp.getDistributedConfigurationListeners()
-                    .forEach(listener -> {
-                        try {
-                            listener.onReadyToRegister(DistributedConfigurationProcessor.this);
-                        }
-                        catch (IgniteCheckedException e) {
-                            log.error("Failed to call listener '" + listener.getClass() + "'", e);
-                        }
-                    });
+                    .forEach(listener -> listener.onReadyToRegister(DistributedConfigurationProcessor.this));
 
             }
 
@@ -87,17 +91,6 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 switchCurrentActionTo(CLUSTER_WIDE_UPDATE);
             }
         });
-
-        //Listener for handling of cluster wide change of specific properties. Do local update.
-        ctx.globalMetastorage().listen(
-            (key) -> key.startsWith(DIST_CONF_PREFIX),
-            (String key, Serializable oldVal, Serializable newVal) -> {
-                DistributedProperty prop = props.get(toPropertyKey(key));
-
-                if (prop != null)
-                    prop.localUpdate(newVal);
-            }
-        );
     }
 
     /**
@@ -107,6 +100,8 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private synchronized void switchCurrentActionTo(AllowableAction to) {
         AllowableAction oldAct = allowableAction;
+
+        assert oldAct.ordinal() <= to.ordinal() : "Current action : " + oldAct + ", new action : " + to;
 
         allowableAction = to;
 
@@ -141,7 +136,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @param prop Property to attach to processor.
      * @param <T> Type of property value.
      */
-    @Override public <T extends DistributedProperty> T registerProperty(T prop) throws IgniteCheckedException {
+    @Override public <T extends DistributedProperty> T registerProperty(T prop) {
         doAllAllowableActions(prop);
 
         return prop;
@@ -152,7 +147,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      *
      * @param <T> Type of property value.
      */
-    public <T extends DistributedProperty> T getProperty(String name) throws IgniteCheckedException {
+    public <T extends DistributedProperty> T getProperty(String name) {
         return (T)props.get(name);
     }
 
@@ -163,7 +158,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    @Override public DistributedLongProperty registerLong(String name, Long initVal) throws IgniteCheckedException {
+    @Override public DistributedLongProperty registerLong(String name, Long initVal) {
         return registerProperty(new DistributedLongProperty(name, initVal));
     }
 
@@ -175,7 +170,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @return Attached new property.
      */
     @Override public DistributedBooleanProperty registerBoolean(String name,
-        Boolean initVal) throws IgniteCheckedException {
+        Boolean initVal) {
         return registerProperty(new DistributedBooleanProperty(name, initVal));
     }
 
@@ -258,7 +253,8 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
-            (IgniteThrowableBiConsumer<String, Serializable>)(key, value) -> globalMetastorage.write(toMetaStorageKey(key), value)
+            (IgniteThrowableBiConsumer<String, Serializable>)(key, value) ->
+                globalMetastorage.write(toMetaStorageKey(key), value)
         );
     }
 

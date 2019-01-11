@@ -215,15 +215,10 @@ public class DistributedConfigurationTest extends GridCommonAbstractTest {
 
         TestDistibutedConfigurationPlugin.supplier = (ctx) -> {
             DistributedLongProperty longProperty = null;
-            try {
-                longProperty = ctx.distributedConfiguration().registerLong(TEST_PROP, -1L);
+            longProperty = ctx.distributedConfiguration().registerLong(TEST_PROP, -1L);
 
-                //Read init value because onReadyForReady have not happened yet.
-                assertEquals(-1, longProperty.value().longValue());
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
+            //Read init value because onReadyForReady have not happened yet.
+            assertEquals(-1, longProperty.value().longValue());
 
             try {
                 assertFalse(longProperty.propagate(1L));

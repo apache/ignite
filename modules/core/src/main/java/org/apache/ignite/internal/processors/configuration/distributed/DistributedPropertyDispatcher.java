@@ -31,7 +31,7 @@ public interface DistributedPropertyDispatcher {
      * @param prop Property to attach to processor.
      * @param <T> Type of property value.
      */
-    public <T extends DistributedProperty> T registerProperty(T prop) throws IgniteCheckedException;
+    public <T extends DistributedProperty> T registerProperty(T prop);
 
     /**
      * Create and attach new long property.
@@ -40,7 +40,7 @@ public interface DistributedPropertyDispatcher {
      * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    public DistributedLongProperty registerLong(String name, Long initVal) throws IgniteCheckedException;
+    public DistributedLongProperty registerLong(String name, Long initVal);
 
     /**
      * Create and attach new boolean property.
@@ -49,5 +49,5 @@ public interface DistributedPropertyDispatcher {
      * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    public DistributedBooleanProperty registerBoolean(String name, Boolean initVal) throws IgniteCheckedException;
+    public DistributedBooleanProperty registerBoolean(String name, Boolean initVal);
 }

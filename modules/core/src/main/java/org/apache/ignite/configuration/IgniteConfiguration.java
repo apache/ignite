@@ -228,7 +228,10 @@ public class IgniteConfiguration {
     /** Default of initial value of manual baseline control or auto adjusting baseline. */
     public static final boolean DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED = false;
 
-    /** Initial value of time which we would wait before the actual topology change since last discovery event(node join/exit). */
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
     public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT = 0;
 
     /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
@@ -536,7 +539,10 @@ public class IgniteConfiguration {
     /** Initial value of manual baseline control or auto adjusting baseline. */
     private boolean initBaselineAutoAdjustEnabled = DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED;
 
-    /** Initial value of time which we would wait before the actual topology change since last discovery event(node join/exit). */
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
     private long initBaselineAutoAdjustTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT;
 
     /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
