@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -238,9 +237,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             wasDeactivated = true;
 
             if (isPersistenceEnabled(ctx.config())) {
-                DistributedMetaStorageHistoryItem[] locFullData = localFullData(bridge);
+                try {
+                    DistributedMetaStorageHistoryItem[] locFullData = bridge.localFullData();
 
-                bridge = new ReadOnlyDistributedMetaStorageBridge(locFullData);
+                    bridge = new ReadOnlyDistributedMetaStorageBridge(locFullData);
+                }
+                catch (IgniteCheckedException e) {
+                    throw criticalError(e);
+                }
 
                 startupExtras = new StartupExtras();
             }
@@ -618,7 +622,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         if (startupExtras == null || startupExtras.fullNodeData == null) {
                             ver0 = ver;
 
-                            fullData = localFullData(bridge);
+                            try {
+                                fullData = bridge.localFullData();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw criticalError(e);
+                            }
 
                             hist = history(ver.id - histCache.size() + 1, actualVer.id);
                         }
@@ -735,41 +744,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Same as {@link #localFullData(DistributedMetaStorageBridge)} but with current bridge passed as parameter.
+     * {@link DistributedMetaStorageBridge#localFullData()} invoked on {@link #bridge}.
      */
     @TestOnly
-    private DistributedMetaStorageHistoryItem[] localFullData() {
-        return localFullData(bridge);
-    }
-
-    /**
-     * Returns all {@code <key, value>} pairs currently stored in distributed metastorage. Values are not unmarshalled.
-     *
-     * @param bridge Bridge to read data. Might be different from {@link #bridge} field value.
-     * @return Array of all keys and values.
-     */
-    private DistributedMetaStorageHistoryItem[] localFullData(DistributedMetaStorageBridge bridge) {
-        if (bridge instanceof EmptyDistributedMetaStorageBridge)
-            return EMPTY_ARRAY;
-
-        if (bridge instanceof ReadOnlyDistributedMetaStorageBridge)
-            return ((ReadOnlyDistributedMetaStorageBridge)bridge).localFullData();
-
-        List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
-
-        try {
-            bridge.iterate(
-                "",
-                (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
-                false
-            );
-        }
-        catch (IgniteCheckedException e) {
-            //TODO ???
-            throw U.convertException(e);
-        }
-
-        return locFullData.toArray(EMPTY_ARRAY);
+    private DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException {
+        return bridge.localFullData();
     }
 
     /** {@inheritDoc} */
@@ -856,7 +835,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), true);
         }
         catch (IgniteCheckedException | Error e) {
-            criticalError(e);
+            throw criticalError(e);
         }
     }
 
@@ -891,7 +870,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Invoke failure handler and rethrow passed exception, possibly wrapped into the unchecked one.
      */
-    private void criticalError(Throwable e) {
+    private RuntimeException criticalError(Throwable e) {
         ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
         if (e instanceof Error)
@@ -1075,9 +1054,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void notifyListenersBeforeReadyForWrite(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
-        DistributedMetaStorageHistoryItem[] oldData = localFullData(this.bridge);
+        DistributedMetaStorageHistoryItem[] oldData = this.bridge.localFullData();
 
-        DistributedMetaStorageHistoryItem[] newData = localFullData(bridge);
+        DistributedMetaStorageHistoryItem[] newData = bridge.localFullData();
 
         int oldIdx = 0, newIdx = 0;
 

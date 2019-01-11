@@ -43,7 +43,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     @Override public Serializable read(String globalKey, boolean unmarshal) throws IgniteCheckedException {
         byte[] valBytes = cache.get(globalKey);
 
-        return unmarshal(valBytes);
+        return unmarshal ? unmarshal(valBytes) : valBytes;
     }
 
     /** {@inheritDoc} */
@@ -80,6 +80,13 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
 
     /** {@inheritDoc} */
     @Override public void removeHistoryItem(long ver) {
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
+        return cache.entrySet().stream().map(
+            entry -> new DistributedMetaStorageHistoryItem(entry.getKey(), entry.getValue())
+        ).toArray(DistributedMetaStorageHistoryItem[]::new);
     }
 
     /** */

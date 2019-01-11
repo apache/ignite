@@ -18,13 +18,16 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
@@ -95,6 +98,19 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
     /** {@inheritDoc} */
     @Override public void removeHistoryItem(long ver) throws IgniteCheckedException {
         metastorage.remove(historyItemKey(ver));
+    }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException {
+        List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
+
+        metastorage.iterate(
+            localKeyPrefix(),
+            (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(globalKey(key), (byte[])val)),
+            false
+        );
+
+        return locFullData.toArray(EMPTY_ARRAY);
     }
 
     /** */

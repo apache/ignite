@@ -113,8 +113,8 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         throw new UnsupportedOperationException("removeHistoryItem");
     }
 
-    /** */
-    public DistributedMetaStorageHistoryItem[] localFullData() {
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
         return locFullData;
     }
 

@@ -53,4 +53,9 @@ class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge 
     @Override public void removeHistoryItem(long ver) {
         throw new UnsupportedOperationException("removeHistoryItem");
     }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
+        return DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+    }
 }

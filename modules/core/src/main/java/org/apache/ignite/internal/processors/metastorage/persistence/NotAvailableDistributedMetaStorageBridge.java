@@ -54,4 +54,9 @@ class NotAvailableDistributedMetaStorageBridge implements DistributedMetaStorage
     @Override public void removeHistoryItem(long ver) {
         throw new UnsupportedOperationException("removeHistoryItem");
     }
+
+    /** {@inheritDoc} */
+    @Override public DistributedMetaStorageHistoryItem[] localFullData() {
+        throw new UnsupportedOperationException("localFullData");
+    }
 }

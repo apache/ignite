@@ -81,4 +81,11 @@ interface DistributedMetaStorageBridge {
      * @throws IgniteCheckedException If some IO error occured.
      */
     void removeHistoryItem(long ver) throws IgniteCheckedException;
+
+    /**
+     * Returns all {@code <key, value>} pairs currently stored in distributed metastorage. Values are not unmarshalled.
+     *
+     * @return Array of all keys and values.
+     */
+    DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException;
 }
