@@ -248,7 +248,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param grpId Cache group Id.
      * @param pageAddr Page address.
      * @param io Page IO.
-     * @param nextLink Next data page link for fragmented rows.
      * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
      * @return Incomplete object.
