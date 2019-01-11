@@ -3341,7 +3341,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @throws IgniteCheckedException If failed.
      */
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        GridNioSession session = createNioSession(node, connIdx);
+        GridNioSession session = createNioSession(node, connIdx, false);
 
         return session == null ?
             null : new GridTcpNioCommunicationClient(connIdx, session, log);
@@ -3373,10 +3373,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      * @param node Remote node identifier to connect with.
      * @param connIdx Connection index based on configured {@link ConnectionPolicy}.
+     * @param isPipe {@code True} if handshake should initiate channel connection creation.
      * @return A {@link GridNioSession} connection representation.
      * @throws IgniteCheckedException If establish connection fails.
      */
-    private GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
+    private GridNioSession createNioSession(ClusterNode node, int connIdx, boolean isPipe) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
         GridNioSession session = null;
@@ -3482,7 +3483,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             new HandshakeMessage2(locNode.id(),
                                 recoveryDesc.incrementConnectCount(),
                                 recoveryDesc.received(),
-                                connIdx));
+                                connIdx,
+                                isPipe));
 
                         if (rcvCnt == ALREADY_CONNECTED)
                             return null;
@@ -4301,7 +4303,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 throw new IgniteCheckedException("Connection key already used: " + connKey);
 
             // GridNioSession ses = createGridNioSession()
-            ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex());
+            ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex(), true);
 
             nioCh = nioSrvr.createNioChannel(ses, connKey);
 
