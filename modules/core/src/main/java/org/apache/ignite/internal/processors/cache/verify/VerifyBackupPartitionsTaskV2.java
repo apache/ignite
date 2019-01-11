@@ -53,6 +53,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -353,9 +354,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         private Set<Integer> getGroupIds() {
             Set<Integer> grpIds = new HashSet<>();
 
-            Set<String> missingCaches = new HashSet<>();
+            if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
+                Set<String> missingCaches = new HashSet<>();
 
-            if (arg.getCaches() != null) {
                 for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
@@ -376,16 +377,49 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         grpIds.add(desc.groupId());
                 }
             }
-            else {
-                Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+            else
+                grpIds = getCacheGroupIds();
 
+            return grpIds;
+        }
+
+        /**
+         * Gets filtered group ids.
+         */
+        private Set<Integer> getCacheGroupIds() {
+            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+
+            Set<Integer> grpIds = new HashSet<>();
+
+            if (arg.excludeCaches() == null || arg.excludeCaches().isEmpty()) {
                 for (CacheGroupContext grp : groups) {
                     if (!grp.systemCache() && !grp.isLocal())
                         grpIds.add(grp.groupId());
                 }
+                return grpIds;
+            }
+
+            for (CacheGroupContext grp : groups) {
+                if (!grp.systemCache() && !grp.isLocal() && !isGrpExcluded(grp))
+                    grpIds.add(grp.groupId());
             }
 
             return grpIds;
+        }
+
+        /**
+         * @param grp Group.
+         */
+        private boolean isGrpExcluded(CacheGroupContext grp) {
+            if (arg.excludeCaches().contains(grp.name()))
+                return true;
+
+            for (GridCacheContext cacheCtx : grp.caches()) {
+                if (arg.excludeCaches().contains(cacheCtx.name()))
+                    return true;
+            }
+
+            return false;
         }
 
         /**
@@ -474,7 +508,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         ) {
             return ForkJoinPool.commonPool().submit(() -> calculatePartitionHash(grpCtx, part, cpFlag));
         }
-
 
         /**
          * @param grpCtx Group context.

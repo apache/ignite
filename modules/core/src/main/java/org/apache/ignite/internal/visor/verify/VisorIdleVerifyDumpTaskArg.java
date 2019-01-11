@@ -45,17 +45,19 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
     /**
      * @param caches Caches.
+     * @param excludeCaches Caches to exclude.
      * @param skipZeros Skip zeros partitions.
      * @param cacheFilterEnum Cache kind.
      * @param checkCrc Check partition crc sum.
      */
     public VisorIdleVerifyDumpTaskArg(
         Set<String> caches,
+        Set<String> excludeCaches,
         boolean skipZeros,
         CacheFilterEnum cacheFilterEnum,
         boolean checkCrc
     ) {
-        super(caches, checkCrc);
+        super(caches, excludeCaches, checkCrc);
         this.skipZeros = skipZeros;
         this.cacheFilterEnum = cacheFilterEnum;
     }
@@ -97,7 +99,7 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return (byte) Math.max(V2, super.getProtocolVersion());
     }
 
     /** {@inheritDoc} */

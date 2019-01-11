@@ -35,6 +35,9 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** Caches. */
     private Set<String> caches;
 
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
+
     /** Check CRC */
     private boolean checkCrc;
 
@@ -47,6 +50,18 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
+     * @param excludeCaches Exclude caches or group.
+     * @param checkCrc Check CRC sum on stored pages on disk.
+     */
+    public VisorIdleVerifyTaskArg(Set<String> caches, Set<String> excludeCaches, boolean checkCrc) {
+        this.caches = caches;
+        this.excludeCaches = excludeCaches;
+        this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @param caches Caches.
+     * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
         this.caches = caches;
@@ -58,11 +73,6 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         return checkCrc;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
     /**
      * @return Caches.
      */
@@ -70,9 +80,22 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         return caches;
     }
 
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V3;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
+        U.writeCollection(out, excludeCaches);
         out.writeBoolean(checkCrc);
     }
 
@@ -80,7 +103,10 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
 
-        if(protoVer >= V2)
+        if (protoVer >= V2)
+            excludeCaches = U.readSet(in);
+
+        if(protoVer >= V3)
             checkCrc = in.readBoolean();
     }
 
