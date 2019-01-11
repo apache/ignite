@@ -1700,7 +1700,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 onUpdateFinished(updateCntr);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE, keepBinary);
 
             if (intercept) {
                 if (op == UPDATE)
@@ -1985,6 +1985,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     fut,
                     topVer);
             }
+
+            cctx.dataStructures().onEntryUpdated(key, c.op == DELETE, keepBinary);
 
             if (intercept && c.wasIntercepted) {
                 assert c.op == UPDATE || c.op == DELETE : c.op;
