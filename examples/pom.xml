@@ -155,7 +155,6 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
-        <mleap.folder>src/main/mleap</mleap.folder>
     </properties>
 
     <profiles>
@@ -165,7 +164,6 @@
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
-                <mleap.folder>src/main/mleap</mleap.folder>
             </properties>
 
             <dependencies>
