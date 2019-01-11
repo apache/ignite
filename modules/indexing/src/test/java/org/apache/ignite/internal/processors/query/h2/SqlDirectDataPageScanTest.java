@@ -85,10 +85,15 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         IgniteCache<Long,Long> cache = client.createCache(ccfg);
 
-        for (long i = 0; i < 10_000; i++)
+        for (long i = 0; i < 1000; i++)
             cache.put(i, i);
 
         int calls = 0;
+
+        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key"))
+            .getAll().isEmpty());
+        assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = null;
         assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key")
