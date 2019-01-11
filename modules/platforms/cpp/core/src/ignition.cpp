@@ -111,6 +111,10 @@ namespace ignite
 
             int idx = 0;
 
+            std::string fileEncParam = "-Dfile.encoding=";
+
+            bool hadFileEnc = false;
+
             // 1. Set classpath.
             std::string cpFull = "-Djava.class.path=" + cp;
 
@@ -131,8 +135,19 @@ namespace ignite
             opts[idx++] = CopyChars(xmxStr.c_str());
 
             // 4. Set the rest options.
-            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i)
+            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
+                if (i->find(fileEncParam) != std::string::npos)
+                    hadFileEnc = true;
+
                 opts[idx++] = CopyChars(i->c_str());
+            }
+
+            // 5. Set file.encoding.
+            if (!hadFileEnc) {
+                std::string fileEncFull = fileEncParam + "UTF-8";
+
+                opts[idx++] = CopyChars(fileEncFull.c_str());
+            }
         }
 
         /**
