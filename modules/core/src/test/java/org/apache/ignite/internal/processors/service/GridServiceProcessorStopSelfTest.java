@@ -31,12 +31,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -168,6 +170,60 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         fut.get();
 
         Ignition.stopAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void disconnectingDuringNodeStoppingIsNotHangTest() throws Exception {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+
+        try {
+            final IgniteEx ignite = startGrid(0);
+
+            final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
+
+            GridTestUtils.runAsync(() -> {
+                srvcProc.onKernalStop(true);
+            });
+
+            final IgniteInternalFuture testFut = GridTestUtils.runAsync(() -> {
+                srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+            });
+
+            testFut.get(2_000, TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stopAllGrids(true);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void stoppingDuringDisconnectingIsNotHangTest() throws Exception {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+
+        try {
+            final IgniteEx ignite = startGrid(0);
+
+            final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
+
+            GridTestUtils.runAsync(() -> {
+                srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+            });
+
+            final IgniteInternalFuture testFut = GridTestUtils.runAsync(() -> {
+                srvcProc.onKernalStop(true);
+            });
+
+            testFut.get(2_000, TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stopAllGrids(true);
+        }
     }
 
     /**
