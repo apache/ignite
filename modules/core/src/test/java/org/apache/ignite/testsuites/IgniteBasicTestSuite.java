@@ -45,6 +45,7 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTe
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -139,6 +141,7 @@ public class IgniteBasicTestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTest(new JUnit4TestAdapter(GridProductVersionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAffinityAssignmentTest.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorRendezvousSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorMemoryLeakTest.class));
         suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
@@ -169,6 +172,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteLocalNodeMapBeforeStartTest.class));
         suite.addTest(new JUnit4TestAdapter(OdbcConfigurationValidationSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(OdbcEscapeSequenceSelfTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(BitSetIntSetTest.class));
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
 
