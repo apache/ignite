@@ -514,6 +514,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                     }
 
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to rebalance finished");
+
                     cctx.exchange().refreshPartitions();
                 }
             });
