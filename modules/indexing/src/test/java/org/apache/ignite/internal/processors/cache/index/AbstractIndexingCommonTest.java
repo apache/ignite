@@ -31,9 +31,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
-    /** Dump filename. */
-    private static final String DUMP_FILENAME = "h2_conn_heap_dmp.hprof";
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -46,7 +43,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
     /**
      * Checks all H2 connection are closed.
      */
-    protected void checkAllConnectionAreClosed() {
+    void checkAllConnectionAreClosed() {
         Set<Object> refs = GridTestUtils.getFieldValue(CloseWatcher.class, "refs");
 
         if (!refs.isEmpty()) {
@@ -58,9 +55,10 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
                 }
             }
 
-            GridDebug.dumpHeap(DUMP_FILENAME , true);
+            // Use heap dump to investigate the problem if the test failed.
+            // GridDebug.dumpHeap("h2_conn_heap_dmp.hprof", true);
 
-            fail("Not closed connections. Heap dump is created: " + DUMP_FILENAME);
+            fail("There are not closed connections. See the log above.");
         }
     }
 
