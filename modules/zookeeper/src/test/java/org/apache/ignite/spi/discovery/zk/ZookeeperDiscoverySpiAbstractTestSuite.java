@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
+public abstract class ZookeeperDiscoverySpiAbstractTestSuite /* todo test this removal on Teamcity: extends TestSuite */ {
     /** */
     private static TestingCluster testingCluster;
 
