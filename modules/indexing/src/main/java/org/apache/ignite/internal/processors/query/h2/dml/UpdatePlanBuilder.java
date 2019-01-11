@@ -823,9 +823,9 @@ public final class UpdatePlanBuilder {
 
     //TODO: rewrite using cols!
     /**
-     * Checks DML query (insert, merge, update, bulk load) columns: <br/>
+     * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br/>
      * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>
-     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. </>
+     * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br/>
      *
      * @param tab - updated table.
      * @param affectedColumns - table's column names affected by dml query.
@@ -842,21 +842,33 @@ public final class UpdatePlanBuilder {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        for (String colName: affectedColumns) {
+        for (String colName : affectedColumns) {
             int colId = tab.getColumn(colName).getColumnId();
 
             if (desc.isKeyColumn(colId)) {
-                keyColName = colName;
+                if (keyColName == null)
+                    keyColName = colName;
+                else
+                    throw new IgniteSQLException(
+                        "Columns " + keyColName + " and " + colName + " both refer to entire cache key object.",
+                        IgniteQueryErrorCode.PARSING);
+
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
-                valColName = colName;
+                if (valColName == null)
+                    valColName = colName;
+                else
+                    throw new IgniteSQLException(
+                        "Columns " + valColName + " and " + colName + " both refer to entire cache value object.",
+                        IgniteQueryErrorCode.PARSING);
+
                 continue;
             }
 
             // column ids 0..2 are _key, _val, _ver
-            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + colName + ", id=" + colId +"].";
+            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + colName + ", id=" + colId + "].";
 
             if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
                 hasKeyProps = true;
