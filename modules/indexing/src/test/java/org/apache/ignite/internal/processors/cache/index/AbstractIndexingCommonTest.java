@@ -55,7 +55,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
                 }
             }
 
-            // Use heap dump to investigate the problem if the test failed.
+            // Uncomment and use heap dump to investigate the problem if the test failed.
             // GridDebug.dumpHeap("h2_conn_heap_dmp.hprof", true);
 
             fail("There are not closed connections. See the log above.");
