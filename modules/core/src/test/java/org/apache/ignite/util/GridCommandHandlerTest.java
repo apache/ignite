@@ -1334,7 +1334,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 
@@ -1374,7 +1373,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 
