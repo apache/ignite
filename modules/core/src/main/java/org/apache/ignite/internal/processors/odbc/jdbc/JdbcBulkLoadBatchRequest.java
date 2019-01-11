@@ -79,10 +79,11 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @param cursorId The cursor ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
+     * @param timeout Request timeout.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd) {
-        this(cursorId, batchIdx, cmd, new byte[0]);
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd, int timeout) {
+        this(cursorId, batchIdx, cmd, new byte[0], timeout);
     }
 
     /**
@@ -92,9 +93,10 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
+     * @param timeout Request timeout.
      */
-    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd, @NotNull byte[] data) {
-        super(BULK_LOAD_BATCH);
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd, @NotNull byte[] data, int timeout) {
+        super(BULK_LOAD_BATCH, timeout);
 
         this.cursorId = cursorId;
         this.batchIdx = batchIdx;

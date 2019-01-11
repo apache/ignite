@@ -46,10 +46,11 @@ public class JdbcOrderedBatchExecuteRequest extends JdbcBatchExecuteRequest
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      * @param order Request order.
+     * @param timeout Request timeout.
      */
     public JdbcOrderedBatchExecuteRequest(String schemaName, List<JdbcQuery> queries,
-        boolean autoCommit, boolean lastStreamBatch, long order) {
-        super(BATCH_EXEC_ORDERED, schemaName, queries, autoCommit, lastStreamBatch);
+        boolean autoCommit, boolean lastStreamBatch, long order, int timeout) {
+        super(BATCH_EXEC_ORDERED, schemaName, queries, autoCommit, lastStreamBatch, timeout);
 
         this.order = order;
     }

@@ -84,6 +84,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Request id. */
     private long reqId;
 
+    /** Request timeout. */
+    private int timeout;
+
     /**
      * @param type Command type.
      */
@@ -91,6 +94,16 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         this.type = type;
 
         reqId = REQ_ID_GENERATOR.incrementAndGet();
+    }
+
+    /**
+     * @param type Command type.
+     * @param timeout Request timeout.
+     */
+    public JdbcRequest(byte type, int timeout) {
+        this(type);
+
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
@@ -236,5 +249,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         stream.position(1);
 
         return stream.readLong();
+    }
+
+    /**
+     * @return Request timeout.
+     */
+    public int timeout() {
+        return timeout;
     }
 }
