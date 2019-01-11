@@ -191,6 +191,12 @@
                     <artifactId>ignite-spark</artifactId>
                     <version>${project.version}</version>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
             </dependencies>
 
             <build>
