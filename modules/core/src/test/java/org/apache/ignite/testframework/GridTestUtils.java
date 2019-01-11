@@ -2115,6 +2115,9 @@ public final class GridTestUtils {
         return DriverManager.getConnection(connStr);
     }
 
+    /**
+     * Removes idle_verify log files created in tests.
+     */
     public static void cleanIdleVerifyLogFiles() {
         File dir = new File(".");
 
