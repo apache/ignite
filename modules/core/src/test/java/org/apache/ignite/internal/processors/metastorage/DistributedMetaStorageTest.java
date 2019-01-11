@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -308,13 +310,23 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        grid(0).cluster().active(true);
+        CountDownLatch grid1MetaStorageStartLatch = new CountDownLatch(1);
 
-        awaitPartitionMapExchange();
+        grid(1).context().internalSubscriptionProcessor().registerGlobalMetastorageListener(
+            new DistributedMetastorageLifecycleListener() {
+                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                    grid1MetaStorageStartLatch.countDown();
+                }
+            }
+        );
+
+        grid(0).cluster().active(true);
 
         assertEquals("value1", metastorage(0).read("key1"));
 
         assertEquals("value2", metastorage(0).read("key2"));
+
+        grid1MetaStorageStartLatch.await(1, TimeUnit.SECONDS);
 
         assertGlobalMetastoragesAreEqual(grid(0), grid(1));
     }
