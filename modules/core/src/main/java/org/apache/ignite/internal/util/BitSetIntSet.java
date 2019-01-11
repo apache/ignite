@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Immutable BitSet wrapper, which also implements Set of Integers interface.
  */
-public class ImmutableBitSet implements Set<Integer> {
+public class BitSetIntSet implements Set<Integer> {
     /**
      * Wrapped BitSet.
      */
@@ -35,25 +35,24 @@ public class ImmutableBitSet implements Set<Integer> {
     /**
      * Size.
      */
-    private final int size;
+    private int size;
 
     /**
      *
-     * @param bitSet BitSet to wrap.
      */
-    public ImmutableBitSet(BitSet bitSet) {
-        this.bitSet = bitSet;
+    public BitSetIntSet() {
+        bitSet = new BitSet();
+    }
+
+    /**
+     *
+     * @param initCap initial capacity.
+     */
+    public BitSetIntSet(int initCap) {
+        bitSet = new BitSet(initCap);
 
         int idx = 0;
         int size0 = 0;
-
-        while ((idx = bitSet.nextSetBit(idx)) != -1) {
-            size0++;
-
-            idx++;
-        }
-
-        size = size0;
     }
 
     /**
@@ -74,7 +73,15 @@ public class ImmutableBitSet implements Set<Integer> {
      * @{inheritDoc}
      */
     @Override public boolean contains(Object o) {
-        return bitSet.get((int)o);
+        if (o == null)
+            throw new UnsupportedOperationException("Null values are not supported!");
+
+        int val = (int)o;
+
+        if (val < 0)
+            throw new UnsupportedOperationException("Negative values are not supported!");
+
+        return bitSet.get(val);
     }
 
     /**
@@ -140,28 +147,67 @@ public class ImmutableBitSet implements Set<Integer> {
      * Unsupported operation.
      */
     @Override public boolean add(Integer integer) {
-        throw new UnsupportedOperationException();
+        if (integer == null || integer < 0)
+            throw new UnsupportedOperationException("Negative or null values are not supported!");
+
+        boolean alreadySet = bitSet.get(integer);
+
+        if (!alreadySet) {
+            bitSet.set(integer);
+
+            size++;
+        }
+
+        return !alreadySet;
     }
 
     /**
      * Unsupported operation.
      */
     @Override public boolean remove(Object o) {
-        throw new UnsupportedOperationException();
+        if (o == null)
+            throw new UnsupportedOperationException("Null values are not supported!");
+
+        int val = (int)o;
+
+        if (val < 0)
+            throw new UnsupportedOperationException("Negative values are not supported!");
+
+        boolean alreadySet = bitSet.get(val);
+
+        if (alreadySet) {
+            bitSet.clear(val);
+
+            size--;
+        }
+
+        return alreadySet;
     }
 
     /**
      * @{inheritDoc}
      */
     @Override public boolean containsAll(@NotNull Collection<?> c) {
-        return false;
+        for(Object o : c) {
+            if (!contains(o))
+                return false;
+        }
+
+        return true;
     }
 
     /**
-     * Unsupported operation.
+     * @{inheritDoc}
      */
     @Override public boolean addAll(@NotNull Collection<? extends Integer> c) {
-        throw new UnsupportedOperationException();
+        boolean atLeastOneAdded = false;
+
+        for(Integer o : c) {
+            if (add(o))
+                atLeastOneAdded = true;
+        }
+
+        return atLeastOneAdded;
     }
 
     /**
@@ -172,16 +218,25 @@ public class ImmutableBitSet implements Set<Integer> {
     }
 
     /**
-     * Unsupported operation.
+     * @{inheritDoc}
      */
     @Override public boolean removeAll(@NotNull Collection<?> c) {
-        throw new UnsupportedOperationException();
+        boolean atLeastOneRemoved = false;
+
+        for(Object o : c) {
+            if (remove(o))
+                atLeastOneRemoved = true;
+        }
+
+        return atLeastOneRemoved;
     }
 
     /**
-     * Unsupported operation.
+     * @{inheritDoc}
      */
     @Override public void clear() {
-        throw new UnsupportedOperationException();
+        bitSet.clear();
+
+        size = 0;
     }
 }

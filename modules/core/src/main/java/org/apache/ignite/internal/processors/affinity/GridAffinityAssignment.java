@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.ImmutableBitSet;
+import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -47,10 +47,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     private List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
-    private final Map<UUID, BitSet> primary;
+    private final Map<UUID, Set<Integer>> primary;
 
     /** Map of backup node partitions. */
-    private final Map<UUID, BitSet> backup;
+    private final Map<UUID, Set<Integer>> backup;
 
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
@@ -92,8 +92,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
         // Temporary mirrors with modifiable partition's collections.
-        Map<UUID, BitSet> tmpPrimary = new HashMap<>();
-        Map<UUID, BitSet> tmpBackup = new HashMap<>();
+        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
+        Map<UUID, Set<Integer>> tmpBackup = new HashMap<>();
         boolean isFirst;
 
         for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
@@ -102,13 +102,13 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
             for (ClusterNode node : assignment.get(p)) {
                 UUID id = node.id();
 
-                Map<UUID, BitSet> tmp = isFirst ? tmpPrimary : tmpBackup;
+                Map<UUID, Set<Integer>> tmp = isFirst ? tmpPrimary : tmpBackup;
 
-                tmp.computeIfAbsent(id, new Function<UUID, BitSet>() {
-                    @Override public BitSet apply(UUID uuid) {
-                        return new BitSet(partsCnt);
+                tmp.computeIfAbsent(id, new Function<UUID, Set<Integer>>() {
+                    @Override public Set<Integer> apply(UUID uuid) {
+                        return new BitSetIntSet(partsCnt);
                     }
-                }).set(p);
+                }).add(p);
 
                 isFirst =  false;
             }
@@ -242,9 +242,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @return Primary partitions for specified node ID.
      */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        BitSet set = primary.get(nodeId);
+        Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.emptySet() : new ImmutableBitSet(set);
+        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
     }
 
     /**
@@ -254,9 +254,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @return Backup partitions for specified node ID.
      */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        BitSet set = backup.get(nodeId);
+        Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.emptySet() : new ImmutableBitSet(set);
+        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
     }
 
     /** {@inheritDoc} */
