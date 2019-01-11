@@ -490,7 +490,7 @@ export default class AgentManager {
                         if (res.zipped) {
                             const taskId = _.get(params, 'taskId', '');
 
-                            const useBigIntJson = taskId.startsWith('querySql') || taskId.startsWith('queryFetch');
+                            const useBigIntJson = taskId.startsWith('query');
 
                             return this.pool.postMessage({payload: res.data, useBigIntJson});
                         }
