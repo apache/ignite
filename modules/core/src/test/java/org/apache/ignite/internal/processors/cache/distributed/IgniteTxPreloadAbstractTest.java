@@ -37,7 +37,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -85,8 +84,6 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      */
     @Test
     public void testRemoteTxPreloading() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10391", MvccFeatureChecker.forcedMvcc());
-
         IgniteCache<String, Integer> cache = jcache(0);
 
         for (int i = 0; i < 10_000; i++)
@@ -166,8 +163,6 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      */
     @Test
     public void testLocalTxPreloadingPessimistic() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10391", MvccFeatureChecker.forcedMvcc());
-
         testLocalTxPreloading(PESSIMISTIC);
     }
 

@@ -52,11 +52,4 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
     @Override public void testBackupQueueEvict() throws Exception {
         // No-op.
     }
-
-    /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10391")
-    @Test
-    @Override public void testFailoverStartStopBackup() throws Exception {
-        // No-op.
-    }
 }
