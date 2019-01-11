@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -90,24 +91,31 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      * @param blockerVer Version of the waited for transaction.
      */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
-            .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
-            .findAny();
+        Optional<IgniteInternalTx> waitingTx = findTx(waiterVer);
 
-        Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
-            .filter(tx -> belongToSameTx(blockerVer, tx.mvccSnapshot()))
-            .findAny();
+        Optional<IgniteInternalTx> blockerTx = findTx(blockerVer);
 
         if (waitingTx.isPresent() && blockerTx.isPresent()) {
+            IgniteInternalTx wTx = waitingTx.get();
+
+            IgniteInternalTx bTx = blockerTx.get();
+
             sendProbe(
                 waitingTx.get().nearXidVersion(),
-                Collections.singleton(waitingTx.get().nearXidVersion()),
-                blockerTx.get().nearXidVersion(),
-                blockerTx.get().eventNodeId(),
+                // real start time will be filled later when corresponding near node is visited
+                Collections.singleton(new ProbedTx(wTx.eventNodeId(), wTx.nearXidVersion(), -1)),
+                new ProbedTx(bTx.eventNodeId(), bTx.nearXidVersion(), -1),
+                bTx.eventNodeId(),
                 true);
         }
+    }
+
+    /** */
+    private Optional<IgniteInternalTx> findTx(MvccVersion mvccVer) {
+        return cctx.tm().activeTransactions().stream()
+            .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
+            .filter(tx -> belongToSameTx(mvccVer, tx.mvccSnapshot()))
+            .findAny();
     }
 
     /**
@@ -130,22 +138,35 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** */
     private void handleDeadlockProbeForNear(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
-        GridNearTxLocal nearTx = cctx.tm().tx(probe.blockerVersion());
+        GridNearTxLocal nearTx = cctx.tm().tx(probe.blocker().xidVersion());
 
         if (nearTx == null)
             return;
 
-        if (probe.waitingVersions().contains(nearTx.nearXidVersion())) {
+        if (probe.waitChain().stream().anyMatch(pTx -> pTx.xidVersion().equals(nearTx.nearXidVersion()))) {
             // a deadlock found
-            nearTx.rollbackAsync();
+            ProbedTx victim = chooseVictim(nearTx, probe.waitChain());
+
+            if (victim.nodeId().equals(cctx.localNodeId())) {
+                // victim can be another tx on the same node
+                IgniteInternalTx vTx = cctx.tm().tx(victim.xidVersion());
+
+                if (vTx != null)
+                    vTx.rollbackAsync();
+            }
+            else {
+                // t0d0 special message for remote rollback
+                sendProbe(probe.initiatorVersion(), Collections.singleton(victim), victim, victim.nodeId(), true);
+            }
         }
         else {
             // probe each blocker
             for (UUID pendingNodeId : getPendingResponseNodes(nearTx)) {
                 sendProbe(
                     probe.initiatorVersion(),
-                    probe.waitingVersions(),
-                    nearTx.nearXidVersion(),
+                    probe.waitChain(),
+                    // real start time is filled here
+                    new ProbedTx(nearTx.eventNodeId(), nearTx.nearXidVersion(), nearTx.startTime()),
                     pendingNodeId,
                     false);
             }
@@ -158,22 +179,67 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
         cctx.tm().activeTransactions().stream()
             .filter(IgniteInternalTx::local)
-            .filter(tx -> tx.nearXidVersion().equals(probe.blockerVersion()))
+            .filter(tx -> tx.nearXidVersion().equals(probe.blocker().xidVersion()))
             .findAny()
-            .flatMap(tx -> cctx.coordinators().checkWaiting(tx.mvccSnapshot()))
-            .ifPresent(nextBlocker -> {
-                ArrayList<GridCacheVersion> waitChain = new ArrayList<>(probe.waitingVersions().size() + 1);
-                waitChain.addAll(probe.waitingVersions());
-                waitChain.add(probe.blockerVersion());
+            .ifPresent(tx -> {
+                assert tx.mvccSnapshot() != null;
 
-                sendProbe(
-                    probe.initiatorVersion(),
-                    waitChain,
-                    nextBlocker.xidVersion(),
-                    nextBlocker.nodeId(),
-                    true
-                );
+                cctx.coordinators().checkWaiting(tx.mvccSnapshot())
+                    .ifPresent(nextBlocker -> {
+                        ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 1);
+                        waitChain.addAll(probe.waitChain());
+                        waitChain.add(probe.blocker());
+
+                        sendProbe(
+                            probe.initiatorVersion(),
+                            waitChain,
+                            // real start time will be filled later when corresponding near node is visited
+                            new ProbedTx(nextBlocker.nodeId(), nextBlocker.xidVersion(), -1),
+                            nextBlocker.nodeId(),
+                            true);
+                    });
             });
+    }
+
+    /**
+     * Chooses victim basing on tx start time. Algorithm chooses victim in such way that every site detected a deadlock
+     * will choose the same victim. As a result only one tx participating in a deadlock will be aborted.
+     * <p>
+     * Near tx is needed here because start time for it might not be filled yet in wait chain.
+     *
+     * @param nearTx Near tx.
+     * @param waitChain Wait chain.
+     * @return Tx chosen as a victim.
+     */
+    @SuppressWarnings("StatementWithEmptyBody")
+    private ProbedTx chooseVictim(
+        GridNearTxLocal nearTx,
+        Collection<ProbedTx> waitChain) {
+        // Near tx should be present in a wait chain but start time for it might not be filled yet.
+        // So, we use near tx (with real start time) as first victim candidate.
+        ProbedTx victim = new ProbedTx(nearTx.eventNodeId(), nearTx.nearXidVersion(), nearTx.startTime());
+
+        long maxStartTime = nearTx.startTime();
+
+        Iterator<ProbedTx> it = waitChain.iterator();
+
+        // skip until near tx (inclusive), because txs before are not deadlocked
+        while (it.hasNext() && !it.next().xidVersion().equals(victim.xidVersion()));
+
+        while (it.hasNext()) {
+            ProbedTx tx = it.next();
+
+            // seek for youngest tx in order to guarantee forward progress
+            if (tx.startTime() > maxStartTime) {
+                maxStartTime = tx.startTime();
+                victim = tx;
+            }
+            // tie-breaking
+            else if (tx.startTime() == maxStartTime && tx.xidVersion().compareTo(victim.xidVersion()) > 0)
+                victim = tx;
+        }
+
+        return victim;
     }
 
     /** */
@@ -187,9 +253,9 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    private void sendProbe(GridCacheVersion initiatorVer, Collection<GridCacheVersion> waiterVers,
-        GridCacheVersion blockerVer, UUID destNodeId, boolean near) {
-        DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVers, blockerVer, near);
+    private void sendProbe(GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
+        ProbedTx blocker, UUID destNodeId, boolean near) {
+        DeadlockProbe probe = new DeadlockProbe(initiatorVer, waitChain, blocker, near);
 
         try {
             cctx.gridIO().sendToGridTopic(destNodeId, TOPIC_DEADLOCK_DETECTION, probe, SYSTEM_POOL);

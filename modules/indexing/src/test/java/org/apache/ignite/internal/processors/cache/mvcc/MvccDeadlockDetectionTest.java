@@ -139,7 +139,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
@@ -183,7 +183,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
@@ -237,7 +237,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1, fut2);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1, fut2);
     }
 
     /** */
@@ -300,7 +300,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         fut1.get(10, TimeUnit.SECONDS);
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut2);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut2);
     }
 
     /** */
@@ -340,12 +340,13 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
     @Test
     public void detectDeadlockLocalPrimary() throws Exception {
+        // t0d0 fix test
         // Checks that case when near tx does local on enlist on the same node and no dht tx is created
 
         setUpGrids(2, false);
@@ -382,7 +383,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
@@ -410,6 +411,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key <= ?").setArgs(key0));
                 b.await();
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key >= ?").setArgs(key1));
+                TimeUnit.SECONDS.sleep(2);
 
                 tx.commit();
             }
@@ -429,7 +431,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
@@ -478,7 +480,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         TimeUnit.SECONDS.sleep(2);
         cache.put(key0, 33);
 
-        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
     /** */
@@ -496,8 +498,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void assertAtLeastOneAbortedDueDeadlock(IgniteInternalFuture<?>... futs) throws IgniteCheckedException {
-        // t0d0 exactly one abort is expected
+    private void assertExactlyOneAbortedDueDeadlock(IgniteInternalFuture<?>... futs) throws IgniteCheckedException {
         assert futs.length > 0;
 
         int aborted = 0;
@@ -507,6 +508,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
                 fut.get(10, TimeUnit.SECONDS);
             }
             catch (IgniteCheckedException e) {
+                e.printStackTrace();
                 // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
                 if (X.hasCause(e, TransactionRollbackException.class)
                     || X.hasCause(e, IgniteTxRollbackCheckedException.class))
@@ -516,9 +518,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             }
         }
 
-        log.info(aborted + " tx(s) aborted.");
-
-        if (aborted == 0)
-            fail("At least one tx is expected to be aborted");
+        if (aborted != 1)
+            fail("Exactly one tx is expected to be aborted, but was " + aborted);
     }
 }

@@ -18,79 +18,54 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Probe message travelling between transactions (from waiting to blocking) during deadlock detection.
- * @see DeadlockDetectionManager
+ * Contains attributes of tx visited during deadlock detection.
  */
-public class DeadlockProbe implements Message {
+public class ProbedTx implements Message {
     /** */
-    private static final long serialVersionUID = 0;
+    private UUID nodeId;
+    /** */
+    private GridCacheVersion xidVer;
+    /** */
+    private long startTime;
 
     /** */
-    // t0d0 do we still need initiator version?
-    private GridCacheVersion initiatorVer;
-    /** */
-    @GridDirectCollection(ProbedTx.class)
-    private Collection<ProbedTx> waitChain;
-    /** */
-    // t0d0 consider storing blocker in wait chain
-    private ProbedTx blocker;
-    /** */
-    private boolean nearCheck;
-
-    /** */
-    public DeadlockProbe() {
+    public ProbedTx() {
     }
 
     /** */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public DeadlockProbe(GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
-        ProbedTx blocker, boolean nearCheck) {
-        this.initiatorVer = initiatorVer;
-        this.waitChain = waitChain;
-        this.blocker = blocker;
-        this.nearCheck = nearCheck;
+    public ProbedTx(UUID nodeId, GridCacheVersion xidVer, long startTime) {
+        this.nodeId = nodeId;
+        this.xidVer = xidVer;
+        this.startTime = startTime;
     }
 
     /**
-     * @return Identifier of a transaction started a deadlock detection process.
+     * @return Node started near transction.
      */
-    public GridCacheVersion initiatorVersion() {
-        return initiatorVer;
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
-     * t0d0
-     * @return Identifier of a transaction identified as waiting during deadlock detection.
+     * @return Identifier of near transaction.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Collection<ProbedTx> waitChain() {
-        return waitChain;
+    public GridCacheVersion xidVersion() {
+        return xidVer;
     }
 
     /**
-     * t0d0
-     * @return Identifier of a transaction identified as blocking another (waiting)
-     * transaction during deadlock deteciton.
+     * @return Transaction start time.
      */
-    public ProbedTx blocker() {
-        return blocker;
-    }
-
-    /**
-     * @return {@code True} if checks if near transaction is waiting. {@code False} if checks dht transaction.
-     */
-    public boolean nearCheck() {
-        return nearCheck;
+    public long startTime() {
+        return startTime;
     }
 
     /** {@inheritDoc} */
@@ -106,25 +81,19 @@ public class DeadlockProbe implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("blocker", blocker))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("initiatorVer", initiatorVer))
+                if (!writer.writeLong("startTime", startTime))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("nearCheck", nearCheck))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeCollection("waitChain", waitChain, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("xidVer", xidVer))
                     return false;
 
                 writer.incrementState();
@@ -143,7 +112,7 @@ public class DeadlockProbe implements Message {
 
         switch (reader.state()) {
             case 0:
-                blocker = reader.readMessage("blocker");
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,7 +120,7 @@ public class DeadlockProbe implements Message {
                 reader.incrementState();
 
             case 1:
-                initiatorVer = reader.readMessage("initiatorVer");
+                startTime = reader.readLong("startTime");
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,15 +128,7 @@ public class DeadlockProbe implements Message {
                 reader.incrementState();
 
             case 2:
-                nearCheck = reader.readBoolean("nearCheck");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                waitChain = reader.readCollection("waitChain", MessageCollectionItemType.MSG);
+                xidVer = reader.readMessage("xidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,17 +137,17 @@ public class DeadlockProbe implements Message {
 
         }
 
-        return reader.afterMessageRead(DeadlockProbe.class);
+        return reader.afterMessageRead(ProbedTx.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 170;
+        return 171;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -195,6 +156,6 @@ public class DeadlockProbe implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DeadlockProbe.class, this);
+        return S.toString(ProbedTx.class, this);
     }
 }
