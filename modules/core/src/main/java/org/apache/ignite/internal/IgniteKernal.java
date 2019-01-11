@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -1077,6 +1079,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.writeUnlock();
             }
 
+            // Check whether UTF-8 is the default character encoding.
+            checkFileEncoding();
+
             // Check whether physical RAM is not exceeded.
             checkPhysicalRam();
 
@@ -1403,6 +1408,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
+    }
+
+    /**
+     * Check whether UTF-8 is the default character encoding.
+     * Differing character encodings across cluster may lead to erratic behavior.
+     */
+    private void checkFileEncoding() {
+        String encodingDisplayName = Charset.defaultCharset().displayName(Locale.ENGLISH);
+
+        if (!"UTF-8".equals(encodingDisplayName)) {
+            U.quietAndWarn(log, "Default character encoding is " + encodingDisplayName +
+                ". Specify UTF-8 character encoding by setting -Dfile.encoding=UTF-8 JVM parameter. " +
+                "Differing character encodings across cluster may lead to erratic behavior.");
+        }
     }
 
     /**
