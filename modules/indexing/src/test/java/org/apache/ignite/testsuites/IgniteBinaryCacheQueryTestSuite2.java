@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQuery
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
-import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDateKeySelfTest;
@@ -134,8 +133,6 @@ public class IgniteBinaryCacheQueryTestSuite2 {
         suite.addTest(new JUnit4TestAdapter(TableViewSubquerySelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueriesLoadTest1.class));
-
-        suite.addTest(new JUnit4TestAdapter(SqlLocalQueryConnectionAndStatementTest.class));
 
         return suite;
     }
