@@ -647,7 +647,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
             // Trying to close all cursors of current request.
-            clearCursors(req.requestId());
+            clearCursors(req.requestId(), true);
 
             unregisterReq = true;
 
@@ -675,6 +675,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!prepareQueryCancellationMeta(cur))
             return new JdbcResponse(null);
 
+        boolean failed = false;
         try {
             cur = jdbcCursors.remove(req.cursorId());
 
@@ -687,6 +688,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(null);
         }
         catch (Exception e) {
+            failed = true;
+
             jdbcCursors.remove(req.cursorId());
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -721,7 +724,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
 
                 if (clearCursors)
-                    clearCursors(cur.requestId());
+                    clearCursors(cur.requestId(), failed);
             }
         }
     }
@@ -1322,7 +1325,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         cancelHook.cancel();
 
         if (clearCursors)
-            clearCursors(req.requestIdToBeCancelled());
+            clearCursors(req.requestIdToBeCancelled(), false);
 
         return null;
     }
@@ -1362,8 +1365,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * Tries to close all cursors of request with given id and removes them from jdbcCursors map.
      *
      * @param reqId Request ID.
+     * @param failed {@code true} in case of any error occured.
      */
-    private void clearCursors(long reqId) {
+    private void clearCursors(long reqId, boolean failed) {
         for (Iterator<Map.Entry<Long, JdbcCursor>> it = jdbcCursors.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Long, JdbcCursor> entry = it.next();
 
@@ -1371,7 +1375,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (cursor.requestId() == reqId) {
                 try {
-                    cursor.close();
+                    cursor.close(failed);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to close cursor [reqId=" + reqId + ", cursor=" + cursor + ']', e);
@@ -1437,7 +1441,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             if (clearCursors)
-                clearCursors(reqId);
+                clearCursors(reqId, false);
         }
     }
 }

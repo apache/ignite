@@ -114,6 +114,13 @@ class JdbcQueryCursor extends JdbcCursor {
         cur.close();
     }
 
+    /** {@inheritDoc} */
+    @Override public void close(boolean failed) {
+        cur.failed(failed);
+
+        cur.close();
+    }
+
     /**
      * @param pageSize New fetch size.
      */

@@ -220,6 +220,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         return fieldsMeta.size();
     }
 
+    /**
+     * @param failed {@code true} In case any errors occured.
+     */
+    public void failed(boolean failed) {
+        this.failed = failed;
+    }
+
     /** Query cursor state */
     protected enum State {
         /** Idle. */IDLE,
