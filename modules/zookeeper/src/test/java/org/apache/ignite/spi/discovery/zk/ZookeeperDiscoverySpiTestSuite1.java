@@ -33,7 +33,7 @@ import org.junit.runners.AllTests;
 /**
  *
  */
-@RunWith(AllTests.class)
+@RunWith(AllTests.class) // todo thoroughly test this at Teamcity
 public class ZookeeperDiscoverySpiTestSuite1 {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
