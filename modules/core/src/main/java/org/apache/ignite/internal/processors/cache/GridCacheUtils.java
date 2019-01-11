@@ -1740,7 +1740,7 @@ public class GridCacheUtils {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(topVer);
+                            entry.touch();
 
                         cctx.shared().database().checkpointReadUnlock();
                     }

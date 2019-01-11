@@ -1521,7 +1521,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(added to cancelled locks set): " + req);
                         }
 
-                        entry.touch(ctx.affinity().affinityTopologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -1708,7 +1708,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    entry.touch(topVer);
+                    entry.touch();
 
                     break;
                 }

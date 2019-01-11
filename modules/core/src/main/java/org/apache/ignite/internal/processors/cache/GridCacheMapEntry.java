@@ -935,7 +935,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             if (touch)
-                touch(cctx.affinity().affinityTopologyVersion());
+                touch();
         }
     }
 
@@ -4366,8 +4366,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void touch(AffinityTopologyVersion topVer) {
-        context().evicts().touch(this, topVer);
+    @Override public void touch() {
+        context().evicts().touch(this);
     }
 
     /** {@inheritDoc} */

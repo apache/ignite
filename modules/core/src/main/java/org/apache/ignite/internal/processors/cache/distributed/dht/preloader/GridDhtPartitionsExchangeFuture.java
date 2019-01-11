@@ -1391,9 +1391,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Assign to class variable so it will be included into toString() method.
         this.partReleaseFut = partReleaseFut;
 
-        if (exchId.isLeft())
-            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
-
         if (log.isTraceEnabled())
             log.trace("Before waiting for partition release future: " + this);
 
@@ -1543,8 +1540,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             grp.preloader().unwindUndeploys();
         }
-
-        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
     }
 
     /**
@@ -4052,8 +4047,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void onNodeLeft(final ClusterNode node) {
         if (isDone() || !enterBusy())
             return;
-
-        cctx.mvcc().removeExplicitNodeLocks(node.id(), initialVersion());
 
         try {
             onDiscoveryEvent(new IgniteRunnable() {
