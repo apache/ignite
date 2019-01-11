@@ -18,13 +18,17 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -44,6 +48,9 @@ class BinaryMetadataFileStore {
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private FileIOFactory fileIOFactory;
 
     /** */
     private final IgniteLogger log;
@@ -66,6 +73,8 @@ class BinaryMetadataFileStore {
 
         if (!CU.isPersistenceEnabled(ctx.config()))
             return;
+
+        fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
 
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
@@ -91,17 +100,27 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(workDir, Integer.toString(binMeta.typeId()) + ".bin");
+            File file = new File(workDir, binMeta.typeId() + ".bin");
 
-            try(FileOutputStream out = new FileOutputStream(file, false)) {
-                byte[] marshalled = U.marshal(ctx, binMeta);
+            byte[] marshalled = U.marshal(ctx, binMeta);
 
-                out.write(marshalled);
+            try (final FileIO out = fileIOFactory.create(file)) {
+                int left = marshalled.length;
+                while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
+                    ;
+
+                out.force();
             }
         }
         catch (Exception e) {
-            U.warn(log, "Failed to save metadata for typeId: " + binMeta.typeId() +
-                "; exception was thrown: " + e.getMessage());
+            final String msg = "Failed to save metadata for typeId: " + binMeta.typeId() +
+                "; exception was thrown: " + e.getMessage();
+
+            U.error(log, msg);
+
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw new IgniteException(msg, e);
         }
     }
 
