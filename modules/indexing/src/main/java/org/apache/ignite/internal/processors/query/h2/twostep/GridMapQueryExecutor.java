@@ -605,7 +605,8 @@ public class GridMapQueryExecutor {
                         txReq.threadId(),
                         txReq.timeout(),
                         txReq.subjectId(),
-                        txReq.taskNameHash());
+                        txReq.taskNameHash(),
+                        req.mvccSnapshot());
                 }
                 else {
                     tx = MvccUtils.tx(ctx, txReq.version());

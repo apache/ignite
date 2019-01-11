@@ -134,9 +134,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         else {
             AffinityTopologyVersion mapTopVer = topVer;
 
-            if (mapTopVer == null) {
+            if (mapTopVer == null)
                 mapTopVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
-            }
 
             map(keys, Collections.emptyMap(), mapTopVer);
         }
@@ -361,8 +360,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null,
-                            null); // TODO IGNITE-7371
+                            null);
 
                         if (res != null) {
                             v = res.value();
@@ -380,8 +378,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
-                            null); // TODO IGNITE-7371
+                            !deserializeBinary);
                     }
                 }
 
@@ -502,8 +499,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null,
-                            null); // TODO IGNITE-7371
+                            null);
 
                         if (res != null) {
                             v = res.value();
@@ -521,8 +517,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
-                            null); // TODO IGNITE-7371
+                            !deserializeBinary);
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.

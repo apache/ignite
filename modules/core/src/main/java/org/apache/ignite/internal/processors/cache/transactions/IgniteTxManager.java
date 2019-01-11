@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -315,16 +314,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
             }
-        }
-    }
-
-    /**
-     * Rollback all active transactions with acquired Mvcc snapshot.
-     */
-    public void rollbackMvccTxOnCoordinatorChange() {
-        for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccSnapshot() != null && tx instanceof GridNearTxLocal)
-                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }
 
@@ -2416,53 +2405,34 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Marks MVCC transaction as {@link TxState#COMMITTED} or {@link TxState#ABORTED}.
+     * Sets MVCC state.
      *
      * @param tx Transaction.
-     * @param commit Commit flag.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
+     * @param state New state.
      */
-    public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
-            WALPointer ptr = null;
+    public void setMvccState(IgniteInternalTx tx, byte state) {
+        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
+            return;
 
-            cctx.database().checkpointReadLock();
+        cctx.database().checkpointReadLock();
 
-            try {
-                if (cctx.wal() != null)
-                    ptr = cctx.wal().log(newTxRecord(tx));
-
-                cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
-            }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
-
-            if (ptr != null)
-                cctx.wal().flush(ptr, true);
+        try {
+            cctx.coordinators().updateState(tx.mvccSnapshot(), state, tx.local());
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
         }
     }
 
     /**
-     * Marks MVCC transaction as {@link TxState#PREPARED}.
-     *
-     * @param tx Transaction.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
+     *  Finishes MVCC transaction.
+     *  @param tx Transaction.
      */
-    public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
-            cctx.database().checkpointReadLock();
+    public void mvccFinish(IgniteTxAdapter tx) {
+        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot == null || !tx.local())
+            return;
 
-            try {
-                if (cctx.wal() != null)
-                    cctx.wal().log(newTxRecord(tx));
-
-                cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
-            }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
-        }
+        cctx.coordinators().releaseWaiters(tx.mvccSnapshot);
     }
 
     /**
@@ -2473,37 +2443,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
         // Log tx state change to WAL.
-        if (cctx.wal() != null && logTxRecords) {
-            TxRecord txRecord = newTxRecord(tx);
+        if (cctx.wal() == null || (!logTxRecords && !tx.txState().mvccEnabled()))
+            return null;
 
-            try {
-                return cctx.wal().log(txRecord);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to log TxRecord: " + txRecord, e);
+        TxRecord record;
 
-                throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Creates Tx state record for WAL.
-     *
-     * @param tx Transaction.
-     * @return Tx state record.
-     */
-    private TxRecord newTxRecord(IgniteTxAdapter tx) {
         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
         Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
 
         if (tx.txState().mvccEnabled())
-            return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+            record = new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
         else
-            return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+            record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+
+        try {
+            return cctx.wal().log(record);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to log TxRecord: " + record, e);
+
+            throw new IgniteException("Failed to log TxRecord: " + record, e);
+        }
     }
 
     /**

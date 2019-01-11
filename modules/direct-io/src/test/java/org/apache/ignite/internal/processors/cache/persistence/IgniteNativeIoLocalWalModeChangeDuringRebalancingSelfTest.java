@@ -35,8 +35,7 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     /** {@inheritDoc} */
     @Test
     @Override public void testWithExchangesMerge() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
 
         super.testWithExchangesMerge();
     }

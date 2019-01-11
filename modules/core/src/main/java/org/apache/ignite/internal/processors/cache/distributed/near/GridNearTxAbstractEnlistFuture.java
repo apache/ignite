@@ -274,6 +274,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
         mapping.markQueryUpdate();
 
+        tx.markQueryEnlisted();
+
         if (node.isLocal())
             tx.colocatedLocallyMapped(true);
 
@@ -339,8 +341,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (tx != null)
-                    tx.topologyVersion(topVer);
+                tx.topologyVersion(topVer);
 
                 if (this.topVer == null)
                     this.topVer = topVer;
