@@ -31,11 +31,11 @@ import org.h2.table.IndexColumn;
  * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
-
     /**
      *
      */
-    public static final IgniteSQLException SHOULDNT_BE_INVOKED_EXCEPTION = new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+    public static final IgniteSQLException SHOULDNT_BE_INVOKED_EXCEPTION =
+        new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
 
     /**
      * @param tbl Table.
@@ -49,12 +49,14 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
         boolean pk,
         List<IndexColumn> colsList
     ) {
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+        super(tbl,
+            0,
+            name,
+            colsList.toArray(new IndexColumn[colsList.size()]),
+            pk ? IndexType.createPrimaryKey(false, false)
+                : IndexType.createNonUnique(false, false, false));
 
-        IndexColumn.mapColumns(cols, tbl);
-
-        initBaseIndex(tbl, 0, name, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+        IndexColumn.mapColumns(getIndexColumns(), tbl);
     }
 
     /** {@inheritDoc} */

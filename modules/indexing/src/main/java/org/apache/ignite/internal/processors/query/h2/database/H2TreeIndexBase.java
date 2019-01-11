@@ -18,23 +18,39 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
+import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
+import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 
 /**
  * H2 tree index base.
  */
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
+    /**
+     * Initialize the base index.
+     *
+     * @param newTable the table.
+     * @param id the object id.
+     * @param name the index name.
+     * @param newIndexColumns the columns that are indexed or null if this is not yet known.
+     * @param newIndexType the index type.
+     */
+    protected H2TreeIndexBase(Table newTable, int id, String name, IndexColumn[] newIndexColumns,
+        IndexType newIndexType) {
+        super(newTable, id, name, newIndexColumns, newIndexType);
+    }
+
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
-        HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, AllColumnsForPlan allColsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 

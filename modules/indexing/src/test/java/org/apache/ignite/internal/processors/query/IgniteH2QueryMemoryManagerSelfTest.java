@@ -23,10 +23,14 @@ import javax.cache.CacheException;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for query memory manager.
  */
+@RunWith(JUnit4.class)
 public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     /** Row count. */
     private static final int ROW_CNT = 1000;
@@ -61,16 +65,15 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     /**
      * Test local query execution.
      */
+    @Test
     public void test() {
         List<List<?>> res = sql("select * from T order by T.id", MAX_MEM_1M);
 
-//        sql("select * from T as T0, T as T1 order by T0.id", MAX_MEM_1M);
+        GridTestUtils.assertThrows(log, () -> {
+            sql("select * from T as T0, T as T1 order by T0.id", MAX_MEM_1M);
 
-//        GridTestUtils.assertThrows(log, () -> {
-//            sql("select * from T as T0, T as T1 order by T0.id", MAX_MEM_1M);
-//
-//            return null;
-//        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
+            return null;
+        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
 //
 //        // Check that two small queries works.
 //        sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id", MAX_MEM_1M);

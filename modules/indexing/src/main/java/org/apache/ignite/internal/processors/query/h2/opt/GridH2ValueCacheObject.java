@@ -80,6 +80,11 @@ public class GridH2ValueCacheObject extends Value {
     }
 
     /** {@inheritDoc} */
+    @Override public StringBuilder getSQL(StringBuilder builder) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getType() {
         return Value.JAVA_OBJECT;
     }

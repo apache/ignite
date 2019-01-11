@@ -71,22 +71,22 @@ import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
 import org.h2.expression.Alias;
 import org.h2.expression.BinaryOperation;
-import org.h2.expression.CompareLike;
-import org.h2.expression.Comparison;
-import org.h2.expression.ConditionAndOr;
-import org.h2.expression.ConditionExists;
-import org.h2.expression.ConditionIn;
-import org.h2.expression.ConditionInConstantSet;
-import org.h2.expression.ConditionInSelect;
-import org.h2.expression.ConditionNot;
+import org.h2.expression.condition.CompareLike;
+import org.h2.expression.condition.Comparison;
+import org.h2.expression.condition.ConditionAndOr;
+import org.h2.expression.condition.ConditionExists;
+import org.h2.expression.condition.ConditionIn;
+import org.h2.expression.condition.ConditionInConstantSet;
+import org.h2.expression.condition.ConditionInSelect;
+import org.h2.expression.condition.ConditionNot;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.expression.ExpressionList;
-import org.h2.expression.Function;
-import org.h2.expression.JavaFunction;
+import org.h2.expression.function.Function;
+import org.h2.expression.function.JavaFunction;
+import org.h2.expression.function.TableFunction;
 import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
-import org.h2.expression.TableFunction;
 import org.h2.expression.UnaryOperation;
 import org.h2.expression.ValueExpression;
 import org.h2.expression.aggregate.AbstractAggregate;
@@ -264,7 +264,7 @@ public class GridSqlQueryParser {
     private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
 
     /** */
-    private static final Getter<TableFunction, Column[]> FUNC_TBL_COLS = getter(TableFunction.class, "columnList");
+    private static final Getter<TableFunction, Column[]> FUNC_TBL_COLS = getter(TableFunction.class, "columns");
 
     /** */
     private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");

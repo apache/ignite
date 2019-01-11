@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
-import org.h2.expression.Comparison;
+import org.h2.expression.condition.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.index.IndexCondition;

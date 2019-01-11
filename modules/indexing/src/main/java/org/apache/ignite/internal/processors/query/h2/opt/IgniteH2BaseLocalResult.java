@@ -88,6 +88,8 @@ public class IgniteH2BaseLocalResult implements LocalResult {
     /** Contains lobs. */
     private boolean containsLobs;
 
+    private Boolean containsNull;
+
     /**
      * Construct a local result object.
      */
@@ -213,6 +215,35 @@ public class IgniteH2BaseLocalResult implements LocalResult {
         ValueArray array = ValueArray.get(values);
 
         return distinctRows.get(array) != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsNull() {
+        Boolean r = containsNull;
+
+        if (r == null) {
+            r = false;
+
+            reset();
+
+            while (next()) {
+                Value[] row = currentRow;
+
+                for (int i = 0; i < visibleColCnt; i++) {
+                    if (row[i].containsNull()) {
+                        r = true;
+
+                        break;
+                    }
+                }
+            }
+
+            reset();
+
+            containsNull = r;
+        }
+
+        return r;
     }
 
     /** {@inheritDoc} */
