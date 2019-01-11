@@ -212,4 +212,22 @@ public interface DataStorageMetrics {
      * @return Checkpoint buffer size in bytes.
      */
     public long getCheckpointBufferSize();
+
+    /**
+     * Storage space allocated in bytes.
+     *
+     * @return Storage space allocated in bytes.
+     */
+    public long getStorageSize();
+
+    /**
+     * Storage space allocated adjusted for possible sparsity in bytes.
+     *
+     * May produce unstable or even incorrect result on some file systems (e.g. XFS).
+     * Known to work correctly on Ext4 and Btrfs.
+     *
+     * @return Storage space allocated adjusted for possible sparsity in bytes
+     *         or negative value is not supported.
+     */
+    public long getSparseStorageSize();
 }

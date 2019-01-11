@@ -1103,7 +1103,7 @@ namespace ignite
                 // Bitmask that describes the attributes of a static cursor that are supported by the driver. This
                 // bitmask contains the first subset of attributes; for the second subset, see
                 // SQL_STATIC_CURSOR_ATTRIBUTES2.
-                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT | SQL_CA1_ABSOLUTE;
 #endif // SQL_STATIC_CURSOR_ATTRIBUTES1
 
 #ifdef SQL_STATIC_CURSOR_ATTRIBUTES2

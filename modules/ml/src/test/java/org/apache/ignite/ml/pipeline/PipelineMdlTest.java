@@ -20,7 +20,7 @@ package org.apache.ignite.ml.pipeline;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.junit.Test;
 
 /**
@@ -53,19 +53,19 @@ public class PipelineMdlTest {
     /** */
     private void verifyPredict(PipelineMdl mdl) {
         Vector observation = new DenseVector(new double[] {1.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, 2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {-2.0, 1.0});
-        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.predict(observation), PRECISION);
 
         observation = new DenseVector(new double[] {1.0, -2.0});
-        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.predict(observation), PRECISION);
     }
 
     /**

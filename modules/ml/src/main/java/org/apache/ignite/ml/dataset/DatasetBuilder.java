@@ -21,6 +21,8 @@ import java.io.Serializable;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 
 /**
  * A builder constructing instances of a {@link Dataset}. Implementations of this interface encapsulate logic of
@@ -39,6 +41,7 @@ public interface DatasetBuilder<K, V> {
      * Constructs a new instance of {@link Dataset} that includes allocation required data structures and
      * initialization of {@code context} part of partitions.
      *
+     * @param envBuilder Learning environment builder.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param partDataBuilder Partition {@code data} builder.
      * @param <C> Type of a partition {@code context}.
@@ -46,8 +49,25 @@ public interface DatasetBuilder<K, V> {
      * @return Dataset.
      */
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
+        LearningEnvironmentBuilder envBuilder,
+        PartitionContextBuilder<K, V, C> partCtxBuilder,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder);
 
+    /**
+     * Returns new instance of {@link DatasetBuilder} with new {@link UpstreamTransformerBuilder} added
+     * to chain of upstream transformer builders. When needed, each builder in chain first transformed into
+     * {@link UpstreamTransformer}, those are in turn composed together one after another forming
+     * final {@link UpstreamTransformer}.
+     * This transformer is applied to upstream data before it is passed
+     * to {@link PartitionDataBuilder} and {@link PartitionContextBuilder}. This is needed to allow
+     * transformation to upstream data which are agnostic of any changes that happen after.
+     * Such transformations may be used for deriving meta-algorithms such as bagging
+     * (see {@link BaggingUpstreamTransformer}).
+     *
+     * @return Returns new instance of {@link DatasetBuilder} with new {@link UpstreamTransformerBuilder} added
+     * to chain of upstream transformer builders.
+     */
+    public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder);
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.

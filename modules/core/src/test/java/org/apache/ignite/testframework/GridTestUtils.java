@@ -34,6 +34,9 @@ import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -64,8 +68,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import junit.framework.Test;
-import junit.framework.TestCase;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -86,6 +89,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -105,8 +110,11 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Utility class for tests.
@@ -189,13 +197,13 @@ public final class GridTestUtils {
     private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> mcastPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> discoPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> discoPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> commPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> commPorts = new HashMap<>();
 
     /** */
     private static int[] addr;
@@ -562,7 +570,6 @@ public final class GridTestUtils {
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
      */
-    @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
         Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
@@ -602,7 +609,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast port.
      */
-    public static synchronized int getNextMulticastPort(Class<? extends Test> cls) {
+    public static synchronized int getNextMulticastPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = mcastPorts.get(cls);
 
         if (portRet != null)
@@ -649,7 +656,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next communication port.
      */
-    public static synchronized int getNextCommPort(Class<? extends Test> cls) {
+    public static synchronized int getNextCommPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = commPorts.get(cls);
 
         if (portRet != null)
@@ -676,7 +683,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next discovery port.
      */
-    public static synchronized int getNextDiscoPort(Class<? extends Test> cls) {
+    public static synchronized int getNextDiscoPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = discoPorts.get(cls);
 
         if (portRet != null)
@@ -1312,15 +1319,12 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
         try {
-            obj = findField(cls, obj, fieldName);
-
-            return (T)obj;
+            return (T)findField(cls, obj, fieldName);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
@@ -1337,7 +1341,6 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1379,7 +1382,6 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1420,22 +1422,12 @@ public final class GridTestUtils {
         // Resolve inner field.
         Field field = cls.getDeclaredField(fieldName);
 
-        synchronized (field) {
-            // Backup accessible field state.
-            boolean accessible = field.isAccessible();
+        boolean accessible = field.isAccessible();
 
-            try {
-                if (!accessible)
-                    field.setAccessible(true);
+        if (!accessible)
+            field.setAccessible(true);
 
-                return field.get(obj);
-            }
-            finally {
-                // Recover accessible field state.
-                if (!accessible)
-                    field.setAccessible(false);
-            }
-        }
+        return field.get(obj);
     }
 
     /**
@@ -1461,7 +1453,6 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
@@ -1471,22 +1462,12 @@ public final class GridTestUtils {
 
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+            if (!accessible)
+                field.setAccessible(true);
 
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1502,46 +1483,28 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
         assert fieldName != null;
 
         try {
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
+            if (!accessible)
+                field.setAccessible(true);
 
-                Field modifiersField = null;
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
 
-                if (isFinal)
-                    modifiersField = Field.class.getDeclaredField("modifiers");
+            if (isFinal) {
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+                modifiersField.setAccessible(true);
 
-                    if (isFinal) {
-                        modifiersField.setAccessible(true);
-                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-                    }
-
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-
-                    if (isFinal) {
-                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
-                        modifiersField.setAccessible(false);
-                    }
-                }
+                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
             }
+
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1557,7 +1520,6 @@ public final class GridTestUtils {
      * @return Method invocation result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         Class<?> cls = obj.getClass();
 
@@ -1573,22 +1535,12 @@ public final class GridTestUtils {
                     continue;
 
                 try {
-                    synchronized (m) {
-                        // Backup accessible field state.
-                        boolean accessible = m.isAccessible();
+                    boolean accessible = m.isAccessible();
 
-                        try {
-                            if (!accessible)
-                                m.setAccessible(true);
+                    if (!accessible)
+                        m.setAccessible(true);
 
-                            return (T)m.invoke(obj, params);
-                        }
-                        finally {
-                            // Recover accessible field state.
-                            if (!accessible)
-                                m.setAccessible(false);
-                        }
-                    }
+                    return (T)m.invoke(obj, params);
                 }
                 catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to access method" +
@@ -2008,12 +1960,12 @@ public final class GridTestUtils {
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
+    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<?> test,
         @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.addTest(new JUnit4TestAdapter(test));
     }
 
     /**
@@ -2078,7 +2030,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) (TEST_SCALE_FACTOR_VALUE * val);
+            return (int) Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
@@ -2088,12 +2040,77 @@ public final class GridTestUtils {
 
         /** Apply scale factor with lower bound */
         public static int applyLB(int val, int lowerBound) {
-            return Math.max((int) (TEST_SCALE_FACTOR_VALUE * val), lowerBound);
+            return Math.max(apply(val), lowerBound);
         }
 
         /** Apply scale factor with upper bound */
         public static int applyUB(int val, int upperBound) {
-            return Math.min((int) (TEST_SCALE_FACTOR_VALUE * val), upperBound);
+            return Math.min(apply(val), upperBound);
         }
+    }
+
+    /** Adds system property on initialization and removes it when closed. */
+    public static final class SystemProperty implements AutoCloseable {
+        /** Name of property. */
+        private final String name;
+
+        /** Original value of property. */
+        private final String originalValue;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param val Value.
+         */
+        public SystemProperty(String name, String val) {
+            this.name = name;
+
+            Properties props = System.getProperties();
+
+            originalValue = (String)props.put(name, val);
+
+            System.setProperties(props);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            Properties props = System.getProperties();
+
+            if (originalValue != null)
+                props.put(name, originalValue);
+            else
+                props.remove(name);
+
+            System.setProperties(props);
+        }
+    }
+
+    /**
+     * @param node Node to connect to.
+     * @param params Connection parameters.
+     * @return Thin JDBC connection to specified node.
+     */
+    public static Connection connect(IgniteEx node, String params) throws SQLException {
+        Collection<GridPortRecord> recs = node.context().ports().records();
+
+        GridPortRecord cliLsnrRec = null;
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
+
+                break;
+            }
+        }
+
+        assertNotNull(cliLsnrRec);
+
+        String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
+
+        if (!F.isEmpty(params))
+            connStr += "/?" + params;
+
+        return DriverManager.getConnection(connStr);
     }
 }

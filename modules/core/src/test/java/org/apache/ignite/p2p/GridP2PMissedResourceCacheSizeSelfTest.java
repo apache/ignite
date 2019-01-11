@@ -26,18 +26,19 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTest {
     /** Task name. */
     private static final String TASK_NAME1 = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
@@ -57,9 +58,6 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     /** */
     private int missedRsrcCacheSize;
 
-    /** */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -72,12 +70,6 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
         cfg.setPeerClassLoadingMissedResourcesCacheSize(missedRsrcCacheSize);
 
         cfg.setCacheConfiguration();
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -227,6 +219,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0PrivateMode() throws Exception {
         processSize0Test(DeploymentMode.PRIVATE);
     }
@@ -236,6 +229,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0IsolatedMode() throws Exception {
         processSize0Test(DeploymentMode.ISOLATED);
     }
@@ -245,6 +239,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0ContinuousMode() throws Exception {
         processSize0Test(DeploymentMode.CONTINUOUS);
     }
@@ -254,6 +249,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0SharedMode() throws Exception {
         processSize0Test(DeploymentMode.SHARED);
     }
@@ -262,6 +258,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2PrivateMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.PRIVATE);
     }
@@ -271,6 +268,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2IsolatedMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.ISOLATED);
     }
@@ -280,6 +278,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2ContinuousMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.CONTINUOUS);
     }
@@ -289,6 +288,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2SharedMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.SHARED);
     }

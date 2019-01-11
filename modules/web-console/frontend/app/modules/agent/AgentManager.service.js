@@ -18,11 +18,10 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/partition';
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/pluck';
+import {BehaviorSubject} from 'rxjs';
+import {first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
+
+import io from 'socket.io-client';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore
@@ -30,6 +29,7 @@ import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
+import {CancellationError} from 'app/errors/CancellationError';
 import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
@@ -43,6 +43,15 @@ const State = {
 const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
+const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
+
+/** Reserved cache names */
+const RESERVED_CACHE_NAMES = [
+    'ignite-hadoop-mr-sys-cache',
+    'ignite-sys-cache',
+    'MetaStorage',
+    'TxLog'
+];
 
 /** Error codes from o.a.i.internal.processors.restGridRestResponse.java */
 const SuccessStatus = {
@@ -110,7 +119,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     /** @type {ng.IScope} */
     $root;
@@ -125,7 +134,7 @@ export default class AgentManager {
     ClusterLoginSrv;
 
     /** @type {String} */
-    clusterVersion = '2.4.0';
+    clusterVersion;
 
     connectionSbj = new BehaviorSubject(new ConnectionState(AgentManager.restoreActiveCluster()));
 
@@ -155,32 +164,34 @@ export default class AgentManager {
      * @param {ng.IRootScopeService} $root
      * @param {ng.IQService} $q
      * @param {import('@uirouter/angularjs').TransitionService} $transitions
-     * @param {unknown} socketFactory
      * @param {import('./AgentModal.service').default} agentModal
      * @param {import('app/components/user-notifications/service').default} UserNotifications
      * @param {import('app/services/Version.service').default} Version
      * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
      */
-    constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
+    constructor($root, $q, $transitions, agentModal, UserNotifications, Version, ClusterLoginSrv) {
         this.$root = $root;
         this.$q = $q;
         this.$transitions = $transitions;
-        this.socketFactory = socketFactory;
         this.agentModal = agentModal;
         this.UserNotifications = UserNotifications;
         this.Version = Version;
         this.ClusterLoginSrv = ClusterLoginSrv;
 
+        this.clusterVersion = this.Version.webConsole;
+
         let prevCluster;
 
-        this.currentCluster$ = this.connectionSbj
-            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
-            .do(({ cluster }) => prevCluster = cluster);
+        this.currentCluster$ = this.connectionSbj.pipe(
+            distinctUntilChanged(({ cluster }) => prevCluster === cluster),
+            tap(({ cluster }) => prevCluster = cluster)
+        );
 
-        this.clusterIsActive$ = this.connectionSbj
-            .map(({ cluster }) => cluster)
-            .filter((cluster) => Boolean(cluster))
-            .pluck('active');
+        this.clusterIsActive$ = this.connectionSbj.pipe(
+            map(({ cluster }) => cluster),
+            filter((cluster) => Boolean(cluster)),
+            pluck('active')
+        );
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
@@ -208,7 +219,9 @@ export default class AgentManager {
         if (nonNil(this.socket))
             return;
 
-        this.socket = this.socketFactory();
+        const options = this.isDemoMode() ? {query: 'IgniteDemoMode=true'} : {};
+
+        this.socket = io.connect(options);
 
         const onDisconnect = () => {
             const conn = this.connectionSbj.getValue();
@@ -368,11 +381,13 @@ export default class AgentManager {
 
                     case State.AGENT_DISCONNECTED:
                         this.agentModal.agentDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
                     case State.CLUSTER_DISCONNECTED:
                         this.agentModal.clusterDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
@@ -472,8 +487,13 @@ export default class AgentManager {
                         if (cluster.secured)
                             this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                        if (res.zipped)
-                            return this.pool.postMessage(res.data);
+                        if (res.zipped) {
+                            const taskId = _.get(params, 'taskId', '');
+
+                            const useBigIntJson = taskId.startsWith('query');
+
+                            return this.pool.postMessage({payload: res.data, useBigIntJson});
+                        }
 
                         return res;
 
@@ -510,7 +530,7 @@ export default class AgentManager {
         if (this.isDemoMode())
             return Promise.resolve(this._executeOnActiveCluster({}, {}, event, params));
 
-        return this.connectionSbj.first().toPromise()
+        return this.connectionSbj.pipe(first()).toPromise()
             .then(({cluster}) => {
                 if (_.isNil(cluster))
                     throw new Error('Failed to execute request on cluster.');
@@ -533,16 +553,53 @@ export default class AgentManager {
 
                 return {cluster, credentials: {}};
             })
-            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params));
+            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params))
+            .catch((err) => {
+                if (err instanceof CancellationError)
+                    return;
+
+                throw err;
+            });
     }
 
     /**
-     * @param {Boolean} [attr]
-     * @param {Boolean} [mtr]
+     * @param {boolean} [attr] Collect node attributes.
+     * @param {boolean} [mtr] Collect node metrics.
+     * @param {boolean} [caches] Collect node caches descriptors.
      * @returns {Promise}
      */
-    topology(attr = false, mtr = false) {
-        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr, caches: false});
+    topology(attr = false, mtr = false, caches = false) {
+        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr, caches});
+    }
+
+    collectCacheNames(nid) {
+        if (this.available(COLLECT_BY_CACHE_GROUPS_SINCE))
+            return this.visorTask('cacheNamesCollectorTask', nid);
+
+        return Promise.resolve({cacheGroupsNotAvailable: true});
+    }
+
+    publicCacheNames() {
+        return this.collectCacheNames()
+            .then((data) => {
+                if (nonEmpty(data.caches))
+                    return _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
+
+                return this.topology(false, false, true)
+                    .then((nodes) => {
+                        return _.map(_.uniqBy(_.flatMap(nodes, 'caches'), 'name'), 'name');
+                    });
+            });
+    }
+
+    /**
+     * @param {string} cacheName Cache name.
+     */
+    cacheNodes(cacheName) {
+        if (this.available(IGNITE_2_0))
+            return this.visorTask('cacheNodesTaskX2', null, cacheName);
+
+        return this.visorTask('cacheNodesTask', null, cacheName);
     }
 
     /**

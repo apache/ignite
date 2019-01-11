@@ -69,7 +69,7 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
      * @param loc Local flag.
      */
     private static void executeQuery(Ignite node, boolean loc, int... parts) {
-        IgniteCache cache = node.cache(CACHE_NAME);
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 

@@ -50,7 +50,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
         return predictYBasedOn(neighbors, v);

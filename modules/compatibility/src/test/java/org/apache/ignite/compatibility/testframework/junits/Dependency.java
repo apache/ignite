@@ -17,70 +17,76 @@
 
 package org.apache.ignite.compatibility.testframework.junits;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Module dependency: Should be filtered out from current test classpath for separate JVM classpath.
  */
 public class Dependency {
+    /** Default value of group id. */
+    private static final String DEFAULT_GROUP_ID = "org.apache.ignite";
+
     /** Local module name. Folder name where module is located. */
-    private String locModuleName;
+    private final String locModuleName;
 
-    /** Group name. Null means ignite default group name. */
-    @Nullable
-    private String groupName;
+    /** Group id. */
+    private final String groupId;
 
-    /** Artifact name (artifact ID) without group name. */
-    private String artifactName;
+    /** Artifact id. */
+    private final String artifactId;
 
-    /** Version. Null means default Ignite version is to be used. May be used for 3rd party dependencies. */
-    @Nullable
-    private String version;
+    /** Version. {@code null} means default Ignite version is to be used. May be used for 3rd party dependencies. */
+    @Nullable private final String ver;
 
-    /** Test flag. Test jar should have {@code true} value. Default is {@code false}. */
-    private boolean test;
+    /** Test flag. Test jar should have {@code true} value. */
+    private final boolean test;
 
     /**
-     * Creates dependency.
+     * Creates dependency with {@link #DEFAULT_GROUP_ID} as group id.
      *
      * @param locModuleName Local module name. Folder name where module is located.
-     * @param artifactName Artifact name (artifact ID) without group name.
-     * @param test Test flag. Test jar should have {@code true} value. Default is {@code false}.
+     * @param artifactId Artifact id.
+     * @param test Test flag. Test jar should have {@code true} value.
      */
-    public Dependency(String locModuleName, String artifactName, boolean test) {
+    public Dependency(String locModuleName, String artifactId, boolean test) {
+        this(locModuleName, artifactId, null, test);
+    }
+
+    /**
+     * Creates dependency with {@link #DEFAULT_GROUP_ID} as group id.
+     *
+     * @param locModuleName Local module name. Folder name where module is located.
+     * @param artifactId Artifact id.
+     * @param ver Version, {@code null} means default Ignite version is to be used.
+     * @param test Test flag. Test jar should have {@code true} value.
+     */
+    public Dependency(String locModuleName, String artifactId, String ver, boolean test) {
+        this(locModuleName, DEFAULT_GROUP_ID, artifactId, ver, test);
+    }
+
+    /**
+     * Creates dependency with given parameters.
+     *
+     * @param locModuleName Local module name. Folder name where module is located.
+     * @param groupId Group id.
+     * @param artifactId Artifact id.
+     * @param ver Dependency version, {@code null} means default Ignite version is to be used.
+     * @param test Test flag. Test jar should have {@code true} value.
+     */
+    public Dependency(@NotNull String locModuleName, @NotNull String groupId, @NotNull String artifactId,
+        @Nullable String ver, boolean test) {
         this.locModuleName = locModuleName;
-        this.artifactName = artifactName;
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.ver = ver;
         this.test = test;
     }
 
     /**
-     * Creates dependency.
-     *
-     * @param locModuleName Local module name. Folder name where module is located.
-     * @param artifactName Artifact name (artifact ID) without group name.
+     * @return Template of sources path based on local module name.
      */
-    public Dependency(String locModuleName, String artifactName) {
-        this.locModuleName = locModuleName;
-        this.artifactName = artifactName;
-    }
-
-    /**
-     * @param locModuleName Local module name. Folder name where module is located.
-     * @param grpName Group name. Null means ignite default group name.
-     * @param artifactName Artifact name (artifact ID) without group na
-     * @param version Version. Null means default Ignite version is to be used. M
-     */
-    public Dependency(String locModuleName, @Nullable String grpName, String artifactName, @Nullable String version) {
-        this.locModuleName = locModuleName;
-        this.groupName = grpName;
-        this.artifactName = artifactName;
-        this.version = version;
-    }
-
-    /**
-     * @return path based on local module name to exclude from classpath
-     */
-    public String localPathTemplate() {
+    public String sourcePathTemplate() {
         return "modules/" +
             locModuleName +
             "/target/" +
@@ -88,30 +94,37 @@ public class Dependency {
     }
 
     /**
-     * @return {@link #artifactName}
+     * @return Template of artifact's path in Maven repository.
      */
-    public String artifactName() {
-        return artifactName;
+    public String artifactPathTemplate() {
+        return "repository/" + groupId.replaceAll("\\.", "/") + "/" + artifactId;
     }
 
     /**
-     * @return classifier or {@code} null depending on {@link #test} flag
+     * @return Dependency artifact id.
+     */
+    public String artifactId() {
+        return artifactId;
+    }
+
+    /**
+     * @return Classifier or {@code null} depending on {@link #test} flag.
      */
     @Nullable public String classifier() {
         return test ? "tests" : null;
     }
 
     /**
-     * @return {@link #version}
+     * @return Dependency version.
      */
     @Nullable public String version() {
-        return version;
+        return ver;
     }
 
     /**
-     * @return {@link #groupName}
+     * @return Dependency group id.
      */
-    @Nullable public String groupName() {
-        return groupName;
+    public String groupId() {
+        return groupId;
     }
 }

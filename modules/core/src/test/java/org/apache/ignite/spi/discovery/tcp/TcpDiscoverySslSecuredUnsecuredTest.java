@@ -29,11 +29,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different SSL configuration.
  * Exception with meaningful message should be thrown.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest {
     /** */
     private volatile TcpDiscoverySpi spi;
@@ -66,6 +70,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSecuredUnsecuredServerConnection() throws Exception {
         checkConnection("plain-server", "ssl-server");
     }
@@ -73,6 +78,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsecuredSecuredServerConnection() throws Exception {
         checkConnection("ssl-server", "plain-server");
     }
@@ -80,6 +86,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSecuredClientUnsecuredServerConnection() throws Exception {
         checkConnection("plain-server", "ssl-client");
     }
@@ -87,6 +94,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsecuredClientSecuredServerConnection() throws Exception {
         checkConnection("ssl-server", "plain-client");
     }
@@ -94,6 +102,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPlainServerNodesRestart() throws Exception {
         checkNodesRestart("plain-server-1", "plain-server-2");
     }
@@ -101,6 +110,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSslServerNodesRestart() throws Exception {
         checkNodesRestart("ssl-server-1", "ssl-server-2");
     }
@@ -108,6 +118,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPlainClientNodesRestart() throws Exception {
         checkNodesRestart("plain-server", "plain-client");
     }
@@ -115,6 +126,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSslClientNodesRestart() throws Exception {
         checkNodesRestart("ssl-server", "ssl-client");
     }

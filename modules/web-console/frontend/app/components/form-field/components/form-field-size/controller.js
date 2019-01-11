@@ -28,6 +28,8 @@ export default class PCFormFieldSizeController {
     onScaleChange;
     /** @type {ng.IFormController} */
     innerForm;
+    /** @type {boolean?} */
+    autofocus;
 
     static $inject = ['$element', '$attrs'];
 
@@ -37,6 +39,10 @@ export default class PCFormFieldSizeController {
             {label: 'Kb', value: 1024},
             {label: 'Mb', value: 1024 * 1024},
             {label: 'Gb', value: 1024 * 1024 * 1024}
+        ],
+        gigabytes: [
+            {label: 'Gb', value: 1},
+            {label: 'Tb', value: 1024}
         ],
         seconds: [
             {label: 'ns', value: 1 / 1000},
@@ -61,7 +67,8 @@ export default class PCFormFieldSizeController {
     }
 
     $onDestroy() {
-        this.$element = null;
+        delete this.$element[0].focus;
+        this.$element = this.inputElement = null;
     }
 
     $onInit() {
@@ -78,6 +85,8 @@ export default class PCFormFieldSizeController {
             this.ngModel.$validators.max = (value) => this.ngModel.$isEmpty(value) || value === void 0 || value <= this.max;
 
         this.ngModel.$validators.step = (value) => this.ngModel.$isEmpty(value) || value === void 0 || Math.floor(value) === value;
+        this.inputElement = this.$element[0].querySelector('input');
+        this.$element[0].focus = () => this.inputElement.focus();
     }
 
     $onChanges(changes) {
@@ -136,5 +145,19 @@ export default class PCFormFieldSizeController {
     setDefaultSizeType() {
         this.sizesMenu = PCFormFieldSizeController.sizeTypes.bytes;
         this.sizeScale = this.chooseSizeScale();
+    }
+
+    notifyAboutError() {
+        if (this.$element)
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+    }
+
+    hideError() {
+        if (this.$element)
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+    }
+
+    triggerBlur() {
+        this.$element[0].dispatchEvent(new FocusEvent('blur', {relatedTarget: this.inputElement}));
     }
 }

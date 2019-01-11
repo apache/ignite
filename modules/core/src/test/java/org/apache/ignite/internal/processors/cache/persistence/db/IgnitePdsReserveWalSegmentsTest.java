@@ -29,20 +29,18 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
  * Test correctness of truncating unused WAL segments.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
@@ -51,8 +49,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
@@ -60,8 +56,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setPageSize(4 * 1024);
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -95,6 +89,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testWalManagerRangeReservation() throws Exception {
         IgniteEx ig0 = prepareGrid(4);
 
@@ -124,6 +119,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testWalDoesNotTruncatedWhenSegmentReserved() throws Exception {
         IgniteEx ig0 = prepareGrid(4);
 

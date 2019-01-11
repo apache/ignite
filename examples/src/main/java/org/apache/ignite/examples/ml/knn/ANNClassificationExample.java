@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.knn;
 import java.util.Arrays;
 import java.util.UUID;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -96,13 +97,13 @@ public class ANNClassificationExample {
                     double groundTruth = val[0];
 
                     long startPredictionTime = System.currentTimeMillis();
-                    double prediction = knnMdl.apply(new DenseVector(inputs));
+                    double prediction = knnMdl.predict(new DenseVector(inputs));
                     long endPredictionTime = System.currentTimeMillis();
 
                     totalPredictionTime += (endPredictionTime - startPredictionTime);
 
                     totalAmount++;
-                    if (groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);

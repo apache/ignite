@@ -16,6 +16,7 @@
 import ctypes
 
 from pyignite.constants import *
+from .base import IgniteDataType
 from .primitive import *
 from .type_codes import *
 
@@ -28,7 +29,7 @@ __all__ = [
 ]
 
 
-class PrimitiveArray:
+class PrimitiveArray(IgniteDataType):
     """
     Base class for array of primitives. Payload-only.
     """

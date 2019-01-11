@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -642,6 +643,13 @@ public interface IgniteInternalTx {
     public void commitError(Throwable e);
 
     /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
+
+    /**
      * @param mvccSnapshot Mvcc snapshot.
      */
     public void mvccSnapshot(MvccSnapshot mvccSnapshot);
@@ -655,5 +663,5 @@ public interface IgniteInternalTx {
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */
-    @Nullable public TxCounters txCounters(boolean createIfAbsent);
+    @Nullable @Contract("true -> !null;") public TxCounters txCounters(boolean createIfAbsent);
 }

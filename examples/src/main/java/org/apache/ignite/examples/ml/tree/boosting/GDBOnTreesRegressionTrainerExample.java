@@ -22,9 +22,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -44,7 +44,7 @@ public class GDBOnTreesRegressionTrainerExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println();
         System.out.println(">>> GDB regression trainer example started.");
         // Start ignite grid.
@@ -73,7 +73,7 @@ public class GDBOnTreesRegressionTrainerExample {
 
             // Calculate score.
             for (int x = -5; x < 5; x++) {
-                double predicted = mdl.apply(VectorUtils.of(x));
+                double predicted = mdl.predict(VectorUtils.of(x));
 
                 System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
             }

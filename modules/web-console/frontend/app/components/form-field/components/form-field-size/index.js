@@ -36,6 +36,7 @@ export default {
         sizeType: '@?',
         sizeScaleLabel: '@?',
         onScaleChange: '&?',
-        ngDisabled: '<?'
+        ngDisabled: '<?',
+        autofocus: '<?'
     }
 };

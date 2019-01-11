@@ -81,6 +81,11 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean changedAffinity() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "ClientCacheDhtTopologyFuture [topVer=" + topVer + ']';
     }

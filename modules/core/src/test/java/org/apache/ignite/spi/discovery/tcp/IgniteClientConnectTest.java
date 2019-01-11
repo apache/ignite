@@ -34,12 +34,13 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We emulate that client receive message about joining to topology earlier than some server nodes in topology.
@@ -47,10 +48,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * To emulate this we connect client to second node in topology and pause sending message about joining finishing to
  * third node.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientConnectTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Latch to stop message sending. */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -71,7 +70,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             disco.setIpFinder(ipFinder);
         }
         else
-            disco.setIpFinder(ipFinder);
+            disco.setIpFinder(sharedStaticIpFinder);
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
@@ -94,6 +93,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToBigTopology() throws Exception {
         Ignite ignite = startGrids(3);
 
