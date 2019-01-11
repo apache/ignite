@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,6 +49,9 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final long TEST_FUTURES_WAIT_TIMEOUT = 2_000L;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -179,24 +183,18 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     public void disconnectingDuringNodeStoppingIsNotHangTest() throws Exception {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
-        try {
-            final IgniteEx ignite = startGrid(0);
-
-            final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
-
-            GridTestUtils.runAsync(() -> {
-                srvcProc.onKernalStop(true);
-            });
-
-            final IgniteInternalFuture testFut = GridTestUtils.runAsync(() -> {
-                srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
-            });
-
-            testFut.get(2_000, TimeUnit.MILLISECONDS);
-        }
-        finally {
-            stopAllGrids(true);
-        }
+        runServiceProcessorStoppingTest(
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onKernalStop(true);
+                }
+            },
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+                }
+            }
+        );
     }
 
     /**
@@ -206,20 +204,44 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     public void stoppingDuringDisconnectingIsNotHangTest() throws Exception {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
 
+        runServiceProcessorStoppingTest(
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+                }
+            },
+            new IgniteInClosure<IgniteServiceProcessor>() {
+                @Override public void apply(IgniteServiceProcessor srvcProc) {
+                    srvcProc.onKernalStop(true);
+                }
+            }
+        );
+    }
+
+    /**
+     * @param c1 Action to apply over service processor concurrently.
+     * @param c2 Action to apply over service processor concurrently.
+     * @throws Exception In case of an error.
+     */
+    private void runServiceProcessorStoppingTest(IgniteInClosure<IgniteServiceProcessor> c1,
+        IgniteInClosure<IgniteServiceProcessor> c2) throws Exception {
+
         try {
             final IgniteEx ignite = startGrid(0);
 
             final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)(ignite.context().service());
 
-            GridTestUtils.runAsync(() -> {
-                srvcProc.onDisconnected(new IgniteFinishedFutureImpl<>());
+            final IgniteInternalFuture c1Fut = GridTestUtils.runAsync(() -> {
+                c1.apply(srvcProc);
             });
 
-            final IgniteInternalFuture testFut = GridTestUtils.runAsync(() -> {
-                srvcProc.onKernalStop(true);
+            final IgniteInternalFuture c2Fut = GridTestUtils.runAsync(() -> {
+                c2.apply(srvcProc);
             });
 
-            testFut.get(2_000, TimeUnit.MILLISECONDS);
+            c1Fut.get(TEST_FUTURES_WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
+
+            c2Fut.get(TEST_FUTURES_WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
         }
         finally {
             stopAllGrids(true);
