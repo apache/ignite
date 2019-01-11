@@ -787,9 +787,6 @@ public class JdbcThinConnection implements Connection {
 
             JdbcResponse res = cliIo.sendRequest(req, stmt);
 
-            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
-
             if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && req.timeout() != NO_TIMEOUT &&
                 reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get())
                 throw new SQLTimeoutException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
