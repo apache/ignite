@@ -62,9 +62,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
-    /**
-     *
-     */
+    /** */
     protected boolean failed;
 
     /**
