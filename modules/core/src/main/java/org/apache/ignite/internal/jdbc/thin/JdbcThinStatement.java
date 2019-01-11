@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -218,7 +219,7 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
+            maxRows, conn.getAutoCommit(), sql, timeout, args == null ? null : args.toArray(new Object[args.size()]));
 
         JdbcResult res0 = conn.sendRequest(req, this);
 
@@ -305,34 +306,48 @@ public class JdbcThinStatement implements Statement {
                 byte[] buf = new byte[batchSize];
 
                 int readBytes;
+                int timeSpendMillis = 0;
+
                 while ((readBytes = input.read(buf)) != -1) {
+                    long startTime = System.currentTimeMillis();
+
                     if (readBytes == 0)
                         continue;
 
                     JdbcResult res = conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                        cmdRes.cursorId(),
-                        batchNum++,
-                        JdbcBulkLoadBatchRequest.CMD_CONTINUE,
-                        readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)),
+                            cmdRes.cursorId(),
+                            batchNum++,
+                            JdbcBulkLoadBatchRequest.CMD_CONTINUE,
+                            readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes),
+                            timeout == JdbcThinConnection.NO_TIMEOUT ? JdbcThinConnection.NO_TIMEOUT :
+                                timeout - timeSpendMillis),
                         this);
 
                     if (!(res instanceof JdbcQueryExecuteResult))
                         throw new SQLException("Unknown response sent by the server: " + res);
+
+                    timeSpendMillis += (int)(System.currentTimeMillis() - startTime);
                 }
 
                 return conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdRes.cursorId(),
-                    batchNum++,
-                    JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF),
+                        cmdRes.cursorId(),
+                        batchNum++,
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF,
+                        timeout == JdbcThinConnection.NO_TIMEOUT ? JdbcThinConnection.NO_TIMEOUT :
+                            timeout - timeSpendMillis),
                     this);
             }
         }
         catch (Exception e) {
+            if (e instanceof SQLTimeoutException)
+                throw (SQLTimeoutException)e;
+
             try {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdRes.cursorId(),
-                    batchNum,
-                    JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR),
+                        cmdRes.cursorId(),
+                        batchNum,
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR,
+                        JdbcThinConnection.NO_TIMEOUT),
                     this);
             }
             catch (SQLException e1) {
@@ -693,7 +708,7 @@ public class JdbcThinStatement implements Statement {
             return new int[0];
 
         JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
-            conn.getAutoCommit(), false);
+            conn.getAutoCommit(), false, timeout);
 
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(req, this);
@@ -893,6 +908,13 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
+     * @return Timeout in milliseconds.
+     */
+    int timeout() {
+        return timeout;
+    }
+
+    /**
      * @return Connection.
      */
     JdbcThinConnection connection() {
@@ -943,11 +965,20 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * @param currReqId Sets curresnt request Id.
+     * @param currReqId Sets current request Id.
      */
     void currentRequestId(long currReqId) {
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
+        }
+    }
+
+    /**
+     * @return Current request Id.
+     */
+    long currentRequestId() {
+        synchronized (cancellationMux) {
+            return currReqId;
         }
     }
 

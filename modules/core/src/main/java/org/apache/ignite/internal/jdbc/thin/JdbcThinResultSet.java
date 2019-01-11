@@ -197,7 +197,8 @@ public class JdbcThinResultSet implements ResultSet {
         ensureAlive();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize), stmt);
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize,
+                stmt.timeout()), stmt);
 
             rows = res.items();
             finished = res.last();
