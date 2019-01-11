@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -346,6 +347,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10770")
     @Test
     public void testInsertAndQueryMultipleCaches() throws SQLException {
         executeInTransaction(new TransactionClosure() {
@@ -370,7 +372,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @Test
     public void testColocatedJoinSelectAndInsertInTransaction() throws SQLException {
-        // We'd like to put some Google into cities with over 1K population which don't have it yet
+        // We'd like to put some Google into cities wgit checith over 1K population which don't have it yet
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
                 List<Integer> ids = flat(execute(conn, "SELECT distinct City.id from City left join Company c on " +

@@ -17,33 +17,27 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunTxCacheTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Compute and Cache tests for affinityRun/Call. These tests is extracted into separate suite
  * because ones take a lot of time.
  */
-public class IgniteCacheAffinityRunTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Compute and Cache Affinity Run Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheLockPartitionOnAffinityRunTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteBaselineLockPartitionOnAffinityRunTxCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheLockPartitionOnAffinityRunTest.class,
+    IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest.class,
+    IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest.class,
+    IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest.class,
+    IgniteBaselineLockPartitionOnAffinityRunTxCacheTest.class,
+    IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class
+})
+public class IgniteCacheAffinityRunTestSuite {
 }

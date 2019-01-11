@@ -44,7 +44,6 @@
     "angular-nvd3": "1.0.9",
     "angular-sanitize": "1.7.4",
     "angular-smart-table": "2.1.11",
-    "angular-socket-io": "0.7.0",
     "angular-strap": "2.3.12",
     "angular-translate": "2.18.1",
     "angular-tree-control": "0.2.28",
@@ -71,7 +70,7 @@
     "resize-observer-polyfill": "1.5.0",
     "roboto-font": "0.1.0",
     "rxjs": "6.3.3",
-    "socket.io-client": "1.7.3",
+    "socket.io-client": "2.1.1",
     "tf-metatags": "2.0.0"
   },
   "devDependencies": {

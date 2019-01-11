@@ -46,6 +46,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -63,7 +64,6 @@ import static org.junit.Assert.assertArrayEquals;
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
 public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
-
     /** Test timeout. */
     private final long txLongTimeout = getTestTimeout() / 4;
 
@@ -186,10 +186,9 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10104")
     @Test
     public void testBackupsCoherenceWithLargeOperations() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10104");
-
         disableScheduledVacuum = true;
 
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, 10)

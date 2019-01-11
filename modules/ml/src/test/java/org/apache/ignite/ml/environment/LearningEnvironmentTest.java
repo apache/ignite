@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -85,9 +85,9 @@ public class LearningEnvironmentTest {
         int partitions = 10;
         int iterations = 2;
 
-        DatasetTrainer<Model<Object, Vector>, Void> trainer = new DatasetTrainer<Model<Object, Vector>, Void>() {
+        DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-            @Override public <K, V> Model<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
@@ -103,26 +103,26 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(Model<Object, Vector> mdl) {
+            @Override protected boolean checkState(IgniteModel<Object, Vector> mdl) {
                 return false;
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V> Model<Object, Vector> updateModel(Model<Object, Vector> mdl,
+            @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
                 return null;
             }
         };
         trainer.withEnvironmentBuilder(envBuilder);
-        Model<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
+        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
 
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)
             exp.set(i, i * iterations);
 
 
-        Vector res = mdl.apply(null);
+        Vector res = mdl.predict(null);
         assertEquals(exp, res);
     }
 

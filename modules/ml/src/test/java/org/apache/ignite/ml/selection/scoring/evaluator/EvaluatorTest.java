@@ -47,6 +47,9 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
@@ -55,6 +58,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link BinaryClassificationEvaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
+@RunWith(JUnit4.class)
 public class EvaluatorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -84,6 +88,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -130,6 +135,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic2() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -163,6 +169,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBasic3() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
         AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
@@ -196,12 +203,12 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
     /** */
     private void assertResults(CrossValidationResult res, List<double[]> scores, double accuracy, double accuracy2) {
-        assertTrue(res.toString().length() > 0);
+        assertTrue(!res.toString().isEmpty());
         assertEquals("Best maxDeep", 1.0, res.getBest("maxDeep"));
         assertEquals("Best minImpurityDecrease", 0.0, res.getBest("minImpurityDecrease"));
-        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.4, 0}, res.getBestScore(), 0);
+        assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.6, 0}, res.getBestScore(), 0);
         assertEquals("Best hyper params size", 2, res.getBestHyperParams().size());
-        assertEquals("Best average score", 0.35555555555555557, res.getBestAvgScore());
+        assertEquals("Best average score", 0.4222222222222222, res.getBestAvgScore());
 
         assertEquals("Scores amount", 18, scores.size());
 
