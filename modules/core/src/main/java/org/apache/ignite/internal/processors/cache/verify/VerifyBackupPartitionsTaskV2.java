@@ -115,7 +115,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
-        Map<UUID, Exception> exceptions = new HashMap<>();
+        Map<ClusterNode, Exception> exceptions = new HashMap<>();
 
         reduceResults(results, clusterHashes, exceptions);
 
@@ -150,7 +150,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     /** */
     private IdleVerifyResultV2 checkConflicts(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
-        Map<UUID, Exception> exceptions
+        Map<ClusterNode, Exception> exceptions
     ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
 
@@ -194,11 +194,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     private void reduceResults(
         List<ComputeJobResult> results,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
-        Map<UUID, Exception> exceptions
+        Map<ClusterNode, Exception> exceptions
     ) {
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                exceptions.put(res.getNode().id(), res.getException());
+                exceptions.put(res.getNode(), res.getException());
 
                 continue;
             }

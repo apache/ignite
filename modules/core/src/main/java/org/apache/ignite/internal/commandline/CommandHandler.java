@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import java.io.Console;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2726,6 +2727,7 @@ public class CommandHandler {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
+        log("Time: " + LocalDateTime.now());
         log(DELIM);
 
         try {

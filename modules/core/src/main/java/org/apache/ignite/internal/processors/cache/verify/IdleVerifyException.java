@@ -37,6 +37,6 @@ public class IdleVerifyException extends IgniteException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass() +": " + getMessage() + " exceptions: " + exceptions;
+        return getClass() +": " + getMessage();
     }
 }

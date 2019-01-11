@@ -17,10 +17,8 @@
 
 package org.apache.ignite.util;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
@@ -153,6 +151,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     protected File folder(String folder) throws IgniteCheckedException {
         return U.resolveWorkDirectory(U.defaultWorkDirectory(), folder, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.cleanIdleVerifyLogFiles();
     }
 
     /** {@inheritDoc} */
@@ -1196,18 +1201,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testCacheIdleVerifyWithCorruptedPartition() throws Exception {
+    public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
 
         String out = testOut.toString();
 
         assertTrue(out.contains("idle_verify failed on 1 node."));
-        assertTrue(out.contains("CRC check of partition"));
-        assertTrue(out.contains("for cache group default failed"));
+        assertTrue(out.contains("See log for additional information."));
     }
 
     @Test
-    public void testCacheIdleVerifyDumpWithCorruptedPartition() throws Exception {
+    public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
         String parts[] = testOut.toString().split("VisorIdleVerifyDumpTask successfully written output to '");
@@ -1223,8 +1227,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertTrue(outputStr.contains("idle_verify failed on 1 node."));
         assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
-        assertTrue(outputStr.contains("CRC check of partition"));
-
     }
 
     /** */
@@ -1303,9 +1305,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
 
-            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
-                "Exception message:\n" +
-                "Node has left grid: " + unstableNodeId));
+            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
