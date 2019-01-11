@@ -692,7 +692,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
     @Test
-    @Ignore
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10899")
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 
