@@ -2143,6 +2143,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
+     * Handle failure, which happened during the test.
+     *
      * @param t Throwable.
      */
     public void handleFailure(Throwable t) {
