@@ -23,6 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
  * Exception of distributed property still have not been attached to the processor.
  */
 public class DetachedPropertyException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /**
      * @param name Name of detached property.
      */
