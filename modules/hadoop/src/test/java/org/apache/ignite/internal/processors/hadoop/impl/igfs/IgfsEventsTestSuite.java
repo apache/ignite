@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
@@ -33,7 +33,8 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
@@ -42,43 +43,50 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test suite for IGFS event tests.
  */
-@SuppressWarnings("PublicInnerClass")
-@RunWith(AllTests.class)
+@RunWith(IgfsEventsTestSuite.DynamicSuite.class)
 public class IgfsEventsTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @throws ClassNotFoundException Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        ClassLoader ldr = TestSuite.class.getClassLoader();
+    public static List<Class<?>> suite() throws ClassNotFoundException {
+        ClassLoader ldr = IgfsEventsTestSuite.class.getClassLoader();
 
-        TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemPrimary.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualSync.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualAsync.class.getName())));
+        suite.add(ldr.loadClass(ShmemPrimary.class.getName()));
+        suite.add(ldr.loadClass(ShmemDualSync.class.getName()));
+        suite.add(ldr.loadClass(ShmemDualAsync.class.getName()));
 
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.add(ldr.loadClass(LoopbackPrimary.class.getName()));
+        suite.add(ldr.loadClass(LoopbackDualSync.class.getName()));
+        suite.add(ldr.loadClass(LoopbackDualAsync.class.getName()));
 
         return suite;
     }
 
     /**
      * @return Test suite with only tests that are supported on all platforms.
-     * @throws Exception Thrown in case of the failure.
+     * @throws ClassNotFoundException Thrown in case of the failure.
      */
-    public static TestSuite suiteNoarchOnly() throws Exception {
-        ClassLoader ldr = TestSuite.class.getClassLoader();
+    public static List<Class<?>> suiteNoarchOnly() throws ClassNotFoundException {
+        ClassLoader ldr = IgfsEventsTestSuite.class.getClassLoader();
 
-        TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.add(ldr.loadClass(LoopbackPrimary.class.getName()));
+        suite.add(ldr.loadClass(LoopbackDualSync.class.getName()));
+        suite.add(ldr.loadClass(LoopbackDualAsync.class.getName()));
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws ClassNotFoundException, InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 
     /**
@@ -134,6 +142,7 @@ public class IgfsEventsTestSuite {
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
 
+            //noinspection deprecation
             igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
                 "igfs://igfs-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
@@ -168,7 +177,7 @@ public class IgfsEventsTestSuite {
         }
 
         /** {@inheritDoc} */
-        @Override protected void afterTestsStopped() throws Exception {
+        @Override protected void afterTestsStopped() {
             G.stopAll(true);
         }
 
@@ -236,6 +245,7 @@ public class IgfsEventsTestSuite {
 
             igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
 
+            //noinspection deprecation
             igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
                 "igfs://igfs-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
