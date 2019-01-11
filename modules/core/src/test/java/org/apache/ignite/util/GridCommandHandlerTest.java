@@ -165,7 +165,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(128 * 1024);
+        testOut = new ByteArrayOutputStream(1024 * 1024);
     }
 
     /** {@inheritDoc} */
@@ -1214,16 +1214,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(2, parts.length);
 
-        String dumpFile = parts[1].split("\\.")[0]+".txt";
+        String dumpFile = parts[1].split("\\.")[0] + ".txt";
 
-        for(String line : Files.readAllLines(new File(dumpFile).toPath()))
+        for (String line : Files.readAllLines(new File(dumpFile).toPath()))
             System.out.println(line);
 
-        try(BufferedReader br = new BufferedReader(new FileReader(dumpFile))){
-            assertEquals("idle_verify failed on 1 node.", br.readLine());
-            assertTrue(br.readLine().contains("Node ID"));
-            assertTrue(br.readLine().contains("CRC check of partition"));
-        }
+        String outputStr = testOut.toString();
+
+        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertTrue(outputStr.contains("CRC check of partition"));
+
     }
 
     /** */
@@ -1300,8 +1301,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
+            assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
+
             assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
-                "class org.apache.ignite.cluster.ClusterTopologyException: Node has left grid: " + unstableNodeId));
+                "Exception message:\n" +
+                "Node has left grid: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
