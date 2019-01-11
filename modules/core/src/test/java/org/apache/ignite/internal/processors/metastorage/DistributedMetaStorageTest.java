@@ -310,6 +310,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
+        awaitPartitionMapExchange();
+
         assertEquals("value1", metastorage(0).read("key1"));
 
         assertEquals("value2", metastorage(0).read("key2"));
