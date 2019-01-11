@@ -17,58 +17,48 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Grid SPI test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Failover.
+    IgniteSpiFailoverSelfTestSuite.class,
+
+    // Collision.
+    IgniteSpiCollisionSelfTestSuite.class,
+
+    // Event storage.
+    IgniteSpiEventStorageSelfTestSuite.class,
+
+    // Load Balancing.
+    IgniteSpiLoadBalancingSelfTestSuite.class,
+
+    // Checkpoints.
+    IgniteSpiCheckpointSelfTestSuite.class,
+
+    // Deployment
+    IgniteSpiDeploymentSelfTestSuite.class,
+
+    // Discovery.
+    IgniteSpiDiscoverySelfTestSuite.class,
+
+    // Communication.
+    IgniteSpiCommunicationSelfTestSuite.class,
+
+    // All other tests.
+    GridNoopManagerSelfTest.class,
+
+    // Local Message Listener tests.
+    GridManagerLocalMessageListenerSelfTest.class,
+
+    KeystoreEncryptionSpiSelfTest.class
+})
 public class IgniteSpiTestSuite {
-    /**
-     * @return All SPI tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite SPIs Test Suite");
-
-        // Failover.
-        suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
-
-        // Collision.
-        suite.addTest(IgniteSpiCollisionSelfTestSuite.suite());
-
-        // Event storage.
-        suite.addTest(IgniteSpiEventStorageSelfTestSuite.suite());
-
-        // Load Balancing.
-        suite.addTest(IgniteSpiLoadBalancingSelfTestSuite.suite());
-
-        // Checkpoints.
-        suite.addTest(IgniteSpiCheckpointSelfTestSuite.suite());
-
-        // Deployment
-        suite.addTest(IgniteSpiDeploymentSelfTestSuite.suite());
-
-        // Discovery.
-        suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
-
-        // Communication.
-        suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
-
-        // All other tests.
-        suite.addTest(new JUnit4TestAdapter(GridNoopManagerSelfTest.class));
-
-        // Local Message Listener tests.
-        suite.addTest(new JUnit4TestAdapter(GridManagerLocalMessageListenerSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(KeystoreEncryptionSpiSelfTest.class));
-
-        return suite;
-    }
 }
