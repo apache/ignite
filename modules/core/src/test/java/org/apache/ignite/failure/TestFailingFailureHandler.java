@@ -52,7 +52,7 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
         TestCase.fail(failureCtx.toString());
 
-        test.handleFailure(failureCtx.error());
+        test.handleFailure(failureCtx.error(), false);
 
         return nodeStopped;
     }

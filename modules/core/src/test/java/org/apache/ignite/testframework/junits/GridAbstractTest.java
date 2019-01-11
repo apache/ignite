@@ -2096,7 +2096,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     testRoutine.evaluate();
                 }
                 catch (Throwable e) {
-                    handleFailure(e);
+                    handleFailure(e, true);
                 } finally {
                     testIsRunning = false;
                 }
@@ -2146,11 +2146,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * Handle failure, which happened during the test.
      *
      * @param t Throwable.
+     * @param useHnd Use Failure Handler.
      */
-    public void handleFailure(Throwable t) {
+    public void handleFailure(Throwable t, boolean useHnd) {
         IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-        ex.set(hnd != null ? hnd.apply(t) : t);
+        ex.set((hnd != null && useHnd) ? hnd.apply(t) : t);
     }
 
     /**
