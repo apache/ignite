@@ -29,16 +29,16 @@ public class IgniteIgnoredTestSuite extends TestSuite {
      * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
-        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Test Suite");
+        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite("Ignite Ignored Test Suite");
 
         /* --- AWS --- */
-        suite.addTest(IgniteS3TestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteS3TestSuite.class));
 
         /* --- CLIENTS --- */
-        suite.addTest(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.class));
 
         /* --- CLOUDS --- */
-        suite.addTest(IgniteCloudTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteCloudTestSuite.class));
 
         /* --- JTA --- */
         suite.addTest(new JUnit4TestAdapter(IgniteJtaTestSuite.class));
@@ -48,10 +48,10 @@ public class IgniteIgnoredTestSuite extends TestSuite {
         //suite.addTest(new JUnit4TestAdapter(IgniteCacheQuerySelfTestSuite2.class));
 
         /* --- SPRING --- */
-        suite.addTest(IgniteSpringTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringTestSuite.class));
 
         /* --- WEB SESSIONS --- */
-        suite.addTest(IgniteWebSessionSelfTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteWebSessionSelfTestSuite.class));
 
         return suite;
     }
