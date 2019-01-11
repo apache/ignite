@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +35,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -229,7 +229,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
 
                 assertTrue(rs.next());
 
-                TestCase.assertEquals(1, rs.getInt(1));
+                Assert.assertEquals(1, rs.getInt(1));
             }
         }
     }
@@ -238,6 +238,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * Key class.
      */
     private static class SqlConnectorKey {
+        /** */
         @QuerySqlField
         public int key;
     }
@@ -246,6 +247,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * Value class.
      */
     private static class SqlConnectorValue {
+        /** */
         @QuerySqlField
         public int val;
     }

@@ -35,8 +35,8 @@ import org.apache.ignite.ml.structures.LabeledVectorSetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet> {
@@ -96,13 +96,12 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
 
         assertEquals(dataset.copy().colSize(), 2);
 
-        @SuppressWarnings("unchecked")
         final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
 
-        assertEquals(row.features().get(0), 1.0);
-        assertEquals(row.label(), 1.0);
+        assertEquals(1.0, row.features().get(0), 0);
+        assertEquals(1.0, row.label(), 0);
         dataset.setLabel(0, 2.0);
-        assertEquals(row.label(), 2.0);
+        assertEquals(2.0, row.label(), 0);
 
         assertEquals(0, new LabeledVectorSet().rowSize());
         assertEquals(1, new LabeledVectorSet(1, 2).rowSize());
