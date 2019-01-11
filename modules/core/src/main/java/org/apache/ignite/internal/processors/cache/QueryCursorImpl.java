@@ -89,6 +89,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
+        return new AutoClosableCursorIterator<>(this, iter());
+    }
+
+    /**
+     * @return An simple iterator.
+     */
+    private Iterator<T> iter() {
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
@@ -103,23 +110,37 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
         assert iter != null;
 
-        return new AutoClosableIterator<>(iter);
+        return iter;
     }
 
     /** {@inheritDoc} */
     @Override public List<T> getAll() {
         List<T> all = new ArrayList<>();
 
-        for (T t : this) // Implicitly calls iterator() to do all checks.
-            all.add(t);
+        try {
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                all.add(iter.next());
+        }
+        finally {
+            close();
+        }
 
         return all;
     }
 
     /** {@inheritDoc} */
     @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
-            for (T t : this)
-                clo.consume(t);
+        try {
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                clo.consume(iter.next());
+        }
+        finally {
+            close();
+        }
     }
 
     /** {@inheritDoc} */
@@ -201,66 +222,5 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         /** Executing. */EXECUTION,
         /** Result ready. */RESULT_READY,
         /** Closed. */CLOSED,
-    }
-
-    /**
-     * Inner implementation of iterator wrapper to close cursor when all data has been read.
-     *
-     * @param <T> The type of elements returned by this iterator.
-     */
-    private class AutoClosableIterator<T> implements Iterator<T> {
-
-        private Iterator<T> it;
-
-        /**
-         * Constructor.
-         *
-         * @param it Wrapped iterator.
-         */
-        public AutoClosableIterator(Iterator<T> it) {
-            this.it = it;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            boolean hasNext;
-
-            try {
-                hasNext = it.hasNext();
-            }
-            catch (Exception e) {
-                try {
-                    close();
-                }
-                catch (Exception e1) {
-                    e.addSuppressed(e1);
-                }
-
-                throw e;
-            }
-
-            if (!hasNext)
-                close();
-
-            return hasNext;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public T next() {
-            try {
-                return it.next();
-            }
-            catch (Exception e) {
-                try {
-                    close();
-                }
-                catch (Exception e1) {
-                    e.addSuppressed(e1);
-                }
-
-                throw e;
-            }
-        }
     }
 }
