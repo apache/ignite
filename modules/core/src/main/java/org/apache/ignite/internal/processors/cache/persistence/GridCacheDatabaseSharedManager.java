@@ -4370,11 +4370,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public boolean finished() {
             return cpFinishFut.isDone();
         }
-
-        /** */
-        public GridFutureAdapter finishFuture() {
-            return cpFinishFut;
-        }
     }
 
     /**
