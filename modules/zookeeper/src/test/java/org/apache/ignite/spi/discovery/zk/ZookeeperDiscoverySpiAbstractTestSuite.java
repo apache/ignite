@@ -17,13 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import junit.framework.TestSuite;
-import org.apache.curator.test.InstanceSpec;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -42,7 +36,7 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite /* todo test this r
     public static void initSuite() throws Exception {
         System.setProperty("zookeeper.forceSync", "false");
 
-        testingCluster = createTestingCluster(3);
+        testingCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(3);
 
         testingCluster.start();
 
@@ -70,54 +64,4 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite /* todo test this r
 
         cfg.setDiscoverySpi(zkSpi);
     }
-
-    /**
-     * @param instances Number of instances in
-     * @return Test cluster.
-     */
-    public static TestingCluster createTestingCluster(int instances) {
-        String tmpDir;
-
-        if (System.getenv("TMPFS_ROOT") != null)
-            tmpDir = System.getenv("TMPFS_ROOT");
-        else
-            tmpDir = System.getProperty("java.io.tmpdir");
-
-        List<InstanceSpec> specs = new ArrayList<>();
-
-        for (int i = 0; i < instances; i++) {
-            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
-
-            if (file.isDirectory())
-                deleteRecursively0(file);
-            else {
-                if (!file.mkdirs())
-                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
-            }
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500));
-        }
-
-        return new TestingCluster(specs);
-    }
-
-    /**
-     * @param file File or directory to delete.
-     */
-    private static void deleteRecursively0(File file) {
-        File[] files = file.listFiles();
-
-        if (files == null)
-            return;
-
-        for (File f : files) {
-            if (f.isDirectory())
-                deleteRecursively0(f);
-            else {
-                if (!f.delete())
-                    throw new IgniteException("Failed to delete file: " + f.getAbsolutePath());
-            }
-        }
-    }
-
 }

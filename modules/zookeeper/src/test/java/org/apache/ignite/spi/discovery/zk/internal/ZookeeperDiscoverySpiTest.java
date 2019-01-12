@@ -125,9 +125,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -493,7 +492,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
 
@@ -1323,7 +1322,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             assertTrue(l.await(10, TimeUnit.SECONDS));
         }
         finally {
-            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1364,7 +1363,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         finally {
             zkCluster.close();
 
-            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1402,7 +1401,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         finally {
             zkCluster.close();
 
-            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -4430,7 +4429,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         sesTimeout = 30_000;
 
-        zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(3);
+        zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(3);
 
         try {
             final AtomicInteger idx = new AtomicInteger();
