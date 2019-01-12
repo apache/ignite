@@ -30,9 +30,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class ProbedTx implements Message {
     /** */
-    private UUID nodeId;
+    private UUID nearNodeId;
     /** */
     private GridCacheVersion xidVer;
+    /** */
+    private GridCacheVersion nearXidVer;
     /** */
     private long startTime;
 
@@ -41,24 +43,32 @@ public class ProbedTx implements Message {
     }
 
     /** */
-    public ProbedTx(UUID nodeId, GridCacheVersion xidVer, long startTime) {
-        this.nodeId = nodeId;
+    public ProbedTx(UUID nearNodeId, GridCacheVersion xidVer, GridCacheVersion nearXidVer, long startTime) {
+        this.nearNodeId = nearNodeId;
         this.xidVer = xidVer;
+        this.nearXidVer = nearXidVer;
         this.startTime = startTime;
     }
 
     /**
      * @return Node started near transction.
      */
-    public UUID nodeId() {
-        return nodeId;
+    public UUID nearNodeId() {
+        return nearNodeId;
+    }
+
+    /**
+     * @return Identifier of transaction.
+     */
+    public GridCacheVersion xidVersion() {
+        return xidVer;
     }
 
     /**
      * @return Identifier of near transaction.
      */
-    public GridCacheVersion xidVersion() {
-        return xidVer;
+    public GridCacheVersion nearXidVersion() {
+        return nearXidVer;
     }
 
     /**
@@ -81,18 +91,24 @@ public class ProbedTx implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("startTime", startTime))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeLong("startTime", startTime))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeMessage("xidVer", xidVer))
                     return false;
 
@@ -112,7 +128,7 @@ public class ProbedTx implements Message {
 
         switch (reader.state()) {
             case 0:
-                nodeId = reader.readUuid("nodeId");
+                nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -120,7 +136,7 @@ public class ProbedTx implements Message {
                 reader.incrementState();
 
             case 1:
-                startTime = reader.readLong("startTime");
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -128,6 +144,14 @@ public class ProbedTx implements Message {
                 reader.incrementState();
 
             case 2:
+                startTime = reader.readLong("startTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 xidVer = reader.readMessage("xidVer");
 
                 if (!reader.isLastRead())
@@ -147,7 +171,7 @@ public class ProbedTx implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
