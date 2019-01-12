@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
@@ -39,7 +40,7 @@ import org.junit.runners.Suite;
     ZookeeperDiscoverySpiSaslFailedAuthTest.class,
     ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
 })
-public class ZookeeperDiscoverySpiTestSuite1 {
+public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
      * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.
