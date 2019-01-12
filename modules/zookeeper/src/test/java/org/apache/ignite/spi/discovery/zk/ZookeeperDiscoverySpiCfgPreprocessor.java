@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -26,21 +28,33 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public abstract class ZookeeperDiscoverySpiAbstractTestSuite /* todo test this removal on Teamcity: extends TestSuite */ {
+public class ZookeeperDiscoverySpiCfgPreprocessor {
+    /** */
+    private static final Lock lock = new ReentrantLock();
+
     /** */
     private static TestingCluster testingCluster;
 
     /**
      * @throws Exception If failed.
      */
-    public static void initSuite() throws Exception {
+    static void initSuite() throws Exception {
+        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
+
         System.setProperty("zookeeper.forceSync", "false");
 
-        testingCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(3);
+        lock.lock();
+        try {
+            testingCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(3);
 
-        testingCluster.start();
+            testingCluster.start();
+        }
+        finally {
+            lock.unlock();
+        }
 
-        System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS, ZookeeperDiscoverySpiAbstractTestSuite.class.getName());
+        System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS,
+            ZookeeperDiscoverySpiCfgPreprocessor.class.getName());
     }
 
     /**
@@ -48,20 +62,27 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite /* todo test this r
      *
      * @param cfg Configuration to change.
      */
-    public static synchronized void preprocessConfiguration(IgniteConfiguration cfg) {
-        if (testingCluster == null)
-            throw new IllegalStateException("Test Zookeeper cluster is not started.");
+    @SuppressWarnings("unused")
+    public static void preprocessConfiguration(IgniteConfiguration cfg) {
+        lock.lock();
+        try {
+            if (testingCluster == null)
+                throw new IllegalStateException("Test Zookeeper cluster is not started.");
 
-        ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+            ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
-        DiscoverySpi spi = cfg.getDiscoverySpi();
+            DiscoverySpi spi = cfg.getDiscoverySpi();
 
-        if (spi instanceof TcpDiscoverySpi)
-            zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
+            if (spi instanceof TcpDiscoverySpi)
+                zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
 
-        zkSpi.setSessionTimeout(30_000);
-        zkSpi.setZkConnectionString(testingCluster.getConnectString());
+            zkSpi.setSessionTimeout(30_000);
+            zkSpi.setZkConnectionString(testingCluster.getConnectString());
 
-        cfg.setDiscoverySpi(zkSpi);
+            cfg.setDiscoverySpi(zkSpi);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 }
