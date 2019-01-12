@@ -3096,7 +3096,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore // todo restore this after testing on Teamcity
     public void testCommunicationFailureResolve_KillRandom() throws Exception {
         sesTimeout = 2000;
 
