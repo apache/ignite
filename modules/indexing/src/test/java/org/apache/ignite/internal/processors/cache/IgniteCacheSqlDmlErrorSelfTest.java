@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -62,8 +63,8 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check it's forbidden to specify any two of _key, key alias or key field (column that belongs to key) together
-     * in the insert/merge dml statement.
+     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together
+     * in the insert/merge dml statement. Same constraints are right for (_val, _val alias, val fields).
      */
     @Test
     public void testInsertMixingPlaceholderAndFields() {
@@ -107,12 +108,20 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
 
 
     /**
-     * Check update statements that modify any two of _key, key alias or key field (column that belongs to key)
-     * are forbidden.
+     * Check update statements that modify any two of _val, _val alias or val field (column that belongs to cache value
+     * object) are forbidden.
      */
     @Test
-    public void testUpdateMixingPlaceholderAndFields() {
-        throw new IllegalStateException("Not implemented yet");
+    public void testUpdateMixingValueAndValueFields() {
+        assertThrows(()->
+                execute("UPDATE COMPOSITE SET _val = ?, name2 = ?",
+                    new CompositeValue(), "name#2"),
+            "Column _VAL refers to entire value cache object.");
+
+        assertThrows(()->
+                execute("UPDATE SIMPLE SET _val = ?, name = ?",
+                    "name#1", "name#2"),
+            "Columns _VAL and NAME both refer to entire cache value object.");
     }
 
     /**
@@ -183,7 +192,7 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
             "SQL UPDATE can't modify key or its fields directly");
 
         assertThrows(()->
-                execute("UPDATE SIMPLE SET _val = ?, _val = ?",  42, "simple name"),
+                execute("UPDATE SIMPLE SET _key = ?, _val = ?",  42, "simple name"),
             "SQL UPDATE can't modify key or its fields directly");
 
         assertThrows(()->
@@ -192,11 +201,12 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Check that setting entire cache key to {@code null} via sql is forbidden.
      */
     @Test
-    public void testUpdateToNullKeyValue () {
-        // It's ok just fail if we update key to null.
+    public void testUpdateKeyToNull () {
+        // It's ok to just fail if we update key to null.
+        // Both reasons (the fact of updating key and setting _key to null) are correct.
         // Empty string is contained by any exception message.
         final String ANY_MESSAGE = "";
 
@@ -211,25 +221,31 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
         assertThrows(()->
                 execute("UPDATE SIMPLE SET id = ?, _val = ?",  null, "simple name"),
             ANY_MESSAGE);
-
-        assertThrows(()->
-                execute("UPDATE COMPOSITE SET _val = ?",  (Object)null),
-            "stub");
-
-        assertThrows(()->
-                execute("c",  (Object)null),
-            "stub");
-
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET name = ?",  (Object)null),
-            "stub");
-
     }
 
     /**
-     * Execute sql query with PUBLIC schema.
+     * Check that setting entire cache value to {@code null} via sql is forbidden.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10906")
+    @Test
+    public void testUpdateValToNull () {
+        assertThrows(()->
+                execute("UPDATE COMPOSITE SET _val = ?",  (Object)null),
+            "");  // TODO: update expected error message, once blocking issue is fixed.
+
+        assertThrows(()->
+                execute("UPDATE SIMPLE SET _val = ?",  (Object)null),
+            "");
+
+        assertThrows(()->
+                execute("UPDATE SIMPLE SET name = ?",  (Object)null),
+            "");
+    }
+    /**
+     * Execute sql query with PUBLIC schema and specified positional arguments of sql query.
      *
      * @param sql query.
+     * @param args positional arguments if sql query got ones.
      * @return fetched result set.
      */
     private static List<List<?>> execute(String sql, Object... args) {
