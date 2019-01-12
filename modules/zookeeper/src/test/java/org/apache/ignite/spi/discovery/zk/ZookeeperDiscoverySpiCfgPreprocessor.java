@@ -38,7 +38,7 @@ public class ZookeeperDiscoverySpiCfgPreprocessor {
     /**
      * @throws Exception If failed.
      */
-    static void initSuite() throws Exception {
+    static void initTestSuite() throws Exception {
         System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
 
         System.setProperty("zookeeper.forceSync", "false");
