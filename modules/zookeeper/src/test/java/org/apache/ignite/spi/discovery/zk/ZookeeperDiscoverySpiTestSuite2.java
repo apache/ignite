@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-@RunWith(Suite.class) // todo thoroughly test this at Teamcity
+@RunWith(Suite.class)
 @Suite.SuiteClasses({
     GridCachePartitionedNodeRestartTest.class,
     IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
