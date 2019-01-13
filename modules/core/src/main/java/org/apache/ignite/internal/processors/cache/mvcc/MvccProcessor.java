@@ -29,7 +29,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
@@ -245,13 +244,11 @@ public interface MvccProcessor extends GridProcessor {
     void ensureStarted() throws IgniteCheckedException;
 
     /**
-     * t0d0 refine
      * Checks whether one tx is waiting for another tx.
      * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
      *
      * @param mvccVer Version of transaction which is checked for being waiting.
-     * @return Locator for tx which blocks checked tx.
-     * Locator is {@code null} is checked tx is not waiting.
+     * @return Version of tx which blocks checked tx.
      */
-    Optional<GridDhtTxLocalAdapter> checkWaiting(MvccVersion mvccVer);
+    Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer);
 }

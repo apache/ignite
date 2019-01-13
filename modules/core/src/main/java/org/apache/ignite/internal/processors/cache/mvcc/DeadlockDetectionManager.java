@@ -209,6 +209,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                     assert tx.mvccSnapshot() != null;
 
                     cctx.coordinators().checkWaiting(tx.mvccSnapshot())
+                        .flatMap(this::findTx)
                         .ifPresent(nextBlocker -> {
                             ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 2);
                             waitChain.addAll(probe.waitChain());

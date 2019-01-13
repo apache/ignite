@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
@@ -1825,10 +1824,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<NearTxLocator> checkWaiting(MvccVersion mvccVer) {
-        return findBlockerTx(mvccVer)
-            .map(GridDhtTxLocalAdapter.class::cast);
-//            .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()));
+    @Override public Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer) {
+        return waitMap.entrySet().stream()
+            .filter(e -> e.getValue().hasWaiting(mvccVer))
+            .map(Map.Entry::getKey)
+            .map(key -> new MvccVersionImpl(key.major(), key.minor(), 0))
+            .findAny();
     }
 
     /**
@@ -1887,22 +1888,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         @Override public String toString() {
             return "MvccMessageListener[]";
         }
-    }
-
-    /** */
-    private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
-        return waitMap.entrySet().stream()
-            .filter(e -> e.getValue().hasWaiting(checkedTxVer))
-            .map(Map.Entry::getKey)
-            .findAny()
-            .flatMap(txKey -> ctx.cache().context().tm().activeTransactions().stream()
-                .filter(tx -> tx.mvccSnapshot() != null)
-                .filter(tx -> {
-                    MvccSnapshot s = tx.mvccSnapshot();
-
-                    return s.coordinatorVersion() == txKey.major() && s.counter() == txKey.minor();
-                })
-                .findAny());
     }
 
     /**
