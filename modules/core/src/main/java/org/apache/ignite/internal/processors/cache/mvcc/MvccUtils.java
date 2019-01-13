@@ -820,21 +820,11 @@ public class MvccUtils {
 
         if ((snapshot = tx.mvccSnapshot()) == null) {
             MvccProcessor prc = cctx.shared().coordinators();
-            MvccCoordinator crd = prc.currentCoordinator();
 
-            if (crd.disconnected())
-                throw noCoordinatorError();
+            snapshot = prc.requestWriteSnapshotLocal();
 
-            if (crd.local())
-                snapshot = prc.requestWriteSnapshotLocal();
-
-            if (snapshot == null) {
-                MvccSnapshotFuture fut = new MvccSnapshotFuture();
-
-                prc.requestWriteSnapshotAsync(crd, fut);
-
-                snapshot = fut.get();
-            }
+            if (snapshot == null)
+                snapshot = prc.requestWriteSnapshotAsync().get();
 
             tx.mvccSnapshot(snapshot);
         }

@@ -135,6 +135,20 @@ public interface MvccProcessor extends GridProcessor {
     /**
      * Requests snapshot on Mvcc coordinator.
      *
+     * @return Result future.
+     */
+    IgniteInternalFuture<MvccSnapshot> requestReadSnapshotAsync();
+
+    /**
+     * Requests snapshot on Mvcc coordinator.
+     *
+     * @return Result future.
+     */
+    IgniteInternalFuture<MvccSnapshot> requestWriteSnapshotAsync();
+
+    /**
+     * Requests snapshot on Mvcc coordinator.
+     *
      * @param crd Expected coordinator.
      * @param lsnr Request listener.
      */

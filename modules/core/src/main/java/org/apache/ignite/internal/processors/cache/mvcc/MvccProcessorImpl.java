@@ -684,6 +684,24 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<MvccSnapshot> requestReadSnapshotAsync() {
+        MvccSnapshotFuture fut = new MvccSnapshotFuture();
+
+        requestReadSnapshotAsync(currentCoordinator(), fut);
+
+        return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<MvccSnapshot> requestWriteSnapshotAsync() {
+        MvccSnapshotFuture fut = new MvccSnapshotFuture();
+
+        requestWriteSnapshotAsync(currentCoordinator(), fut);
+
+        return fut;
+    }
+
+    /** {@inheritDoc} */
     @Override public void requestReadSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr) {
         requestSnapshotAsync(crd, lsnr, true);
     }
