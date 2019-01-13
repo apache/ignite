@@ -18,8 +18,13 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
 import javax.cache.Cache.Entry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -48,8 +53,7 @@ public class GAGrid {
     private IgniteCache<Long, Chromosome> populationCache;
     /** Gene cache */
     private IgniteCache<Long, Gene> geneCache;
-    /** population keys */
-    private List<Long> populationKeys = new ArrayList<Long>();
+   
 
     /**
      * @param cfg GAConfiguration
@@ -81,7 +85,7 @@ public class GAGrid {
 
         IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 
-        // Execute query to get names of all employees.
+        // Execute query calculate average fitness
         SqlFieldsQuery sql = new SqlFieldsQuery("select AVG(FITNESSSCORE) from Chromosome");
 
         // Iterate over the result set.
@@ -110,7 +114,7 @@ public class GAGrid {
     private Boolean copyFitterChromosomesToPopulation(List<Long> fittestKeys, List<Long> selectedKeys) {
         double truncatePercentage = this.cfg.getTruncateRate();
 
-        int totalSize = this.populationKeys.size();
+        int totalSize = this.cfg.getPopulationSize();
 
         int truncateCnt = (int)(truncatePercentage * totalSize);
 
@@ -165,18 +169,20 @@ public class GAGrid {
 
         initializeGenePopulation();
 
-        intializePopulation();
+        initializePopulation();
 
         // Calculate Fitness
-        calculateFitness(this.populationKeys);
+        calculateFitness(getPopulationKeys());
 
         // Retrieve chromosomes in order by fitness value
-        List<Long> keys = getChromosomesByFittest();
+        LinkedHashMap<Long, Double> map = getChromosomesByFittest();
 
         // Calculate average fitness value of population
         double averageFitnessScore = calculateAverageFitness();
 
-        fittestChomosome = populationCache.get(keys.get(0));
+        Long key = map.keySet().iterator().next();
+        	
+        fittestChomosome = populationCache.get(key);
 
         // while NOT terminateCondition met
         while (!(cfg.getTerminateCriteria().isTerminationConditionMet(fittestChomosome, averageFitnessScore,
@@ -184,8 +190,7 @@ public class GAGrid {
             generationCnt = generationCnt + 1;
 
             // We will crossover/mutate over chromosomes based on selection method
-
-            List<Long> selectedKeysforCrossMutaton = selection(keys);
+            List<Long> selectedKeysforCrossMutaton = selection(map);
 
             // Cross Over
             crossover(selectedKeysforCrossMutaton);
@@ -197,10 +202,12 @@ public class GAGrid {
             calculateFitness(selectedKeysforCrossMutaton);
 
             // Retrieve chromosomes in order by fitness value
-            keys = getChromosomesByFittest();
+            map = getChromosomesByFittest();
 
+            key = map.keySet().iterator().next();
+            
             // Retreive the first chromosome from the list
-            fittestChomosome = populationCache.get(keys.get(0));
+            fittestChomosome = populationCache.get(key);
 
             // Calculate average fitness value of population
             averageFitnessScore = calculateAverageFitness();
@@ -214,30 +221,34 @@ public class GAGrid {
     /**
      * helper routine to retrieve Chromosome keys in order of fittest
      *
-     * @return List of primary keys for chromosomes.
+     * @return Map of primary key/fitness score pairs for chromosomes.
      */
-    private List<Long> getChromosomesByFittest() {
-        List<Long> orderChromKeysByFittest = new ArrayList<Long>();
+    private LinkedHashMap<Long,Double> getChromosomesByFittest() {
+   
+    	LinkedHashMap<Long, Double> orderChromKeysByFittest  = new LinkedHashMap();
+    	
         String orderDirection = "desc";
 
         if (!cfg.isHigherFitnessValFitter())
             orderDirection = "asc";
 
-        String fittestSQL = "select _key from Chromosome order by fitnessScore " + orderDirection;
+        String fittestSQL = "select _key, fitnessScore from Chromosome order by fitnessScore " + orderDirection;
 
         // Execute query to retrieve keys for ALL Chromosomes by fittnessScore
         QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
-
+    
         List<List<?>> res = cursor.getAll();
-
+          		
         for (List row : res) {
-            Long key = (Long)row.get(0);
-            orderChromKeysByFittest.add(key);
+        	Long key = (Long)row.get(0);
+        	Double fitnessScore= (Double)row.get(1);
+        	orderChromKeysByFittest.put(key, fitnessScore);
         }
-
+        
         return orderChromKeysByFittest;
     }
 
+   
     /**
      * @param keys List of primary keys for respective Chromosomes
      * @return List of keys for respective Chromosomes
@@ -272,25 +283,11 @@ public class GAGrid {
         for (int j = 0; j < populationSize; j++) {
             Chromosome chromosome = createChromosome(cfg.getChromosomeLen());
             populationCache.put(chromosome.id(), chromosome);
-            populationKeys.add(chromosome.id());
         }
 
     }
 
-    /**
-     * initialize the population of Chromosomes based on GAConfiguration
-     */
-    void intializePopulation() {
-        int populationSize = cfg.getPopulationSize();
-        populationCache.clear();
-
-        for (int j = 0; j < populationSize; j++) {
-            Chromosome chromosome = createChromosome(cfg.getChromosomeLen());
-            populationCache.put(chromosome.id(), chromosome);
-            populationKeys.add(chromosome.id());
-        }
-
-    }
+  
 
     /**
      * Perform mutation
@@ -339,6 +336,19 @@ public class GAGrid {
         int truncateCnt = (int)(truncatePercentage * keys.size());
 
         return keys.subList(truncateCnt, keys.size());
+    }
+    
+    /**
+     * Roulette Wheel selection 
+     *
+     * @param map Map of keys/fitness scores
+     * @return List of primary Keys for respective chromosomes that will breed
+     */
+    private List<Long> selectByRouletteWheel(LinkedHashMap map) {
+        
+    	List<Long> populationKeys = this.ignite.compute().execute(new RouletteWheelSelectionTask(this.cfg), map);
+    	
+        return populationKeys;
     }
 
     /**
@@ -393,12 +403,16 @@ public class GAGrid {
     /**
      * Select chromosomes
      *
-     * @param chromosomeKeys List of population primary keys for respective Chromsomes
+     * @param map Map of keys/fitness scores for respective Chromsomes
      * @return List of primary keys for respective Chromsomes
      */
-    private List<Long> selection(List<Long> chromosomeKeys) {
+    private List<Long> selection(LinkedHashMap map) {
         List<Long> selectedKeys = new ArrayList();
 
+        // We will crossover/mutate over chromosomes based on selection method
+        List<Long> chromosomeKeys = new ArrayList<>(map.keySet());
+      
+        
         GAGridConstants.SELECTION_METHOD selectionMtd = cfg.getSelectionMtd();
 
         switch (selectionMtd) {
@@ -413,8 +427,10 @@ public class GAGrid {
                 copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
 
                 // copy more fit keys to rest of population
-                break;
-
+                break; 
+            case SELECTION_METHOD_ROULETTE_WHEEL:
+              selectedKeys = this.selectByRouletteWheel(map);
+            	
             default:
                 break;
         }
@@ -428,6 +444,18 @@ public class GAGrid {
      * @return List of Chromosome primary keys
      */
     List<Long> getPopulationKeys() {
+    	
+    	 String fittestSQL = "select _key from Chromosome";
+
+         // Execute query to retrieve keys for ALL Chromosomes
+         QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
+
+         List<List<?>> res = cursor.getAll();
+         
+         List<Long> populationKeys = (List<Long>) res.stream().map(x -> x.get(0)).collect(Collectors.toList());
+      
         return populationKeys;
     }
+    
+  
 }
