@@ -17,25 +17,35 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest2;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest3;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest4;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest5;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest6;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest7;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest8;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 import org.junit.runners.Suite;
 
-/**
- *
- */
-@RunWith(AllTests.class) // todo thoroughly test this at Teamcity
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ZookeeperDiscoverySpiTest.class,
+    ZookeeperDiscoverySpiTest2.class,
+    ZookeeperDiscoverySpiTest3.class,
+    ZookeeperDiscoverySpiTest4.class,
+    ZookeeperDiscoverySpiTest5.class,
+    ZookeeperDiscoverySpiTest6.class,
+    ZookeeperDiscoverySpiTest7.class,
+    ZookeeperDiscoverySpiTest8.class,
+}) // todo thoroughly test this at Teamcity
 public class ZookeeperDiscoverySpiTestWrapperSuite extends TestSuite {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
@@ -55,17 +65,10 @@ public class ZookeeperDiscoverySpiTestWrapperSuite extends TestSuite {
         WORKAROUND = new Class[] {ZooKeeperServer.class, LearnerZooKeeperServer.class, MBeanRegistry.class};
     }
 
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySpiTest.class));
-
-        return suite;
     }
 }

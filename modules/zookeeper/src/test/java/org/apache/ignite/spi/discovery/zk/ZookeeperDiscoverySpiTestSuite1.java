@@ -34,9 +34,9 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     ZookeeperClientTest.class,
+    ZookeeperDiscoverySpiTestWrapperSuite.class,
     ZookeeperDiscoverySpiSaslFailedAuthTest.class,
     ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
-    ZookeeperDiscoverySpiTestWrapperSuite.class,
 })
 public class ZookeeperDiscoverySpiTestSuite1 {
     /**
