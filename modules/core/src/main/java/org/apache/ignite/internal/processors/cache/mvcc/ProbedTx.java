@@ -30,31 +30,35 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class ProbedTx implements Message {
     /** */
-    private UUID nearNodeId;
+    private UUID nodeId;
     /** */
     private GridCacheVersion xidVer;
     /** */
     private GridCacheVersion nearXidVer;
     /** */
     private long startTime;
+    /** */
+    private int lockCntr;
 
     /** */
     public ProbedTx() {
     }
 
     /** */
-    public ProbedTx(UUID nearNodeId, GridCacheVersion xidVer, GridCacheVersion nearXidVer, long startTime) {
-        this.nearNodeId = nearNodeId;
+    public ProbedTx(UUID nodeId, GridCacheVersion xidVer, GridCacheVersion nearXidVer, long startTime,
+        int lockCntr) {
+        this.nodeId = nodeId;
         this.xidVer = xidVer;
         this.nearXidVer = nearXidVer;
         this.startTime = startTime;
+        this.lockCntr = lockCntr;
     }
 
     /**
-     * @return Node started near transction.
+     * @return t0d0 Node started near transction.
      */
-    public UUID nearNodeId() {
-        return nearNodeId;
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
@@ -78,6 +82,26 @@ public class ProbedTx implements Message {
         return startTime;
     }
 
+    /**
+     * @return t0d0
+     */
+    public int lockCounter() {
+        return lockCntr;
+    }
+
+    /**
+     * t0d0
+     */
+    public ProbedTx withStartTime(long updStartTime) {
+        return new ProbedTx(
+            nodeId,
+            xidVer,
+            nearXidVer,
+            updStartTime,
+            lockCntr
+        );
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -91,7 +115,7 @@ public class ProbedTx implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeInt("lockCntr", lockCntr))
                     return false;
 
                 writer.incrementState();
@@ -103,12 +127,18 @@ public class ProbedTx implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("startTime", startTime))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
+                if (!writer.writeLong("startTime", startTime))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeMessage("xidVer", xidVer))
                     return false;
 
@@ -128,7 +158,7 @@ public class ProbedTx implements Message {
 
         switch (reader.state()) {
             case 0:
-                nearNodeId = reader.readUuid("nearNodeId");
+                lockCntr = reader.readInt("lockCntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -144,7 +174,7 @@ public class ProbedTx implements Message {
                 reader.incrementState();
 
             case 2:
-                startTime = reader.readLong("startTime");
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -152,6 +182,14 @@ public class ProbedTx implements Message {
                 reader.incrementState();
 
             case 3:
+                startTime = reader.readLong("startTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 xidVer = reader.readMessage("xidVer");
 
                 if (!reader.isLastRead())
@@ -171,7 +209,7 @@ public class ProbedTx implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */

@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
@@ -1826,7 +1827,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public Optional<NearTxLocator> checkWaiting(MvccVersion mvccVer) {
         return findBlockerTx(mvccVer)
-            .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()));
+            .map(GridDhtTxLocalAdapter.class::cast);
+//            .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()));
     }
 
     /**

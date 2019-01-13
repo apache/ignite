@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
+import static java.util.Collections.singleton;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DEADLOCK_DETECTION;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -91,30 +93,31 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      * @param blockerVer Version of the waited for transaction.
      */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        Optional<IgniteInternalTx> waitingTx = findTx(waiterVer);
+        Optional<GridDhtTxLocalAdapter> waitingTx = findTx(waiterVer);
 
-        Optional<IgniteInternalTx> blockerTx = findTx(blockerVer);
+        Optional<GridDhtTxLocalAdapter> blockerTx = findTx(blockerVer);
 
         if (waitingTx.isPresent() && blockerTx.isPresent()) {
-            IgniteInternalTx wTx = waitingTx.get();
+            GridDhtTxLocalAdapter wTx = waitingTx.get();
 
-            IgniteInternalTx bTx = blockerTx.get();
+            GridDhtTxLocalAdapter bTx = blockerTx.get();
 
             sendProbe(
                 waitingTx.get().nearXidVersion(),
                 // real start time will be filled later when corresponding near node is visited
-                Collections.singleton(new ProbedTx(wTx.eventNodeId(), wTx.xidVersion(), wTx.nearXidVersion(), -1)),
-                new ProbedTx(bTx.eventNodeId(), bTx.xidVersion(), bTx.nearXidVersion(), -1),
+                singleton(new ProbedTx(wTx.nodeId(), wTx.xidVersion(), wTx.nearXidVersion(), -1, wTx.lockCounter())),
+                new ProbedTx(bTx.nodeId(), bTx.xidVersion(), bTx.nearXidVersion(), -1, bTx.lockCounter()),
                 bTx.eventNodeId(),
                 true);
         }
     }
 
     /** */
-    private Optional<IgniteInternalTx> findTx(MvccVersion mvccVer) {
+    private Optional<GridDhtTxLocalAdapter> findTx(MvccVersion mvccVer) {
         return cctx.tm().activeTransactions().stream()
             .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(mvccVer, tx.mvccSnapshot()))
+            .map(GridDhtTxLocalAdapter.class::cast)
             .findAny();
     }
 
@@ -161,7 +164,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                 probe.initiatorVersion(),
                 probe.waitChain(),
                 // real start time is filled here
-                new ProbedTx(blocker.nearNodeId(), blocker.xidVersion(), blocker.nearXidVersion(), nearTx.startTime()),
+                blocker.withStartTime(nearTx.startTime()),
                 pendingNodeId,
                 false);
         }
@@ -176,6 +179,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
             .filter(IgniteInternalTx::local)
             .filter(tx -> tx.nearXidVersion().equals(blocker.nearXidVersion()))
             .findAny()
+            .map(GridDhtTxLocalAdapter.class::cast)
             .ifPresent(tx -> {
                 Optional<ProbedTx> repeatedTx = probe.waitChain().stream()
                     .filter(wTx -> wTx.xidVersion().equals(tx.xidVersion()))
@@ -184,19 +188,21 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                 if (repeatedTx.isPresent()) {
                     // a deadlock found
                     ProbedTx victim = chooseVictim(
-                        new ProbedTx(tx.eventNodeId(), tx.xidVersion(), tx.nearXidVersion(), blocker.startTime()),
+                        new ProbedTx(tx.nodeId(), tx.xidVersion(), tx.nearXidVersion(), blocker.startTime(), repeatedTx.get().lockCounter()),
                         probe.waitChain());
 
-                    if (victim.nearNodeId().equals(cctx.localNodeId())) {
-                        // victim can be another tx on the same node
-                        IgniteInternalTx vTx = cctx.tm().tx(victim.nearXidVersion());
+                    if (victim.xidVersion().equals(tx.xidVersion())) {
+                        if (victim.lockCounter() == tx.lockCounter()) {
+                            // t0d0 figure out why DHT tx rollback does not work properly
+//                            tx.rollbackAsync();
+                            ProbedTx nearVictim = new ProbedTx(null, victim.nearXidVersion(), victim.nearXidVersion(), -1, -1);
 
-                        if (vTx != null)
-                            vTx.rollbackAsync();
+                            sendProbe(probe.initiatorVersion(), singleton(nearVictim), nearVictim, tx.eventNodeId(), true);
+                        }
                     }
                     else {
                         // t0d0 special message for remote rollback
-                        sendProbe(probe.initiatorVersion(), Collections.singleton(victim), victim, victim.nearNodeId(), true);
+                        sendProbe(probe.initiatorVersion(), singleton(victim), victim, victim.nodeId(), false);
                     }
                 }
                 else {
@@ -204,17 +210,21 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
                     cctx.coordinators().checkWaiting(tx.mvccSnapshot())
                         .ifPresent(nextBlocker -> {
-                            ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 1);
+                            ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 2);
                             waitChain.addAll(probe.waitChain());
-                            waitChain.add(new ProbedTx(blocker.nearNodeId(), blocker.xidVersion(), blocker.nearXidVersion(), blocker.startTime()));
-                            waitChain.add(new ProbedTx(tx.eventNodeId(), tx.xidVersion(), tx.nearXidVersion(), blocker.startTime()));
+                            waitChain.add(blocker);
+                            waitChain.add(new ProbedTx(tx.nodeId(), tx.xidVersion(), tx.nearXidVersion(),
+                                blocker.startTime(), tx.lockCounter()));
+
+                            // real start time will be filled later when corresponding near node is visited
+                            ProbedTx nextProbedTx = new ProbedTx(nextBlocker.nodeId(), nextBlocker.xidVersion(),
+                                nextBlocker.nearXidVersion(), -1, nextBlocker.lockCounter());
 
                             sendProbe(
                                 probe.initiatorVersion(),
                                 waitChain,
-                                // real start time will be filled later when corresponding near node is visited
-                                new ProbedTx(nextBlocker.nodeId(), nextBlocker.xidVersion(), nextBlocker.xidVersion(), -1),
-                                nextBlocker.nodeId(),
+                                nextProbedTx,
+                                nextBlocker.eventNodeId(),
                                 true);
                         });
                 }

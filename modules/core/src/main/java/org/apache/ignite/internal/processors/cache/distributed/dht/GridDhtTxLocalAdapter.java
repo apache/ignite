@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -109,6 +110,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
+
+    /** t0d0 */
+    private final AtomicInteger lockCntr = new AtomicInteger();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -939,5 +943,19 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
             "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
+    }
+
+    /**
+     * t0d0
+     */
+    public void incrementLockCounter() {
+        lockCntr.incrementAndGet();
+    }
+
+    /**
+     * t0d0
+     */
+    public int lockCounter() {
+        return lockCntr.get();
     }
 }
