@@ -181,6 +181,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
             .findAny()
             .map(GridDhtTxLocalAdapter.class::cast)
             .ifPresent(tx -> {
+                // t0d0 second dht tx is repeated?
                 Optional<ProbedTx> repeatedTx = probe.waitChain().stream()
                     .filter(wTx -> wTx.xidVersion().equals(tx.xidVersion()))
                     .findAny();
@@ -188,7 +189,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                 if (repeatedTx.isPresent()) {
                     // a deadlock found
                     ProbedTx victim = chooseVictim(
-                        new ProbedTx(tx.nodeId(), tx.xidVersion(), tx.nearXidVersion(), blocker.startTime(), repeatedTx.get().lockCounter()),
+                        repeatedTx.get().withStartTime(blocker.startTime()),
                         probe.waitChain());
 
                     if (victim.xidVersion().equals(tx.xidVersion())) {
