@@ -57,21 +57,18 @@ public interface MvccProcessor extends GridProcessor {
      * @param crdVer Mvcc coordinator version.
      * @param cntr Mvcc counter.
      * @return State for given mvcc version.
-     * @throws IgniteCheckedException If fails.
      */
     byte state(long crdVer, long cntr);
 
     /**
      * @param ver Version to check.
      * @return State for given mvcc version.
-     * @throws IgniteCheckedException If fails.
      */
     byte state(MvccVersion ver);
 
     /**
      * @param ver Version.
      * @param state State.
-     * @throws IgniteCheckedException If fails;
      */
     void updateState(MvccVersion ver, byte state);
 
@@ -79,7 +76,6 @@ public interface MvccProcessor extends GridProcessor {
      * @param ver Version.
      * @param state State.
      * @param primary Flag if this is primary node.
-     * @throws IgniteCheckedException If fails;
      */
     void updateState(MvccVersion ver, byte state, boolean primary);
 
@@ -100,13 +96,11 @@ public interface MvccProcessor extends GridProcessor {
      * @param cctx Cache context.
      * @param locked Version the entry is locked by.
      * @return Future, which is completed as soon as the lock is released.
-     * @throws IgniteCheckedException If failed.
      */
     IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked);
 
     /**
      * @param locked Version the entry is locked by.
-     * @throws IgniteCheckedException If failed.
      */
     void releaseWaiters(MvccVersion locked);
 
