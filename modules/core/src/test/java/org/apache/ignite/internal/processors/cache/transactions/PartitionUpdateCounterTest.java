@@ -20,9 +20,14 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -95,19 +100,29 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         AtomicBoolean stop = new AtomicBoolean();
 
+        Queue<long[]> reservations = new ConcurrentLinkedQueue<>();
+
+        LongAdder reserveCntr = new LongAdder();
+
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            while(!stop.get()) {
-                if (ThreadLocalRandom.current().nextBoolean())
-                    pc.next();
+            while(!stop.get() || !reservations.isEmpty()) {
+                if (!stop.get() && ThreadLocalRandom.current().nextBoolean()) {
+                    int size = ThreadLocalRandom.current().nextInt(9) + 1;
+
+                    reservations.add(new long[] {pc.reserve(size), size}); // Only update if stop flag is set.
+
+                    reserveCntr.add(size);
+                }
                 else {
-                    long reserved = pc.reserve(1);
+                    long[] reserved = reservations.poll();
 
-                    Thread.yield();
+                    if (reserved == null)
+                        continue;
 
-                    pc.update(reserved, 1);
+                    pc.update(reserved[0], reserved[1]);
                 }
             }
-        }, 4, "updater-thread");
+        }, Runtime.getRuntime().availableProcessors() * 2, "updater-thread");
 
         doSleep(10_000);
 
@@ -115,11 +130,15 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         fut.get();
 
-        log.info(pc.toString());
+        assertTrue(reservations.isEmpty());
+
+        log.info("counter=" + pc.toString() + ", reserveCntrLocal=" + reserveCntr.sum());
 
         assertTrue(pc.gaps().isEmpty());
 
         assertTrue(pc.get() == pc.reserved());
+
+        assertEquals(reserveCntr.sum(), pc.get());
     }
 
     /**

@@ -53,7 +53,7 @@ public class PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. */
+    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
     private final AtomicLong reserveCntr = new AtomicLong();
 
     /** Initial counter points to last sequential update after recovery. */
@@ -113,10 +113,6 @@ public class PartitionUpdateCounter {
      */
     public long next() {
         return cntr.incrementAndGet();
-    }
-
-    public void forceUpdate(long val) throws IllegalUpdateCounterException {
-        cntr.set(val);
     }
 
     /**
@@ -287,7 +283,7 @@ public class PartitionUpdateCounter {
 
         long newCntr = reserveCntr.getAndAdd(delta);
 
-        assert newCntr >= cntr : "Reserve counter lag: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
+        assert newCntr >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
 
         return newCntr;
     }

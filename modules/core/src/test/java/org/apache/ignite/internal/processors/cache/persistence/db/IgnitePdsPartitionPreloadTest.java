@@ -34,7 +34,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -670,13 +672,16 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         long c0 = testNode.dataRegionMetrics(DEFAULT_REGION).getPagesRead();
 
         // After partition preloading no pages should be read from store.
-        GridCursor<? extends CacheDataRow> cursor =
-            ((IgniteEx)testNode).cachex(DEFAULT_CACHE_NAME).context().topology().localPartition(preloadPart).dataStore().cursor();
+        GridIterator<CacheDataRow> cursor = ((IgniteEx)testNode).cachex(DEFAULT_CACHE_NAME).context().offheap().
+            cachePartitionIterator(CU.UNDEFINED_CACHE_ID, preloadPart);
 
         int realSize = 0;
 
-        while(cursor.next())
+        while(cursor.hasNext()) {
             realSize++;
+
+            cursor.next();
+        }
 
         assertEquals("Partition has missed some entries", ENTRY_CNT, realSize);
 

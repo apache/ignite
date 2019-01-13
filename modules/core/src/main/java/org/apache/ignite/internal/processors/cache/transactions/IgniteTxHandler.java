@@ -2283,7 +2283,7 @@ public class IgniteTxHandler {
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         counter.initialCounter(i), counter.updatesCount(i));
 
-                                    log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
+                                    // log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
 
                                     ctx.wal().log(rec);
                                 }

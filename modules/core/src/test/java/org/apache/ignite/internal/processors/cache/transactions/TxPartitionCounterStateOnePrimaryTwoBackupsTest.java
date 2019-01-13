@@ -224,6 +224,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         waitForTopology(NODES_CNT);
 
+        awaitPartitionMapExchange();
+
         IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
@@ -611,6 +613,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         }, SIZES);
 
         waitForTopology(NODES_CNT);
+
+        awaitPartitionMapExchange();
 
         IgniteEx client = grid("client");
 

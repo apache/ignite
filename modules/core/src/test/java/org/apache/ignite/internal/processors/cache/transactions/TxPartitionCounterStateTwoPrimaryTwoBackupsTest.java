@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -24,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -113,7 +115,7 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
                                     prepFuts.put(nearXidVer, proceedFut);
 
                                     // Order prepares.
-                                    if (prepFuts.size() == SIZES.length) {// Wait until all prep requests queued and force prepare order.
+                                    if (prepFuts.size() == SIZES.length) { // Wait until all prep requests queued and force prepare order.
                                         prepFuts.remove(version(prepOrder.poll())).onDone();
                                     }
                                 });
@@ -153,28 +155,23 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
             },
             SIZES);
 
-        // Expect only one committed tx.
-        assertEquals(PRELOAD_KEYS_CNT + SIZES[finishedTxIdx], grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
+        waitForTopology(NODES_CNT);
+
+        awaitPartitionMapExchange();
+
+        Iterator<Cache.Entry<Object, Object>> iterator = grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).iterator();
+
+        while (iterator.hasNext()) {
+            Cache.Entry<Object, Object> next = iterator.next();
+            log.info("TX: e=" + next);
+        }
+
+        // Expect only one committed tx for part1 and committed tx for part2.
+        assertEquals(PRELOAD_KEYS_CNT + SIZES[finishedTxIdx] + 1 /** Tx for part 2 */, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
 
         // Expect consistent partitions.
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        PartitionUpdateCounter pc0 = null;
-
-        // Expect same counters on primary and backup.
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.configuration().isClientMode())
-                continue;
-
-            PartitionUpdateCounter pc = counter(PARTITION_ID, ignite.name());
-
-            if (pc0 == null)
-                pc0 = pc;
-            else {
-                assertEquals(pc0, pc);
-
-                pc0 = pc;
-            }
-        }
+        assertCountersSame(PARTITION_ID, true);
     }
 }
