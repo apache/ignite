@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -336,7 +337,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     for (Integer key : keys.subList(range[0], range[0] + range[1]))
                         client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-                    if (keysPart2 != null) {// Force 2PC.
+                    if (keysPart2 != null) { // Force 2PC.
                         client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(txIdx), 0);
                     }
 
@@ -639,16 +640,24 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /**
      * @param partId Partition id.
+     *
+     * @return Counter or null if node is not partition owner.
      */
-    protected PartitionUpdateCounter counter(int partId) {
-        return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    protected @Nullable PartitionUpdateCounter counter(int partId) {
+        @Nullable GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(partId);
+
+        return part == null ? null : part.dataStore().partUpdateCounter();
     }
 
     /**
      * @param partId Partition id.
+     *
+     * @return Counter or null if node is not partition owner.
      */
-    protected PartitionUpdateCounter counter(int partId, String gridName) {
-        return internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition part = internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return part == null ? null : part.dataStore().partUpdateCounter();
     }
 
 
