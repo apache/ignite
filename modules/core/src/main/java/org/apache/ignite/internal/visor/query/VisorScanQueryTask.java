@@ -123,8 +123,10 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
                 String qryId = SCAN_QRY_NAME + "-" + UUID.randomUUID();
 
                 if (hasNext) {
-                    ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
-                        new VisorQueryHolder(qryId, cur, arg.getPageSize(), null));
+                    VisorQueryHolder holder = new VisorQueryHolder(qryId, cur, arg.getPageSize(), null);
+
+                    holder.setColumns(SCAN_COL_NAMES);
+                    ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId, holder);
 
                     scheduleResultSetHolderRemoval(qryId, ignite);
                     scheduleResultSetGet(qryId, ignite, true);
