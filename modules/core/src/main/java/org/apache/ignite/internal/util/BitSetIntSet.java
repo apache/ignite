@@ -24,16 +24,18 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Immutable BitSet wrapper, which also implements Set of Integers interface.
+ * Set of Integers implementation based on BitSet.
+ *
+ * Implementation doesn't support negative values and null, cause we can't distinct null from 0 bit in BitSet.
  */
-public class BitSetIntSet implements Set<Integer> {
+public class BitSetIntSet extends GridSerializableCollection<Integer> implements Set<Integer> {
     /**
-     * Wrapped BitSet.
+     * BitSet.
      */
     private final BitSet bitSet;
 
     /**
-     * Size.
+     * Calculated size.
      */
     private int size;
 
@@ -50,28 +52,14 @@ public class BitSetIntSet implements Set<Integer> {
      */
     public BitSetIntSet(int initCap) {
         bitSet = new BitSet(initCap);
-
-        int idx = 0;
-        int size0 = 0;
     }
 
-    /**
-     * @{inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
-    /**
-     * @{inheritDoc}
-     */
-    @Override public boolean isEmpty() {
-        return size == 0;
-    }
-
-    /**
-     * @{inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public boolean contains(Object o) {
         if (o == null)
             throw new UnsupportedOperationException("Null values are not supported!");
@@ -84,9 +72,7 @@ public class BitSetIntSet implements Set<Integer> {
         return bitSet.get(val);
     }
 
-    /**
-     * @{inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public @NotNull Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
             private int next = -1;
@@ -111,36 +97,6 @@ public class BitSetIntSet implements Set<Integer> {
                 return next;
             }
         };
-    }
-
-    /**
-     * @{inheritDoc}
-     */
-    @Override public @NotNull Object[] toArray() {
-        Object[] arr = new Object[size];
-
-        Iterator<Integer> iterator = iterator();
-
-        int idx = 0;
-
-        while (iterator.hasNext())
-            arr[idx++] = iterator.next();
-
-        return arr;
-    }
-
-    /** @{inheritDoc} */
-    @Override public @NotNull <T> T[] toArray(@NotNull T[] a) {
-        T[] r = a.length >= size
-            ? a
-            :(T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
-
-        Iterator it = iterator();
-
-        for (int i = 0; i < r.length; i++)
-            r[i] = it.hasNext() ? (T)it.next() : null;
-
-        return r;
     }
 
     /**

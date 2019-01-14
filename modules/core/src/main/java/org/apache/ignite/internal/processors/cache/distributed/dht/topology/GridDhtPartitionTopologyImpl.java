@@ -1172,7 +1172,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             Collection<UUID> diffIds = diffFromAffinity.get(p);
 
             if (!F.isEmpty(diffIds)) {
-                HashSet<UUID> affIds = affAssignment.getIds(p);
+                Collection<UUID> affIds = affAssignment.getIds(p);
 
                 for (UUID nodeId : diffIds) {
                     if (affIds.contains(nodeId)) {
