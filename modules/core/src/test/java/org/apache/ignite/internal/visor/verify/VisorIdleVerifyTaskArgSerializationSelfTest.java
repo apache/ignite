@@ -71,7 +71,7 @@ public class VisorIdleVerifyTaskArgSerializationSelfTest {
 
         checkFieldsForVersion1();
 
-        assertNull(arg.excludeCaches());
+        assertNull(arg.getExcludeCaches());
         assertFalse(arg.isCheckCrc());
     }
 
@@ -108,7 +108,7 @@ public class VisorIdleVerifyTaskArgSerializationSelfTest {
     private void checkFieldsForVersion2() {
         checkFieldsForVersion1();
 
-        assertEquals(GOLDEN_ARG.excludeCaches(), arg.excludeCaches());
+        assertEquals(GOLDEN_ARG.getExcludeCaches(), arg.getExcludeCaches());
     }
 
     /**

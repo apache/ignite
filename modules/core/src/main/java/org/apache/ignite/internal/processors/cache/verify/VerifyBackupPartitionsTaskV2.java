@@ -391,7 +391,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             Set<Integer> grpIds = new HashSet<>();
 
-            if (arg.excludeCaches() == null || arg.excludeCaches().isEmpty()) {
+            if (F.isEmpty(arg.getExcludeCaches())) {
                 for (CacheGroupContext grp : groups) {
                     if (!grp.systemCache() && !grp.isLocal())
                         grpIds.add(grp.groupId());
@@ -411,11 +411,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param grp Group.
          */
         private boolean isGrpExcluded(CacheGroupContext grp) {
-            if (arg.excludeCaches().contains(grp.name()))
+            if (arg.getExcludeCaches().contains(grp.name()))
                 return true;
 
             for (GridCacheContext cacheCtx : grp.caches()) {
-                if (arg.excludeCaches().contains(cacheCtx.name()))
+                if (arg.getExcludeCaches().contains(cacheCtx.name()))
                     return true;
             }
 

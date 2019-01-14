@@ -82,15 +82,17 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
         out.writeBoolean(skipZeros);
 
-        if(instanceOfCurrentClass())
-            writeExternalDataFromEndOfObjectOutput(out);
-    }
+        /**
+         * Since protocol version 2 we must save class instance new fields to end of output object. It's needs for
+         * support backward compatibility in extended (child) classes.
+         */
+        if (instanceOfCurrentClass()) {
+            U.writeEnum(out, cacheFilterEnum);
 
-    /** {@inheritDoc} */
-    @Override protected void writeExternalDataFromEndOfObjectOutput(ObjectOutput out) throws IOException {
-        U.writeEnum(out, cacheFilterEnum);
+            U.writeCollection(out, getExcludeCaches());
 
-        super.writeExternalDataFromEndOfObjectOutput(out);
+            out.writeBoolean(isCheckCrc());
+        }
     }
 
     /** {@inheritDoc} */
@@ -102,21 +104,22 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
         skipZeros = in.readBoolean();
 
-        if(instanceOfCurrentClass())
-            readExternalDataFromEndOfObjectOutput(protoVer, in);
-    }
+        /**
+         * Since protocol version 2 we must read class instance new fields from end of input object. It's needs for
+         * support backward compatibility in extended (child) classes.
+         */
+        if(instanceOfCurrentClass()) {
+            if (protoVer >= V2)
+                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
+            else
+                cacheFilterEnum = CacheFilterEnum.ALL;
 
-    /** {@inheritDoc} */
-    @Override protected void readExternalDataFromEndOfObjectOutput(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
-        if (protoVer >= V2)
-            cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
-        else
-            cacheFilterEnum = CacheFilterEnum.ALL;
+            if (protoVer >= V2)
+                excludeCaches(U.readSet(in));
 
-        super.readExternalDataFromEndOfObjectOutput(protoVer, in);
+            if (protoVer >= V3)
+                checkCrc(in.readBoolean());
+        }
     }
 
     /** {@inheritDoc} */

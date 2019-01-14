@@ -26,7 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments for task {@link VisorIdleVerifyTask}
+ * Arguments for task {@link VisorIdleVerifyTask}.
+ * <br/>
  */
 public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */
@@ -83,7 +84,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Exclude caches or groups.
      */
-    public Set<String> excludeCaches() {
+    public Set<String> getExcludeCaches() {
         return excludeCaches;
     }
 
@@ -96,21 +97,15 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
 
-        if(instanceOfCurrentClass())
-            writeExternalDataFromEndOfObjectOutput(out);
-    }
+        /**
+         * Instance fields since protocol version 2 must be serialized if, and only if class instance isn't child of
+         * current class. Otherwise, these fields must be serialized in child class.
+         */
+        if(instanceOfCurrentClass()) {
+            U.writeCollection(out, excludeCaches);
 
-    /**
-     * Save new object's specific data (since protocol version 2) to end of output object. It's needs for support
-     * backward compatibility in extended (child) classes. At first you must save object's specific data for current
-     * class and after save object's specific data for parent class.
-     *
-     * @see VisorIdleVerifyTaskArg#writeExternalData(ObjectOutput)
-     */
-    protected void writeExternalDataFromEndOfObjectOutput(ObjectOutput out) throws IOException {
-        U.writeCollection(out, excludeCaches);
-
-        out.writeBoolean(checkCrc);
+            out.writeBoolean(checkCrc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -120,26 +115,25 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     ) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
 
-        if(instanceOfCurrentClass())
-            readExternalDataFromEndOfObjectOutput(protoVer, in);
+        /**
+         * Instance fields since protocol version 2 must be deserialized if, and only if class instance isn't child of
+         * current class. Otherwise, these fields must be deserialized in child class.
+         */
+        if(instanceOfCurrentClass()) {
+            if (protoVer >= V2)
+                excludeCaches = U.readSet(in);
+
+            if (protoVer >= V3)
+                checkCrc = in.readBoolean();
+        }
     }
 
-    /**
-     * Load new object's specific data content (since protocol version 2) from  end of input object. t's needs for
-     * support backward compatibility in extended (child) classes. At first you must load object's specific data for
-     * current class and after load object's specific data for parent class.
-     *
-     * @see VisorIdleVerifyTaskArg#readExternalData(byte, ObjectInput)
-     */
-    protected void readExternalDataFromEndOfObjectOutput(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
-        if (protoVer >= V2)
-            excludeCaches = U.readSet(in);
+    protected void excludeCaches(Set<String> excludeCaches) {
+        this.excludeCaches = excludeCaches;
+    }
 
-        if (protoVer >= V3)
-            checkCrc = in.readBoolean();
+    protected void checkCrc(boolean checkCrc) {
+        this.checkCrc = checkCrc;
     }
 
     /** {@inheritDoc} */
