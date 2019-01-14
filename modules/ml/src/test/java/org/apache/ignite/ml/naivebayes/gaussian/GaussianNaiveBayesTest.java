@@ -57,7 +57,7 @@ public class GaussianNaiveBayesTest {
         );
         Vector observation = VectorUtils.of(6, 130, 8);
 
-        Assert.assertEquals(female, model.apply(observation), PRECISION);
+        Assert.assertEquals(female, model.predict(observation), PRECISION);
     }
 
     /** Dataset from Gaussian NB example in the scikit-learn documentation */
@@ -80,7 +80,7 @@ public class GaussianNaiveBayesTest {
         );
         Vector observation = VectorUtils.of(-0.8, -1);
 
-        Assert.assertEquals(one, model.apply(observation), PRECISION);
+        Assert.assertEquals(one, model.predict(observation), PRECISION);
     }
 
 }

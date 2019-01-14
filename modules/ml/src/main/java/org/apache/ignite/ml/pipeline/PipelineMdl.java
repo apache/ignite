@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.pipeline;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -27,9 +27,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class PipelineMdl<K, V> implements Model<Vector, Double> {
+public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
     /** Internal model produced by {@link Pipeline}. */
-    private Model<Vector, Double> internalMdl;
+    private IgniteModel<Vector, Double> internalMdl;
 
     /** Feature extractor. */
     private IgniteBiFunction<K, V, Vector> featureExtractor;
@@ -38,8 +38,8 @@ public class PipelineMdl<K, V> implements Model<Vector, Double> {
     private IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** */
-    @Override public Double apply(Vector vector) {
-        return internalMdl.apply(vector);
+    @Override public Double predict(Vector vector) {
+        return internalMdl.predict(vector);
     }
 
     /** */
@@ -53,12 +53,12 @@ public class PipelineMdl<K, V> implements Model<Vector, Double> {
     }
 
     /** */
-    public Model<Vector, Double> getInternalMdl() {
+    public IgniteModel<Vector, Double> getInternalMdl() {
         return internalMdl;
     }
 
     /** */
-    public PipelineMdl<K, V> withInternalMdl(Model<Vector, Double> internalMdl) {
+    public PipelineMdl<K, V> withInternalMdl(IgniteModel<Vector, Double> internalMdl) {
         this.internalMdl = internalMdl;
         return this;
     }

@@ -160,14 +160,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testStaticDeployFromEachPersistentNodes() throws Exception {
-        checkDeployFromEachNodes(true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -194,9 +186,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite ignite0 = deployServiceFromNewNode(staticDeploy, 0);
 
-        if (persistence)
-            ignite0.cluster().active(true);
-        else {
+        if (!staticDeploy) {
             IgniteCluster cluster = ignite0.cluster();
 
             cluster.setBaselineTopology(cluster.topologyVersion());

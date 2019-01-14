@@ -218,7 +218,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
                 if (val1 == null)
                     prevEquals.set(false);
 
-                boolean equals = v0.map().equals(val1.map());
+                boolean equals = v0.map().equals(val1.map()) && (v0.topologyVersion().equals(val1.topologyVersion()));
 
                 prevEquals.set(prevEquals.get() && equals);
             });

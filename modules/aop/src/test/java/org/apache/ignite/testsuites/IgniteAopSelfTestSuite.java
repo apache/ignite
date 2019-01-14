@@ -17,16 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.gridify.BasicAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXNonSpringAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
 import org.apache.ignite.gridify.NonSpringAopSelfTest;
 import org.apache.ignite.gridify.SpringAopSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 import org.test.gridify.ExternalNonSpringAopSelfTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -34,26 +33,22 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 /**
  * AOP test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Test configuration.
+    BasicAopSelfTest.class,
+
+    SpringAopSelfTest.class,
+    NonSpringAopSelfTest.class,
+    GridifySetToXXXSpringAopSelfTest.class,
+    GridifySetToXXXNonSpringAopSelfTest.class,
+    ExternalNonSpringAopSelfTest.class,
+})
 public class IgniteAopSelfTestSuite {
-    /**
-     * @return AOP test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite AOP Test Suite");
-
-        // Test configuration.
-        suite.addTest(new JUnit4TestAdapter(BasicAopSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(SpringAopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(NonSpringAopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridifySetToXXXSpringAopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridifySetToXXXNonSpringAopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ExternalNonSpringAopSelfTest.class));
-
+    /** */
+    @BeforeClass
+    public static void init() {
         // Examples
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(IgniteAopSelfTestSuite.class));
-
-        return suite;
     }
 }
