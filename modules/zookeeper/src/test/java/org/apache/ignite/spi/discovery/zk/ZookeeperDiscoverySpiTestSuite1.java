@@ -33,9 +33,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ZookeeperClientTest.class,
+    /*todo: restore after testing: ZookeeperClientTest.class,
     ZookeeperDiscoverySpiTestWrapperSuite.class,
-    ZookeeperDiscoverySpiSaslFailedAuthTest.class,
+    ZookeeperDiscoverySpiSaslFailedAuthTest.class,*/
     ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
 })
 public class ZookeeperDiscoverySpiTestSuite1 {

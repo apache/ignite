@@ -37,7 +37,7 @@ import org.junit.runners.Suite;
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ZookeeperDiscoverySpiTest.class,
+    //todo restore after testing: ZookeeperDiscoverySpiTest.class,
     ZookeeperDiscoverySpiTest2.class,
     ZookeeperDiscoverySpiTest3.class,
     ZookeeperDiscoverySpiTest4.class,
