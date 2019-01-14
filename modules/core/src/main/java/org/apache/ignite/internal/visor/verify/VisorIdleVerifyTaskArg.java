@@ -69,6 +69,13 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         this.checkCrc = checkCrc;
     }
 
+    /**
+     * @param caches Caches.
+     */
+    public VisorIdleVerifyTaskArg(Set<String> caches) {
+        this.caches = caches;
+    }
+
     /** */
     public boolean isCheckCrc() {
         return checkCrc;
