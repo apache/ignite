@@ -20,11 +20,14 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -112,6 +115,55 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         doTestDml(clientCache);
         doTestDml(serverCache);
+
+        doTestSqlStream(clientCache, keysCnt);
+    }
+
+    private void doTestSqlStream(IgniteCache<Long,TestData> cache, int keysCnt) {
+        checkSqlStream(cache, false, keysCnt);
+        checkSqlStream(cache, true, keysCnt);
+        checkSqlStream(cache, null, keysCnt);
+    }
+
+    private void checkSqlStream(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
+        CacheDataTree.isLastFindWithDirectDataPageScan();
+
+        DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
+
+        try (
+            FieldsQueryCursor<List<?>> cursor = cache.query(
+                new SqlFieldsQuery(
+                    "select 1 " +
+                        "from TestData a use index(), TestData b use index() " +
+                        "where a.z between 1 and 5 " +
+                        "and check_scan_flag(?,true)")
+                    .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
+                    .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
+                    .setPageSize(keysCnt / 2) // Must be lower than keysCnt.
+            )
+        ) {
+            int rowCnt = 0;
+            List<Integer> pages = new ArrayList<>();
+
+            for (List<?> row : cursor) {
+                if (dataPageScanEnabled == FALSE)
+                    assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIndex was never used.
+                else {
+                    Boolean x = CacheDataTree.isLastFindWithDirectDataPageScan();
+
+                    if (x != null) {
+                        assertTrue(x);
+                        pages.add(rowCnt);
+                    }
+                }
+
+                rowCnt++;
+            }
+
+            assertEquals(keysCnt * 5, rowCnt);
+
+            System.err.println(pages);
+        }
     }
 
     private void doTestDml(IgniteCache<Long,TestData> cache) {

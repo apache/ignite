@@ -943,6 +943,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param dataPageScanEnabled If data page scan is enabled.
+     */
+    public void enableDataPageScan(Boolean dataPageScanEnabled) {
+        // Data page scan is enabled by default for SQL.
+        CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled != FALSE);
+    }
+
+    /**
      * Executes sql query and prints warning if query is too slow.
      *
      * @param stmt Prepared statement for query.
@@ -966,8 +974,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
-        // Data page scan is enabled by default for SQL.
-        CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled != FALSE);
+        enableDataPageScan(dataPageScanEnabled);
 
         try {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);

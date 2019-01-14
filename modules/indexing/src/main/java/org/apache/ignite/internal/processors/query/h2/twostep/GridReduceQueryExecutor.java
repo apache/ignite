@@ -110,6 +110,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuer
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.setDataPageScanEnabled;
 
 /**
  * Reduce query executor.
@@ -322,7 +323,8 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize,
+                            (byte)setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -480,7 +482,7 @@ public class GridReduceQueryExecutor {
             long qryReqId = qryIdGen.incrementAndGet();
 
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
-                qry.mapQueries().size(), qry.pageSize(), sfuFut);
+                qry.mapQueries().size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
 
             Collection<ClusterNode> nodes;
 

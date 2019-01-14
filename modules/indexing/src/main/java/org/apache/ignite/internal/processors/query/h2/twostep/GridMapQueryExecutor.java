@@ -115,6 +115,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.join.Distribute
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
@@ -999,9 +1000,9 @@ public class GridMapQueryExecutor {
 
                     // Send the first page.
                     if (lockFut == null)
-                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping, dataPageScanEnabled);
                     else {
-                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping, dataPageScanEnabled);
 
                         if (msg != null) {
                             lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
@@ -1272,17 +1273,19 @@ public class GridMapQueryExecutor {
         else if (qr.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
+            Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
+
             MapQueryLazyWorker lazyWorker = qr.lazyWorker();
 
             if (lazyWorker != null) {
                 lazyWorker.submit(new Runnable() {
                     @Override public void run() {
-                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
+                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false, dataPageScanEnabled);
                     }
                 });
             }
             else
-                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false, dataPageScanEnabled);
         }
     }
 
@@ -1294,11 +1297,12 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Next page.
      * @throws IgniteCheckedException If failed.
      */
     private GridQueryNextPageResponse prepareNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) throws IgniteCheckedException {
+        int pageSize, boolean removeMapping, Boolean dataPageScanEnabled) throws IgniteCheckedException {
         MapQueryResult res = qr.result(qry);
 
         assert res != null;
@@ -1310,7 +1314,7 @@ public class GridMapQueryExecutor {
 
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+        boolean last = res.fetchNextPage(rows, pageSize, dataPageScanEnabled);
 
         if (last) {
             res.close();
@@ -1350,11 +1354,13 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) {
+        int pageSize, boolean removeMapping, Boolean dataPageScanEnabled) {
         try {
-            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
+            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping,
+                dataPageScanEnabled);
 
             if (msg != null) {
                 if (node.isLocal())

@@ -42,6 +42,9 @@ public class GridQueryNextPageRequest implements Message {
     /** */
     private int pageSize;
 
+    /** */
+    private byte flags;
+
     /**
      * Default constructor.
      */
@@ -54,12 +57,21 @@ public class GridQueryNextPageRequest implements Message {
      * @param qry Query.
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
+     * @param flags Flags.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize, byte flags) {
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.segmentId = segmentId;
         this.pageSize = pageSize;
+        this.flags = flags;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte getFlags() {
+        return flags;
     }
 
     /**
@@ -87,6 +99,8 @@ public class GridQueryNextPageRequest implements Message {
     public int pageSize() {
         return pageSize;
     }
+
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
