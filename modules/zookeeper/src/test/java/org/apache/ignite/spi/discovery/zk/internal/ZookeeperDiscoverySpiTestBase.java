@@ -93,7 +93,8 @@ import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
- * Base class for Zookeeper SPI discovery tests in this package.
+ * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
+ * superclass methods to be shared by all subclasses.
  */
 class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */

@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
 
 /**
- * Non-base functionality shared by Zookeeper SPI discovery test classes in this package.
+ * Non-base functionality shared by some of Zookeeper SPI discovery test classes in this package.
  */
 class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
     /** */
