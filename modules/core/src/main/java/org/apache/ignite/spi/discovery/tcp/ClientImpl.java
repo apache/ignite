@@ -294,7 +294,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         sockReader = new SocketReader();
         sockReader.start();
 
-        if (spi.ipFinder.isShared())
+        if (spi.ipFinder.isShared() && spi.isForceServerMode())
             registerLocalNodeAddress();
 
         msgWorker = new MessageWorker(log);

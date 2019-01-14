@@ -17,33 +17,35 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClientOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyTopologySelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for near-only cache.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheNearOnlySelfTestSuite.DynamicSuite.class)
 public class IgniteCacheNearOnlySelfTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Near-only cache test suite.");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
@@ -58,5 +60,13 @@ public class IgniteCacheNearOnlySelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }
