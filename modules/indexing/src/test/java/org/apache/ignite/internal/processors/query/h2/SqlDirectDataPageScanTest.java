@@ -139,7 +139,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
                         "and check_scan_flag(?,true)")
                     .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-                    .setPageSize(keysCnt / 2) // Must be lower than keysCnt.
+                    .setPageSize(keysCnt / 2) // Must be less than keysCnt.
             )
         ) {
             int rowCnt = 0;
