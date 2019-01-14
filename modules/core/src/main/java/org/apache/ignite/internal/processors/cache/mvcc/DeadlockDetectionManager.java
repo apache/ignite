@@ -103,11 +103,11 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
             GridDhtTxLocalAdapter bTx = blockerTx.get();
 
             sendProbe(
+                bTx.eventNodeId(),
                 waitingTx.get().nearXidVersion(),
                 // real start time will be filled later when corresponding near node is visited
                 singleton(new ProbedTx(wTx.nodeId(), wTx.xidVersion(), wTx.nearXidVersion(), -1, wTx.lockCounter())),
                 new ProbedTx(bTx.nodeId(), bTx.xidVersion(), bTx.nearXidVersion(), -1, bTx.lockCounter()),
-                bTx.eventNodeId(),
                 true);
         }
     }
@@ -151,11 +151,11 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
         // probe each blocker
         for (UUID pendingNodeId : getPendingResponseNodes(nearTx)) {
             sendProbe(
+                pendingNodeId,
                 probe.initiatorVersion(),
                 probe.waitChain(),
                 // real start time is filled here
                 blocker.withStartTime(nearTx.startTime()),
-                pendingNodeId,
                 false);
         }
     }
@@ -191,7 +191,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                     }
                     else {
                         // t0d0 special message for remote rollback
-                        sendProbe(probe.initiatorVersion(), singleton(victim), victim, victim.nodeId(), false);
+                        // destination node must determine itself as a victim
+                        sendProbe(victim.nodeId(), probe.initiatorVersion(), singleton(victim), victim, false);
                     }
                 }
                 else {
@@ -211,10 +212,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                                 nextBlocker.nearXidVersion(), -1, nextBlocker.lockCounter());
 
                             sendProbe(
+                                nextBlocker.eventNodeId(),
                                 probe.initiatorVersion(),
                                 waitChain,
                                 nextProbedTx,
-                                nextBlocker.eventNodeId(),
                                 true);
                         });
                 }
@@ -273,8 +274,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    private void sendProbe(GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
-        ProbedTx blocker, UUID destNodeId, boolean near) {
+    private void sendProbe(UUID destNodeId, GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
+        ProbedTx blocker, boolean near) {
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waitChain, blocker, near);
 
         try {
