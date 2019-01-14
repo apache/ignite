@@ -72,7 +72,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -467,8 +467,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10186")
     public void testMergeServerAndClientJoin1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
+
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -1487,11 +1488,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         for (int i = futs.size() - 1; i >= 0; i--) {
             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-            if (fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
+            if (!fut.isMerged() && fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
                 AffinityTopologyVersion resVer = fut.topologyVersion();
 
-                if (resVer != null)
-                    doneVers.add(resVer);
+                Assert.assertNotNull(resVer);
+
+                doneVers.add(resVer);
             }
         }
 

@@ -141,8 +141,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -165,7 +163,6 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  *
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
@@ -3927,6 +3924,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_1() throws Exception {
@@ -3936,6 +3934,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_2() throws Exception {

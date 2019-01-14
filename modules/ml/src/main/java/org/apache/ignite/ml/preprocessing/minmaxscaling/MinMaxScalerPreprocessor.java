@@ -71,8 +71,16 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
         assert res.size() == min.length;
         assert res.size() == max.length;
 
-        for (int i = 0; i < res.size(); i++)
-            res.set(i, (res.get(i) - min[i]) / (max[i] - min[i]));
+        for (int i = 0; i < res.size(); i++) {
+            double num = res.get(i) - min[i];
+            double denom = max[i] - min[i];
+            double scaled = num / denom;
+
+            if (Double.isNaN(scaled))
+                res.set(i, num);
+            else
+                res.set(i, scaled);
+        }
 
         return res;
     }

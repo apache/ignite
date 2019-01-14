@@ -104,7 +104,7 @@ public class RandomForestRegressionExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = randomForestMdl.apply(inputs);
+                    double prediction = randomForestMdl.predict(inputs);
 
                     mse += Math.pow(prediction - groundTruth, 2.0);
                     mae += Math.abs(prediction - groundTruth);

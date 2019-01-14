@@ -45,11 +45,12 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
     /**
      * @param caches Caches.
+     * @param excludeCaches Caches to exclude.
      * @param skipZeros Skip zeros partitions.
      * @param cacheFilterEnum Cache kind.
      */
-    public VisorIdleVerifyDumpTaskArg(Set<String> caches, boolean skipZeros, CacheFilterEnum cacheFilterEnum) {
-        super(caches);
+    public VisorIdleVerifyDumpTaskArg(Set<String> caches, Set<String> excludeCaches, boolean skipZeros, CacheFilterEnum cacheFilterEnum) {
+        super(caches, excludeCaches);
         this.skipZeros = skipZeros;
         this.cacheFilterEnum = cacheFilterEnum;
     }

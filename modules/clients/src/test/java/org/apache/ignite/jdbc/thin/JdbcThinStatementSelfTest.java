@@ -31,10 +31,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -388,8 +386,9 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5438")
     public void testExecuteQueryTimeout() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
+
         final String sqlText = "select sleep_func(3)";
 
         stmt.setQueryTimeout(1);
@@ -572,8 +571,9 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5438")
     public void testExecuteUpdateTimeout() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
+
         final String sqlText = "update test set val=1 where _key=sleep_func(3)";
 
         stmt.setQueryTimeout(1);
@@ -706,8 +706,9 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5440")
     public void testSetEscapeProcessing() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+
         stmt.setEscapeProcessing(false);
 
         final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";
@@ -1056,52 +1057,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 stmt.execute("select 1", new String[] {"a", "b"});
             }
         });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @org.junit.Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5439")
-    public void testCancel() throws Exception {
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.execute("select sleep_func(3)");
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "The query is canceled");
-
-        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    stmt.cancel();
-                }
-                catch (SQLException e) {
-                    log.error("Unexpected exception", e);
-
-                    fail("Unexpected exception.");
-                }
-            }
-        });
-
-        f.get();
-
-        stmt.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.cancel();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed");
     }
 
     /**

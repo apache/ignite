@@ -44,17 +44,18 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // No-op.
     }
 
-    /* {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override protected TcpDiscoveryCloudIpFinder ipFinder() throws Exception {
         // No-op.
         return null;
     }
 
-    /* {@inheritDoc} */
+    /** {@inheritDoc} */
     @Test
     @Override public void testIpFinder() throws Exception {
         // No-op

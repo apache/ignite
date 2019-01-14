@@ -120,7 +120,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void createCaches() {
         cacheOrg = jcache(ignite, cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class), ORG, Integer.class, Organization.class);
         cachePers = ignite.cache(PERS);
@@ -130,7 +129,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void initCacheAndDbData() throws SQLException {
         int idGen = 0;
 
@@ -258,7 +256,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-705")
     @Test

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
-import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * Special test suite with ignored tests.
@@ -27,34 +27,31 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteIgnoredTestSuite extends TestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        IgniteTestSuite.ignoreDefault(true);
-
-        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite");
+    public static TestSuite suite() {
+        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Test Suite");
 
         /* --- AWS --- */
-        suite.addTest(IgniteS3TestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteS3TestSuite.class));
 
         /* --- CLIENTS --- */
-        suite.addTest(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.class));
 
         /* --- CLOUDS --- */
-        suite.addTest(IgniteCloudTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteCloudTestSuite.class));
 
         /* --- JTA --- */
-        suite.addTest(IgniteJtaTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteJtaTestSuite.class));
 
         /* --- QUERIES --- */
-        suite.addTest(IgniteCacheQuerySelfTestSuite.suite());
-        suite.addTest(IgniteCacheQuerySelfTestSuite2.suite());
+        //suite.addTest(new JUnit4TestAdapter(IgniteCacheQuerySelfTestSuite.class));
+        //suite.addTest(new JUnit4TestAdapter(IgniteCacheQuerySelfTestSuite2.class));
 
         /* --- SPRING --- */
-        suite.addTest(IgniteSpringTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringTestSuite.class));
 
         /* --- WEB SESSIONS --- */
-        suite.addTest(IgniteWebSessionSelfTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteWebSessionSelfTestSuite.class));
 
         return suite;
     }

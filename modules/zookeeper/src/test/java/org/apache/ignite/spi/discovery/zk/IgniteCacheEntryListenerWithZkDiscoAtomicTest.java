@@ -31,9 +31,9 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class IgniteCacheEntryListenerWithZkDiscoAtomicTest extends IgniteCacheEntryListenerAtomicTest {
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8109")
+    @Test
     @Override public void testConcurrentRegisterDeregister() throws Exception {
-        // No-op
+        // No-op.
     }
 }
