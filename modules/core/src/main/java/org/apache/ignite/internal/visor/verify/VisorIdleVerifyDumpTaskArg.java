@@ -82,19 +82,41 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
         out.writeBoolean(skipZeros);
 
-        U.writeEnum(out, cacheFilterEnum);
+        if(instanceOfCurrentClass())
+            writeExternalDataFromEndOfObjectOutput(out);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void writeExternalDataFromEndOfObjectOutput(ObjectOutput out) throws IOException {
+        U.writeEnum(out, cacheFilterEnum);
+
+        super.writeExternalDataFromEndOfObjectOutput(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
         skipZeros = in.readBoolean();
 
+        if(instanceOfCurrentClass())
+            readExternalDataFromEndOfObjectOutput(protoVer, in);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalDataFromEndOfObjectOutput(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         if (protoVer >= V2)
             cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
         else
             cacheFilterEnum = CacheFilterEnum.ALL;
+
+        super.readExternalDataFromEndOfObjectOutput(protoVer, in);
     }
 
     /** {@inheritDoc} */
@@ -105,5 +127,13 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorIdleVerifyDumpTaskArg.class, this);
+    }
+
+    /**
+     * @return {@code True} if current instance is a instance of current class (not a child class) and {@code False} if
+     * current instance is a instance of extented class (i.e child class).
+     */
+    private boolean instanceOfCurrentClass() {
+        return VisorIdleVerifyDumpTaskArg.class == getClass();
     }
 }
