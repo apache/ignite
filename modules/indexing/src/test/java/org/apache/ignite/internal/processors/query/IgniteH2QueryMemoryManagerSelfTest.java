@@ -74,22 +74,22 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
 
             return null;
         }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
-//
-//        // Check that two small queries works.
-//        sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id", MAX_MEM_1M);
-//        sql("select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
-//
-//        // Check query that is mapped to two map queries.
-//        GridTestUtils.assertThrows(log, () -> {
-//            sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id" +
-//                "UNION " +
-//                "select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
-//
-//            return null;
-//        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
-//
-//        // Query with small local result.
-//        List<List<?>> res = sql("select * from T order by T.id", MAX_MEM_1M);
+
+        // Check that two small queries works.
+        sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id", MAX_MEM_1M);
+        sql("select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
+
+        // Check query that is mapped to two map queries.
+        GridTestUtils.assertThrows(log, () -> {
+            sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id" +
+                "UNION " +
+                "select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
+
+            return null;
+        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
+
+        // Query with small local result.
+        sql("select * from T order by T.id", MAX_MEM_1M);
     }
 
     /**
@@ -100,6 +100,7 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
      */
     private List<List<?>> sql(String sql, long maxMem, Object... args) {
         return grid(0).context().query().querySqlFields(
-            new SqlFieldsQueryEx(sql, null).setArgs(args).maxMemory(maxMem), false).getAll();
+            new SqlFieldsQueryEx(sql, null).maxMemory(maxMem).setLazy(true).setArgs(args), false)
+            .getAll();
     }
 }
