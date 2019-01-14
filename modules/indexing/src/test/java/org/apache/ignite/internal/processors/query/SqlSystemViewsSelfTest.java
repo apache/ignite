@@ -549,13 +549,13 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
 
         List<?> expRow = Arrays.asList(
-            "DEFAULT",      // TABLE_SCHEMA
+            "DEFAULT",      // SCHEMA_NAME
             "CACHE_SQL",    // TABLE_NAME
-            "cache_sql",    // OWNING_CACHE_NAME
-            cacheSqlId,     // OWNING_CACHE_ID
+            "cache_sql",    // CACHE_NAME
+            cacheSqlId,     // CACHE_ID
             "_KEY",         // AFFINITY_COLUMN
             "ID",           // KEY_ALIAS
-            "_VAL",         // VALUE_ALIAS
+            null,           // VALUE_ALIAS
             "java.lang.Integer", // KEY_TYPE_NAME
             "random_name"   // VALUE_TYPE_NAME
 
@@ -571,12 +571,12 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         List<?> allExpRows = Arrays.asList(
             expRow,
             Arrays.asList(
-                "PUBLIC",               // TABLE_SCHEMA
+                "PUBLIC",               // SCHEMA_NAME
                 "DDL_TABLE",            // TABLE_NAME
-                "SQL_PUBLIC_DDL_TABLE", // OWNING_CACHE_NAME
-                ddlTabId,               // OWNING_CACHE_ID
+                "SQL_PUBLIC_DDL_TABLE", // CACHE_NAME
+                ddlTabId,               // CACHE_ID
                 "ID2",                  // AFFINITY_COLUMN
-                "_KEY",                 // KEY_ALIAS
+                null,                   // KEY_ALIAS
                 "MY_VAL",               // VALUE_ALIAS
                 "random_name",          // KEY_TYPE_NAME
                 "java.lang.String"      // VALUE_TYPE_NAME
@@ -607,7 +607,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
                 "WHERE TABLE_NAME = 'NO_ALIAS_NON_SQL_KEY'").get(0);
 
-            assertEquals(Arrays.asList("_KEY", "_VAL"), keyValAliases);
+            assertEquals(Arrays.asList(null, null), keyValAliases);
         }
 
         {
@@ -631,7 +631,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
                 "WHERE TABLE_NAME = 'COMPLEX_KEY_COMPLEX_VAL'").get(0);
 
-            assertEquals(Arrays.asList("_KEY", "_VAL"), keyValAliases);
+            assertEquals(Arrays.asList(null, null), keyValAliases);
         }
     }
 
@@ -710,7 +710,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
                 "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
                 "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
                 "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
-                "IS_SQL_ESCAPE_ALL, TABLE_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
+                "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
                 "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
                 "DATA_REGION_NAME FROM IGNITE.CACHES");
 

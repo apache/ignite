@@ -696,6 +696,13 @@ public class SchemaManager {
     }
 
     /**
+     * @return all known tables.
+     */
+    public Collection<GridH2Table> dataTables() {
+        return dataTables.values();
+    }
+
+    /**
      * Find table for index.
      *
      * @param schemaName Schema name.

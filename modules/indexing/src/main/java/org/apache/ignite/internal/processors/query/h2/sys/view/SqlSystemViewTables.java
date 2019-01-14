@@ -21,8 +21,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -83,9 +81,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
 
         final AtomicLong keys = new AtomicLong();
 
-        return ctx.cache().publicCacheNames().stream()
-            .flatMap(cacheName -> mgr.tablesForCache(cacheName).stream())
-            .map(H2TableDescriptor::table)
+        return mgr.dataTables().stream()
             .filter(filter)
             .map(tab -> {
                     Object[] data = new Object[] {
@@ -94,8 +90,8 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tab.cacheName(),
                         tab.cacheId(),
                         getAffinityColumn(tab),
-                        getKeyAlias(tab),
-                        getValueAlias(tab),
+                        tab.rowDescriptor().keyAliasName(),
+                        tab.rowDescriptor().valueAliasName(),
                         // We use type descriptor because there is no way to get complex type (custom class Person)
                         // from typeid.
                         tab.rowDescriptor().type().keyTypeName(),
@@ -123,7 +119,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                 return cols[i].getName();
         }
 
-        return QueryUtils.VAL_FIELD_NAME;
+        return null;
     }
 
     /**
@@ -142,7 +138,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                 return cols[i].getName();
         }
 
-        return QueryUtils.KEY_FIELD_NAME;
+        return null;
     }
 
     /**
@@ -167,6 +163,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.cache().publicAndDsCacheNames().stream().mapToLong(c -> ctx.query().types(c).size()).sum();
+        return mgr.dataTables().size();
     }
 }
