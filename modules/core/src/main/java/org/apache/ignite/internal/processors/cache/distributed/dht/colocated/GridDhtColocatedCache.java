@@ -365,8 +365,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         else
             topVer = ctx.affinity().affinityTopologyVersion();
 
-        assert ctx.shared().exchange().affinityReadyFuture(topVer).isDone();
-
         IgniteInternalFuture<Map<K, V>> fut = loadAsync(
             ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),

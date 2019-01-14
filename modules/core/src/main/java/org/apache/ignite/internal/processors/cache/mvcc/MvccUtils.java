@@ -246,7 +246,8 @@ public class MvccUtils {
 
             byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
 
-            if (state != TxState.COMMITTED && state != TxState.ABORTED)
+            if (MVCC_MAX_SNAPSHOT.compareTo(snapshot) != 0 // Special version which sees all committed entries.
+                && state != TxState.COMMITTED && state != TxState.ABORTED)
                 throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
 
             return state == TxState.COMMITTED;

@@ -162,7 +162,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private void requestSnapshot0(@NotNull AffinityTopologyVersion topVer, @NotNull MvccSnapshotResponseListener lsnr) {
         MvccCoordinator crd = coordinator(); AffinityTopologyVersion crdTopVer = crd.topologyVersion();
 
-        if (AffinityTopologyVersion.ZERO.compareTo(crdTopVer) == 0)
+        if (!crdTopVer.initialized())
             lsnr.onError(noCoordinatorError());
         else if (crdTopVer.compareTo(topVer) <= 0) {
             synchronized (this) {
@@ -238,7 +238,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** */
     private void tryRemap(@NotNull AffinityTopologyVersion mapVer, @NotNull MvccSnapshotResponseListener lsnr) {
-        if (AffinityTopologyVersion.ZERO.compareTo(mapVer) == 0)
+        if (!mapVer.initialized())
             lsnr.onError(noCoordinatorError());
         else
             remap(mapVer, lsnr);

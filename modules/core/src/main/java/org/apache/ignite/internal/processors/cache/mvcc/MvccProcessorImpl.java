@@ -731,8 +731,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
                 });
             }
-
-            if (forRead)
+            else if (forRead)
                 lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
             else
                 lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
