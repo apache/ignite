@@ -34,6 +34,8 @@ import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArgSerializationSelfTest;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArgSerializationSelfTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
@@ -71,6 +73,10 @@ public class IgniteBasicWithPersistenceTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(GridCommandHandlerTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCommandHandlerSslTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(VisorIdleVerifyTaskArgSerializationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(VisorIdleVerifyDumpTaskArgSerializationSelfTest.class));
+
         suite.addTest(new JUnit4TestAdapter(GridInternalTaskUnusedWalSegmentsTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridNodeMetricsLogPdsSelfTest.class));
