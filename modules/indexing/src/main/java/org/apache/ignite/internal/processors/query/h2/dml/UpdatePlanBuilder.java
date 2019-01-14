@@ -789,7 +789,6 @@ public final class UpdatePlanBuilder {
             throw new IgniteSQLException("SQL UPDATE can't modify key or its fields directly",
                 IgniteQueryErrorCode.KEY_UPDATE);
 
-        // FIXME: Do we have cases when we got it null?
         if (gridTbl != null)
             verifyDmlColumns(gridTbl, update.set().keySet());
     }
@@ -821,14 +820,14 @@ public final class UpdatePlanBuilder {
     }
 
 
-    //TODO: rewrite using cols!
     /**
      * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br/>
      * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>
      * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br/>
      *
      * @param tab - updated table.
-     * @param affectedColumns - table's column names affected by dml query.
+     * @param affectedColumns - table's column names affected by dml query. Their order should be the same as in the
+     * dml statement only to have the same columns order in the error message.
      * @throws IgniteSQLException if check failed.
      */
     private static void verifyDmlColumns(GridH2Table tab, Collection<String> affectedColumns) {
