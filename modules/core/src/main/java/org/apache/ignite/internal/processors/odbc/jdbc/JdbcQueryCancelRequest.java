@@ -24,32 +24,33 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query close request.
+ * JDBC query cancel request.
  */
-public class JdbcQueryCloseRequest extends JdbcRequest {
-    /** Cursor ID. */
-    private long cursorId;
+public class JdbcQueryCancelRequest extends JdbcRequest {
+
+    /** Id of a request to be cancelled. */
+    private long reqIdToCancel;
 
     /**
      */
-    JdbcQueryCloseRequest() {
-        super(QRY_CLOSE);
+    public JdbcQueryCancelRequest() {
+        super(QRY_CANCEL);
     }
 
     /**
-     * @param cursorId Cursor ID.
+     * @param reqIdToCancel Id of a request to be cancelled.
      */
-    public JdbcQueryCloseRequest(long cursorId) {
-        super(QRY_CLOSE);
+    public JdbcQueryCancelRequest(long reqIdToCancel) {
+        super(QRY_CANCEL);
 
-        this.cursorId = cursorId;
+        this.reqIdToCancel = reqIdToCancel;
     }
 
     /**
-     * @return Cursor ID.
+     * @return Id of a request to be cancelled.
      */
-    public long cursorId() {
-        return cursorId;
+    public long requestIdToBeCancelled() {
+        return reqIdToCancel;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +58,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(cursorId);
+        writer.writeLong(reqIdToCancel);
     }
 
     /** {@inheritDoc} */
@@ -65,11 +66,11 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        cursorId = reader.readLong();
+        reqIdToCancel = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryCloseRequest.class, this);
+        return S.toString(JdbcQueryCancelRequest.class, this);
     }
 }

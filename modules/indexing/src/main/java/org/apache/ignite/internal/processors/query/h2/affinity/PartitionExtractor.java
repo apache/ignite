@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
-import org.h2.value.ValueLong;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,10 +49,13 @@ public class PartitionExtractor {
      * Maximum number of partitions to be used in case of between expression.
      * In case of exceeding all partitions will be used.
      */
-    private static final int MAX_PARTITIONS_COUNT_BETWEEN = 16;
+    private static final int DFL_MAX_PARTITIONS_COUNT_BETWEEN = 16;
 
     /** Indexing. */
     private final IgniteH2Indexing idx;
+
+    /** Maximum number of partitions to be used in case of between expression. */
+    private final int maxPartitionsCntBetween;
 
     /**
      * Constructor.
@@ -62,6 +64,8 @@ public class PartitionExtractor {
      */
     public PartitionExtractor(IgniteH2Indexing idx) {
         this.idx = idx;
+        maxPartitionsCntBetween = Integer.getInteger(
+            IgniteSystemProperties.IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN, DFL_MAX_PARTITIONS_COUNT_BETWEEN);
     }
 
     /**
@@ -211,7 +215,7 @@ public class PartitionExtractor {
     private PartitionNode extractFromAnd(GridSqlOperation op) throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode  betweenNodes = tryExtractBetween(op);
+        PartitionNode betweenNodes = tryExtractBetween(op);
 
         if (betweenNodes != null)
             return betweenNodes;
@@ -381,169 +385,107 @@ public class PartitionExtractor {
     }
 
     /**
-     * Try to extract partitons from {@code op} assuming that it's between opoeration or simple range.
+     * Try to extract partitions from {@code op} assuming that it's between operation or simple range.
      *
      * @param op Sql operation.
      * @return {@code PartitionSingleNode} if operation reduced to one partition,
-     *   {@code PartitionGroupNode} if operation reduced to multiple partitons or null if operation is neither
+     *   {@code PartitionGroupNode} if operation reduced to multiple partitions or null if operation is neither
      *   between nor simple range. Null also returns if it's not possible to extract partitions from given operation.
      * @throws IgniteCheckedException If failed.
      */
-    PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
         // Between operation (or similar range) should contain exact two children.
-        if (op.size() != 2)
-            return null;
+        assert op.size() == 2;
 
-        if (op.child().size() != 2)
-            return null;
-
-        if (op.child(1).size() != 2)
-            return null;
-
-        if (op.child().child().size() != 0 || op.child(1).child().size() != 0)
+        if (op.child().size() != 2 || op.child(1).size() != 2 || op.child().child().size() != 0 ||
+            op.child(1).child().size() != 0)
             return null;
 
         // Try parse left AST.
-        GridSqlAst left = op.child();
-        GridSqlOperation leftOp;
-        GridSqlOperationType leftOpType;
         GridSqlColumn leftCol;
 
-        if (left instanceof GridSqlOperation) {
-            leftOp = (GridSqlOperation)left;
-            leftOpType = leftOp.operationType();
-
-            if (leftOp.child() instanceof GridSqlColumn) {
-                leftCol = leftOp.child();
-
-                if (!(leftCol.column().getTable() instanceof GridH2Table))
-                    return null;
-            }
-            else
-                return null;
-        }
+        if (op.child() instanceof GridSqlOperation && op.child().child() instanceof GridSqlColumn &&
+            (((GridSqlColumn)op.child().child()).column().getTable() instanceof GridH2Table))
+            leftCol = op.child().child();
         else
             return null;
 
         // Try parse right AST.
-        GridSqlAst right = op.child(1);
-        GridSqlOperation rightOp;
-        GridSqlOperationType rightOpType;
         GridSqlColumn rightCol;
 
-        if (right instanceof GridSqlOperation) {
-            rightOp = (GridSqlOperation)right;
-            rightOpType = rightOp.operationType();
-
-            if (rightOp.child() instanceof GridSqlColumn) {
-                rightCol = rightOp.child();
-
-                if (!(rightCol.column().getTable() instanceof GridH2Table))
-                    return null;
-            }
+        if (op.child(1) instanceof GridSqlOperation && op.child(1).child() instanceof GridSqlColumn)
+                rightCol = op.child(1).child();
             else
                 return null;
-        }
-        else
+
+        // Check that columns might be used for partition pruning.
+        if(!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
             return null;
 
         // Check that both left and right AST use same column.
-        if (!leftCol.equals(rightCol))
+        if (!F.eq(leftCol.schema(), rightCol.schema()) ||
+            !F.eq(leftCol.columnName(), rightCol.columnName()) ||
+            !F.eq(leftCol.tableAlias(), rightCol.tableAlias()))
             return null;
 
-        // Check that columns might be used for partition prunning.
-        if (!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
+        // Check columns type
+        if (!(leftCol.column().getType() == Value.BYTE || leftCol.column().getType() == Value.SHORT ||
+            leftCol.column().getType() == Value.INT || leftCol.column().getType() == Value.LONG))
             return null;
 
         // Check that left AST operation is '>' or '>=' and right AST operation is '<' or '<='.
-        if (!((leftOpType == GridSqlOperationType.BIGGER || leftOpType == GridSqlOperationType.BIGGER_EQUAL)
-            && (rightOpType == GridSqlOperationType.SMALLER || rightOpType == GridSqlOperationType.SMALLER_EQUAL)))
+        if (!((((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER ||
+            ((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER_EQUAL)
+            && (((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER ||
+            ((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER_EQUAL)))
             return null;
 
         // Try parse left AST right value (value to the right of '>' or '>=').
-        GridSqlAst leftVal = leftOp.child(1);
-
         GridSqlConst leftConst;
-        GridSqlParameter leftParam;
 
-        if (leftVal instanceof GridSqlConst) {
-            leftConst = (GridSqlConst)leftVal;
-            leftParam = null;
-        }
-        else if (leftVal instanceof GridSqlParameter) {
-            leftConst = null;
-            leftParam = (GridSqlParameter)leftVal;
-        }
+        if (op.child().child(1) instanceof GridSqlConst)
+            leftConst = op.child().child(1);
         else
             return null;
 
         // Try parse right AST right value (value to the right of '<' or '<=').
-        GridSqlAst rightVal = rightOp.child(1);
-
         GridSqlConst rightConst;
-        GridSqlParameter rightParam;
 
-        if (rightVal instanceof GridSqlConst) {
-            rightConst = (GridSqlConst)rightVal;
-            rightParam = null;
-        }
-        else if (rightVal instanceof GridSqlParameter) {
-            rightConst = null;
-            rightParam = (GridSqlParameter)rightVal;
-        }
+        if (op.child(1).child(1) instanceof GridSqlConst)
+            rightConst = op.child(1).child(1);
         else
             return null;
 
-        if (leftParam != null || rightParam != null)
+        long leftLongVal;
+        long rightLongVal;
+
+        try {
+            leftLongVal = leftConst.value().getLong();
+            rightLongVal = rightConst.value().getLong();
+        }
+        catch (Exception e) {
             return null;
-
-        // Check const dataTypes
-        int leftConstType = leftConst.value().getType();
-
-        if (!(leftConstType == Value.BYTE || leftConstType == Value.SHORT || leftConstType == Value.INT ||
-            leftConstType == Value.LONG))
-            return null;
-
-        int rightConstType = rightConst.value().getType();
-
-        if (!(rightConstType == Value.BYTE || rightConstType == Value.SHORT || rightConstType == Value.INT ||
-            rightConstType == Value.LONG))
-            return null;
-
-
-        long leftLongVal = leftConst.value().getLong();
-        long rightLongVal = rightConst.value().getLong();
+        }
 
         // Increment left long value if '>' is used.
-        if (leftOpType == GridSqlOperationType.BIGGER)
+        if (((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER)
             leftLongVal++;
 
         // Decrement right long value if '<' is used.
-        if (rightOpType == GridSqlOperationType.SMALLER)
+        if (((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER)
             rightLongVal--;
 
         Set<PartitionSingleNode> parts = new HashSet<>();
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            // Do extract.
-            PartitionSingleNode part = extractSingle(leftCol.column(), new GridSqlConst(ValueLong.get(i)),
-                null);
+            parts.add(new PartitionConstantNode(descriptor((GridH2Table)leftCol.column().getTable()),
+                idx.kernalContext().affinity().partition(((GridH2Table)leftCol.column().getTable()).cacheName(), i)));
 
-            if (part == null)
-                return null;
-
-            parts.add(part);
-
-            int maxPartitionsCnt = Integer.getInteger(
-                IgniteSystemProperties.IGNITE_PARTITIONS_PRUNNING_MAX_PARTIONS_BETWEEN, MAX_PARTITIONS_COUNT_BETWEEN);
-
-            if (parts.size() > maxPartitionsCnt)
+            if (parts.size() > maxPartitionsCntBetween)
                 return null;
         }
 
-        if (parts.isEmpty())
-            return PartitionNoneNode.INSTANCE;
-
-        return parts.size() == 1 ? parts.iterator().next() : new PartitionGroupNode(parts);
+        return parts.isEmpty() ? PartitionNoneNode.INSTANCE :
+            parts.size() == 1 ? parts.iterator().next() : new PartitionGroupNode(parts);
     }
 }

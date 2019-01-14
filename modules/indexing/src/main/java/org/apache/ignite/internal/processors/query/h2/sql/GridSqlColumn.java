@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
-import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.expression.Expression;
@@ -93,6 +92,13 @@ public class GridSqlColumn extends GridSqlElement {
         this.tblAlias = tblAlias;
     }
 
+    /**
+     * @return Table alias.
+     */
+    public String tableAlias() {
+        return tblAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         String sql = Parser.quoteIdentifier(colName);
@@ -148,26 +154,5 @@ public class GridSqlColumn extends GridSqlElement {
      */
     public Column column() {
         return col;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        if (!super.equals(o))
-            return false;
-        GridSqlColumn column = (GridSqlColumn)o;
-        return Objects.equals(from, column.from) &&
-            Objects.equals(schema, column.schema) &&
-            Objects.equals(tblAlias, column.tblAlias) &&
-            Objects.equals(colName, column.colName) &&
-            Objects.equals(col, column.col);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(super.hashCode(), from, schema, tblAlias, colName, col);
     }
 }
