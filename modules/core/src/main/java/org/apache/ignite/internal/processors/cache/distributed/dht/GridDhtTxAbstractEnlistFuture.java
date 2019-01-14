@@ -515,7 +515,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
                                     try {
-                                        // t0d0 recheck all places where lock counter is incremented
                                         tx.incrementLockCounter();
 
                                         processEntry(entry0, op, fut.get(), val0, backups0);

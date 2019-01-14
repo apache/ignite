@@ -111,7 +111,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
 
-    /** t0d0 */
+    /** Counter tracking number of entries locked by this tx. */
     private final AtomicInteger lockCntr = new AtomicInteger();
 
     /**
@@ -946,14 +946,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * t0d0
+     * Increments lock counter.
      */
     public void incrementLockCounter() {
         lockCntr.incrementAndGet();
     }
 
     /**
-     * t0d0
+     * @return Current value of lock counter.
      */
     public int lockCounter() {
         return lockCntr.get();

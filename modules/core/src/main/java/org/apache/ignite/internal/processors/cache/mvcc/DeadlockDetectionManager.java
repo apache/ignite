@@ -182,8 +182,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                         probe.waitChain());
 
                     if (victim.xidVersion().equals(tx.xidVersion())) {
+                        // if a victim tx has made a progress since it was identified as waiting
+                        // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
                         if (victim.lockCounter() == tx.lockCounter()) {
-                            // t0d0 figure out whether DHT tx rollback works properly
+                            // t0d0 switch to near rollback as DHT tx rollback is not designed for cascade rollbacks
                             tx.rollbackAsync();
                         }
                     }
@@ -220,7 +222,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * t0d0 fix doc
+     * t0d0 Evalutate correctness for local and remote victims
+     * t0d0 fix docs
      * Chooses victim basing on tx start time. Algorithm chooses victim in such way that every site detected a deadlock
      * will choose the same victim. As a result only one tx participating in a deadlock will be aborted.
      * <p>

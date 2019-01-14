@@ -36,13 +36,11 @@ public class DeadlockProbe implements Message {
     private static final long serialVersionUID = 0;
 
     /** */
-    // t0d0 do we still need initiator version?
     private GridCacheVersion initiatorVer;
     /** */
     @GridDirectCollection(ProbedTx.class)
     private Collection<ProbedTx> waitChain;
     /** */
-    // t0d0 consider storing blocker in wait chain
     private ProbedTx blocker;
     /** */
     private boolean nearCheck;
@@ -62,15 +60,14 @@ public class DeadlockProbe implements Message {
     }
 
     /**
-     * @return Identifier of a transaction started a deadlock detection process.
+     * @return Identifier of a transaction started a deadlock detection process. Can be used for diagnostics.
      */
     public GridCacheVersion initiatorVersion() {
         return initiatorVer;
     }
 
     /**
-     * t0d0
-     * @return Identifier of a transaction identified as waiting during deadlock detection.
+     * @return Chain of transactions identified as waiting during deadlock detection.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Collection<ProbedTx> waitChain() {
@@ -78,9 +75,8 @@ public class DeadlockProbe implements Message {
     }
 
     /**
-     * t0d0
-     * @return Identifier of a transaction identified as blocking another (waiting)
-     * transaction during deadlock deteciton.
+     * @return Identifier of a transaction identified as blocking last transaction in the wait chain
+     * during deadlock deteciton.
      */
     public ProbedTx blocker() {
         return blocker;

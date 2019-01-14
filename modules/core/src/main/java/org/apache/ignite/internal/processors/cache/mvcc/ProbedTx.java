@@ -55,7 +55,7 @@ public class ProbedTx implements Message {
     }
 
     /**
-     * @return t0d0 Node started near transction.
+     * @return Node on which probed transction runs.
      */
     public UUID nodeId() {
         return nodeId;
@@ -83,14 +83,17 @@ public class ProbedTx implements Message {
     }
 
     /**
-     * @return t0d0
+     * @return Number of locks aquired by probed transaction at a time of probe handling.
      */
     public int lockCounter() {
         return lockCntr;
     }
 
     /**
-     * t0d0
+     * Creates a copy of this instance with modified transaction start time.
+     *
+     * @param updStartTime New start time value.
+     * @return Instance with updated start time.
      */
     public ProbedTx withStartTime(long updStartTime) {
         return new ProbedTx(
