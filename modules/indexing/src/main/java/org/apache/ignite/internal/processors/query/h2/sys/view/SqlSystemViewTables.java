@@ -40,38 +40,11 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * View that contains information about all the sql tables in the cluster.
  */
 public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
-    /**
-     * Name of the affinity column. Columns value could be {@code null} if affinity key is not known, "_KEY" for
-     * default.
-     */
-    public static final String AFFINITY_COLUMN = "AFFINITY_COLUMN";
-
-    /** Alias for cache key. {@link QueryUtils#KEY_FIELD_NAME} by default. */
-    public static final String KEY_ALIAS = "KEY_ALIAS";
-
-    /** Alias for cache value. {@link QueryUtils#VAL_FIELD_NAME} by default. */
-    public static final String VALUE_ALIAS = "VALUE_ALIAS";
-
-    /** Type name of key cache object. */
-    public static final String KEY_TYPE_NAME = "KEY_TYPE_NAME";
-
-    /** Type name of value cache object. */
-    public static final String VALUE_TYPE_NAME = "VALUE_TYPE_NAME";
-
-    /** Name of the sql table. */
-    public static final String TABLE_NAME = "TABLE_NAME";
-
-    /** Sql schema name (database name). */
-    public static final String TABLE_SCHEMA = "TABLE_SCHEMA";
-
-    /** Name of the cache holding that table. */
-    public static final String OWNING_CACHE_NAME = "OWNING_CACHE_NAME";
-
-    /** Id of the cache holding that table. */
-    public static final String OWNING_CACHE_ID = "OWNING_CACHE_ID";
+    /** Name of the column that contains names of sql tables. */
+    private static final String TABLE_NAME = "TABLE_NAME";
 
     /** Api to all known tables. */
-    private final SchemaManager mngr;
+    private final SchemaManager mgr;
 
     /**
      * Creates view with columns.
@@ -80,18 +53,18 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
      */
     public SqlSystemViewTables(GridKernalContext ctx, SchemaManager schemaMngr) {
         super("TABLES", "Ignite tables", ctx, TABLE_NAME,
-            newColumn(TABLE_SCHEMA),
+            newColumn("SCHEMA_NAME"),
             newColumn(TABLE_NAME),
-            newColumn(OWNING_CACHE_NAME),
-            newColumn(OWNING_CACHE_ID, Value.INT),
-            newColumn(AFFINITY_COLUMN),
-            newColumn(KEY_ALIAS),
-            newColumn(VALUE_ALIAS),
-            newColumn(KEY_TYPE_NAME),
-            newColumn(VALUE_TYPE_NAME)
+            newColumn("CACHE_NAME"),
+            newColumn("CACHE_ID", Value.INT),
+            newColumn("AFFINITY_COLUMN"),
+            newColumn("KEY_ALIAS"),
+            newColumn("VALUE_ALIAS"),
+            newColumn("KEY_TYPE_NAME"),
+            newColumn("VALUE_TYPE_NAME")
         );
 
-        mngr = schemaMngr;
+        mgr = schemaMngr;
     }
 
     /** {@inheritDoc} */
@@ -111,7 +84,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
         final AtomicLong keys = new AtomicLong();
 
         return ctx.cache().publicCacheNames().stream()
-            .flatMap(cacheName -> mngr.tablesForCache(cacheName).stream())
+            .flatMap(cacheName -> mgr.tablesForCache(cacheName).stream())
             .map(H2TableDescriptor::table)
             .filter(filter)
             .map(tab -> {
