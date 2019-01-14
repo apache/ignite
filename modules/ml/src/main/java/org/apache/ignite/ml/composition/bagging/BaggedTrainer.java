@@ -48,9 +48,8 @@ import org.apache.ignite.ml.util.Utils;
  *
  * @param <M> Type of model produced by trainer for which bagged version is created.
  * @param <L> Type of labels.
- * @param <T> Type of trainer for which bagged version is created.
  */
-public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends DatasetTrainer<M, L>> extends
+public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L> extends
     DatasetTrainer<BaggedModel, L> {
     /** Trainer for which bagged version is created. */
     private final DatasetTrainer<M, L> tr;
@@ -181,8 +180,8 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L, T extends D
     }
 
     /** {@inheritDoc} */
-    @Override public BaggedTrainer<M, L, T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        return (BaggedTrainer<M, L, T>)super.withEnvironmentBuilder(envBuilder);
+    @Override public BaggedTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (BaggedTrainer<M, L>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */
