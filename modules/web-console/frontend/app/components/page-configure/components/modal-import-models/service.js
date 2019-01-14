@@ -48,7 +48,11 @@ export default class ModalImportModels {
             }
         });
 
-        return this.$uiRouter.stateService.go(this._state, this.$uiRouter.stateService.params);
+        return this.$uiRouter.stateService.go(this._state, this.$uiRouter.stateService.params)
+            .catch(() => {
+                this.deferred.reject(false);
+                this.deferred = null;
+            });
     }
 
     _open() {
