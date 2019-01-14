@@ -261,41 +261,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         }
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void _testMemoryLeakOnRestart() throws Exception {
-//        Ignite srv0 = startGrid(0);
-//        Ignite srv1 = startGrid(1);
-//
-//        populateBaseQueryData(srv0, 4);
-//
-//        int iter = 0;
-//        long prevMem = 0;
-//        while (true) {
-//            FieldsQueryCursor<List<?>> cursor = execute(srv1, new SqlFieldsQuery(
-//                "SELECT pers.id, pers.name " +
-//                    "FROM (SELECT DISTINCT p.id, p.name " +
-//                    "FROM \"pers\".PERSON as p) as pers " +
-//                    "JOIN \"pers\".PERSON p on p.id = pers.id " +
-//                    "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
-//                    "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
-//                .setLazy(lazy())
-//                .setPageSize(PAGE_SIZE_SMALL));
-//
-//            cursor.iterator().next();
-//
-//            stopGrid(1);
-//            U.sleep(50);
-//            srv1 = startGrid(1);
-//
-//            if (iter % 10 == 0)
-//                GridDebug.dumpHeap(String.format("dump%03d.hprof", iter / 10), true);
-//
-//            iter++;
-//        }
-//    }
-
     /**
      * @throws Exception If failed.
      */
