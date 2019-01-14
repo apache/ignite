@@ -780,6 +780,7 @@ public class GridReduceQueryExecutor {
                                 cancel);
 
                             resIter = new H2FieldsIterator(res, mvccTracker, false, detachedConn);
+
                             // don't recycle at final block
                             detachedConn = null;
 
