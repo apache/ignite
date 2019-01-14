@@ -34,9 +34,6 @@ public class VisorQueryCursor<T> implements Iterator<T>, AutoCloseable {
     /** */
     private final Iterator<T> itr;
 
-    /** Flag indicating that this cursor was read from last check. */
-    private volatile boolean accessed;
-
     /**
      * @param cur Cursor.
      */
@@ -72,20 +69,6 @@ public class VisorQueryCursor<T> implements Iterator<T>, AutoCloseable {
     @SuppressWarnings("unchecked")
     public Collection<GridQueryFieldMetadata> fieldsMeta() {
         return ((QueryCursorImpl)cur).fieldsMeta();
-    }
-
-    /**
-     * @return Flag indicating that this future was read from last check..
-     */
-    public boolean accessed() {
-        return accessed;
-    }
-
-    /**
-     * @param accessed New accessed.
-     */
-    public void accessed(boolean accessed) {
-        this.accessed = accessed;
     }
 
     /** {@inheritDoc} */

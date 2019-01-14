@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains utility methods for Visor query tasks and jobs.
@@ -280,6 +282,46 @@ public class VisorQueryUtils {
     }
 
     /**
+     * Get query holder from local storage for query with specified ID.
+     *
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
+     * @param errMsg Message to exception when holder is not found.
+     * @return Query holder for specified query ID.
+     * @throws IgniteException When holder is not found and errMsg is not null.
+     */
+    @Nullable public static VisorQueryHolder getQueryHolder(final IgniteEx ignite, final String qryId, final String errMsg)
+        throws IgniteException {
+        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+        VisorQueryHolder holder = storage.get(qryId);
+
+        if (holder == null && errMsg != null)
+            throw new IgniteException(errMsg);
+
+        return holder;
+    }
+
+    /**
+     * Remove query holder from local storage for query with specified ID and cancel query if it is in progress.
+     *
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
+     */
+    public static void removeQueryHolder(final IgniteEx ignite, final String qryId) {
+        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+        VisorQueryHolder holder = storage.remove(qryId);
+
+        if (holder != null) {
+            VisorQueryCursor<?> cur = holder.getCursor();
+
+            if (cur != null)
+                cur.close();
+
+            holder.cancelQuery();
+        }
+    }
+
+    /**
      * Schedule fetch of first query result page.
      *
      * @param qryId Unique query result id.
@@ -289,8 +331,7 @@ public class VisorQueryUtils {
     public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite, final Boolean scan) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
             @Override public void onTimeout() {
-                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-                VisorQueryHolder holder = storage.get(qryId);
+                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
                 if (holder != null) {
                     VisorQueryCursor<?> cur = holder.getCursor();
@@ -308,8 +349,7 @@ public class VisorQueryUtils {
                         }
                         else {
                             // Remove stored cursor otherwise.
-                            storage.remove(qryId);
-                            cur.close();
+                            removeQueryHolder(ignite, qryId);
                         }
                     }
                     catch (Throwable e) {
@@ -336,8 +376,7 @@ public class VisorQueryUtils {
     ) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
             @Override public void onTimeout() {
-                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-                VisorQueryHolder holder = storage.get(qryId);
+                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
                 if (holder != null) {
                     try {
@@ -411,26 +450,18 @@ public class VisorQueryUtils {
     public static void scheduleResultSetHolderRemoval(final String qryId, final IgniteEx ignite) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
-                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-                VisorQueryHolder holder = storage.get(qryId);
+                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
                 if (holder != null) {
                     VisorQueryCursor<?> cur = holder.getCursor();
 
-                    if (cur != null) {
-                        // If cursor was accessed since last scheduling, set access flag to false and reschedule.
-                        if (cur.accessed()) {
-                            cur.accessed(false);
-
-                            scheduleResultSetHolderRemoval(qryId, ignite);
-                        }
-                        else {
-                            // Remove stored cursor otherwise.
-                            storage.remove(qryId);
-
-                            cur.close();
-                            holder.cancelQuery();
-                        }
+                    if (holder.accessed()) {
+                        holder.accessed(false);
+                        scheduleResultSetHolderRemoval(qryId, ignite);
+                    }
+                    else {
+                        // Remove stored cursor otherwise.
+                        removeQueryHolder(ignite, qryId);
                     }
                 }
             }

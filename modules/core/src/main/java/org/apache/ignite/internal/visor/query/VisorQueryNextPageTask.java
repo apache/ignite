@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
 /**
  * Task for collecting next page previously executed SQL or SCAN query.
@@ -70,27 +71,17 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
          */
         private VisorQueryResult nextSqlPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
-
             String qryId = arg.getQueryId();
-            ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-            VisorQueryHolder holder = storage.get(qryId);
-
-            if (holder == null)
-                throw new IgniteException("SQL query results are expired.");
-
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "SQL query results are expired.");
             VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
-
             List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize());
 
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                cur.accessed(true);
-            else {
-                storage.remove(qryId);
-
-                cur.close();
-            }
+                holder.accessed(true);
+            else
+                removeQueryHolder(ignite, qryId);
 
             return new VisorQueryResult(ignite.localNode().id(), qryId, null, nextRows, hasMore,
                 U.currentTimeMillis() - start);
@@ -106,24 +97,16 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
             long start = U.currentTimeMillis();
 
             String qryId = arg.getQueryId();
-            ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-            VisorQueryHolder holder = storage.get(qryId);
-
-            if (holder == null)
-                throw new IgniteException("Scan query results are expired.");
-
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "Scan query results are expired.");
             VisorQueryCursor<Cache.Entry<Object, Object>> cur =
                 (VisorQueryCursor<Cache.Entry<Object, Object>>)holder.getCursor();
             List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.getPageSize());
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                cur.accessed(true);
-            else {
-                storage.remove(qryId);
-
-                cur.close();
-            }
+                holder.accessed(true);
+            else
+                removeQueryHolder(ignite, qryId);
 
             return new VisorQueryResult(ignite.localNode().id(), qryId, null, rows, hasMore,
                 U.currentTimeMillis() - start);

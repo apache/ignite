@@ -51,6 +51,9 @@ public class VisorQueryHolder {
     /** Query duration in ms. */
     private Long duration = null;
 
+    /** Flag indicating that this cursor was read from last check. */
+    private volatile boolean accessed;
+
     /**
      * Constructor.
      *
@@ -129,6 +132,17 @@ public class VisorQueryHolder {
     }
 
     /**
+     * Set fetched from query rows.
+     *
+     * @param rows Rows fetched from query.
+     */
+    public void setRows(List<Object[]> rows) {
+        duration = System.currentTimeMillis() - start;
+
+        this.rows = rows;
+    }
+
+    /**
      * @return Error in process of query result receiving.
      */
     public Throwable getErr() {
@@ -147,14 +161,17 @@ public class VisorQueryHolder {
     }
 
     /**
-     * Set fetched from query rows.
-     *
-     * @param rows Rows fetched from query.
+     * @return Flag indicating that this future was read from last check..
      */
-    public void setRows(List<Object[]> rows) {
-        duration = System.currentTimeMillis() - start;
+    public boolean accessed() {
+        return accessed;
+    }
 
-        this.rows = rows;
+    /**
+     * @param accessed New accessed.
+     */
+    public void accessed(boolean accessed) {
+        this.accessed = accessed;
     }
 
     /**

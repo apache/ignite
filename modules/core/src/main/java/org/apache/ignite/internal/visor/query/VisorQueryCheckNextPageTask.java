@@ -18,15 +18,15 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
+
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
 /**
  * Task for check a query execution and recieving first page of query result.
@@ -60,36 +60,27 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
 
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(VisorQueryNextPageTaskArg arg) {
-            long start = U.currentTimeMillis();
             String qryId = arg.getQueryId();
-
-            ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-            VisorQueryHolder holder = storage.get(qryId);
-
-            if (holder == null)
-                throw new IgniteException("SQL query results are expired.");
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "SQL query results are expired.");
 
             if (holder.getErr() != null)
                 return new VisorEither<>(new VisorExceptionWrapper(holder.getErr()));
 
+            VisorQueryCursor<?> cur = holder.getCursor();
             List<Object[]> rows = holder.getRows();
             List<VisorQueryField> columns = null;
 
-            boolean hasMore = true;
+            boolean hasMore = cur == null || rows == null;
 
             if (rows != null) {
-                VisorQueryCursor<?> cur = holder.getCursor();
                 columns = holder.getColumns();
                 hasMore = cur.hasNext();
-
-                if (hasMore)
-                    cur.accessed(true);
-                else {
-                    storage.remove(qryId);
-
-                    cur.close();
-                }
             }
+
+            if (hasMore)
+                holder.accessed(true);
+            else
+                removeQueryHolder(ignite, qryId);
 
             return new VisorEither<>(
                 new VisorQueryResult(ignite.localNode().id(), qryId, columns, rows, hasMore, holder.duration()));
