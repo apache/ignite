@@ -171,6 +171,7 @@ import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.FALSE;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
@@ -949,7 +950,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
-        CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled);
+        // Data page scan is enabled by default for SQL.
+        CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled != FALSE);
 
         try {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
@@ -980,7 +982,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException(e);
         }
         finally {
-            CacheDataTree.resetDataPageScanEnabled();
+            CacheDataTree.setDataPageScanEnabled(false);
         }
     }
 
@@ -1118,7 +1120,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 stmtEx.putMeta(MVCC_STATE, Boolean.TRUE);
             }
             else
-                stmtEx.putMeta(MVCC_STATE, Boolean.FALSE);
+                stmtEx.putMeta(MVCC_STATE, FALSE);
         }
 
         return mvccEnabled;

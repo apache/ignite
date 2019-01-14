@@ -25,11 +25,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,6 +39,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import static java.lang.Boolean.FALSE;
 
 /**
  */
@@ -82,6 +86,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>("test");
         ccfg.setIndexedTypes(Long.class, Long.class);
+        ccfg.setSqlFunctionClasses(SqlDirectDataPageScanTest.class);
 
         IgniteCache<Long,Long> cache = client.createCache(ccfg);
 
@@ -90,28 +95,41 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         int calls = 0;
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key"))
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(null)"))
             .getAll().isEmpty());
         assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key")
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
         assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = true;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key")
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
         assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = false;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "_val <> _key")
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
         assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
+    }
+
+    /**
+     * @param exp Expected flag value.
+     * @return Always {@code false}.
+     */
+    @QuerySqlFunction(alias = "check_scan_flag")
+    public static boolean checkScanFlag(Boolean exp) {
+        assertEquals(exp != FALSE, CacheDataTree.isDataPageScanEnabled());
+
+        return false;
     }
 
     /**

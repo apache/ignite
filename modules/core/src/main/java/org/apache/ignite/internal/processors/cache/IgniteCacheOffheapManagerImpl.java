@@ -114,6 +114,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -979,7 +980,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                             curPart = ds.partId();
 
-                            CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled);
+                            // Data page scan is disabled by default for scan queries.
+                            CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled == TRUE);
 
                             try {
                                 if (mvccSnapshot == null)
@@ -990,7 +992,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                                 }
                             }
                             finally {
-                                CacheDataTree.resetDataPageScanEnabled();
+                                CacheDataTree.setDataPageScanEnabled(false);
                             }
                         }
                         else
@@ -3353,7 +3355,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
                     newVer.coordinatorVersion(), newVer.counter(), newVer.operationCounter()));
 
-            return Boolean.TRUE;
+            return TRUE;
         }
     }
 
@@ -3406,7 +3408,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // We do not throw an exception here because new version may be updated by active Tx at this moment.
             }
 
-            return Boolean.TRUE;
+            return TRUE;
         }
     }
 
@@ -3471,7 +3473,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     ctx.wal().log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newRow.newMvccTxState()));
             }
 
-            return Boolean.TRUE;
+            return TRUE;
         }
     }
 }

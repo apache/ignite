@@ -61,11 +61,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
-    private static final Boolean DFLT_DATA_PAGE_SCAN_ENABLED = false;
-
-    /** */
-    private static final ThreadLocal<Boolean> dataPageScanEnabled = ThreadLocal.withInitial(
-        () -> DFLT_DATA_PAGE_SCAN_ENABLED);
+    private static final ThreadLocal<Boolean> dataPageScanEnabled =
+        ThreadLocal.withInitial(() -> false);
 
     /** */
     private final CacheDataRowStore rowStore;
@@ -115,18 +112,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * Enable or disable data page scan.
      * @param enabled {code true} If enabled.
      */
-    public static void setDataPageScanEnabled(Boolean enabled) {
-        if (enabled == null)
-            enabled = DFLT_DATA_PAGE_SCAN_ENABLED;
-
+    public static void setDataPageScanEnabled(boolean enabled) {
         dataPageScanEnabled.set(enabled);
-    }
-
-    /**
-     * Resets `data page scan enabled` flag to default.
-     */
-    public static void resetDataPageScanEnabled() {
-        setDataPageScanEnabled(DFLT_DATA_PAGE_SCAN_ENABLED);
     }
 
     /**
