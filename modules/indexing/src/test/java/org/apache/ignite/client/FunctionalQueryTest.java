@@ -109,42 +109,37 @@ public class FunctionalQueryTest {
                 }
             }
 
-            // Fields query
-            SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
-                .setArgs(minId)
-                .setPageSize(pageSize);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, true);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, false);
+        }
+    }
 
-            try (QueryCursor<List<?>> cur = cache.query(qry)) {
-                List<List<?>> res = cur.getAll();
+    /**
+     * @param cache Cache.
+     * @param minId Minimal ID.
+     * @param pageSize Page size.
+     * @param expSize The size of the expected results.
+     * @param exp Expected results.
+     * @param lazy Lazy mode flag.
+     */
+    private void checkSqlFieldsQuery(ClientCache<Integer, Person> cache, int minId, int pageSize, int expSize,
+        Map<Integer, Person> exp, boolean lazy) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
+            .setArgs(minId)
+            .setPageSize(pageSize)
+            .setLazy(lazy);
 
-                assertEquals(expSize, res.size());
+        try (QueryCursor<List<?>> cur = cache.query(qry)) {
+            List<List<?>> res = cur.getAll();
 
-                Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
-                    r -> Integer.parseInt(r.get(0).toString()),
-                    r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
-                ));
+            assertEquals(expSize, res.size());
 
-                assertEquals(exp, act);
-            }
+            Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
+                r -> Integer.parseInt(r.get(0).toString()),
+                r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
+            ));
 
-            // Check lazy = false mode.
-            qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
-                .setArgs(minId)
-                .setPageSize(pageSize)
-                .setLazy(false);
-
-            try (QueryCursor<List<?>> cur = cache.query(qry)) {
-                List<List<?>> res = cur.getAll();
-
-                assertEquals(expSize, res.size());
-
-                Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
-                    r -> Integer.parseInt(r.get(0).toString()),
-                    r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
-                ));
-
-                assertEquals(exp, act);
-            }
+            assertEquals(exp, act);
         }
     }
 
