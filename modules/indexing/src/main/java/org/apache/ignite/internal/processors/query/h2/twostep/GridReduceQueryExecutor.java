@@ -479,7 +479,7 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),
+            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
                 qry.mapQueries().size(), qry.pageSize(), sfuFut);
 
             Collection<ClusterNode> nodes;
@@ -765,7 +765,7 @@ public class GridReduceQueryExecutor {
                                 cancel,
                                 dataPageScanEnabled);
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, false);
+                            resIter = new H2FieldsIterator(res, mvccTracker, false, null);
 
                             mvccTracker = null; // To prevent callback inside finally block;
                         }

@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -64,7 +64,7 @@ import org.junit.runners.JUnit4;
  * Tests for ignite SQL system views.
  */
 @RunWith(JUnit4.class)
-public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
+public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** Metrics check attempts. */
     private static final int METRICS_CHECK_ATTEMPTS = 10;
 
