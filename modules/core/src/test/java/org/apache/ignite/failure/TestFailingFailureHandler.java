@@ -42,7 +42,7 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
-        if (!testIsRunning) {
+        if (!testIsRunning.getAndSet(false)) {
             ignite.log().info("Critical issue detected after test finished. Test failure handler ignore it.");
 
             return true;
@@ -52,7 +52,7 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
         TestCase.fail(failureCtx.toString());
 
-        test.handleFailure(failureCtx.error(), false);
+        test.handleFailure(failureCtx.error());
 
         return nodeStopped;
     }

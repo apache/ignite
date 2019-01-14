@@ -39,6 +39,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -178,7 +179,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Show that test is currently running. */
-    public static volatile boolean testIsRunning;
+    public static AtomicBoolean testIsRunning = new AtomicBoolean();
 
     /** Failure catched by test failure handler. */
     public final AtomicReference<Throwable> ex = new AtomicReference<>();
@@ -2087,7 +2088,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
-                testIsRunning = true;
+                testIsRunning.set(true);
 
                 try {
                     if (forceFailure)
@@ -2096,9 +2097,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     testRoutine.evaluate();
                 }
                 catch (Throwable e) {
-                    handleFailure(e, true);
+                    handleFailure(e);
                 } finally {
-                    testIsRunning = false;
+                    testIsRunning.set(false);
                 }
             }
         });
@@ -2146,12 +2147,11 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * Handle failure, which happened during the test.
      *
      * @param t Throwable.
-     * @param useHnd Use Failure Handler.
      */
-    public void handleFailure(Throwable t, boolean useHnd) {
+    public void handleFailure(Throwable t) {
         IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-        ex.set((hnd != null && useHnd) ? hnd.apply(t) : t);
+        ex.set(hnd != null ? hnd.apply(t) : t);
     }
 
     /**
