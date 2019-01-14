@@ -531,5 +531,4 @@ public class GridH2QueryContext {
     @Override public String toString() {
         return S.toString(GridH2QueryContext.class, this);
     }
-
 }
