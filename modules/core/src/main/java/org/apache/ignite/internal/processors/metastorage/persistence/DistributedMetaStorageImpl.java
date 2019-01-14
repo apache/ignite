@@ -455,6 +455,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
+        if (ctx.clientNode())
+            return null;
+
         if (!discoData.hasJoiningNodeData() || !isPersistenceEnabled(ctx.config()))
             return null;
 
@@ -553,6 +556,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (ctx.clientNode())
+            return;
+
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData = dataBag.newJoinerDiscoveryData(COMPONENT_ID);
 
         if (!discoData.hasJoiningNodeData())
