@@ -704,7 +704,7 @@ public class MvccUtils {
         GridNearTxLocal tx = tx0 != null && tx0.user() ? (GridNearTxLocal)tx0 : null;
 
         if (tx != null) {
-            if (!tx.pessimistic() || !tx.repeatableRead()) {
+            if (!tx.pessimistic()) {
                 tx.setRollbackOnly();
 
                 throw new UnsupportedTxModeException();
@@ -948,7 +948,7 @@ public class MvccUtils {
         private static final long serialVersionUID = 0L;
         /** */
         private UnsupportedTxModeException() {
-            super("Only pessimistic repeatable read transactions are supported when MVCC is enabled.");
+            super("Only pessimistic transactions are supported when MVCC is enabled.");
         }
     }
 

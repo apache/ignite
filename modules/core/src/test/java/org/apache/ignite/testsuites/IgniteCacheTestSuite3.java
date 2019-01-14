@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheStartupInDeploymentModesTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
@@ -78,26 +79,27 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLoca
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalByteArrayValuesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheTestSuite3.DynamicSuite.class)
 public class IgniteCacheTestSuite3 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 3");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite,IgniteCacheGroupsTest.class, ignoredTests);
 
@@ -165,7 +167,7 @@ public class IgniteCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite,GridCacheReplicatedP2PDisabledByteArrayValuesSelfTest.class, ignoredTests);
 
         // Near-only cache.
-        suite.addTest(IgniteCacheNearOnlySelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheNearOnlySelfTestSuite.suite(ignoredTests));
 
         // Test cache with daemon nodes.
         GridTestUtils.addTestIfNeeded(suite,GridCacheDaemonNodeLocalSelfTest.class, ignoredTests);
@@ -173,7 +175,7 @@ public class IgniteCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite,GridCacheDaemonNodeReplicatedSelfTest.class, ignoredTests);
 
         // Write-behind.
-        suite.addTest(IgniteCacheWriteBehindTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheWriteBehindTestSuite.suite(ignoredTests));
 
         // Transform.
         GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class, ignoredTests);
@@ -189,7 +191,7 @@ public class IgniteCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite,GridCacheMixedModeSelfTest.class, ignoredTests);
 
         // Cache interceptor tests.
-        suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheInterceptorSelfTestSuite.suite(ignoredTests));
 
         GridTestUtils.addTestIfNeeded(suite,IgniteTxGetAfterStopTest.class, ignoredTests);
 
@@ -199,5 +201,13 @@ public class IgniteCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite,IgniteTxRemoveTimeoutObjectsNearTest.class, ignoredTests);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

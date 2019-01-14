@@ -17,27 +17,26 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Mvcc variant of {@link IgnitePdsTestSuite4}.
  */
-@RunWith(AllTests.class)
+@RunWith(IgnitePdsMvccTestSuite4.DynamicSuite.class)
 public class IgnitePdsMvccTestSuite4 {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("Ignite persistent Store Mvcc Test Suite 4");
 
         Set<Class> ignoredTests = new HashSet<>();
 
@@ -48,9 +47,14 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(FileDownloaderTest.class);
         ignoredTests.add(IgnitePdsTaskCancelingTest.class);
 
-        suite.addTest(IgnitePdsTestSuite4.suite(ignoredTests));
-
-        return suite;
+        return IgnitePdsTestSuite4.suite(ignoredTests);
     }
 
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
+    }
 }
