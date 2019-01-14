@@ -37,7 +37,7 @@ module.exports.factory = function(mongoose) {
     const Account = new Schema({
         firstName: String,
         lastName: String,
-        email: String,
+        email: {type: String, unique: true},
         phone: String,
         company: String,
         country: String,
