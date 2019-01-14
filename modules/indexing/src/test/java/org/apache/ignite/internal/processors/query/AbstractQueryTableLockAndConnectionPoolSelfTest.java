@@ -262,6 +262,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     }
 
     /**
+     * @param node Ignite node to execute query.
      * @throws Exception If failed.
      */
     private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {
@@ -315,6 +316,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     }
 
     /**
+     * @param node Ignite node to execute query.
      * @throws Exception If failed.
      */
     private void checkTablesLockQueryAndDropColumnMultithreaded(final Ignite node) throws Exception {
@@ -699,7 +701,8 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     /**
      * Get cache for node.
      *
-     * @param node Node.
+     * @param node Ignite node to get cache.
+     * @param name Cache name.
      * @return Cache.
      */
     private static IgniteCache<Long, Object> cache(Ignite node, String name) {
