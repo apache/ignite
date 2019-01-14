@@ -38,6 +38,9 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     /** 1M constant. */
     private static final int MAX_MEM_1M = 1024 * 1024;
 
+    /** Lazy query execution. */
+    private boolean lazy;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -63,10 +66,26 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test local query execution.
      */
     @Test
-    public void test() {
+    public void testLazyFalse() {
+        lazy = false;
+
+        checkQueries();
+    }
+
+    /**
+     */
+    @Test
+    public void testLazyTrue() {
+        lazy = true;
+
+        checkQueries();
+    }
+
+    /**
+     */
+    private void checkQueries() {
         List<List<?>> res = sql("select * from T order by T.id", MAX_MEM_1M);
 
         GridTestUtils.assertThrows(log, () -> {
@@ -81,9 +100,9 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
 
         // Check query that is mapped to two map queries.
         GridTestUtils.assertThrows(log, () -> {
-            sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id" +
+            sql("(select * from T as T0, T as T1 where T0.id < 2 order by T0.id) " +
                 "UNION " +
-                "select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
+                "(select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id)", MAX_MEM_1M);
 
             return null;
         }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
@@ -100,7 +119,7 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
      */
     private List<List<?>> sql(String sql, long maxMem, Object... args) {
         return grid(0).context().query().querySqlFields(
-            new SqlFieldsQueryEx(sql, null).maxMemory(maxMem).setLazy(true).setArgs(args), false)
+            new SqlFieldsQueryEx(sql, null).maxMemory(maxMem).setLazy(lazy).setArgs(args), false)
             .getAll();
     }
 }
