@@ -47,6 +47,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -83,6 +84,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
     /**
      * @throws Exception If failed.
      */
+    @Ignore // todo create JIRA if further testing shows that is is better to ignore
     @Test
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
         try {
