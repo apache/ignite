@@ -34,16 +34,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /** */
-@RunWith(Suite.class) // todo thoroughly test this at Teamcity
+@RunWith(Suite.class)
 @Suite.SuiteClasses({
-    //todo restore after testing: ZookeeperDiscoverySpiTest.class,
-    ZookeeperDiscoverySpiTest2.class,
-    ZookeeperDiscoverySpiTest3.class,
+//todo restore after testing:     ZookeeperDiscoverySpiTest2.class,
+//todo restore after testing:     ZookeeperDiscoverySpiTest3.class,
     ZookeeperDiscoverySpiTest4.class,
-    ZookeeperDiscoverySpiTest5.class,
+    //todo restore after testing: ZookeeperDiscoverySpiTest5.class,
     //todo restore after testing: ZookeeperDiscoverySpiTest6.class,
     //todo restore after testing: ZookeeperDiscoverySpiTest7.class,
     //todo restore after testing: ZookeeperDiscoverySpiTest8.class,
+    //todo restore after testing: ZookeeperDiscoverySpiTest.class,
 })
 public class ZookeeperDiscoverySpiTestWrapperSuite {
     /**
