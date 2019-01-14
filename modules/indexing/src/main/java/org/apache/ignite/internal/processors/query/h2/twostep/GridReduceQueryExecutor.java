@@ -649,6 +649,8 @@ public class GridReduceQueryExecutor {
                 if (lazy && mapQrys.size() == 1)
                     flags |= GridH2QueryRequest.FLAG_LAZY;
 
+                flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
                     .topologyVersion(topVer)
@@ -660,8 +662,7 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName)
-                    .setDataPageScanEnabled(dataPageScanEnabled);
+                    .schemaName(schemaName);
 
                 if (curTx != null && curTx.mvccSnapshot() != null)
                     req.mvccSnapshot(curTx.mvccSnapshot());

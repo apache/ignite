@@ -94,7 +94,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
-    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0;
+    @SuppressWarnings("PointlessBitwiseExpression")
+    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_ENABLED = 0b01 << FLAG_DATA_PAGE_SCAN_SHIFT;
@@ -429,18 +430,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public void txDetails(GridH2SelectForUpdateTxDetails txDetails) {
         this.txReq = txDetails;
-    }
-
-    /**
-     * Sets data page scan enabled or disabled.
-     *
-     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
-     * @return {@code this}.
-     */
-    public GridH2QueryRequest setDataPageScanEnabled(Boolean dataPageScanEnabled) {
-        flags = (byte)setDataPageScanEnabled(flags, dataPageScanEnabled);
-
-        return this;
     }
 
     /**
