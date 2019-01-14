@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core
         private long? _initBaselineAutoAdjustTimeout;
 
         /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-        private int? _initBaselineAutoAdjustMaxTimeout;
+        private long? _initBaselineAutoAdjustMaxTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
         /// </summary>
-        public const int DefaultInitBaselineAutoAdjustMaxTimeout = 0;
+        public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
