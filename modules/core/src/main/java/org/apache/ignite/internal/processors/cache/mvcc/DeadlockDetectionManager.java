@@ -57,12 +57,25 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
-            DeadlockProbe msg0 = (DeadlockProbe)msg;
+            if (msg instanceof DeadlockProbe) {
+                DeadlockProbe msg0 = (DeadlockProbe)msg;
 
-            if (log.isDebugEnabled())
-                log.debug("Received a probe message msg=[" + msg0 + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Received a probe message msg=[" + msg0 + ']');
 
-            handleDeadlockProbe(msg0);
+                handleDeadlockProbe(msg0);
+            }
+            else if (msg instanceof RollbackTxMessage) {
+                // t0d0 log
+
+                IgniteInternalTx nearTx = cctx.tm().tx(((RollbackTxMessage)msg).nearTxVer());
+
+                if (nearTx != null)
+                    nearTx.rollbackAsync();
+            }
+            else {
+                // t0d0 fail according to common practice
+            }
         });
     }
 
@@ -185,8 +198,12 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                         // if a victim tx has made a progress since it was identified as waiting
                         // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
                         if (victim.lockCounter() == tx.lockCounter()) {
-                            // t0d0 switch to near rollback as DHT tx rollback is not designed for cascade rollbacks
-                            tx.rollbackAsync();
+                            try {
+                                cctx.gridIO().sendToGridTopic(tx.eventNodeId(), TOPIC_DEADLOCK_DETECTION, new RollbackTxMessage(tx.nearXidVersion()), SYSTEM_POOL);
+                            }
+                            catch (IgniteCheckedException e) {
+                                // t0d0 log
+                            }
                         }
                     }
                     else {

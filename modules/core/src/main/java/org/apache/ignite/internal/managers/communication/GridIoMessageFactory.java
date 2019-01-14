@@ -128,6 +128,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
+import org.apache.ignite.internal.processors.cache.mvcc.RollbackTxMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
@@ -1147,6 +1148,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 171:
                 msg = new ProbedTx();
+
+                break;
+
+            case 172:
+                msg = new RollbackTxMessage();
 
                 break;
 
