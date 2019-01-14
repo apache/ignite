@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -53,13 +52,16 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      * Create test tables.
      */
     @Before
-    public void createTables() {
+    public void dropAdnCreateTables() {
         execute("DROP TABLE IF EXISTS COMPOSITE;");
         execute("DROP TABLE IF EXISTS SIMPLE");
 
         execute("CREATE TABLE COMPOSITE (id1 INT, id2 INT, name1 VARCHAR, name2 VARCHAR, PRIMARY KEY(id1, id2)) " +
-            "WITH \"key_type=CompositeKey, value_type=CompositeValue\"");
+            "WITH \"key_type=" + CompositeKey.class.getName() + ", value_type=" + CompositeValue.class.getName() + "\"");
         execute("CREATE TABLE SIMPLE (id INT PRIMARY KEY, name VARCHAR) WITH \"wrap_value=false, wrap_key=false\"");
+
+        execute("INSERT INTO COMPOSITE (_key, _val) VALUES (?, ?)", new CompositeKey(), new CompositeValue());
+        execute("INSERT INTO SIMPLE VALUES (146, 'default name')");
     }
 
     /**
@@ -226,20 +228,19 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     /**
      * Check that setting entire cache value to {@code null} via sql is forbidden.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10906")
     @Test
     public void testUpdateValToNull () {
         assertThrows(()->
                 execute("UPDATE COMPOSITE SET _val = ?",  (Object)null),
-            "");  // TODO: update expected error message, once blocking issue is fixed.
+            "New value for UPDATE must not be null");
 
         assertThrows(()->
                 execute("UPDATE SIMPLE SET _val = ?",  (Object)null),
-            "");
+            "New value for UPDATE must not be null");
 
         assertThrows(()->
                 execute("UPDATE SIMPLE SET name = ?",  (Object)null),
-            "");
+            "New value for UPDATE must not be null");
     }
     /**
      * Execute sql query with PUBLIC schema and specified positional arguments of sql query.
@@ -277,17 +278,17 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      */
     private static class CompositeKey {
         /** First key field. */
-        long id1;
+        int id1;
 
         /** Second key field. */
-        long id2;
+        int id2;
 
         /** Constructs key with random fields. */
         public CompositeKey() {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            id1 = rnd.nextLong();
-            id2 = rnd.nextLong();
+            id1 = rnd.nextInt();
+            id2 = rnd.nextInt();
         }
     }
 
