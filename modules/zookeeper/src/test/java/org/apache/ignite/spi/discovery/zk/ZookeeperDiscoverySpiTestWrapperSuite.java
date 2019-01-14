@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest2;
@@ -46,7 +45,7 @@ import org.junit.runners.Suite;
     //todo restore after testing: ZookeeperDiscoverySpiTest7.class,
     //todo restore after testing: ZookeeperDiscoverySpiTest8.class,
 })
-public class ZookeeperDiscoverySpiTestWrapperSuite /*todo: test this removal: extends TestSuite*/ {
+public class ZookeeperDiscoverySpiTestWrapperSuite {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
      * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.
