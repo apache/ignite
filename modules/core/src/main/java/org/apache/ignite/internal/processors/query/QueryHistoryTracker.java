@@ -88,7 +88,10 @@ class QueryHistoryTracker {
 
                 return false;
             }
-            else if (qryMetrics.get(entry.key()) != entry) {
+
+            QueryHistoryMetrics curMetrics = qryMetrics.get(entry.key());
+
+            if (curMetrics == null || curMetrics.link() != node) {
                 // Was concurrently evicted, need to clear it from queue.
                 removeLink(node);
 
@@ -107,7 +110,10 @@ class QueryHistoryTracker {
 
                 return false;
             }
-            else if (qryMetrics.get(entry.key()) != entry) {
+
+            QueryHistoryMetrics curMetrics = qryMetrics.get(entry.key());
+
+            if (curMetrics == null || curMetrics.link() != node) {
                 // Was concurrently evicted, need to clear it from queue.
                 removeLink(node);
 
