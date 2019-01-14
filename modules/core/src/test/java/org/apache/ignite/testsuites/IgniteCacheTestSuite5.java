@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.HashSet;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
@@ -52,26 +52,27 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheTestSuite5.DynamicSuite.class)
 public class IgniteCacheTestSuite5 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(HashSet<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite,CacheSerializableTransactionsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,CacheNearReaderUpdateTest.class, ignoredTests);
@@ -85,7 +86,7 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite,EntryVersionConsistencyReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,IgniteCacheSyncRebalanceModeSelfTest.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheReadThroughEvictionsVariationsSuite.class));
+        suite.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
 
         GridTestUtils.addTestIfNeeded(suite,IgniteCacheTxIteratorSelfTest.class, ignoredTests);
 
@@ -122,5 +123,13 @@ public class IgniteCacheTestSuite5 {
         //GridTestUtils.addTestIfNeeded(suite,IgniteCacheContainsKeyNearAtomicSelfTest.class, ignoredTests);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }
