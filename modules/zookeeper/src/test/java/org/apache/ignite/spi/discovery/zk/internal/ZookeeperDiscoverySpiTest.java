@@ -458,9 +458,6 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
         waitForTopology(5);
     }
 
-    //todo cut 8============================
-
-
     /**
      *
      */

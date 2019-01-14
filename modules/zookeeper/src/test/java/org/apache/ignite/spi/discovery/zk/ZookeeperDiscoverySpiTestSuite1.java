@@ -21,6 +21,14 @@ import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest2;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest3;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest4;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest5;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest6;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest7;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest8;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
@@ -33,10 +41,17 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ZookeeperDiscoverySpiTestWrapperSuite.class,
-    /*todo: restore after testing: ZookeeperClientTest.class,
+    ZookeeperDiscoverySpiTest2.class,
+    ZookeeperDiscoverySpiTest3.class,
+    ZookeeperDiscoverySpiTest4.class,
+    ZookeeperDiscoverySpiTest5.class,
+    ZookeeperDiscoverySpiTest6.class,
+    ZookeeperDiscoverySpiTest7.class,
+    ZookeeperDiscoverySpiTest8.class,
+    ZookeeperDiscoverySpiTest.class,
+    ZookeeperClientTest.class,
     ZookeeperDiscoverySpiSaslFailedAuthTest.class,
-    ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,*/
+    ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class,
 })
 public class ZookeeperDiscoverySpiTestSuite1 {
     /**

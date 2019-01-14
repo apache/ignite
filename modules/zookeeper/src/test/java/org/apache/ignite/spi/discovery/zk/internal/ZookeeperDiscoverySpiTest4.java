@@ -84,7 +84,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
     /**
      * @throws Exception If failed.
      */
-    @Ignore // todo create JIRA if further testing shows that is is better to ignore
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
         try {
