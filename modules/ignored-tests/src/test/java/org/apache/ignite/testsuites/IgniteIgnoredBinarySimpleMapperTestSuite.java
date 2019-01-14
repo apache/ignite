@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -30,7 +31,7 @@ public class IgniteIgnoredBinarySimpleMapperTestSuite extends TestSuite {
         IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Binary Simple Mapper Test Suite");
 
         /* --- QUERY --- */
-        suite.addTest(IgniteBinarySimpleNameMapperCacheQueryTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteBinarySimpleNameMapperCacheQueryTestSuite.class));
 
         return suite;
     }

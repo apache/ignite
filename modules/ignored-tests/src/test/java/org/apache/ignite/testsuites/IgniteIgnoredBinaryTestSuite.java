@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -30,8 +31,8 @@ public class IgniteIgnoredBinaryTestSuite extends TestSuite {
         IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Binary Test Suite");
 
         /* --- QUERY --- */
-        suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
-        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteBinaryCacheQueryTestSuite.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteBinaryCacheQueryTestSuite2.class));
 
         return suite;
     }
