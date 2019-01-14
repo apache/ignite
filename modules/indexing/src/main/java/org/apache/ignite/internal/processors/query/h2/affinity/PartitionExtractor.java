@@ -400,24 +400,36 @@ public class PartitionExtractor {
         // Between operation (or similar range) should contain exact two children.
         assert op.size() == 2;
 
-        if (op.child().size() != 2 || op.child(1).size() != 2 || op.child().child().size() != 0 ||
-            op.child(1).child().size() != 0)
+        GridSqlAst left = op.child();
+        GridSqlAst right = op.child(1);
+
+        GridSqlOperationType leftOpType = retrieveOperationType(left);
+        GridSqlOperationType rightOpType = retrieveOperationType(right);
+
+        if ((GridSqlOperationType.BIGGER == rightOpType || GridSqlOperationType.BIGGER_EQUAL == rightOpType) &&
+            (GridSqlOperationType.SMALLER == leftOpType || GridSqlOperationType.SMALLER_EQUAL == leftOpType)) {
+            GridSqlAst tmp = left;
+            left = right;
+            right = tmp;
+        }
+        else if (!((GridSqlOperationType.BIGGER == leftOpType || GridSqlOperationType.BIGGER_EQUAL == leftOpType) &&
+            (GridSqlOperationType.SMALLER == rightOpType || GridSqlOperationType.SMALLER_EQUAL == rightOpType)))
             return null;
 
         // Try parse left AST.
         GridSqlColumn leftCol;
 
-        if (op.child() instanceof GridSqlOperation && op.child().child() instanceof GridSqlColumn &&
-            (((GridSqlColumn)op.child().child()).column().getTable() instanceof GridH2Table))
-            leftCol = op.child().child();
+        if (left instanceof GridSqlOperation && left.child() instanceof GridSqlColumn &&
+            (((GridSqlColumn)left.child()).column().getTable() instanceof GridH2Table))
+            leftCol = left.child();
         else
             return null;
 
         // Try parse right AST.
         GridSqlColumn rightCol;
 
-        if (op.child(1) instanceof GridSqlOperation && op.child(1).child() instanceof GridSqlColumn)
-            rightCol = op.child(1).child();
+        if (right instanceof GridSqlOperation && right.child() instanceof GridSqlColumn)
+            rightCol = right.child();
         else
             return null;
 
@@ -436,26 +448,19 @@ public class PartitionExtractor {
             leftCol.column().getType() == Value.INT || leftCol.column().getType() == Value.LONG))
             return null;
 
-        // Check that left AST operation is '>' or '>=' and right AST operation is '<' or '<='.
-        if (!((((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER ||
-            ((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER_EQUAL)
-            && (((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER ||
-            ((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER_EQUAL)))
-            return null;
-
         // Try parse left AST right value (value to the right of '>' or '>=').
         GridSqlConst leftConst;
 
-        if (op.child().child(1) instanceof GridSqlConst)
-            leftConst = op.child().child(1);
+        if (left.child(1) instanceof GridSqlConst)
+            leftConst = left.child(1);
         else
             return null;
 
         // Try parse right AST right value (value to the right of '<' or '<=').
         GridSqlConst rightConst;
 
-        if (op.child(1).child(1) instanceof GridSqlConst)
-            rightConst = op.child(1).child(1);
+        if (right.child(1) instanceof GridSqlConst)
+            rightConst = right.child(1);
         else
             return null;
 
@@ -471,18 +476,21 @@ public class PartitionExtractor {
         }
 
         // Increment left long value if '>' is used.
-        if (((GridSqlOperation)op.child()).operationType() == GridSqlOperationType.BIGGER)
+        if (((GridSqlOperation)left).operationType() == GridSqlOperationType.BIGGER)
             leftLongVal++;
 
         // Decrement right long value if '<' is used.
-        if (((GridSqlOperation)op.child(1)).operationType() == GridSqlOperationType.SMALLER)
+        if (((GridSqlOperation)right).operationType() == GridSqlOperationType.SMALLER)
             rightLongVal--;
 
         Set<PartitionSingleNode> parts = new HashSet<>();
 
+        GridH2Table tbl = (GridH2Table)leftCol.column().getTable();
+        PartitionTableDescriptor desc = descriptor(tbl);
+
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            parts.add(new PartitionConstantNode(descriptor((GridH2Table)leftCol.column().getTable()),
-                idx.kernalContext().affinity().partition(((GridH2Table)leftCol.column().getTable()).cacheName(), i)));
+            parts.add(new PartitionConstantNode(desc,
+                idx.kernalContext().affinity().partition((tbl).cacheName(), i)));
 
             if (parts.size() > maxPartsCntBetween)
                 return null;
@@ -490,5 +498,18 @@ public class PartitionExtractor {
 
         return parts.isEmpty() ? PartitionNoneNode.INSTANCE :
             parts.size() == 1 ? parts.iterator().next() : new PartitionGroupNode(parts);
+    }
+
+    /**
+     * Retrieves operation type.
+     *
+     * @param ast Tree
+     * @return Operation type.
+     */
+    private GridSqlOperationType retrieveOperationType(GridSqlAst ast) {
+        if (!(ast instanceof GridSqlOperation))
+            return null;
+
+        return ((GridSqlOperation)ast).operationType();
     }
 }

@@ -157,7 +157,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     /**
      * @return Query entity for Organization.
      */
-    static Collection<QueryEntity> organizationQueryEntity() {
+    private static Collection<QueryEntity> organizationQueryEntity() {
         QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Organization.class);
 
         entity.setKeyFieldName("ID");
@@ -497,6 +497,20 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     }
 
     /**
+     * Check range expression with constant values.
+     */
+    @Test
+    public void testRevertedRangeConst() {
+        // select * from Organization org where org._KEY %s %d and org._KEY %s %d
+        //
+        //     <(=) >(=)
+        //
+        testRevertedRangeConstOperator(3, 1, 3);
+        testRevertedRangeConstOperator(5, 5, 1);
+        testRevertedRangeConstOperator(8, 7, 2);
+    }
+
+    /**
      * Check that given sql query with between expression returns expect rows count and that expected partitions set
      * matches used one.
      *
@@ -537,36 +551,68 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
      * matches used one.
      *
      * @param sqlQry SQL query
-     * @param from Range from const.
-     * @param to Range to const.
+     * @param const1 Range const1 const.
+     * @param const2 Range const2 const.
      * @param expResCnt Expected result rows count.
      * @param skipPartitionsCheck Skip partitions matching check.
      */
-    private void testRangeConstOperator(String sqlQry, int from, int to, int expResCnt, boolean skipPartitionsCheck) {
+    private void testRangeConstOperator(String sqlQry, int const1, int const2, int expResCnt,
+        boolean skipPartitionsCheck) {
         // Range: > <.
-        TestCommunicationSpi commSpi = runQuery(sqlQry, from, to, ">", "<",
+        TestCommunicationSpi commSpi = runQuery(sqlQry, const1, const2, ">", "<",
             expResCnt - 2);
 
         if (!skipPartitionsCheck)
-            assertEquals(extractExpectedPartitions(from + 1, to - 1), commSpi.partitionsSet());
+            assertEquals(extractExpectedPartitions(const1 + 1, const2 - 1), commSpi.partitionsSet());
 
         // Range: >= <.
-        commSpi = runQuery(sqlQry, from, to, ">=", "<", expResCnt - 1);
+        commSpi = runQuery(sqlQry, const1, const2, ">=", "<", expResCnt - 1);
 
         if (!skipPartitionsCheck)
-            assertEquals(extractExpectedPartitions(from, to - 1), commSpi.partitionsSet());
+            assertEquals(extractExpectedPartitions(const1, const2 - 1), commSpi.partitionsSet());
 
         // Range: > <=.
-        commSpi = runQuery(sqlQry, from, to, ">", "<=", expResCnt - 1);
+        commSpi = runQuery(sqlQry, const1, const2, ">", "<=", expResCnt - 1);
 
         if (!skipPartitionsCheck)
-            assertEquals(extractExpectedPartitions(from + 1, to), commSpi.partitionsSet());
+            assertEquals(extractExpectedPartitions(const1 + 1, const2), commSpi.partitionsSet());
 
         // Range: >= <=.
-        commSpi = runQuery(sqlQry, from, to, ">=", "<=", expResCnt);
+        commSpi = runQuery(sqlQry, const1, const2, ">=", "<=", expResCnt);
 
         if (!skipPartitionsCheck)
-            assertEquals(extractExpectedPartitions(from, to), commSpi.partitionsSet());
+            assertEquals(extractExpectedPartitions(const1, const2), commSpi.partitionsSet());
+    }
+
+    /**
+     * Check that given sql query with reverted range expression returns expect rows count and that expected partitions
+     * set matches used one.
+     *
+     * @param const1 Range const1 const.
+     * @param const2 Range const2 const.
+     * @param expResCnt Expected result rows count.
+     */
+    private void testRevertedRangeConstOperator(int const1, int const2, int expResCnt) {
+        // Range: < >.
+        TestCommunicationSpi commSpi = runQuery(RANGE_QRY, const1, const2, "<", ">",
+            expResCnt - 2);
+
+        assertEquals(extractExpectedPartitions(const2 + 1, const1 - 1), commSpi.partitionsSet());
+
+        // Range: <= >.
+        commSpi = runQuery(RANGE_QRY, const1, const2, "<=", ">", expResCnt - 1);
+
+        assertEquals(extractExpectedPartitions(const2 + 1, const1), commSpi.partitionsSet());
+
+        // Range: < >=.
+        commSpi = runQuery(RANGE_QRY, const1, const2, "<", ">=", expResCnt - 1);
+
+        assertEquals(extractExpectedPartitions(const2, const1 - 1), commSpi.partitionsSet());
+
+        // Range: <= >=.
+        commSpi = runQuery(RANGE_QRY, const1, const2, "<=", ">=", expResCnt);
+
+        assertEquals(extractExpectedPartitions(const2, const1), commSpi.partitionsSet());
     }
 
     /**
@@ -639,6 +685,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
             assertEquals(Math.max(expResCnt, 0), rows.size());
         }
+
         return commSpi;
     }
 
