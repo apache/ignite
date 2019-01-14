@@ -111,21 +111,44 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
         doTestSqlQuery(serverCache);
 
         doTestDml(clientCache);
+        doTestDml(serverCache);
     }
 
     private void doTestDml(IgniteCache<Long,TestData> cache) {
-        String prefix = "update TestData set z = z + 1 ";
+        // SQL query (data page scan must be enabled by default).
+        DirectPageScanIndexing.callsCnt.set(0);
+        int callsCnt = 0;
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        System.err.println(
-            cache.query(new SqlFieldsQuery(
-                "explain select z from TestData where check_scan_flag(?,false)")
-                .setDataPageScanEnabled(null)
-                .setArgs((Object)null)
-            ).getAll());
+        checkDml(cache, null);
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
-//        cache.query(new SqlFieldsQuery(prefix + " _val = 10 where _val = 100" ));
+        checkDml(cache, true);
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
+        checkDml(cache, false);
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+
+        checkDml(cache, null);
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+    }
+
+    private void checkDml(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+        DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
+
+        assertEquals(0L, cache.query(new SqlFieldsQuery(
+            "update TestData set z = z + 1 where check_scan_flag(?,false)")
+            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
+        ).getAll().get(0).get(0));
+
+        checkSqlLastFindDataPageScan(dataPageScanEnabled);
+    }
+
+    private void checkSqlLastFindDataPageScan(Boolean dataPageScanEnabled) {
+        if (dataPageScanEnabled == FALSE)
+            assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIdx was not used.
+        else
+            assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
     }
 
     private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
@@ -155,10 +178,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
 
-        if (dataPageScanEnabled == FALSE)
-            assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIdx was not used.
-        else
-            assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        checkSqlLastFindDataPageScan(dataPageScanEnabled);
     }
 
     private void doTestScanQuery(IgniteCache<Long,TestData> cache, int keysCnt) {
@@ -195,7 +215,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
      * @return The given result..
      */
     @QuerySqlFunction(alias = "check_scan_flag")
-    public static boolean checkScanFlag(Boolean exp, boolean res) {
+    public static boolean checkScanFlagFromSql(Boolean exp, boolean res) {
         assertEquals(exp != FALSE, CacheDataTree.isDataPageScanEnabled());
 
         return res;
