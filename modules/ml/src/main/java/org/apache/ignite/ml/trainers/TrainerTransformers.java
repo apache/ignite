@@ -49,12 +49,11 @@ public class TrainerTransformers {
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
      * @param aggregator Aggregator.
-     * @param <M> Type of one model in ensemble.
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<M, L, DatasetTrainer<M, L>> makeBagged(
-        DatasetTrainer<M, L> trainer,
+    public static <L> BaggedTrainer<L> makeBagged(
+        DatasetTrainer<? extends IgniteModel, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
@@ -72,7 +71,7 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<M, L, DatasetTrainer<M, L>> makeBagged(
+    public static <M extends IgniteModel<Vector, Double>, L> BaggedTrainer<L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,

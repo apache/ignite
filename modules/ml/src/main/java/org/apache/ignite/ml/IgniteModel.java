@@ -44,7 +44,19 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
      * @return Composition model of the form {@code x -> after(mdl(x))}.
      */
     public default <V1> IgniteModel<T, V1> andThen(IgniteModel<V, V1> after) {
-        return t -> after.predict(predict(t));
+        IgniteModel<T, V> self = this;
+        return new IgniteModel<T, V1>() {
+            /** {@inheritDoc} */
+            @Override public V1 predict(T input) {
+                return after.predict(self.predict(input));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                self.close();
+                after.close();
+            }
+        };
     }
 
     /**
@@ -55,7 +67,18 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
      * @return Composition model of the form {@code x -> after(mdl(x))}.
      */
     public default <V1> IgniteModel<T, V1> andThen(IgniteFunction<V, V1> after) {
-        return t -> after.apply(predict(t));
+        IgniteModel<T, V> self = this;
+        return new IgniteModel<T, V1>() {
+            /** {@inheritDoc} */
+            @Override public V1 predict(T input) {
+                return after.apply(self.predict(input));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                self.close();
+            }
+        };
     }
 
     /**

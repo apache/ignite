@@ -79,7 +79,7 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
-        BaggedTrainer<LogisticRegressionModel, Double, DatasetTrainer<LogisticRegressionModel, Double>> baggedTrainer = TrainerTransformers.makeBagged(
+        BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
             trainer,
             10,
             0.7,

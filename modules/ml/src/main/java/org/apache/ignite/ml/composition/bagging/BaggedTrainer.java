@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
@@ -46,13 +45,12 @@ import org.apache.ignite.ml.util.Utils;
  * on both samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
  * <a href="https://en.wikipedia.org/wiki/Random_subspace_method"></a>Features bagging</a>).</p>
  *
- * @param <M> Type of model produced by trainer for which bagged version is created.
  * @param <L> Type of labels.
  */
-public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L> extends
+public class BaggedTrainer<L> extends
     DatasetTrainer<BaggedModel, L> {
     /** Trainer for which bagged version is created. */
-    private final DatasetTrainer<M, L> tr;
+    private final DatasetTrainer<? extends IgniteModel, L> tr;
 
     /** Aggregator of submodels results. */
     private final PredictionsAggregator aggregator;
@@ -79,7 +77,7 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L> extends
      * @param featuresVectorSize Dimensionality of feature vector.
      * @param featureSubspaceDim Dimensionality of feature subspace.
      */
-    public BaggedTrainer(DatasetTrainer<M, L> tr,
+    public BaggedTrainer(DatasetTrainer<? extends IgniteModel, L> tr,
         PredictionsAggregator aggregator, int ensembleSize, double subsampleRatio, int featuresVectorSize,
         int featureSubspaceDim) {
         this.tr = tr;
@@ -105,13 +103,12 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L> extends
                 .collect(Collectors.toList()) :
             null;
 
-        Stream.generate(this::getTrainer).limit(ensembleSize);
-        List<DatasetTrainer<M, L>> trainers = Collections.nCopies(ensembleSize, tr);
+        List<DatasetTrainer<? extends IgniteModel, L>> trainers = Collections.nCopies(ensembleSize, tr);
 
         // Generate a list of trainers each each copy of original trainer but on its own subspace and subsample.
         List<DatasetTrainer<IgniteModel<Vector, Double>, L>> subspaceTrainers = IntStream.range(0, ensembleSize)
             .mapToObj(mdlIdx -> {
-                AdaptableDatasetTrainer<Vector, Double, Vector, Double, M, L> tr =
+                AdaptableDatasetTrainer<Vector, Double, Vector, Double, ? extends IgniteModel, L> tr =
                     AdaptableDatasetTrainer.of(trainers.get(mdlIdx));
                 if (mappings != null) {
                     tr = tr.afterFeatureExtractor(featureValues -> {
@@ -180,8 +177,8 @@ public class BaggedTrainer<M extends IgniteModel<Vector, Double>, L> extends
     }
 
     /** {@inheritDoc} */
-    @Override public BaggedTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        return (BaggedTrainer<M, L>)super.withEnvironmentBuilder(envBuilder);
+    @Override public BaggedTrainer<L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (BaggedTrainer<L>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */
