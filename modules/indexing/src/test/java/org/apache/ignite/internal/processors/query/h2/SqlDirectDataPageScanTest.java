@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,7 +83,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDirectScanFlag() throws Exception {
+    public void testDirectDataPageScan() throws Exception {
         final String cacheName = "test";
 
         GridQueryProcessor.idxCls = DirectPageScanIndexing.class;
@@ -116,34 +115,38 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
         doTestDml(clientCache);
         doTestDml(serverCache);
 
-        doTestSqlStream(clientCache, keysCnt);
+        doTestLazySql(clientCache, keysCnt);
+        doTestLazySql(serverCache, keysCnt);
     }
 
-    private void doTestSqlStream(IgniteCache<Long,TestData> cache, int keysCnt) {
-        checkSqlStream(cache, false, keysCnt);
-        checkSqlStream(cache, true, keysCnt);
-        checkSqlStream(cache, null, keysCnt);
+    private void doTestLazySql(IgniteCache<Long,TestData> cache, int keysCnt) {
+        checkLazySql(cache, false, keysCnt);
+        checkLazySql(cache, true, keysCnt);
+        checkLazySql(cache, null, keysCnt);
     }
 
-    private void checkSqlStream(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
+    private void checkLazySql(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
         CacheDataTree.isLastFindWithDirectDataPageScan();
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
+
+        final int expNestedLoops = 5;
 
         try (
             FieldsQueryCursor<List<?>> cursor = cache.query(
                 new SqlFieldsQuery(
                     "select 1 " +
                         "from TestData a use index(), TestData b use index() " +
-                        "where a.z between 1 and 5 " +
+                        "where a.z between ? and ? " +
                         "and check_scan_flag(?,true)")
+                    .setLazy(true)
                     .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
-                    .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
+                    .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setPageSize(keysCnt / 2) // Must be less than keysCnt.
             )
         ) {
+            int nestedLoops = 0;
             int rowCnt = 0;
-            List<Integer> pages = new ArrayList<>();
 
             for (List<?> row : cursor) {
                 if (dataPageScanEnabled == FALSE)
@@ -153,16 +156,15 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
                     if (x != null) {
                         assertTrue(x);
-                        pages.add(rowCnt);
+                        nestedLoops++;
                     }
                 }
 
                 rowCnt++;
             }
 
-            assertEquals(keysCnt * 5, rowCnt);
-
-            System.err.println(pages);
+            assertEquals(keysCnt * expNestedLoops, rowCnt);
+            assertEquals(dataPageScanEnabled == FALSE ? 0 : expNestedLoops, nestedLoops);
         }
     }
 
