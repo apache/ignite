@@ -1575,7 +1575,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9774")
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9949")
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
