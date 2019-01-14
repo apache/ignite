@@ -225,8 +225,8 @@ public class IgniteConfiguration {
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
-    /** Default query history statistics size. */
-    public static final int DFLT_QUERY_HISTORY_STATISTICS_SIZE = 1000;
+    /** Default SQL query history size. */
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -276,8 +276,8 @@ public class IgniteConfiguration {
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
-    /** Query history statistics size. */
-    private int qryHistStatSize = DFLT_QUERY_HISTORY_STATISTICS_SIZE;
+    /** SQL query history size. */
+    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -648,7 +648,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        qryHistStatSize = cfg.getQueryHistoryStatisticsSize();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
     }
 
     /**
@@ -1009,28 +1009,28 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Number of query history statistics to keep in memory. If not provided, then default value {@link
-     * #DFLT_QUERY_HISTORY_STATISTICS_SIZE} is used. If provided value is less or equals 0, then gathering query history
-     * statistics will be switched off.
+     * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * will be switched off.
      *
-     * @return Query history statistics size.
-     * @see #DFLT_QUERY_HISTORY_STATISTICS_SIZE
+     * @return SQL query history size.
+     * @see #DFLT_SQL_QUERY_HISTORY_SIZE
      */
-    public int getQueryHistoryStatisticsSize() {
-        return qryHistStatSize;
+    public int getSqlQueryHistorySize() {
+        return sqlQryHistSize;
     }
 
     /**
-     * Sets number of query history statistics kept in memory. If not explicitly set, then default value is {@link
-     * #DFLT_QUERY_HISTORY_STATISTICS_SIZE}.
+     * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
      *
-     * @param size Number of query history statistics kept in memory. If value is less or equals 0, then gathering query
-     * history statistics will be switched off.
+     * @param size Number of SQL query history elements kept in memory. If value is less or equals 0, then gathering
+     * SQL query history will be switched off.
      * @return {@code this} for chaining.
-     * @see #DFLT_QUERY_HISTORY_STATISTICS_SIZE
+     * @see #DFLT_SQL_QUERY_HISTORY_SIZE
      */
-    public IgniteConfiguration setQueryHistoryStatisticsSize(int size) {
-        qryHistStatSize = size;
+    public IgniteConfiguration setSqlQueryHistorySize(int size) {
+        sqlQryHistSize = size;
 
         return this;
     }

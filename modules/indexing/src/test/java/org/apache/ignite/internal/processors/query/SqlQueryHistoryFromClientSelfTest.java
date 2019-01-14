@@ -24,7 +24,7 @@ import org.apache.ignite.internal.IgniteEx;
 /**
  * Check query history metrics from client node.
  */
-public class QueryHistoryMetricsFromClientSelfTest extends QueryHistoryMetricsSelfTest {
+public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
 
     private int idx;
 

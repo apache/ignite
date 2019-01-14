@@ -152,10 +152,10 @@ class QueryHistoryTracker {
     }
 
     /**
-     * Gets query history statistics. Size of history could be configured via {@link
-     * IgniteConfiguration#setQueryHistoryStatisticsSize(int)}
+     * Gets SQL query history. Size of history could be configured via {@link
+     * IgniteConfiguration#setSqlQueryHistorySize(int)}
      *
-     * @return Queries history statistics aggregated by query text, schema and local flag.
+     * @return SQL queries history aggregated by query text, schema and local flag.
      */
     Collection<QueryHistoryMetrics> queryHistoryMetrics() {
         if (histSz <= 0)

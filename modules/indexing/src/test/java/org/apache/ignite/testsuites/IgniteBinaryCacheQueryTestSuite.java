@@ -198,6 +198,7 @@ import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
+import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
@@ -539,6 +540,9 @@ public class IgniteBinaryCacheQueryTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(GridCacheDynamicLoadOnClientTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheDynamicLoadOnClientPersistentTest.class));
+
+        //Query history.
+        suite.addTest(new JUnit4TestAdapter(SqlQueryHistorySelfTest.class));
 
         return suite;
     }

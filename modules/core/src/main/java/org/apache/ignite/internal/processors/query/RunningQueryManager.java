@@ -51,7 +51,7 @@ public class RunningQueryManager {
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
-        histSz = ctx.config().getQueryHistoryStatisticsSize();
+        histSz = ctx.config().getSqlQueryHistorySize();
 
         queryHistoryTracker = new QueryHistoryTracker(histSz);
     }
@@ -178,7 +178,7 @@ public class RunningQueryManager {
 
     /**
      * Gets query history statistics. Size of history could be configured via {@link
-     * IgniteConfiguration#setQueryHistoryStatisticsSize(int)}
+     * IgniteConfiguration#setSqlQueryHistorySize(int)}
      *
      * @return Queries history statistics aggregated by query text, schema and local flag.
      */

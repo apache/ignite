@@ -53,7 +53,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Check query history metrics from server node.
  */
 @RunWith(JUnit4.class)
-public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
+public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
@@ -116,7 +116,7 @@ public class QueryHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(configureCache("A"), configureCache("B"));
 
-        cfg.setQueryHistoryStatisticsSize(3);
+        cfg.setSqlQueryHistorySize(QUERY_HISTORY_SIZE);
 
         return cfg;
     }
