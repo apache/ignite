@@ -22,10 +22,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -37,12 +42,16 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,7 +61,7 @@ import static java.lang.Boolean.FALSE;
 /**
  */
 @RunWith(JUnit4.class)
-public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
+public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -82,6 +91,118 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore
+    @Test
+    public void testConcurrentUpdatesWithMvcc() throws Exception {
+        doTestConcurrentUpdates(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConcurrentUpdatesNoMvcc() throws Exception {
+        try {
+            doTestConcurrentUpdates(false);
+
+            throw new IllegalStateException("Expected to detect data inconsistency.");
+        } catch (AssertionError e) {
+            assertTrue(e.getMessage().startsWith("wrong sum!"));
+        }
+    }
+
+    private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
+        final String cacheName = "test_updates";
+
+        IgniteEx server = startGrid(0);
+        server.cluster().active(true);
+
+        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>(cacheName);
+        ccfg.setIndexedTypes(Long.class, Long.class);
+        ccfg.setAtomicityMode(enableMvcc ?
+            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
+            CacheAtomicityMode.TRANSACTIONAL);
+
+        IgniteCache<Long,Long> cache = server.createCache(ccfg);
+
+        long accounts = 100;
+        long initialBalance = 100;
+
+        for (long i = 0; i < accounts; i++)
+            cache.put(i, initialBalance);
+
+        assertEquals(accounts * initialBalance,((Number)
+            cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
+            .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+
+        AtomicBoolean cancel = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            Random rnd = ThreadLocalRandom.current();
+
+            while (!cancel.get() && !Thread.interrupted()) {
+                long accountId1 = rnd.nextInt((int)accounts);
+                long accountId2 = rnd.nextInt((int)accounts);
+
+                if (accountId1 == accountId2)
+                    continue;
+
+                try (
+                    Transaction tx = server.transactions().txStart()
+                ) {
+                    long balance1 = cache.get(accountId1);
+                    long balance2 = cache.get(accountId2);
+
+                    if (balance1 == 0) {
+                        if (balance2 == 0)
+                            continue;
+
+                        long transfer = rnd.nextInt((int)balance2);
+
+                        if (transfer == 0)
+                            transfer = balance2;
+
+                        cache.put(accountId1, balance1 + transfer);
+                        cache.put(accountId2, balance2 - transfer);
+                    }
+                    else {
+                        long transfer = rnd.nextInt((int)balance1);
+
+                        if (transfer == 0)
+                            transfer = balance1;
+
+                        cache.put(accountId1, balance1 - transfer);
+                        cache.put(accountId2, balance2 + transfer);
+                    }
+
+                    tx.commit();
+                }
+                catch (CacheException e) {
+                    U.warn(log, "Failed to commit TX, will ignore!");
+                }
+            }
+        }, 16, "updater");
+
+        try {
+            for (int i = 0; i < 1000; i++) {
+                assertEquals("wrong sum!",accounts * initialBalance,((Number)
+                    cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
+                        .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+                info("query " + i + " is ok!");
+            }
+
+            cancel.set(true);
+            fut.get(5000);
+        }
+        finally {
+            cancel.set(true);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testDirectDataPageScan() throws Exception {
         final String cacheName = "test";
@@ -95,7 +216,7 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long,TestData> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, TestData.class);
-        ccfg.setSqlFunctionClasses(SqlDirectDataPageScanTest.class);
+        ccfg.setSqlFunctionClasses(QueryDirectDataPageScanTest.class);
 
         IgniteCache<Long,TestData> clientCache = client.createCache(ccfg);
 

@@ -208,7 +208,7 @@ import org.apache.ignite.internal.processors.query.h2.H2StatementCacheSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.PreparedStatementExSelfTest;
-import org.apache.ignite.internal.processors.query.h2.SqlDirectDataPageScanTest;
+import org.apache.ignite.internal.processors.query.h2.QueryDirectDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
@@ -360,7 +360,7 @@ public class IgniteBinaryCacheQueryTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteCrossCachesJoinsQueryTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheMultipleIndexedTypesTest.class));
-        suite.addTest(new JUnit4TestAdapter(SqlDirectDataPageScanTest.class));
+        suite.addTest(new JUnit4TestAdapter(QueryDirectDataPageScanTest.class));
 
         // DML.
         suite.addTest(new JUnit4TestAdapter(IgniteCacheMergeSqlQuerySelfTest.class));
