@@ -80,6 +80,13 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
         return grid(0).cluster().forPredicate(F.nodeForNodeIds(ids));
     }
