@@ -486,7 +486,7 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
     @Test
     public void testBetweenPartitionsCustomLimitExceeding() {
         try (GridTestUtils.SystemProperty ignored = new GridTestUtils.
-            SystemProperty(IgniteSystemProperties.IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN, "4")){
+            SystemProperty(IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN, "4")){
 
             // Default limit (16) not exceeded.
             testBetweenConstOperator(BETWEEN_QRY, 1, 4, 4);

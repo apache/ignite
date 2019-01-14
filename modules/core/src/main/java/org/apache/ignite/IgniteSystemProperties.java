@@ -1085,8 +1085,8 @@ public final class IgniteSystemProperties {
      * Maximum number of different partitions to be extracted from between expression within sql query.
      * In case of limit exceeding all partitions will be used.
      */
-    public static final String IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN =
-        "IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN";
+    public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
+        "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
 
     /**
      * Enforces singleton.

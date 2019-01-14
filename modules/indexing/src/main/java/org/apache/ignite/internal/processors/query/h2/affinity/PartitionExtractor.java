@@ -49,13 +49,13 @@ public class PartitionExtractor {
      * Maximum number of partitions to be used in case of between expression.
      * In case of exceeding all partitions will be used.
      */
-    private static final int DFL_MAX_PARTITIONS_COUNT_BETWEEN = 16;
+    private static final int DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN = 16;
 
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
     /** Maximum number of partitions to be used in case of between expression. */
-    private final int maxPartitionsCntBetween;
+    private final int maxPartsCntBetween;
 
     /**
      * Constructor.
@@ -64,8 +64,11 @@ public class PartitionExtractor {
      */
     public PartitionExtractor(IgniteH2Indexing idx) {
         this.idx = idx;
-        maxPartitionsCntBetween = Integer.getInteger(
-            IgniteSystemProperties.IGNITE_PARTITIONS_PRUNING_MAX_PARTITIONS_BETWEEN, DFL_MAX_PARTITIONS_COUNT_BETWEEN);
+
+        maxPartsCntBetween = Integer.getInteger(
+            IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN,
+            DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN
+        );
     }
 
     /**
@@ -414,9 +417,9 @@ public class PartitionExtractor {
         GridSqlColumn rightCol;
 
         if (op.child(1) instanceof GridSqlOperation && op.child(1).child() instanceof GridSqlColumn)
-                rightCol = op.child(1).child();
-            else
-                return null;
+            rightCol = op.child(1).child();
+        else
+            return null;
 
         // Check that columns might be used for partition pruning.
         if(!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
@@ -481,7 +484,7 @@ public class PartitionExtractor {
             parts.add(new PartitionConstantNode(descriptor((GridH2Table)leftCol.column().getTable()),
                 idx.kernalContext().affinity().partition(((GridH2Table)leftCol.column().getTable()).cacheName(), i)));
 
-            if (parts.size() > maxPartitionsCntBetween)
+            if (parts.size() > maxPartsCntBetween)
                 return null;
         }
 
