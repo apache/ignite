@@ -29,6 +29,9 @@ import org.jetbrains.annotations.NotNull;
  * Implementation doesn't support negative values and null, cause we can't distinct null from 0 bit in BitSet.
  */
 public class BitSetIntSet extends GridSerializableCollection<Integer> implements Set<Integer> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * BitSet.
      */
