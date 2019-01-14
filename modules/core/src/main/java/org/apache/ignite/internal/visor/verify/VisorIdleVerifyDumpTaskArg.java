@@ -85,6 +85,8 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
         /**
          * Since protocol version 2 we must save class instance new fields to end of output object. It's needs for
          * support backward compatibility in extended (child) classes.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
         if (instanceOfCurrentClass()) {
             U.writeEnum(out, cacheFilterEnum);
@@ -107,6 +109,8 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
         /**
          * Since protocol version 2 we must read class instance new fields from end of input object. It's needs for
          * support backward compatibility in extended (child) classes.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
         if(instanceOfCurrentClass()) {
             if (protoVer >= V2)

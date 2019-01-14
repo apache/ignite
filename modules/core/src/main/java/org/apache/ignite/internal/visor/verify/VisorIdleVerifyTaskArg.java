@@ -100,6 +100,8 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         /**
          * Instance fields since protocol version 2 must be serialized if, and only if class instance isn't child of
          * current class. Otherwise, these fields must be serialized in child class.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
         if(instanceOfCurrentClass()) {
             U.writeCollection(out, excludeCaches);
@@ -118,6 +120,8 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         /**
          * Instance fields since protocol version 2 must be deserialized if, and only if class instance isn't child of
          * current class. Otherwise, these fields must be deserialized in child class.
+         *
+         * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
         if(instanceOfCurrentClass()) {
             if (protoVer >= V2)
@@ -128,10 +132,12 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         }
     }
 
+    /** */
     protected void excludeCaches(Set<String> excludeCaches) {
         this.excludeCaches = excludeCaches;
     }
 
+    /** */
     protected void checkCrc(boolean checkCrc) {
         this.checkCrc = checkCrc;
     }
