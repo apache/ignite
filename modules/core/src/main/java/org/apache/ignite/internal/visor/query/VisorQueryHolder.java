@@ -56,6 +56,8 @@ public class VisorQueryHolder {
      *
      * @param qryId Query ID for extraction query data result.
      * @param cur Wrapper for query cursor.
+     * @param pageSize Page size to fetch.
+     * @param cancel Cancel object.
      */
     VisorQueryHolder(String qryId, VisorQueryCursor<?> cur, int pageSize, GridQueryCancel cancel) {
         this.qryId = qryId;

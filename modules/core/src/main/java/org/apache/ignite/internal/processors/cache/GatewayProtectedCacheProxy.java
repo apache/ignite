@@ -51,7 +51,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -393,15 +392,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
-        return queryMultipleStatements(qry, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry, GridQueryCancel cancel) {
         CacheOperationGate opGate = onEnter();
 
         try {
-            return delegate.queryMultipleStatements(qry, cancel);
+            return delegate.queryMultipleStatements(qry);
         }
         finally {
             onLeave(opGate);

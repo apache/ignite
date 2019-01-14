@@ -79,7 +79,9 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
                 throw new IgniteException("SQL query results are expired.");
 
             VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
+
             List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize());
+
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
