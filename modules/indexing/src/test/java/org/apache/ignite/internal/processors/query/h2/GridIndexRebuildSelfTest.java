@@ -87,9 +87,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cleanPersistenceDir();
+
+        super.afterTestsStopped();
     }
 
     /**

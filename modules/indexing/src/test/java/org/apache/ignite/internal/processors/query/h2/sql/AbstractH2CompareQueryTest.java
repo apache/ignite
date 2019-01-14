@@ -40,15 +40,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract test framework to compare query results from h2 database instance and mixed ignite caches (replicated and
  * partitioned) which have the same data models and data content.
  */
-public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest {
+public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonTest {
     /** */
     protected static Ignite ignite;
 
