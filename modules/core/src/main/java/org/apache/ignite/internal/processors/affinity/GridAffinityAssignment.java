@@ -167,11 +167,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        return F.viewReadOnly(
-                assignment.get(part),
-                UUID_CLOSURE,
-                ALWAYS_TRUE_PREDICATE
-        );
+        return F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /** {@inheritDoc} */

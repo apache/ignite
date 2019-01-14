@@ -30,12 +30,6 @@ import org.apache.ignite.lang.IgnitePredicate;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
-    /** */
-    public IgniteClosure<ClusterNode, UUID> UUID_CLOSURE = (IgniteClosure<ClusterNode, UUID>) ClusterNode::id;
-
-    /** */
-    public IgnitePredicate<ClusterNode> ALWAYS_TRUE_PREDICATE = (IgnitePredicate<ClusterNode>) clusterNode -> true;
-
     /**
      * @return Affinity assignment computed by affinity function.
      */

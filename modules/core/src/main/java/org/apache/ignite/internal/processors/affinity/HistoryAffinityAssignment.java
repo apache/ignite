@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -80,7 +79,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
         List<ClusterNode> nodes = assignment.get(part);
 
-        return F.viewReadOnly(nodes, UUID_CLOSURE, ALWAYS_TRUE_PREDICATE);
+        return F.viewReadOnly(nodes, F.node2id());
     }
 
     /** {@inheritDoc} */
