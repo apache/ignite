@@ -17,76 +17,61 @@
 
 const _ = require('lodash');
 
-function deduplicate(accountsModel, spaceModel, activitiesModel) {
-    return accountsModel.distinct('email')
-        .lean()
-        .exec()
-        .then((emails) => {
-            const accountsToRemove = [];
+const log = require('./migration-utils').log;
 
-            return _.reduce(emails, (start, email) => start.then(() => {
-                return accountsModel.find({email}).count()
-                    .then((cnt) => {
-                        if (cnt > 1) {
-                            return accountsModel.find({email})
-                                .lean()
-                                .exec()
-                                .then((accounts) => {
-                                    // Sort by last activity.
-                                    const sorted = _.sortBy(accounts, [(o) => { return o.lastActivity; }]);
+function deduplicateAccounts(model) {
+    const accountsModel = model('Account');
+    const spaceModel = model('Space');
 
-                                    // And keep most recent.
-                                    sorted.splice(-1, 1);
+    return accountsModel.aggregate([
+        {$group: {_id: "$email", count: {$sum: 1}}},
+        {$match: {count: {$gt: 1}}}
+    ]).exec()
+        .then((accounts) => _.map(accounts, '_id'))
+        .then((emails) => Promise.all(
+            _.map(emails, (email) => accountsModel.find({email}, {_id: 1, lastActivity: 1, lastLogin: 1}).lean().exec())
+        ))
+        .then((promises) => _.flatMap(promises, (accounts) =>
+            _.map(_.sortBy(accounts, [(a) => a.lastActivity || '', 'lastLogin']).slice(0, -1), '_id')
+        ))
+        .then((accountIds) => {
+            if (_.isEmpty(accountIds))
+                return 0;
 
-                                    // All other accounts will be deleted.
-                                    accountsToRemove.push(...sorted);
-
-                                    return Promise.resolve();
-                                });
-                        }
-
-                        return Promise.resolve();
-                    });
-            }), Promise.resolve())
+            return spaceModel.find({owner: {$in: accountIds}}, {_id: 1}).lean().exec()
+                .then((spaces) => _.map(spaces, '_id'))
+                .then((spaceIds) =>
+                    Promise.all([
+                        model('Cluster').remove({space: {$in: spaceIds}}).exec(),
+                        model('Cache').remove({space: {$in: spaceIds}}).exec(),
+                        model('DomainModel').remove({space: {$in: spaceIds}}).exec(),
+                        model('Igfs').remove({space: {$in: spaceIds}}).exec(),
+                        model('Notebook').remove({space: {$in: spaceIds}}).exec(),
+                        model('Activities').remove({owner: accountIds}).exec(),
+                        model('Notifications').remove({owner: accountIds}).exec(),
+                        spaceModel.remove({owner: accountIds}).exec(),
+                        accountsModel.remove({_id: accountIds}).exec(),
+                    ])
+                )
                 .then(() => {
-                    if (_.isEmpty(accountsToRemove))
-                        console.log('Duplicate accounts not found');
-                    else {
-                        console.log(`Following accounts will be removed as duplicates: ${_.size(accountsToRemove)}`);
-                        _.forEach(accountsToRemove, (acc) => console.log(`  ${acc._id} ${acc.email}`));
+                    const conditions = _.map(accountIds, (accountId) => ({session: {$regex: `"${accountId}"`}}));
 
-                        const _ids = _.map(accountsToRemove, (acc) => acc._id);
-
-                        return accountsModel.remove({_id: {$in: _ids}})
-                            .then(() => spaceModel.remove({owner: {$in: _ids}}))
-                            .then(() => activitiesModel.remove({owner: {$in: _ids}}));
-                    }
-                });
+                    return accountsModel.db.collection('sessions').deleteMany({$or: conditions});
+                })
+                .then(() => _.size(accountIds));
         });
 }
 
-function createIndex(accountsModel) {
-    return accountsModel.collection.createIndex({email: 1}, {unique: true, background: false});
-}
-
 exports.up = function up(done) {
-    process.on('unhandledRejection', function(reason, p) {
-        console.log('Unhandled rejection at:', p, 'reason:', reason);
-    });
-
-    const accountsModel = this('Account');
-    const spaceModel = this('Space');
-    const activitiesModel = this('Activities');
-
-    Promise.resolve()
-        .then(() => deduplicate(accountsModel, spaceModel, activitiesModel))
-        .then(() => createIndex(accountsModel))
+    deduplicateAccounts((name) => this(name))
+        .then((removedCount) => log('Removed duplicated accounts: ' + removedCount))
+        .then(() => this('Account').collection.createIndex({email: 1}, {unique: true, background: false}))
         .then(() => done())
         .catch(done);
 };
 
 exports.down = function down(done) {
-    log('Model migration can not be reverted');
+    log('Account migration can not be reverted');
 
     done();
 };
