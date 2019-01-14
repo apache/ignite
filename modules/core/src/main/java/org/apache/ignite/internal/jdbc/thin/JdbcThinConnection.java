@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -789,8 +790,10 @@ public class JdbcThinConnection implements Connection {
             JdbcResponse res = cliIo.sendRequest(req, stmt);
 
             if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
-                stmt.reqTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get())
-                throw new SQLTimeoutException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
+                stmt.reqTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get()) {
+                throw new SQLTimeoutException(QueryCancelledException.ERR_MSG, SqlStateCode.QUERY_CANCELLED,
+                    IgniteQueryErrorCode.QUERY_CANCELED);
+            }
             else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
