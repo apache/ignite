@@ -76,7 +76,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                 })
                 .then((registered) => {
                     return mongo.Space.create({name: 'Personal space', owner: registered._id})
-                        .then(() => registered)
+                        .then(() => registered);
                 })
                 .then((registered) => {
                     if (settings.activation.enabled) {
@@ -102,16 +102,17 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
         /**
          * Save user.
          *
-         * @param {Object} changed - The user
+         * @param userId User ID.
+         * @param {Object} changed Changed user.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static save(changed) {
+        static save(userId, changed) {
             delete changed.admin;
             delete changed.activated;
             delete changed.activationSentAt;
             delete changed.activationToken;
 
-            return mongo.Account.findById(changed._id).exec()
+            return mongo.Account.findById(userId).exec()
                 .then((user) => {
                     if (!changed.password)
                         return Promise.resolve(user);
