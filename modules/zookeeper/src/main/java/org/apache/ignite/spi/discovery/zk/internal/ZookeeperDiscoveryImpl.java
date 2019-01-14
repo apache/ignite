@@ -734,17 +734,15 @@ public class ZookeeperDiscoveryImpl {
             return;
 
         try {
-            boolean reconnect = prevState != null;
-
-            // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined.
-            boolean prevJoined = prevState != null && prevState.joined;
+            // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined or new cluster created.
+            boolean reconnect = locNode.isClient() && prevState != null;
 
             IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
             if (internalLsnr != null)
                 internalLsnr.beforeJoin(locNode, log);
 
-            if (locNode.isClient() && reconnect)
+            if (reconnect)
                 locNode.setAttributes(spi.getLocNodeAttrs());
 
             marshalCredentialsOnJoin(locNode);
@@ -756,7 +754,7 @@ public class ZookeeperDiscoveryImpl {
                 connState = ConnectionState.STARTED;
             }
 
-            ZkRuntimeState rtState = this.rtState = new ZkRuntimeState(prevJoined);
+            ZkRuntimeState rtState = this.rtState = new ZkRuntimeState(reconnect);
 
             DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
@@ -1046,6 +1044,11 @@ public class ZookeeperDiscoveryImpl {
 
             if (!locNode.isClient())
                 zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
+            else {
+                ClientLocalNodeWatcher watcher = new ClientLocalNodeWatcher(rtState);
+
+                zkClient.existsAsync(rtState.locNodeZkPath, watcher, watcher);
+            }
 
             zkClient.getDataAsync(zkPaths.evtsPath, rtState.watcher, rtState.watcher);
 
@@ -2973,7 +2976,7 @@ public class ZookeeperDiscoveryImpl {
                 Collections.emptyMap(),
                 null).get();
 
-            if (rtState.prevJoined) {
+            if (rtState.reconnect) {
                 lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
                     joinedEvtData.topVer,
                     locNode,
@@ -4311,6 +4314,29 @@ public class ZookeeperDiscoveryImpl {
                 log.info("Watched node failed, check if there are alive servers [locId=" + locNode.id() + ']');
 
             rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckClientsStatusCallback(rtState));
+        }
+    }
+
+    /**
+     * Watcher for the local node. The local node can be deleted in case of cluster restarts.
+     * See {@link #cleanupPreviousClusterData}.
+     */
+    private class ClientLocalNodeWatcher extends PreviousNodeWatcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        ClientLocalNodeWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+
+            assert locNode.isClient() : locNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onPreviousNodeFail() {
+            if (log.isInfoEnabled())
+                log.info("Watched local node failed [locId=" + locNode.id() + ']');
+
+            localNodeFail("Local node was forced to stop.", true);
         }
     }
 
