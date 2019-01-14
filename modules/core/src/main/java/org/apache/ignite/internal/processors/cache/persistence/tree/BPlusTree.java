@@ -978,7 +978,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Check if the tree is getting destroyed.
      */
-    private void checkDestroyed() {
+    protected final void checkDestroyed() {
         if (destroyed.get())
             throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }

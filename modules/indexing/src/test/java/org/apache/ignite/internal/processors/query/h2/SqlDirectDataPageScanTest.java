@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,7 +26,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -88,99 +91,114 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
         Ignition.setClientMode(true);
         IgniteEx client = startGrid(1);
 
-        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>(cacheName);
-        ccfg.setIndexedTypes(Long.class, Long.class);
+        CacheConfiguration<Long,TestData> ccfg = new CacheConfiguration<>(cacheName);
+        ccfg.setIndexedTypes(Long.class, TestData.class);
         ccfg.setSqlFunctionClasses(SqlDirectDataPageScanTest.class);
 
-        IgniteCache<Long,Long> clientCache = client.createCache(ccfg);
+        IgniteCache<Long,TestData> clientCache = client.createCache(ccfg);
 
         final int keysCnt = 1000;
 
         for (long i = 0; i < keysCnt; i++)
-            clientCache.put(i, i);
+            clientCache.put(i, new TestData(i));
 
-        IgniteCache<Long,Long> serverCache = server.cache(cacheName);
+        IgniteCache<Long,TestData> serverCache = server.cache(cacheName);
 
         doTestScanQuery(clientCache, keysCnt);
         doTestScanQuery(serverCache, keysCnt);
 
         doTestSqlQuery(clientCache);
         doTestSqlQuery(serverCache);
+
+        doTestDml(clientCache);
     }
 
-    private void doTestSqlQuery(IgniteCache<Long,Long> cache) {
+    private void doTestDml(IgniteCache<Long,TestData> cache) {
+        String prefix = "update TestData set z = z + 1 ";
+
+        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
+        System.err.println(
+            cache.query(new SqlFieldsQuery(
+                "explain select z from TestData where check_scan_flag(?,false)")
+                .setDataPageScanEnabled(null)
+                .setArgs((Object)null)
+            ).getAll());
+
+//        cache.query(new SqlFieldsQuery(prefix + " _val = 10 where _val = 100" ));
+
+    }
+
+    private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
         // SQL query (data page scan must be enabled by default).
         DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(null)"))
-            .getAll().isEmpty());
+        checkSqlQuery(cache, null);
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = true;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
-            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
-            .getAll().isEmpty());
+        checkSqlQuery(cache, true);
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
-            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
-            .getAll().isEmpty());
+        checkSqlQuery(cache, false);
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
-        DirectPageScanIndexing.expectedDataPageScanEnabled = false;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
-            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
-            .getAll().isEmpty());
+        checkSqlQuery(cache, null);
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
-    private void doTestScanQuery(IgniteCache<Long,Long> cache, int keysCnt) {
+    private void checkSqlQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
+        DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
+
+        assertTrue(cache.query(new SqlQuery<>(TestData.class,
+            "from TestData use index() where check_scan_flag(?,false)") // Force full scan with USE INDEX()
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
+            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
+            .getAll().isEmpty());
+
+        if (dataPageScanEnabled == FALSE)
+            assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIdx was not used.
+        else
+            assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+    }
+
+    private void doTestScanQuery(IgniteCache<Long,TestData> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
         TestPredicate.callsCnt.set(0);
         int callsCnt = 0;
 
-        TestPredicate p = new TestPredicate();
-
-        assertTrue(cache.query(new ScanQuery<>(p)).getAll().isEmpty());
+        assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
         assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
 
-        assertTrue(cache.query(new ScanQuery<>(p)
-            .setDataPageScanEnabled(true)).getAll().isEmpty());
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        checkScanQuery(cache, true, true);
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
 
-        assertTrue(cache.query(new ScanQuery<>(p)
-            .setDataPageScanEnabled(false)).getAll().isEmpty());
-        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        checkScanQuery(cache, false, false);
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
 
-        assertTrue(cache.query(new ScanQuery<>(p)
-            .setDataPageScanEnabled(true)).getAll().isEmpty());
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        checkScanQuery(cache, true, true);
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
 
-        assertTrue(cache.query(new ScanQuery<>(p)
-            .setDataPageScanEnabled(null)).getAll().isEmpty());
-        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        checkScanQuery(cache, null, false);
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+    }
+
+    private void checkScanQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
+        assertTrue(cache.query(new ScanQuery<>(new TestPredicate())
+            .setDataPageScanEnabled(dataPageScanEnabled)).getAll().isEmpty());
+        assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDirectDataPageScan());
     }
 
     /**
      * @param exp Expected flag value.
-     * @return Always {@code false}.
+     * @param res Result to return.
+     * @return The given result..
      */
     @QuerySqlFunction(alias = "check_scan_flag")
-    public static boolean checkScanFlag(Boolean exp) {
+    public static boolean checkScanFlag(Boolean exp, boolean res) {
         assertEquals(exp != FALSE, CacheDataTree.isDataPageScanEnabled());
 
-        return false;
+        return res;
     }
 
     /**
@@ -212,14 +230,46 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
     /**
      */
-    static class TestPredicate implements IgniteBiPredicate<Long,Long> {
+    static class TestPredicate implements IgniteBiPredicate<Long,TestData> {
         /** */
         static final AtomicInteger callsCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(Long k, Long v) {
+        @Override public boolean apply(Long k, TestData v) {
             callsCnt.incrementAndGet();
             return false;
+        }
+    }
+
+    /**
+     */
+    static class TestData implements Serializable {
+        /** */
+        static final long serialVersionUID = 42L;
+
+        /** */
+        @QuerySqlField
+        long z;
+
+        /**
+         */
+        TestData(long z) {
+            this.z = z;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            TestData testData = (TestData)o;
+
+            return z == testData.z;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return (int)(z ^ (z >>> 32));
         }
     }
 }

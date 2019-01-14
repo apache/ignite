@@ -47,6 +47,8 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
@@ -61,7 +63,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
-    private static boolean lastFindWithDirectDataPageScan;
+    private static Boolean lastFindWithDirectDataPageScan;
 
     /** */
     private static final ThreadLocal<Boolean> dataPageScanEnabled =
@@ -131,8 +133,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      *         {@link #find(CacheSearchRow, CacheSearchRow, TreeRowClosure, Object)}
      *         used direct data page scan.
      */
-    public static boolean isLastFindWithDirectDataPageScan() {
-        return lastFindWithDirectDataPageScan;
+    public static Boolean isLastFindWithDirectDataPageScan() {
+        Boolean res = lastFindWithDirectDataPageScan;
+        lastFindWithDirectDataPageScan = null;
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -147,7 +151,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
-        lastFindWithDirectDataPageScan = false;
+        lastFindWithDirectDataPageScan = FALSE;
         return super.find(lower, upper, c, x);
     }
 
@@ -159,7 +163,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData, MvccDataPageClosure c)
         throws IgniteCheckedException {
-        lastFindWithDirectDataPageScan = true;
+        lastFindWithDirectDataPageScan = TRUE;
+
+        checkDestroyed();
 
         assert rowData != null;
         assert grp.persistenceEnabled();
