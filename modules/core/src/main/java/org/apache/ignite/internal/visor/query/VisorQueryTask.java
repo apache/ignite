@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -69,8 +70,9 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 String qryId = SQL_QRY_NAME + "-" + UUID.randomUUID();
                 GridQueryCancel cancel = new GridQueryCancel();
 
-                ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId,
-                    new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel));
+                Map<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+
+                storage.put(qryId, new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel));
 
                 scheduleQueryStart(qryId, ignite, arg, cancel);
 

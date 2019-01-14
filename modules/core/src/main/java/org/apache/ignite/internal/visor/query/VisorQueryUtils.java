@@ -282,7 +282,7 @@ public class VisorQueryUtils {
     }
 
     /**
-     * Schedule recieving of first query result page.
+     * Schedule fetch of first query result page.
      *
      * @param qryId Unique query result id.
      * @param ignite IgniteEx instance.
@@ -334,7 +334,8 @@ public class VisorQueryUtils {
         final String qryId,
         final IgniteEx ignite,
         final VisorQueryTaskArg arg,
-        final GridQueryCancel cancel) {
+        final GridQueryCancel cancel
+    ) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
             @Override public void onTimeout() {
                 ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
