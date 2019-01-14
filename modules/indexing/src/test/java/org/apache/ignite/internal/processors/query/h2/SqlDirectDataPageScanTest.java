@@ -93,32 +93,32 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
         for (long i = 0; i < 1000; i++)
             cache.put(i, i);
 
-        int calls = 0;
+        int callsCnt = 0;
 
         assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(null)"))
             .getAll().isEmpty());
-        assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
-
-        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
-        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
-            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
-            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
-            .getAll().isEmpty());
-        assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = true;
         assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
             .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
-        assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+
+        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
+        assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
+            .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
+            .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
+            .getAll().isEmpty());
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = false;
         assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(?)")
             .setArgs(DirectPageScanIndexing.expectedDataPageScanEnabled)
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
-        assertEquals(++calls, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
     }
 
     /**
