@@ -2265,15 +2265,19 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             if (rest.getClass() == ArrayList.class) {
                                 for (MvccDataRow row : ((List<MvccDataRow>) rest))
                                     part.dataStore().updateTxState(cctx, row);
-                            } else
+                            }
+                            else
                                 part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
                         }
-                    } finally {
+                    }
+                    finally {
                         cctx.shared().database().checkpointReadUnlock();
                     }
-                } finally {
+                }
+                finally {
                     entry.unlockEntry();
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+
+                    cctx.evicts().touch(entry);
 
                     metrics.addCleanupNanoTime(System.nanoTime() - cleanupStartNanoTime);
                     metrics.addCleanupRowsCnt(cleaned);

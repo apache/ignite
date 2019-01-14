@@ -631,7 +631,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             }
                             finally {
                                 if (entry != null)
-                                    entry.touch(topVer);
+                                    entry.touch();
                             }
                         }
                     }
