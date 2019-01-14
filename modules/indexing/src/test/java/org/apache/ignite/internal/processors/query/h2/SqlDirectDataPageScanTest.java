@@ -79,6 +79,8 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDirectScanFlag() throws Exception {
+        final String cacheName = "test";
+
         GridQueryProcessor.idxCls = DirectPageScanIndexing.class;
         IgniteEx server = startGrid(0);
         server.cluster().active(true);
@@ -86,20 +88,32 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
         Ignition.setClientMode(true);
         IgniteEx client = startGrid(1);
 
-        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>("test");
+        CacheConfiguration<Long,Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
         ccfg.setSqlFunctionClasses(SqlDirectDataPageScanTest.class);
 
-        IgniteCache<Long,Long> cache = client.createCache(ccfg);
+        IgniteCache<Long,Long> clientCache = client.createCache(ccfg);
 
         final int keysCnt = 1000;
 
         for (long i = 0; i < keysCnt; i++)
-            cache.put(i, i);
+            clientCache.put(i, i);
 
+        IgniteCache<Long,Long> serverCache = server.cache(cacheName);
+
+        doTestScanQuery(clientCache, keysCnt);
+        doTestScanQuery(serverCache, keysCnt);
+
+        doTestSqlQuery(clientCache);
+        doTestSqlQuery(serverCache);
+    }
+
+    private void doTestSqlQuery(IgniteCache<Long,Long> cache) {
         // SQL query (data page scan must be enabled by default).
+        DirectPageScanIndexing.callsCnt.set(0);
         int callsCnt = 0;
 
+        DirectPageScanIndexing.expectedDataPageScanEnabled = null;
         assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(null)"))
             .getAll().isEmpty());
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
@@ -124,9 +138,12 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+    }
 
+    private void doTestScanQuery(IgniteCache<Long,Long> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
-        callsCnt = 0;
+        TestPredicate.callsCnt.set(0);
+        int callsCnt = 0;
 
         TestPredicate p = new TestPredicate();
 
