@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -55,13 +60,16 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     public void dropAdnCreateTables() {
         execute("DROP TABLE IF EXISTS COMPOSITE;");
         execute("DROP TABLE IF EXISTS SIMPLE");
+        execute("DROP TABLE IF EXISTS SIMPLE_WRAPPED");
 
         execute("CREATE TABLE COMPOSITE (id1 INT, id2 INT, name1 VARCHAR, name2 VARCHAR, PRIMARY KEY(id1, id2)) " +
             "WITH \"key_type=" + CompositeKey.class.getName() + ", value_type=" + CompositeValue.class.getName() + "\"");
         execute("CREATE TABLE SIMPLE (id INT PRIMARY KEY, name VARCHAR) WITH \"wrap_value=false, wrap_key=false\"");
+        execute("CREATE TABLE SIMPLE_WRAPPED (id INT PRIMARY KEY, name VARCHAR) WITH \"wrap_value=true, wrap_key=true\"");
 
         execute("INSERT INTO COMPOSITE (_key, _val) VALUES (?, ?)", new CompositeKey(), new CompositeValue());
         execute("INSERT INTO SIMPLE VALUES (146, 'default name')");
+        execute("INSERT INTO SIMPLE_WRAPPED VALUES (147, 'default name')");
     }
 
     /**
@@ -108,6 +116,46 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
             "Columns _VAL and NAME both refer to entire cache value object.");
     }
 
+    /**
+     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together
+     * in the COPY (aka bulk load) sql statement. Same constraints are right for (_val, _val alias, val fields).
+     */
+    @Test
+    public void testCopyMixingPlaceholderAndFields() {
+        File duplicatedKeyCsv = createTmpCsvFileWithContent("42, 43, myName");
+        try {
+            assertThrows(() ->
+                    execute("COPY FROM \'" + duplicatedKeyCsv.getAbsolutePath() + "\' " +
+                        "INTO SIMPLE (_key, id, name) FORMAT CSV"),
+                "Columns _KEY and ID both refer to entire cache key object.");
+
+            assertThrows(() ->
+                    execute("COPY FROM \'" + duplicatedKeyCsv.getAbsolutePath() + "\' " +
+                        "INTO SIMPLE_WRAPPED (_key, id, name) FORMAT CSV"),
+                "Column _KEY refers to entire key cache object.");
+
+        }
+        finally {
+            duplicatedKeyCsv.delete();
+        }
+
+        File duplicatedValCsv = createTmpCsvFileWithContent("42, myName, anotherName");
+        try {
+            assertThrows(() ->
+                    execute("COPY FROM \'" + duplicatedValCsv.getAbsolutePath() + "\' " +
+                        "INTO SIMPLE (id, _val, name) FORMAT CSV"),
+                "Columns _VAL and NAME both refer to entire cache value object.");
+
+            assertThrows(() ->
+                    execute("COPY FROM \'" + duplicatedValCsv.getAbsolutePath() + "\' " +
+                        "INTO SIMPLE_WRAPPED (id, _val, name) FORMAT CSV"),
+                "Column _VAL refers to entire value cache object.");
+
+        }
+        finally {
+            duplicatedValCsv.delete();
+        }
+    }
 
     /**
      * Check update statements that modify any two of _val, _val alias or val field (column that belongs to cache value
@@ -242,6 +290,7 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
                 execute("UPDATE SIMPLE SET name = ?",  (Object)null),
             "New value for UPDATE must not be null");
     }
+
     /**
      * Execute sql query with PUBLIC schema and specified positional arguments of sql query.
      *
@@ -271,6 +320,34 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
             qryClos,
             IgniteSQLException.class,
             expErrMsg);
+    }
+
+    /**
+     * @param content content of the csv file.
+     * @return csv file to be loaded into test table.
+     */
+    public File createTmpCsvFileWithContent(String content) {
+        File csv;
+
+        try {
+           csv = File.createTempFile("copy_", ".csv");
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Couldn't create file for the COPY command", e);
+        }
+
+        try (OutputStream os = new FileOutputStream(csv);
+             OutputStreamWriter w =  new OutputStreamWriter(os)) {
+            w.write(content);
+        }
+        catch (IOException e) {
+            csv.delete();
+
+            throw new RuntimeException("Couldn't write to file for the COPY command. " +
+                "[File=" + csv.getAbsolutePath() + "]" , e);
+        }
+
+        return csv;
     }
 
     /**
