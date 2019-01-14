@@ -206,11 +206,11 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
     /** */
     @Test
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
-        Path path = Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
+        Path path = Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
 
         LabeledVectorSet training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
-        assertEquals(training.features(2).get(1), 0.0);
+        assertEquals(training.features(2).get(1), 0.0, 0);
     }
 
     /** */
@@ -265,7 +265,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
-            assertEquals(lbs[i], labels[i]);
+            assertEquals(lbs[i], labels[i], 0);
     }
 
     /** */
@@ -289,6 +289,6 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
-        this.externalizeTest(dataset);
+        externalizeTest(dataset);
     }
 }
