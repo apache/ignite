@@ -140,16 +140,6 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void handleDeadlockProbeForNear(DeadlockProbe probe) {
-        // t0d0 refine
-        if (probe.waitChain().size() == 1 && probe.waitChain().iterator().next().xidVersion().equals(probe.blocker().xidVersion())) {
-            GridNearTxLocal nearTx = cctx.tm().tx(probe.blocker().nearXidVersion());
-
-            if (nearTx != null)
-                nearTx.rollbackAsync();
-
-            return;
-        }
-
         // a probe is simply discarded if next wait-for edge is not found
         ProbedTx blocker = probe.blocker();
 
@@ -181,7 +171,6 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
             .findAny()
             .map(GridDhtTxLocalAdapter.class::cast)
             .ifPresent(tx -> {
-                // t0d0 second dht tx is repeated?
                 Optional<ProbedTx> repeatedTx = probe.waitChain().stream()
                     .filter(wTx -> wTx.xidVersion().equals(tx.xidVersion()))
                     .findAny();
@@ -194,11 +183,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
                     if (victim.xidVersion().equals(tx.xidVersion())) {
                         if (victim.lockCounter() == tx.lockCounter()) {
-                            // t0d0 figure out why DHT tx rollback does not work properly
-//                            tx.rollbackAsync();
-                            ProbedTx nearVictim = new ProbedTx(null, victim.nearXidVersion(), victim.nearXidVersion(), -1, -1);
-
-                            sendProbe(probe.initiatorVersion(), singleton(nearVictim), nearVictim, tx.eventNodeId(), true);
+                            // t0d0 figure out whether DHT tx rollback works properly
+                            tx.rollbackAsync();
                         }
                     }
                     else {
@@ -234,7 +220,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * t0d0
+     * t0d0 fix doc
      * Chooses victim basing on tx start time. Algorithm chooses victim in such way that every site detected a deadlock
      * will choose the same victim. As a result only one tx participating in a deadlock will be aborted.
      * <p>
