@@ -31,8 +31,8 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  * Simple tests for {@link InlineIndexHelper}.
  */
 @RunWith(JUnit4.class)
-public class InlineIndexHelperTest extends GridCommonAbstractTest {
+public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CACHE_ID = 42;
 
