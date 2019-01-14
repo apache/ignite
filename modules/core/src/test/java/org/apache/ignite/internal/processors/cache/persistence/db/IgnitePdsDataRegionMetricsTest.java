@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -246,9 +245,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
     }
-    static {
-        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-    }
+
     /**
      * Test for check used checkpoint size metric.
      *
