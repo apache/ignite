@@ -54,6 +54,7 @@ import org.junit.runners.JUnit4;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -157,7 +158,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 cache.putAll(map);
 
-                forceCheckpoint();
+                forceCheckpoint(node);
 
                 checkMetricsConsistency(node);
             }
@@ -311,6 +312,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private void checkMetricsConsistency(final IgniteEx node) throws Exception {
         checkMetricsConsistency(node, DEFAULT_CACHE_NAME);
         checkMetricsConsistency(node, UTILITY_CACHE_NAME);
+        checkMetricsConsistency(node, TX_LOG_CACHE_NAME);
         checkMetricsConsistency(node, METASTORAGE_CACHE_NAME);
     }
 
@@ -321,8 +323,10 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         assert pageStoreMgr != null : "Persistence is not enabled";
 
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
+        boolean txLog = TX_LOG_CACHE_NAME.equals(cacheName);
 
         File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), META_STORAGE_NAME) :
+            txLog ? new File(pageStoreMgr.workDir(), TX_LOG_CACHE_NAME) :
             pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;
@@ -349,6 +353,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         GridCacheSharedContext cctx = node.context().cache().context();
 
         String regionName = metaStore ? GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME :
+            txLog ? TX_LOG_CACHE_NAME :
             cctx.cacheContext(CU.cacheId(cacheName)).group().dataRegion().config().getName();
 
         long totalAllocatedPagesFromMetrics = cctx.database().memoryMetrics(regionName).getTotalAllocatedPages();
