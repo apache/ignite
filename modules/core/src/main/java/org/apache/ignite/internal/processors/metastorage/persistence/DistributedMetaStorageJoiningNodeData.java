@@ -31,9 +31,6 @@ class DistributedMetaStorageJoiningNodeData implements Serializable {
     /** */
     public final DistributedMetaStorageVersion ver;
 
-//    /** */
-//    public final DistributedMetaStorageHistoryItem[] fullData;
-
     /** */
     public final DistributedMetaStorageHistoryItem[] hist;
 
@@ -41,12 +38,10 @@ class DistributedMetaStorageJoiningNodeData implements Serializable {
     public DistributedMetaStorageJoiningNodeData(
         int bltId,
         DistributedMetaStorageVersion ver,
-        DistributedMetaStorageHistoryItem[] fullData,
         DistributedMetaStorageHistoryItem[] hist
     ) {
         this.bltId = bltId;
         this.ver = ver;
-//        this.fullData = fullData;
         this.hist = hist;
     }
 }

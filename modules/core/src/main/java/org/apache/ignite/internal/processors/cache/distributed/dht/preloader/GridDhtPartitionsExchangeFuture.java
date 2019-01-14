@@ -1141,7 +1141,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    ((IgniteChangeGlobalStateSupport)kctx.globalMetastorage()).onDeActivate(kctx);
+                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
 
                     kctx.dataStructures().onDeActivate(kctx);
 

@@ -221,7 +221,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Global metastorage. */
     @GridToStringInclude
-    private DistributedMetaStorage globalMetastorage;
+    private DistributedMetaStorage distributedMetastorage;
 
     /** */
     @GridToStringInclude
@@ -608,7 +608,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridClusterStateProcessor)
             stateProc = (GridClusterStateProcessor)comp;
         else if (comp instanceof DistributedMetaStorage)
-            globalMetastorage = (DistributedMetaStorage)comp;
+            distributedMetastorage = (DistributedMetaStorage)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -759,8 +759,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorage globalMetastorage() {
-        return globalMetastorage;
+    @Override public DistributedMetaStorage distributedMetastorage() {
+        return distributedMetastorage;
     }
 
     /** {@inheritDoc} */

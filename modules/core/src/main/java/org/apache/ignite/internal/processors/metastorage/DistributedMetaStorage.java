@@ -55,7 +55,7 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
      * @return {@code True} if expected value matched the actual one and write was completed successfully.
      *      {@code False} otherwise.
      */
-    boolean casWrite(
+    boolean compareAndSet(
         @NotNull String key,
         @Nullable Serializable expVal,
         @NotNull Serializable newVal
@@ -70,5 +70,5 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
      * @return {@code True} if expected value matched the actual one and remove was completed successfully.
      *      {@code False} otherwise.
      */
-    boolean casRemove(@NotNull String key, @NotNull Serializable expVal) throws IgniteCheckedException;
+    boolean compareAndRemove(@NotNull String key, @NotNull Serializable expVal) throws IgniteCheckedException;
 }

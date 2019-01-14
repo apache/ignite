@@ -32,9 +32,6 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -49,16 +46,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE
  */
 @RunWith(JUnit4.class)
 public class DistributedMetaStorageTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -104,7 +96,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        DistributedMetaStorage metastorage = ignite.context().globalMetastorage();
+        DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
         assertNull(metastorage.read("key"));
 
@@ -140,7 +132,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         }
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -173,7 +165,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -208,7 +200,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -220,33 +212,33 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        assertFalse(metastorage(0).casWrite("key", "expVal", "newVal"));
+        assertFalse(metastorage(0).compareAndSet("key", "expVal", "newVal"));
 
         assertNull(metastorage(0).read("key"));
 
-        assertFalse(metastorage(0).casRemove("key", "expVal"));
+        assertFalse(metastorage(0).compareAndRemove("key", "expVal"));
 
-        assertTrue(metastorage(0).casWrite("key", null, "val1"));
-
-        assertEquals("val1", metastorage(0).read("key"));
-
-        assertFalse(metastorage(0).casWrite("key", null, "val2"));
+        assertTrue(metastorage(0).compareAndSet("key", null, "val1"));
 
         assertEquals("val1", metastorage(0).read("key"));
 
-        assertTrue(metastorage(0).casWrite("key", "val1", "val3"));
+        assertFalse(metastorage(0).compareAndSet("key", null, "val2"));
+
+        assertEquals("val1", metastorage(0).read("key"));
+
+        assertTrue(metastorage(0).compareAndSet("key", "val1", "val3"));
 
         assertEquals("val3", metastorage(0).read("key"));
 
-        assertFalse(metastorage(0).casRemove("key", "val1"));
+        assertFalse(metastorage(0).compareAndRemove("key", "val1"));
 
         assertEquals("val3", metastorage(0).read("key"));
 
-        assertTrue(metastorage(0).casRemove("key", "val3"));
+        assertTrue(metastorage(0).compareAndRemove("key", "val3"));
 
         assertNull(metastorage(0).read("key"));
 
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /**
@@ -258,13 +250,13 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key", "value");
+        ignite.context().distributedMetastorage().write("key", "value");
 
         IgniteEx newNode = startGrid(1);
 
-        assertEquals("value", newNode.context().globalMetastorage().read("key"));
+        assertEquals("value", newNode.context().distributedMetastorage().read("key"));
 
-        assertGlobalMetastoragesAreEqual(ignite, newNode);
+        assertDistributedMetastoragesAreEqual(ignite, newNode);
     }
 
     /**
@@ -278,9 +270,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().distributedMetastorage().write("key1", "value1");
 
-        ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().distributedMetastorage().write("key2", "value2");
 
         startGrid(1);
 
@@ -288,7 +280,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         assertEquals("value2", metastorage(1).read("key2"));
 
-        assertGlobalMetastoragesAreEqual(ignite, grid(1));
+        assertDistributedMetastoragesAreEqual(ignite, grid(1));
     }
 
     /**
@@ -312,7 +304,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         CountDownLatch grid1MetaStorageStartLatch = new CountDownLatch(1);
 
-        grid(1).context().internalSubscriptionProcessor().registerGlobalMetastorageListener(
+        grid(1).context().internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
                 @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                     grid1MetaStorageStartLatch.countDown();
@@ -328,41 +320,41 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid1MetaStorageStartLatch.await(1, TimeUnit.SECONDS);
 
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /**
      * @return {@link DistributedMetaStorage} instance for i'th node.
      */
     protected DistributedMetaStorage metastorage(int i) {
-        return grid(i).context().globalMetastorage();
+        return grid(i).context().distributedMetastorage();
     }
 
     /**
      * Assert that two nodes have the same internal state in {@link DistributedMetaStorage}.
      */
-    protected void assertGlobalMetastoragesAreEqual(IgniteEx ignite1, IgniteEx ignite2) throws Exception {
-        DistributedMetaStorage globalMetastorage1 = ignite1.context().globalMetastorage();
+    protected void assertDistributedMetastoragesAreEqual(IgniteEx ignite1, IgniteEx ignite2) throws Exception {
+        DistributedMetaStorage distributedMetastorage1 = ignite1.context().distributedMetastorage();
 
-        DistributedMetaStorage globalMetastorage2 = ignite2.context().globalMetastorage();
+        DistributedMetaStorage distributedMetastorage2 = ignite2.context().distributedMetastorage();
 
-        Object ver1 = U.field(globalMetastorage1, "ver");
+        Object ver1 = U.field(distributedMetastorage1, "ver");
 
-        Object ver2 = U.field(globalMetastorage2, "ver");
+        Object ver2 = U.field(distributedMetastorage2, "ver");
 
         assertEquals(ver1, ver2);
 
-        Object histCache1 = U.field(globalMetastorage1, "histCache");
+        Object histCache1 = U.field(distributedMetastorage1, "histCache");
 
-        Object histCache2 = U.field(globalMetastorage2, "histCache");
+        Object histCache2 = U.field(distributedMetastorage2, "histCache");
 
         assertEquals(histCache1, histCache2);
 
         Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "localFullData");
 
-        Object[] fullData1 = (Object[])fullDataMtd.invoke(globalMetastorage1);
+        Object[] fullData1 = (Object[])fullDataMtd.invoke(distributedMetastorage1);
 
-        Object[] fullData2 = (Object[])fullDataMtd.invoke(globalMetastorage2);
+        Object[] fullData2 = (Object[])fullDataMtd.invoke(distributedMetastorage2);
 
         assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
 

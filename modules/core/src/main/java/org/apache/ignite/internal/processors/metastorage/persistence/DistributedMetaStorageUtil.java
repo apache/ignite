@@ -19,25 +19,38 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** */
 class DistributedMetaStorageUtil {
-    /** */
+    /**
+     * Common prefix for everything that is going to be written into {@link MetaStorage}. Something that has minimal
+     * chance of collision with the existing keys.
+     */
     static final String COMMON_KEY_PREFIX = "\u0000";
 
-    /** */
+    /**
+     * Prefix for user keys to store in distributed metastorage.
+     */
     private static final String KEY_PREFIX = "key-";
 
-    /** */
+    /**
+     * Key for history version.
+     */
     private static final String HISTORY_VER_KEY = "hist-ver";
 
-    /** */
+    /**
+     * Prefix for history items. Each item will be stored using {@code hist-item-<ver>} key.
+     */
     private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
 
-    /** */
+    /**
+     * Special key indicating that local data for distributied metastorage is inconsistent because of the ungoing
+     * update/recovery process. Data associated with the key may be ignored.
+     */
     private static final String CLEANUP_GUARD_KEY = "clean";
 
     /** */

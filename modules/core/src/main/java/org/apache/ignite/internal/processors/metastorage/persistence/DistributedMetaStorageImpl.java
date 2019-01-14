@@ -38,6 +38,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -161,6 +162,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        if (ctx.clientNode())
+            return;
+
         if (isPersistenceEnabled(ctx.config())) {
             subscrProcessor.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
@@ -183,16 +187,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             bridge = new EmptyDistributedMetaStorageBridge();
 
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
 
-        ctx.discovery().setCustomEventListener(
+        GridDiscoveryManager discovery = ctx.discovery();
+
+        discovery.setCustomEventListener(
             DistributedMetaStorageUpdateMessage.class,
             this::onUpdateMessage
         );
 
-        ctx.discovery().setCustomEventListener(
+        discovery.setCustomEventListener(
             DistributedMetaStorageUpdateAckMessage.class,
             this::onAckMessage
         );
@@ -206,6 +212,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        if (ctx.clientNode())
+            return;
+
         if (!isPersistenceEnabled(ctx.config())) {
             if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
                 synchronized (innerStateLock) {
@@ -224,7 +233,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
-            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
 
             writeAvailable.countDown();
@@ -233,6 +242,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        if (ctx.clientNode())
+            return;
+
         synchronized (innerStateLock) {
             wasDeactivated = true;
 
@@ -293,7 +305,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         bridge = readOnlyBridge;
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
             subscriber.onReadyForRead(this);
     }
 
@@ -312,10 +324,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(this, metastorage);
 
             if (startupExtras != null) {
-//                long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
-//
-//                histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
-
                 lock();
 
                 try {
@@ -333,7 +341,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             startupExtras = null;
         }
 
-        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : subscrProcessor.getDistributedMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
 
         writeAvailable.countDown();
@@ -364,7 +372,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean casWrite(
+    @Override public boolean compareAndSet(
         @NotNull String key,
         @Nullable Serializable expVal,
         @NotNull Serializable newVal
@@ -375,7 +383,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean casRemove(
+    @Override public boolean compareAndRemove(
         @NotNull String key,
         @NotNull Serializable expVal
     ) throws IgniteCheckedException {
@@ -429,7 +437,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         Serializable data = new DistributedMetaStorageJoiningNodeData(
             getBaselineTopologyId(),
             verToSnd,
-            null,//startupExtras.locFullData,
             hist
         );
 
@@ -579,17 +586,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     dataBag.addGridCommonData(COMPONENT_ID, nodeData);
                 }
-                else {
+                else
                     assert false : "Joining node is too far ahead [remoteVer=" + remoteVer + "]";
-//                    DistributedMetaStorageClusterNodeData nodeData = new DistributedMetaStorageClusterNodeData(
-//                        remoteVer,
-//                        joiningData.fullData,
-//                        joiningData.hist,
-//                        EMPTY_ARRAY
-//                    );
-//
-//                    writeFullDataLater(nodeData);
-                }
             }
             else {
                 if (dataBag.commonDataCollectedFor(COMPONENT_ID))
@@ -756,14 +754,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
         if (nodeData != null) {
-            if (nodeData.fullData == null) {
-                if (nodeData.updates != null) {
-                    for (DistributedMetaStorageHistoryItem update : nodeData.updates)
-                        updateLater(update);
+            synchronized (innerStateLock) {
+                if (nodeData.fullData == null) {
+                    if (nodeData.updates != null) {
+                        for (DistributedMetaStorageHistoryItem update : nodeData.updates)
+                            updateLater(update);
+                    }
                 }
+                else
+                    writeFullDataLater(nodeData);
             }
-            else
-                writeFullDataLater(nodeData);
         }
     }
 
@@ -934,6 +934,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!Objects.deepEquals(oldVal, expVal)) {
                 msg.setMatches(false);
 
+                // Do nothing if expected value doesn't match with the actual one.
                 return;
             }
         }
@@ -1009,6 +1010,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Add update into the list of deferred updates. Works for inactive nodes only.
      */
     private void updateLater(DistributedMetaStorageHistoryItem update) {
+        assert Thread.holdsLock(innerStateLock);
+
         assert startupExtras != null;
 
         startupExtras.deferredUpdates.add(update);
@@ -1105,6 +1108,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param nodeData Data received from remote node.
      */
     private void writeFullDataLater(DistributedMetaStorageClusterNodeData nodeData) {
+        assert Thread.holdsLock(innerStateLock);
+
         assert nodeData.fullData != null;
 
         startupExtras.fullNodeData = nodeData;

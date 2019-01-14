@@ -68,7 +68,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key", "value");
+        ignite.context().distributedMetastorage().write("key", "value");
 
         stopGrid(0);
 
@@ -76,7 +76,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        assertEquals("value", ignite.context().globalMetastorage().read("key"));
+        assertEquals("value", ignite.context().distributedMetastorage().read("key"));
     }
 
     /**
@@ -90,7 +90,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().distributedMetastorage().write("key1", "value1");
 
         stopGrid(1);
 
@@ -100,15 +100,15 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().distributedMetastorage().write("key2", "value2");
 
         IgniteEx newNode = startGrid(1);
 
-        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+        assertEquals("value1", newNode.context().distributedMetastorage().read("key1"));
 
-        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+        assertEquals("value2", newNode.context().distributedMetastorage().read("key2"));
 
-        assertGlobalMetastoragesAreEqual(ignite, newNode);
+        assertDistributedMetastoragesAreEqual(ignite, newNode);
     }
 
     /**
@@ -124,7 +124,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().distributedMetastorage().write("key1", "value1");
 
         stopGrid(1);
 
@@ -134,19 +134,19 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().distributedMetastorage().write("key2", "value2");
 
-        ignite.context().globalMetastorage().write("key3", "value3");
+        ignite.context().distributedMetastorage().write("key3", "value3");
 
         IgniteEx newNode = startGrid(1);
 
-        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+        assertEquals("value1", newNode.context().distributedMetastorage().read("key1"));
 
-        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+        assertEquals("value2", newNode.context().distributedMetastorage().read("key2"));
 
-        assertEquals("value3", newNode.context().globalMetastorage().read("key3"));
+        assertEquals("value3", newNode.context().distributedMetastorage().read("key3"));
 
-        assertGlobalMetastoragesAreEqual(ignite, newNode);
+        assertDistributedMetastoragesAreEqual(ignite, newNode);
     }
 
     /**
@@ -160,11 +160,11 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().distributedMetastorage().write("key1", "value1");
 
         stopGrid(1);
 
-        ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().distributedMetastorage().write("key2", "value2");
 
         stopGrid(0);
 
@@ -174,11 +174,11 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         awaitPartitionMapExchange();
 
-        assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
+        assertEquals("value1", ignite.context().distributedMetastorage().read("key1"));
 
-        assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
+        assertEquals("value2", ignite.context().distributedMetastorage().read("key2"));
 
-        assertGlobalMetastoragesAreEqual(ignite, grid(0));
+        assertDistributedMetastoragesAreEqual(ignite, grid(0));
     }
 
     /**
@@ -194,13 +194,13 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite.cluster().active(true);
 
-        ignite.context().globalMetastorage().write("key1", "value1");
+        ignite.context().distributedMetastorage().write("key1", "value1");
 
         stopGrid(1);
 
-        ignite.context().globalMetastorage().write("key2", "value2");
+        ignite.context().distributedMetastorage().write("key2", "value2");
 
-        ignite.context().globalMetastorage().write("key3", "value3");
+        ignite.context().distributedMetastorage().write("key3", "value3");
 
         stopGrid(0);
 
@@ -210,13 +210,13 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         awaitPartitionMapExchange();
 
-        assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
+        assertEquals("value1", ignite.context().distributedMetastorage().read("key1"));
 
-        assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
+        assertEquals("value2", ignite.context().distributedMetastorage().read("key2"));
 
-        assertEquals("value3", ignite.context().globalMetastorage().read("key3"));
+        assertEquals("value3", ignite.context().distributedMetastorage().read("key3"));
 
-        assertGlobalMetastoragesAreEqual(ignite, grid(0));
+        assertDistributedMetastoragesAreEqual(ignite, grid(0));
     }
 
     /**
@@ -232,7 +232,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         MetaStorage locMetastorage = dbSharedMgr.metaStorage();
 
-        DistributedMetaStorage globalMetastorage = ignite.context().globalMetastorage();
+        DistributedMetaStorage distributedMetastorage = ignite.context().distributedMetastorage();
 
         dbSharedMgr.checkpointReadLock();
 
@@ -243,7 +243,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             dbSharedMgr.checkpointReadUnlock();
         }
 
-        globalMetastorage.write("key", "globalValue");
+        distributedMetastorage.write("key", "globalValue");
 
         dbSharedMgr.checkpointReadLock();
 
@@ -254,7 +254,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             dbSharedMgr.checkpointReadUnlock();
         }
 
-        assertEquals("globalValue", globalMetastorage.read("key"));
+        assertEquals("globalValue", distributedMetastorage.read("key"));
     }
 
     /**
@@ -317,13 +317,13 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         Thread.sleep(3_000L); // Remove later.
 
         for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage globalMetastorage = metastorage(i);
+            DistributedMetaStorage distributedMetastorage = metastorage(i);
 
-            assertNull(U.field(globalMetastorage, "startupExtras"));
+            assertNull(U.field(distributedMetastorage, "startupExtras"));
         }
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -362,7 +362,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         awaitPartitionMapExchange();
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -413,7 +413,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         awaitPartitionMapExchange();
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -460,7 +460,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         awaitPartitionMapExchange();
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -511,7 +511,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         awaitPartitionMapExchange();
 
         for (int i = 1; i < cnt; i++)
-            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /**
@@ -605,7 +605,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertEquals("val9", metastorage(1).read("key9"));
 
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /**
@@ -648,7 +648,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertEquals("val1", metastorage(1).read("key1"));
 
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /**
@@ -693,6 +693,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertEquals("val5", metastorage(1).read("key5"));
 
-        assertGlobalMetastoragesAreEqual(grid(0), grid(1));
+        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 }

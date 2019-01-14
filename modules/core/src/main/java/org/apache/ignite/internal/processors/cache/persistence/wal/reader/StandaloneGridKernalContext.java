@@ -302,7 +302,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedMetaStorage globalMetastorage() {
+    @Override public DistributedMetaStorage distributedMetastorage() {
         return null;
     }
 

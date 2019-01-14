@@ -211,7 +211,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Global metastorage.
      */
-    public DistributedMetaStorage globalMetastorage();
+    public DistributedMetaStorage distributedMetastorage();
 
     /**
      * Gets task session processor.

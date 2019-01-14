@@ -35,13 +35,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
-    private List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
+    private final List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
 
     /** */
-    private List<DistributedMetastorageLifecycleListener> globalMetastorageListeners = new ArrayList<>();
+    private final List<DistributedMetastorageLifecycleListener> distributedMetastorageListeners = new ArrayList<>();
 
     /** */
-    private List<DatabaseLifecycleListener> dbListeners = new ArrayList<>();
+    private final List<DatabaseLifecycleListener> dbListeners = new ArrayList<>();
 
 
     /**
@@ -65,16 +65,16 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    public void registerGlobalMetastorageListener(@NotNull DistributedMetastorageLifecycleListener lsnr) {
+    public void registerDistributedMetastorageListener(@NotNull DistributedMetastorageLifecycleListener lsnr) {
         if (lsnr == null)
             throw new NullPointerException("Global metastorage subscriber should be not-null.");
 
-        globalMetastorageListeners.add(lsnr);
+        distributedMetastorageListeners.add(lsnr);
     }
 
     /** */
-    public List<DistributedMetastorageLifecycleListener> getGlobalMetastorageSubscribers() {
-        return globalMetastorageListeners;
+    public List<DistributedMetastorageLifecycleListener> getDistributedMetastorageSubscribers() {
+        return distributedMetastorageListeners;
     }
 
     /** */

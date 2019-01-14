@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.function.BiConsumer;
 
-/** */
+/**
+ * Empty metastorage is the specific implementation to be used in in-memory clusters to have distributed metastorage
+ * without any data until cluster is activated.
+ */
 class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
     /** {@inheritDoc} */
     @Override public Serializable read(String globalKey, boolean unmarshal) {
