@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,20 +25,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -358,65 +352,6 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             return data;
-        }
-    }
-
-    /** */
-    static class ZkTestCommunicationSpi extends TestRecordingCommunicationSpi {
-        /** */
-        volatile CountDownLatch pingStartLatch;
-
-        /** */
-        volatile CountDownLatch pingLatch;
-
-        /** */
-        volatile BitSet checkRes;
-
-        /**
-         * @param ignite Node.
-         * @return Node's communication SPI.
-         */
-        static ZkTestCommunicationSpi testSpi(Ignite ignite) {
-            return (ZkTestCommunicationSpi)ignite.configuration().getCommunicationSpi();
-        }
-
-        /**
-         * @param nodes Number of nodes.
-         * @param setBitIdxs Bits indexes to set in check result.
-         */
-        void initCheckResult(int nodes, Integer... setBitIdxs) {
-            checkRes = new BitSet(nodes);
-
-            for (Integer bitIdx : setBitIdxs)
-                checkRes.set(bitIdx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
-            CountDownLatch pingStartLatch = this.pingStartLatch;
-
-            if (pingStartLatch != null)
-                pingStartLatch.countDown();
-
-            CountDownLatch pingLatch = this.pingLatch;
-
-            try {
-                if (pingLatch != null)
-                    pingLatch.await();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
-            }
-
-            BitSet checkRes = this.checkRes;
-
-            if (checkRes != null) {
-                this.checkRes = null;
-
-                return new IgniteFinishedFutureImpl<>(checkRes);
-            }
-
-            return super.checkConnection(nodes);
         }
     }
 }

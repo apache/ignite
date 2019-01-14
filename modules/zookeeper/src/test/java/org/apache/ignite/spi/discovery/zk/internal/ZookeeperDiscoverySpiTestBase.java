@@ -719,15 +719,15 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class ZkTestCommunicationSpi extends TestRecordingCommunicationSpi {
+    static class ZkTestCommunicationSpi extends TestRecordingCommunicationSpi {
         /** */
-        private volatile CountDownLatch pingStartLatch;
+        volatile CountDownLatch pingStartLatch;
 
         /** */
-        private volatile CountDownLatch pingLatch;
+        volatile CountDownLatch pingLatch;
 
         /** */
-        private volatile BitSet checkRes;
+        volatile BitSet checkRes;
 
         /**
          * @param ignite Node.
