@@ -217,7 +217,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, NO_TIMEOUT, null), stmt);
+                    schema, 1, 1, autoCommit, sql, null), stmt);
 
                 streamState.start();
             }
@@ -778,17 +778,18 @@ public class JdbcThinConnection implements Connection {
         RequestTimeoutTimerTask reqTimeoutTimerTask = null;
 
         try {
-            if (req.timeout() != NO_TIMEOUT) {
+            if (stmt != null && stmt.reqTimeout() != NO_TIMEOUT) {
                 reqTimeoutTimerTask = new RequestTimeoutTimerTask(
-                    req instanceof JdbcBulkLoadBatchRequest ? stmt.currentRequestId() : req.requestId(), req.timeout());
+                    req instanceof JdbcBulkLoadBatchRequest ? stmt.currentRequestId() : req.requestId(),
+                    stmt.reqTimeout());
 
                 timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
             }
 
             JdbcResponse res = cliIo.sendRequest(req, stmt);
 
-            if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && req.timeout() != NO_TIMEOUT &&
-                reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get())
+            if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
+                stmt.reqTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get())
                 throw new SQLTimeoutException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
             else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
@@ -804,7 +805,7 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
         }
         finally {
-            if (req.timeout() != NO_TIMEOUT && reqTimeoutTimerTask != null)
+            if (stmt != null && stmt.reqTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null)
                 reqTimeoutTimerTask.cancel();
         }
     }
@@ -993,7 +994,7 @@ public class JdbcThinConnection implements Connection {
                 respSem.acquire();
 
                 sendRequestNotWaitResponse(
-                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch, order, NO_TIMEOUT));
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch, order));
 
                 streamBatch = null;
 

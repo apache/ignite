@@ -82,6 +82,9 @@ public class JdbcThinStatement implements Statement {
     /** Query timeout. */
     private int timeout;
 
+    /** Request timeout. */
+    private int reqTimeout;
+
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
@@ -219,7 +222,7 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), sql, timeout, args == null ? null : args.toArray(new Object[args.size()]));
+            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
 
         JdbcResult res0 = conn.sendRequest(req, this);
 
@@ -314,27 +317,29 @@ public class JdbcThinStatement implements Statement {
                     if (readBytes == 0)
                         continue;
 
+                    if (reqTimeout != JdbcThinConnection.NO_TIMEOUT)
+                        reqTimeout -= timeSpendMillis;
+
                     JdbcResult res = conn.sendRequest(new JdbcBulkLoadBatchRequest(
                             cmdRes.cursorId(),
                             batchNum++,
                             JdbcBulkLoadBatchRequest.CMD_CONTINUE,
-                            readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes),
-                            timeout == JdbcThinConnection.NO_TIMEOUT ? JdbcThinConnection.NO_TIMEOUT :
-                                timeout - timeSpendMillis),
+                            readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)),
                         this);
 
                     if (!(res instanceof JdbcQueryExecuteResult))
                         throw new SQLException("Unknown response sent by the server: " + res);
 
-                    timeSpendMillis += (int)(System.currentTimeMillis() - startTime);
+                    timeSpendMillis = (int)(System.currentTimeMillis() - startTime);
                 }
+
+                if (reqTimeout != JdbcThinConnection.NO_TIMEOUT)
+                    reqTimeout -= timeSpendMillis;
 
                 return conn.sendRequest(new JdbcBulkLoadBatchRequest(
                         cmdRes.cursorId(),
                         batchNum++,
-                        JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF,
-                        timeout == JdbcThinConnection.NO_TIMEOUT ? JdbcThinConnection.NO_TIMEOUT :
-                            timeout - timeSpendMillis),
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF),
                     this);
             }
         }
@@ -346,8 +351,7 @@ public class JdbcThinStatement implements Statement {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
                         cmdRes.cursorId(),
                         batchNum,
-                        JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR,
-                        JdbcThinConnection.NO_TIMEOUT),
+                        JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR),
                     this);
             }
             catch (SQLException e1) {
@@ -481,6 +485,8 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Invalid timeout value.");
 
         this.timeout = timeout * 1000;
+
+        reqTimeout = this.timeout;
     }
 
     /** {@inheritDoc} */
@@ -708,7 +714,7 @@ public class JdbcThinStatement implements Statement {
             return new int[0];
 
         JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
-            conn.getAutoCommit(), false, timeout);
+            conn.getAutoCommit(), false);
 
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(req, this);
@@ -908,13 +914,6 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * @return Timeout in milliseconds.
-     */
-    int timeout() {
-        return timeout;
-    }
-
-    /**
      * @return Connection.
      */
     JdbcThinConnection connection() {
@@ -994,5 +993,12 @@ public class JdbcThinStatement implements Statement {
      */
     private boolean isQueryCancellationSupported() {
         return conn.isQueryCancellationSupported();
+    }
+
+    /**
+     * @return Request timeout.
+     */
+    int reqTimeout() {
+        return reqTimeout;
     }
 }

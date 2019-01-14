@@ -71,11 +71,10 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
-     * @param timeout Request timeout.
      */
     public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit,
-        boolean lastStreamBatch, int timeout) {
-        super(BATCH_EXEC, timeout);
+        boolean lastStreamBatch) {
+        super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 
@@ -93,11 +92,10 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
-     * @param timeout Request timeout.
      */
     protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit,
-        boolean lastStreamBatch, int timeout) {
-        super(type, timeout);
+        boolean lastStreamBatch) {
+        super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 

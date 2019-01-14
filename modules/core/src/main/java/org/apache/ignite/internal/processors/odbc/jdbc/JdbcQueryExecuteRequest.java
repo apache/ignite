@@ -72,12 +72,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param maxRows Max rows.
      * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
-     * @param timeout Request timeout.
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, int timeout, Object[] args) {
-        super(QRY_EXEC, timeout);
+        boolean autoCommit, String sqlQry, Object[] args) {
+        super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
         this.pageSize = pageSize;
