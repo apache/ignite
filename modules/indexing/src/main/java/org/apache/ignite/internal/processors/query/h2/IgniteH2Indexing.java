@@ -556,6 +556,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 fldsQry.setEnforceJoinOrder(enforceJoinOrder);
                 fldsQry.setTimeout(qryTimeout, TimeUnit.MILLISECONDS);
+                fldsQry.setDataPageScanEnabled(dataPageScanEnabled);
 
                 return dmlProc.updateSqlFieldsLocal(schemaName, conn, p, fldsQry, filter, cancel);
             }
@@ -1982,6 +1983,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
         fldsQry.setPageSize(pageSize);
         fldsQry.setLocal(true);
+        fldsQry.setDataPageScanEnabled(GridH2QueryRequest.isDataPageScanEnabled(flags));
 
         boolean loc = true;
 

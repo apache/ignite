@@ -438,13 +438,24 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this}.
      */
     public GridH2QueryRequest setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+        flags = (byte)setDataPageScanEnabled(flags, dataPageScanEnabled);
+
+        return this;
+    }
+
+    /**
+     * @param flags Flags.
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     * @return Updated flags.
+     */
+    public static int setDataPageScanEnabled(int flags, Boolean dataPageScanEnabled) {
         int x = dataPageScanEnabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
             dataPageScanEnabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
 
         flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
         flags |= x; // Set new bits.
 
-        return this;
+        return flags;
     }
 
     /**
@@ -453,6 +464,16 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
      */
     public Boolean isDataPageScanEnabled() {
+        return isDataPageScanEnabled(flags);
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @param flags Flags.
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public static Boolean isDataPageScanEnabled(int flags) {
         switch (flags & FLAG_DATA_PAGE_SCAN_MASK) {
             case FLAG_DATA_PAGE_SCAN_ENABLED:
                 return true;
