@@ -218,6 +218,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        ccfg = null;
+        ccfgs = null;
+
         MvccProcessorImpl.coordinatorAssignClosure(null);
 
         cleanPersistenceDir();

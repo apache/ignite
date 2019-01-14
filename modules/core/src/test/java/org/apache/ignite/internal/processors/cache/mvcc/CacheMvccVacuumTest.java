@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -91,7 +94,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node1);
 
         node1.createCache(new CacheConfiguration<>("test1")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
@@ -144,6 +147,56 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         Ignite node = startGrid(cfg);
 
         ensureNoVacuum(node);
+
+        IgniteCache<Object, Object> cache = node.createCache(
+            cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16));
+
+        ensureVacuum(node);
+
+        cache.put(0, 0);
+
+        cache.destroy();
+
+        ensureNoVacuum(node);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testVacuumNotStartedOnNonBaselineNode() throws Exception {
+        persistence = true;
+
+        Ignite node0 = startGrid(0);
+        Ignite node1 = startGrid(1);
+
+        ensureNoVacuum(node0);
+        ensureNoVacuum(node1);
+
+        node0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = node0.createCache(
+            cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16));
+
+        cache.put(primaryKey(cache), 0);
+        cache.put(primaryKey(node1.cache(DEFAULT_CACHE_NAME)), 0);
+
+        ensureVacuum(node0);
+        ensureVacuum(node1);
+
+        stopGrid(0);
+
+        node1.cluster().setBaselineTopology(node1.cluster().topologyVersion());
+
+        node0 = startGrid(0);
+
+        ensureNoVacuum(node0);
+        ensureVacuum(node1);
+
+        node1.cluster().setBaselineTopology(node0.cluster().topologyVersion());
+
+        ensureVacuum(node0);
+        ensureVacuum(node1);
     }
 
     /**
@@ -174,10 +227,14 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         assertNotNull(crd);
 
+        TxLog txLog = GridTestUtils.getFieldValue(crd, "txLog");
+
+        assertNotNull("TxLog wasn't initialized.", txLog);
+
         List<GridWorker> vacuumWorkers = GridTestUtils.getFieldValue(crd, "vacuumWorkers");
 
-        assertNotNull(vacuumWorkers);
-        assertFalse(vacuumWorkers.isEmpty());
+        assertNotNull("No vacuum workers was initialized.", vacuumWorkers);
+        assertFalse("No vacuum workers was initialized.", vacuumWorkers.isEmpty());
 
         for (GridWorker w : vacuumWorkers) {
             assertFalse(w.isCancelled());
@@ -193,6 +250,8 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     private void ensureNoVacuum(Ignite node) {
         MvccProcessorImpl crd = mvccProcessor(node);
 
-        assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
+        assertNull("Vacuums workers shouldn't be started.", GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
+
+        assertNull("TxLog shouldn't exists.", GridTestUtils.getFieldValue(crd, "txLog"));
     }
 }
