@@ -352,12 +352,12 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
          * @param data Data.
          */
         DummyCallable(byte[] data) {
-            this.data = data.clone();
+            this.data = data;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return data.clone();
+            return data;
         }
     }
 

@@ -71,7 +71,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJ
 /**
  * Tests for Zookeeper SPI discovery.
  */
-@Ignore // todo recover after testing
 public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
     /**
      * Verifies that node attributes returned through public API are presented in standard form.
