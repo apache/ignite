@@ -313,17 +313,6 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        // Whether _key is specified.
-        boolean hasKeyPlaceholder = keyColIdx != -1;
-
-        if (!hasKeyProps && !hasKeyPlaceholder)
-            throw new IgniteSQLException("Insert and merge queries requires at least one key column specified.",
-                IgniteQueryErrorCode.PARSING);
-
-        if (hasKeyProps && hasKeyPlaceholder)
-            throw new IgniteSQLException("Key columns must not be mixed with '_key' placeholder.",
-                IgniteQueryErrorCode.PARSING);
-
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
