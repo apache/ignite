@@ -35,18 +35,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /** */
-@RunWith(Suite.class)
+@RunWith(Suite.class) // todo thoroughly test this at Teamcity
 @Suite.SuiteClasses({
     //todo restore after testing: ZookeeperDiscoverySpiTest.class,
     ZookeeperDiscoverySpiTest2.class,
     ZookeeperDiscoverySpiTest3.class,
     ZookeeperDiscoverySpiTest4.class,
     ZookeeperDiscoverySpiTest5.class,
-    ZookeeperDiscoverySpiTest6.class,
-    ZookeeperDiscoverySpiTest7.class,
-    ZookeeperDiscoverySpiTest8.class,
-}) // todo thoroughly test this at Teamcity
-public class ZookeeperDiscoverySpiTestWrapperSuite extends TestSuite {
+    //todo restore after testing: ZookeeperDiscoverySpiTest6.class,
+    //todo restore after testing: ZookeeperDiscoverySpiTest7.class,
+    //todo restore after testing: ZookeeperDiscoverySpiTest8.class,
+})
+public class ZookeeperDiscoverySpiTestWrapperSuite /*todo: test this removal: extends TestSuite*/ {
     /**
      * During test suite processing GC can unload some classes whose bytecode has been rewritten here
      * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.
