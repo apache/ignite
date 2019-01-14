@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -177,9 +175,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
         checkCoordinatorChangeActiveQueryClientFails_Simple(new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }
 
-    static {
-        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS,"true");
-    }
     /**
      * @throws Exception If failed.
      */
