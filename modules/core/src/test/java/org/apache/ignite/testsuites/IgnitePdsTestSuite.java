@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.IgnitePdsDataRegionMetricsTxTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
@@ -54,26 +55,27 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTe
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  *
  */
-@RunWith(AllTests.class)
+@RunWith(IgnitePdsTestSuite.DynamicSuite.class)
 public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         addRealPageStoreTests(suite, ignoredTests);
         addRealPageStoreTestsLongRunning(suite, ignoredTests);
@@ -119,7 +121,7 @@ public class IgnitePdsTestSuite {
      * @param suite suite to add tests into.
      * @param ignoredTests Ignored tests.
      */
-    private static void addRealPageStoreTestsLongRunning(TestSuite suite, Collection<Class> ignoredTests) {
+    private static void addRealPageStoreTestsLongRunning(List<Class<?>> suite, Collection<Class> ignoredTests) {
         // Basic PageMemory tests.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageReplacementTest.class, ignoredTests);
     }
@@ -132,7 +134,7 @@ public class IgnitePdsTestSuite {
      * @param suite suite to add tests into.
      * @param ignoredTests Ignored tests.
      */
-    public static void addRealPageStoreTests(TestSuite suite, Collection<Class> ignoredTests) {
+    public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
 
         // Checkpointing smoke-test.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class, ignoredTests);
@@ -168,5 +170,13 @@ public class IgnitePdsTestSuite {
 
         //MetaStorage
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

@@ -553,7 +553,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 mvccSnapshot());
                         }
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {

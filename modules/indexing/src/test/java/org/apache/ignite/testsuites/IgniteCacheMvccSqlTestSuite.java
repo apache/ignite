@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlConfiguratio
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlContinuousQueryPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlContinuousQueryReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlLockTimeoutTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlTxModesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCountersTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
@@ -88,7 +89,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     CacheMvccSizeTest.class,
     CacheMvccSqlUpdateCountersTest.class,
     CacheMvccSqlLockTimeoutTest.class,
-
+    CacheMvccSqlTxModesTest.class,
     GridIndexRebuildWithMvccEnabledSelfTest.class,
 
     CacheMvccTxNodeMappingTest.class,

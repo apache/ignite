@@ -177,10 +177,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -1119,7 +1119,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final MvccQueryTracker tracker = mvccTracker == null && qry.mvccEnabled() ?
                 MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
-            GridNearTxLocal tx = tx(ctx);
+            GridNearTxLocal tx = tracker != null ? tx(ctx) : null;
 
             if (qry.forUpdate())
                 qry.forUpdate(checkActive(tx) != null);
