@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -90,9 +92,12 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
         IgniteCache<Long,Long> cache = client.createCache(ccfg);
 
-        for (long i = 0; i < 1000; i++)
+        final int keysCnt = 1000;
+
+        for (long i = 0; i < keysCnt; i++)
             cache.put(i, i);
 
+        // SQL query (data page scan must be enabled by default).
         int callsCnt = 0;
 
         assertTrue(cache.query(new SqlQuery<>(Long.class, "check_scan_flag(null)"))
@@ -119,6 +124,35 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
             .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled))
             .getAll().isEmpty());
         assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+
+        // Scan query (data page scan must be disabled by default).
+        callsCnt = 0;
+
+        TestPredicate p = new TestPredicate();
+
+        assertTrue(cache.query(new ScanQuery<>(p)).getAll().isEmpty());
+        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+
+        assertTrue(cache.query(new ScanQuery<>(p)
+            .setDataPageScanEnabled(true)).getAll().isEmpty());
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+
+        assertTrue(cache.query(new ScanQuery<>(p)
+            .setDataPageScanEnabled(false)).getAll().isEmpty());
+        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+
+        assertTrue(cache.query(new ScanQuery<>(p)
+            .setDataPageScanEnabled(true)).getAll().isEmpty());
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+
+        assertTrue(cache.query(new ScanQuery<>(p)
+            .setDataPageScanEnabled(null)).getAll().isEmpty());
+        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
     }
 
     /**
@@ -156,6 +190,19 @@ public class SqlDirectDataPageScanTest extends GridCommonAbstractTest {
 
             return super.executeSqlQueryWithTimer(stmt, conn, sql, params, timeoutMillis,
                 cancel, dataPageScanEnabled);
+        }
+    }
+
+    /**
+     */
+    static class TestPredicate implements IgniteBiPredicate<Long,Long> {
+        /** */
+        static final AtomicInteger callsCnt = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Long k, Long v) {
+            callsCnt.incrementAndGet();
+            return false;
         }
     }
 }

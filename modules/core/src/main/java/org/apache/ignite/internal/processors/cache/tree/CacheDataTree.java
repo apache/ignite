@@ -61,6 +61,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
+    private static boolean lastFindWithDirectDataPageScan;
+
+    /** */
     private static final ThreadLocal<Boolean> dataPageScanEnabled =
         ThreadLocal.withInitial(() -> false);
 
@@ -123,6 +126,15 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         return dataPageScanEnabled.get();
     }
 
+    /**
+     * @return {@code true} If the last observed call to the method
+     *         {@link #find(CacheSearchRow, CacheSearchRow, TreeRowClosure, Object)}
+     *         used direct data page scan.
+     */
+    public static boolean isLastFindWithDirectDataPageScan() {
+        return lastFindWithDirectDataPageScan;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
@@ -135,6 +147,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
+        lastFindWithDirectDataPageScan = false;
         return super.find(lower, upper, c, x);
     }
 
@@ -146,6 +159,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData, MvccDataPageClosure c)
         throws IgniteCheckedException {
+        lastFindWithDirectDataPageScan = true;
+
         assert rowData != null;
         assert grp.persistenceEnabled();
 
