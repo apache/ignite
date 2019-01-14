@@ -171,7 +171,6 @@ public class QueryUtils {
         return indexName(tableName(entity), idx);
     }
 
-
     /**
      * Get index name.
      *
@@ -603,7 +602,7 @@ public class QueryUtils {
 
             d.addProperty(prop, false);
         }
-        
+
         String keyFieldName = qryEntity.getKeyFieldName();
 
         if (keyFieldName == null)
