@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(0, remoteMetrics.Size);
-            Assert.AreEqual(0, remoteMetrics.CacheSize);
+            Assert.AreEqual(1, remoteMetrics.CacheSize);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
         }
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(0, remoteMetrics.Size);
-            Assert.AreEqual(1, remoteMetrics.CacheSize);
+            Assert.AreEqual(0, remoteMetrics.CacheSize);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
