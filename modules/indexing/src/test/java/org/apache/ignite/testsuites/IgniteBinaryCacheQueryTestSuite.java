@@ -316,7 +316,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteErrorOnRebalanceTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheQueryBuildValueTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheOffheapBatchIndexingMultiTypeTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheOffheapBatchIndexingBaseTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryIndexSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheCollocatedQuerySelfTest.class));
