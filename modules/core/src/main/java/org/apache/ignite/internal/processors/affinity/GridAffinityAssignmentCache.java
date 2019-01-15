@@ -247,22 +247,10 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Initialize affinity with already calculated affinity assignment.
-     *
-     * @param copy Already calculated assignment for other group with similiar affinity key.
-     * @return Calculated assignment.
-     */
-    public GridAffinityAssignment initialize(GridAffinityAssignment copy) {
-        idealAssignment(copy.idealAssignment());
-
-        return set(copy.topologyVersion(), copy);
-    }
-
-    /**
      * @param assignment Assignment.
      */
-    public void idealAssignment(List<List<ClusterNode>> assignment) {
-        this.idealAssignment = IdealAffinityAssignment.create(assignment);
+    public void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+        this.idealAssignment = IdealAffinityAssignment.create(topVer, assignment);
     }
 
     /**
@@ -339,6 +327,10 @@ public class GridAffinityAssignmentCache {
 
         IdealAffinityAssignment prevAssignment = idealAssignment;
 
+        // Already calculated.
+        if (prevAssignment.topologyVersion().equals(topVer))
+            return prevAssignment;
+
         // Resolve nodes snapshot for specified topology version.
         List<ClusterNode> sorted;
 
@@ -388,10 +380,11 @@ public class GridAffinityAssignmentCache {
                         baselineAffinityNodes, prevAssignment != null ? prevAssignment.assignment() : null,
                         events.lastEvent(), topVer, backups));
 
-                    baselineAssignment = IdealAffinityAssignment.create(baselineAffinityNodes, calculated);
+                    baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
                 }
 
                 assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
+                    topVer,
                     baselineAssignmentWithoutOfflineNodes(topVer),
                     baselineAssignment
                 );
@@ -404,9 +397,10 @@ public class GridAffinityAssignmentCache {
                     baselineAffinityNodes, prevAssignment != null ? prevAssignment.assignment() : null,
                     events.lastEvent(), topVer, backups));
 
-                baselineAssignment = IdealAffinityAssignment.create(baselineAffinityNodes, calculated);
+                baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
 
                 assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
+                    topVer,
                     baselineAssignmentWithoutOfflineNodes(topVer),
                     baselineAssignment
                 );
@@ -416,7 +410,7 @@ public class GridAffinityAssignmentCache {
                     prevAssignment != null ? prevAssignment.assignment() : null,
                     events.lastEvent(), topVer, backups));
 
-                assignment = IdealAffinityAssignment.create(sorted, calculated);
+                assignment = IdealAffinityAssignment.create(topVer, sorted, calculated);
             }
         }
         else {
@@ -433,9 +427,10 @@ public class GridAffinityAssignmentCache {
                     baselineAffinityNodes, prevAssignment != null ? prevAssignment.assignment() : null,
                     event, topVer, backups));
 
-                baselineAssignment = IdealAffinityAssignment.create(baselineAffinityNodes, calculated);
+                baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
 
                 assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
+                    topVer,
                     baselineAssignmentWithoutOfflineNodes(topVer),
                     baselineAssignment
                 );
@@ -445,7 +440,7 @@ public class GridAffinityAssignmentCache {
                     prevAssignment != null ? prevAssignment.assignment() : null,
                     event, topVer, backups));
 
-                assignment = IdealAffinityAssignment.create(sorted, calculated);
+                assignment = IdealAffinityAssignment.create(topVer, sorted, calculated);
             }
         }
 
@@ -837,7 +832,7 @@ public class GridAffinityAssignmentCache {
         assert aff.lastVersion().compareTo(lastVersion()) >= 0;
         assert aff.idealAssignment() != null;
 
-        idealAssignment(aff.idealAssignment());
+        idealAssignment(aff.lastVersion(), aff.idealAssignment());
 
         AffinityAssignment assign = aff.cachedAffinity(aff.lastVersion());
 

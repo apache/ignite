@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -627,42 +626,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return Objects.hash(cacheName);
         }
-    }
-
-    @Test
-    public void testCol() {
-        final int colSize = 10;
-        final int rowSize = 5;
-
-        List<List<Integer>> collectionOrigin = new ArrayList<>(colSize);
-        for (int i = 0; i < colSize; i++) {
-            List<Integer> row = new ArrayList<>(rowSize);
-            for (int j = 0; j < rowSize; j++) {
-                row.add((i + 1) * (j + 1));
-            }
-            collectionOrigin.add(row);
-        }
-
-        List<List<Integer>> collectionCpy1 = new ArrayList<>(collectionOrigin);
-        List<List<Integer>> collectionCpy2 = new ArrayList<>(collectionOrigin);
-
-        final int thrash = 0;
-
-        collectionCpy1.get(0).set(0, thrash);
-        collectionCpy2.get(1).set(1, thrash);
-
-        Stream.of(collectionOrigin, collectionCpy1, collectionCpy2)
-            .forEach(col -> {
-                System.err.println(col + ":");
-
-                for (int i = 0; i < col.size(); i++) {
-                    List<Integer> row = col.get(i);
-                    for (int j = 0; j < row.size(); j++) {
-                        System.err.print(row.get(j) + " ");
-                    }
-                    System.err.println();
-                }
-            });
     }
 
     /**
