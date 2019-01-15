@@ -23,21 +23,33 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-// t0d0 adjust accorging to code style
-public class RollbackTxMessage implements Message {
+/**
+ * Message requesting abort of a specified transaction.
+ * <p>
+ * Could be used for external abort (i.e. outside of regular transaction execution flow).
+ * One example is aborting transaction identified as deadlocked.
+ */
+public class AbortTxMessage implements Message {
+    /** */
     private GridCacheVersion nearTxVer;
 
-    public RollbackTxMessage() {
+    /** */
+    public AbortTxMessage() {
     }
 
-    public RollbackTxMessage(GridCacheVersion ver) {
+    /** */
+    public AbortTxMessage(GridCacheVersion ver) {
         nearTxVer = ver;
     }
 
+    /**
+     * @return Near tx identifier.
+     */
     public GridCacheVersion nearTxVer() {
         return nearTxVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -60,6 +72,7 @@ public class RollbackTxMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -77,17 +90,20 @@ public class RollbackTxMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(RollbackTxMessage.class);
+        return reader.afterMessageRead(AbortTxMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 172;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
     }
 }

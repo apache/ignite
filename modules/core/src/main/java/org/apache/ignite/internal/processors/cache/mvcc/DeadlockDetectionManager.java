@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
@@ -58,24 +59,29 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
             if (msg instanceof DeadlockProbe) {
-                DeadlockProbe msg0 = (DeadlockProbe)msg;
-
                 if (log.isDebugEnabled())
-                    log.debug("Received a probe message msg=[" + msg0 + ']');
+                    log.debug("Received a probe message msg=[" + msg + ']');
+
+                DeadlockProbe msg0 = (DeadlockProbe)msg;
 
                 handleDeadlockProbe(msg0);
             }
-            else if (msg instanceof RollbackTxMessage) {
-                // t0d0 log
+            else if (msg instanceof AbortTxMessage) {
+                if (log.isDebugEnabled())
+                    log.debug("Received a tx abort message msg=[" + msg + ']');
 
-                IgniteInternalTx nearTx = cctx.tm().tx(((RollbackTxMessage)msg).nearTxVer());
+                AbortTxMessage msg0 = (AbortTxMessage)msg;
+
+                IgniteInternalTx nearTx = cctx.tm().tx(msg0.nearTxVer());
 
                 if (nearTx != null)
                     nearTx.rollbackAsync();
+                else if (log.isDebugEnabled())
+                    log.debug("Tx which should be aborted not found xidVer=[" + msg0.nearTxVer() + ']');
+
             }
-            else {
-                // t0d0 fail according to common practice
-            }
+            else
+                log.warning("Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         });
     }
 
@@ -197,17 +203,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                     if (victim.xidVersion().equals(tx.xidVersion())) {
                         // if a victim tx has made a progress since it was identified as waiting
                         // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
-                        if (victim.lockCounter() == tx.lockCounter()) {
-                            try {
-                                cctx.gridIO().sendToGridTopic(tx.eventNodeId(), TOPIC_DEADLOCK_DETECTION, new RollbackTxMessage(tx.nearXidVersion()), SYSTEM_POOL);
-                            }
-                            catch (IgniteCheckedException e) {
-                                // t0d0 log
-                            }
-                        }
+                        if (victim.lockCounter() == tx.lockCounter())
+                            abortTx(tx);
                     }
                     else {
-                        // t0d0 special message for remote rollback
                         // destination node must determine itself as a victim
                         sendProbe(victim.nodeId(), probe.initiatorVersion(), singleton(victim), victim, false);
                     }
@@ -239,23 +238,34 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
             });
     }
 
+    /** */
+    private void abortTx(GridDhtTxLocalAdapter tx) {
+        UUID destNode = tx.eventNodeId();
+
+        try {
+            // sends message to initiate proper tx abort on near node
+            cctx.gridIO().sendToGridTopic(destNode, TOPIC_DEADLOCK_DETECTION,
+                new AbortTxMessage(tx.nearXidVersion()), SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException ignored) {
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Failed to send a deadlock probe [nodeId=" + destNode + ']', e);
+        }
+    }
+
     /**
-     * t0d0 Evalutate correctness for local and remote victims
-     * t0d0 fix docs
      * Chooses victim basing on tx start time. Algorithm chooses victim in such way that every site detected a deadlock
      * will choose the same victim. As a result only one tx participating in a deadlock will be aborted.
      * <p>
-     * Near tx is needed here because start time for it might not be filled yet in wait chain.
+     * Local tx is needed here because start time for it might not be filled yet for corresponding entry in wait chain.
      *
-     * @param locTx Near tx.
+     * @param locTx Deadlocked tx on local node.
      * @param waitChain Wait chain.
      * @return Tx chosen as a victim.
      */
     @SuppressWarnings("StatementWithEmptyBody")
-    private ProbedTx chooseVictim(
-        ProbedTx locTx,
-        Collection<ProbedTx> waitChain) {
-
+    private ProbedTx chooseVictim(ProbedTx locTx, Collection<ProbedTx> waitChain) {
         Iterator<ProbedTx> it = waitChain.iterator();
 
         // skip until local tx (inclusive), because txs before are not deadlocked
@@ -297,6 +307,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
         try {
             cctx.gridIO().sendToGridTopic(destNodeId, TOPIC_DEADLOCK_DETECTION, probe, SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException ignored) {
         }
         catch (IgniteCheckedException e) {
             log.warning("Failed to send a deadlock probe [nodeId=" + destNodeId + ']', e);
