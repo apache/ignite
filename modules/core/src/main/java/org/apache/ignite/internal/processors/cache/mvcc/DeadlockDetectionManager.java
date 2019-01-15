@@ -72,10 +72,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
                 AbortTxMessage msg0 = (AbortTxMessage)msg;
 
-                IgniteInternalTx nearTx = cctx.tm().tx(msg0.nearTxVer());
+                GridNearTxLocal nearTx = cctx.tm().tx(msg0.nearTxVer());
 
                 if (nearTx != null)
-                    nearTx.rollbackAsync();
+                    nearTx.rollbackNearTxLocalAsync(false, false);
                 else if (log.isDebugEnabled())
                     log.debug("Tx which should be aborted not found xidVer=[" + msg0.nearTxVer() + ']');
 

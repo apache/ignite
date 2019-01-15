@@ -31,11 +31,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -344,7 +346,6 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void detectDeadlockLocalPrimary() throws Exception {
-        // t0d0 fix test
         // Checks that case when near tx does local on enlist on the same node and no dht tx is created
 
         setUpGrids(2, false);
@@ -481,6 +482,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
+    /** */
     @Test
     public void randomizedPuts() throws Exception {
         // t0d0 remove or extract test
@@ -555,12 +557,10 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             catch (IgniteCheckedException e) {
                 e.printStackTrace();
                 // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
-                // t0d0 hair-split thrown exceptions
-//                if (X.hasCause(e, TransactionRollbackException.class)
-//                    || X.hasCause(e, IgniteTxRollbackCheckedException.class))
+                if (X.hasCause(e, IgniteFutureCancelledCheckedException.class))
                     aborted++;
-//                else
-//                    throw e;
+                else
+                    throw e;
             }
         }
 
