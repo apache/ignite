@@ -23,15 +23,21 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
@@ -43,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -347,10 +354,8 @@ public class VisorQueryUtils {
                                     (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
                             }
                         }
-                        else {
-                            // Remove stored cursor otherwise.
-                            removeQueryHolder(ignite, qryId);
-                        }
+                        else
+                            holder.setRows(Collections.emptyList());
                     }
                     catch (Throwable e) {
                         holder.setErr(e);
@@ -421,15 +426,8 @@ public class VisorQueryUtils {
                                         col.fieldName(), col.fieldTypeName()));
 
                                 holder.setColumns(names);
-
-                                boolean hasNext = cur.hasNext();
-
-                                if (hasNext) {
-                                    scheduleResultSetHolderRemoval(qryId, ignite);
-                                    scheduleResultSetGet(qryId, ignite, false);
-                                }
-                                else
-                                    cur.close();
+                                scheduleResultSetHolderRemoval(qryId, ignite);
+                                scheduleResultSetGet(qryId, ignite, false);
                             }
                         }
                     }
@@ -439,6 +437,92 @@ public class VisorQueryUtils {
                 }
             }
         });
+    }
+
+    /**
+     * Schedule start of SCAN query execution.
+     *
+     * @param qryId Unique query result id.
+     * @param ignite IgniteEx instance.
+     * @param arg Query task argument with query properties.
+     */
+    public static void scheduleScanStart(
+        final String qryId,
+        final IgniteEx ignite,
+        final VisorScanQueryTaskArg arg
+    ) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
+            @Override public void onTimeout() {
+                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+
+                if (holder != null) {
+                    try {
+                        IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
+                        String filterText = arg.getFilter();
+                        IgniteBiPredicate<Object, Object> filter = null;
+
+                        if (!F.isEmpty(filterText))
+                            filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
+
+                        VisorQueryCursor<Cache.Entry<Object, Object>> cur = null;
+
+                        if (arg.isNear())
+                            cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
+                        else {
+                            ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
+                            qry.setPageSize(arg.getPageSize());
+                            qry.setLocal(arg.isLocal());
+
+                            cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
+                        }
+
+                        holder.setCursor(cur);
+                        scheduleResultSetHolderRemoval(qryId, ignite);
+                        scheduleResultSetGet(qryId, ignite, true);
+                    }
+                    catch (Throwable e) {
+                        holder.setErr(e);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Wrapper for cache iterator to behave like {@link QueryCursor}.
+     */
+    private static class VisorNearCacheCursor<T> implements QueryCursor<T> {
+        /** Wrapped iterator.  */
+        private final Iterator<T> it;
+
+        /**
+         * Wrapping constructor.
+         *
+         * @param it Near cache iterator to wrap.
+         */
+        private VisorNearCacheCursor(Iterator<T> it) {
+            this.it = it;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<T> getAll() {
+            List<T> all = new ArrayList<>();
+
+            while(it.hasNext())
+                all.add(it.next());
+
+            return all;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            // Nothing to close.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<T> iterator() {
+            return it;
+        }
     }
 
     /**
