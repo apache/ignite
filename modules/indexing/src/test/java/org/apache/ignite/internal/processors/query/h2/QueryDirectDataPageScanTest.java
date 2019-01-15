@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -86,6 +87,36 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleIndexedTypes() throws Exception {
+        final String cacheName = "test_multi_type";
+
+        IgniteEx server = startGrid(0);
+        server.cluster().active(true);
+
+        CacheConfiguration<Object,Object> ccfg = new CacheConfiguration<>(cacheName);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setIndexedTypes(
+            Long.class, String.class,
+            Long.class, TestData.class
+        );
+
+        IgniteCache<Object,Object> cache = server.createCache(ccfg);
+
+        cache.put(1L, "bla-bla");
+        cache.put(2L, new TestData(777L));
+
+        CacheDataTree.isLastFindWithDirectDataPageScan();
+
+        assertEquals(777L, cache.query(new SqlFieldsQuery("select z from TestData use index()")
+            .setDataPageScanEnabled(true)).getAll().get(0).get(0));
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
     }
 
     /**
