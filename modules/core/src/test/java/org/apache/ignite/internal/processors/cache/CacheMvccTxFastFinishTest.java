@@ -21,21 +21,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-/**
- *
- */
+/** */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10444")
 public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10444");
-
-        super.beforeTestsStarted();
-    }
-
     /** {@inheritDoc} */
     @Override protected void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
