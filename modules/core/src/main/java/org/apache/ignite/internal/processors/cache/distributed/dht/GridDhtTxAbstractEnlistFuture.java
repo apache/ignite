@@ -341,8 +341,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             else // Nothing to do for single update.
                 assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
 
-            if (tx.dht())
-                tx.markQueryEnlisted();
+            tx.markQueryEnlisted();
 
             this.it = it;
         }

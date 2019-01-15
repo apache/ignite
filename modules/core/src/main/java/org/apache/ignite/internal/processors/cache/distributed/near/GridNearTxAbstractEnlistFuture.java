@@ -274,8 +274,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
         mapping.markQueryUpdate();
 
-        tx.markQueryEnlisted();
-
         if (node.isLocal())
             tx.colocatedLocallyMapped(true);
 

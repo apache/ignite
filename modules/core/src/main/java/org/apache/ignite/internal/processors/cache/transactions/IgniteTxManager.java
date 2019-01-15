@@ -1432,6 +1432,35 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Removes Tx from manager. Can be used only if there were no updates.
+     *
+     * @param tx Transaction to finish.
+     */
+    public void forgetTx(IgniteInternalTx tx) {
+        assert tx != null;
+
+        if (transactionMap(tx).remove(tx.xidVersion(), tx)) {
+            // 1. Remove from per-thread storage.
+            clearThreadMap(tx);
+
+            // 2. Unregister explicit locks.
+            if (!tx.alternateVersions().isEmpty())
+                for (GridCacheVersion ver : tx.alternateVersions())
+                    idMap.remove(ver);
+
+            // 3. Remove Near-2-DHT mappings.
+            if (tx instanceof GridCacheMappedVersion)
+                mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
+
+            // 4. Clear context.
+            resetContext();
+
+            // 5. Complete finish future.
+            tx.state(UNKNOWN);
+        }
+    }
+
+    /**
      * Tries to minimize damage from partially-committed transaction.
      *
      * @param tx Tx to uncommit.

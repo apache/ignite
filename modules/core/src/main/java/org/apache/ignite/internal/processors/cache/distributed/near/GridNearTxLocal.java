@@ -3318,6 +3318,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
+
+    /** {@inheritDoc} */
+    @Override public boolean queryEnlisted() {
+        return super.queryEnlisted() || mappings.mappings().stream().anyMatch(GridDistributedTxMapping::queryUpdate);
+    }
+
     /**
      * Adds key mapping to dht mapping.
      *

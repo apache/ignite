@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache query lock future.
@@ -111,10 +110,11 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
         this.cacheIds = cacheIds;
         this.schema = schema;
         this.qry = qry;
-        this.parts = parts;
         this.params = params;
         this.flags = flags;
         this.pageSize = pageSize;
+
+        this.parts = calculatePartitions(tx, parts, cctx);
     }
 
     /** {@inheritDoc} */
@@ -132,14 +132,9 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
      * @throws ClusterTopologyCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void checkPartitions(@Nullable int[] parts) throws ClusterTopologyCheckedException {
+    private void checkPartitions(int[] parts) throws ClusterTopologyCheckedException {
         if (cctx.isLocal() || !cctx.rebalanceEnabled())
             return;
-
-        if (parts == null)
-            parts = U.toIntArray(
-                cctx.affinity()
-                    .primaryPartitions(cctx.localNodeId(), tx.topologyVersionSnapshot()));
 
         GridDhtPartitionTopology top = cctx.topology();
 
@@ -158,6 +153,16 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
         finally {
             top.readUnlock();
         }
+    }
+
+    /** */
+    private int[] calculatePartitions(GridDhtTxLocalAdapter tx, int[] parts, GridCacheContext<?, ?> cctx) {
+        if (parts == null)
+            parts = U.toIntArray(
+                cctx.affinity()
+                    .primaryPartitions(cctx.localNodeId(), tx.topologyVersionSnapshot()));
+
+        return parts;
     }
 
     /** {@inheritDoc} */
