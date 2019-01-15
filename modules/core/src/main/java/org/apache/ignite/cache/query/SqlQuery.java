@@ -289,7 +289,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * Sets data page scan enabled or disabled.
      *
      * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}
-     * and generally improves performance.
+     * and generally improves performance of full-scan SQL queries.
      * When enabled, result may miss some concurrent updates or produce duplicates for the same key.
      * To avoid these issues use with {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}.
      *
