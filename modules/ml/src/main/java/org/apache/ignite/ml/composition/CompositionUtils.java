@@ -54,15 +54,31 @@ public class CompositionUtils {
                 return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * This method is never called, instead of constructing logic of update from
+             * {@link DatasetTrainer#checkState(IgniteModel)} and
+             * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+             * in this class we explicitly override update method.
+             *
+             * @param mdl Model.
+             * @return True if current critical for training parameters correspond to parameters from last training.
+             */
             @Override protected boolean checkState(IgniteModel<I, O> mdl) {
-                return true;
+                throw new IllegalStateException();
             }
 
-            /** {@inheritDoc} */
+            /**
+             * This method is never called, instead of constructing logic of update from
+             * {@link DatasetTrainer#checkState(IgniteModel)} and
+             * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+             * in this class we explicitly override update method.
+             *
+             * @param mdl Model.
+             * @return Updated model.
+             */
             @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return null;
+                throw new IllegalStateException();
             }
         };
     }

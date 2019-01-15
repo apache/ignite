@@ -29,11 +29,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
@@ -77,7 +75,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
 
-            BaggedTrainer<LogisticRegressionModel, Double, DatasetTrainer<LogisticRegressionModel, Double>> baggedTrainer = TrainerTransformers.makeBagged(
+            BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
                 trainer,
                 10,
                 0.6,

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.composition.combinators.parallel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.IgniteModel;
@@ -57,7 +58,7 @@ public class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> 
      * @return List of submodels constituting this model.
      */
     public List<IgniteModel<I, O>> submodels() {
-        return new ArrayList<>(submodels);
+        return Collections.unmodifiableList(submodels);
     }
 
     /** {@inheritDoc} */
