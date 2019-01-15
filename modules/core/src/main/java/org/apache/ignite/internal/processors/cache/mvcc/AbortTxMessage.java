@@ -111,6 +111,7 @@ public class AbortTxMessage implements Message {
     @Override public void onAckReceived() {
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AbortTxMessage.class, this);
     }
