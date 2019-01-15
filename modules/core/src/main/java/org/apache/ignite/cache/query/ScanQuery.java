@@ -19,6 +19,8 @@ package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
@@ -123,6 +125,11 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets data page scan enabled or disabled.
+     *
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}
+     * and generally improves performance.
+     * When enabled, result may miss some concurrent updates or produce duplicates for the same key.
+     * To avoid these issues use with {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}.
      *
      * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
      * @return {@code this} for chaining.

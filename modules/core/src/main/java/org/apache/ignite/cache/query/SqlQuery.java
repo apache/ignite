@@ -20,6 +20,8 @@ package org.apache.ignite.cache.query;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -285,6 +287,11 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets data page scan enabled or disabled.
+     *
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}
+     * and generally improves performance.
+     * When enabled, result may miss some concurrent updates or produce duplicates for the same key.
+     * To avoid these issues use with {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}.
      *
      * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
      * @return {@code this} for chaining.
