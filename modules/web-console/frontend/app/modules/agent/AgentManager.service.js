@@ -487,8 +487,13 @@ export default class AgentManager {
                         if (cluster.secured)
                             this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                        if (res.zipped)
-                            return this.pool.postMessage(res.data);
+                        if (res.zipped) {
+                            const taskId = _.get(params, 'taskId', '');
+
+                            const useBigIntJson = taskId.startsWith('query');
+
+                            return this.pool.postMessage({payload: res.data, useBigIntJson});
+                        }
 
                         return res;
 
