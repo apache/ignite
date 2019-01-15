@@ -24,19 +24,29 @@ function deduplicateAccounts(model) {
     const spaceModel = model('Space');
 
     return accountsModel.aggregate([
-        {$group: {_id: "$email", count: {$sum: 1}}},
+        {$group: {_id: '$email', count: {$sum: 1}}},
         {$match: {count: {$gt: 1}}}
     ]).exec()
         .then((accounts) => _.map(accounts, '_id'))
         .then((emails) => Promise.all(
-            _.map(emails, (email) => accountsModel.find({email}, {_id: 1, lastActivity: 1, lastLogin: 1}).lean().exec())
+            _.map(emails, (email) => accountsModel.find({email}, {_id: 1, email: 1, lastActivity: 1, lastLogin: 1}).lean().exec())
         ))
-        .then((promises) => _.flatMap(promises, (accounts) =>
-            _.map(_.sortBy(accounts, [(a) => a.lastActivity || '', 'lastLogin']).slice(0, -1), '_id')
-        ))
+        .then((promises) => {
+            const duplicates = _.flatMap(promises, (accounts) => _.sortBy(accounts, [(a) => a.lastActivity || '', 'lastLogin']).slice(0, -1));
+
+            if (_.isEmpty(duplicates))
+                log('Duplicates not found!');
+            else {
+                log(`Duplicates found: ${_.size(duplicates)}`);
+
+                _.forEach(duplicates, (dup) => log(`  ID: ${dup._id}, e-mail: ${dup.email}`));
+            }
+
+            return _.map(duplicates, '_id');
+        })
         .then((accountIds) => {
             if (_.isEmpty(accountIds))
-                return 0;
+                return Promise.resolve();
 
             return spaceModel.find({owner: {$in: accountIds}}, {_id: 1}).lean().exec()
                 .then((spaces) => _.map(spaces, '_id'))
@@ -50,21 +60,19 @@ function deduplicateAccounts(model) {
                         model('Activities').remove({owner: accountIds}).exec(),
                         model('Notifications').remove({owner: accountIds}).exec(),
                         spaceModel.remove({owner: accountIds}).exec(),
-                        accountsModel.remove({_id: accountIds}).exec(),
+                        accountsModel.remove({_id: accountIds}).exec()
                     ])
                 )
                 .then(() => {
                     const conditions = _.map(accountIds, (accountId) => ({session: {$regex: `"${accountId}"`}}));
 
                     return accountsModel.db.collection('sessions').deleteMany({$or: conditions});
-                })
-                .then(() => _.size(accountIds));
+                });
         });
 }
 
 exports.up = function up(done) {
     deduplicateAccounts((name) => this(name))
-        .then((removedCount) => log('Removed duplicated accounts: ' + removedCount))
         .then(() => this('Account').collection.createIndex({email: 1}, {unique: true, background: false}))
         .then(() => done())
         .catch(done);
