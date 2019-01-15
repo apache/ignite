@@ -138,7 +138,7 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
 
         AtomicBoolean cancel = new AtomicBoolean();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+        IgniteInternalFuture<?> updFut = multithreadedAsync(() -> {
             Random rnd = ThreadLocalRandom.current();
 
             while (!cancel.get() && !Thread.interrupted()) {
@@ -179,25 +179,36 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
-                    U.warn(log, "Failed to commit TX, will ignore!");
+                    if (!e.getMessage().contains(
+                        "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
+                        throw new IllegalStateException(e);
+//                    else
+//                        U.warn(log, "Failed to commit TX, will ignore!");
                 }
             }
         }, 16, "updater");
 
-        try {
-            for (int i = 0; i < 1000; i++) {
-                assertEquals("wrong sum!",accounts * initialBalance,((Number)
+        IgniteInternalFuture<?> qryFut = multithreadedAsync(() -> {
+            while (!cancel.get() && !Thread.interrupted()) {
+                assertEquals("wrong sum!", accounts * initialBalance, ((Number)
                     cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                         .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
-                info("query " + i + " is ok!");
+//                info("query ok!");
             }
+        }, 2, "query");
 
-            cancel.set(true);
-            fut.get(5000);
-        }
-        finally {
-            cancel.set(true);
-        }
+        qryFut.listen((f) -> cancel.set(true));
+        updFut.listen((f) -> cancel.set(true));
+
+        long start = U.currentTimeMillis();
+
+        while (!cancel.get() && U.currentTimeMillis() - start < 30_000)
+            doSleep(100);
+
+        cancel.set(true);
+
+        qryFut.get(3000);
+        updFut.get(1);
     }
 
     /**
