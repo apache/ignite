@@ -102,6 +102,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
             Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
+            Assert.AreEqual(134, cfg.SqlQueryHistorySize);
 
             Assert.IsNotNull(cfg.SqlSchemas);
             Assert.AreEqual(2, cfg.SqlSchemas.Count);

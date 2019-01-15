@@ -661,6 +661,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumThreadCount(in.readInt());
         if (in.readBoolean())
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setSqlQueryHistorySize(in.readInt());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1250,6 +1252,9 @@ public class PlatformConfigurationUtils {
         } else {
             w.writeBoolean(false);
         }
+
+        w.writeBoolean(true);
+        w.writeInt(cfg.getSqlQueryHistorySize());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);

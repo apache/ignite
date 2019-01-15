@@ -2321,10 +2321,14 @@
                     <xs:documentation>Time interval between MVCC vacuum runs in milliseconds.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-
             <xs:attribute name="mvccVacuumThreadCount" type="xs:int">
                 <xs:annotation>
                     <xs:documentation>Number of MVCC vacuum threads.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="sqlQueryHistorySize" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
