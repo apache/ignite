@@ -822,6 +822,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
+        cache.clear();
+
+        awaitMetricsUpdate(1);
+
         assertEquals(0, cache.metrics().getCacheSize());
 
         for (int i = 0; i < KEY_CNT; i++)
