@@ -199,7 +199,7 @@ public class CommandHandler {
     private static final String CMD_SKIP_ZEROS = "--skip-zeros";
 
     /** Command exclude caches. */
-    private static final String CMD_EXCLUDE_CACHES = "--excludeCaches";
+    private static final String CMD_EXCLUDE_CACHES = "--exclude-caches";
 
     /** Cache filter. */
     private static final String CACHE_FILTER = "--cache-filter";
