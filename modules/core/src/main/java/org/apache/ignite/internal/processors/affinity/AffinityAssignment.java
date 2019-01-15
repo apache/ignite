@@ -17,19 +17,27 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
+    /**
+     * Backups threshold to use HashMap instead of views on list.
+     */
+    int AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
+        6
+    );
+
     /**
      * @return Affinity assignment computed by affinity function.
      */
@@ -86,4 +94,32 @@ public interface AffinityAssignment {
      * @return Backup partitions for specified node ID.
      */
     public Set<Integer> backupPartitions(UUID nodeId);
+
+    /**
+     * Number of backups of assignment.
+     *
+     * @return Number of backups.
+     */
+    public int backups();
+
+    /**
+     * Converts List of Cluster Nodes to Set of UUIDs.
+     * @param assignment Source assignment.
+     * @return List of deduplicated collections if ClusterNode's ids.
+     */
+    public default List<Collection<UUID>> assignments2ids(List<List<ClusterNode>> assignment) {
+        List<Collection<UUID>> assignmentIds0 = new ArrayList<>(assignment.size());
+
+        for (List<ClusterNode> assignmentPart : assignment) {
+            Collection<UUID> partIds = new HashSet<>(assignmentPart.size());
+
+            for (ClusterNode node : assignmentPart)
+                partIds.add(node.id());
+
+            assignmentIds0.add(partIds);
+        }
+
+        return assignmentIds0;
+    }
+
 }

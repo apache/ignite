@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.util;
 
 import java.util.ArrayList;
@@ -10,15 +27,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+/**
+ *
+ */
 @RunWith(JUnit4.class)
 public class BitSetIntSetTest extends GridCommonAbstractTest {
-
+    /**
+     *
+     */
     @Test
     public void testSizeIsEmpty() {
         sizeIsEmpty(0);
         sizeIsEmpty(1024);
     }
 
+    /**
+     *
+     */
     private void sizeIsEmpty(int initCap) {
         BitSetIntSet bitSetIntSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
 
@@ -38,6 +63,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertFalse(bitSetIntSet.isEmpty());
     }
 
+    /**
+     *
+     */
     @Test
     public void testItetator() {
         testIterator(0);
@@ -47,6 +75,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
     private void testIterator(int initCap) {
         BitSetIntSet bitSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
 
+        assertTrue(bitSet.add(0));
         assertTrue(bitSet.add(1));
 
         assertTrue(bitSet.add(10));
@@ -56,6 +85,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertTrue(bitSet.add(1025));
 
         Iterator<Integer> iterator = bitSet.iterator();
+
+        assertTrue(iterator.hasNext());
+        assertEquals(0, (int)iterator.next());
 
         assertTrue(iterator.hasNext());
         assertEquals(1, (int)iterator.next());
@@ -76,28 +108,32 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         for(Integer i : bitSet)
             list.add(i);
 
-        assertEquals(4, list.size());
+        assertEquals(5, list.size());
 
-        assertEquals(1, (int)list.get(0));
-        assertEquals(10, (int)list.get(1));
-        assertEquals(11, (int)list.get(2));
-        assertEquals(1025, (int)list.get(3));
+        assertEquals(0, (int)list.get(0));
+        assertEquals(1, (int)list.get(1));
+        assertEquals(10, (int)list.get(2));
+        assertEquals(11, (int)list.get(3));
+        assertEquals(1025, (int)list.get(4));
 
 
         assertFalse(bitSet.remove(2));
-        assertEquals(4, bitSet.size());
+        assertEquals(5, bitSet.size());
 
         assertTrue(bitSet.remove(1));
         assertFalse(bitSet.remove(1));
-        assertEquals(3, bitSet.size());
+        assertEquals(4, bitSet.size());
         assertFalse(bitSet.isEmpty());
 
         assertTrue(bitSet.remove(10));
         assertFalse(bitSet.remove(10));
-        assertEquals(2, bitSet.size());
+        assertEquals(3, bitSet.size());
         assertFalse(bitSet.isEmpty());
     }
 
+    /**
+     *
+     */
     @Test
     public void testContains() {
         BitSetIntSet bitSetInt = new BitSetIntSet();
@@ -119,6 +155,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertTrue(bitSetInt.contains(1025));
     }
 
+    /**
+     *
+     */
     @Test
     public void testContainsAll() {
         BitSetIntSet bitSetInt = new BitSetIntSet();
@@ -149,6 +188,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         }}));
     }
 
+    /**
+     *
+     */
     @Test
     public void testAddAllRemoveAllRetainAll() {
         BitSetIntSet bitSetInt = new BitSetIntSet();
@@ -188,6 +230,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testToArray() {
         BitSetIntSet bitSetInt = new BitSetIntSet();
@@ -238,6 +283,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertNull(output[5]);
     }
 
+    /**
+     *
+     */
     @Test
     public void testInvalidValues() {
         BitSetIntSet bitSetInt = new BitSetIntSet();

@@ -40,13 +40,20 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final List<List<ClusterNode>> idealAssignment;
 
+    /** */
+    private final int backups;
+
+    /** Assignment node IDs */
+    private volatile List<Collection<UUID>> assignmentIds;
+
     /**
      * @param assign Assignment.
      */
     HistoryAffinityAssignment(GridAffinityAssignment assign) {
-        this.topVer = assign.topologyVersion();
-        this.assignment = assign.assignment();
-        this.idealAssignment = assign.idealAssignment();
+        topVer = assign.topologyVersion();
+        assignment = assign.assignment();
+        idealAssignment = assign.idealAssignment();
+        backups = assign.backups();
     }
 
     /** {@inheritDoc} */
@@ -77,9 +84,18 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        List<ClusterNode> nodes = assignment.get(part);
+        if (backups > AFFINITY_BACKUPS_THRESHOLD) {
+            List<Collection<UUID>> assignmentIds0 = assignmentIds;
 
-        return F.viewReadOnly(nodes, F.node2id());
+            if (assignmentIds0 == null) {
+                assignmentIds0 = assignments2ids(assignment);
+
+                assignmentIds = assignmentIds0;
+            }
+
+            return assignmentIds0.get(part);
+        } else
+            return F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /** {@inheritDoc} */
@@ -143,6 +159,11 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int backups() {
+        return backups;
     }
 
     /** {@inheritDoc} */

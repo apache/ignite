@@ -42,6 +42,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
 
+    /** Number of backups . */
+    private final int backups;
+
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
 
@@ -50,6 +53,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Map of backup node partitions. */
     private final Map<UUID, Set<Integer>> backup;
+
+    /** Assignment node IDs */
+    private transient volatile List<Collection<UUID>> assignmentIds;
 
     /** Nodes having primary or backup partition assignments. */
     private transient volatile Set<ClusterNode> nodes;
@@ -65,10 +71,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      *
      * @param topVer Topology version.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer, int backups) {
         this.topVer = topVer;
         primary = Collections.emptyMap();
         backup = Collections.emptyMap();
+        this.backups = backups;
     }
 
     /**
@@ -78,7 +85,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment) {
+        List<List<ClusterNode>> idealAssignment,
+        int backups
+    ) {
         assert topVer != null;
         assert assignment != null;
         assert idealAssignment != null;
@@ -88,7 +97,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
         // Temporary mirrors with modifiable partition's collections.
-        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>(assignment.size());
+        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
         Map<UUID, Set<Integer>> tmpBackup = new HashMap<>();
         boolean isPrimary;
 
@@ -108,19 +117,23 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
         primary = Collections.unmodifiableMap(tmpPrimary);
         backup = Collections.unmodifiableMap(tmpBackup);
+
+        this.backups = backups;
     }
 
     /**
      * @param topVer Topology version.
      * @param aff Assignment to copy from.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff, int backups) {
         this.topVer = topVer;
 
         assignment = aff.assignment;
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+
+        this.backups = backups;
     }
 
     /**
@@ -167,7 +180,18 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        return F.viewReadOnly(assignment.get(part), F.node2id());
+        if (backups > AFFINITY_BACKUPS_THRESHOLD) {
+            List<Collection<UUID>> assignmentIds0 = assignmentIds;
+
+            if (assignmentIds0 == null) {
+                assignmentIds0 = assignments2ids(assignment);
+
+                assignmentIds = assignmentIds0;
+            }
+
+            return assignmentIds0.get(part);
+        } else
+            return F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /** {@inheritDoc} */
@@ -232,6 +256,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<Integer> set = backup.get(nodeId);
 
         return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int backups() {
+        return backups;
     }
 
     /** {@inheritDoc} */
