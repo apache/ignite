@@ -1210,7 +1210,6 @@ public interface GridCacheEntryEx {
     /**
      * Touch this entry in its context's eviction manager.
      *
-     * @param topVer Topology version.
      */
-    public void touch(AffinityTopologyVersion topVer);
+    public void touch();
 }

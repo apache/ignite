@@ -6526,7 +6526,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     size++;
 
-                    e.touch(null);
+                    e.touch();
                 }
             }
 

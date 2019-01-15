@@ -17,6 +17,8 @@
 include /app/helpers/jade/mixins
 
 h3.public-page__title Sign In
+p(ng-if='$ctrl.activationToken')
+    | Please sign in to confirm your registration
 form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
     +form-field__email({
         label: 'Email:',
@@ -45,6 +47,6 @@ form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
         a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
         button.btn-ignite.btn-ignite--primary(
             type='submit'
-        ) Sign In
+        ) {{ ::$ctrl.activationToken ? "Activate" : "Sign In" }}
 footer.page-signin__no-account-message
     | Don't have an account? #[a(ui-sref='signup') Get started]

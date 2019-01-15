@@ -17,27 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Geospatial indexing tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    H2IndexingGeoSelfTest.class,
+    H2IndexingSegmentedGeoSelfTest.class
+})
 public class GeoSpatialIndexingTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("H2 Geospatial Indexing Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(H2IndexingGeoSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(H2IndexingSegmentedGeoSelfTest.class));
-
-        return suite;
-    }
 }

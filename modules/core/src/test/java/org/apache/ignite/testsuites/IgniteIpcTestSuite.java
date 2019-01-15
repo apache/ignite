@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.runner.RunWith;
@@ -28,13 +29,12 @@ import org.junit.runners.AllTests;
 public class IgniteIpcTestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite IPC Shared Memory Suite");
 
         if (U.isLinux() || U.isMacOs())
-            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
+            suite.addTest(new JUnit4TestAdapter(IgniteIpcSharedMemorySelfTestSuite.class));
 
         return suite;
     }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.ml.clustering.kmeans;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 
 /** Base interface for all clusterization models. */
-public interface ClusterizationModel<P, V> extends Model<P, V> {
+public interface ClusterizationModel<P, V> extends IgniteModel<P, V> {
     /** Gets the clusters count. */
     public int getAmountOfClusters();
 

@@ -24,9 +24,10 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-/** */
+/**
+ * SSL socket factory that configure additional SSL params for socket.
+ */
 class SSLSocketFactoryWrapper extends SSLSocketFactory {
-
     /** */
     private final SSLSocketFactory delegate;
 
@@ -49,65 +50,46 @@ class SSLSocketFactoryWrapper extends SSLSocketFactory {
         return delegate.getSupportedCipherSuites();
     }
 
+    /**
+     * Configure socket with SSL parameters.
+     *
+     * @param socket Socket to configure.
+     * @return Configured socket.
+     */
+    private Socket configureSocket(Socket socket) {
+        if (parameters != null)
+            ((SSLSocket)socket).setSSLParameters(parameters);
+
+        return socket;
+    }
+
     /** {@inheritDoc} */
     @Override public Socket createSocket() throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket();
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket());
     }
 
     /** {@inheritDoc} */
     @Override public Socket createSocket(Socket sock, String host, int port, boolean autoClose) throws IOException {
-        SSLSocket sslSock = (SSLSocket)delegate.createSocket(sock, host, port, autoClose);
-
-        if (parameters != null)
-            sslSock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket(sock, host, port, autoClose));
     }
 
     /** {@inheritDoc} */
     @Override public Socket createSocket(String host, int port) throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket(host, port);
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket(host, port));
     }
 
     /** {@inheritDoc} */
     @Override public Socket createSocket(String host, int port, InetAddress locAddr, int locPort) throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket(host, port, locAddr, locPort);
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket(host, port, locAddr, locPort));
     }
 
     /** {@inheritDoc} */
     @Override public Socket createSocket(InetAddress addr, int port) throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket(addr, port);
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket(addr, port));
     }
 
     /** {@inheritDoc} */
-    @Override public Socket createSocket(InetAddress addr, int port, InetAddress locAddr,
-        int locPort) throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket(addr, port, locAddr, locPort);
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+    @Override public Socket createSocket(InetAddress addr, int port, InetAddress locAddr, int locPort) throws IOException {
+        return configureSocket(delegate.createSocket(addr, port, locAddr, locPort));
     }
-
 }
