@@ -2085,23 +2085,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param countUpdate Number of events.
      */
     protected void awaitMetricsUpdate(int countUpdate) throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(countUpdate);
+        if (countUpdate > 0) {
+            final List<Ignite> allGrids = G.allGrids();
 
-        final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EventType.EVT_NODE_METRICS_UPDATED;
+            final CountDownLatch latch = new CountDownLatch(allGrids.size() * countUpdate);
 
-                latch.countDown();
+            final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt.type() == EventType.EVT_NODE_METRICS_UPDATED;
 
-                return true;
-            }
-        };
+                    latch.countDown();
 
-        grid(0).events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
+                    return true;
+                }
+            };
 
-        // Wait for metrics update.
-        assert latch.await(10, TimeUnit.SECONDS);
+            for (Ignite g : allGrids)
+                g.events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
 
-        grid(0).events().stopLocalListen(lsnr);
+            // Wait for metrics update.
+            assert latch.await(10, TimeUnit.SECONDS);
+
+            for (Ignite g : allGrids)
+                g.events().stopLocalListen(lsnr);
+        }
     }
 }
