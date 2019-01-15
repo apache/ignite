@@ -142,6 +142,8 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         String qry = "select * from A.String";
 
         try (Connection conn = GridTestUtils.connect(queryNode(), null); Statement stmt = conn.createStatement()) {
+            stmt.setFetchSize(1);
+
             ResultSet rs = stmt.executeQuery(qry);
 
             assertTrue(rs.next());

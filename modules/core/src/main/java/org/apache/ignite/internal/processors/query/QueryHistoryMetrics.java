@@ -18,36 +18,32 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Query history metrics.
  */
-public class QueryHistoryMetrics implements Externalizable {
-    /**
-     *
-     */
+public class QueryHistoryMetrics {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Link to internal node in eviction deque. */
-    private AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
+    private final AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
 
     /** Textual query representation. */
-    private String qry;
+    private final String qry;
 
     /** Schema name. */
-    private String schema;
+    private final String schema;
 
     /** Flag of local query. */
-    private boolean loc;
+    private final boolean loc;
+
+    /** Query history metrics group key. */
+    private final QueryHistoryMetricsKey key;
 
     /** Number of executions. */
     private int execs;
@@ -63,16 +59,6 @@ public class QueryHistoryMetrics implements Externalizable {
 
     /** Last start time of execution. */
     private long lastStartTime;
-
-    /** Query history metrics group key. */
-    private QueryHistoryMetricsKey key;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public QueryHistoryMetrics() {
-        // No-op.
-    }
 
     /**
      * Constructor with metrics.
@@ -90,6 +76,8 @@ public class QueryHistoryMetrics implements Externalizable {
         this.schema = schema;
         this.loc = loc;
 
+        key = new QueryHistoryMetricsKey(qry, schema, loc);
+
         execs = 1;
 
         if (failed)
@@ -104,40 +92,11 @@ public class QueryHistoryMetrics implements Externalizable {
         linkRef = new AtomicReference<>();
     }
 
-    /**
-     * Copy constructor.
-     *
-     * @param qry Textual query representation.
-     * @param schema Schema.
-     * @param loc Local flag of query execution.
-     * @param failures Number of failures.
-     * @param minTime Minimum of execution time.
-     * @param maxTime Maximum of execution time.
-     * @param lastStartTime Time of last start of execution.
-     * @param key Key of query history metrics.
-     */
-    private QueryHistoryMetrics(String qry, String schema, boolean loc, int execs, int failures, long minTime,
-        long maxTime, long lastStartTime, QueryHistoryMetricsKey key,
-        AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef) {
-        this.qry = qry;
-        this.schema = schema;
-        this.loc = loc;
-        this.execs = execs;
-        this.failures = failures;
-        this.minTime = minTime;
-        this.maxTime = maxTime;
-        this.lastStartTime = lastStartTime;
-        this.key = key;
-        this.linkRef = linkRef;
-    }
 
     /**
      * @return Metrics group key.
      */
     public QueryHistoryMetricsKey key() {
-        if (key == null)
-            key = new QueryHistoryMetricsKey(qry, schema, loc);
-
         return key;
     }
 
@@ -148,20 +107,13 @@ public class QueryHistoryMetrics implements Externalizable {
      * @return Aggregated metrics.
      */
     public QueryHistoryMetrics aggregateWithNew(QueryHistoryMetrics m) {
-        assert m.linkRef.get() == null;
+        execs += m.execs;
+        failures += m.failures;
+        minTime = Math.min(minTime, m.minTime);
+        maxTime = Math.max(maxTime, m.maxTime);
+        lastStartTime = Math.max(lastStartTime, m.lastStartTime);
 
-        return new QueryHistoryMetrics(
-            qry,
-            schema,
-            loc,
-            execs + m.executions(),
-            failures + m.failures(),
-            Math.min(minTime, m.minTime),
-            Math.max(maxTime, m.maxTime),
-            Math.max(lastStartTime, m.lastStartTime),
-            key,
-            linkRef
-        );
+        return this;
     }
 
     /**
@@ -267,30 +219,6 @@ public class QueryHistoryMetrics implements Externalizable {
     public boolean replaceLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> expLink,
         ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> updatedLink) {
         return linkRef.compareAndSet(expLink, updatedLink);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, qry);
-        U.writeString(out, schema);
-        out.writeBoolean(loc);
-        out.writeInt(execs);
-        out.writeInt(failures);
-        out.writeLong(minTime);
-        out.writeLong(maxTime);
-        out.writeLong(lastStartTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        qry = U.readString(in);
-        schema = U.readString(in);
-        loc = in.readBoolean();
-        execs = in.readInt();
-        failures = in.readInt();
-        minTime = in.readLong();
-        maxTime = in.readLong();
-        lastStartTime = in.readLong();
     }
 
     /** {@inheritDoc} */

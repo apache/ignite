@@ -89,11 +89,9 @@ class QueryHistoryTracker {
                 return false;
             }
 
-            QueryHistoryMetrics curMetrics = qryMetrics.get(entry.key());
-
-            if (curMetrics == null || curMetrics.link() != node) {
-                // Was concurrently evicted, need to clear it from queue.
-                removeLink(node);
+            if (node.item() == null) {
+                // Was concurrently schrinked.
+                entry.unlink(node);
 
                 return false;
             }
@@ -107,17 +105,6 @@ class QueryHistoryTracker {
             if (!entry.replaceLink(node, newNode)) {
                 // Was concurrently added, need to clear it from queue.
                 removeLink(newNode);
-
-                return false;
-            }
-
-            QueryHistoryMetrics curMetrics = qryMetrics.get(entry.key());
-
-            if (curMetrics == null || curMetrics.link() != node) {
-                // Was concurrently evicted, need to clear it from queue.
-                removeLink(node);
-
-                return false;
             }
         }
 
