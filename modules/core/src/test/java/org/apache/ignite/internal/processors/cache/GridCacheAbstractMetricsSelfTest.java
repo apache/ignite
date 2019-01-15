@@ -808,18 +808,18 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+        assertEquals(0, cache.metrics().getCacheSize());
 
         for (int i = 0; i < KEY_CNT; i++) {
             cache.put(i, i);
 
             CacheMetrics metrics = cache.metrics();
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+            assertEquals(i + 1, metrics.getCacheSize());
 
             CacheMetrics localMetrics = cache.localMetrics();
 
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+            assertEquals(i + 1, localMetrics.getCacheSize());
         }
 
         for (int i = 0; i < KEY_CNT / 2; i++) {
@@ -827,11 +827,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             CacheMetrics metrics = cache.metrics();
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+            assertEquals(KEY_CNT - i - 1, metrics.getCacheSize());
 
             CacheMetrics localMetrics = cache.localMetrics();
 
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+            assertEquals(KEY_CNT - i - 1, localMetrics.getCacheSize());
         }
 
         cache.removeAll();
