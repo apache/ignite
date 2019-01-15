@@ -17,23 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Special test suite with ignored tests for Binary mode.
  */
-public class IgniteIgnoredBinaryTestSuite extends TestSuite {
-    /**
-     * @return IgniteCache test suite.
-     */
-    public static TestSuite suite() {
-        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Binary Test Suite");
-
-        /* --- QUERY --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteBinaryCacheQueryTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteBinaryCacheQueryTestSuite2.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteBinaryCacheQueryTestSuite.class,
+    IgniteBinaryCacheQueryTestSuite2.class
+})
+public class IgniteIgnoredBinaryTestSuite {
 }

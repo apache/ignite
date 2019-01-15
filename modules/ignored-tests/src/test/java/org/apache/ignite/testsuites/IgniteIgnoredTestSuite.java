@@ -17,42 +17,35 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Special test suite with ignored tests.
  */
-public class IgniteIgnoredTestSuite extends TestSuite {
-    /**
-     * @return IgniteCache test suite.
-     */
-    public static TestSuite suite() {
-        IgniteIgnoredBaseTestSuite suite = new IgniteIgnoredBaseTestSuite(null, "Ignite Ignored Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteS3TestSuite.class,
 
-        /* --- AWS --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteS3TestSuite.class));
+    /* --- CLIENTS --- */
+    org.apache.ignite.internal.client.suite.IgniteClientTestSuite.class,
 
-        /* --- CLIENTS --- */
-        suite.addTest(new JUnit4TestAdapter(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.class));
+    /* --- CLOUDS --- */
+    IgniteCloudTestSuite.class,
 
-        /* --- CLOUDS --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteCloudTestSuite.class));
+    /* --- JTA --- */
+    IgniteJtaTestSuite.class,
 
-        /* --- JTA --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteJtaTestSuite.class));
+    /* --- QUERIES --- */
+    //IgniteCacheQuerySelfTestSuite.class,
+    //IgniteCacheQuerySelfTestSuite2.class,
 
-        /* --- QUERIES --- */
-        //suite.addTest(new JUnit4TestAdapter(IgniteCacheQuerySelfTestSuite.class));
-        //suite.addTest(new JUnit4TestAdapter(IgniteCacheQuerySelfTestSuite2.class));
+    /* --- SPRING --- */
+    IgniteSpringTestSuite.class,
 
-        /* --- SPRING --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteSpringTestSuite.class));
-
-        /* --- WEB SESSIONS --- */
-        suite.addTest(new JUnit4TestAdapter(IgniteWebSessionSelfTestSuite.class));
-
-        return suite;
-    }
+    /* --- WEB SESSIONS --- */
+    IgniteWebSessionSelfTestSuite.class,
+})
+public class IgniteIgnoredTestSuite {
 }

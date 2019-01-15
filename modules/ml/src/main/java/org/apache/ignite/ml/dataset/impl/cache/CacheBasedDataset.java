@@ -64,7 +64,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     private final IgniteBiPredicate<K, V> filter;
 
     /** Builder of transformation applied to upstream. */
-    private final UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder;
+    private final UpstreamTransformerBuilder upstreamTransformerBuilder;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
@@ -94,7 +94,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder,
+        UpstreamTransformerBuilder upstreamTransformerBuilder,
         IgniteCache<Integer, C> datasetCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
