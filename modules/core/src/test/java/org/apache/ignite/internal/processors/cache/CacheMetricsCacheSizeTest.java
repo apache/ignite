@@ -120,20 +120,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         IgniteCache cacheNode2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        grid(0).events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        // Wait for metrics update.
-        latch.await();
+        awaitMetricsUpdate(1);
 
         assertEquals(ENTITIES_CNT, cacheNode0.metrics().getCacheSize());
 

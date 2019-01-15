@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -30,16 +29,12 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -135,20 +130,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 fillCache(igniteIdx, cacheIdx);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        grid(0).events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        // Wait for metrics update.
-        latch.await();
+        awaitMetricsUpdate(1);
 
         int cacheSize = GRID_CNT * ENTITIES_CNT;
 
