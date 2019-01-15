@@ -30,22 +30,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 @IgniteCodeGeneratingFail
 public class HandshakeMessage2 extends HandshakeMessage {
     /** */
-    private static final byte CHANNEL_TYPE_MASK = 0x01;
-
-    /** */
-    public static final int HANDSHAKE2_MSG_FULL_SIZE = MESSAGE_FULL_SIZE + 5;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Message size in bytes including {@link HandshakeMessage} fields. */
-    public static final int HANDSHAKE2_MESSAGE_SIZE = MESSAGE_FULL_SIZE + 4;
+    public static final int HANDSHAKE2_MSG_FULL_SIZE = MESSAGE_FULL_SIZE + 4;
 
     /** */
     private int connIdx;
-
-    /** */
-    private byte flags;
 
     /**
      *
@@ -66,19 +57,6 @@ public class HandshakeMessage2 extends HandshakeMessage {
         this.connIdx = connIdx;
     }
 
-    /**
-     * @param nodeId Node ID.
-     * @param connectCnt Connect count.
-     * @param rcvCnt Number of received messages.
-     * @param connIdx Connection index.
-     * @param isPipe {@code True} create a socket connection.
-     */
-    public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx, boolean isPipe) {
-        this(nodeId, connectCnt, rcvCnt, connIdx);
-
-        channelTypeEnabled(isPipe);
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return -44;
@@ -94,20 +72,6 @@ public class HandshakeMessage2 extends HandshakeMessage {
         return connIdx;
     }
 
-    /**
-     * @return If socket will be used to transfer raw files.
-     */
-    public boolean channelTypeEnabled() {
-        return (flags & CHANNEL_TYPE_MASK) != 0;
-    }
-
-    /**
-     * @param useChannelTransfer {@code True} if socket should be used to transfer raw files.
-     */
-    public final void channelTypeEnabled(boolean useChannelTransfer) {
-        flags = useChannelTransfer ? (byte)(flags | CHANNEL_TYPE_MASK) : (byte)(flags & ~CHANNEL_TYPE_MASK);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         if (!super.writeTo(buf, writer))
@@ -117,8 +81,6 @@ public class HandshakeMessage2 extends HandshakeMessage {
             return false;
 
         buf.putInt(connIdx);
-
-        buf.put(flags);
 
         return true;
     }
@@ -132,8 +94,6 @@ public class HandshakeMessage2 extends HandshakeMessage {
             return false;
 
         connIdx = buf.getInt();
-
-        flags = buf.get();
 
         return true;
     }

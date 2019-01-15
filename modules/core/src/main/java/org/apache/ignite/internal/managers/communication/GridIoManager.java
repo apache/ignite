@@ -935,7 +935,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** */
     private void onChannelRequest0(IgniteNioSocketChannel ch, GridIoMessage msg) {
-        assert msg != null;
+        assert ch != null;
+
+        if (msg == null)
+            return;
 
         Lock busyLock0 = busyLock.readLock();
 

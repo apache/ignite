@@ -33,9 +33,6 @@ public class ChannelCreateResponseMessage implements Message {
     /** Request message type */
     public static final int CHANNEL_RESPONSE_MSG_TYPE = -30;
 
-    /** Full message size (with message type) in bytes. */
-    public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,22 +50,31 @@ public class ChannelCreateResponseMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
+        writer.setBuffer(buf);
 
-        TcpCommunicationSpi.writeMessageType(buf, directType());
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return true;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        return reader.afterMessageRead(ChannelCreateResponseMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return HANDSHAKE_WAIT_MSG_TYPE;
+        return CHANNEL_RESPONSE_MSG_TYPE;
     }
 
     /** {@inheritDoc} */

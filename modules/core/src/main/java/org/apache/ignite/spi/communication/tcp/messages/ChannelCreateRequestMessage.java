@@ -112,7 +112,7 @@ public class ChannelCreateRequestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -29;
+        return CHANNEL_REQUEST_MSG_TYPE;
     }
 
     /** {@inheritDoc} */

@@ -104,7 +104,7 @@ public class GridNioRecoveryDescriptor {
         ClusterNode node,
         IgniteLogger log
     ) {
-        assert !node.isLocal() : node;
+//        assert !node.isLocal() : node;
         assert queueLimit > 0;
 
         msgReqs = new ArrayDeque<>(queueLimit);

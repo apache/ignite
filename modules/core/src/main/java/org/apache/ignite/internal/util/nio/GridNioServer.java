@@ -956,6 +956,8 @@ public class GridNioServer<T> {
         if (closed)
             throw new IgniteCheckedException("Server is stopped");
 
+        log.info("channels=" + channels);
+
         if (channels.get(connKey) != null)
             throw new IgniteCheckedException("Channel connection already exists: " + connKey);
 

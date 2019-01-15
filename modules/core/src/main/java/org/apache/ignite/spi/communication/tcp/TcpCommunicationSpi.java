@@ -41,7 +41,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -590,20 +589,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
 
-                // GridCommunicationClient is not needed for the channel connections.
-                if (msg instanceof HandshakeMessage2 && ((HandshakeMessage2) msg).channelTypeEnabled()) {
-                    ses.addMeta(CHNL_CFG_META, true);
-
-                    if (log.isInfoEnabled())
-                        log.info("Channel connection creation handshake [" +
-                            "locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId + ']');
-
-                    // Finalize handshake between nodes by sending revovery message.
-                    ses.send(new RecoveryLastReceivedMessage(0));
-
-                    return;
-                }
-
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
@@ -786,8 +771,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             @Override public void onMessage(final GridNioSession ses, Message msg) {
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
-                boolean channelType = Optional.ofNullable(ses.<Boolean>meta(CHNL_CFG_META)).orElse(false);
-
                 if (connKey == null) {
                     assert ses.accepted() : ses;
 
@@ -809,20 +792,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                     finally {
                         connectGate.leave();
-                    }
-                }
-                else if (channelType) {
-                    metricsLsnr.onMessageReceived(msg, connKey.nodeId());
-
-                    if (msg instanceof ChannelCreateRequestMessage)
-                        onChannelRequest((GridSelectorNioSession)ses, connKey, (ChannelCreateRequestMessage)msg);
-                    else if (msg instanceof ChannelCreateResponseMessage) {
-                        IgniteNioSocketChannel nioCh = nioSrvr.getNioSocketChannel(connKey);
-
-                        assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
-
-                        // Make channel ready to transfer bytes.
-                        nioCh.setReady();
                     }
                 }
                 else {
@@ -899,7 +868,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     else
                         c = NOOP;
 
-                    notifyListener(connKey.nodeId(), msg, c);
+                    if (msg instanceof ChannelCreateRequestMessage) {
+                        onChannelRequest((GridSelectorNioSession)ses, connKey, (ChannelCreateRequestMessage)msg);
+
+                        if (c != null)
+                            c.run();
+                    }
+                    else if (msg instanceof ChannelCreateResponseMessage) {
+                        IgniteNioSocketChannel nioCh = nioSrvr.getNioSocketChannel(connKey);
+
+                        assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
+
+                        // Make channel ready to transfer bytes.
+                        nioCh.setReady();
+
+                        if (c != null)
+                            c.run();
+                    }
+                    else
+                        notifyListener(connKey.nodeId(), msg, c);
                 }
             }
 
@@ -3341,7 +3328,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @throws IgniteCheckedException If failed.
      */
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        GridNioSession session = createNioSession(node, connIdx, false);
+        GridNioSession session = createNioSession(node, connIdx);
 
         return session == null ?
             null : new GridTcpNioCommunicationClient(connIdx, session, log);
@@ -3373,11 +3360,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      * @param node Remote node identifier to connect with.
      * @param connIdx Connection index based on configured {@link ConnectionPolicy}.
-     * @param isPipe {@code True} if handshake should initiate channel connection creation.
      * @return A {@link GridNioSession} connection representation.
      * @throws IgniteCheckedException If establish connection fails.
      */
-    private GridNioSession createNioSession(ClusterNode node, int connIdx, boolean isPipe) throws IgniteCheckedException {
+    private GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
         GridNioSession session = null;
@@ -3483,8 +3469,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             new HandshakeMessage2(locNode.id(),
                                 recoveryDesc.incrementConnectCount(),
                                 recoveryDesc.received(),
-                                connIdx,
-                                isPipe));
+                                connIdx));
 
                         if (rcvCnt == ALREADY_CONNECTED)
                             return null;
@@ -4303,7 +4288,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 throw new IgniteCheckedException("Connection key already used: " + connKey);
 
             // GridNioSession ses = createGridNioSession()
-            ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex(), true);
+            ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex());
+
+            log.info("sessions=" + nioSrvr.sessions());
 
             nioCh = nioSrvr.createNioChannel(ses, connKey);
 
@@ -4312,7 +4299,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             // Wait for the reply (channel created on the remote side)
             long curTime = U.currentTimeMillis();
-            long endTime = curTime + DFLT_CONN_TIMEOUT;
+            long endTime = curTime + 15_000L;
 
             while (curTime < endTime) {
                 if (nioCh.isReady())
