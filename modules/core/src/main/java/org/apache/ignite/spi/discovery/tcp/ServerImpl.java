@@ -266,6 +266,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Last listener future. */
     private IgniteFuture<?> lastCustomEvtLsnrFut;
 
+    /** */
+    private DiscoveryDataPacket gridDiscoData;
+
     /**
      * @param adapter Adapter.
      */
@@ -4527,9 +4530,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                // Notify outside of synchronized block.
-                if (dataPacket != null)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                gridDiscoData = dataPacket;
 
                 processMessageFailedNodes(msg);
             }
@@ -4666,6 +4667,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     mux.notifyAll();
                 }
+
+                if (gridDiscoData != null)
+                    spi.onExchange(gridDiscoData, U.resolveClassLoader(spi.ignite().configuration()));
+
+                gridDiscoData = null;
 
                 // Discovery manager must create local joined event before spiStart completes.
                 notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
