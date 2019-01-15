@@ -220,6 +220,30 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Check auto clenup running queries on fully readed iterator.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
+    public void testAutoCloseQueryAfterIteratorIsExhausted(){
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        FieldsQueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+
+        query.iterator().forEachRemaining((e) -> {
+            Assert.assertEquals("Should be one running query",
+                1,
+                ignite.context().query().runningQueries(-1).size());
+        });
+
+        assertNoRunningQueries();
+
+    }
+
+    /**
      * Check tracking running queries for Select.
      *
      * @throws Exception Exception in case of failure.
