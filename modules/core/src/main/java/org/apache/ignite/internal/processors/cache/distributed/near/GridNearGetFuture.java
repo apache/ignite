@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -550,11 +549,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 // Retry.
             }
             catch (GridDhtInvalidPartitionException ignored) {
-                return false;
-            }
-            catch (IgniteException e) {
-                onDone(U.cast(e));
-
                 return false;
             }
             catch (IgniteCheckedException e) {
