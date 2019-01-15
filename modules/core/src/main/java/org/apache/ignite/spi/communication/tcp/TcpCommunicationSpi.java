@@ -879,8 +879,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
 
-                        // Make channel ready to transfer bytes.
-                        nioCh.setReady();
+                        ses.closeSocket(false);
+
+                        ses.close().listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> future) {
+                                // Make channel ready to transfer bytes.
+                                nioCh.setReady();
+                            }
+                        });
 
                         if (c != null)
                             c.run();
@@ -4309,10 +4315,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 curTime = U.currentTimeMillis();
             }
-
-            // Cleanup.
-            ses.closeSocket(false);
-            ses.close().get();
 
             if (!nioCh.isReady())
                 throw new IgniteCheckedException("Timeout while getting response message");
