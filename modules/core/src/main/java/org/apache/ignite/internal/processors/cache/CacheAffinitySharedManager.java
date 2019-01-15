@@ -469,38 +469,37 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (!grp.isLocal() && grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
                     assert grp.localStartVersion().equals(topVer) : grp.localStartVersion();
 
-                    if (crd) {
-                        CacheGroupHolder grpHolder = grpHolders.get(grp.groupId());
+                    CacheGroupHolder grpHolder = grpHolders.get(grp.groupId());
 
-                        assert grpHolder != null && grpHolder.affinity().idealAssignment() != null;
+                    assert !crd || (grpHolder != null && grpHolder.affinity().idealAssignment() != null);
 
-                        if (grpHolder.client()) {
-                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
+                    if (grpHolder != null && grpHolder.client()) {
+                        ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
 
-                            grp.topology().updateTopologyVersion(topFut,
-                                discoCache,
-                                -1,
-                                false);
+                        grp.topology().updateTopologyVersion(topFut,
+                            discoCache,
+                            -1,
+                            false);
 
-                            grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
+                        grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
 
-                            grpHolders.put(grp.groupId(), grpHolder);
+                        grpHolders.put(grp.groupId(), grpHolder);
 
-                            GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(grp.groupId());
+                        GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(grp.groupId());
 
-                            if (clientTop != null) {
-                                grp.topology().update(grpHolder.affinity().lastVersion(),
-                                    clientTop.partitionMap(true),
-                                    clientTop.fullUpdateCounters(),
-                                    Collections.<Integer>emptySet(),
-                                    null,
-                                    null);
-                            }
-
-                            assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
+                        if (clientTop != null) {
+                            grp.topology().update(grpHolder.affinity().lastVersion(),
+                                clientTop.partitionMap(true),
+                                clientTop.fullUpdateCounters(),
+                                Collections.<Integer>emptySet(),
+                                null,
+                                null);
                         }
+
+                        assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
                     }
-                    else if (!fetchFuts.containsKey(grp.groupId())) {
+
+                    if (!crd && !fetchFuts.containsKey(grp.groupId())) {
                         GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                             grp.groupId(),
                             topVer,
@@ -605,27 +604,25 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> closed = cctx.cache().closeCaches(cachesToClose, true);
 
-        if (crd) {
-            for (CacheGroupHolder hld : grpHolders.values()) {
-                if (!hld.client() && cctx.cache().cacheGroup(hld.groupId()) == null) {
-                    int grpId = hld.groupId();
+        for (CacheGroupHolder hld : grpHolders.values()) {
+            if (!hld.client() && cctx.cache().cacheGroup(hld.groupId()) == null) {
+                int grpId = hld.groupId();
 
-                    // All client cache groups were stopped, need create 'client' CacheGroupHolder.
-                    CacheGroupHolder grpHolder = grpHolders.remove(grpId);
+                // All client cache groups were stopped, need create 'client' CacheGroupHolder.
+                CacheGroupHolder grpHolder = grpHolders.remove(grpId);
 
-                    assert grpHolder != null && !grpHolder.client() : grpHolder;
+                assert grpHolder != null && !grpHolder.client() : grpHolder;
 
-                    try {
-                        grpHolder = CacheGroupHolder2.create(cctx,
-                            cachesRegistry.group(grpId),
-                            topVer,
-                            grpHolder.affinity());
+                try {
+                    grpHolder = CacheGroupHolder2.create(cctx,
+                        cachesRegistry.group(grpId),
+                        topVer,
+                        grpHolder.affinity());
 
-                        grpHolders.put(grpId, grpHolder);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to initialize cache: " + e, e);
-                    }
+                    grpHolders.put(grpId, grpHolder);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to initialize cache: " + e, e);
                 }
             }
         }
@@ -1010,21 +1007,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedGrps = null;
 
-        if (crd) {
-            for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
-                if (data.descriptor().config().getCacheMode() != LOCAL) {
-                    CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
+        for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
+            if (data.descriptor().config().getCacheMode() != LOCAL) {
+                CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
 
-                    assert cacheGrp != null || forceClose : data.descriptor();
+                // TODO: remove crd check
+                assert !crd || cacheGrp != null || forceClose : data.descriptor();
 
-                    if (cacheGrp != null) {
-                        if (stoppedGrps == null)
-                            stoppedGrps = new HashSet<>();
+                if (cacheGrp != null) {
+                    if (stoppedGrps == null)
+                        stoppedGrps = new HashSet<>();
 
-                        stoppedGrps.add(cacheGrp.groupId());
+                    stoppedGrps.add(cacheGrp.groupId());
 
-                        cctx.io().removeHandler(true, cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
-                    }
+                    cctx.io().removeHandler(true, cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
                 }
             }
         }
