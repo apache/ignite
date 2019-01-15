@@ -433,7 +433,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
-                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx) != null;
 
                     GridCacheUpdateTxResult res;
 

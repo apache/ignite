@@ -1885,7 +1885,7 @@ public class IgniteTxHandler {
                         EntryProcessor entryProc = null;
                         Object[] invokeArgs = null;
 
-                        boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx, key) != null;
+                        boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx) != null;
 
                         Message val0 = vals != null ? vals.get(i) : null;
 

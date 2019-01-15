@@ -5211,7 +5211,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 valid = entry.valid(tx.topologyVersion());
 
-                boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, entry.key()) != null;
+                boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx) != null;
 
                 cctx.shared().database().checkpointReadLock();
 

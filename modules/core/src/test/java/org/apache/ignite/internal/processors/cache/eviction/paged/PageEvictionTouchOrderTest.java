@@ -83,7 +83,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
      */
     @Test
     public void testTouchOrderWithFairFifoEvictionMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+        fail("https://issues.apache.org/jira/browse/IGNITE-10738");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
 
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
@@ -94,7 +94,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
      */
     @Test
     public void testTouchOrderWithFairFifoEvictionMvccTxPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+        fail("https://issues.apache.org/jira/browse/IGNITE-10738");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
 
         testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);

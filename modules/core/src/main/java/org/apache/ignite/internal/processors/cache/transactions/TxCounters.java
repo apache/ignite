@@ -36,7 +36,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    private volatile Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
      * Accumulates size change for cache partition.
