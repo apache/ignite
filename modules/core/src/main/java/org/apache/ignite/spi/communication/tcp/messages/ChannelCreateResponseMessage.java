@@ -18,16 +18,14 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 
 /**
- *
+ * Message response for creation of {@link IgniteNioSocketChannel}.
  */
 public class ChannelCreateResponseMessage implements Message {
     /** Request message type */
@@ -36,11 +34,35 @@ public class ChannelCreateResponseMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Message. */
+    private boolean created;
+
     /**
      * Default constructor required by {@link Message}.
      */
     public ChannelCreateResponseMessage() {
         // Default constructor used only for GridIoMessageFactory.
+    }
+
+    /**
+     * @param created flag.
+     */
+    public ChannelCreateResponseMessage(boolean created) {
+        this.created = created;
+    }
+
+    /**
+     * @return {@code True} if created successfully.
+     */
+    public boolean isCreated() {
+        return created;
+    }
+
+    /**
+     * @param created {@code True} if channel created successfully.
+     */
+    public void setCreated(boolean created) {
+        this.created = created;
     }
 
     /** {@inheritDoc} */
@@ -59,6 +81,13 @@ public class ChannelCreateResponseMessage implements Message {
             writer.onHeaderWritten();
         }
 
+        if (writer.state() == 0) {
+            if (!writer.writeBoolean("created", created))
+                return false;
+
+            writer.incrementState();
+        }
+
         return true;
     }
 
@@ -68,6 +97,15 @@ public class ChannelCreateResponseMessage implements Message {
 
         if (!reader.beforeMessageRead())
             return false;
+
+        if (reader.state() == 0) {
+            created = reader.readBoolean("created");
+
+            if (!reader.isLastRead())
+                return false;
+
+            reader.incrementState();
+        }
 
         return reader.afterMessageRead(ChannelCreateResponseMessage.class);
     }
@@ -79,7 +117,7 @@ public class ChannelCreateResponseMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0;
+        return 1;
     }
 
     /** {@inheritDoc} */

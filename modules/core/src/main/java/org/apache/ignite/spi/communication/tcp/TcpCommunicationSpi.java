@@ -757,7 +757,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     // Close session and send response.
                     ses.closeSocket(false);
 
-                    ses.send(new ChannelCreateResponseMessage()).listen(new CI1<IgniteInternalFuture<?>>() {
+                    ses.send(new ChannelCreateResponseMessage(true)).listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> fut) {
                             ses.close();
                         }
