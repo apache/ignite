@@ -69,6 +69,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
         try {
