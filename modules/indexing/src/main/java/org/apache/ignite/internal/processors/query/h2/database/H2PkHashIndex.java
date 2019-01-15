@@ -58,18 +58,26 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** */
     private final GridCacheContext cctx;
 
+    /** */
+    private final int segments;
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
      * @param name Index name.
      * @param colsList Index columns.
+     * @param segments Segments.
      */
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
         String name,
-        List<IndexColumn> colsList
+        List<IndexColumn> colsList,
+        int segments
     ) {
+        assert segments > 0: segments;
+
+        this.segments = segments;
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
@@ -83,7 +91,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public int segmentsCount() {
-        return 1;
+        return segments;
     }
 
     /** {@inheritDoc} */
@@ -93,10 +101,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
+        int seg = 0;
+
         if (qctx != null) {
             IndexingQueryFilter f = qctx.filter();
             filter = f != null ? f.forCache(getTable().cacheName()) : null;
             mvccSnapshot = qctx.mvccSnapshot();
+            seg = qctx.segment();
         }
 
         assert !cctx.mvccEnabled() || mvccSnapshot != null;
@@ -107,9 +118,15 @@ public class H2PkHashIndex extends GridH2IndexBase {
         try {
             Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                if (filter == null || filter.applyPartition(store.partId()))
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (segmentForPartition(part) != seg)
+                    continue;
+
+                if (filter == null || filter.applyPartition(part))
                     cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+            }
 
             return new H2Cursor(cursors.iterator());
         }
