@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -246,8 +247,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUsedCheckpointBuffer() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10591");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10591", MvccFeatureChecker.forcedMvcc());
 
         IgniteEx ig = startGrid(0);
 
