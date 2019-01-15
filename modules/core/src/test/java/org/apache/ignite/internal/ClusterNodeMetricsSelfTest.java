@@ -181,11 +181,15 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
-        final CountDownLatch taskLatch = new CountDownLatch(2);
+        final CountDownLatch taskLatch = new CountDownLatch(1);
         ignite.compute().executeAsync(new GridTestTask(taskLatch), "testArg");
 
-        // Let metrics update thrice.
-        awaitMetricsUpdate(3);
+        // Let metrics update twice.
+        awaitMetricsUpdate(2);
+
+        taskLatch.countDown();
+
+        awaitMetricsUpdate(1);
 
         ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
