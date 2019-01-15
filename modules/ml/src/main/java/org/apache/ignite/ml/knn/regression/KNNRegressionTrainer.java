@@ -56,7 +56,7 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KNNRegressionModel mdl) {
+    @Override public boolean isUpdateable(KNNRegressionModel mdl) {
         return true;
     }
 }
