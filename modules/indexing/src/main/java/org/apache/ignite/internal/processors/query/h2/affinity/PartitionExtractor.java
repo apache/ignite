@@ -433,8 +433,10 @@ public class PartitionExtractor {
         else
             return null;
 
+        GridH2Table tbl = (GridH2Table)leftCol.column().getTable();
+
         // Check that columns might be used for partition pruning.
-        if(!((GridH2Table)leftCol.column().getTable()).isColumnForPartitionPruning(leftCol.column()))
+        if(!tbl.isColumnForPartitionPruning(leftCol.column()))
             return null;
 
         // Check that both left and right AST use same column.
@@ -485,7 +487,6 @@ public class PartitionExtractor {
 
         Set<PartitionSingleNode> parts = new HashSet<>();
 
-        GridH2Table tbl = (GridH2Table)leftCol.column().getTable();
         PartitionTableDescriptor desc = descriptor(tbl);
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
