@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.Checkpoint;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -428,7 +427,7 @@ public class CheckpointHistory {
                             res.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, chpEntry);
                         else {
                             if (inapplicablePartitions == null)
-                                inapplicablePartitions = new BitSetIntSet();
+                                inapplicablePartitions = new HashSet<>();
 
                             // Partition is no more applicable for history search, exclude partition from searching.
                             inapplicablePartitions.add(partId);

@@ -121,5 +121,4 @@ public interface AffinityAssignment {
 
         return assignmentIds0;
     }
-
 }
