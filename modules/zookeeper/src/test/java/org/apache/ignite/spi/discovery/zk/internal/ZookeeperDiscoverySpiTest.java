@@ -3926,7 +3926,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_1() throws Exception {
         reconnectServersRestart(1);
     }
@@ -3936,7 +3935,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     public void testReconnectServersRestart_2() throws Exception {
         reconnectServersRestart(3);
     }
