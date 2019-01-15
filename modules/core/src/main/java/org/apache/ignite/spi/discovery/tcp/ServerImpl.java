@@ -989,12 +989,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.addressesAsString(msg.addresses(), msg.hostNames()) +
                         ", creatorNodeId=" + msg.creatorNodeId() + ']');
                 }
-                else
+                else {
                     LT.warn(log, "Node has not been connected to topology and will repeat join process. " +
                         "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
                         "Increase 'TcpDiscoverySpi.networkTimeout' configuration property " +
                         "if getting this message on the starting nodes [networkTimeout=" + spi.netTimeout + ']');
+
+                    gridDiscoData = null;
+                }
             }
         }
 
