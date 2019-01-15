@@ -216,6 +216,9 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -250,6 +253,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -333,6 +341,7 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -722,6 +731,7 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1632,6 +1642,17 @@ namespace Apache.Ignite.Core
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
             set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
         }
 
         /// <summary>
