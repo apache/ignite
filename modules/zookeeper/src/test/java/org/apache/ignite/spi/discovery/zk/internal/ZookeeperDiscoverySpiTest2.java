@@ -44,6 +44,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -277,6 +278,7 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
     @Test
     public void testQuorumRestore() throws Exception {
         sesTimeout = 60_000;

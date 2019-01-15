@@ -68,8 +68,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1966,24 +1964,6 @@ public final class GridTestUtils {
             return;
 
         suite.add(test);
-    }
-
-    /**
-     * Adds test to the suite only if it's not in {@code ignoredTests} set.
-     * TODO IGNITE-10777 remove this method.
-     *
-     * @param suite TestSuite where to place the test.
-     * @param test Test.
-     * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
-     * @deprecated Use {@link GridTestUtils#addTestIfNeeded(List, Class, Collection)} instead.
-     */
-    @Deprecated
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<?> test,
-        @Nullable final Collection<Class> ignoredTests) {
-        if (ignoredTests != null && ignoredTests.contains(test))
-            return;
-
-        suite.addTest(new JUnit4TestAdapter(test));
     }
 
     /**
