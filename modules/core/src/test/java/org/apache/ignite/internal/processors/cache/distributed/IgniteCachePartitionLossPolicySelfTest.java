@@ -406,12 +406,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5078,https://issues.apache.org/jira/browse/IGNITE-10041")
     @Test
     public void testIgnoreWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
         partLossPlc = PartitionLossPolicy.IGNORE;
 
         isPersistenceEnabled = true;
