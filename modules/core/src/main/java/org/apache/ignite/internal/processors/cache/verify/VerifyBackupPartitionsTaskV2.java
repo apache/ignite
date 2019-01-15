@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -248,27 +247,32 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             completionCntr.set(0);
 
-            IgniteCacheDatabaseSharedManager idb =  ignite.context().cache().context().database();
-
-            assert idb instanceof GridCacheDatabaseSharedManager : idb.getClass();
-
-            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)idb;
-
             AtomicBoolean cpFlag = new AtomicBoolean();
 
-            DbCheckpointListener lsnr = new DbCheckpointListener() {
-                @Override public void onMarkCheckpointBegin(Context ctx){
-                    /* No-op. */
-                }
+            GridCacheDatabaseSharedManager db = null;
 
-                @Override public void onCheckpointBegin(Context ctx){
-                    if(ctx.hasPages())
-                        cpFlag.set(true);
-                }
-            };
+            DbCheckpointListener lsnr = null;
 
-            db.addCheckpointListener(lsnr);
+            if(arg.isCheckCrc()) {
+                IgniteCacheDatabaseSharedManager idb = ignite.context().cache().context().database();
 
+                assert idb instanceof GridCacheDatabaseSharedManager : idb.getClass();
+
+                db = (GridCacheDatabaseSharedManager)idb;
+
+                lsnr = new DbCheckpointListener() {
+                    @Override public void onMarkCheckpointBegin(Context ctx) {
+                        /* No-op. */
+                    }
+
+                    @Override public void onCheckpointBegin(Context ctx) {
+                        if (ctx.hasPages())
+                            cpFlag.set(true);
+                    }
+                };
+
+                db.addCheckpointListener(lsnr);
+            }
             try {
                 if(arg.isCheckCrc() && isCheckpointNow(db))
                     throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
@@ -324,7 +328,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 return res;
             } finally {
-                db.removeCheckpointListener(lsnr);
+                if(db != null && lsnr != null)
+                    db.removeCheckpointListener(lsnr);
             }
         }
 
