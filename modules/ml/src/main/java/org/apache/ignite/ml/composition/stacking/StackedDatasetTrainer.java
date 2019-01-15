@@ -307,8 +307,10 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      * Get feature extractor which will be used for aggregator trainer from original feature extractor.
      * This method is static to make sure that we will not grab context of instance in serialization.
      *
+     * @param <IS> Type of submodels input.
+     * @param <IA> Type of aggregator input.
      * @param <K> Type of upstream keys.
-     * @param <V> Type of upstream values.
+     * @param <V> Type of upstream values
      * @return Feature extractor which will be used for aggregator trainer from original feature extractor.
      */
     private static <IS, IA, K, V> IgniteBiFunction<List<IgniteModel<IS, IA>>, Vector, Vector> getFeatureExtractorForAggregator(
@@ -340,7 +342,15 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         return vector2SubmodelInputConverter.andThen(mdl::predict).andThen(submodelOutput2VectorConverter).apply(v);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return Updated model.
+     */
     @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
@@ -349,7 +359,15 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
         throw new IllegalStateException();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return True if current critical for training parameters correspond to parameters from last training.
+     */
     @Override public boolean isUpdateable(StackedModel<IS, IA, O, AM> mdl) {
         // Should be never called.
         throw new IllegalStateException();

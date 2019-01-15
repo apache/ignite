@@ -99,7 +99,7 @@ public class BaggedTrainer<L> extends
                 modelIdx -> getMapping(
                     featuresVectorSize,
                     featureSubspaceDim,
-                    environment.randomNumbersGenerator().nextLong() + modelIdx))
+                    environment.randomNumbersGenerator().nextLong()))
                 .collect(Collectors.toList()) :
             null;
 

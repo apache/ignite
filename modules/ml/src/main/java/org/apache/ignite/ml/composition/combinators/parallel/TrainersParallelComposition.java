@@ -115,13 +115,29 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
         return new ModelsParallelComposition<>(mdls);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return True if current critical for training parameters correspond to parameters from last training.
+     */
     @Override public boolean isUpdateable(IgniteModel<I, List<O>> mdl) {
         // Never called.
         throw new IllegalStateException();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
+     * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return Updated model.
+     */
     @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Never called.
