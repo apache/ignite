@@ -955,8 +955,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-585")
+    @Test
     public void testNodeJoinWithP2P() throws Exception {
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();

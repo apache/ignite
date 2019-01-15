@@ -366,8 +366,8 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-2204")
+    @Test
     public void testMultithreaded() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 

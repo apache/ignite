@@ -213,8 +213,8 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10219")
+    @Test
     public void testLostRollbackOnBackup() throws Exception {
         IgniteEx node = startGrid(0);
 

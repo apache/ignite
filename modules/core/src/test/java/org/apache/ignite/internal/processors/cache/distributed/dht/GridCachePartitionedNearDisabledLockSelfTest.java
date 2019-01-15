@@ -46,8 +46,8 @@ public class GridCachePartitionedNearDisabledLockSelfTest extends GridCacheParti
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-835")
+    @Test
     @Override public void testLockReentrancy() throws Throwable {
         // No-op
     }

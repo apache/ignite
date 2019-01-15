@@ -43,8 +43,8 @@ public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1755")
+    @Test
     @Override public void testLocalTxPreloadingOptimistic() throws Exception {
         // No-op
     }

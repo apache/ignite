@@ -170,8 +170,8 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testMvccTransactionLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, LOCAL);
 

@@ -175,8 +175,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
+    @Test
     public void testLoadCacheFromStore() throws Exception {
         loadCache(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {

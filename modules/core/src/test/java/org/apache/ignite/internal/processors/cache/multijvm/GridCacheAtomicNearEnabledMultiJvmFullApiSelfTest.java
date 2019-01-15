@@ -35,8 +35,8 @@ public class GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1112")
+    @Test
     @Override public void testPutAllPutAll() throws Exception {
         // No-op
     }

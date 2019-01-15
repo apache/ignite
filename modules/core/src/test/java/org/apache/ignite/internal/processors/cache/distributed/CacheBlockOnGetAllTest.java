@@ -57,256 +57,256 @@ public class CacheBlockOnGetAllTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9915")
+    @Test
     @Override public void testStopBaselineAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9915")
+    @Test
     @Override public void testStopBaselineAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9915")
+    @Test
     @Override public void testStopBaselineTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9915")
+    @Test
     @Override public void testStopBaselineTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testCreateCacheAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testCreateCacheAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testCreateCacheTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testCreateCacheTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testDestroyCacheAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testDestroyCacheAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testDestroyCacheTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testDestroyCacheTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStartServerAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStartServerAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStartServerTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStartServerTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStopServerAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStopServerAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStopServerTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testStopServerTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testUpdateBaselineTopologyAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testUpdateBaselineTopologyAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testUpdateBaselineTopologyTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9883")
+    @Test
     @Override public void testUpdateBaselineTopologyTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientAtomicPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientTransactionalPartitioned() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientTransactionalReplicated() {
         // No-op
     }

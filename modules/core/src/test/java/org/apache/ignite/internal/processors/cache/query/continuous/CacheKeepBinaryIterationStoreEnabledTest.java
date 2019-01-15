@@ -56,15 +56,15 @@ public class CacheKeepBinaryIterationStoreEnabledTest extends CacheKeepBinaryIte
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
     @Override public void testMvccTxOnHeap() throws Exception {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
     @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
         // No-op
     }

@@ -82,32 +82,32 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStartClientTransactionalReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientAtomicReplicated() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Test
     @Override public void testStopClientTransactionalReplicated() {
         // No-op
     }

@@ -92,8 +92,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
+    @Test
     public void testMvccGetFromBackupStoreReadThroughEnabled() throws Exception {
         checkGetFromBackupStoreReadThroughEnabled(mvccCacheConfigurations());
     }
@@ -153,8 +153,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
+    @Test
     public void testMvccGetFromBackupStoreReadThroughDisabled() throws Exception {
         checkGetFromBackupStoreReadThroughDisabled(mvccCacheConfigurations());
     }
@@ -198,8 +198,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
+    @Test
     public void testMvccGetFromPrimaryPreloadInProgress() throws Exception {
         checkGetFromPrimaryPreloadInProgress(mvccCacheConfigurations());
     }
@@ -301,8 +301,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10274")
+    @Test
     public void testMvccNoPrimaryReadPreloadFinished() throws Exception {
         checkNoPrimaryReadPreloadFinished(mvccCacheConfigurations());
 

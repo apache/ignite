@@ -82,8 +82,8 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-819")
+    @Test
     public void testGettingRemovedKey() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

@@ -560,8 +560,8 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
@@ -579,8 +579,8 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 

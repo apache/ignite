@@ -175,8 +175,8 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
     public void testConnectionLeakOneBackupMvccPessimisticRepeatableRead() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -184,8 +184,8 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
     public void testConnectionLeakOneBackupMvccPessimisticRepeatableReadLoadFromStore() throws Exception {
         isLoadFromStore = true;
 

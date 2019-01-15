@@ -53,8 +53,8 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-6629")
+    @Test
     public void testDeployService() throws Exception {
         Ignite ig1P = primary(0);
 

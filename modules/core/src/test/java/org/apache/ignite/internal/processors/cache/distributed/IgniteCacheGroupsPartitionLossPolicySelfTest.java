@@ -137,8 +137,8 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-5078")
+    @Test
     public void testIgnore() throws Exception {
         prepareTopology();
 

@@ -44,8 +44,8 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
+    @Test
     public void testEvictionWithRebalanceMvcc() throws Exception {
         checkEvictionWithRebalance(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }

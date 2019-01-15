@@ -36,8 +36,8 @@ public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailove
         return TRANSACTIONAL;
     }
 
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1593")
+    @Test
     @Override public void testNodeRestart(){
         // No-op
     }

@@ -84,8 +84,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9323")
+    @Test
     public void testKeepBinaryWithInterceptorOnMvccCache() throws Exception {
         startGrid(0);
 

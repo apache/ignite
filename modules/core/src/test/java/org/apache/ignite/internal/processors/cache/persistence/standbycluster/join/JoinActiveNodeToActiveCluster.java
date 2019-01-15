@@ -242,8 +242,8 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     }
 
     /** {@inheritDoc} */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         joinClientStaticCacheConfigurationInClusterTemplate().execute();
     }
@@ -257,8 +257,8 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     /**
      *
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
+    @Test
     @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();
     }

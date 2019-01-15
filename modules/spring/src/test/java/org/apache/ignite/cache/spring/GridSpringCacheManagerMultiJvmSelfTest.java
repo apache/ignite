@@ -59,8 +59,8 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9488")
+    @Test
     public void testSyncCache() throws Exception {
         IgniteEx loc = startGrid(0);
 

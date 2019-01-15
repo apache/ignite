@@ -60,8 +60,8 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
     }
 
     /** Check that dev-only messages appear in the log. */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9328")
+    @Test
     public void testDevOnlyQuietMessage() throws Exception {
         additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=true");
 

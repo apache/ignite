@@ -287,8 +287,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception if something goes bad.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-4380")
+    @Test
     public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;

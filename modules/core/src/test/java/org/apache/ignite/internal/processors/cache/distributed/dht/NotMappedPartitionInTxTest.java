@@ -116,8 +116,8 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
+    @Test
     public void testOneServerMvcc() throws Exception {
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -161,8 +161,8 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
+    @Test
     public void testFourServersMvcc() throws Exception {
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;

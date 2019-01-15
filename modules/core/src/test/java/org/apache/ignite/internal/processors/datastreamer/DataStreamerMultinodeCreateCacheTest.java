@@ -55,8 +55,8 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1603")
+    @Test
     public void testCreateCacheAndStream() throws Exception {
         final int THREADS = 5;
 

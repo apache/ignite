@@ -150,8 +150,8 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testLocalMvccTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,false);
 
@@ -161,8 +161,8 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testLocalMvccTxWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,true);
 

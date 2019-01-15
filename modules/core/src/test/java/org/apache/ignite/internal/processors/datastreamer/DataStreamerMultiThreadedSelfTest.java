@@ -86,8 +86,8 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1602")
+    @Test
     public void testStartStopIgnitesDynamicCache() throws Exception {
         dynamicCache = true;
 

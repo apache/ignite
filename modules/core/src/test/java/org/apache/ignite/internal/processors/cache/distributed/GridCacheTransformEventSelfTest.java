@@ -333,8 +333,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testMvccTxLocalPessimisticRepeatableRead() throws Exception {
         checkMvccTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -404,8 +404,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
+    @Test
     public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
         checkMvccTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -476,8 +476,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
+    @Test
     public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
         checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
     }

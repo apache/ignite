@@ -467,8 +467,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10186")
+    @Test
     public void testMergeServerAndClientJoin1() throws Exception {
         final IgniteEx srv0 = startGrid(0);
 

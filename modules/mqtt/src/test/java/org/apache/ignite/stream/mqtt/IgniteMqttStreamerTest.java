@@ -196,8 +196,8 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-2255")
+    @Test
     public void testConnectionStatusWithBrokerDisconnection() throws Exception {
         // Configure streamer.
         streamer.setSingleTupleExtractor(singleTupleExtractor());
