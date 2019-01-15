@@ -1200,6 +1200,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             checkExceptionMessageOnReport(unstableId);
     }
 
+    /** */
     @Test
     public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
@@ -1210,6 +1211,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(out.contains("See log for additional information."));
     }
 
+    /** */
     @Test
     public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");

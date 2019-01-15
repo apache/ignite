@@ -248,7 +248,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                 }
 
                 @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                    /* N0-op. */
+                    /* No-op. */
                 }
             };
 

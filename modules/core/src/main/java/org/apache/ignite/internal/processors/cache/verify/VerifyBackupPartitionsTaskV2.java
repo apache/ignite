@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -253,12 +252,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             DbCheckpointListener lsnr = null;
 
-            if(arg.isCheckCrc()) {
-                IgniteCacheDatabaseSharedManager idb = ignite.context().cache().context().database();
-
-                assert idb instanceof GridCacheDatabaseSharedManager : idb.getClass();
-
-                db = (GridCacheDatabaseSharedManager)idb;
+            if(arg.isCheckCrc() &&
+                ignite.context().cache().context().database() instanceof GridCacheDatabaseSharedManager) {
+                db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
                 lsnr = new DbCheckpointListener() {
                     @Override public void onMarkCheckpointBegin(Context ctx) {
@@ -273,6 +269,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 db.addCheckpointListener(lsnr);
             }
+
             try {
                 if(arg.isCheckCrc() && isCheckpointNow(db))
                     throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
@@ -327,7 +324,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     throw new IdleVerifyException(exceptions);
 
                 return res;
-            } finally {
+            }
+            finally {
                 if(db != null && lsnr != null)
                     db.removeCheckpointListener(lsnr);
             }
@@ -401,6 +399,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     if (!grp.systemCache() && !grp.isLocal())
                         grpIds.add(grp.groupId());
                 }
+
                 return grpIds;
             }
 
@@ -618,13 +617,13 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                         buf.clear();
 
-                        if(cpFlag.get())
+                        if (cpFlag.get())
                             throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
 
                         pageStore.read(pageId, buf, true);
                     }
                 }
-                catch(GridNotIdleException e){
+                catch (GridNotIdleException e){
                     throw e;
                 }
                 catch (Exception | AssertionError e) {
@@ -643,7 +642,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param db Shared DB manager.
          * @return {@code True} if checkpoint is now, {@code False} otherwise.
          */
-        private boolean isCheckpointNow(GridCacheDatabaseSharedManager db) {
+        private boolean isCheckpointNow(@Nullable GridCacheDatabaseSharedManager db) {
+            if (db==null)
+                return false;
+
             GridCacheDatabaseSharedManager.CheckpointProgress progress = db.getCheckpointer().currentProgress();
 
             if (progress == null)
