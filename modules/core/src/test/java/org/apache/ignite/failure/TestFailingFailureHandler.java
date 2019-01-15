@@ -31,7 +31,7 @@ import static org.apache.ignite.testframework.junits.GridAbstractTest.testIsRunn
 public class TestFailingFailureHandler extends StopNodeFailureHandler {
     /** Test. */
     @GridToStringExclude
-    private final GridAbstractTest test;
+    protected final GridAbstractTest test;
 
     /**
      * @param test Test.

@@ -32,8 +32,8 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.ExpectThrowableFailureHandler;
 import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -138,7 +138,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+        ExpectThrowableFailureHandler hnd = new ExpectThrowableFailureHandler(this, log);
+
+        hnd.add(TransactionHeuristicException.class);
+        hnd.add(IgniteSpiException.class);
+
+        return hnd;
     }
 
     /**
