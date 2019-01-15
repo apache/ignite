@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
@@ -123,17 +124,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-
         IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        Map<Thread, H2ConnectionWrapper> conns = h2Idx.connections().connectionsForThread();
+        Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
-        int cntr = 0;
-
-        for (H2ConnectionWrapper w : conns.values())
-            cntr += w.statementCacheSize();
-
-        return cntr;
+        return conns.values().stream()
+            .mapToInt(set ->
+                set.keySet().stream()
+                    .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
     }
 
     /**
