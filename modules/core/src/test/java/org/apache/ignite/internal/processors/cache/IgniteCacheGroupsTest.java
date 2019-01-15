@@ -436,11 +436,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530,https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     public void testEntriesTtlMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         entriesTtl(LOCAL, TRANSACTIONAL_SNAPSHOT);
     }
 
