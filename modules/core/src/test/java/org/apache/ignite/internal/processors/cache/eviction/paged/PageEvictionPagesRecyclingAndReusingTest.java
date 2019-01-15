@@ -113,11 +113,9 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7956,https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPagesRecyclingAndReusingMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
     }
 
