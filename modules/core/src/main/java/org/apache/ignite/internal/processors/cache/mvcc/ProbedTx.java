@@ -30,6 +30,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class ProbedTx implements Message {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     private UUID nodeId;
     /** */
     private GridCacheVersion xidVer;
