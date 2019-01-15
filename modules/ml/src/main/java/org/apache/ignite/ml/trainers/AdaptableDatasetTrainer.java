@@ -84,8 +84,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
      * @param before Function used to convert input type of wrapped trainer.
      * @param wrapped Wrapped trainer.
      * @param after Function used to convert output type of wrapped trainer.
-     * @param extractor
-     * @param builder
+     * @param extractor Function which is applied after label extractor.
+     * @param builder Upstream transformer builder which will be used in dataset builder.
      */
     private AdaptableDatasetTrainer(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped,
         IgniteFunction<OW, O> after,

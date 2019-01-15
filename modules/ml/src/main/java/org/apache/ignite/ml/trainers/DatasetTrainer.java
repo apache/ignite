@@ -377,10 +377,12 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 return x -> x;
             }
 
+            /** {@inheritDoc} */
             @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
                 return true;
             }
 
+            /** {@inheritDoc} */
             @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return x -> x;

@@ -56,8 +56,8 @@ public class CompositionUtils {
 
             /**
              * This method is never called, instead of constructing logic of update from
-             * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
-             * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
+             * {@link DatasetTrainer#isUpdateable} and
+             * {@link DatasetTrainer#updateModel}
              * in this class we explicitly override update method.
              *
              * @param mdl Model.

@@ -181,13 +181,29 @@ public class BaggedTrainer<L> extends
         return (BaggedTrainer<L>)super.withEnvironmentBuilder(envBuilder);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return True if current critical for training parameters correspond to parameters from last training.
+     */
     @Override public boolean isUpdateable(BaggedModel mdl) {
         // Should be never called.
         throw new IllegalStateException();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This method is never called, instead of constructing logic of update from
+     * {@link DatasetTrainer#isUpdateable} and
+     * {@link DatasetTrainer#updateModel}
+     * in this class we explicitly override update method.
+     *
+     * @param mdl Model.
+     * @return Updated model.
+     */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         // Should be never called.
