@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -139,7 +140,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1930,7 +1931,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void prepareStartCaches(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
         prepareStartCaches(startCacheInfos, (data, operation) -> {
-            operation.accept(data);// PROXY
+            operation.apply(data);// PROXY
         });
     }
 
@@ -1946,7 +1947,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         prepareStartCaches(startCacheInfos, (data, operation) -> {
             try {
-                operation.accept(data);
+                operation.apply(data);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw e;
@@ -2779,19 +2780,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
-        if (!exchActions.cacheStopRequests().isEmpty()) {
-            try {
-                sharedCtx.database().waitForCheckpoint("caches stop");
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-            }
-        }
-
         List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop = exchActions.cacheGroupsToStop().stream()
-                .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
-                .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
-                .collect(Collectors.toList());
+            .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
+            .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
+            .collect(Collectors.toList());
+
+        if (!exchActions.cacheStopRequests().isEmpty())
+            removeOffheapListenerAfterCheckpoint(grpToStop);
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
@@ -2848,8 +2843,51 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        sharedCtx.database().checkpointReadLock();
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
+            stopCacheGroup(grp.get1().groupId());
 
+        if (!sharedCtx.kernalContext().clientNode())
+            sharedCtx.database().onCacheGroupsStopped(grpToStop);
+
+        if (exchActions.deactivate())
+            sharedCtx.deactivate();
+    }
+
+    /**
+     * Force checkpoint and remove offheap checkpoint listener after it was finished.
+     *
+     * @param grpToStop Cache group to stop.
+     */
+    private void removeOffheapListenerAfterCheckpoint(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
+        CheckpointFuture checkpointFut;
+        do {
+            do {
+                checkpointFut = sharedCtx.database().forceCheckpoint("caches stop");
+            }
+            while (checkpointFut != null && checkpointFut.started());
+
+            if (checkpointFut != null)
+                checkpointFut.finishFuture().listen((fut) -> removeOffheapCheckpointListener(grpToStop));
+        }
+        while (checkpointFut != null && checkpointFut.finishFuture().isDone());
+
+        if (checkpointFut != null) {
+            try {
+                checkpointFut.finishFuture().get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+            }
+        }
+        else
+            removeOffheapCheckpointListener(grpToStop);
+    }
+
+    /**
+     * @param grpToStop Group for which listener shuold be removed.
+     */
+    private void removeOffheapCheckpointListener(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
+        sharedCtx.database().checkpointReadLock();
         try {
             // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
             grpToStop.forEach(grp -> {
@@ -2864,15 +2902,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         finally {
             sharedCtx.database().checkpointReadUnlock();
         }
-
-        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
-            stopCacheGroup(grp.get1().groupId());
-
-        if (!sharedCtx.kernalContext().clientNode())
-            sharedCtx.database().onCacheGroupsStopped(grpToStop);
-
-        if (exchActions.deactivate())
-            sharedCtx.deactivate();
     }
 
     /**
@@ -5271,7 +5300,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param startCacheOperation Operation for start cache.
          * @throws IgniteCheckedException if failed.
          */
-        void handle(T data, IgniteThrowableConsumer<T, R> startCacheOperation) throws IgniteCheckedException;
+        void handle(T data, IgniteThrowableFunction<T, R> startCacheOperation) throws IgniteCheckedException;
     }
 
     /**
