@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -239,6 +240,23 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matchTypeId(CacheObject val) {
+        return typeId(val) == typeId;
+    }
+
+    /**
+     * @param val Value cache object.
+     * @return Type ID as in {@link #typeId()}.
+     */
+    private int typeId(CacheObject val) {
+        if (val instanceof BinaryObject)
+            return ((BinaryObject)val).type().typeId();
+
+        Object v = val.value(coCtx, false);
+        return coCtx.kernalContext().cacheObjects().typeId(v);
     }
 
     /**

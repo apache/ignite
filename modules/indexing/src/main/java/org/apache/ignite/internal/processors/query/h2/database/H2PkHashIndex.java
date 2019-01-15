@@ -128,7 +128,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                     cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
             }
 
-            return new H2Cursor(cursors.iterator());
+            return new H2PkHashIndexCursor(cursors.iterator());
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -208,7 +208,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /**
      * Cursor.
      */
-    private class H2Cursor implements Cursor {
+    private class H2PkHashIndexCursor implements Cursor {
         /** */
         private final GridH2RowDescriptor desc;
 
@@ -221,7 +221,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /**
          * @param iter Cursors iterator.
          */
-        private H2Cursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
+        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
             assert iter != null;
 
             this.iter = iter;
@@ -253,8 +253,12 @@ public class H2PkHashIndex extends GridH2IndexBase {
                 while (iter.hasNext()) {
                     curr = iter.next();
 
-                    if (curr.next())
-                        return true;
+                    while (curr.next()) {
+                        // Need to filter rows by value type because in a single cache
+                        // we can have multiple indexed types.
+                        if (desc.type().matchTypeId(curr.get().value()))
+                            return true;
+                    }
                 }
 
                 return false;

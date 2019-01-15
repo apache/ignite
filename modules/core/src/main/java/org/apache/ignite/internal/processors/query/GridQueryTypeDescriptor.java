@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -146,6 +147,13 @@ public interface GridQueryTypeDescriptor {
      * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
      */
     public int typeId();
+
+    /**
+     * @param val Value cache object.
+     * @return {@code true} If the given value cache object is of correct type
+     *         for this descriptor.
+     */
+    public boolean matchTypeId(CacheObject val);
 
     /**
      * Gets key field name.

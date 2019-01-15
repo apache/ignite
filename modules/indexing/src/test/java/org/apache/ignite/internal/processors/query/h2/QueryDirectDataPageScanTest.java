@@ -117,6 +117,10 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(777L, cache.query(new SqlFieldsQuery("select z from TestData use index()")
             .setDataPageScanEnabled(true)).getAll().get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+
+        assertEquals("bla-bla", cache.query(new SqlFieldsQuery("select _val from String use index()")
+            .setDataPageScanEnabled(true)).getAll().get(0).get(0));
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
     }
 
     /**
