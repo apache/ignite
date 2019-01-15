@@ -86,7 +86,6 @@ public class IgniteSqlQueryFullScanBenchmark extends IgniteCacheAbstractBenchmar
         SqlQuery qry = new SqlQuery(PersonNoIndex.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
-        qry.setDataPageScanEnabled(true);
 
         return cache.query(qry).getAll();
     }
