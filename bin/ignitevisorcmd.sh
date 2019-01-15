@@ -126,13 +126,13 @@ case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" \
         -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" \
-        -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
+        -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED "${JVM_XOPTS[@]}" -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole ${ARGS}
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DIGNITE_UPDATE_NOTIFIER=false \
         -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
-        ${JVM_XOPTS} -cp "${CP}" \
+        "${JVM_XOPTS[@]}" -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole ${ARGS}
     ;;
 esac

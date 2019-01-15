@@ -160,12 +160,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} $@
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} $@
             ;;
         esac
     else
@@ -173,12 +173,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                 -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} $@
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                 -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} $@
             ;;
         esac
     fi
