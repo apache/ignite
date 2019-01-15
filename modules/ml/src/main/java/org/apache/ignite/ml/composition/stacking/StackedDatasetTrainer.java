@@ -250,17 +250,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      * @return Trainer for stacking.
      */
     private DatasetTrainer<IgniteModel<IS, O>, L> getTrainer() {
-        // Make sure there is at least one way for submodel input to propagate to aggregator.
-        if (submodelInput2AggregatingInputConverter == null && submodelsTrainers.isEmpty())
-            throw new IllegalStateException("There should be at least one way for submodels " +
-                "input to be propageted to aggregator.");
-
-        if (submodelOutput2VectorConverter == null || vector2SubmodelInputConverter == null)
-            throw new IllegalStateException("There should be a specified way to convert vectors to submodels " +
-                "input and submodels output to vector");
-
-        if (aggregatingInputMerger == null)
-            throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
+        checkConsistency();
 
         List<DatasetTrainer<IgniteModel<IS, IA>, L>> subs = new ArrayList<>();
         if (submodelInput2AggregatingInputConverter != null) {
@@ -291,6 +281,23 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
                     return lbl;
                 }
             }).unsafeSimplyTyped();
+    }
+
+    /**
+     * Method checking consistency of this trainer.
+     */
+    private void checkConsistency() {
+        // Make sure there is at least one way for submodel input to propagate to aggregator.
+        if (submodelInput2AggregatingInputConverter == null && submodelsTrainers.isEmpty())
+            throw new IllegalStateException("There should be at least one way for submodels " +
+                "input to be propageted to aggregator.");
+
+        if (submodelOutput2VectorConverter == null || vector2SubmodelInputConverter == null)
+            throw new IllegalStateException("There should be a specified way to convert vectors to submodels " +
+                "input and submodels output to vector");
+
+        if (aggregatingInputMerger == null)
+            throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
     }
 
     /** {@inheritDoc} */
