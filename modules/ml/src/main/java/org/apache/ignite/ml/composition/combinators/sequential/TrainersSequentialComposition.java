@@ -101,7 +101,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsSequentialComposition<I, O1, O2> mdl) {
+    @Override public boolean isUpdateable(ModelsSequentialComposition<I, O1, O2> mdl) {
         // Never called.
         throw new IllegalStateException();
     }

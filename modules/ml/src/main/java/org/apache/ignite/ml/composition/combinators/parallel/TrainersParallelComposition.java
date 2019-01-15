@@ -101,16 +101,22 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();
-        List<IgniteModel<I, O>> mdls = new ArrayList<>();
+        List<IgniteSupplier<IgniteModel<I, O>>> tasks = new ArrayList<>();
 
-        for (int i = 0; i < trainers.size(); i++)
-            mdls.add(trainers.get(i).update(typedMdl.submodels().get(i), datasetBuilder, featureExtractor, lbExtractor));
+        for (int i = 0; i < trainers.size(); i++) {
+            int j = i;
+            tasks.add(() -> trainers.get(j).update(typedMdl.submodels().get(j), datasetBuilder, featureExtractor, lbExtractor));
+        }
+
+        List<IgniteModel<I, O>> mdls = environment.parallelismStrategy().submit(tasks).stream()
+            .map(Promise::unsafeGet)
+            .collect(Collectors.toList());
 
         return new ModelsParallelComposition<>(mdls);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(IgniteModel<I, List<O>> mdl) {
+    @Override public boolean isUpdateable(IgniteModel<I, List<O>> mdl) {
         // Never called.
         throw new IllegalStateException();
     }

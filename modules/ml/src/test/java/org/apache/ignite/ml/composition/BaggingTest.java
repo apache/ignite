@@ -180,7 +180,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkState(IgniteModel<Vector, Double> mdl) {
+        @Override public boolean isUpdateable(IgniteModel<Vector, Double> mdl) {
             return true;
         }
 

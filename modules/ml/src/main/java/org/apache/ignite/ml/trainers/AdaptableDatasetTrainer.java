@@ -112,8 +112,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(AdaptableDatasetModel<I, O, IW, OW, M> mdl) {
-        return wrapped.checkState(mdl.innerModel());
+    @Override public boolean isUpdateable(AdaptableDatasetModel<I, O, IW, OW, M> mdl) {
+        return wrapped.isUpdateable(mdl.innerModel());
     }
 
     /** {@inheritDoc} */
@@ -192,7 +192,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
                     lbExtractor.andThen((IgniteFunction<L, L>)mapping::mapLabels));
             }
 
-            @Override protected boolean checkState(M mdl) {
+            @Override public boolean isUpdateable(M mdl) {
                 return false;
             }
 

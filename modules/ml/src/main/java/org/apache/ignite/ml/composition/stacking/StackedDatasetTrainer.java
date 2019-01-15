@@ -350,7 +350,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
+    @Override public boolean isUpdateable(StackedModel<IS, IA, O, AM> mdl) {
         // Should be never called.
         throw new IllegalStateException();
     }

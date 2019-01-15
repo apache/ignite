@@ -182,7 +182,7 @@ public class BaggedTrainer<L> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(BaggedModel mdl) {
+    @Override public boolean isUpdateable(BaggedModel mdl) {
         // Should be never called.
         throw new IllegalStateException();
     }

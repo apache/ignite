@@ -76,7 +76,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
         if(mdl != null) {
-            if (checkState(mdl))
+            if (isUpdateable(mdl))
                 return updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
             else {
                 environment.logger(getClass()).log(
@@ -94,7 +94,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    protected abstract boolean checkState(M mdl);
+    public abstract boolean isUpdateable(M mdl);
 
     /**
      * Used on update phase when given dataset is empty.
@@ -326,8 +326,8 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(M mdl) {
-                return old.checkState(mdl);
+            @Override public boolean isUpdateable(M mdl) {
+                return old.isUpdateable(mdl);
             }
 
             /** {@inheritDoc} */
@@ -377,7 +377,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 return x -> x;
             }
 
-            @Override protected boolean checkState(IgniteModel<I, I> mdl) {
+            @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
                 return true;
             }
 

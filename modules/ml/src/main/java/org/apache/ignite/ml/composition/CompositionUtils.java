@@ -56,20 +56,20 @@ public class CompositionUtils {
 
             /**
              * This method is never called, instead of constructing logic of update from
-             * {@link DatasetTrainer#checkState(IgniteModel)} and
+             * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
              * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
              * in this class we explicitly override update method.
              *
              * @param mdl Model.
              * @return True if current critical for training parameters correspond to parameters from last training.
              */
-            @Override protected boolean checkState(IgniteModel<I, O> mdl) {
+            @Override public boolean isUpdateable(IgniteModel<I, O> mdl) {
                 throw new IllegalStateException();
             }
 
             /**
              * This method is never called, instead of constructing logic of update from
-             * {@link DatasetTrainer#checkState(IgniteModel)} and
+             * {@link DatasetTrainer#isUpdateable(IgniteModel)} and
              * {@link DatasetTrainer#updateModel(IgniteModel, DatasetBuilder, IgniteBiFunction, IgniteBiFunction)}
              * in this class we explicitly override update method.
              *
