@@ -33,7 +33,6 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.parquet.column.page.PageReadStore;
-import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroup;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
@@ -43,7 +42,6 @@ import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -117,13 +115,10 @@ public class LogRegFromSparkThroughSerializationExample {
                 try (ParquetFileReader r = new ParquetFileReader(conf, parquetPath, readFooter)) {
                     while (null != (pages = r.readNextRowGroup())) {
                         final long rows = pages.getRowCount();
-                        System.out.println("Number of rows: " + rows);
-
                         final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
                         final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                         for (int i = 0; i < rows; i++) {
                             final SimpleGroup g = (SimpleGroup)recordReader.read();
-                            printGroup(g);
                             interceptor = readInterceptor(g);
                             coefficients = readCoefficients(g);
                         }
@@ -170,30 +165,6 @@ public class LogRegFromSparkThroughSerializationExample {
                 coefficients.set(j, coefficient);
             }
             return coefficients;
-        }
-
-        /**
-         * Prints parquet group of data.
-         * NOTE: Recursive procedure.
-         *
-         * @param g Group for printing.
-         */
-        private static void printGroup(Group g) {
-            int fieldCnt = g.getType().getFieldCount();
-            for (int field = 0; field < fieldCnt; field++) {
-                int valCnt = g.getFieldRepetitionCount(field);
-
-                Type fieldType = g.getType().getType(field);
-                String fieldName = fieldType.getName();
-
-                for (int idx = 0; idx < valCnt; idx++) {
-                    if (fieldType.isPrimitive())
-                        System.out.println(fieldName + " " + g.getValueToString(field, idx));
-                    else
-                        printGroup(g.getGroup(field, idx));
-                }
-            }
-            System.out.println();
         }
 
         /**
