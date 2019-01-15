@@ -22,17 +22,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * View that contains information about all the sql tables in the cluster.
@@ -101,44 +97,6 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                     return createRow(ses, keys.incrementAndGet(), data);
                 }
             ).iterator();
-    }
-
-    /**
-     * Returns name of the value column in case of simple value or user defined value alias. If not found - "_val".
-     *
-     * @param table table to extract value alias.
-     * @return alias of the value.
-     */
-    private static String getValueAlias(GridH2Table table) {
-        GridH2RowDescriptor desc = table.rowDescriptor();
-
-        Column[] cols = table.getColumns();
-
-        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
-            if (desc.isValueAliasColumn(i))
-                return cols[i].getName();
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns name of the key column in case of simple key or user defined key alias. If not found - "_key".
-     *
-     * @param table table to extract key alias.
-     * @return alias of the key.
-     */
-    private static String getKeyAlias(GridH2Table table) {
-        GridH2RowDescriptor desc = table.rowDescriptor();
-
-        Column[] cols = table.getColumns();
-
-        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
-            if (desc.isKeyAliasColumn(i))
-                return cols[i].getName();
-        }
-
-        return null;
     }
 
     /**
