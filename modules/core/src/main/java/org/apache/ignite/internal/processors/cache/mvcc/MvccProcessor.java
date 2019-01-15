@@ -237,4 +237,11 @@ public interface MvccProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed to initialize.
      */
     void ensureStarted() throws IgniteCheckedException;
+
+    /**
+     * Cache stop callback.
+     * @param cctx Cache context.
+     *
+     */
+    void onCacheStop(GridCacheContext cctx);
 }
