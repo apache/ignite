@@ -2,6 +2,7 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -119,6 +120,22 @@ public class GridAffinityAssignmentTest {
         assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(0));
         assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(1));
         assertTrue(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(2));
+
+        assertEquals(4, gridAffinityAssignment.getIds(0).size());
+        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode1.id()));
+        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode2.id()));
+        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode3.id()));
+        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode4.id()));
+
+        assertEquals(4, gridAffinityAssignment.getIds(1).size());
+        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode1.id()));
+        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode2.id()));
+        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode3.id()));
+        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode4.id()));
+
+        assertEquals(2, gridAffinityAssignment.getIds(2).size());
+        assertTrue(gridAffinityAssignment.getIds(2).contains(clusterNode5.id()));
+        assertTrue(gridAffinityAssignment.getIds(2).contains(clusterNode6.id()));
 
         try {
             gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);

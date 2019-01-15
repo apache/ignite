@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -73,18 +73,13 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     }
 
     /** {@inheritDoc} */
-    @Override public HashSet<UUID> getIds(int part) {
+    @Override public Collection<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
         List<ClusterNode> nodes = assignment.get(part);
 
-        HashSet<UUID> ids = U.newHashSet(nodes.size());
-
-        for (int i = 0; i < nodes.size(); i++)
-            ids.add(nodes.get(i).id());
-
-        return ids;
+        return F.viewReadOnly(nodes, F.node2id());
     }
 
     /** {@inheritDoc} */

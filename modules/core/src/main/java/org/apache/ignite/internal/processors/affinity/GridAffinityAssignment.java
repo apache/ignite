@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.BitSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -51,9 +50,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Map of backup node partitions. */
     private final Map<UUID, Set<Integer>> backup;
-
-    /** Assignment node IDs */
-    private transient volatile List<HashSet<UUID>> assignmentIds;
 
     /** Nodes having primary or backup partition assignments. */
     private transient volatile Set<ClusterNode> nodes;
@@ -88,29 +84,25 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = Collections.unmodifiableList(assignment);
+        this.assignment = assignment;
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
 
         // Temporary mirrors with modifiable partition's collections.
-        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
+        Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>(assignment.size());
         Map<UUID, Set<Integer>> tmpBackup = new HashMap<>();
-        boolean isFirst;
+        boolean isPrimary;
 
         for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
-            isFirst = true;
+            isPrimary = true;
 
             for (ClusterNode node : assignment.get(p)) {
                 UUID id = node.id();
 
-                Map<UUID, Set<Integer>> tmp = isFirst ? tmpPrimary : tmpBackup;
+                Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
 
-                tmp.computeIfAbsent(id, new Function<UUID, Set<Integer>>() {
-                    @Override public Set<Integer> apply(UUID uuid) {
-                        return new BitSetIntSet(partsCnt);
-                    }
-                }).add(p);
+                tmp.computeIfAbsent(id, uuid -> new BitSetIntSet()).add(p);
 
-                isFirst =  false;
+                isPrimary =  false;
             }
         }
 
@@ -171,28 +163,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    @Override public HashSet<UUID> getIds(int part) {
+    @Override public Collection<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        List<HashSet<UUID>> assignmentIds0 = assignmentIds;
-
-        if (assignmentIds0 == null) {
-            assignmentIds0 = new ArrayList<>();
-
-            for (List<ClusterNode> assignmentPart : assignment) {
-                HashSet<UUID> partIds = new HashSet<>();
-
-                for (ClusterNode node : assignmentPart)
-                    partIds.add(node.id());
-
-                assignmentIds0.add(partIds);
-            }
-
-            assignmentIds = assignmentIds0;
-        }
-
-        return assignmentIds0.get(part);
+        return F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /** {@inheritDoc} */

@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Cached affinity calculations.
@@ -56,7 +59,7 @@ public interface AffinityAssignment {
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    public HashSet<UUID> getIds(int part);
+    public Collection<UUID> getIds(int part);
 
     /**
      * @return Nodes having parimary and backup assignments.
