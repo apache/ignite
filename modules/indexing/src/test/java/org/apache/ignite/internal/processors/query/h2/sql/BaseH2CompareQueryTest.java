@@ -38,7 +38,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -120,7 +120,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void createCaches() {
         cacheOrg = jcache(ignite, cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class), ORG, Integer.class, Organization.class);
         cachePers = ignite.cache(PERS);
@@ -130,7 +129,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void initCacheAndDbData() throws SQLException {
         int idGen = 0;
 
@@ -258,9 +256,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-705", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-705")
     @Test
     public void testAllExamples() throws Exception {
 //        compareQueryRes0("select ? limit ? offset ?");

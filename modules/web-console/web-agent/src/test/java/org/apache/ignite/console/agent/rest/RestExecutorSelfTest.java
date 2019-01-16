@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -178,7 +179,7 @@ public class RestExecutorSelfTest {
     ) throws Exception {
         try(
             Ignite ignite = Ignition.getOrStart(nodeCfg);
-            RestExecutor exec = new RestExecutor(keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites)
+            RestExecutor exec = new RestExecutor(false, keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites)
         ) {
             Map<String, Object> params = new HashMap<>();
             params.put("cmd", "top");
@@ -216,7 +217,7 @@ public class RestExecutorSelfTest {
     @Test
     public void nodeNoSslAgentWithSsl() throws Exception {
         // Check Web Agent with SSL.
-        ruleForExpectedException.expect(SSLHandshakeException.class);
+        ruleForExpectedException.expect(SSLException.class);
         checkRest(
             nodeConfiguration(""),
             HTTPS_URI,
@@ -305,7 +306,7 @@ public class RestExecutorSelfTest {
     /** */
     @Test
     public void differentCiphers2() throws Exception {
-        ruleForExpectedException.expect(SSLHandshakeException.class);
+        ruleForExpectedException.expect(SSLException.class);
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_2),
             HTTPS_URI,
