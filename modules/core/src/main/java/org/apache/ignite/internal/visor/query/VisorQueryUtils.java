@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 
@@ -319,19 +318,6 @@ public class VisorQueryUtils {
     }
 
     /**
-     * Get holder for query.
-     *
-     * @param ignite IgniteEx instance.
-     * @param qryId Query ID to get holder.
-     * @return Query holder for specified query ID or {@code null} if holder is not exist.
-     */
-    @Nullable public static VisorQueryHolder getQueryHolderIfExists(final IgniteEx ignite, final String qryId) {
-        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-
-        return storage.get(qryId);
-    }
-
-    /**
      * Remove query holder from local storage for query with specified ID and cancel query if it is in progress.
      *
      * @param ignite IgniteEx instance.
@@ -404,14 +390,15 @@ public class VisorQueryUtils {
                 VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
 
                 try {
-                    VisorQueryHolder h = getQueryHolder(ignite, holder.getQueryID());
+                    // Ensure holder was not removed from node local storage from separate thread if user cancel query.
+                    VisorQueryHolder actualHolder = getQueryHolder(ignite, holder.getQueryID());
 
                     Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
                     if (meta == null)
-                        h.setError(new SQLException("Fail to execute query. No metadata available."));
+                        actualHolder.setError(new SQLException("Fail to execute query. No metadata available."));
                     else {
-                        h.setCursor(cur);
+                        actualHolder.setCursor(cur);
 
                         List<VisorQueryField> names = new ArrayList<>(meta.size());
 
@@ -419,11 +406,11 @@ public class VisorQueryUtils {
                             names.add(new VisorQueryField(col.schemaName(), col.typeName(),
                                 col.fieldName(), col.fieldTypeName()));
 
-                        h.setColumns(names);
+                        actualHolder.setColumns(names);
 
-                        scheduleQueryHolderRemoval(ignite, h.getQueryID());
+                        scheduleQueryHolderRemoval(ignite, actualHolder.getQueryID());
 
-                        fetchQueryRows(h);
+                        fetchQueryRows(actualHolder);
                     }
                 }
                 catch (Throwable e) {
@@ -472,13 +459,14 @@ public class VisorQueryUtils {
                 }
 
                 try {
-                    VisorQueryHolder h = getQueryHolder(ignite, holder.getQueryID());
+                    // Ensure holder was not removed from node local storage from separate thread if user cancel query.
+                    VisorQueryHolder actualHolder = getQueryHolder(ignite, holder.getQueryID());
 
-                    h.setCursor(cur);
+                    actualHolder.setCursor(cur);
 
-                    scheduleQueryHolderRemoval(ignite, h.getQueryID());
+                    scheduleQueryHolderRemoval(ignite, actualHolder.getQueryID());
 
-                    fetchQueryRows(h);
+                    fetchQueryRows(actualHolder);
                 }
                 catch (Throwable e) {
                     U.closeQuiet(cur);
@@ -538,11 +526,15 @@ public class VisorQueryUtils {
     public static void scheduleQueryHolderRemoval(final IgniteEx ignite, final String qryId) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
-                VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
+                ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+
+                VisorQueryHolder holder = storage.get(qryId);
 
                 if (holder != null) {
                     if (holder.isAccessed()) {
                         holder.setAccessed(false);
+
+                        // Holder was accessed, we need to keep it for one more period.
                         scheduleQueryHolderRemoval(ignite, qryId);
                     }
                     else {
