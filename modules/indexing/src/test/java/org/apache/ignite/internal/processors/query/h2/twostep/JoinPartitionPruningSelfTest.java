@@ -209,7 +209,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         createPartitionedTable("t3",
             pkColumn("k1"),
             affinityColumn("ak2"),
-            "v3"
+            "v3",
+            "v4"
         );
 
         // Replicated table.
@@ -308,11 +309,33 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "1", "2", "3", "4"
         );
 
+        // Multi-way co-located JOIN.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 INNER JOIN t3 ON t1.k1 = t3.ak2 " +
+                "WHERE t1.k1 = ? AND t2.ak2 = ? AND t3.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "1", "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 INNER JOIN t3 ON t1.k1 = t3.ak2 " +
+                "WHERE t1.k1 = ? AND t2.ak2 = ? AND t3.ak2 = ?",
+            (res) -> assertNoRequests(),
+            "1", "2", "3"
+        );
+
         // No transfer through intermediate table.
-        // TODO
+        execute("SELECT * FROM t1 INNER JOIN t3 ON t1.k1 = t3.v3 INNER JOIN t2 ON t3.v4 = t2.ak2 " +
+                "WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "1"
+        );
 
         // No transfer through disjunction.
-        // TODO
+        execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = ? OR t1.k1 = t2.ak2",
+            (res) -> assertNoPartitions(),
+            "1"
+        );
     }
 
     /**
