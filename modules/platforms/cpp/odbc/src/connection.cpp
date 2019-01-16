@@ -23,7 +23,7 @@
 
 #include <ignite/common/fixed_size_array.h>
 
-#include <ignite/network/ssl/ssl_api.h>
+#include <ignite/network/network.h>
 
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"

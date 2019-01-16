@@ -183,9 +183,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\network\end_point.h" />
+    <ClInclude Include="..\..\include\ignite\network\network.h" />
     <ClInclude Include="..\..\include\ignite\network\utils.h" />
     <ClInclude Include="..\..\include\ignite\network\socket_client.h" />
-    <ClInclude Include="..\..\include\ignite\network\ssl\ssl_api.h" />
     <ClInclude Include="..\..\include\ignite\network\tcp_range.h" />
     <ClInclude Include="..\..\src\network\ssl\secure_socket_client.h" />
     <ClInclude Include="..\..\src\network\ssl\ssl_gateway.h" />
@@ -194,8 +194,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\net\utils.cpp" />
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
+    <ClCompile Include="..\..\src\network\network.cpp" />
     <ClCompile Include="..\..\src\network\ssl\secure_socket_client.cpp" />
-    <ClCompile Include="..\..\src\network\ssl\ssl_api.cpp" />
     <ClCompile Include="..\..\src\network\ssl\ssl_gateway.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

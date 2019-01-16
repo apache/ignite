@@ -21,7 +21,7 @@
 #include <sstream>
 
 #include <ignite/common/fixed_size_array.h>
-#include <ignite/network/ssl/ssl_api.h>
+#include <ignite/network/network.h>
 
 #include "impl/message.h"
 #include "impl/remote_type_updater.h"

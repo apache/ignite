@@ -21,9 +21,6 @@
     <ClInclude Include="..\..\include\ignite\network\tcp_range.h">
       <Filter>Code\network</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\network\ssl\ssl_api.h">
-      <Filter>Code\network\ssl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\network\utils.h">
       <Filter>Code\network</Filter>
     </ClInclude>
@@ -36,6 +33,9 @@
     <ClInclude Include="..\..\src\network\tcp_socket_client.h">
       <Filter>Code\network</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\network\network.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp">
@@ -44,13 +44,13 @@
     <ClCompile Include="..\..\src\network\ssl\secure_socket_client.cpp">
       <Filter>Code\network\ssl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\network\ssl\ssl_api.cpp">
-      <Filter>Code\network\ssl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\network\ssl\ssl_gateway.cpp">
       <Filter>Code\network\ssl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\os\win\src\net\utils.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\network.cpp">
       <Filter>Code\network</Filter>
     </ClCompile>
   </ItemGroup>
