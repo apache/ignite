@@ -234,6 +234,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     public void testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
     }

@@ -190,7 +190,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-590")
+    @Ignore(value = "https://issues.apache.org/jira/browse/IGNITE-590")
     @Test
     public void testIdleConnection() throws Exception {
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.

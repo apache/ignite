@@ -79,6 +79,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
     public void testRackspace() throws Exception {
         testCloudProvider("rackspace-cloudservers-us");
     }
