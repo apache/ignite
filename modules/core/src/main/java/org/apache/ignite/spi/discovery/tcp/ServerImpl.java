@@ -209,6 +209,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private RingMessageWorker msgWorker;
 
+    /** Thread executing message worker */
+    private Thread msgWorkerThread;
+
     /** Client message workers. */
     protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap<>();
 
@@ -359,7 +362,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         msgWorker = new RingMessageWorker(log);
 
-        new MessageWorkerDiscoveryThread(msgWorker, log).start();
+        msgWorkerThread = new MessageWorkerDiscoveryThread(msgWorker, log);
+        msgWorkerThread.start();
 
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer(log);
@@ -392,6 +396,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         spi.stats.onJoinStarted();
 
         joinTopology();
+
+        if (locNode.order() == 1)
+            U.enhanceThreadName(msgWorkerThread, "crd");
 
         spi.stats.onJoinFinished();
 
@@ -2668,7 +2675,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker", log, 10, getWorkerRegistry(spi));
+            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi));
 
             initConnectionCheckThreshold();
 
@@ -2866,6 +2873,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Reset the failure flag.
                 failureThresholdReached = false;
+            }
+
+            if (next != null && sock != null) {
+                // Messages that change topology.
+                if (msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodeFailedMessage ||
+                    msg instanceof TcpDiscoveryNodeAddFinishedMessage || msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    U.enhanceThreadName(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+                        + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
+                }
             }
 
             spi.stats.onMessageProcessingFinished(msg);
@@ -5834,7 +5850,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi));
+            super(spi.ignite().name(), "tcp-disco-srvr-[]", log, getWorkerRegistry(spi));
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -5881,6 +5897,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
+                U.enhanceThreadName(":" + port);
+
                 while (!isCancelled()) {
                     Socket sock;
 
@@ -5975,7 +5993,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param sock Socket to read data from.
          */
         SocketReader(Socket sock) {
-            super(spi.ignite().name(), "tcp-disco-sock-reader", log);
+            super(spi.ignite().name(), "tcp-disco-sock-reader-[]", log);
 
             this.sock = sock;
 
@@ -6105,6 +6123,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
+
+                    U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
+                        + ":" + sock.getPort() + (req.client() ? " client" : ""));
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
@@ -6584,6 +6605,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isInfoEnabled())
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
                         ", rmtPort=" + sock.getPort());
+
+                if (isLocalNodeCoordinator() && !ring.hasRemoteServerNodes())
+                    U.enhanceThreadName(msgWorkerThread, "crd");
             }
         }
 
@@ -6873,7 +6897,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null);
+            super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
+                + ' ' + sock.getInetAddress().getHostAddress()
+                + ":" + sock.getPort() + ']', log, Math.max(spi.metricsUpdateFreq, 10), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
