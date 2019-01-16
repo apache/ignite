@@ -23,8 +23,10 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,10 +35,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CommunicationFailureContext;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -52,6 +56,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
@@ -89,7 +94,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         assert nodes > 1;
 
         sesTimeout = 2000;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(nodes);
 
@@ -123,7 +128,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
     @Test
     public void testNoOpCommunicationErrorResolve_3() throws Exception {
         sesTimeout = 2000;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(3);
 
@@ -172,7 +177,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         testCommSpi = true;
 
         sesTimeout = 2000;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGrid(0);
 
@@ -215,13 +220,13 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         testCommSpi = true;
 
         sesTimeout = 2000;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGrid(0);
 
         startGridsMultiThreaded(1, 3);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi commSpi = ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(3));
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.testSpi(ignite(3));
 
         commSpi.pingStartLatch = new CountDownLatch(1);
         commSpi.pingLatch = new CountDownLatch(1);
@@ -333,11 +338,11 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
     private void communicationFailureResolve_KillNodes(int startNodes, Collection<Long> killNodes) throws Exception {
         testCommSpi = true;
 
-        commFailureRslvr = ZookeeperDiscoverySpiTest.TestNodeKillCommunicationFailureResolver.factory(killNodes);
+        commFailureRslvr = TestNodeKillCommunicationFailureResolver.factory(killNodes);
 
         startGrids(startNodes);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi commSpi = ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(0));
+        ZkTestCommunicationSpi commSpi = ZkTestCommunicationSpi.testSpi(ignite(0));
 
         commSpi.checkRes = new BitSet(startNodes);
 
@@ -385,7 +390,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         sesTimeout = 2000;
 
         testCommSpi = true;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.KillCoordinatorCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = KillCoordinatorCommunicationFailureResolver.FACTORY;
 
         startGrids(10);
 
@@ -397,7 +402,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
             info("Iteration: " + i);
 
             for (Ignite node : G.allGrids())
-                ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(node).initCheckResult(10);
+                ZkTestCommunicationSpi.testSpi(node).initCheckResult(10);
 
             UUID crdId = ignite(crd).cluster().localNode().id();
 
@@ -430,7 +435,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         sesTimeout = 2000;
 
         testCommSpi = true;
-        commFailureRslvr = ZookeeperDiscoverySpiTest.KillRandomCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = KillRandomCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(10);
 
@@ -450,7 +455,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
             ZookeeperDiscoverySpi spi = null;
 
             for (Ignite node : G.allGrids()) {
-                ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(node).initCheckResult(100);
+                ZkTestCommunicationSpi.testSpi(node).initCheckResult(100);
 
                 spi = spi(node);
             }
@@ -470,7 +475,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
             startGrid(nodeIdx++);
 
-            nodesCnt = nodesCnt - ZookeeperDiscoverySpiTest.KillRandomCommunicationFailureResolver.LAST_KILLED_NODES.size() + 1;
+            nodesCnt = nodesCnt - KillRandomCommunicationFailureResolver.LAST_KILLED_NODES.size() + 1;
 
             waitForTopology(nodesCnt);
         }
@@ -486,9 +491,9 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(3);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(3, 0, 1);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(3, 0, 1);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(3, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(3, 0, 1);
+        ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(3, 0, 1);
+        ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(3, 2);
 
         UUID killedId = nodeId(2);
 
@@ -517,11 +522,11 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         startGridsMultiThreaded(3, 2);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(5, 0, 1);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(5, 0, 1);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(5, 2, 3, 4);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(3)).initCheckResult(5, 2, 3, 4);
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(ignite(4)).initCheckResult(5, 2, 3, 4);
+        ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(5, 0, 1);
+        ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(5, 0, 1);
+        ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(5, 2, 3, 4);
+        ZkTestCommunicationSpi.testSpi(ignite(3)).initCheckResult(5, 2, 3, 4);
+        ZkTestCommunicationSpi.testSpi(ignite(4)).initCheckResult(5, 2, 3, 4);
 
         ZookeeperDiscoverySpi spi = spi(ignite(0));
 
@@ -594,7 +599,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         testCommSpi = true;
         sesTimeout = 5000;
 
-        final ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver rslvr = new ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver();
+        final CacheInfoCommunicationFailureResolver rslvr = new CacheInfoCommunicationFailureResolver();
 
         commFailureRslvr = new IgniteOutClosure<CommunicationFailureResolver>() {
             @Override public CommunicationFailureResolver apply() {
@@ -688,7 +693,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
         testCommSpi = true;
         sesTimeout = 5000;
 
-        final ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver rslvr = new ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver();
+        final CacheInfoCommunicationFailureResolver rslvr = new CacheInfoCommunicationFailureResolver();
 
         commFailureRslvr = new IgniteOutClosure<CommunicationFailureResolver>() {
             @Override public CommunicationFailureResolver apply() {
@@ -719,7 +724,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         rslvr.latch = new CountDownLatch(1);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(srv0).initCheckResult(2, 0);
+        ZkTestCommunicationSpi.testSpi(srv0).initCheckResult(2, 0);
 
         spi.resolveCommunicationFailure(spi.getRemoteNodes().iterator().next(), new Exception("test"));
 
@@ -756,8 +761,8 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
     private void checkResolverCachesInfo(Ignite crd, Map<String, T3<Integer, Integer, Integer>> expCaches)
         throws Exception
     {
-        ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver rslvr =
-            (ZookeeperDiscoverySpiTest.CacheInfoCommunicationFailureResolver)crd.configuration().getCommunicationFailureResolver();
+        CacheInfoCommunicationFailureResolver rslvr =
+            (CacheInfoCommunicationFailureResolver)crd.configuration().getCommunicationFailureResolver();
 
         assertNotNull(rslvr);
 
@@ -765,7 +770,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         rslvr.latch = new CountDownLatch(1);
 
-        ZookeeperDiscoverySpiTest.ZkTestCommunicationSpi.testSpi(crd).initCheckResult(crd.cluster().nodes().size(), 0);
+        ZkTestCommunicationSpi.testSpi(crd).initCheckResult(crd.cluster().nodes().size(), 0);
 
         spi.resolveCommunicationFailure(spi.getRemoteNodes().iterator().next(), new Exception("test"));
 
@@ -784,7 +789,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
     public void testCommunicationFailureResolve_ConcurrentDiscoveyEvents() throws Exception {
         sesTimeout = 5000;
 
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         final int INIT_NODES = 5;
 
@@ -901,7 +906,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
     public void testCommunicationFailureResolve_ConcurrentMultinode() throws Exception {
         sesTimeout = 5000;
 
-        commFailureRslvr = ZookeeperDiscoverySpiTest.NoOpCommunicationFailureResolver.FACTORY;
+        commFailureRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(5);
 
@@ -926,5 +931,227 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
                 return null;
             }
         }, 30, "test-resolve-failure");
+    }
+
+    /** */
+    private static class CacheInfoCommunicationFailureResolver implements CommunicationFailureResolver {
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** */
+        Map<String, CacheConfiguration<?, ?>>  caches;
+
+        /** */
+        Map<String, List<List<ClusterNode>>> affMap;
+
+        /** */
+        Map<String, List<List<ClusterNode>>> ownersMap;
+
+        /** */
+        volatile CountDownLatch latch;
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            assert latch != null;
+            assert latch.getCount() == 1L : latch.getCount();
+
+            caches = ctx.startedCaches();
+
+            log.info("Resolver called, started caches: " + caches.keySet());
+
+            assertNotNull(caches);
+
+            affMap = new HashMap<>();
+            ownersMap = new HashMap<>();
+
+            for (String cache : caches.keySet()) {
+                affMap.put(cache, ctx.cacheAffinity(cache));
+                ownersMap.put(cache, ctx.cachePartitionOwners(cache));
+            }
+
+            latch.countDown();
+        }
+
+        /**
+         * @param expCaches Expected caches information (when late assignment doen and rebalance finished).
+         */
+        void checkCachesInfo(Map<String, T3<Integer, Integer, Integer>> expCaches) {
+            assertNotNull(caches);
+            assertNotNull(affMap);
+            assertNotNull(ownersMap);
+
+            for (Map.Entry<String, T3<Integer, Integer, Integer>> e : expCaches.entrySet()) {
+                String cacheName = e.getKey();
+
+                int parts = e.getValue().get1();
+                int backups = e.getValue().get2();
+                int expNodes = e.getValue().get3();
+
+                assertTrue(cacheName, caches.containsKey(cacheName));
+
+                CacheConfiguration ccfg = caches.get(cacheName);
+
+                assertEquals(cacheName, ccfg.getName());
+
+                if (ccfg.getCacheMode() == CacheMode.REPLICATED)
+                    assertEquals(Integer.MAX_VALUE, ccfg.getBackups());
+                else
+                    assertEquals(backups, ccfg.getBackups());
+
+                assertEquals(parts, ccfg.getAffinity().partitions());
+
+                List<List<ClusterNode>> aff = affMap.get(cacheName);
+
+                assertNotNull(cacheName, aff);
+                assertEquals(parts, aff.size());
+
+                List<List<ClusterNode>> owners = ownersMap.get(cacheName);
+
+                assertNotNull(cacheName, owners);
+                assertEquals(parts, owners.size());
+
+                for (int i = 0; i < parts; i++) {
+                    List<ClusterNode> partAff = aff.get(i);
+
+                    assertEquals(cacheName, expNodes, partAff.size());
+
+                    List<ClusterNode> partOwners = owners.get(i);
+
+                    assertEquals(cacheName, expNodes, partOwners.size());
+
+                    assertTrue(cacheName, partAff.containsAll(partOwners));
+                    assertTrue(cacheName, partOwners.containsAll(partAff));
+                }
+            }
+        }
+
+        /** */
+        void reset() {
+            caches = null;
+            affMap = null;
+            ownersMap = null;
+        }
+    }
+
+    /** */
+    private static class NoOpCommunicationFailureResolver implements CommunicationFailureResolver {
+        /** */
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
+            = (IgniteOutClosure<CommunicationFailureResolver>)NoOpCommunicationFailureResolver::new;
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            // No-op.
+        }
+    }
+
+    /** */
+    private static class KillCoordinatorCommunicationFailureResolver implements CommunicationFailureResolver {
+        /** */
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
+            = (IgniteOutClosure<CommunicationFailureResolver>)KillCoordinatorCommunicationFailureResolver::new;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            List<ClusterNode> nodes = ctx.topologySnapshot();
+
+            ClusterNode node = nodes.get(0);
+
+            log.info("Resolver kills node: " + node.id());
+
+            ctx.killNode(node);
+        }
+    }
+
+    /** */
+    private static class KillRandomCommunicationFailureResolver implements CommunicationFailureResolver {
+        /** */
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
+            = (IgniteOutClosure<CommunicationFailureResolver>)KillRandomCommunicationFailureResolver::new;
+
+        /** Last killed nodes. */
+        static final Set<ClusterNode> LAST_KILLED_NODES = new HashSet<>();
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            LAST_KILLED_NODES.clear();
+
+            List<ClusterNode> nodes = ctx.topologySnapshot();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            int killNodes = rnd.nextInt(nodes.size() / 2);
+
+            log.info("Resolver kills nodes [total=" + nodes.size() + ", kill=" + killNodes + ']');
+
+            long srvCnt = nodes.stream().filter(node -> !node.isClient()).count();
+
+            Set<Integer> idxs = new HashSet<>();
+
+            while (idxs.size() < killNodes) {
+                int idx = rnd.nextInt(nodes.size());
+
+                if(!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
+                    continue;
+
+                idxs.add(idx);
+            }
+
+            for (int idx : idxs) {
+                ClusterNode node = nodes.get(idx);
+
+                log.info("Resolver kills node: " + node.id());
+
+                LAST_KILLED_NODES.add(node);
+
+                ctx.killNode(node);
+            }
+        }
+    }
+
+    /** */
+    private static class TestNodeKillCommunicationFailureResolver implements CommunicationFailureResolver {
+        /**
+         * @param killOrders Killed nodes order.
+         * @return Factory.
+         */
+        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders)  {
+            return new IgniteOutClosure<CommunicationFailureResolver>() {
+                @Override public CommunicationFailureResolver apply() {
+                    return new TestNodeKillCommunicationFailureResolver(killOrders);
+                }
+            };
+        }
+
+        /** */
+        final Collection<Long> killNodeOrders;
+
+        /**
+         * @param killNodeOrders Killed nodes order.
+         */
+        TestNodeKillCommunicationFailureResolver(Collection<Long> killNodeOrders) {
+            this.killNodeOrders = killNodeOrders;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            List<ClusterNode> nodes = ctx.topologySnapshot();
+
+            assertTrue(!nodes.isEmpty());
+
+            for (ClusterNode node : nodes) {
+                if (killNodeOrders.contains(node.order()))
+                    ctx.killNode(node);
+            }
+        }
     }
 }

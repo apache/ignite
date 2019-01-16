@@ -22,32 +22,21 @@ import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CommunicationFailureContext;
-import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -56,7 +45,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
@@ -458,45 +446,17 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
         waitForTopology(5);
     }
 
-    /**
-     *
-     */
-    @SuppressWarnings("MismatchedReadAndWriteOfArray")
-    static class TestAffinityFunction extends RendezvousAffinityFunction {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private int[] dummyData;
-
-        /**
-         * @param dataSize Dummy data size.
-         */
-        TestAffinityFunction(int dataSize) {
-            dummyData = new int[dataSize];
-
-            for (int i = 0; i < dataSize; i++)
-                dummyData[i] = i;
-        }
-    }
-
-    /**
-     *
-     */
+    /** */
     private static class C1 implements Serializable {
         // No-op.
     }
 
-    /**
-     *
-     */
+    /** */
     private static class C2 implements Serializable {
         // No-op.
     }
 
-    /**
-     *
-     */
+    /** */
     static class ZkTestNodeAuthenticator implements DiscoverySpiNodeAuthenticator {
         /**
          * @param failAuthNodes Node names which should not pass authentication.
@@ -580,240 +540,6 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
             /** {@inheritDoc} */
             @Override public boolean systemOperationAllowed(SecurityPermission perm) {
                 return true;
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    static class CacheInfoCommunicationFailureResolver implements CommunicationFailureResolver {
-        /** */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** */
-        Map<String, CacheConfiguration<?, ?>>  caches;
-
-        /** */
-        Map<String, List<List<ClusterNode>>> affMap;
-
-        /** */
-        Map<String, List<List<ClusterNode>>> ownersMap;
-
-        /** */
-        volatile CountDownLatch latch;
-
-        /** {@inheritDoc} */
-        @Override public void resolve(CommunicationFailureContext ctx) {
-            assert latch != null;
-            assert latch.getCount() == 1L : latch.getCount();
-
-            caches = ctx.startedCaches();
-
-            log.info("Resolver called, started caches: " + caches.keySet());
-
-            assertNotNull(caches);
-
-            affMap = new HashMap<>();
-            ownersMap = new HashMap<>();
-
-            for (String cache : caches.keySet()) {
-                affMap.put(cache, ctx.cacheAffinity(cache));
-                ownersMap.put(cache, ctx.cachePartitionOwners(cache));
-            }
-
-            latch.countDown();
-        }
-
-        /**
-         * @param expCaches Expected caches information (when late assignment doen and rebalance finished).
-         */
-        void checkCachesInfo(Map<String, T3<Integer, Integer, Integer>> expCaches) {
-            assertNotNull(caches);
-            assertNotNull(affMap);
-            assertNotNull(ownersMap);
-
-            for (Map.Entry<String, T3<Integer, Integer, Integer>> e : expCaches.entrySet()) {
-                String cacheName = e.getKey();
-
-                int parts = e.getValue().get1();
-                int backups = e.getValue().get2();
-                int expNodes = e.getValue().get3();
-
-                assertTrue(cacheName, caches.containsKey(cacheName));
-
-                CacheConfiguration ccfg = caches.get(cacheName);
-
-                assertEquals(cacheName, ccfg.getName());
-
-                if (ccfg.getCacheMode() == CacheMode.REPLICATED)
-                    assertEquals(Integer.MAX_VALUE, ccfg.getBackups());
-                else
-                    assertEquals(backups, ccfg.getBackups());
-
-                assertEquals(parts, ccfg.getAffinity().partitions());
-
-                List<List<ClusterNode>> aff = affMap.get(cacheName);
-
-                assertNotNull(cacheName, aff);
-                assertEquals(parts, aff.size());
-
-                List<List<ClusterNode>> owners = ownersMap.get(cacheName);
-
-                assertNotNull(cacheName, owners);
-                assertEquals(parts, owners.size());
-
-                for (int i = 0; i < parts; i++) {
-                    List<ClusterNode> partAff = aff.get(i);
-
-                    assertEquals(cacheName, expNodes, partAff.size());
-
-                    List<ClusterNode> partOwners = owners.get(i);
-
-                    assertEquals(cacheName, expNodes, partOwners.size());
-
-                    assertTrue(cacheName, partAff.containsAll(partOwners));
-                    assertTrue(cacheName, partOwners.containsAll(partAff));
-                }
-            }
-        }
-
-        /**
-         *
-         */
-        void reset() {
-            caches = null;
-            affMap = null;
-            ownersMap = null;
-        }
-    }
-
-    /**
-     *
-     */
-    static class NoOpCommunicationFailureResolver implements CommunicationFailureResolver {
-        /** */
-        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)NoOpCommunicationFailureResolver::new;
-
-        /** {@inheritDoc} */
-        @Override public void resolve(CommunicationFailureContext ctx) {
-            // No-op.
-        }
-    }
-
-    /**
-     *
-     */
-    static class KillCoordinatorCommunicationFailureResolver implements CommunicationFailureResolver {
-        /** */
-        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)KillCoordinatorCommunicationFailureResolver::new;
-
-        /** */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** {@inheritDoc} */
-        @Override public void resolve(CommunicationFailureContext ctx) {
-            List<ClusterNode> nodes = ctx.topologySnapshot();
-
-            ClusterNode node = nodes.get(0);
-
-            log.info("Resolver kills node: " + node.id());
-
-            ctx.killNode(node);
-        }
-    }
-
-    /**
-     *
-     */
-    static class KillRandomCommunicationFailureResolver implements CommunicationFailureResolver {
-        /** */
-        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY
-            = (IgniteOutClosure<CommunicationFailureResolver>)KillRandomCommunicationFailureResolver::new;
-
-        /** Last killed nodes. */
-        static final Set<ClusterNode> LAST_KILLED_NODES = new HashSet<>();
-
-        /** */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** {@inheritDoc} */
-        @Override public void resolve(CommunicationFailureContext ctx) {
-            LAST_KILLED_NODES.clear();
-
-            List<ClusterNode> nodes = ctx.topologySnapshot();
-
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            int killNodes = rnd.nextInt(nodes.size() / 2);
-
-            log.info("Resolver kills nodes [total=" + nodes.size() + ", kill=" + killNodes + ']');
-
-            long srvCnt = nodes.stream().filter(node -> !node.isClient()).count();
-
-            Set<Integer> idxs = new HashSet<>();
-
-            while (idxs.size() < killNodes) {
-                int idx = rnd.nextInt(nodes.size());
-
-                if(!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
-                    continue;
-
-                idxs.add(idx);
-            }
-
-            for (int idx : idxs) {
-                ClusterNode node = nodes.get(idx);
-
-                log.info("Resolver kills node: " + node.id());
-
-                LAST_KILLED_NODES.add(node);
-
-                ctx.killNode(node);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    static class TestNodeKillCommunicationFailureResolver implements CommunicationFailureResolver {
-        /**
-         * @param killOrders Killed nodes order.
-         * @return Factory.
-         */
-        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders)  {
-            return new IgniteOutClosure<CommunicationFailureResolver>() {
-                @Override public CommunicationFailureResolver apply() {
-                    return new TestNodeKillCommunicationFailureResolver(killOrders);
-                }
-            };
-        }
-
-        /** */
-        final Collection<Long> killNodeOrders;
-
-        /**
-         * @param killNodeOrders Killed nodes order.
-         */
-        TestNodeKillCommunicationFailureResolver(Collection<Long> killNodeOrders) {
-            this.killNodeOrders = killNodeOrders;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resolve(CommunicationFailureContext ctx) {
-            List<ClusterNode> nodes = ctx.topologySnapshot();
-
-            assertTrue(!nodes.isEmpty());
-
-            for (ClusterNode node : nodes) {
-                if (killNodeOrders.contains(node.order()))
-                    ctx.killNode(node);
             }
         }
     }

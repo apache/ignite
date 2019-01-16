@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -782,7 +783,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
     private CacheConfiguration<Object, Object> largeCacheConfiguration(String cacheName) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
 
-        ccfg.setAffinity(new ZookeeperDiscoverySpiTest.TestAffinityFunction(1024 * 1024));
+        ccfg.setAffinity(new TestAffinityFunction(1024 * 1024));
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
@@ -975,6 +976,26 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             stopAllGrids();
 
             evts.clear();
+        }
+    }
+
+    /** */
+    @SuppressWarnings("MismatchedReadAndWriteOfArray")
+    private static class TestAffinityFunction extends RendezvousAffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private int[] dummyData;
+
+        /**
+         * @param dataSize Dummy data size.
+         */
+        TestAffinityFunction(int dataSize) {
+            dummyData = new int[dataSize];
+
+            for (int i = 0; i < dataSize; i++)
+                dummyData[i] = i;
         }
     }
 }

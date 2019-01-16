@@ -288,7 +288,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
         waitForTopology(2);
 
         for (Ignite node : G.allGrids())
-            node.compute().broadcast(new ZookeeperDiscoverySpiTest.DummyCallable(null));
+            node.compute().broadcast(new ZookeeperDiscoverySpiTestShared.DummyCallable(null));
 
         awaitPartitionMapExchange();
 
@@ -370,7 +370,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
         waitForTopology(4);
 
         for (Ignite node : G.allGrids())
-            node.compute().broadcast(new ZookeeperDiscoverySpiTest.DummyCallable(null));
+            node.compute().broadcast(new ZookeeperDiscoverySpiTestShared.DummyCallable(null));
 
         startGrid(0);
 
