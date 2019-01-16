@@ -71,12 +71,11 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    //
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
         if(mdl != null) {
-            if (checkState(mdl))
+            if (isUpdateable(mdl))
                 return updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
             else {
                 environment.logger(getClass()).log(
@@ -94,7 +93,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    protected abstract boolean checkState(M mdl);
+    public abstract boolean isUpdateable(M mdl);
 
     /**
      * Used on update phase when given dataset is empty.
@@ -308,12 +307,12 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     }
 
     /**
-     * Creates {@code DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
      * of labels.
      *
      * @param new2Old Converter of new labels to old labels.
      * @param <L1> New labels type.
-     * @return {@code DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * @return {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
      * of labels.
      */
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
@@ -326,8 +325,8 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(M mdl) {
-                return old.checkState(mdl);
+            @Override public boolean isUpdateable(M mdl) {
+                return old.isUpdateable(mdl);
             }
 
             /** {@inheritDoc} */
@@ -362,4 +361,31 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         }
     }
 
+    /**
+     * Returns the trainer which returns identity model.
+     *
+     * @param <I> Type of model input.
+     * @param <L> Type of labels in dataset.
+     * @return Trainer which returns identity model.
+     */
+    public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
+        return new DatasetTrainer<IgniteModel<I, I>, L>() {
+            @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+        };
+    }
 }

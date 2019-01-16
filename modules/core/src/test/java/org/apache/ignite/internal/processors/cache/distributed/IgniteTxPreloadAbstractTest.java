@@ -84,9 +84,6 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      */
     @Test
     public void testRemoteTxPreloading() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         IgniteCache<String, Integer> cache = jcache(0);
 
         for (int i = 0; i < 10_000; i++)
@@ -166,9 +163,6 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      */
     @Test
     public void testLocalTxPreloadingPessimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         testLocalTxPreloading(PESSIMISTIC);
     }
 

@@ -401,7 +401,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCoordinatorVersion());
                         rowIo.setMvccLockCounter(pageAddr, idx, mvccCounter());
 
-                        // TODO Delta record IGNITE-7991
+                        // Actually, there is no need to log lock delta record into WAL.
 
                         setFlags(DIRTY);
                     }
