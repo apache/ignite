@@ -20,10 +20,12 @@ ACLOCAL_AMFLAGS =-I m4
 lib_LTLIBRARIES = libignite-network.la
 
 SUBDIRS = \
-	include
+	include \
+	os/linux/include
 
 AM_CPPFLAGS = \
 	-I$(srcdir)/include \
+	-I$(srcdir)/os/linux/include \
 	-I@top_srcdir@/common/include \
 	-I@top_srcdir@/common/os/linux/include \
 	-DIGNITE_IMPL \
@@ -46,6 +48,11 @@ libignite_network_la_DEPENDENCIES = \
 	@top_srcdir@/common/libignite-common.la
 
 libignite_binary_la_SOURCES = \
+	os/linux/src/net/net_utils.cpp \
+	os/linux/src/net/tcp_socket_client.cpp \
+	src/network/network.cpp \
+	src/network/ssl/secure_socket_client.cpp \
+	src/network/ssl/ssl_gateway.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

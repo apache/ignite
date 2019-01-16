@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite common library for C++], [2.8.0.34042], [dev@ignite.apache.org], [ignite-common], [ignite.apache.org])
+AC_INIT([Apache Ignite network library for C++], [2.7.0.30114], [dev@ignite.apache.org], [ignite-network], [ignite.apache.org])
 AC_CONFIG_SRCDIR(src)
 
 AC_CANONICAL_SYSTEM
@@ -57,6 +57,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES(Makefile include/Makefile os/linux/include/Makefile ignite-common.pc)
+AC_CONFIG_FILES(Makefile include/Makefile ignite-network.pc)
 
 AC_OUTPUT
