@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.EventListener;
 import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 
 /**
  * Listener for connections established from remote nodes.
  */
-public interface GridIoChannelListener {
+public interface GridIoChannelListener extends EventListener {
     /**
      * Handle {@link IgniteNioSocketChannel} creation event from remote connection.
      *
