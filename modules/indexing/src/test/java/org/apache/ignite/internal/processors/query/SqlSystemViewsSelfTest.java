@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -585,6 +586,75 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         if (!F.eqNotOrdered(allExpRows, allInfos))
             fail("Returned incorrect rows [expected=" + allExpRows + ", actual=" + allInfos + "].");
+
+        // Filter by cache name:
+        assertEquals(
+            Collections.singletonList(Arrays.asList("DDL_TABLE", "SQL_PUBLIC_DDL_TABLE")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        assertEquals(
+            Collections.singletonList(Arrays.asList("CACHE_SQL", "cache_sql")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME NOT LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        assertEquals(
+            Arrays.asList(
+                Arrays.asList("DDL_TABLE", "SQL_PUBLIC_DDL_TABLE", "SQL_PUBLIC_DDL_TABLE"),
+                Arrays.asList("CACHE_SQL", "cache_sql", "cache_sql")),
+            execSql("SELECT TABLE_NAME, TAB.CACHE_NAME, C.NAME " +
+                "FROM IGNITE.TABLES AS TAB JOIN IGNITE.CACHES AS C " +
+                "ON TAB.CACHE_ID = C.CACHE_ID " +
+                "ORDER BY C.NAME")
+        );
+    }
+
+    /**
+     * Dummy implementation of the mapper. Required to test "AFFINITY_COLUMN".
+     */
+    static class ConstantMapper implements AffinityKeyMapper {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 7018626316531791556L;
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey(Object key) {
+            return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            //NO-op
+        }
+    };
+
+    @Test
+    public void testTablesNullAffinityKey() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        AffinityKeyMapper fakeMapper = new ConstantMapper();
+
+        ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_KEY_FIELDS_CACHE").setAffinityMapper(fakeMapper)
+            .setQueryEntities(Collections.singleton(
+                // A cache with  no key fields
+                new QueryEntity(Object.class.getName(), "Object2")
+                    .addQueryField("name", String.class.getName(), null)
+                    .addQueryField("salary", Integer.class.getName(), null)
+                    .setTableName("NO_KEY_TABLE")
+            )));
+
+        List<List<String>> expected = Collections.singletonList(Arrays.asList("NO_KEY_TABLE", null));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME = 'NO_KEY_FIELDS_CACHE'"));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE AFFINITY_COLUMN IS NULL"));
     }
 
     /**
