@@ -120,9 +120,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleDynamicCaches() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         int caches = 10;
 
         int entries = 10;
