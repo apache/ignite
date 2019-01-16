@@ -2229,7 +2229,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     for (Map.Entry<UUID, GridDhtPartitionMap> remotes : node2part.entrySet()) {
                         UUID remoteNodeId = remotes.getKey();
 
-                        if (!joinedNodes.contains(locNodeId) && skipResetOwners)
+                        if (!joinedNodes.contains(remoteNodeId) && skipResetOwners)
                             continue;
 
                         GridDhtPartitionMap partMap = remotes.getValue();
