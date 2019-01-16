@@ -1138,23 +1138,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
-                        Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
-                            .mapToCompactIds(topVer, txNodes, baselineTop);
+                        if (baselineTop != null && baselineTop.consistentIds().contains(cctx.localNode().consistentId())) {
+                            Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
+                                .mapToCompactIds(topVer, txNodes, baselineTop);
 
-                        TxRecord txRecord = new TxRecord(
-                            state,
-                            nearXidVersion(),
-                            writeVersion(),
-                            participatingNodes
-                        );
+                            TxRecord txRecord = new TxRecord(
+                                state,
+                                nearXidVersion(),
+                                writeVersion(),
+                                participatingNodes
+                            );
 
-                        try {
-                            ptr = cctx.wal().log(txRecord);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to log TxRecord: " + txRecord, e);
+                            try {
+                                ptr = cctx.wal().log(txRecord);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to log TxRecord: " + txRecord, e);
 
-                            throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                                throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                            }
                         }
                     }
                 }
