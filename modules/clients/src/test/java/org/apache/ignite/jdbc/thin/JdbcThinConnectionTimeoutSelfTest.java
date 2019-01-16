@@ -64,6 +64,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setSqlFunctionClasses(JdbcThinConnectionTimeoutSelfTest.class);
+        cache.setIndexedTypes(Integer.class, Integer.class);
 
         cfg.setCacheConfiguration(cache);
 
@@ -86,9 +87,6 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
 
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        for (int i = 0; i < MAX_ROWS; ++i)
-            grid(0).cache(DEFAULT_CACHE_NAME).put((long)i, (long)i);
     }
 
     /**
