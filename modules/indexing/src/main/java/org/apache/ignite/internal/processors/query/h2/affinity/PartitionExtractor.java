@@ -203,7 +203,7 @@ public class PartitionExtractor {
 
         PartitionTable tbl = prepareTable(from, model);
 
-        return Collections.singletonList(tbl);
+        return tbl != null ? Collections.singletonList(tbl) : Collections.emptyList();
     }
 
     /**
@@ -291,6 +291,7 @@ public class PartitionExtractor {
             String affColName = null;
             String secondAffColName = null;
 
+            // TODO: Sync!
             for (Column col : tbl0.getColumns()) {
                 if (tbl0.isColumnForPartitionPruningStrict(col)) {
                     if (affColName == null)
