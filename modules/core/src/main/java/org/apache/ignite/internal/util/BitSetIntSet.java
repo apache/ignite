@@ -80,7 +80,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         return new Iterator<Integer>() {
             private int next = -1;
 
-            /** @{inheritDoc} */
+            /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 int nextBit = bitSet.nextSetBit(next + 1);
 
@@ -92,7 +92,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
                     return false;
             }
 
-            /** @{inheritDoc} */
+            /** {@inheritDoc} */
             @Override public Integer next() {
                 if (next == -1)
                     throw new NoSuchElementException();
@@ -143,7 +143,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         return alreadySet;
     }
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override public boolean containsAll(@NotNull Collection<?> c) {
         for(Object o : c) {
             if (!contains(o))
@@ -153,7 +153,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         return true;
     }
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override public boolean addAll(@NotNull Collection<? extends Integer> c) {
         boolean atLeastOneAdded = false;
 
@@ -172,7 +172,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         throw new UnsupportedOperationException();
     }
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override public boolean removeAll(@NotNull Collection<?> c) {
         boolean atLeastOneRemoved = false;
 
@@ -184,7 +184,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         return atLeastOneRemoved;
     }
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override public void clear() {
         bitSet.clear();
 
