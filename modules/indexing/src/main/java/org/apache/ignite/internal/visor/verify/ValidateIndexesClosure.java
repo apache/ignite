@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,7 +56,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -154,7 +159,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     /**
      *
      */
-    private VisorValidateIndexesJobResult call0() throws Exception {
+    private VisorValidateIndexesJobResult call0() {
         Set<Integer> grpIds = new HashSet<>();
 
         Set<String> missingCaches = new HashSet<>();
@@ -295,31 +300,56 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     private Map<Integer, IndexIntegrityCheckIssue> integrityCheckIndexesPartitions(Set<Integer> grpIds) {
         List<Future<T2<Integer, IndexIntegrityCheckIssue>>> integrityCheckFutures = new ArrayList<>(grpIds.size());
 
-        for (Integer grpId: grpIds) {
-            final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
-
-            if (grpCtx == null || !grpCtx.persistenceEnabled()) {
-                integrityCheckedIndexes.incrementAndGet();
-
-                continue;
-            }
-
-            Future<T2<Integer, IndexIntegrityCheckIssue>> checkFut =
-                    calcExecutor.submit(new Callable<T2<Integer, IndexIntegrityCheckIssue>>() {
-                        @Override public T2<Integer, IndexIntegrityCheckIssue> call() throws Exception {
-                            IndexIntegrityCheckIssue issue = integrityCheckIndexPartition(grpCtx);
-
-                            return new T2<>(grpCtx.groupId(), issue);
-                        }
-                    });
-
-            integrityCheckFutures.add(checkFut);
-        }
-
         Map<Integer, IndexIntegrityCheckIssue> integrityCheckResults = new HashMap<>();
 
         int curFut = 0;
+
+        IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+        DbCheckpointListener lsnr = null;
+
         try {
+            AtomicBoolean cpFlag = new AtomicBoolean();
+
+            if (db instanceof GridCacheDatabaseSharedManager) {
+                lsnr = new DbCheckpointListener() {
+                    @Override public void onMarkCheckpointBegin(Context ctx) {
+                        /* No-op. */
+                    }
+
+                    @Override public void onCheckpointBegin(Context ctx) {
+                        if (ctx.hasPages())
+                            cpFlag.set(true);
+                    }
+                };
+
+                ((GridCacheDatabaseSharedManager)db).addCheckpointListener(lsnr);
+
+                if (isCheckpointNow(db))
+                    throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
+            }
+
+            for (Integer grpId: grpIds) {
+                final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+
+                if (grpCtx == null || !grpCtx.persistenceEnabled()) {
+                    integrityCheckedIndexes.incrementAndGet();
+
+                    continue;
+                }
+
+                Future<T2<Integer, IndexIntegrityCheckIssue>> checkFut =
+                        calcExecutor.submit(new Callable<T2<Integer, IndexIntegrityCheckIssue>>() {
+                            @Override public T2<Integer, IndexIntegrityCheckIssue> call() throws Exception {
+                                IndexIntegrityCheckIssue issue = integrityCheckIndexPartition(grpCtx, cpFlag);
+
+                                return new T2<>(grpCtx.groupId(), issue);
+                            }
+                        });
+
+                integrityCheckFutures.add(checkFut);
+            }
+
             for (Future<T2<Integer, IndexIntegrityCheckIssue>> fut : integrityCheckFutures) {
                 T2<Integer, IndexIntegrityCheckIssue> res = fut.get();
 
@@ -333,14 +363,19 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             throw unwrapFutureException(e);
         }
+        finally {
+           if (db instanceof GridCacheDatabaseSharedManager && lsnr != null)
+               ((GridCacheDatabaseSharedManager)db).removeCheckpointListener(lsnr);
+        }
 
         return integrityCheckResults;
     }
 
     /**
      * @param gctx Cache group context.
+     * @param cpFlag Checkpoint status flag.
      */
-    private IndexIntegrityCheckIssue integrityCheckIndexPartition(CacheGroupContext gctx) {
+    private IndexIntegrityCheckIssue integrityCheckIndexPartition(CacheGroupContext gctx, AtomicBoolean cpFlag) {
         GridKernalContext ctx = ignite.context();
         GridCacheSharedContext cctx = ctx.cache().context();
 
@@ -362,6 +397,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 buf.clear();
+
+                if (cpFlag.get())
+                    throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
 
                 pageStore.read(pageId, buf, true);
             }
@@ -728,5 +766,18 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         else
             return new IgniteException(e.getCause());
     }
+    
+    /**
+     * @param db Shared DB manager.
+     * @return {@code True} if checkpoint is now, {@code False} otherwise.
+     */
+    private boolean isCheckpointNow(IgniteCacheDatabaseSharedManager db) {
+        GridCacheDatabaseSharedManager.CheckpointProgress progress =
+                ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
 
+        if (progress == null)
+            return false;
+
+        return progress.started() && !progress.finished();
+    }
 }
