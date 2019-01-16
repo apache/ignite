@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -171,8 +172,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     }
 
     /**
-     * Get affinity node IDs for partition.
-     *
+     * Get affinity node IDs for partition as unmodifiable collection.
+     * Depending on AFFINITY_BACKUPS_THRESHOLD we returned newly allocated HashSet or view on List.
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
@@ -184,7 +185,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
             List<Collection<UUID>> assignmentIds0 = assignmentIds;
 
             if (assignmentIds0 == null) {
-                assignmentIds0 = assignments2ids(assignment);
+                assignmentIds0 = new ArrayList<>(assignment.size());
+
+                for (List<ClusterNode> assignmentPart : assignment)
+                    assignmentIds0.add(assignments2ids(assignmentPart));
 
                 assignmentIds = assignmentIds0;
             }
@@ -208,7 +212,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                     res.addAll(nodes);
             }
 
-            nodes = res;
+            nodes = Collections.unmodifiableSet(res);
         }
 
         return res;
@@ -228,7 +232,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                     res.add(nodes.get(0));
             }
 
-            primaryPartsNodes = res;
+            primaryPartsNodes = Collections.unmodifiableSet(res);
         }
 
         return res;

@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -43,9 +45,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final int backups;
 
-    /** Assignment node IDs */
-    private volatile List<Collection<UUID>> assignmentIds;
-
     /**
      * @param assign Assignment.
      */
@@ -58,12 +57,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return idealAssignment;
+        return Collections.unmodifiableList(idealAssignment);
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignment() {
-        return assignment;
+        return Collections.unmodifiableList(assignment);
     }
 
     /** {@inheritDoc} */
@@ -84,18 +83,9 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (backups > AFFINITY_BACKUPS_THRESHOLD) {
-            List<Collection<UUID>> assignmentIds0 = assignmentIds;
-
-            if (assignmentIds0 == null) {
-                assignmentIds0 = assignments2ids(assignment);
-
-                assignmentIds = assignmentIds0;
-            }
-
-            return assignmentIds0.get(part);
-        } else
-            return F.viewReadOnly(assignment.get(part), F.node2id());
+        return backups > AFFINITY_BACKUPS_THRESHOLD
+            ? assignments2ids(assignment.get(part))
+            : F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /** {@inheritDoc} */
@@ -109,7 +99,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.addAll(nodes);
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
@@ -123,12 +113,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.add(nodes.get(0));
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
+        Set<Integer> res = new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -137,12 +127,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 res.add(p);
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> res = new HashSet<>();
+        Set<Integer> res = new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -158,7 +148,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         }
 
-        return res;
+        return Collections.unmodifiableSet(res);
     }
 
     /** {@inheritDoc} */

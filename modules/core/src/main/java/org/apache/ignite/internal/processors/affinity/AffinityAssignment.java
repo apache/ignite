@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -103,22 +104,16 @@ public interface AffinityAssignment {
     public int backups();
 
     /**
-     * Converts List of Cluster Nodes to Set of UUIDs.
-     * @param assignment Source assignment.
+     * Converts List of Cluster Nodes to HashSet of UUIDs wrapped as unmodifiable collection.
+     * @param assignmentPart Source assignment per partition.
      * @return List of deduplicated collections if ClusterNode's ids.
      */
-    public default List<Collection<UUID>> assignments2ids(List<List<ClusterNode>> assignment) {
-        List<Collection<UUID>> assignmentIds0 = new ArrayList<>(assignment.size());
+    public default Collection<UUID> assignments2ids(List<ClusterNode> assignmentPart) {
+        Collection<UUID> partIds = new HashSet<>(assignmentPart.size());
 
-        for (List<ClusterNode> assignmentPart : assignment) {
-            Collection<UUID> partIds = new HashSet<>(assignmentPart.size());
+        for (ClusterNode node : assignmentPart)
+            partIds.add(node.id());
 
-            for (ClusterNode node : assignmentPart)
-                partIds.add(node.id());
-
-            assignmentIds0.add(partIds);
-        }
-
-        return assignmentIds0;
+        return Collections.unmodifiableCollection(partIds);
     }
 }
