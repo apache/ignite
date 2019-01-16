@@ -32,6 +32,28 @@
 
 enum { OPERATION_SUCCESS = 1 };
 
+void FreeContext(SSL_CTX* ctx)
+{
+    using namespace ignite::network::ssl;
+
+    SslGateway &sslGateway = SslGateway::GetInstance();
+
+    assert(sslGateway.Loaded());
+
+    sslGateway.SSL_CTX_free_(ctx);
+}
+
+void FreeBio(BIO* bio)
+{
+    using namespace ignite::network::ssl;
+
+    SslGateway &sslGateway = SslGateway::GetInstance();
+
+    assert(sslGateway.Loaded());
+
+    sslGateway.BIO_free_all_(bio);
+}
+
 namespace ignite
 {
     namespace network
@@ -69,57 +91,41 @@ namespace ignite
                     context = MakeContext(certPath, keyPath, caPath);
 
                     if (!context)
-                    {
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Can not create SSL context. Aborting connect.");
-                    }
+                        ThrowSecureError("Can not create SSL context. Aborting connect");
                 }
 
-                SSL* ssl0 = reinterpret_cast<SSL*>(MakeSsl(context, hostname, port, blocking));
-                if (!ssl0)
-                    return false;
+                ssl = MakeSsl(context, hostname, port, blocking);
 
-                ssl = reinterpret_cast<void*>(ssl0);
+                assert(ssl != 0);
 
                 common::MethodGuard<SecureSocketClient> guard(this, &SecureSocketClient::CloseInteral);
 
-                int res = sslGateway.SSL_set_tlsext_host_name_(ssl0, hostname);
-                if (res != OPERATION_SUCCESS)
-                {
-                    std::string err = "Can not set host name for secure connection: " + GetSslError(ssl0, res);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
-                }
+                int res = sslGateway.SSL_set_tlsext_host_name_(ssl0, hostname);
+
+                if (res != OPERATION_SUCCESS)
+                    ThrowSecureError("Can not set host name for secure connection: " + GetSslError(ssl0, res));
 
                 sslGateway.SSL_set_connect_state_(ssl0);
 
                 bool connected = CompleteConnectInternal(ssl0, timeout);
 
                 if (!connected)
-                {
                     return false;
-                }
 
                 // Verify a server certificate was presented during the negotiation
                 X509* cert = sslGateway.SSL_get_peer_certificate_(ssl0);
                 if (cert)
                     sslGateway.X509_free_(cert);
                 else
-                {
-                    std::string err = "Remote host did not provide certificate: " + GetSslError(ssl0, res);
-
-                    return false;
-                }
+                    ThrowSecureError("Remote host did not provide certificate: " + GetSslError(ssl0, res));
 
                 // Verify the result of chain verification
                 // Verification performed according to RFC 4158
                 res = sslGateway.SSL_get_verify_result_(ssl0);
                 if (X509_V_OK != res)
-                {
-//                  std::string err = "Certificate chain verification failed: " + GetSslError(ssl0, res);
-
-                    return false;
-                }
+                    ThrowSecureError("Certificate chain verification failed: " + GetSslError(ssl0, res));
 
                 guard.Release();
 
@@ -138,16 +144,11 @@ namespace ignite
                 assert(sslGateway.Loaded());
 
                 if (!ssl)
-                {
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Trying to send data using closed connection");
-                }
+                    ThrowNetworkError("Trying to send data using closed connection");
 
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                int res = sslGateway.SSL_write_(ssl0, data, static_cast<int>(size));
-
-                return res;
+                return sslGateway.SSL_write_(ssl0, data, static_cast<int>(size));
             }
 
             int SecureSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
@@ -157,10 +158,7 @@ namespace ignite
                 assert(sslGateway.Loaded());
 
                 if (!ssl)
-                {
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Trying to receive data using closed connection");
-                }
+                    ThrowNetworkError("Trying to receive data using closed connection");
 
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
@@ -174,9 +172,7 @@ namespace ignite
                         return res;
                 }
 
-                res = sslGateway.SSL_read_(ssl0, buffer, static_cast<int>(size));
-
-                return res;
+                return sslGateway.SSL_read_(ssl0, buffer, static_cast<int>(size));
             }
 
             bool SecureSocketClient::IsBlocking() const
@@ -193,11 +189,13 @@ namespace ignite
 
                 const SSL_METHOD* method = sslGateway.SSLv23_client_method_();
                 if (!method)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get SSL method");
+                    ThrowSecureError("Can not get SSL method");
 
                 SSL_CTX* ctx = sslGateway.SSL_CTX_new_(method);
                 if (!ctx)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create new SSL context");
+                    ThrowSecureError("Can not create new SSL context");
+
+                common::DeinitGuard<SSL_CTX> guard(ctx, &FreeContext);
 
                 sslGateway.SSL_CTX_set_verify_(ctx, SSL_VERIFY_PEER, 0);
 
@@ -209,40 +207,22 @@ namespace ignite
 
                 long res = sslGateway.SSL_CTX_load_verify_locations_(ctx, cCaPath, 0);
                 if (res != OPERATION_SUCCESS)
-                {
-                    sslGateway.SSL_CTX_free_(ctx);
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not set Certificate Authority path for secure connection");
-                }
+                    ThrowSecureError("Can not set Certificate Authority path for secure connection");
 
                 res = sslGateway.SSL_CTX_use_certificate_chain_file_(ctx, certPath.c_str());
                 if (res != OPERATION_SUCCESS)
-                {
-                    sslGateway.SSL_CTX_free_(ctx);
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not set client certificate file for secure connection");
-                }
+                    ThrowSecureError("Can not set client certificate file for secure connection");
 
                 res = sslGateway.SSL_CTX_use_RSAPrivateKey_file_(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
                 if (res != OPERATION_SUCCESS)
-                {
-                    sslGateway.SSL_CTX_free_(ctx);
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not set private key file for secure connection");
-                }
+                    ThrowSecureError("Can not set private key file for secure connection");
 
                 const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
                 res = sslGateway.SSL_CTX_set_cipher_list_(ctx, PREFERRED_CIPHERS);
                 if (res != OPERATION_SUCCESS)
-                {
-                    sslGateway.SSL_CTX_free_(ctx);
+                    ThrowSecureError("Can not set ciphers list for secure connection");
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not set ciphers list for secure connection");
-                }
+                guard.Release();
 
                 return ctx;
             }
@@ -255,7 +235,9 @@ namespace ignite
 
                 BIO* bio = sslGateway.BIO_new_ssl_connect_(reinterpret_cast<SSL_CTX*>(context));
                 if (!bio)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create SSL connection.");
+                    ThrowSecureError("Can not create SSL connection");
+
+                common::DeinitGuard<BIO> guard(bio, &FreeBio);
 
                 blocking = sslGateway.BIO_set_nbio_(bio, 1) != OPERATION_SUCCESS;
 
@@ -266,20 +248,14 @@ namespace ignite
 
                 long res = sslGateway.BIO_set_conn_hostname_(bio, address.c_str());
                 if (res != OPERATION_SUCCESS)
-                {
-                    sslGateway.BIO_free_all_(bio);
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not set SSL connection hostname.");
-                }
+                    ThrowSecureError("Can not set SSL connection hostname");
 
                 SSL* ssl = 0;
                 sslGateway.BIO_get_ssl_(bio, &ssl);
                 if (!ssl)
-                {
-                    sslGateway.BIO_free_all_(bio);
+                    ThrowSecureError("Can not get SSL instance from BIO");
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get SSL instance from BIO.");
-                }
+                guard.Release();
 
                 return ssl;
             }
@@ -302,7 +278,7 @@ namespace ignite
                     int sslError = sslGateway.SSL_get_error_(ssl0, res);
 
                     if (IsActualError(sslError))
-                        return false;
+                        ThrowSecureError("Can not establish secure connection: " + GetSslError(ssl0, res));
 
                     int want = sslGateway.SSL_want_(ssl0);
 
@@ -312,7 +288,7 @@ namespace ignite
                         return false;
 
                     if (res != WaitResult::SUCCESS)
-                        return false;
+                        ThrowSecureError("Error while establishing secure connection: " + GetSslError(ssl0, res));
                 }
             }
 
@@ -379,6 +355,11 @@ namespace ignite
                 }
             }
 
+            void SecureSocketClient::ThrowSecureError(const std::string& err)
+            {
+                throw IgniteError(IgniteError::IGNITE_ERR_SECURE_CONNECTION_FAILURE, err.c_str());
+            }
+
             int SecureSocketClient::WaitOnSocket(void* ssl, int32_t timeout, bool rd)
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
@@ -399,9 +380,7 @@ namespace ignite
 
                     ss << "Can not get file descriptor from the SSL socket: " << fd << ", " << GetSslError(ssl, fd);
 
-                    std::string err = ss.str();
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
+                    ThrowNetworkError(ss.str());
                 }
 
                 do {

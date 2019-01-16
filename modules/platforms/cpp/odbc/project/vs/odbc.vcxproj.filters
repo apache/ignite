@@ -181,6 +181,9 @@
     <ClCompile Include="..\..\src\streaming\streaming_context.cpp">
       <Filter>Code\streaming</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ssl_mode.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">

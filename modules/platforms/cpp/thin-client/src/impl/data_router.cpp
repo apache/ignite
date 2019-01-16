@@ -80,7 +80,16 @@ namespace ignite
                     {
                         SP_DataChannel channel(new DataChannel(config, typeMgr));
 
-                        bool connected = channel.Get()->Connect(range.host, port, connectionTimeout);
+                        bool connected = false;
+
+                        try
+                        {
+                            connected = channel.Get()->Connect(range.host, port, connectionTimeout);
+                        }
+                        catch (const IgniteError&)
+                        {
+                            // No-op.
+                        }
 
                         if (connected)
                         {
@@ -231,7 +240,16 @@ namespace ignite
 
                     SP_DataChannel channel(new DataChannel(config, typeMgr));
 
-                    bool connected = channel.Get()->Connect(it->host, it->port, connectionTimeout);
+                    bool connected = false;
+
+                    try
+                    {
+                        connected = channel.Get()->Connect(it->host, it->port, connectionTimeout);
+                    }
+                    catch (const IgniteError&)
+                    {
+                        // No-op.
+                    }
 
                     if (connected)
                     {

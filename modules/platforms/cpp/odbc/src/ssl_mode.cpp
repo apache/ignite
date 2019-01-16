@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-#include "ignite/common/utils.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
+#include <ignite/common/utils.h>
+
+#include "ignite/odbc/ssl_mode.h"
 
 namespace ignite
 {

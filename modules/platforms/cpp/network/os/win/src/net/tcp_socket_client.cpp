@@ -121,14 +121,10 @@ namespace ignite
                 {
                     WSADATA wsaData;
 
-                    networkInited = (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
+                    networkInited = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
 
                     if (!networkInited)
-                    {
-                        std::string err = "Networking initialisation failed: " + GetLastSocketErrorMessage();
-
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
-                    }
+                        ThrowNetworkError("Networking initialisation failed: " + GetLastSocketErrorMessage());
                 }
             }
 
@@ -140,26 +136,29 @@ namespace ignite
 
             std::stringstream converter;
             converter << port;
+            std::string strPort = converter.str();
 
             // Resolve the server address and port
             addrinfo *result = NULL;
-            int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
+            int res = getaddrinfo(hostname, strPort.c_str(), &hints, &result);
 
             if (res != 0)
-                return false;
+                ThrowNetworkError("Can not resolve host: " + std::string(hostname) + ":" + strPort);
+
+            std::string lastErrorMsg = "Failed to resolve host";
+            bool isTimeout = false;
 
             // Attempt to connect to an address until one succeeds
             for (addrinfo *it = result; it != NULL; it = it->ai_next)
             {
+                lastErrorMsg = "Failed to establish connection with the host";
+                isTimeout = false;
+
                 // Create a SOCKET for connecting to server
                 socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
-                if (socketHandle == INVALID_SOCKET)
-                {
-                    std::string err = "Socket creation failed: " + GetLastSocketErrorMessage();
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
-                }
+                if (socketHandle == static_cast<intptr_t>(INVALID_SOCKET))
+                    ThrowNetworkError("Socket creation failed: " + GetLastSocketErrorMessage());
 
                 TrySetOptions();
 
@@ -171,6 +170,8 @@ namespace ignite
 
                     if (lastError != WSAEWOULDBLOCK)
                     {
+                        lastErrorMsg.append(": ").append(GetSocketErrorMessage(lastError));
+
                         Close();
 
                         continue;
@@ -180,17 +181,28 @@ namespace ignite
 
                     if (res < 0 || res == WaitResult::TIMEOUT)
                     {
+                        isTimeout = true;
+
                         Close();
 
                         continue;
                     }
                 }
+
                 break;
             }
 
             freeaddrinfo(result);
 
-            return socketHandle != INVALID_SOCKET;
+            if (socketHandle == static_cast<intptr_t>(INVALID_SOCKET))
+            {
+                if (isTimeout)
+                    return false;
+
+                ThrowNetworkError(lastErrorMsg);
+            }
+
+            return true;
         }
 
         void TcpSocketClient::Close()
@@ -200,7 +212,7 @@ namespace ignite
 
         void TcpSocketClient::InternalClose()
         {
-            if (socketHandle != INVALID_SOCKET)
+            if (socketHandle != static_cast<intptr_t>(INVALID_SOCKET))
             {
                 closesocket(socketHandle);
 
@@ -246,54 +258,21 @@ namespace ignite
             int bufSizeOpt = BUFFER_SIZE;
 
 
-            int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
-                reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+            setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
 
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP socket send buffer size setup failed: " + GetLastSocketErrorMessage();
-            }
+            setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
 
-            res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF,
-                reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+            setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
 
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP socket receive buffer size setup failed: " + GetLastSocketErrorMessage();
-            }
+            setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
 
-            res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY,
+            blocking = ioctlsocket(socketHandle, FIONBIO, &uTrueOpt) == SOCKET_ERROR;
+
+            int res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
                 reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
 
             if (SOCKET_ERROR == res)
             {
-//              std::string err = "TCP no-delay mode setup failed: " + GetLastSocketErrorMessage();
-            }
-
-            res = setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE,
-                reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP out-of-bound data inlining setup failed: " + GetLastSocketErrorMessage();
-            }
-
-            blocking = false;
-            res = ioctlsocket(socketHandle, FIONBIO, &uTrueOpt);
-
-            if (res == SOCKET_ERROR)
-            {
-                blocking = true;
-//              std::string err = "Non-blocking mode setup failed: " + GetLastSocketErrorMessage();
-            }
-
-            res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
-                reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP keep-alive mode setup failed: " + GetLastSocketErrorMessage();
-
                 // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
                 return;
             }
@@ -303,21 +282,10 @@ namespace ignite
             DWORD idleOpt = KEEP_ALIVE_IDLE_TIME;
             DWORD idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
 
-            res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE,
-                reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+            setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
 
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP keep-alive idle timeout setup failed: " + GetLastSocketErrorMessage();
-            }
-
-            res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
+            setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
                 reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
-
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP keep-alive probes period setup failed: " + GetLastSocketErrorMessage();
-            }
 #else // use old hardcore WSAIoctl
 
             // WinSock structure for KeepAlive timing settings
@@ -332,7 +300,7 @@ namespace ignite
             overlapped.hEvent = NULL;
 
             // Set KeepAlive settings
-            res = WSAIoctl(
+            WSAIoctl(
                 socketHandle,
                 SIO_KEEPALIVE_VALS,
                 &settings,
@@ -343,11 +311,6 @@ namespace ignite
                 &overlapped,
                 NULL
             );
-
-            if (SOCKET_ERROR == res)
-            {
-//              std::string err = "TCP keep-alive params setup failed: " + GetLastSocketErrorMessage();
-            }
 #endif
         }
 

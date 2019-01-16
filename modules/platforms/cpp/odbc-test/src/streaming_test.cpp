@@ -35,6 +35,7 @@
 #include "test_utils.h"
 #include "odbc_test_suite.h"
 #include "ignite/odbc/socket_client.h"
+#include <boost/thread/v2/thread.hpp>
 
 using namespace ignite;
 using namespace ignite::common;

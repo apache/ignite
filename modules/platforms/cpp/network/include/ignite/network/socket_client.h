@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include <ignite/ignite_error.h>
+
 namespace ignite
 {
     namespace network
@@ -59,7 +61,7 @@ namespace ignite
              * @param hostname Remote host name.
              * @param port Service port.
              * @param timeout Timeout.
-             * @return True on success.
+             * @return @c true on success and @c false on timeout.
              */
             virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout) = 0;
 
@@ -95,6 +97,17 @@ namespace ignite
              * @return @c true if the socket is blocking and false otherwise.
              */
             virtual bool IsBlocking() const = 0;
+
+        protected:
+            /**
+             * Throw connection error.
+             *
+             * @param err Error message.
+             */
+            static void ThrowNetworkError(const std::string& err)
+            {
+                throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE, err.c_str());
+            }
         };
     }
 }

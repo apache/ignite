@@ -55,7 +55,7 @@ namespace ignite
                  * @param hostname Host name or address.
                  * @param port TCP port.
                  * @param timeout Timeout in seconds.
-                 * @return @c true on success and @c false on fail.
+                 * @return @c true on success and @c false on timeout.
                  */
                 virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout);
 
@@ -99,6 +99,13 @@ namespace ignite
                 void CloseInteral();
 
                 /**
+                 * Throw SSL-related error.
+                 *
+                 * @param err Error message.
+                 */
+                static void ThrowSecureError(const std::string& err);
+
+                /**
                  * Wait on the socket for any event for specified time.
                  * This function uses poll to achive timeout functionality
                  * for every separate socket operation.
@@ -138,7 +145,7 @@ namespace ignite
                  *
                  * @param ssl SSL instance.
                  * @param timeout Timeout in seconds.
-                 * @return @c true on success.
+                 * @return @c true on success and @c false on timeout.
                  */
                 static bool CompleteConnectInternal(void* ssl, int timeout);
 
