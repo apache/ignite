@@ -599,6 +599,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * For test purposes only.
+     *
+     * @return Current number of client workers.
+     */
+    int clientWorkersCount() {
+        synchronized (mux) {
+            return clientMsgWorkers.size();
+        }
+    }
+
+    /**
      * Pings the remote node to see if it's alive.
      *
      * @param node Node.
