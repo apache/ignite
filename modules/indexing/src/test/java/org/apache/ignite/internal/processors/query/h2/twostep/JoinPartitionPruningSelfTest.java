@@ -579,7 +579,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * Test joins when explicit partitions are set.
      */
     @Test
-    public void testExplicitParititons() {
+    public void testExplicitPartitions() {
         // TODO
     }
 
@@ -588,7 +588,55 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOuterJoin() {
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
+
+
         // TODO
+    }
+
+    /**
+     * Test JOINs on a single table.
+     */
+    @Test
+    public void testSelfJoin() {
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ? AND B.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "1"
+        );
+
+        execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ? AND B.k1 = ?",
+            (res) -> assertNoRequests(),
+            "1", "2"
+        );
+
+        execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ? OR B.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t1", "2")
+            ),
+            "1", "2"
+        );
     }
 
     /**
