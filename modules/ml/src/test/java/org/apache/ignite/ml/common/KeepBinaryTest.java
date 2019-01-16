@@ -21,48 +21,79 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
-import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for IGNITE-10700.
  */
-public class KeepBinaryTest {
-    /*
+@RunWith(JUnit4.class)
+public class KeepBinaryTest extends GridCommonAbstractTest {
+    /** Number of nodes in grid. */
+    private static final int NODE_COUNT = 2;
+    /** Number of samples. */
+    public static final int NUMBER_OF_SAMPLES = 1000;
+    /** Half of samples. */
+    public static final int HALF = NUMBER_OF_SAMPLES / 2;
+
+    /** Ignite instance. */
+    private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
+        /* Grid instance. */
+        ignite = grid(NODE_COUNT);
+        ignite.configuration().setPeerClassLoadingEnabled(true);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+    }
+
+    /**
      * Startup Ignite, populate cache and train some model.
      */
     @Test
     public void test() {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
+        IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
 
-            IgniteBiFunction<Integer, BinaryObject, Vector> featureExtractor
-                = (k, v) -> VectorUtils.of(new double[]{v.field("feat1")});
-            IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
+        IgniteBiFunction<Integer, BinaryObject, Vector> featureExtractor
+            = (k, v) -> VectorUtils.of(new double[]{v.field("feat1")});
+        IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
 
-            IgniteBiFunction<Integer, BinaryObject, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, BinaryObject>()
-                .withP(1)
-                .fit(
-                    ignite,
-                    dataCache,
-                    featureExtractor
-                );
+        IgniteBiFunction<Integer, BinaryObject, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, BinaryObject>()
+            .withP(1)
+            .fit(
+                ignite,
+                dataCache,
+                featureExtractor
+            );
 
-            KMeansTrainer trainer = new KMeansTrainer().withDistance(new ManhattanDistance()).withSeed(7867L);
+        KMeansTrainer trainer = new KMeansTrainer();
 
-            KMeansModel kmdl = trainer.fit(ignite, dataCache, normalizationPreprocessor, lbExtractor);
+        KMeansModel kmdl = trainer.fit(ignite, dataCache, normalizationPreprocessor, lbExtractor);
 
-        }
+        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0.0);
     }
 
     /**
@@ -76,10 +107,11 @@ public class KeepBinaryTest {
 
         BinaryObjectBuilder builder = ignite.binary().builder("testType");
 
-        for (int i = 0; i < 1_000; i++) {
-            BinaryObject value = builder.setField("label", (i < 500)? 0.0 : 1.0)
+        for (int i = 0; i < NUMBER_OF_SAMPLES; i++) {
+            BinaryObject value = builder.setField("label", (i < HALF)? 0.0 : 1.0)
                 .setField("feat1", new Random().nextDouble())
                 .build();
+
             cache.put(i, value);
         }
 
