@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition;
 
 import java.io.Serializable;
 import java.util.List;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -33,7 +33,7 @@ public class ModelsCompositionFormat implements Serializable {
     private static final long serialVersionUID = 9115341364082681837L;
 
     /** Models. */
-    private List<Model<Vector, Double>> models;
+    private List<IgniteModel<Vector, Double>> models;
 
     /** Predictions aggregator. */
     private PredictionsAggregator predictionsAggregator;
@@ -44,13 +44,13 @@ public class ModelsCompositionFormat implements Serializable {
      * @param models Models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsCompositionFormat(List<Model<Vector, Double>> models,PredictionsAggregator predictionsAggregator) {
+    public ModelsCompositionFormat(List<IgniteModel<Vector, Double>> models,PredictionsAggregator predictionsAggregator) {
         this.models = models;
         this.predictionsAggregator = predictionsAggregator;
     }
 
     /** */
-    public List<Model<Vector, Double>> models() {
+    public List<IgniteModel<Vector, Double>> models() {
         return models;
     }
 

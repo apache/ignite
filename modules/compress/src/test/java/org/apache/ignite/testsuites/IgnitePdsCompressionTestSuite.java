@@ -17,13 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
@@ -31,18 +34,19 @@ import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
 /**
  */
+@RunWith(IgnitePdsCompressionTestSuite.DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with page compression).");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(CompressionConfigurationTest.class));
-        suite.addTest(new JUnit4TestAdapter(CompressionProcessorTest.class));
-        suite.addTest(new JUnit4TestAdapter(FileSystemUtilsTest.class));
-        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationTest.class));
-        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationAsyncTest.class));
+        suite.add(CompressionConfigurationTest.class);
+        suite.add(CompressionProcessorTest.class);
+        suite.add(FileSystemUtilsTest.class);
+        suite.add(DiskPageCompressionIntegrationTest.class);
+        suite.add(DiskPageCompressionIntegrationAsyncTest.class);
 
         enableCompressionByDefault();
         IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
@@ -55,5 +59,13 @@ public class IgnitePdsCompressionTestSuite {
     static void enableCompressionByDefault() {
         System.setProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, ZSTD.name());
         System.setProperty(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, String.valueOf(8 * 1024));
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }
