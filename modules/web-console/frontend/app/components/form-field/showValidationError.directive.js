@@ -54,7 +54,7 @@ export function directive($timeout) {
                         el[0].scrollIntoView();
 
                     if (!attr.bsSelect)
-                        $timeout(() => el[0].focus());
+                        $timeout(() => el[0].focus(), 100);
 
                     formFieldController && formFieldController.notifyAboutError();
                 });
