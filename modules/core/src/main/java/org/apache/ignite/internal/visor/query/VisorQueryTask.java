@@ -66,6 +66,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
         @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
                 UUID nid = ignite.localNode().id();
+
                 // Generate query ID to store query cursor in node local storage.
                 String qryId = SQL_QRY_NAME + "-" + UUID.randomUUID();
                 GridQueryCancel cancel = new GridQueryCancel();

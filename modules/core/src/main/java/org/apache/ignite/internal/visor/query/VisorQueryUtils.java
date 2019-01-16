@@ -52,13 +52,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
+
 /**
  * Contains utility methods for Visor query tasks and jobs.
  */
 public class VisorQueryUtils {
-    /** Immediately get first result page. */
-    public static final Integer IMMEDIATELY_DELAY = 0;
-
     /** How long to store future with query in node local map: 5 minutes. */
     public static final Integer RMV_DELAY = 5 * 60 * 1000;
 
@@ -247,6 +246,12 @@ public class VisorQueryUtils {
             "typeId", obj.type().typeId(), true);
     }
 
+    /**
+     * Convert object that can be passed to client.
+     *
+     * @param original Source object.
+     * @return Converted vaue.
+     */
     public static Object convertValue(Object original) {
         if (original == null)
             return null;
@@ -329,40 +334,31 @@ public class VisorQueryUtils {
     }
 
     /**
-     * Schedule fetch of first query result page.
+     * Fetch rows from query cursor.
      *
-     * @param qryId Unique query result id.
-     * @param ignite IgniteEx instance.
-     * @param scan {@code True} for scan query of {@code false} otherwise.
+     * @param holder Result holder.
+     * @param scan {@code true} for scan query of {@code false} otherwise.
      */
-    public static void scheduleResultSetGet(final String qryId, final IgniteEx ignite, final Boolean scan) {
-        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
-            @Override public void onTimeout() {
-                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+    public static void fetchQueryRows(VisorQueryHolder holder, final boolean scan) {
+        VisorQueryCursor<?> cur = holder.getCursor();
 
-                if (holder != null) {
-                    VisorQueryCursor<?> cur = holder.getCursor();
-
-                    try {
-                        if (cur.hasNext()) {
-                            if (scan) {
-                                holder.setRows(fetchScanQueryRows(
-                                    (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
-                            }
-                            else {
-                                holder.setRows(fetchSqlQueryRows(
-                                    (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
-                            }
-                        }
-                        else
-                            holder.setRows(Collections.emptyList());
-                    }
-                    catch (Throwable e) {
-                        holder.setErr(e);
-                    }
+        try {
+            if (cur.hasNext()) {
+                if (scan) {
+                    holder.setRows(fetchScanQueryRows(
+                        (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
+                }
+                else {
+                    holder.setRows(fetchSqlQueryRows(
+                        (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
                 }
             }
-        });
+            else
+                holder.setRows(Collections.emptyList());
+        }
+        catch (Throwable e) {
+            holder.setErr(e);
+        }
     }
 
     /**
@@ -379,64 +375,62 @@ public class VisorQueryUtils {
         final VisorQueryTaskArg arg,
         final GridQueryCancel cancel
     ) {
-        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
-            @Override public void onTimeout() {
-                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+        ignite.context().closure().runLocalSafe(() -> {
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
-                if (holder != null) {
-                    try {
-                        SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
+            if (holder != null) {
+                try {
+                    SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
 
-                        qry.setPageSize(arg.getPageSize());
-                        qry.setLocal(arg.isLocal());
-                        qry.setDistributedJoins(arg.isDistributedJoins());
-                        qry.setCollocated(arg.isCollocated());
-                        qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
-                        qry.setReplicatedOnly(arg.isReplicatedOnly());
-                        qry.setLazy(arg.getLazy());
+                    qry.setPageSize(arg.getPageSize());
+                    qry.setLocal(arg.isLocal());
+                    qry.setDistributedJoins(arg.isDistributedJoins());
+                    qry.setCollocated(arg.isCollocated());
+                    qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
+                    qry.setReplicatedOnly(arg.isReplicatedOnly());
+                    qry.setLazy(arg.getLazy());
 
-                        String cacheName = arg.getCacheName();
+                    String cacheName = arg.getCacheName();
 
-                        if (!F.isEmpty(cacheName))
-                            qry.setSchema(cacheName);
+                    if (!F.isEmpty(cacheName))
+                        qry.setSchema(cacheName);
 
-                        List<FieldsQueryCursor<List<?>>> qryCursors = ignite
-                            .context()
-                            .query()
-                            .querySqlFields(null, qry, null, true, false, cancel);
+                    List<FieldsQueryCursor<List<?>>> qryCursors = ignite
+                        .context()
+                        .query()
+                        .querySqlFields(null, qry, null, true, false, cancel);
 
-                        if (qryCursors != null) {
-                            // In case of multiple statements leave opened only last cursor.
-                            for (int i = 0; i < qryCursors.size() - 1; i++)
-                                U.closeQuiet(qryCursors.get(i));
+                    if (qryCursors != null) {
+                        // In case of multiple statements leave opened only last cursor.
+                        for (int i = 0; i < qryCursors.size() - 1; i++)
+                            U.closeQuiet(qryCursors.get(i));
 
-                            // In case of multiple statements return last cursor as result.
-                            VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
-                            Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
+                        // In case of multiple statements return last cursor as result.
+                        VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
+                        Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
-                            if (meta == null)
-                                holder.setErr(new SQLException("Fail to execute query. No metadata available."));
-                            else {
-                                holder.setCursor(cur);
+                        if (meta == null)
+                            holder.setErr(new SQLException("Fail to execute query. No metadata available."));
+                        else {
+                            holder.setCursor(cur);
 
-                                List<VisorQueryField> names = new ArrayList<>(meta.size());
+                            List<VisorQueryField> names = new ArrayList<>(meta.size());
 
-                                for (GridQueryFieldMetadata col : meta)
-                                    names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                                        col.fieldName(), col.fieldTypeName()));
+                            for (GridQueryFieldMetadata col : meta)
+                                names.add(new VisorQueryField(col.schemaName(), col.typeName(),
+                                    col.fieldName(), col.fieldTypeName()));
 
-                                holder.setColumns(names);
-                                scheduleResultSetHolderRemoval(qryId, ignite);
-                                scheduleResultSetGet(qryId, ignite, false);
-                            }
+                            holder.setColumns(names);
+                            scheduleResultSetHolderRemoval(qryId, ignite);
+                            fetchQueryRows(holder, false);
                         }
                     }
-                    catch (Throwable e) {
-                        holder.setErr(e);
-                    }
+                }
+                catch (Throwable e) {
+                    holder.setErr(e);
                 }
             }
-        });
+        }, MANAGEMENT_POOL);
     }
 
     /**
@@ -451,41 +445,39 @@ public class VisorQueryUtils {
         final IgniteEx ignite,
         final VisorScanQueryTaskArg arg
     ) {
-        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(IMMEDIATELY_DELAY) {
-            @Override public void onTimeout() {
-                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+        ignite.context().closure().runLocalSafe(() -> {
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
-                if (holder != null) {
-                    try {
-                        IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
-                        String filterText = arg.getFilter();
-                        IgniteBiPredicate<Object, Object> filter = null;
+            if (holder != null) {
+                try {
+                    IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
+                    String filterText = arg.getFilter();
+                    IgniteBiPredicate<Object, Object> filter = null;
 
-                        if (!F.isEmpty(filterText))
-                            filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
+                    if (!F.isEmpty(filterText))
+                        filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
 
-                        VisorQueryCursor<Cache.Entry<Object, Object>> cur = null;
+                    VisorQueryCursor<Cache.Entry<Object, Object>> cur;
 
-                        if (arg.isNear())
-                            cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
-                        else {
-                            ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
-                            qry.setPageSize(arg.getPageSize());
-                            qry.setLocal(arg.isLocal());
+                    if (arg.isNear())
+                        cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
+                    else {
+                        ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
+                        qry.setPageSize(arg.getPageSize());
+                        qry.setLocal(arg.isLocal());
 
-                            cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
-                        }
-
-                        holder.setCursor(cur);
-                        scheduleResultSetHolderRemoval(qryId, ignite);
-                        scheduleResultSetGet(qryId, ignite, true);
+                        cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
                     }
-                    catch (Throwable e) {
-                        holder.setErr(e);
-                    }
+
+                    holder.setCursor(cur);
+                    scheduleResultSetHolderRemoval(qryId, ignite);
+                    fetchQueryRows(holder, true);
+                }
+                catch (Throwable e) {
+                    holder.setErr(e);
                 }
             }
-        });
+        }, MANAGEMENT_POOL);
     }
 
     /**
@@ -537,8 +529,6 @@ public class VisorQueryUtils {
                 VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
 
                 if (holder != null) {
-                    VisorQueryCursor<?> cur = holder.getCursor();
-
                     if (holder.accessed()) {
                         holder.accessed(false);
                         scheduleResultSetHolderRemoval(qryId, ignite);
