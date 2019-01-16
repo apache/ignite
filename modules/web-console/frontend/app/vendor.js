@@ -25,7 +25,6 @@ import 'angular-strap/dist/angular-strap.tpl';
 
 import 'angular-messages';
 import '@uirouter/angularjs';
-import '@uirouter/angularjs/lib/legacy/stateEvents';
 
 import 'resize-observer-polyfill';
 

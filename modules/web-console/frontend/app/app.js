@@ -191,7 +191,6 @@ export default angular.module('ignite-console', [
     'ui.grid.saveState',
     'ui.grid.selection',
     'ui.router',
-    'ui.router.state.events',
     'ui.carousel',
     // Base modules.
     'ignite-console.core',

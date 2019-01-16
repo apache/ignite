@@ -278,12 +278,10 @@ export class NotebookCtrl {
             paragraph.cancelRefresh($interval);
         };
 
-        const _stopTopologyRefresh = () => {
+        this._stopTopologyRefresh = () => {
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
         };
-
-        $scope.$on('$stateChangeStart', _stopTopologyRefresh);
 
         $scope.caches = [];
 
@@ -1995,6 +1993,8 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
+        this._stopTopologyRefresh();
+
         if (this.refresh$)
             this.refresh$.unsubscribe();
     }
