@@ -1650,6 +1650,60 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
+     * @return Established {@link IgniteNioSocketChannel} to use.
+     * @throws IgniteCheckedException If fails.
+     */
+    private IgniteNioSocketChannel channel(
+        ClusterNode node,
+        Object topic,
+        int topicOrd
+    ) throws IgniteCheckedException {
+        assert node != null;
+        assert topic != null;
+        assert topicOrd >= 0 || !(topic instanceof GridTopic);
+
+        GridIoMessage ioMsg = new GridIoMessage(PUBLIC_POOL, topic, topicOrd, null, false, 0, false);
+
+        try {
+            return getSpi().channel(node, ioMsg);
+        }
+        catch (IgniteSpiException e) {
+            if (e.getCause() instanceof ClusterTopologyCheckedException)
+                throw (ClusterTopologyCheckedException)e.getCause();
+
+            if (!ctx.discovery().alive(node))
+                throw new ClusterTopologyCheckedException("Failed to create channel, node left: " + node.id(), e);
+
+            throw new IgniteCheckedException("Failed to create channel (node may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[node=" + node + ", topic=" + topic + ']', e);
+        }
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @return Established {@link IgniteNioSocketChannel} to use.
+     * @throws IgniteCheckedException If fails.
+     */
+    public IgniteNioSocketChannel channelToCustomTopic(ClusterNode node, Object topic) throws IgniteCheckedException {
+        return channel(node, topic, -1);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @return Established {@link IgniteNioSocketChannel} to use.
+     * @throws IgniteCheckedException If fails.
+     */
+    public IgniteNioSocketChannel channelToGridTopic(ClusterNode node, GridTopic topic) throws IgniteCheckedException {
+        return channel(node, topic, topic.ordinal());
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param topicOrd GridTopic enumeration ordinal.
      * @param msg Message to send.
      * @param plc Type of processing.
      * @param ordered Ordered flag.

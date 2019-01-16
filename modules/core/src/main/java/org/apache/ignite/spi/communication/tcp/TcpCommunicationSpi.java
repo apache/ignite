@@ -4293,8 +4293,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             // GridNioSession ses = createGridNioSession()
             ses = (GridSelectorNioSession)createNioSession(remote, connKey.connectionIndex());
 
-            log.info("sessions=" + nioSrvr.sessions());
-
             nioCh = nioSrvr.createNioChannel(ses, connKey);
 
             // Send configuration message new GridIoMessage(msg, ..)
