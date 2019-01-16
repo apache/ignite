@@ -288,7 +288,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     public void finish(boolean commit) {
         boolean sync;
 
-        assert !tx.queryEnlisted() || tx.mvccSnapshot() != null;
+        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null;
 
         if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
             sync = finish(commit, dhtMap, nearMap);

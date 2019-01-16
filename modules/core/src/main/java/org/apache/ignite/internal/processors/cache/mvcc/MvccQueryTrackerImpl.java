@@ -133,6 +133,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             done = true;
         }
 
+        cctx.shared().coordinators().removeQueryTracker(id);
+
         if (state0 != null && state0.getClass() == SnapshotFuture.class)
             ((SnapshotFuture)state0).cancel();
         else
@@ -287,12 +289,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** */
     private void ackQueryDone(MvccSnapshot snapshot) {
-        MvccProcessor prc = cctx.shared().coordinators();
-
-        prc.removeQueryTracker(id);
-
         if (snapshot != null)
-            prc.ackQueryDone(snapshot, id);
+            cctx.shared().coordinators().ackQueryDone(snapshot, id);
     }
 
     /** */

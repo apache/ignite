@@ -155,7 +155,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected CacheWriteSynchronizationMode syncMode;
 
     /** */
-    private volatile boolean qryEnlisted;
+    protected volatile boolean qryEnlisted;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1647,6 +1647,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Marks that there are entries, enlisted by query.
      */
     public void markQueryEnlisted() {
+        assert mvccSnapshot != null && txState.mvccEnabled();
+
         if (!qryEnlisted) {
             qryEnlisted = true;
 

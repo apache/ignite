@@ -1225,22 +1225,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                     try {
                                         metrics = future.get();
 
-//                                        if (U.assertionsEnabled()) { TODO
-//                                            MvccCoordinator crd = currentCoordinator();
-//
-//                                            assert crd.version() >= snapshot.coordinatorVersion();
-//
-//                                            for (TxKey key : waitMap.keySet()) {
-//                                                if (!( key.major() == snapshot.coordinatorVersion()
-//                                                    && key.minor() > snapshot.cleanupVersion()
-//                                                    || key.major() > snapshot.coordinatorVersion())) {
-//                                                    byte state = state(key.major(), key.minor());
-//
-//                                                    assert state == TxState.ABORTED : "tx state=" + state;
-//                                                }
-//                                            }
-//                                        }
-
                                         txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
 
                                         if (log.isDebugEnabled())
