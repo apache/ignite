@@ -318,22 +318,24 @@ public class AgentLauncher {
             return;
         }
 
-        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean serverTrustAll = Boolean.getBoolean("trust.all");
         boolean hasServerTrustStore = cfg.serverTrustStore() != null;
-        boolean hasNodeTrustStore = cfg.nodeTrustStore() != null;
 
-        if (trustAll && hasServerTrustStore) {
+        if (serverTrustAll && hasServerTrustStore) {
             log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
-                "Option '-Dtrust.all=true' will be ignored.");
+                "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
 
-            trustAll = false;
+            serverTrustAll = false;
         }
 
-        if (trustAll && hasNodeTrustStore) {
-            log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
-                "Option '-Dtrust.all=true' will be ignored.");
+        boolean nodeTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasNodeTrustStore = cfg.nodeTrustStore() != null;
 
-            trustAll = false;
+        if (nodeTrustAll && hasNodeTrustStore) {
+            log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to cluster.");
+
+            nodeTrustAll = false;
         }
 
         cfg.nodeURIs(nodeURIs);
@@ -344,14 +346,14 @@ public class AgentLauncher {
         List<String> cipherSuites = cfg.cipherSuites();
 
         if (
-            trustAll ||
+            serverTrustAll ||
             hasServerTrustStore ||
             cfg.serverKeyStore() != null
         ) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
             X509TrustManager serverTrustMgr = trustManager(
-                trustAll,
+                serverTrustAll,
                 cfg.serverTrustStore(),
                 cfg.serverTrustStorePassword()
             );
@@ -381,6 +383,7 @@ public class AgentLauncher {
 
         try (
             RestExecutor restExecutor = new RestExecutor(
+                nodeTrustAll,
                 cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
                 cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
                 cipherSuites);

@@ -25,9 +25,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.EncryptionService;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -91,7 +91,7 @@ public abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
     @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
