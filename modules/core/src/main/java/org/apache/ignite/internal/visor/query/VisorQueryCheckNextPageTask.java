@@ -68,12 +68,12 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
 
             VisorQueryCursor<?> cur = holder.getCursor();
             List<Object[]> rows = holder.getRows();
-            List<VisorQueryField> columns = null;
+            List<VisorQueryField> cols = null;
 
             boolean hasMore = cur == null || rows == null;
 
             if (rows != null) {
-                columns = holder.getColumns();
+                cols = holder.getColumns();
                 hasMore = cur.hasNext();
             }
 
@@ -83,7 +83,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
                 removeQueryHolder(ignite, qryId);
 
             return new VisorEither<>(
-                new VisorQueryResult(ignite.localNode().id(), qryId, columns, rows, hasMore, holder.duration()));
+                new VisorQueryResult(ignite.localNode().id(), qryId, cols, rows, hasMore, holder.duration()));
         }
 
         /** {@inheritDoc} */
