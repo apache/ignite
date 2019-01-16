@@ -26,7 +26,9 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.table.IndexColumn;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * View that contains information about all the sql tables in the cluster.
@@ -83,7 +85,7 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tab.getName(),
                         tab.cacheName(),
                         tab.cacheId(),
-                        tab.getAffinityKeyColumn(),
+                        computeAffinityColumn(tab),
                         tab.rowDescriptor().keyAliasName(),
                         tab.rowDescriptor().valueAliasName(),
                         // We use type descriptor because there is no way to get complex type (custom class Person)
@@ -95,6 +97,23 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                     return createRow(ses, keys.incrementAndGet(), data);
                 }
             ).iterator();
+    }
+
+    /**
+     * Computes "AFFINITY_COLUMN" for the specified table. Affinity column is a column which value is an Affinity Key
+     * of the table's underlying cache.
+     *
+     * @param tab table compute affinity column for.
+     * @return "_KEY" for default (all PK), {@code null} if custom mapper specified or name of the desired column
+     * otherwise.
+     */
+    private @Nullable String computeAffinityColumn(GridH2Table tab) {
+        IndexColumn affCol = tab.getAffinityKeyColumn();
+
+        if (affCol == null) // custom mapper is used.
+            return null;
+
+        return affCol.columnName;
     }
 
     /** {@inheritDoc} */
