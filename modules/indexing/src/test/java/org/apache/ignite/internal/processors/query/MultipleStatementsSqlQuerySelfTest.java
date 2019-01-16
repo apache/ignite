@@ -23,8 +23,8 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -33,7 +33,7 @@ import org.junit.runners.JUnit4;
  * Tests for schemas.
  */
 @RunWith(JUnit4.class)
-public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
+public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTest {
     /** Node. */
     private IgniteEx node;
 

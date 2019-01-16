@@ -46,14 +46,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,7 +64,7 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
-public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CLIENT = 7;
 
@@ -1797,7 +1796,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
