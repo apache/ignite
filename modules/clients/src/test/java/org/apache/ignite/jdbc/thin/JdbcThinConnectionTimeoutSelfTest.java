@@ -46,8 +46,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
     private static final int MAX_ROWS = 10000;
 
     /** Executor stub */
-    private static final Executor EXECUTOR_STUB = (Runnable command) -> {
-    };
+    private static final Executor EXECUTOR_STUB = (Runnable command) -> {};
 
     /** Connection. */
     private Connection conn;

@@ -87,6 +87,9 @@ public class JdbcThinConnection implements Connection {
     /** Request timeout period. */
     private static final int REQUEST_TIMEOUT_PERIOD = 1_000;
 
+    /** Network timeout permission */
+    private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
+
     /** Zero timeout as query timeout means no timeout. */
     static final int NO_TIMEOUT = 0;
 
@@ -131,9 +134,6 @@ public class JdbcThinConnection implements Connection {
 
     /** Query timeout timer */
     private final Timer timer;
-
-    /** Network timeout permission */
-    private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
 
     /**
      * Creates new connection.
@@ -715,6 +715,7 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Network timeout cannot be negative.");
 
         SecurityManager secMgr = System.getSecurityManager();
+
         if (secMgr != null)
             secMgr.checkPermission(new SQLPermission(SET_NETWORK_TIMEOUT_PERM));
 
