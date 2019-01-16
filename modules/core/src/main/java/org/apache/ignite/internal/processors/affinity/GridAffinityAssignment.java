@@ -203,7 +203,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<ClusterNode> res = nodes;
 
         if (res == null) {
-            res = new HashSet<>(assignment.size());
+            res = new HashSet<>();
 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
@@ -223,7 +223,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<ClusterNode> res = primaryPartsNodes;
 
         if (res == null) {
-            res = new HashSet<>(assignment.size());
+            res = new HashSet<>();
 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
