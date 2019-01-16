@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -61,19 +61,28 @@ public class GridAffinityAssignmentTest {
     /**
      *
      */
-    private IgniteProductVersion version = new IgniteProductVersion();
+    private IgniteProductVersion ver = new IgniteProductVersion();
 
     /**
      * Test GridAffinityAssignment logic when backup threshold is not reached.
      */
     @Test
     public void testPrimaryBackupPartitions() {
-        ClusterNode clusterNode1 = node(metrics, version, "1");
-        ClusterNode clusterNode2 = node(metrics, version, "2");
-        ClusterNode clusterNode3 = node(metrics, version, "3");
-        ClusterNode clusterNode4 = node(metrics, version, "4");
-        ClusterNode clusterNode5 = node(metrics, version, "5");
-        ClusterNode clusterNode6 = node(metrics, version, "6");
+        ClusterNode clusterNode1 = node(metrics, ver, "1");
+        ClusterNode clusterNode2 = node(metrics, ver, "2");
+        ClusterNode clusterNode3 = node(metrics, ver, "3");
+        ClusterNode clusterNode4 = node(metrics, ver, "4");
+        ClusterNode clusterNode5 = node(metrics, ver, "5");
+        ClusterNode clusterNode6 = node(metrics, ver, "6");
+
+        List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
+            add(clusterNode1);
+            add(clusterNode2);
+            add(clusterNode3);
+            add(clusterNode4);
+            add(clusterNode5);
+            add(clusterNode6);
+        }};
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
@@ -99,82 +108,38 @@ public class GridAffinityAssignmentTest {
             4
         );
 
-        assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).contains(0));
-        assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).contains(1));
+        List<Integer> parts = new ArrayList<Integer>() {{
+            add(0);
+            add(1);
+        }};
+
+        assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).containsAll(parts));
         assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).contains(2));
+        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode1.id()).isEmpty());
 
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode2.id()).contains(0));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode2.id()).contains(1));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode2.id()).contains(2));
+        for (int i = 1; i < 4; i++) {
+            Set<Integer> primary = gridAffinityAssignment.primaryPartitions(clusterNodes.get(i).id());
 
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode3.id()).contains(0));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode3.id()).contains(1));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode3.id()).contains(2));
+            assertTrue(primary.isEmpty());
 
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode4.id()).contains(0));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode4.id()).contains(1));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode4.id()).contains(2));
+            Set<Integer> backup = gridAffinityAssignment.backupPartitions(clusterNodes.get(i).id());
 
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode5.id()).contains(0));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode5.id()).contains(1));
+            assertTrue(backup.containsAll(parts));
+            assertFalse(backup.contains(2));
+        }
+
         assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode5.id()).contains(2));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode6.id()).contains(0));
-        assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode6.id()).contains(1));
+        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode5.id()).isEmpty());
+
         assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode6.id()).contains(2));
-
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode1.id()).contains(0));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode1.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode1.id()).contains(2));
-
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode2.id()).contains(0));
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode2.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode2.id()).contains(2));
-
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode3.id()).contains(0));
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode3.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode3.id()).contains(2));
-
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode4.id()).contains(0));
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode4.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode4.id()).contains(2));
-
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(0));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(2));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(0));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(1));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode5.id()).contains(2));
-
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(0));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(1));
-        assertTrue(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(2));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(0));
-        assertFalse(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(1));
         assertTrue(gridAffinityAssignment.backupPartitions(clusterNode6.id()).contains(2));
 
         assertEquals(4, gridAffinityAssignment.getIds(0).size());
-        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode1.id()));
-        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode2.id()));
-        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode3.id()));
-        assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNode4.id()));
 
-        assertEquals(4, gridAffinityAssignment.getIds(1).size());
-        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode1.id()));
-        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode2.id()));
-        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode3.id()));
-        assertTrue(gridAffinityAssignment.getIds(1).contains(clusterNode4.id()));
-
-        assertEquals(2, gridAffinityAssignment.getIds(2).size());
-        assertTrue(gridAffinityAssignment.getIds(2).contains(clusterNode5.id()));
-        assertTrue(gridAffinityAssignment.getIds(2).contains(clusterNode6.id()));
+        for (int i = 0; i < 4; i++)
+            assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNodes.get(i).id()));
 
         assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-        assertNotSame(gridAffinityAssignment.getIds(1), gridAffinityAssignment.getIds(1));
-        assertNotSame(gridAffinityAssignment.getIds(2), gridAffinityAssignment.getIds(2));
-
-        assertFalse(gridAffinityAssignment.getIds(0) instanceof HashSet);
-        assertFalse(gridAffinityAssignment.getIds(1) instanceof HashSet);
-        assertFalse(gridAffinityAssignment.getIds(2) instanceof HashSet);
 
         try {
             gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);
@@ -198,32 +163,21 @@ public class GridAffinityAssignmentTest {
      */
     @Test
     public void testBackupsMoreThanThreshold() {
-        ClusterNode clusterNode1 = node(metrics, version, "1");
-        ClusterNode clusterNode2 = node(metrics, version, "2");
-        ClusterNode clusterNode3 = node(metrics, version, "3");
-        ClusterNode clusterNode4 = node(metrics, version, "4");
-        ClusterNode clusterNode5 = node(metrics, version, "5");
-        ClusterNode clusterNode6 = node(metrics, version, "6");
+        List<ClusterNode> nodes = new ArrayList<>();
+
+        for(int i = 0; i < 10; i++)
+            nodes.add(node(metrics, ver, "1" + i));
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                    add(clusterNode5);
-                    add(clusterNode5);
-                    add(clusterNode6);
-                }});
+            new ArrayList<List<ClusterNode>>(){{
+                add(nodes);
             }},
             new ArrayList<>(),
             10
         );
 
         assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-        assertTrue(gridAffinityAssignment.getIds(0) instanceof HashSet);
     }
 
     /**
