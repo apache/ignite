@@ -36,7 +36,7 @@ public interface AffinityAssignment {
      */
     int AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
-        6
+        5
     );
 
     /**

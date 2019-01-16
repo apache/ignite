@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.benchmarks.model.Node;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
@@ -36,15 +37,21 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.openjdk.jmh.annotations.Mode.AverageTime;
+import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /**
  * Comparison of HashMap vs view on List on small sizes.
  */
 @State(Scope.Benchmark)
 @OutputTimeUnit(NANOSECONDS)
-@BenchmarkMode(AverageTime)
+@BenchmarkMode(Throughput)
 public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
+    /** */
+    private static final int SIZE = AffinityAssignment.AFFINITY_BACKUPS_THRESHOLD;
+
+    /** */
+    private static final int PARTS = 8192;
+
     /**
      *
      * @param args Args.
@@ -58,66 +65,25 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
             .run();
     }
 
-    /**
-     *
-     */
-    private Random random = new Random();
+    /** */
+    private final Random random = new Random();
 
-    /**
-     *
-     */
-    private List<Collection<UUID>> hashSets = new ArrayList<>();
+    /** */
+    private final List<Collection<UUID>> hashSets = new ArrayList<>();
 
-    /**
-     *
-     */
-    private List<List<Node>> lists = new ArrayList<>();
+    /** */
+    private final List<List<Node>> lists = new ArrayList<>();
 
-    /**
-     *
-     */
-    private Node[] nodes;
-
-    /**
-     *
-     */
-    private static int SIZE = AffinityAssignment.AFFINITY_BACKUPS_THRESHOLD;
-
-    /**
-     *
-     */
-    private static class Node {
-        /**
-         *
-         */
-        private UUID uuid;
-
-        /**
-         *
-         * @param uuid Uuid.
-         */
-        public Node(UUID uuid) {
-            this.uuid = uuid;
-        }
-
-        /**
-         *
-         * @return UUID.
-         */
-        public UUID getUuid() {
-            return uuid;
-        }
-    }
+    /** */
+    private final Node[] nodes = new Node[SIZE];
 
     /** */
     @Setup
     public void setup() {
-        nodes = new Node[SIZE];
-
         for (int i = 0; i < SIZE; i++)
             nodes[i] = new Node(UUID.randomUUID());
 
-        for (int i= 0; i < 1000; i++) {
+        for (int i= 0; i < PARTS; i++) {
             Collection<UUID> hashSet = new HashSet<>();
 
             for (int j = 0; j < SIZE; j++)
@@ -137,23 +103,25 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
     /** */
     @Benchmark
     public boolean hashSetContainsRandom() {
-        return hashSets.get(random.nextInt(1000))
-            .contains(nodes[random.nextInt(SIZE)].uuid);
+        return hashSets.get(random.nextInt(PARTS))
+            .contains(nodes[random.nextInt(SIZE)].getUuid());
     }
 
     /** */
     @Benchmark
     public boolean readOnlyViewContainsRandom() {
-        return F.viewReadOnly(lists.get(random.nextInt(1000)), (IgniteClosure<Node, UUID>)Node::getUuid)
-            .contains(nodes[random.nextInt(SIZE)].uuid);
+        return F.viewReadOnly(
+            lists.get(random.nextInt(PARTS)),
+            (IgniteClosure<Node, UUID>)Node::getUuid
+        ).contains(nodes[random.nextInt(SIZE)].getUuid());
     }
 
     /** */
     @Benchmark
     public boolean hashSetIteratorRandom() {
-        UUID randomUuid = nodes[random.nextInt(SIZE)].uuid;
+        UUID randomUuid = nodes[random.nextInt(SIZE)].getUuid();
 
-        Collection<UUID> col = hashSets.get(random.nextInt(1000));
+        Collection<UUID> col = hashSets.get(random.nextInt(PARTS));
 
         boolean contains = false;
 
@@ -167,10 +135,10 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
     /** */
     @Benchmark
     public boolean readOnlyViewIteratorRandom() {
-        UUID randomUuid = nodes[random.nextInt(SIZE)].uuid;
+        UUID randomUuid = nodes[random.nextInt(SIZE)].getUuid();
 
         Collection<UUID> col = F.viewReadOnly(
-            lists.get(random.nextInt(1000)),
+            lists.get(random.nextInt(PARTS)),
             (IgniteClosure<Node, UUID>)Node::getUuid
         );
 
