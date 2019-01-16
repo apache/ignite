@@ -201,7 +201,7 @@ public class ComputeUtils {
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 
-            IgniteCache<K, V> upstreamCache = ignite.cache(upstreamCacheName);
+            IgniteCache<K, V> upstreamCache = ignite.cache(upstreamCacheName).withKeepBinary();
 
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
@@ -278,7 +278,7 @@ public class ComputeUtils {
             Ignite locIgnite = Ignition.localIgnite();
             LearningEnvironment env = envBuilder.buildForWorker(part);
 
-            IgniteCache<K, V> locUpstreamCache = locIgnite.cache(upstreamCacheName);
+            IgniteCache<K, V> locUpstreamCache = locIgnite.cache(upstreamCacheName).withKeepBinary();
 
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);

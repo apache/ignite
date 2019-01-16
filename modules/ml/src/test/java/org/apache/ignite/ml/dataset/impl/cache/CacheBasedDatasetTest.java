@@ -354,7 +354,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheConfiguration.setBackups(backups);
 
-        IgniteCache<Integer, String> cache = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, String> cache = ignite.createCache(cacheConfiguration).withKeepBinary();
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, "TEST" + i);
