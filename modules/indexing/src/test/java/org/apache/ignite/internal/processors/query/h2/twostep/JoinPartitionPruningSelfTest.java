@@ -213,14 +213,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "v4"
         );
 
-        // TODO: Move to RPELICATED table tests.
-        // Replicated table.
-        createReplicatedTable("t4",
-            pkColumn("k1"),
-            "v2",
-            "v3"
-        );
-
         // Transfer through "AND".
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
             (res) -> assertPartitions(
@@ -516,11 +508,48 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test joins with REPLICATED caches.
+     * Test joins with REPLICATED cache.
      */
     @Test
     public void testJoinWithReplicated() {
-        // TODO
+        // First co-located table.
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2"
+        );
+
+        // Replicated table.
+        createReplicatedTable("t2",
+            pkColumn("k1"),
+            "v2",
+            "v3"
+        );
+
+        // Only partition from PARTITIONED cache should be used.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t1.k1 = ? AND t2.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1", "2"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t1.k1 IN (?, ?) AND t2.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1"),
+                parititon("t1", "2")
+            ),
+            "1", "2", "3"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t1.k1 = ? OR t2.k1 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "2"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t2.k1 = ?",
+            (res) -> assertNoPartitions(),
+            "1"
+        );
     }
 
     /**
