@@ -180,8 +180,6 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
-        cctx.tm().txContext(tx);
-
         Throwable ex0 = ex;
 
         if (ex0 != null) {

@@ -719,10 +719,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw e;
         }
-        finally {
-            if (sfuFut != null)
-                ctx.cache().context().tm().resetContext();
-        }
     }
 
     /**

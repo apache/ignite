@@ -835,9 +835,6 @@ public class GridReduceQueryExecutor {
                             fakeTable(null, i).innerTable(null); // Drop all merge tables.
                     }
                 }
-
-                if (sfuFut != null)
-                    ctx.cache().context().tm().resetContext();
             }
         }
     }
