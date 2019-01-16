@@ -26,7 +26,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleScanStart;
 
 /**
@@ -64,16 +63,15 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
             try {
                 UUID nid = ignite.localNode().id();
 
-                // Generate query ID to store query cursor in node local storage.
-                String qryId = SCAN_QRY_NAME + "-" + UUID.randomUUID();
-                VisorQueryHolder holder = new VisorQueryHolder(qryId, null, arg.getPageSize(), null);
+                VisorQueryHolder holder = new VisorQueryHolder(false, null, arg.getPageSize(), null);
+
                 holder.setColumns(SCAN_COL_NAMES);
 
-                ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId, holder);
+                ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(holder.getQueryID(), holder);
 
                 scheduleScanStart(ignite, holder, arg);
 
-                return new VisorEither<>(new VisorQueryResult(nid, qryId, SCAN_COL_NAMES, null, false, 0));
+                return new VisorEither<>(new VisorQueryResult(nid, holder.getQueryID(), SCAN_COL_NAMES, null, false, 0));
             }
             catch (Throwable e) {
                 return new VisorEither<>(new VisorExceptionWrapper(e));

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getScanHolder;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
 /**
@@ -61,21 +60,17 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
 
         /** {@inheritDoc} */
         @Override protected VisorQueryResult run(VisorQueryNextPageTaskArg arg) {
-            return arg.getQueryId().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
-        }
-
-        /**
-         * Collect data from SQL query.
-         *
-         * @param arg Query name and page size.
-         * @return Query result with next page.
-         */
-        private VisorQueryResult nextSqlPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
+
             String qryId = arg.getQueryId();
+
             VisorQueryHolder holder = getQueryHolder(ignite, qryId);
-            VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
-            List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize());
+
+            VisorQueryCursor<?> cur = holder.getCursor();
+
+            List<Object[]> nextRows = VisorQueryHolder.isSqlQuery(qryId)
+                ? VisorQueryUtils.fetchSqlQueryRows((VisorQueryCursor<List<?>>)cur, arg.getPageSize())
+                : VisorQueryUtils.fetchScanQueryRows((VisorQueryCursor<Cache.Entry<Object, Object>>)cur, arg.getPageSize());
 
             boolean hasMore = cur.hasNext();
 
@@ -85,31 +80,6 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
                 removeQueryHolder(ignite, qryId);
 
             return new VisorQueryResult(ignite.localNode().id(), qryId, null, nextRows, hasMore,
-                U.currentTimeMillis() - start);
-        }
-
-        /**
-         * Collect data from SCAN query
-         *
-         * @param arg Query name and page size.
-         * @return Next page with data.
-         */
-        private VisorQueryResult nextScanPage(VisorQueryNextPageTaskArg arg) {
-            long start = U.currentTimeMillis();
-
-            String qryId = arg.getQueryId();
-            VisorQueryHolder holder = getScanHolder(ignite, qryId);
-            VisorQueryCursor<Cache.Entry<Object, Object>> cur =
-                (VisorQueryCursor<Cache.Entry<Object, Object>>)holder.getCursor();
-            List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.getPageSize());
-            boolean hasMore = cur.hasNext();
-
-            if (hasMore)
-                holder.accessed(true);
-            else
-                removeQueryHolder(ignite, qryId);
-
-            return new VisorQueryResult(ignite.localNode().id(), qryId, null, rows, hasMore,
                 U.currentTimeMillis() - start);
         }
 

@@ -61,17 +61,11 @@ public class VisorQueryUtils {
     /** How long to store future with query in node local map: 5 minutes. */
     public static final Integer RMV_DELAY = 5 * 60 * 1000;
 
-    /** Prefix for node local key for SQL queries. */
-    public static final String SQL_QRY_NAME = "VISOR_SQL_QUERY";
-
-    /** Prefix for node local key for SCAN queries. */
-    public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
-
     /** Message for query result expired error. */
-    private static final String QUERY_RESULTS_EXPIRED_MSG = "SQL query results are expired.";
+    private static final String SQL_QRY_RESULTS_EXPIRED_ERR = "SQL query results are expired.";
 
     /** Message for scan result expired error. */
-    private static final String SCAN_RESULTS_EXPIRED_MSG = "Scan query results are expired.";
+    private static final String SCAN_QRY_RESULTS_EXPIRED_ERR = "Scan query results are expired.";
 
     /** Columns for SCAN queries. */
     public static final List<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
@@ -300,47 +294,24 @@ public class VisorQueryUtils {
     }
 
     /**
-     * Get query holder from local storage for query with specified ID.
-     *
-     * @param ignite IgniteEx instance.
-     * @param qryId Query ID to get holder.
-     * @param errMsg Message to exception when holder is not found.
-     * @return Query holder for specified query ID.
-     * @throws IgniteException When holder is not found and errMsg is not null.
-     */
-    @Nullable private static VisorQueryHolder getQueryHolder0(final IgniteEx ignite, final String qryId, final String errMsg)
-        throws IgniteException {
-        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-        VisorQueryHolder holder = storage.get(qryId);
-
-        if (holder == null && errMsg != null)
-            throw new IgniteException(errMsg);
-
-        return holder;
-    }
-
-    /**
-     * Get holder for SQL fields query with throwing of exception when it is not exist.
+     * Get holder for query or throw exception if not found.
      *
      * @param ignite IgniteEx instance.
      * @param qryId Query ID to get holder.
      * @return Query holder for specified query ID.
-     * @throws IgniteException When holder is not found and errMsg is not null.
+     * @throws IgniteException When holder is not found.
      */
     public static VisorQueryHolder getQueryHolder(final IgniteEx ignite, final String qryId) throws IgniteException {
-        return getQueryHolder0(ignite, qryId, QUERY_RESULTS_EXPIRED_MSG);
-    }
+        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
 
-    /**
-     * Get holder for scan query with throwing of exception when it is not exist.
-     *
-     * @param ignite IgniteEx instance.
-     * @param qryId Query ID to get holder.
-     * @return Query holder for specified query ID.
-     * @throws IgniteException When holder is not found and errMsg is not null.
-     */
-    public static VisorQueryHolder getScanHolder(final IgniteEx ignite, final String qryId) throws IgniteException  {
-        return getQueryHolder0(ignite, qryId, SCAN_RESULTS_EXPIRED_MSG);
+        VisorQueryHolder holder = storage.get(qryId);
+
+        if (holder == null)
+            throw new IgniteException(VisorQueryHolder.isSqlQuery(qryId)
+                ? SQL_QRY_RESULTS_EXPIRED_ERR
+                : SCAN_QRY_RESULTS_EXPIRED_ERR);
+
+        return holder;
     }
 
     /**
@@ -350,8 +321,10 @@ public class VisorQueryUtils {
      * @param qryId Query ID to get holder.
      * @return Query holder for specified query ID or {@code null} if holder is not exist.
      */
-    public static VisorQueryHolder getQueryHolderIfExists(final IgniteEx ignite, final String qryId) {
-        return getQueryHolder0(ignite, qryId, null);
+    @Nullable public static VisorQueryHolder getQueryHolderIfExists(final IgniteEx ignite, final String qryId) {
+        ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+
+        return storage.get(qryId);
     }
 
     /**

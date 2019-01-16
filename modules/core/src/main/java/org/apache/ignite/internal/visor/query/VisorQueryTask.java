@@ -28,7 +28,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleQueryStart;
 
 /**
@@ -67,18 +66,17 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
             try {
                 UUID nid = ignite.localNode().id();
 
-                // Generate query ID to store query cursor in node local storage.
-                String qryId = SQL_QRY_NAME + "-" + UUID.randomUUID();
                 GridQueryCancel cancel = new GridQueryCancel();
 
                 Map<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
-                VisorQueryHolder holder = new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel);
 
-                storage.put(qryId, holder);
+                VisorQueryHolder holder = new VisorQueryHolder(true, null, arg.getPageSize(), cancel);
+
+                storage.put(holder.getQueryID(), holder);
 
                 scheduleQueryStart(ignite, holder, arg, cancel);
 
-                return new VisorEither<>(new VisorQueryResult(nid, qryId, null, null, false, 0));
+                return new VisorEither<>(new VisorQueryResult(nid, holder.getQueryID(), null, null, false, 0));
             }
             catch (Throwable e) {
                 return new VisorEither<>(new VisorExceptionWrapper(e));

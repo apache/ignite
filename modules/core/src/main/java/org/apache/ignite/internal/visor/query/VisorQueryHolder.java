@@ -18,12 +18,19 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
  * Holds identify information of executing query and its result.
  */
 public class VisorQueryHolder {
+    /** Prefix for node local key for SQL queries. */
+    private static final String SQL_QRY_PREFIX = "VISOR_SQL_QUERY";
+
+    /** Prefix for node local key for SCAN queries. */
+    private static final String SCAN_QRY_PREFIX = "VISOR_SCAN_QUERY";
+
     /** Query ID for extraction query data result. */
     private String qryId;
 
@@ -49,24 +56,35 @@ public class VisorQueryHolder {
     private long start;
 
     /** Query duration in ms. */
-    private Long duration = null;
+    private long duration = -1;
 
     /** Flag indicating that this cursor was read from last check. */
     private volatile boolean accessed;
 
     /**
+     * @param qryId Query ID.
+     * @return {@code true} if holder contains SQL query.
+     */
+    public static boolean isSqlQuery(String qryId) {
+        return qryId.startsWith(SQL_QRY_PREFIX);
+    }
+
+    /**
      * Constructor.
      *
-     * @param qryId Query ID for extraction query data result.
+     * @param sqlQry Flag indicating that holder contains SQL or SCAN query.
      * @param cur Wrapper for query cursor.
      * @param pageSize Page size to fetch.
      * @param cancel Cancel object.
      */
-    VisorQueryHolder(String qryId, VisorQueryCursor<?> cur, int pageSize, GridQueryCancel cancel) {
-        this.qryId = qryId;
+    VisorQueryHolder(boolean sqlQry, VisorQueryCursor<?> cur, int pageSize, GridQueryCancel cancel) {
         this.cur = cur;
         this.pageSize = pageSize;
         this.cancel = cancel;
+
+        // Generate query ID to store query cursor in node local storage.
+        qryId = (sqlQry ? SQL_QRY_PREFIX : SCAN_QRY_PREFIX) + "-" + UUID.randomUUID();
+
         start = System.currentTimeMillis();
     }
 
@@ -116,6 +134,9 @@ public class VisorQueryHolder {
         return pageSize;
     }
 
+    /**
+     * Cancel query.
+     */
     public void cancelQuery() {
         if (cancel != null)
             cancel.cancel();
@@ -178,7 +199,7 @@ public class VisorQueryHolder {
      * @return Duration of query execution.
      */
     public long duration() {
-        if (duration != null)
+        if (duration > 0)
             return duration;
 
         return System.currentTimeMillis() - start;
