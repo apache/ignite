@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -212,6 +213,8 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (QueryUtils.isGeometryClass(cls))
+           writer.doWriteString(QueryUtils.geometryToWkt(obj));
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else

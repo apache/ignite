@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -1080,6 +1081,28 @@ public class QueryUtils {
      */
     public static boolean isGeometryClass(Class<?> cls) {
         return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param obj Object.
+     * @return WKT representation of geometry.
+     * @throws BinaryObjectException if failed.
+     */
+    public static String geometryToWkt(Object obj) throws BinaryObjectException {
+        if(obj == null)
+            return null;
+        else if(!isGeometryClass(obj.getClass()))
+            throw new BinaryObjectException("Object is not geometry");
+        else {
+            try {
+                return U.invoke(GEOMETRY_CLASS, obj, "toText");
+            }
+            catch (IgniteCheckedException e) {
+                throw new BinaryObjectException("Object is not geometry", e);
+            }
+        }
     }
 
     /**
