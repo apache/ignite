@@ -24,12 +24,12 @@ export default class PCFormFieldSizeController implements IInputErrorNotifier {
     max?: number;
     onScaleChange: ng.ICompiledExpression;
     innerForm: ng.IFormController;
-    inputElement?: HTMLInputElement
+    inputElement?: HTMLInputElement;
     autofocus?: boolean;
     id = Math.random();
-    sizesMenu?: ig.config.formFieldSize.ISizeTypes[keyof ig.config.formFieldSize.ISizeTypes]
-    private _sizeScale: ig.config.formFieldSize.ISizeTypeOption
-    value: number
+    sizesMenu?: ig.config.formFieldSize.ISizeTypes[keyof ig.config.formFieldSize.ISizeTypes];
+    private _sizeScale: ig.config.formFieldSize.ISizeTypeOption;
+    value: number;
 
     static $inject = ['$element', '$attrs'];
 

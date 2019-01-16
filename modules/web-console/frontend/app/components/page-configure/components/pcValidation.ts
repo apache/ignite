@@ -22,7 +22,8 @@ export class IgniteFormField implements IInputErrorNotifier {
     static animName = 'ignite-form-field__error-blink';
     static eventName = 'webkitAnimationEnd oAnimationEnd msAnimationEnd animationend';
     static $inject = ['$element', '$scope'];
-    onAnimEnd?: () => void
+
+    onAnimEnd?: () => void;
 
     constructor(private $element: JQLite, private $scope: ng.IScope) {}
 
