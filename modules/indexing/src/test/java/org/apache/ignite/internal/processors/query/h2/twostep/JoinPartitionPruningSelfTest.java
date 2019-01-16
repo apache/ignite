@@ -716,6 +716,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param name Name.
      * @param cols Columns.
      */
+    @SuppressWarnings("SameParameterValue")
     private void createReplicatedTable(String name, Object... cols) {
         createTable0(name, true, cols);
     }
