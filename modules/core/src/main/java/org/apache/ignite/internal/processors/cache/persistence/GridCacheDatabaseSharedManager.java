@@ -2683,7 +2683,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (lockEntry) {
                         entryEx.unlockEntry();
 
-                        entryEx.context().evicts().touch(entryEx, AffinityTopologyVersion.NONE);
+                        entryEx.context().evicts().touch(entryEx);
                     }
                 }
 
@@ -2718,7 +2718,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (lockEntry) {
                         entryEx.unlockEntry();
 
-                        entryEx.context().evicts().touch(entryEx, AffinityTopologyVersion.NONE);
+                        entryEx.context().evicts().touch(entryEx);
                     }
                 }
 
