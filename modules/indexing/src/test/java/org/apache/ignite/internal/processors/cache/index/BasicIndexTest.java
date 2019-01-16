@@ -40,10 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,10 +48,7 @@ import org.junit.runners.JUnit4;
  * A set of basic tests for caches with indexes.
  */
 @RunWith(JUnit4.class)
-public class BasicIndexTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private Collection<QueryIndex> indexes = Collections.emptyList();
 
@@ -68,9 +61,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     /** */
     private int gridCount = 1;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         assertNotNull(inlineSize);
 
@@ -80,10 +71,6 @@ public class BasicIndexTest extends GridCommonAbstractTest {
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
 
         igniteCfg.setConsistentId(igniteInstanceName);
-
-        igniteCfg.setDiscoverySpi(
-            new TcpDiscoverySpi().setIpFinder(IP_FINDER)
-        );
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());
@@ -332,6 +319,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 

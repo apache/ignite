@@ -54,8 +54,6 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -127,7 +125,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Before
     @Override public final void setUp() throws Exception {
         // Need to change classloader here, although it also handled in the parent class
         // the current test initialisation procedure doesn't allow us to setUp the parent first.
@@ -490,7 +487,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @After
     @Override public final void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 

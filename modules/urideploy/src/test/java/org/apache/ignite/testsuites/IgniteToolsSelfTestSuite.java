@@ -17,22 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.tools.GridToolsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Tools self-test suite.
  */
-public class IgniteToolsSelfTestSuite extends TestSuite {
-    /**
-     * @return Grid ant tasks tests suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Ant Tasks Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridToolsSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridToolsSelfTest.class
+})
+public class IgniteToolsSelfTestSuite {
 }

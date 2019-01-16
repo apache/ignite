@@ -1890,6 +1890,20 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
+     * Gets a collection of all pages currently marked as dirty. Will create a collection copy.
+     *
+     * @return Collection of all page IDs marked as dirty.
+     */
+    public Collection<FullPageId> dirtyPages() {
+        Collection<FullPageId> res = new HashSet<>((int)loadedPages());
+
+        for (Segment seg : segments)
+            res.addAll(seg.dirtyPages);
+
+        return res;
+    }
+
+    /**
      *
      */
     private class Segment extends ReentrantReadWriteLock {

@@ -37,19 +37,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
  * A set of basic tests for caches with indexes.
  */
-public class IoStatisticsBasicIndexSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NUMBER_OF_PK_SORTED_INDEXES = 1;
 
@@ -64,10 +57,6 @@ public class IoStatisticsBasicIndexSelfTest extends GridCommonAbstractTest {
         assertNotNull(indexes);
 
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        igniteCfg.setDiscoverySpi(
-            new TcpDiscoverySpi().setIpFinder(IP_FINDER)
-        );
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());

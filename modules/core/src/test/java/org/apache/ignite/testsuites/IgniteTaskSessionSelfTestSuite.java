@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.session.GridSessionCancelSiblingsFromFutureSelfTest;
 import org.apache.ignite.session.GridSessionCancelSiblingsFromJobSelfTest;
 import org.apache.ignite.session.GridSessionCancelSiblingsFromTaskSelfTest;
@@ -38,38 +36,33 @@ import org.apache.ignite.session.GridSessionSetJobAttributeWaitListenerSelfTest;
 import org.apache.ignite.session.GridSessionSetTaskAttributeSelfTest;
 import org.apache.ignite.session.GridSessionTaskWaitJobAttributeSelfTest;
 import org.apache.ignite.session.GridSessionWaitAttributeSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Task session test suite.
  */
-public class IgniteTaskSessionSelfTestSuite extends TestSuite {
-    /**
-     * @return TaskSession test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite TaskSession Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridSessionCancelSiblingsFromFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionCancelSiblingsFromJobSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionCancelSiblingsFromTaskSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetFutureAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetFutureAttributeWaitListenerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetJobAttributeWaitListenerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetJobAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetJobAttribute2SelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionJobWaitTaskAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetTaskAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionFutureWaitTaskAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionFutureWaitJobAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionTaskWaitJobAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionSetJobAttributeOrderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionWaitAttributeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionJobFailoverSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionLoadSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionCollisionSpiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSessionCheckpointSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridSessionCancelSiblingsFromFutureSelfTest.class,
+    GridSessionCancelSiblingsFromJobSelfTest.class,
+    GridSessionCancelSiblingsFromTaskSelfTest.class,
+    GridSessionSetFutureAttributeSelfTest.class,
+    GridSessionSetFutureAttributeWaitListenerSelfTest.class,
+    GridSessionSetJobAttributeWaitListenerSelfTest.class,
+    GridSessionSetJobAttributeSelfTest.class,
+    GridSessionSetJobAttribute2SelfTest.class,
+    GridSessionJobWaitTaskAttributeSelfTest.class,
+    GridSessionSetTaskAttributeSelfTest.class,
+    GridSessionFutureWaitTaskAttributeSelfTest.class,
+    GridSessionFutureWaitJobAttributeSelfTest.class,
+    GridSessionTaskWaitJobAttributeSelfTest.class,
+    GridSessionSetJobAttributeOrderSelfTest.class,
+    GridSessionWaitAttributeSelfTest.class,
+    GridSessionJobFailoverSelfTest.class,
+    GridSessionLoadSelfTest.class,
+    GridSessionCollisionSpiSelfTest.class,
+    GridSessionCheckpointSelfTest.class
+})
+public class IgniteTaskSessionSelfTestSuite {
 }

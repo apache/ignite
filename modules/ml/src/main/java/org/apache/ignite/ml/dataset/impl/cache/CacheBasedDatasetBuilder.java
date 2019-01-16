@@ -59,7 +59,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> filter;
 
     /** Upstream transformer builder. */
-    private final UpstreamTransformerBuilder<K, V> transformerBuilder;
+    private final UpstreamTransformerBuilder transformerBuilder;
 
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
@@ -93,7 +93,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     public CacheBasedDatasetBuilder(Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuilder<K, V> transformerBuilder) {
+        UpstreamTransformerBuilder transformerBuilder) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
@@ -136,7 +136,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder) {
+    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder builder) {
         return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder.andThen(builder));
     }
 

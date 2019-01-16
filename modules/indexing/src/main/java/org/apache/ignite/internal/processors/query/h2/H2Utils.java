@@ -45,15 +45,22 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.result.Row;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
@@ -78,6 +85,8 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 
+import javax.cache.CacheException;
+
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
@@ -93,6 +102,19 @@ public class H2Utils {
 
     /** Quotation character. */
     private static final char ESC_CH = '\"';
+
+    /** Empty cursor. */
+    public static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row get() {
+            return null;
+        }
+    };
 
     /**
      * @param c1 First column.
@@ -597,5 +619,45 @@ public class H2Utils {
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 
         return qry;
+    }
+
+    /**
+     * @param row Row.
+     * @return Row message.
+     */
+    public static GridH2RowMessage toRowMessage(Row row) {
+        if (row == null)
+            return null;
+
+        int cols = row.getColumnCount();
+
+        assert cols > 0 : cols;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(cols);
+
+        for (int i = 0; i < cols; i++) {
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
+     * Create retry exception for distributed join.
+     *
+     * @param msg Message.
+     * @return Exception.
+     */
+    public static GridH2RetryException retryException(String msg) {
+        return new GridH2RetryException(msg);
     }
 }

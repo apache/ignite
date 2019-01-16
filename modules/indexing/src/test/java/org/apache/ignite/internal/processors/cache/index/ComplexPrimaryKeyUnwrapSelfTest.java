@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,8 +35,7 @@ import org.junit.runners.JUnit4;
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 @RunWith(JUnit4.class)
-public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
-
+public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
 
@@ -50,9 +48,9 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**

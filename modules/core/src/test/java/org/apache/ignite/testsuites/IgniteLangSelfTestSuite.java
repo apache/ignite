@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.future.GridCompoundFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
@@ -46,52 +44,47 @@ import org.apache.ignite.lang.utils.GridStripedLockSelfTest;
 import org.apache.ignite.lang.utils.IgniteOffheapReadWriteLockSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Ignite language test suite.
  */
-public class IgniteLangSelfTestSuite extends TestSuite {
-    /**
-     * @return Kernal test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Lang Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridTupleSelfTest.class,
+    GridBoundedPriorityQueueSelfTest.class,
+    GridByteArrayListSelfTest.class,
+    GridLeanMapSelfTest.class,
+    GridLeanIdentitySetSelfTest.class,
+    GridListSetSelfTest.class,
+    GridSetWrapperSelfTest.class,
+    GridConcurrentWeakHashSetSelfTest.class,
+    GridMetadataAwareAdapterSelfTest.class,
+    GridSetWrapperSelfTest.class,
+    IgniteUuidSelfTest.class,
+    GridXSelfTest.class,
+    GridBoundedConcurrentOrderedMapSelfTest.class,
+    GridBoundedConcurrentLinkedHashMapSelfTest.class,
+    GridConcurrentLinkedDequeSelfTest.class,
+    GridCircularBufferSelfTest.class,
+    GridConcurrentLinkedHashMapSelfTest.class,
+    GridConcurrentLinkedHashMapMultiThreadedSelfTest.class,
+    GridStripedLockSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridTupleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedPriorityQueueSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridByteArrayListSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLeanMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLeanIdentitySetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridListSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSetWrapperSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentWeakHashSetSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMetadataAwareAdapterSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSetWrapperSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteUuidSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridXSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedConcurrentOrderedMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridBoundedConcurrentLinkedHashMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedDequeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCircularBufferSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedHashMapSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedHashMapMultiThreadedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridStripedLockSelfTest.class));
+    GridFutureAdapterSelfTest.class,
+    GridCompoundFutureSelfTest.class,
+    GridEmbeddedFutureSelfTest.class,
+    GridNioFutureSelfTest.class,
+    GridNioEmbeddedFutureSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(GridFutureAdapterSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCompoundFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEmbeddedFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNioFutureSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNioEmbeddedFutureSelfTest.class));
+    IgniteFutureImplTest.class,
+    IgniteCacheFutureImplTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteFutureImplTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheFutureImplTest.class));
+    IgniteOffheapReadWriteLockSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(IgniteOffheapReadWriteLockSelfTest.class));
-
-        // Consistent hash tests.
-        suite.addTest(new JUnit4TestAdapter(GridConsistentHashSelfTest.class));
-
-        return suite;
-    }
+    // Consistent hash tests.
+    GridConsistentHashSelfTest.class,
+})
+public class IgniteLangSelfTestSuite {
 }
