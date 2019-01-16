@@ -213,6 +213,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             "v4"
         );
 
+        // TODO: Move to RPELICATED table tests.
         // Replicated table.
         createReplicatedTable("t4",
             pkColumn("k1"),
@@ -429,11 +430,93 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThetaJoin() {
-        // TODO
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
+        // Greater than.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t1.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "2"
+        );
+
+        // Less than.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t1.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "2"
+        );
+
+        // Non-equal.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t1.k1 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t2.ak2 = ?",
+            (res) -> assertPartitions(
+                parititon("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+            (res) -> assertNoPartitions(),
+            "1", "2"
+        );
     }
 
     /**
-     * Test joins with REPLICTED caches.
+     * Test joins with REPLICATED caches.
      */
     @Test
     public void testJoinWithReplicated() {
