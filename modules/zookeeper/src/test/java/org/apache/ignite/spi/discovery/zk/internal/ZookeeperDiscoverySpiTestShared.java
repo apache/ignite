@@ -20,24 +20,18 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -199,73 +193,6 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
                 return true;
             }
         }, 10_000));
-    }
-
-    /**
-     * @param stopTime Stop time.
-     * @param stop Stop flag.
-     * @return Future.
-     */
-    IgniteInternalFuture<?> startRestartZkServers(final long stopTime, final AtomicBoolean stop) {
-        return GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(2500));
-
-                    int idx = rnd.nextInt(ZK_SRVS);
-
-                    log.info("Restart ZK server: " + idx);
-
-                    zkCluster.getServers().get(idx).restart();
-
-                    waitForZkClusterReady(zkCluster);
-                }
-
-                return null;
-            }
-        }, "zk-restart-thread");
-    }
-
-    /**
-     * @param stopTime Stop time.
-     * @param stop Stop flag.
-     * @return Future.
-     */
-    IgniteInternalFuture<?> startCloseZkClientSocket(final long stopTime, final AtomicBoolean stop) {
-        assert testSockNio;
-
-        return GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(100) + 50);
-
-                    List<Ignite> nodes = G.allGrids();
-
-                    if (!nodes.isEmpty()) {
-                        Ignite node = nodes.get(rnd.nextInt(nodes.size()));
-
-                        ZkTestClientCnxnSocketNIO nio = ZkTestClientCnxnSocketNIO.forNode(node);
-
-                        if (nio != null) {
-                            info("Close zk client socket for node: " + node.name());
-
-                            try {
-                                nio.closeSocket(false);
-                            }
-                            catch (Exception e) {
-                                info("Failed to close zk client socket for node: " + node.name());
-                            }
-                        }
-                    }
-                }
-
-                return null;
-            }
-        }, "zk-restart-thread");
     }
 
     /**
