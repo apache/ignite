@@ -127,9 +127,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateInactiveCluster() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
-
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
                 .setGroupName("test_cache")
