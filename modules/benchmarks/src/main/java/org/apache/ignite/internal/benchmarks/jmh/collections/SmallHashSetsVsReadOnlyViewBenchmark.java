@@ -150,6 +150,5 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
 
         return contains;
     }
-
 }
 

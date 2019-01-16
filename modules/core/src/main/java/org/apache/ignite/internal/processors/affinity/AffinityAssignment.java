@@ -31,9 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
-    /**
-     * Backups threshold to use HashMap instead of views on list.
-     */
+    /** Backups threshold to use HashMap instead of views on list. */
     int AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
         5

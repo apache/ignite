@@ -32,19 +32,13 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * BitSet.
-     */
+    /** BitSet. */
     private final BitSet bitSet;
 
-    /**
-     * Calculated size.
-     */
+    /** Calculated size. */
     private int size;
 
-    /**
-     *
-     */
+    /** */
     public BitSetIntSet() {
         bitSet = new BitSet();
     }
@@ -84,7 +78,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
             @Override public boolean hasNext() {
                 int nextBit = bitSet.nextSetBit(next + 1);
 
-                if(nextBit != -1) {
+                if (nextBit != -1) {
                     next = nextBit;
 
                     return true;
@@ -102,9 +96,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         };
     }
 
-    /**
-     * Unsupported operation.
-     */
+    /** Unsupported operation. */
     @Override public boolean add(Integer integer) {
         if (integer == null || integer < 0)
             throw new UnsupportedOperationException("Negative or null values are not supported!");
@@ -120,9 +112,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         return !alreadySet;
     }
 
-    /**
-     * Unsupported operation.
-     */
+    /** Unsupported operation. */
     @Override public boolean remove(Object o) {
         if (o == null)
             throw new UnsupportedOperationException("Null values are not supported!");

@@ -45,9 +45,7 @@ import static org.junit.Assert.fail;
  */
 @RunWith(JUnit4.class)
 public class GridAffinityAssignmentTest {
-    /**
-     *
-     */
+    /**  */
     private DiscoveryMetricsProvider metrics = new DiscoveryMetricsProvider() {
         @Override public ClusterMetrics metrics() {
             return null;
@@ -58,9 +56,7 @@ public class GridAffinityAssignmentTest {
         }
     };
 
-    /**
-     *
-     */
+    /** */
     private IgniteProductVersion ver = new IgniteProductVersion();
 
     /**
