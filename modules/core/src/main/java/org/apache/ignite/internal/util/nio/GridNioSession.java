@@ -80,14 +80,14 @@ public interface GridNioSession {
     /**
      * @return {@code True} to close SocketChannel on session close.
      */
-    public default boolean closeSocket() {
+    public default boolean closeSocketOnSessionClose() {
         return true;
     }
 
     /**
      * @param closeSocket {@code False} remain SocketChannel open on session close.
      */
-    public default void closeSocket(boolean closeSocket) {
+    public default void closeSocketOnSessionClose(boolean closeSocket) {
         throw new UnsupportedOperationException();
     }
 

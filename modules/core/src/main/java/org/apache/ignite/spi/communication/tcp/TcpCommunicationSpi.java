@@ -754,13 +754,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (lsnr != null)
                         lsnr.onChannelRequest(ch, msg.getMessage());
 
-                    // Close session and send response.
-                    ses.closeSocket(false);
+                    ses.send(new ChannelCreateResponseMessage(true)).listen(c1 -> {
+                        // Close session and send response.
+                        ses.closeSocketOnSessionClose(false);
 
-                    ses.send(new ChannelCreateResponseMessage(true)).listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            ses.close();
-                        }
+                        ses.close().listen(c2 -> {
+                            ch.setReady();
+
+                            onChannelCreated(ch);
+                        });
                     });
                 }
                 catch (IgniteCheckedException e) {
@@ -879,14 +881,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
 
-                        ses.closeSocket(false);
+                        ses.closeSocketOnSessionClose(false);
 
-                        ses.close().listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                            @Override public void apply(IgniteInternalFuture<Boolean> future) {
-                                // Make channel ready to transfer bytes.
-                                nioCh.setReady();
-                            }
-                        });
+                        ses.close().listen(f -> nioCh.setReady());
 
                         if (c != null)
                             c.run();
@@ -3999,7 +3996,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         CommunicationListener<Message> lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onChannelReady(ch);
+            lsnr0.onChannelCreated(ch);
     }
 
     /**

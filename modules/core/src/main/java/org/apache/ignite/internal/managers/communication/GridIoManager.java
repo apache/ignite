@@ -292,7 +292,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
 
-            @Override public void onChannelReady(IgniteNioSocketChannel ch) {
+            @Override public void onChannelCreated(IgniteNioSocketChannel ch) {
                 for (GridIoChannelListener lsnr : channelLsnrs)
                     lsnr.onChannelCreated(ch);
             }

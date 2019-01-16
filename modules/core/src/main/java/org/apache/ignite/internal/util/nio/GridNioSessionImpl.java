@@ -329,12 +329,12 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean closeSocket() {
+    @Override public boolean closeSocketOnSessionClose() {
         return closeSocket;
     }
 
     /** {@inheritDoc} */
-    @Override public void closeSocket(boolean closeSocket) {
+    @Override public void closeSocketOnSessionClose(boolean closeSocket) {
         this.closeSocket = closeSocket;
     }
 

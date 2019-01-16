@@ -87,7 +87,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -920,33 +919,6 @@ public class GridNioServer<T> {
     }
 
     /**
-     * The new {@link IgniteNioSocketChannel} will be created and {@link GridNioSession} will be destroyed.
-     *
-     * @param ses Session.
-     * @param msg Message to send on complete.
-     */
-    public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses, Message msg) {
-        assert ses instanceof GridSelectorNioSessionImpl : ses;
-
-        NioOperationFuture<Boolean> req =
-            new NioOperationFuture<>((SocketChannel)ses.key().channel(),
-                NioOperation.ADD_CHANNEL,
-                (GridSelectorNioSessionImpl)ses,
-                msg,
-                true,
-                null);
-
-        try {
-            send0((GridSelectorNioSessionImpl)ses, req, true);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridNioFinishedFuture<>(e);
-        }
-
-        return req;
-    }
-
-    /**
      * Create a {@link IgniteNioSocketChannel} using provided session.
      */
     public IgniteNioSocketChannel createNioChannel(
@@ -955,8 +927,6 @@ public class GridNioServer<T> {
     ) throws IgniteCheckedException {
         if (closed)
             throw new IgniteCheckedException("Server is stopped");
-
-        log.info("channels=" + channels);
 
         if (channels.get(connKey) != null)
             throw new IgniteCheckedException("Channel connection already exists: " + connKey);
@@ -968,30 +938,6 @@ public class GridNioServer<T> {
         channels.putIfAbsent(connKey, nioSocketCh);
 
         return nioSocketCh;
-    }
-
-    /**
-     * Create a new NIO channel on local node.
-     * @param key Channel connection key.
-     * @param channel Socket channel.
-     * @throws IgniteCheckedException If fails.
-     */
-    public GridNioFuture<IgniteNioSocketChannel> createNioChannel(ConnectionKey key,
-        SocketChannel channel) throws IgniteCheckedException {
-        if (!closed) {
-            if (channels.get(key) != null)
-                return new GridNioFinishedFuture<>(new IgniteCheckedException("Channel connection already exists: " + key));
-
-            IgniteNioSocketChannel nioSocketCh = new IgniteNioSocketChannelImpl(key, channel);
-
-            channels.putIfAbsent(key, nioSocketCh);
-
-            onChannelCreated(nioSocketCh);
-
-            return new GridNioFinishedFuture<>(nioSocketCh);
-        }
-        else
-            return new GridNioFinishedFuture<>(new IgniteCheckedException("Server is stopped."));
     }
 
     /**
@@ -1803,16 +1749,6 @@ public class GridNioServer<T> {
     }
 
     /**
-     * Handle {@link IgniteNioSocketChannel} creation event.
-     *
-     * @param ch Created channel.
-     */
-    private void onChannelCreated(IgniteNioSocketChannel ch) {
-        if (lsnr != null)
-            lsnr.onChannelCreated(ch);
-    }
-
-    /**
      * Thread performing only read operations from the channel.
      */
     private abstract class AbstractNioClientWorker extends GridWorker implements GridNioWorker {
@@ -2196,43 +2132,7 @@ public class GridNioServer<T> {
                                 finally {
                                     req.onDone(sb.toString());
                                 }
-
-                                break;
                             }
-
-                            case ADD_CHANNEL:
-                                NioOperationFuture req = (NioOperationFuture)req0;
-
-                                SocketChannel ch = req.socketChannel();
-
-                                assert ch.isOpen() && ch.isConnected() : req;
-
-                                SelectionKey key = ch.keyFor(selector);
-
-                                if (key == null)
-                                    break;
-
-                                try {
-                                    writeAndCloseSession(key, req.session(), ch);
-
-                                }
-                                catch (Exception e) {
-                                    U.closeQuiet(ch);
-
-                                    req.onDone(e);
-
-                                    throw e;
-                                }
-                                finally {
-                                    key.cancel();
-
-                                    if (ch.isOpen() && ch.isConnected())
-                                        ch.configureBlocking(true);
-                                }
-
-                                req.onDone();
-
-                                break;
                         }
                     }
 
@@ -2658,28 +2558,6 @@ public class GridNioServer<T> {
             }
         }
 
-        /** */
-        private void writeAndCloseSession(
-            SelectionKey key,
-            GridSelectorNioSession ses,
-            SocketChannel ch
-        ) throws IOException {
-            ConnectionKey connKey = ses.meta(CONN_IDX_META);
-
-            assert connKey != null : ses;
-            assert channels.get(connKey) == null : connKey;
-
-            processWrite(key);
-
-            close((GridSelectorNioSessionImpl)ses, null, false);
-
-            IgniteNioSocketChannel nioSocketCh;
-
-            channels.putIfAbsent(connKey, nioSocketCh = new IgniteNioSocketChannelImpl(connKey, ch));
-
-            onChannelCreated(nioSocketCh);
-        }
-
         /**
          * Registers given socket channel to the selector, creates a session and notifies the listener.
          *
@@ -2818,7 +2696,7 @@ public class GridNioServer<T> {
 
         /** */
         protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
-            return close(ses, e, ses.closeSocket());
+            return close(ses, e, ses.closeSocketOnSessionClose());
         }
 
         /**
@@ -2860,7 +2738,7 @@ public class GridNioServer<T> {
                 if (closeSock)
                     closeKey(ses.key());
                 else
-                    U.close(ses.key(), log);
+                    ses.key().cancel(); // Unbind socket to the current SelectionKey.
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
@@ -3221,10 +3099,7 @@ public class GridNioServer<T> {
         RESUME_READ,
 
         /** Dump statistics. */
-        DUMP_STATS,
-
-        /** Move session to channel. */
-        ADD_CHANNEL
+        DUMP_STATS
     }
 
     /**
@@ -3450,32 +3325,6 @@ public class GridNioServer<T> {
 
             op = NioOperation.REGISTER;
 
-            this.sockCh = sockCh;
-            this.accepted = accepted;
-            this.meta = meta;
-        }
-
-        /**
-         * @param sockCh Socket channel.
-         * @param op Operation to execute.
-         * @param ses Session.
-         * @param msg Message to send.
-         * @param accepted If socket accepted.
-         * @param meta Optional meta.
-         */
-        NioOperationFuture(
-            SocketChannel sockCh,
-            NioOperation op,
-            GridSelectorNioSession ses,
-            Message msg,
-            boolean accepted,
-            @Nullable Map<Integer, ?> meta
-        ) {
-            super(null);
-
-            this.op = op;
-            this.ses = (GridSelectorNioSessionImpl)ses;
-            this.msg = msg;
             this.sockCh = sockCh;
             this.accepted = accepted;
             this.meta = meta;

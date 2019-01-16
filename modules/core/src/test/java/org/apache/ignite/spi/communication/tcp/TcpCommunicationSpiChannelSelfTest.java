@@ -86,7 +86,7 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
         WritableByteChannel writableCh = commSpi.channel(grid(1).localNode(), null).channel();
 
         // Wait for the channel connection established.
-        waitChLatch.await(5_000L, TimeUnit.MILLISECONDS);
+        assertTrue(waitChLatch.await(5_000L, TimeUnit.MILLISECONDS));
 
         assertNotNull(nioCh[0]);
 

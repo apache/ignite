@@ -22,6 +22,7 @@ import java.util.EventListener;
 import java.util.UUID;
 import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener SPI notifies IO manager with.
@@ -53,7 +54,7 @@ public interface CommunicationListener<T extends Serializable> extends EventList
      * @param ch Channel to configure.
      * @param msg Configuration message.
      */
-    public default void onChannelRequest(IgniteNioSocketChannel ch, T msg) {
+    public default void onChannelRequest(IgniteNioSocketChannel ch, @Nullable T msg) {
         // No-op.
     }
 
@@ -62,7 +63,7 @@ public interface CommunicationListener<T extends Serializable> extends EventList
      *
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelReady(IgniteNioSocketChannel ch) {
+    public default void onChannelCreated(IgniteNioSocketChannel ch) {
         // No-op.
     }
 }
