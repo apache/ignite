@@ -61,7 +61,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(VisorQueryNextPageTaskArg arg) {
             String qryId = arg.getQueryId();
-            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "SQL query results are expired.");
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId);
 
             if (holder.getErr() != null)
                 return new VisorEither<>(new VisorExceptionWrapper(holder.getErr()));

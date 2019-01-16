@@ -67,6 +67,12 @@ public class VisorQueryUtils {
     /** Prefix for node local key for SCAN queries. */
     public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
 
+    /** Message for query result expired error. */
+    private static final String QUERY_RESULTS_EXPIRED_MSG = "SQL query results are expired.";
+
+    /** Message for scan result expired error. */
+    private static final String SCAN_RESULTS_EXPIRED_MSG = "Scan query results are expired.";
+
     /** Columns for SCAN queries. */
     public static final List<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
         new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),
@@ -302,7 +308,7 @@ public class VisorQueryUtils {
      * @return Query holder for specified query ID.
      * @throws IgniteException When holder is not found and errMsg is not null.
      */
-    @Nullable public static VisorQueryHolder getQueryHolder(final IgniteEx ignite, final String qryId, final String errMsg)
+    @Nullable private static VisorQueryHolder getQueryHolder0(final IgniteEx ignite, final String qryId, final String errMsg)
         throws IgniteException {
         ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
         VisorQueryHolder holder = storage.get(qryId);
@@ -311,6 +317,41 @@ public class VisorQueryUtils {
             throw new IgniteException(errMsg);
 
         return holder;
+    }
+
+    /**
+     * Get holder for SQL fields query with throwing of exception when it is not exist.
+     *
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
+     * @return Query holder for specified query ID.
+     * @throws IgniteException When holder is not found and errMsg is not null.
+     */
+    public static VisorQueryHolder getQueryHolder(final IgniteEx ignite, final String qryId) throws IgniteException {
+        return getQueryHolder0(ignite, qryId, QUERY_RESULTS_EXPIRED_MSG);
+    }
+
+    /**
+     * Get holder for scan query with throwing of exception when it is not exist.
+     *
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
+     * @return Query holder for specified query ID.
+     * @throws IgniteException When holder is not found and errMsg is not null.
+     */
+    public static VisorQueryHolder getScanHolder(final IgniteEx ignite, final String qryId) throws IgniteException  {
+        return getQueryHolder0(ignite, qryId, SCAN_RESULTS_EXPIRED_MSG);
+    }
+
+    /**
+     * Get holder for query.
+     *
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
+     * @return Query holder for specified query ID or {@code null} if holder is not exist.
+     */
+    public static VisorQueryHolder getQueryHolderIfExists(final IgniteEx ignite, final String qryId) {
+        return getQueryHolder0(ignite, qryId, null);
     }
 
     /**
@@ -336,99 +377,105 @@ public class VisorQueryUtils {
     /**
      * Fetch rows from query cursor.
      *
-     * @param holder Result holder.
+     * @param ignite IgniteEx instance.
+     * @param qryId Query ID to get holder.
      * @param scan {@code true} for scan query of {@code false} otherwise.
+     * @return {@code True} when query holder exists or {@code false} otherwise.
      */
-    public static void fetchQueryRows(VisorQueryHolder holder, final boolean scan) {
-        VisorQueryCursor<?> cur = holder.getCursor();
+    public static boolean fetchQueryRows(final IgniteEx ignite, final String qryId, final boolean scan) {
+        VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
 
-        try {
-            if (cur.hasNext()) {
-                if (scan) {
-                    holder.setRows(fetchScanQueryRows(
-                        (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
+        if (holder != null) {
+            VisorQueryCursor<?> cur = holder.getCursor();
+
+            try {
+                if (cur.hasNext()) {
+                    if (scan) {
+                        holder.setRows(fetchScanQueryRows(
+                            (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
+                    }
+                    else {
+                        holder.setRows(fetchSqlQueryRows(
+                            (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
+                    }
                 }
-                else {
-                    holder.setRows(fetchSqlQueryRows(
-                        (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
-                }
+                else
+                    holder.setRows(Collections.emptyList());
             }
-            else
-                holder.setRows(Collections.emptyList());
+            catch (Throwable e) {
+                holder.setErr(e);
+            }
         }
-        catch (Throwable e) {
-            holder.setErr(e);
-        }
+
+        return holder != null;
     }
 
     /**
      * Schedule start of SQL query execution.
      *
-     * @param qryId Unique query result id.
      * @param ignite IgniteEx instance.
+     * @param holder Query holder object.
      * @param arg Query task argument with query properties.
      * @param cancel Object to cancel query.
      */
     public static void scheduleQueryStart(
-        final String qryId,
         final IgniteEx ignite,
+        final VisorQueryHolder holder,
         final VisorQueryTaskArg arg,
         final GridQueryCancel cancel
     ) {
         ignite.context().closure().runLocalSafe(() -> {
-            VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+            try {
+                SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
 
-            if (holder != null) {
-                try {
-                    SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
+                qry.setPageSize(arg.getPageSize());
+                qry.setLocal(arg.isLocal());
+                qry.setDistributedJoins(arg.isDistributedJoins());
+                qry.setCollocated(arg.isCollocated());
+                qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
+                qry.setReplicatedOnly(arg.isReplicatedOnly());
+                qry.setLazy(arg.getLazy());
 
-                    qry.setPageSize(arg.getPageSize());
-                    qry.setLocal(arg.isLocal());
-                    qry.setDistributedJoins(arg.isDistributedJoins());
-                    qry.setCollocated(arg.isCollocated());
-                    qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
-                    qry.setReplicatedOnly(arg.isReplicatedOnly());
-                    qry.setLazy(arg.getLazy());
+                String cacheName = arg.getCacheName();
 
-                    String cacheName = arg.getCacheName();
+                if (!F.isEmpty(cacheName))
+                    qry.setSchema(cacheName);
 
-                    if (!F.isEmpty(cacheName))
-                        qry.setSchema(cacheName);
+                List<FieldsQueryCursor<List<?>>> qryCursors = ignite
+                    .context()
+                    .query()
+                    .querySqlFields(null, qry, null, true, false, cancel);
 
-                    List<FieldsQueryCursor<List<?>>> qryCursors = ignite
-                        .context()
-                        .query()
-                        .querySqlFields(null, qry, null, true, false, cancel);
+                if (qryCursors != null) {
+                    // In case of multiple statements leave opened only last cursor.
+                    for (int i = 0; i < qryCursors.size() - 1; i++)
+                        U.closeQuiet(qryCursors.get(i));
 
-                    if (qryCursors != null) {
-                        // In case of multiple statements leave opened only last cursor.
-                        for (int i = 0; i < qryCursors.size() - 1; i++)
-                            U.closeQuiet(qryCursors.get(i));
+                    // In case of multiple statements return last cursor as result.
+                    VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
+                    Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
-                        // In case of multiple statements return last cursor as result.
-                        VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
-                        Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
+                    if (meta == null)
+                        holder.setErr(new SQLException("Fail to execute query. No metadata available."));
+                    else {
+                        holder.setCursor(cur);
 
-                        if (meta == null)
-                            holder.setErr(new SQLException("Fail to execute query. No metadata available."));
-                        else {
-                            holder.setCursor(cur);
+                        List<VisorQueryField> names = new ArrayList<>(meta.size());
 
-                            List<VisorQueryField> names = new ArrayList<>(meta.size());
+                        for (GridQueryFieldMetadata col : meta)
+                            names.add(new VisorQueryField(col.schemaName(), col.typeName(),
+                                col.fieldName(), col.fieldTypeName()));
 
-                            for (GridQueryFieldMetadata col : meta)
-                                names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                                    col.fieldName(), col.fieldTypeName()));
+                        holder.setColumns(names);
+                        scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
 
-                            holder.setColumns(names);
-                            scheduleResultSetHolderRemoval(qryId, ignite);
-                            fetchQueryRows(holder, false);
-                        }
+                        if (!fetchQueryRows(ignite, holder.getQueryID(), false))
+                            cur.close();
                     }
                 }
-                catch (Throwable e) {
-                    holder.setErr(e);
-                }
+            }
+            catch (Throwable e) {
+                holder.setErr(e);
             }
         }, MANAGEMENT_POOL);
     }
@@ -436,46 +483,44 @@ public class VisorQueryUtils {
     /**
      * Schedule start of SCAN query execution.
      *
-     * @param qryId Unique query result id.
      * @param ignite IgniteEx instance.
+     * @param holder Query holder object.
      * @param arg Query task argument with query properties.
      */
     public static void scheduleScanStart(
-        final String qryId,
         final IgniteEx ignite,
+        final VisorQueryHolder holder,
         final VisorScanQueryTaskArg arg
     ) {
         ignite.context().closure().runLocalSafe(() -> {
-            VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+            try {
+                IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
+                String filterText = arg.getFilter();
+                IgniteBiPredicate<Object, Object> filter = null;
 
-            if (holder != null) {
-                try {
-                    IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
-                    String filterText = arg.getFilter();
-                    IgniteBiPredicate<Object, Object> filter = null;
+                if (!F.isEmpty(filterText))
+                    filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
 
-                    if (!F.isEmpty(filterText))
-                        filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
+                VisorQueryCursor<Cache.Entry<Object, Object>> cur;
 
-                    VisorQueryCursor<Cache.Entry<Object, Object>> cur;
+                if (arg.isNear())
+                    cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
+                else {
+                    ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
+                    qry.setPageSize(arg.getPageSize());
+                    qry.setLocal(arg.isLocal());
 
-                    if (arg.isNear())
-                        cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
-                    else {
-                        ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
-                        qry.setPageSize(arg.getPageSize());
-                        qry.setLocal(arg.isLocal());
-
-                        cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
-                    }
-
-                    holder.setCursor(cur);
-                    scheduleResultSetHolderRemoval(qryId, ignite);
-                    fetchQueryRows(holder, true);
+                    cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
                 }
-                catch (Throwable e) {
-                    holder.setErr(e);
-                }
+
+                holder.setCursor(cur);
+                scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
+
+                if (!fetchQueryRows(ignite, holder.getQueryID(), true))
+                    cur.close();
+            }
+            catch (Throwable e) {
+                holder.setErr(e);
             }
         }, MANAGEMENT_POOL);
     }
@@ -523,15 +568,15 @@ public class VisorQueryUtils {
      * @param qryId Unique query result id.
      * @param ignite IgniteEx instance.
      */
-    public static void scheduleResultSetHolderRemoval(final String qryId, final IgniteEx ignite) {
+    public static void scheduleResultSetHolderRemoval(final IgniteEx ignite, final String qryId) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
-                VisorQueryHolder holder = getQueryHolder(ignite, qryId, null);
+                VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
 
                 if (holder != null) {
                     if (holder.accessed()) {
                         holder.accessed(false);
-                        scheduleResultSetHolderRemoval(qryId, ignite);
+                        scheduleResultSetHolderRemoval(ignite, qryId);
                     }
                     else {
                         // Remove stored cursor otherwise.

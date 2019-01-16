@@ -71,7 +71,7 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
 
                 ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(qryId, holder);
 
-                scheduleScanStart(qryId, ignite, arg);
+                scheduleScanStart(ignite, holder, arg);
 
                 return new VisorEither<>(new VisorQueryResult(nid, qryId, SCAN_COL_NAMES, null, false, 0));
             }

@@ -72,10 +72,11 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 GridQueryCancel cancel = new GridQueryCancel();
 
                 Map<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+                VisorQueryHolder holder = new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel);
 
-                storage.put(qryId, new VisorQueryHolder(qryId, null, arg.getPageSize(), cancel));
+                storage.put(qryId, holder);
 
-                scheduleQueryStart(qryId, ignite, arg, cancel);
+                scheduleQueryStart(ignite, holder, arg, cancel);
 
                 return new VisorEither<>(new VisorQueryResult(nid, qryId, null, null, false, 0));
             }

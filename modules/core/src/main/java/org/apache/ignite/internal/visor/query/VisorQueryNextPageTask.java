@@ -26,6 +26,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getScanHolder;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
 /**
@@ -72,7 +73,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
         private VisorQueryResult nextSqlPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
             String qryId = arg.getQueryId();
-            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "SQL query results are expired.");
+            VisorQueryHolder holder = getQueryHolder(ignite, qryId);
             VisorQueryCursor<List<?>> cur = (VisorQueryCursor<List<?>>)holder.getCursor();
             List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize());
 
@@ -97,7 +98,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
             long start = U.currentTimeMillis();
 
             String qryId = arg.getQueryId();
-            VisorQueryHolder holder = getQueryHolder(ignite, qryId, "Scan query results are expired.");
+            VisorQueryHolder holder = getScanHolder(ignite, qryId);
             VisorQueryCursor<Cache.Entry<Object, Object>> cur =
                 (VisorQueryCursor<Cache.Entry<Object, Object>>)holder.getCursor();
             List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.getPageSize());
