@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 /**
  *
@@ -77,7 +78,7 @@ public class InterceptorWithKeepBinaryCacheFullApiTest extends WithKeepBinaryCac
                 validate(e.getKey(), e.getValue(), true, true);
 
                 if (newVal != null)
-                    assertEquals("NewVal: " + newVal, interceptorBinaryObjExp, newVal instanceof BinaryObject);
+                    Assert.assertEquals("NewVal: " + newVal, interceptorBinaryObjExp, newVal instanceof BinaryObject);
             }
 
             return newVal;
@@ -107,16 +108,16 @@ public class InterceptorWithKeepBinaryCacheFullApiTest extends WithKeepBinaryCac
          * @param validateVal Validate value flag.
          */
         private void validate(K key, V val, boolean validateKey, boolean validateVal) {
-            assertNotNull(key);
+            Assert.assertNotNull(key);
 
             if (validate) {
                 if (validateKey)
-                    assertTrue("Key: " + key, key instanceof BinaryObject);
+                    Assert.assertTrue("Key: " + key, key instanceof BinaryObject);
 
                 if (val != null) {
                     // TODO IGNITE-2973: should always do this check, but cannot due to the bug.
                     if (validateVal && interceptorBinaryObjExp)
-                        assertTrue("Val: " + val, val instanceof BinaryObject);
+                        Assert.assertTrue("Val: " + val, val instanceof BinaryObject);
                 }
             }
         }

@@ -104,6 +104,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -251,7 +252,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 }
             }, 5000);
 
-            assertEquals(lsnr.evts.size(), 1);
+            Assert.assertEquals(lsnr.evts.size(), 1);
         }
     }
 
@@ -266,8 +267,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
-        assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
-        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
+        Assert.assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
+        Assert.assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
 
         Ignite ignite1 = startGrid(1);
         GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
@@ -275,8 +276,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         waitRebalanceFinished(ignite0, 2, minorVer);
         waitRebalanceFinished(ignite1, 2, minorVer);
 
-        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
-        assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
+        Assert.assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
+        Assert.assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
 
         Ignite ignite2 = startGrid(2);
         GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
@@ -285,19 +286,19 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         waitRebalanceFinished(ignite1, 3, minorVer);
         waitRebalanceFinished(ignite2, 3, minorVer);
 
-        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
-        assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
-        assertFalse(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertFalse(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
 
         client = true;
 
         Ignite ignite3 = startGrid(3);
         GridDhtPartitionTopology top3 = ((IgniteKernal)ignite3).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
-        assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
-        assertTrue(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
-        assertTrue(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
-        assertTrue(top3.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertTrue(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertTrue(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
+        Assert.assertTrue(top3.rebalanceFinished(new AffinityTopologyVersion(4)));
 
         stopGrid(1);
 
@@ -348,8 +349,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                             final Integer val = evt.getValue();
 
-                            assertNotNull("No old value: " + evt, oldVal);
-                            assertEquals("Unexpected old value: " + evt, (Integer)(oldVal + 1), val);
+                            Assert.assertNotNull("No old value: " + evt, oldVal);
+                            Assert.assertEquals("Unexpected old value: " + evt, (Integer)(oldVal + 1), val);
 
                             cntr.incrementAndGet();
                         }
@@ -393,9 +394,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             updFut.get();
             rebFut.get();
 
-            assertFalse("Unexpected error during test", err.get());
+            Assert.assertFalse("Unexpected error during test", err.get());
 
-            assertTrue(cntr.get() > 0);
+            Assert.assertTrue(cntr.get() > 0);
 
             cur.close();
 
@@ -421,7 +422,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 5000);
 
-        assertTrue(top.rebalanceFinished(topVer0));
+        Assert.assertTrue(top.rebalanceFinished(topVer0));
     }
 
     /**
@@ -535,7 +536,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (aff.mapPartitionToPrimaryAndBackups(e.getKey()).contains(grid(i).localNode())) {
                     int partIdx = act.partitionIndex(e.getKey());
 
-                    assertEquals(e.getValue(), (Long)act.updateCounterAt(partIdx));
+                    Assert.assertEquals(e.getValue(), (Long)act.updateCounterAt(partIdx));
                 }
             }
         }
@@ -805,7 +806,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     updated = true;
                 }
                 catch (Exception ignore) {
-                    assertEquals(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, atomicityMode());
+                    Assert.assertEquals(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, atomicityMode());
                 }
             }
 
@@ -837,7 +838,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
         if (cacheMode() != REPLICATED)
-            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+            Assert.assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
 
         Affinity<Object> aff = qryClient.affinity(DEFAULT_CACHE_NAME);
 
@@ -1117,7 +1118,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         cur.close();
 
-        assertFalse("Unexpected error during test, see log for details.", err);
+        Assert.assertFalse("Unexpected error during test, see log for details.", err);
     }
 
     /**
@@ -1128,8 +1129,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (T3<Object, Object, Object> exp : expEvts) {
             CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
 
-            assertNotNull("No event for key: " + exp.get1(), e);
-            assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+            Assert.assertNotNull("No event for key: " + exp.get1(), e);
+            Assert.assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
         }
 
         expEvts.clear();
@@ -1140,7 +1141,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param expEvts Expected events.
      * @param lsnr Listener.
-     * @param lostAllow If {@code true} than won't assert on lost events.
+     * @param lostAllow If {@code true} than won't Assert.assert on lost events.
      * @throws Exception If failed.
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts,
@@ -1152,7 +1153,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param expEvts Expected events.
      * @param lsnr Listener.
-     * @param lostAllow If {@code true} than won't assert on lost events.
+     * @param lostAllow If {@code true} than won't Assert.assert on lost events.
      * @param wait Wait flag.
      * @throws Exception If failed.
      */
@@ -1294,8 +1295,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (T3<Object, Object, Object> exp : expEvts) {
             CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
 
-            assertNotNull("No event for key: " + exp.get1(), e);
-            assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+            Assert.assertNotNull("No event for key: " + exp.get1(), e);
+            Assert.assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
 
             if (allowLoseEvt)
                 lsnr.evts.remove(exp.get1());
@@ -1325,7 +1326,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final ClusterNode node = ignite.cluster().localNode();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return aff.primaryPartitions(node).length > 0;
             }
@@ -1349,10 +1350,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 }
             }
 
-            assertEquals(KEYS_PER_PART, cnt);
+            Assert.assertEquals(KEYS_PER_PART, cnt);
         }
 
-        assertEquals(parts * KEYS_PER_PART, res.size());
+        Assert.assertEquals(parts * KEYS_PER_PART, res.size());
 
         return res;
     }
@@ -1376,7 +1377,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = qryClient.cache(DEFAULT_CACHE_NAME).query(qry);
 
-        assertEquals(0, backupQueue(ignite(1)).size());
+        Assert.assertEquals(0, backupQueue(ignite(1)).size());
 
         IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1398,7 +1399,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
+        Assert.assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
             backupQueue(ignite(1)).size() < BACKUP_ACK_THRESHOLD);
 
         if (!latch.await(5, SECONDS))
@@ -1421,14 +1422,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, ACK_FREQ + 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)), backupQueue(ignite(1)).isEmpty());
+        Assert.assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)), backupQueue(ignite(1)).isEmpty());
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
 
         cur.close();
 
-        assertFalse("Unexpected error during test, see log for details.", err);
+        Assert.assertFalse("Unexpected error during test, see log for details.", err);
     }
 
     /**
@@ -1450,7 +1451,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = qryClient.cache(DEFAULT_CACHE_NAME).query(qry);
 
-        assertEquals(0, backupQueue(ignite(0)).size());
+        Assert.assertEquals(0, backupQueue(ignite(0)).size());
 
         long ttl = 100;
 
@@ -1474,7 +1475,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 5000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)),
+        Assert.assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)),
             backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
@@ -1483,7 +1484,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, ttl + 1000);
 
-        assertTrue("Entry evicted.", wait);
+        Assert.assertTrue("Entry evicted.", wait);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1491,13 +1492,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)), backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
+        Assert.assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)), backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
         if (!backupQueue(ignite(0)).isEmpty()) {
             for (Object o : backupQueue(ignite(0))) {
                 CacheContinuousQueryEntry e = (CacheContinuousQueryEntry)o;
 
-                assertNotSame("Evicted entry added to backup queue.", -1L, e.updateCounter());
+                Assert.assertNotSame("Evicted entry added to backup queue.", -1L, e.updateCounter());
             }
         }
 
@@ -1521,7 +1522,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = cache.query(qry);
 
-        assertEquals(0, backupQueue(ignite(1)).size());
+        Assert.assertEquals(0, backupQueue(ignite(1)).size());
 
         List<Integer> keys = primaryKeys(cache, BACKUP_ACK_THRESHOLD);
 
@@ -1541,7 +1542,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 5000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
+        Assert.assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
             backupQueue(ignite(1)).size() < BACKUP_ACK_THRESHOLD);
 
         if (!latch.await(5, SECONDS))
@@ -1711,12 +1712,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     CountDownLatch latch = new CountDownLatch(1);
 
-                    assertTrue(checkLatch.compareAndSet(null, latch));
+                    Assert.assertTrue(checkLatch.compareAndSet(null, latch));
 
                     if (!stop.get()) {
                         log.info("Wait for event check.");
 
-                        assertTrue(latch.await(1, MINUTES));
+                        Assert.assertTrue(latch.await(1, MINUTES));
                     }
                 }
 
@@ -1805,8 +1806,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         updated = true;
                     }
                     catch (CacheException e) {
-                        assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                        assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                        Assert.assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                        Assert.assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                     }
                 }
 
@@ -1906,7 +1907,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             dinQry.close();
         }
 
-        assertFalse("Unexpected error during test, see log for details.", err);
+        Assert.assertFalse("Unexpected error during test, see log for details.", err);
     }
 
     /**
@@ -2025,7 +2026,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             }
                         });
 
-                        assertTrue(checkBarrier.compareAndSet(null, bar));
+                        Assert.assertTrue(checkBarrier.compareAndSet(null, bar));
 
                         if (!stop.get() && !err)
                             bar.await(1, MINUTES);
@@ -2074,7 +2075,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
-                                assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                                Assert.assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                             }
                         }
 
@@ -2114,7 +2115,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         cur.close();
 
-        assertFalse("Unexpected error during test, see log for details.", err);
+        Assert.assertFalse("Unexpected error during test, see log for details.", err);
     }
 
     /**
@@ -2180,8 +2181,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             updated = true;
                         }
                         catch (CacheException e) {
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                            assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                            Assert.assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            Assert.assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                         }
                     }
 
@@ -2196,15 +2197,15 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             if (!latch.await(5, SECONDS))
                 fail("Failed to wait for notifications [exp=" + THREADS + ", left=" + lsnr.latch.getCount() + ']');
 
-            assertEquals(THREADS, lsnr.allEvts.size());
+            Assert.assertEquals(THREADS, lsnr.allEvts.size());
 
             Set<Integer> vals = new HashSet<>();
 
             boolean err = false;
 
             for (CacheEntryEvent<?, ?> evt : lsnr.allEvts) {
-                assertEquals(key, evt.getKey());
-                assertNotNull(evt.getValue());
+                Assert.assertEquals(key, evt.getKey());
+                Assert.assertNotNull(evt.getValue());
 
                 if (!vals.add((Integer)evt.getValue())) {
                     err = true;
@@ -2221,7 +2222,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 }
             }
 
-            assertFalse("Invalid events, see log for details.", err);
+            Assert.assertFalse("Invalid events, see log for details.", err);
 
             lsnr.allEvts.clear();
 
@@ -2241,7 +2242,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     private boolean checkEvents(boolean logAll,
         Map<Integer, List<T2<Integer, Integer>>> expEvts,
         CacheEventListener2 lsnr) {
-        assertTrue(!expEvts.isEmpty());
+        Assert.assertTrue(!expEvts.isEmpty());
 
         boolean pass = true;
 
@@ -2279,8 +2280,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         CacheEntryEvent<?, ?> rcvdEvt = rcvdEvts.get(i);
 
                         if (pass) {
-                            assertEquals(key, rcvdEvt.getKey());
-                            assertEquals(expEvt.get1(), rcvdEvt.getValue());
+                            Assert.assertEquals(key, rcvdEvt.getKey());
+                            Assert.assertEquals(expEvt.get1(), rcvdEvt.getValue());
                         }
                         else {
                             if (!key.equals(rcvdEvt.getKey()) || !expEvt.get1().equals(rcvdEvt.getValue()))
@@ -2521,8 +2522,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     if (allEvts != null)
                         allEvts.add(evt);
 
-                    assertTrue(latch != null);
-                    assertTrue(latch.getCount() > 0);
+                    Assert.assertTrue(latch != null);
+                    Assert.assertTrue(latch.getCount() > 0);
 
                     latch.countDown();
 
@@ -2583,8 +2584,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     Integer key = (Integer)evt.getKey();
                     Integer val = (Integer)evt.getValue();
 
-                    assertNotNull(key);
-                    assertNotNull(val);
+                    Assert.assertNotNull(key);
+                    Assert.assertNotNull(val);
 
                     Integer prevVal = vals.get(key);
 

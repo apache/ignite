@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.junit.Assert;
 
 /**
  * Tests for {@link CacheJdbcStoreSessionListener}.
@@ -148,7 +149,7 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) {
-            assertNull(ses.attachment());
+            Assert.assertNull(ses.attachment());
         }
 
         /**
@@ -156,11 +157,11 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
         private void checkConnection() {
             Connection conn = ses.attachment();
 
-            assertNotNull(conn);
+            Assert.assertNotNull(conn);
 
             try {
-                assertFalse(conn.isClosed());
-                assertFalse(conn.getAutoCommit());
+                Assert.assertFalse(conn.isClosed());
+                Assert.assertFalse(conn.getAutoCommit());
             }
             catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -180,7 +181,7 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
             if (sesConn == null)
                 props.put(SES_CONN_KEY, conn);
             else {
-                assertSame(conn, sesConn);
+                Assert.assertSame(conn, sesConn);
 
                 reuseCnt.incrementAndGet();
             }
