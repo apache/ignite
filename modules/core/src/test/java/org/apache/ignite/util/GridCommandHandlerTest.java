@@ -103,7 +103,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -692,7 +691,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10899")
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 

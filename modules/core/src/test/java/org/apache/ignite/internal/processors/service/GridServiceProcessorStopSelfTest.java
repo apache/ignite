@@ -49,9 +49,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final long TEST_FUTURE_WAIT_TIMEOUT = 2_000L;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -239,9 +236,9 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
                 c2.apply(srvcProc);
             });
 
-            c1Fut.get(TEST_FUTURE_WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
+            c1Fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-            c2Fut.get(TEST_FUTURE_WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
+            c2Fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             stopAllGrids(true);
