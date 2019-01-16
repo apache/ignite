@@ -170,7 +170,7 @@ public class GridAffinityAssignmentTest {
 
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>(){{
+            new ArrayList<List<ClusterNode>>() {{
                 add(nodes);
             }},
             new ArrayList<>(),
