@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLPermission;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
@@ -42,15 +43,20 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
@@ -84,11 +90,10 @@ public class JdbcThinConnection implements Connection {
     /** Request timeout period. */
     private static final int REQUEST_TIMEOUT_PERIOD = 1_000;
 
-    /** Network timeout permission */
-    private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
-
     /** Zero timeout as query timeout means no timeout. */
     static final int NO_TIMEOUT = 0;
+
+    private static final String SET_NETWORK_TIMEOUT_PERM = "setNetworkTimeout";
 
     /** Statements modification mutex. */
     final private Object stmtsMux = new Object();
@@ -129,6 +134,9 @@ public class JdbcThinConnection implements Connection {
     /** Tracked statements to close on disconnect. */
     private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
+    /** Query timeout timer */
+    private final Timer timer;
+
     /**
      * Creates new connection.
      *
@@ -145,6 +153,8 @@ public class JdbcThinConnection implements Connection {
         schema = normalizeSchema(connProps.getSchema());
 
         cliIo = new JdbcThinTcpIo(connProps);
+
+        timer = new Timer("query-timeout-timer");
 
         ensureConnected();
     }
@@ -399,6 +409,8 @@ public class JdbcThinConnection implements Connection {
         closed = true;
 
         cliIo.close();
+
+        timer.cancel();
     }
 
     /** {@inheritDoc} */
@@ -772,10 +784,25 @@ public class JdbcThinConnection implements Connection {
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
 
+        RequestTimeoutTimerTask reqTimeoutTimerTask = null;
+
         try {
+            if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT) {
+                reqTimeoutTimerTask = new RequestTimeoutTimerTask(
+                    req instanceof JdbcBulkLoadBatchRequest ? stmt.currentRequestId() : req.requestId(),
+                    stmt.requestTimeout());
+
+                timer.schedule(reqTimeoutTimerTask, 0, REQUEST_TIMEOUT_PERIOD);
+            }
+
             JdbcResponse res = cliIo.sendRequest(req, stmt);
 
-            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
+            if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED && stmt != null &&
+                stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null && reqTimeoutTimerTask.expired.get()) {
+                throw new SQLTimeoutException(QueryCancelledException.ERR_MSG, SqlStateCode.QUERY_CANCELLED,
+                    IgniteQueryErrorCode.QUERY_CANCELED);
+            }
+            else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
             return (R)res.response();
@@ -790,6 +817,10 @@ public class JdbcThinConnection implements Connection {
                 throw new SQLException("Connection timed out.", SqlStateCode.CONNECTION_FAILURE, e);
             else
                 throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+        finally {
+            if (stmt != null && stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTimerTask != null)
+                reqTimeoutTimerTask.cancel();
         }
     }
 
@@ -865,6 +896,8 @@ public class JdbcThinConnection implements Connection {
 
             stmts.clear();
         }
+
+        timer.cancel();
     }
 
     /**
@@ -902,9 +935,6 @@ public class JdbcThinConnection implements Connection {
     private class StreamState {
         /** Maximum requests count that may be sent before any responses. */
         private static final int MAX_REQUESTS_BEFORE_RESPONSE = 10;
-
-        /** Wait timeout. */
-        private static final long WAIT_TIMEOUT = 1;
 
         /** Batch size for streaming. */
         private int streamBatchSize;
@@ -1107,5 +1137,53 @@ public class JdbcThinConnection implements Connection {
      */
     boolean isQueryCancellationSupported() {
         return cliIo.isQueryCancellationSupported();
+    }
+
+    /**
+     * Request Timeout Timer Task
+     */
+    private class RequestTimeoutTimerTask extends TimerTask {
+
+        /** Request id. */
+        private long reqId;
+
+        /** Remaining query timeout. */
+        private int remainingQryTimeout;
+
+        /** Flag that shows whether TimerTask was expired or not. */
+        private AtomicBoolean expired;
+
+        /**
+         * @param reqId Request Id to cancel in case of timeout
+         * @param initReqTimeout Initial request timeout
+         */
+        RequestTimeoutTimerTask(long reqId, int initReqTimeout) {
+            this.reqId = reqId;
+
+            remainingQryTimeout = initReqTimeout;
+
+            expired = new AtomicBoolean(false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                if (remainingQryTimeout <= 0) {
+                    expired.set(true);
+
+                    sendQueryCancelRequest(new JdbcQueryCancelRequest(reqId));
+
+                    cancel();
+                }
+
+                remainingQryTimeout -= REQUEST_TIMEOUT_PERIOD;
+            }
+            catch (SQLException e) {
+                LOG.log(Level.WARNING,
+                    "Request timeout processing failure: unable to cancel request [reqId=" + reqId + ']', e);
+
+                cancel();
+            }
+        }
     }
 }

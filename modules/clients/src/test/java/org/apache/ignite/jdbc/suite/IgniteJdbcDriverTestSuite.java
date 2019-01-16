@@ -78,6 +78,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStatementTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingNotOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
@@ -177,6 +178,7 @@ public class IgniteJdbcDriverTestSuite {
         suite.addTest(new JUnit4TestAdapter(JdbcThinErrorsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinStatementCancelSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinConnectionTimeoutSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinStatementTimeoutSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(JdbcThinInsertStatementSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinUpdateStatementSelfTest.class));
