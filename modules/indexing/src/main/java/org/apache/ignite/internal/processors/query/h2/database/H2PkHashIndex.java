@@ -251,15 +251,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
                 GridQueryTypeDescriptor type = desc.type();
 
                 for (;;) {
-                    if (curr != null && curr.next()) {
-                        CacheDataRow row = curr.get();
-
-                        // Need to filter rows by value type because in a single cache
-                        // we can have multiple indexed types.
-                        if (!type.matchTypeId(row.value()))
-                            continue;
-
-                        return true;
+                    if (curr != null) {
+                        while (curr.next()) {
+                            // Need to filter rows by value type because in a single cache
+                            // we can have multiple indexed types.
+                            if (type.matchTypeId(curr.get().value()))
+                                return true;
+                        }
                     }
 
                     if (!iter.hasNext())
