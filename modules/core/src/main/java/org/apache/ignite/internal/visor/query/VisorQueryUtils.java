@@ -348,33 +348,16 @@ public class VisorQueryUtils {
     /**
      * Fetch rows from query cursor.
      *
-     * @param ignite IgniteEx instance.
-     * @param qryId Query ID to get holder.
-     * @return {@code true} when query holder exists or {@code false} otherwise.
+     * @param holder Query holder.
      */
-    public static boolean fetchQueryRows(final IgniteEx ignite, final String qryId) {
-        VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
+    public static void fetchQueryRows(VisorQueryHolder holder) {
+        VisorQueryCursor<?> cur = holder.getCursor();
 
-        boolean hasData = holder != null;
-
-        if (hasData) {
-            VisorQueryCursor<?> cur = holder.getCursor();
-
-            try {
-                if (cur.hasNext()) {
-                    holder.setRows(VisorQueryHolder.isSqlQuery(qryId)
-                        ? fetchSqlQueryRows(cur, holder.getPageSize())
-                        : fetchScanQueryRows(cur, holder.getPageSize()));
-                }
-                else
-                    holder.setRows(Collections.emptyList());
-            }
-            catch (Throwable e) {
-                holder.setError(e);
-            }
-        }
-
-        return hasData;
+        holder.setRows(cur.hasNext()
+            ? (VisorQueryHolder.isSqlQuery(holder.getQueryID())
+                ? fetchSqlQueryRows(cur, holder.getPageSize())
+                : fetchScanQueryRows(cur, holder.getPageSize()))
+            : Collections.emptyList());
     }
 
     /**
@@ -419,25 +402,34 @@ public class VisorQueryUtils {
 
                 // In case of multiple statements return last cursor as result.
                 VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
-                Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
-                if (meta == null)
-                    holder.setError(new SQLException("Fail to execute query. No metadata available."));
-                else {
-                    holder.setCursor(cur);
+                try {
+                    VisorQueryHolder h = getQueryHolder(ignite, holder.getQueryID());
 
-                    List<VisorQueryField> names = new ArrayList<>(meta.size());
+                    Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
-                    for (GridQueryFieldMetadata col : meta)
-                        names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                            col.fieldName(), col.fieldTypeName()));
+                    if (meta == null)
+                        h.setError(new SQLException("Fail to execute query. No metadata available."));
+                    else {
+                        h.setCursor(cur);
 
-                    holder.setColumns(names);
+                        List<VisorQueryField> names = new ArrayList<>(meta.size());
 
-                    scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
+                        for (GridQueryFieldMetadata col : meta)
+                            names.add(new VisorQueryField(col.schemaName(), col.typeName(),
+                                col.fieldName(), col.fieldTypeName()));
 
-                    if (!fetchQueryRows(ignite, holder.getQueryID()))
-                        cur.close();
+                        h.setColumns(names);
+
+                        scheduleQueryHolderRemoval(ignite, h.getQueryID());
+
+                        fetchQueryRows(h);
+                    }
+                }
+                catch (Throwable e) {
+                    U.closeQuiet(cur);
+
+                    throw e;
                 }
             }
             catch (Throwable e) {
@@ -479,12 +471,20 @@ public class VisorQueryUtils {
                     cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
                 }
 
-                holder.setCursor(cur);
+                try {
+                    VisorQueryHolder h = getQueryHolder(ignite, holder.getQueryID());
 
-                scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
+                    h.setCursor(cur);
 
-                if (!fetchQueryRows(ignite, holder.getQueryID()))
-                    cur.close();
+                    scheduleQueryHolderRemoval(ignite, h.getQueryID());
+
+                    fetchQueryRows(h);
+                }
+                catch (Throwable e) {
+                    U.closeQuiet(cur);
+
+                    throw e;
+                }
             }
             catch (Throwable e) {
                 holder.setError(e);
@@ -535,15 +535,15 @@ public class VisorQueryUtils {
      * @param qryId Unique query result id.
      * @param ignite IgniteEx instance.
      */
-    public static void scheduleResultSetHolderRemoval(final IgniteEx ignite, final String qryId) {
+    public static void scheduleQueryHolderRemoval(final IgniteEx ignite, final String qryId) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
                 VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
 
                 if (holder != null) {
-                    if (holder.accessed()) {
-                        holder.accessed(false);
-                        scheduleResultSetHolderRemoval(ignite, qryId);
+                    if (holder.isAccessed()) {
+                        holder.setAccessed(false);
+                        scheduleQueryHolderRemoval(ignite, qryId);
                     }
                     else {
                         // Remove stored cursor otherwise.

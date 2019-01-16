@@ -44,16 +44,16 @@ public class VisorQueryHolder {
     private final long start;
 
     /** Wrapper for query cursor. */
-    private VisorQueryCursor<?> cur;
+    private volatile VisorQueryCursor<?> cur;
 
     /** Query column descriptors. */
-    private List<VisorQueryField> cols;
+    private volatile List<VisorQueryField> cols;
 
     /** Rows fetched from query. */
-    private List<Object[]> rows;
+    private volatile List<Object[]> rows;
 
     /** Error in process of query result receiving. */
-    private Throwable err;
+    private volatile Throwable err;
 
     /** Query duration in ms. */
     private long duration = -1;
@@ -188,14 +188,14 @@ public class VisorQueryHolder {
     /**
      * @return Flag indicating that this future was read from last check..
      */
-    public boolean accessed() {
+    public boolean isAccessed() {
         return accessed;
     }
 
     /**
      * @param accessed New accessed.
      */
-    public void accessed(boolean accessed) {
+    public void setAccessed(boolean accessed) {
         this.accessed = accessed;
     }
 

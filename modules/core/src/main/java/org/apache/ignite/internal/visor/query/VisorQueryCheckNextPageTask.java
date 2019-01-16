@@ -79,7 +79,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
             }
 
             if (hasMore)
-                holder.accessed(true);
+                holder.setAccessed(true);
             else
                 removeQueryHolder(ignite, qryId);
 
