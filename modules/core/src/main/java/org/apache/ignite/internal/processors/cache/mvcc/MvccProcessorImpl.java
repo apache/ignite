@@ -326,7 +326,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (cctx.mvccEnabled() && txLog != null) {
             assert mvccEnabled && mvccSupported;
 
-            boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
+            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
                 .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
 
             if (!hasMvccCaches)
@@ -611,7 +611,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
-        assert txLog != null && mvccEnabled;
+        assert txLog != null && mvccEnabled : txLog;
 
         return txLog.get(crdVer, cntr);
     }
