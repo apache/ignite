@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -43,6 +44,9 @@ public class IgniteCacheMvccTestSuite9 {
 
         // Skip classes that already contains Mvcc tests
         ignoredTests.add(IgniteTxConcurrentRemoveObjectsTest.class);
+
+        // Non supported modes.
+        ignoredTests.add(IgniteTxCachePrimarySyncTest.class);
 
         // Atomic caches.
         ignoredTests.add(CacheAtomicPrimarySyncBackPressureTest.class);
