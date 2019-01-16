@@ -623,6 +623,10 @@ public class DmlStatementsProcessor {
 
                 throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
             }
+            finally {
+                if (commit)
+                    cctx.tm().resetContext();
+            }
         }
 
         UpdateResult fastUpdateRes = plan.processFast(fieldsQry.getArgs());
