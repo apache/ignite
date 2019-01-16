@@ -341,7 +341,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    private void stopTxLog() {
+    @Override public void stopTxLog() {
         stopVacuumWorkers();
 
         txLog = null;

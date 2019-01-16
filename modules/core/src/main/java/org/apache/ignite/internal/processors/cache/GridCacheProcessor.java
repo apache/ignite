@@ -5602,7 +5602,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             stopCaches(true);
 
-//            sharedCtx.coordinators().stopTxLog();
+            sharedCtx.coordinators().stopTxLog();
 
             sharedCtx.database().cleanupRestoredCaches();
         }

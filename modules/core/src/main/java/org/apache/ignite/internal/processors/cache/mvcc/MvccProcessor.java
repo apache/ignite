@@ -244,4 +244,9 @@ public interface MvccProcessor extends GridProcessor {
      *
      */
     void onCacheStop(GridCacheContext cctx);
+
+    /**
+     * Force txLog stop.
+     */
+    void stopTxLog();
 }
