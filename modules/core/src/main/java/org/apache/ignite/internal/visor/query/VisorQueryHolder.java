@@ -138,6 +138,9 @@ public class VisorQueryHolder {
      * Cancel query.
      */
     public void cancelQuery() {
+        if (cur != null)
+            cur.close();
+
         if (cancel != null)
             cancel.cancel();
     }

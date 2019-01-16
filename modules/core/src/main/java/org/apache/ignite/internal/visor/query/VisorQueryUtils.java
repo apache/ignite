@@ -341,14 +341,8 @@ public class VisorQueryUtils {
         ConcurrentMap<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
         VisorQueryHolder holder = storage.remove(qryId);
 
-        if (holder != null) {
-            VisorQueryCursor<?> cur = holder.getCursor();
-
-            if (cur != null)
-                cur.close();
-
+        if (holder != null)
             holder.cancelQuery();
-        }
     }
 
     /**
@@ -419,33 +413,31 @@ public class VisorQueryUtils {
                     .query()
                     .querySqlFields(null, qry, null, true, false, cancel);
 
-                if (qryCursors != null) {
-                    // In case of multiple statements leave opened only last cursor.
-                    for (int i = 0; i < qryCursors.size() - 1; i++)
-                        U.closeQuiet(qryCursors.get(i));
+                // In case of multiple statements leave opened only last cursor.
+                for (int i = 0; i < qryCursors.size() - 1; i++)
+                    U.closeQuiet(qryCursors.get(i));
 
-                    // In case of multiple statements return last cursor as result.
-                    VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
-                    Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
+                // In case of multiple statements return last cursor as result.
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
+                Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
-                    if (meta == null)
-                        holder.setError(new SQLException("Fail to execute query. No metadata available."));
-                    else {
-                        holder.setCursor(cur);
+                if (meta == null)
+                    holder.setError(new SQLException("Fail to execute query. No metadata available."));
+                else {
+                    holder.setCursor(cur);
 
-                        List<VisorQueryField> names = new ArrayList<>(meta.size());
+                    List<VisorQueryField> names = new ArrayList<>(meta.size());
 
-                        for (GridQueryFieldMetadata col : meta)
-                            names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                                col.fieldName(), col.fieldTypeName()));
+                    for (GridQueryFieldMetadata col : meta)
+                        names.add(new VisorQueryField(col.schemaName(), col.typeName(),
+                            col.fieldName(), col.fieldTypeName()));
 
-                        holder.setColumns(names);
+                    holder.setColumns(names);
 
-                        scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
+                    scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
 
-                        if (!fetchQueryRows(ignite, holder.getQueryID()))
-                            cur.close();
-                    }
+                    if (!fetchQueryRows(ignite, holder.getQueryID()))
+                        cur.close();
                 }
             }
             catch (Throwable e) {
