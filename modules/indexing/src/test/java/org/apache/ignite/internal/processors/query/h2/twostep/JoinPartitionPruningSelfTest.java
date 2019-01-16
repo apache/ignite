@@ -134,7 +134,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1")
+                    partition("t1", "1")
                 );
                 assertEquals(1, res.size());
                 assertEquals("1", res.get(0).get(0));
@@ -146,7 +146,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1._KEY = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "2")
+                    partition("t1", "2")
                 );
                 assertEquals(1, res.size());
                 assertEquals("2", res.get(0).get(0));
@@ -168,7 +168,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "4")
+                    partition("t2", "4")
                 );
                 assertEquals(1, res.size());
                 assertEquals("4", res.get(0).get(0));
@@ -181,7 +181,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         List<List<?>> res = executeSingle("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2._KEY = ?", key);
         assertPartitions(
-            parititon("t2", "5")
+            partition("t2", "5")
         );
         assertEquals(1, res.size());
         assertEquals("5", res.get(0).get(0));
@@ -216,7 +216,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Transfer through "AND".
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "1"
         );
@@ -228,7 +228,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? AND t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "1", "2"
         );
@@ -240,7 +240,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) AND t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "2")
+                partition("t1", "2")
             ),
             "1", "2", "2", "3"
         );
@@ -253,51 +253,51 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Transfer through "OR".
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "1"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t2", "2")
+                partition("t1", "1"),
+                partition("t2", "2")
             ),
             "1", "2"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t2", "2")
+                partition("t1", "1"),
+                partition("t2", "2")
             ),
             "1", "1", "2"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t2", "2"),
-                parititon("t2", "3")
+                partition("t1", "1"),
+                partition("t2", "2"),
+                partition("t2", "3")
             ),
             "1", "2", "3"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) OR t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t1", "2"),
-                parititon("t2", "3")
+                partition("t1", "1"),
+                partition("t1", "2"),
+                partition("t2", "3")
             ),
             "1", "2", "2", "3"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 IN (?, ?) OR t2.ak2 IN (?, ?)",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t1", "2"),
-                parititon("t2", "3"),
-                parititon("t2", "4")
+                partition("t1", "1"),
+                partition("t1", "2"),
+                partition("t2", "3"),
+                partition("t2", "4")
             ),
             "1", "2", "3", "4"
         );
@@ -306,7 +306,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 INNER JOIN t3 ON t1.k1 = t3.ak2 " +
                 "WHERE t1.k1 = ? AND t2.ak2 = ? AND t3.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "1", "1"
         );
@@ -358,7 +358,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1, t2 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1")
+                    partition("t1", "1")
                 );
                 assertEquals(1, res.size());
                 assertEquals("1", res.get(0).get(0));
@@ -369,7 +369,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t1.k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1")
+                    partition("t1", "1")
                 );
                 assertEquals(1, res.size());
                 assertEquals("1", res.get(0).get(0));
@@ -381,7 +381,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1, t2 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "2")
+                    partition("t2", "2")
                 );
                 assertEquals(1, res.size());
                 assertEquals("2", res.get(0).get(0));
@@ -392,7 +392,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 INNER JOIN t2 ON 1=1 WHERE t2.ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "2")
+                    partition("t2", "2")
                 );
                 assertEquals(1, res.size());
                 assertEquals("2", res.get(0).get(0));
@@ -434,14 +434,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Greater than.
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t1.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 > t2.ak2 WHERE t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
@@ -459,14 +459,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Less than.
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t1.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 < t2.ak2 WHERE t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
@@ -484,14 +484,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Non-equal.
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t1.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 <> t2.ak2 WHERE t2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
@@ -528,15 +528,15 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Only partition from PARTITIONED cache should be used.
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t1.k1 = ? AND t2.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "2"
         );
 
         execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.k1 WHERE t1.k1 IN (?, ?) AND t2.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t1", "2")
+                partition("t1", "1"),
+                partition("t1", "2")
             ),
             "1", "2", "3"
         );
@@ -565,6 +565,12 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // Node filters.
         // TODO
+
+        // Backups.
+        // TODO
+
+        // With and without persistence.
+        // TODO
     }
 
     /**
@@ -583,7 +589,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 INNER JOIN (SELECT * FROM t2) T2_SUB ON t1.k1 = T2_SUB.ak2 WHERE t1.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
@@ -599,7 +605,19 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExplicitPartitions() {
-        // TODO
+        createPartitionedTable("t1",
+            pkColumn("k1"),
+            "v2");
+
+        createPartitionedTable("t2",
+            pkColumn("k1"),
+            affinityColumn("ak2"),
+            "v3");
+
+        executeSqlFieldsQuery(new SqlFieldsQuery("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 " +
+            "WHERE t1.k1=? OR t2.ak2=?").setArgs("1", "2").setPartitions(1));
+
+        assertPartitions(1);
     }
 
     /**
@@ -618,7 +636,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 LEFT OUTER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
@@ -631,7 +649,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 LEFT OUTER JOIN t2 T2_1 ON t1.k1 = T2_1.ak2 INNER JOIN t2 T2_2 ON T2_1.k1 = T2_2.k1 " +
                 "WHERE T2_2.ak2 = ?",
             (res) -> assertPartitions(
-                parititon("t2", "1")
+                partition("t2", "1")
             ),
             "1"
         );
@@ -639,7 +657,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         execute("SELECT * FROM t1 LEFT OUTER JOIN t2 T2_1 ON t1.k1 = T2_1.ak2 INNER JOIN t2 T2_2 ON t1.k1 = T2_2.ak2 " +
                 "WHERE T2_1.ak2 = ? AND T2_2.ak2=?",
             (res) -> assertPartitions(
-                parititon("t2", "2")
+                partition("t2", "2")
             ),
             "1", "2"
         );
@@ -656,14 +674,14 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1"
         );
 
         execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ? AND B.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1")
+                partition("t1", "1")
             ),
             "1", "1"
         );
@@ -675,8 +693,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         execute("SELECT * FROM t1 A INNER JOIN t1 B ON A.k1 = B.k1 WHERE A.k1 = ? OR B.k1 = ?",
             (res) -> assertPartitions(
-                parititon("t1", "1"),
-                parititon("t1", "2")
+                partition("t1", "1"),
+                partition("t1", "2")
             ),
             "1", "2"
         );
@@ -863,6 +881,16 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         if (args != null && args.length > 0)
             qry.setArgs(args);
 
+        return executeSqlFieldsQuery(qry);
+    }
+
+    /**
+     * Execute prepared SQL fields query.
+     *
+     * @param qry Query.
+     * @return Result.
+     */
+    private List<List<?>> executeSqlFieldsQuery(SqlFieldsQuery qry) {
         return client().context().query().querySqlFields(qry, false).getAll();
     }
 
@@ -928,7 +956,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Partition.
      */
-    private int parititon(String cacheName, Object key) {
+    private int partition(String cacheName, Object key) {
         return client().affinity(cacheName).partition(key);
     }
 
