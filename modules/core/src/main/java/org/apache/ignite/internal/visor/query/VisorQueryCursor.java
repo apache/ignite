@@ -20,7 +20,7 @@ package org.apache.ignite.internal.visor.query;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -68,7 +68,7 @@ public class VisorQueryCursor<T> implements Iterator<T>, AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public Collection<GridQueryFieldMetadata> fieldsMeta() {
-        return ((QueryCursorImpl)cur).fieldsMeta();
+        return ((QueryCursorEx)cur).fieldsMeta();
     }
 
     /** {@inheritDoc} */

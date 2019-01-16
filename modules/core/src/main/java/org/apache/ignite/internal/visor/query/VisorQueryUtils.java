@@ -74,7 +74,7 @@ public class VisorQueryUtils {
     );
 
     /**
-     * @param o - Object.
+     * @param o Source object.
      * @return String representation of object class.
      */
     private static String typeOf(Object o) {
@@ -149,17 +149,19 @@ public class VisorQueryUtils {
     /**
      * Fetch rows from SCAN query future.
      *
-     * @param cur Query future to fetch rows from.
+     * @param cur Query cursor to fetch rows from.
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows.
      */
-    public static List<Object[]> fetchScanQueryRows(VisorQueryCursor<Cache.Entry<Object, Object>> cur, int pageSize) {
+    public static List<Object[]> fetchScanQueryRows(VisorQueryCursor<?> cur, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        while (cur.hasNext() && cnt < pageSize) {
-            Cache.Entry<Object, Object> next = cur.next();
+        VisorQueryCursor<Cache.Entry<Object, Object>> scanCur = (VisorQueryCursor<Cache.Entry<Object, Object>>)cur;
+
+        while (scanCur.hasNext() && cnt < pageSize) {
+            Cache.Entry<Object, Object> next = scanCur.next();
 
             Object k = next.getKey();
             Object v = next.getValue();
@@ -250,7 +252,7 @@ public class VisorQueryUtils {
      * Convert object that can be passed to client.
      *
      * @param original Source object.
-     * @return Converted vaue.
+     * @return Converted value.
      */
     public static Object convertValue(Object original) {
         if (original == null)
@@ -270,13 +272,15 @@ public class VisorQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows.
      */
-    public static List<Object[]> fetchSqlQueryRows(VisorQueryCursor<List<?>> cur, int pageSize) {
+    public static List<Object[]> fetchSqlQueryRows(VisorQueryCursor<?> cur, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        while (cur.hasNext() && cnt < pageSize) {
-            List<?> next = cur.next();
+        VisorQueryCursor<List<?>> sqlCur = (VisorQueryCursor<List<?>>)cur;
+
+        while (sqlCur.hasNext() && cnt < pageSize) {
+            List<?> next = sqlCur.next();
 
             int sz = next.size();
 
@@ -352,35 +356,31 @@ public class VisorQueryUtils {
      *
      * @param ignite IgniteEx instance.
      * @param qryId Query ID to get holder.
-     * @param scan {@code true} for scan query of {@code false} otherwise.
-     * @return {@code True} when query holder exists or {@code false} otherwise.
+     * @return {@code true} when query holder exists or {@code false} otherwise.
      */
-    public static boolean fetchQueryRows(final IgniteEx ignite, final String qryId, final boolean scan) {
+    public static boolean fetchQueryRows(final IgniteEx ignite, final String qryId) {
         VisorQueryHolder holder = getQueryHolderIfExists(ignite, qryId);
 
-        if (holder != null) {
+        boolean hasData = holder != null;
+
+        if (hasData) {
             VisorQueryCursor<?> cur = holder.getCursor();
 
             try {
                 if (cur.hasNext()) {
-                    if (scan) {
-                        holder.setRows(fetchScanQueryRows(
-                            (VisorQueryCursor<Cache.Entry<Object, Object>>)cur, holder.getPageSize()));
-                    }
-                    else {
-                        holder.setRows(fetchSqlQueryRows(
-                            (VisorQueryCursor<List<?>>)cur, holder.getPageSize()));
-                    }
+                    holder.setRows(VisorQueryHolder.isSqlQuery(qryId)
+                        ? fetchSqlQueryRows(cur, holder.getPageSize())
+                        : fetchScanQueryRows(cur, holder.getPageSize()));
                 }
                 else
                     holder.setRows(Collections.emptyList());
             }
             catch (Throwable e) {
-                holder.setErr(e);
+                holder.setError(e);
             }
         }
 
-        return holder != null;
+        return hasData;
     }
 
     /**
@@ -429,7 +429,7 @@ public class VisorQueryUtils {
                     Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
                     if (meta == null)
-                        holder.setErr(new SQLException("Fail to execute query. No metadata available."));
+                        holder.setError(new SQLException("Fail to execute query. No metadata available."));
                     else {
                         holder.setCursor(cur);
 
@@ -440,15 +440,16 @@ public class VisorQueryUtils {
                                 col.fieldName(), col.fieldTypeName()));
 
                         holder.setColumns(names);
+
                         scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
 
-                        if (!fetchQueryRows(ignite, holder.getQueryID(), false))
+                        if (!fetchQueryRows(ignite, holder.getQueryID()))
                             cur.close();
                     }
                 }
             }
             catch (Throwable e) {
-                holder.setErr(e);
+                holder.setError(e);
             }
         }, MANAGEMENT_POOL);
     }
@@ -487,13 +488,14 @@ public class VisorQueryUtils {
                 }
 
                 holder.setCursor(cur);
+
                 scheduleResultSetHolderRemoval(ignite, holder.getQueryID());
 
-                if (!fetchQueryRows(ignite, holder.getQueryID(), true))
+                if (!fetchQueryRows(ignite, holder.getQueryID()))
                     cur.close();
             }
             catch (Throwable e) {
-                holder.setErr(e);
+                holder.setError(e);
             }
         }, MANAGEMENT_POOL);
     }

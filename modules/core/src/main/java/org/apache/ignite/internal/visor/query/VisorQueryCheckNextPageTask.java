@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHol
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
 /**
- * Task for check a query execution and recieving first page of query result.
+ * Task for check a query execution and receiving first page of query result.
  */
 @GridInternal
 public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
@@ -37,14 +37,14 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryNextPageJob job(VisorQueryNextPageTaskArg arg) {
-        return new VisorQueryNextPageJob(arg, debug);
+    @Override protected VisorQueryCheckNextPageJob job(VisorQueryNextPageTaskArg arg) {
+        return new VisorQueryCheckNextPageJob(arg, debug);
     }
 
     /**
      * Job for collecting next page previously executed SQL or SCAN query.
      */
-    private static class VisorQueryNextPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
+    private static class VisorQueryCheckNextPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,13 +54,14 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryNextPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
+        private VisorQueryCheckNextPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(VisorQueryNextPageTaskArg arg) {
             String qryId = arg.getQueryId();
+
             VisorQueryHolder holder = getQueryHolder(ignite, qryId);
 
             if (holder.getErr() != null)
@@ -88,7 +89,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorQueryNextPageJob.class, this);
+            return S.toString(VisorQueryCheckNextPageJob.class, this);
         }
     }
 }

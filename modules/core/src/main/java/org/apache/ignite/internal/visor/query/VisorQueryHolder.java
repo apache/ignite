@@ -32,13 +32,19 @@ public class VisorQueryHolder {
     private static final String SCAN_QRY_PREFIX = "VISOR_SCAN_QUERY";
 
     /** Query ID for extraction query data result. */
-    private String qryId;
+    private final String qryId;
+
+    /** Cancel query object. */
+    private final GridQueryCancel cancel;
+
+    /** Size of result to extract by query. */
+    private final int pageSize;
+
+    /** Query start time in ms. */
+    private final long start;
 
     /** Wrapper for query cursor. */
     private VisorQueryCursor<?> cur;
-
-    /** Cancel query object. */
-    private GridQueryCancel cancel;
 
     /** Query column descriptors. */
     private List<VisorQueryField> cols;
@@ -46,14 +52,8 @@ public class VisorQueryHolder {
     /** Rows fetched from query. */
     private List<Object[]> rows;
 
-    /** Size of result to extract by query. */
-    private int pageSize;
-
     /** Error in process of query result receiving. */
     private Throwable err;
-
-    /** Query start time in ms. */
-    private long start;
 
     /** Query duration in ms. */
     private long duration = -1;
@@ -171,10 +171,11 @@ public class VisorQueryHolder {
     }
 
     /**
-     * Set error in process of query result receiving.
-     * @param err Error in process of query result receiving.
+     * Set error caught during query execution.
+     *
+     * @param err Error caught during query execution.
      */
-    public void setErr(Throwable err) {
+    public void setError(Throwable err) {
         this.err = err;
 
         if (cur != null)
