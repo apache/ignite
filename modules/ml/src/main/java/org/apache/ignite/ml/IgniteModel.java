@@ -20,8 +20,10 @@ package org.apache.ignite.ml;
 import java.io.Serializable;
 import java.util.function.BiFunction;
 import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
+@FunctionalInterface
 public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     /**
      * Combines this model with other model via specified combiner
@@ -37,12 +39,46 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     /**
      * Get a composition model of the form {@code x -> after(mdl(x))}.
      *
-     * @param after Function to apply after this model.
+     * @param after Model to apply after this model.
      * @param <V1> Type of input of function applied before this model.
      * @return Composition model of the form {@code x -> after(mdl(x))}.
      */
     public default <V1> IgniteModel<T, V1> andThen(IgniteModel<V, V1> after) {
-        return t -> after.predict(predict(t));
+        IgniteModel<T, V> self = this;
+        return new IgniteModel<T, V1>() {
+            /** {@inheritDoc} */
+            @Override public V1 predict(T input) {
+                return after.predict(self.predict(input));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                self.close();
+                after.close();
+            }
+        };
+    }
+
+    /**
+     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     *
+     * @param after Function to apply after this model.
+     * @param <V1> Type of input of function applied before this model.
+     * @return Composition model of the form {@code x -> after(mdl(x))}.
+     */
+    public default <V1> IgniteModel<T, V1> andThen(IgniteFunction<V, V1> after) {
+        IgniteModel<T, V> self = this;
+        return new IgniteModel<T, V1>() {
+            /** {@inheritDoc} */
+            @Override public V1 predict(T input) {
+                return after.apply(self.predict(input));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                self.close();
+            }
+        };
     }
 
     /**

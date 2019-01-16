@@ -103,7 +103,7 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(IgniteModel<Object, Vector> mdl) {
+            @Override public boolean isUpdateable(IgniteModel<Object, Vector> mdl) {
                 return false;
             }
 
