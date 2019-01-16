@@ -48,7 +48,7 @@ class DatasetBuilderAdapter extends LocalDatasetBuilder<Vector, Double> {
      */
     public DatasetBuilderAdapter(DataStreamGenerator generator, int datasetSize,
         IgniteBiPredicate<Vector, Double> filter, int partitions,
-        UpstreamTransformerBuilder<Vector, Double> upstreamTransformerBuilder) {
+        UpstreamTransformerBuilder upstreamTransformerBuilder) {
 
         super(generator.asMap(datasetSize), filter, partitions, upstreamTransformerBuilder);
     }
