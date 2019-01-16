@@ -103,6 +103,7 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setIndexedTypes(
+            Integer.class, Integer.class,
             Long.class, String.class,
             Long.class, TestData.class
         );
@@ -111,15 +112,26 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
 
         cache.put(1L, "bla-bla");
         cache.put(2L, new TestData(777L));
+        cache.put(3, 3);
 
         CacheDataTree.isLastFindWithDirectDataPageScan();
 
-        assertEquals(777L, cache.query(new SqlFieldsQuery("select z from TestData use index()")
-            .setDataPageScanEnabled(true)).getAll().get(0).get(0));
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select z, _key, _val from TestData use index()")
+            .setDataPageScanEnabled(true)).getAll();
+        assertEquals(1, res.size());
+        assertEquals(777L, res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
 
-        assertEquals("bla-bla", cache.query(new SqlFieldsQuery("select _val from String use index()")
-            .setDataPageScanEnabled(true)).getAll().get(0).get(0));
+        res = cache.query(new SqlFieldsQuery("select _val, _key from String use index()")
+            .setDataPageScanEnabled(true)).getAll();
+        assertEquals(1, res.size());
+        assertEquals("bla-bla", res.get(0).get(0));
+        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+
+        res = cache.query(new SqlFieldsQuery("select _key, _val from Integer use index()")
+            .setDataPageScanEnabled(true)).getAll();
+        assertEquals(1, res.size());
+        assertEquals(3, res.get(0).get(0));
         assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
     }
 

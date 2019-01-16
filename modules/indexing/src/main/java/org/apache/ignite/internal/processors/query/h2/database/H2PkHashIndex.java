@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -247,21 +248,25 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public boolean next() {
             try {
-                if (curr != null && curr.next())
-                    return true;
+                GridQueryTypeDescriptor type = desc.type();
 
-                while (iter.hasNext()) {
-                    curr = iter.next();
+                for (;;) {
+                    if (curr != null && curr.next()) {
+                        CacheDataRow row = curr.get();
 
-                    while (curr.next()) {
                         // Need to filter rows by value type because in a single cache
                         // we can have multiple indexed types.
-                        if (desc.type().matchTypeId(curr.get().value()))
-                            return true;
-                    }
-                }
+                        if (!type.matchTypeId(row.value()))
+                            continue;
 
-                return false;
+                        return true;
+                    }
+
+                    if (!iter.hasNext())
+                        return false;
+
+                    curr = iter.next();
+                }
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
