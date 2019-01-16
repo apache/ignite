@@ -339,14 +339,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test various expressions.
-     */
-    @Test
-    public void testExpressions() {
-        // TODO
-    }
-
-    /**
      * Test cross-joins. They cannot "transfer" partitions between joined tables.
      */
     @Test
