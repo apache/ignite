@@ -32,20 +32,18 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * SSL connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Client key store path. */
     private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +
         "/modules/clients/src/test/keystore/client.jks";
@@ -72,12 +70,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientConnectorConfiguration(
@@ -95,6 +87,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnection() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -118,6 +111,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionTrustAll() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -140,6 +134,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionUseIgniteFactory() throws Exception {
         setSslCtxFactoryToIgnite = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -163,6 +158,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultContext() throws Exception {
         // Store exists default SSL context to restore after test.
         final SSLContext dfltSslCtx = SSLContext.getDefault();
@@ -200,6 +196,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContextFactory() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -218,6 +215,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSslServerAndPlainClient() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -241,6 +239,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeystoreConfig() throws Exception {
         setSslCtxFactoryToCli = true;
 
@@ -329,6 +328,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnknownClientCertificate() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -356,6 +356,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsupportedSslProtocol() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -384,6 +385,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeyAlgorithm() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -412,6 +414,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeyStoreType() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();

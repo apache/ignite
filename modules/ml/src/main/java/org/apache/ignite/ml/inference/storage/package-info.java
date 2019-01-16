@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Root package for model inference descriptor storages.
+ * Root package for inference model storages.
  */
 package org.apache.ignite.ml.inference.storage;

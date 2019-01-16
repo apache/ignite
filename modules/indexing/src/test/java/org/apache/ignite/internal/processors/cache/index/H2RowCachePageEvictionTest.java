@@ -35,12 +35,15 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCacheRegistry;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for H2RowCacheRegistry with page eviction.
  */
-public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
+@RunWith(JUnit4.class)
+public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
     /** Entries count. */
     private static final int ENTRIES = 10_000;
 
@@ -147,6 +150,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
+    @Test
     public void testEvictPagesWithDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = true;
 
@@ -160,6 +164,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
+    @Test
     public void testEvictPagesWithDiskStorageWithOtherCacheInGroup() throws Exception {
         persistenceEnabled = true;
 
@@ -175,6 +180,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
+    @Test
     public void testEvictPagesWithoutDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = false;
 
@@ -186,6 +192,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
+    @Test
     public void testEvictPagesWithoutDiskStorageWithOtherCacheInGroup() throws Exception {
         persistenceEnabled = false;
 

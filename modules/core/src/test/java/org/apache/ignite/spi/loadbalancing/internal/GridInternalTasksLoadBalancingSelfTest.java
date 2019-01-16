@@ -42,10 +42,14 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test that will start two nodes with custom load balancing SPI and execute {@link GridInternal} task on it.
  */
+@RunWith(JUnit4.class)
 public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
@@ -68,6 +72,13 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -82,6 +93,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskBalancing() throws Exception {
         customLoadBalancer = true;
 
@@ -113,6 +125,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskDefaultBalancing() throws Exception {
         customLoadBalancer = false;
 

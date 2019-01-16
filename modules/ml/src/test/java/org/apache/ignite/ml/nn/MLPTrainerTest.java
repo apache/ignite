@@ -146,7 +146,7 @@ public class MLPTrainerTest {
                 (k, v) -> v[1]
             );
 
-            Matrix predict = mlp.apply(new DenseMatrix(new double[][]{
+            Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},
@@ -215,8 +215,8 @@ public class MLPTrainerTest {
                 {1.0, 1.0}
             });
 
-            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.apply(matrix).getRow(0), updatedOnSameDS.apply(matrix).getRow(0), 1E-1);
-            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.apply(matrix).getRow(0), updatedOnEmptyDS.apply(matrix).getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnSameDS.predict(matrix).getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(originalMdl.predict(matrix).getRow(0), updatedOnEmptyDS.predict(matrix).getRow(0), 1E-1);
         }
     }
 

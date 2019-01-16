@@ -260,6 +260,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
+     * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
+     */
+    public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
@@ -1035,6 +1042,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
     /**
+     * Disables cache interceptor triggering in case of conflicts.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+
+    /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
      */
     public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
@@ -1043,6 +1057,29 @@ public final class IgniteSystemProperties {
      * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
      */
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
+     * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
+     * All nodes in the cluster must have the same value of this property.
+     * <p/>
+     * If the property is {@code true} then event-driven implementation of the service processor will be used.
+     * <p/>
+     * If the property is {@code false} then internal cache based implementation of service processor will be used.
+     * <p/>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
+        = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
+
+    /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
      * Enforces singleton.

@@ -16,26 +16,39 @@
  */
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
-public class IgnitePdsNativeIoTestSuite extends TestSuite {
+@RunWith(IgnitePdsNativeIoTestSuite.DynamicSuite.class)
+public class IgnitePdsNativeIoTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with Direct IO)");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         //long running test by design with light parameters
-        suite.addTestSuite(IgnitePdsReplacementNativeIoTest.class);
+        suite.add(IgnitePdsReplacementNativeIoTest.class);
 
-        suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
+        suite.add(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

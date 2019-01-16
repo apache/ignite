@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.spi.discovery.AbstractDiscoveryRandomStartStopTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
@@ -28,18 +26,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
 public class TcpDiscoverySpiRandomStartStopTest extends
         AbstractDiscoveryRandomStartStopTest<TcpDiscoverySpi> {
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected int getMaxInterval() {
         return 10;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void spiConfigure(TcpDiscoverySpi spi) throws Exception {
-        super.spiConfigure(spi);
-
-        spi.setIpFinder(ipFinder);
     }
 }

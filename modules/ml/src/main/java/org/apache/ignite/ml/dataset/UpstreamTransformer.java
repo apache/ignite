@@ -18,25 +18,19 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
-import java.util.Random;
 import java.util.stream.Stream;
 
 /**
  * Interface of transformer of upstream.
- *
- * @param <K> Type of keys in the upstream.
- * @param <V> Type of values in the upstream.
  */
+// TODO: IGNITE-10297: Investigate possibility of API change.
 @FunctionalInterface
-public interface UpstreamTransformer<K, V> extends Serializable {
+public interface UpstreamTransformer extends Serializable {
     /**
-     * Perform transformation of upstream.
+     * Transform upstream.
      *
-     * @param rnd Random numbers generator.
-     * @param upstream Upstream.
+     * @param upstream Upstream to transform.
      * @return Transformed upstream.
      */
-    // TODO: IGNITE-10296: Inject capabilities of randomization through learning environment.
-    // TODO: IGNITE-10297: Investigate possibility of API change.
-    public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream);
+    public Stream<UpstreamEntry> transform(Stream<UpstreamEntry> upstream);
 }

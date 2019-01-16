@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -414,7 +415,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = globalState.finish(msg.success());
+            globalState = state.finish(msg.success());
 
             afterStateChangeFinished(msg.id(), msg.success());
 
@@ -904,15 +905,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis());
 
+        IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
+
         try {
             if (log.isInfoEnabled())
                 U.log(log, "Sending " + prettyStr(activate) + " request with BaselineTopology " + blt);
 
             ctx.discovery().sendCustomEvent(msg);
 
-            if (ctx.isStopping())
-                startedFut.onDone(new IgniteCheckedException("Failed to execute " + prettyStr(activate) + " request, " +
-                    "node is stopping."));
+            if (ctx.isStopping()) {
+                String errMsg = "Failed to execute " + prettyStr(activate) + " request, node is stopping.";
+
+                startedFut.onDone(new IgniteCheckedException(errMsg));
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send global state change request: " + activate, e);
@@ -920,7 +925,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             startedFut.onDone(e);
         }
 
-        return wrapStateChangeFuture(startedFut, msg);
+        return resFut;
     }
 
     /** {@inheritDoc} */
@@ -1161,9 +1166,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 Exception e = null;
 
                 try {
-                    ctx.service().onUtilityCacheStarted();
+                    if (ctx.service() instanceof GridServiceProcessor) {
+                        GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
 
-                    ctx.service().onActivate(ctx);
+                        srvcProc.onUtilityCacheStarted();
+
+                        srvcProc.onActivate(ctx);
+                    }
 
                     ctx.dataStructures().onActivate(ctx);
 

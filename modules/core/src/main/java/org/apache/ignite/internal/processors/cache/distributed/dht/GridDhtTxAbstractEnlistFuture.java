@@ -160,7 +160,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     private Object peek;
 
     /** */
-    @SuppressWarnings({"FieldCanBeLocal"})
     @GridToStringExclude
     private volatile int skipCntr;
 
@@ -788,7 +787,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param backups Backup nodes.
      * @return {@code True} if there is possible to add this key to batch or send ready batch.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean ensureFreeSlot(KeyCacheObject key, List<ClusterNode> backups) {
         if (F.isEmpty(batches) || F.isEmpty(pending))
             return true;
@@ -900,6 +898,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             m.put(node.id(), mapping = new GridDistributedTxMapping(node));
 
         mapping.markQueryUpdate();
+
+        checkCompleted();
     }
 
     /** */
@@ -1146,16 +1146,17 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (keys == null)
                 keys = new ArrayList<>();
 
-            keys.add(key);
+            if (vals == null && val != null) {
+                vals = new ArrayList<>(U.ceilPow2(keys.size() + 1));
 
-            if (val != null) {
-                if (vals == null)
-                    vals = new ArrayList<>();
-
-                vals.add(val);
+                while (vals.size() != keys.size())
+                    vals.add(null); // Init vals with missed 'nulls'.
             }
 
-            assert (vals == null) || keys.size() == vals.size();
+            keys.add(key);
+
+            if (vals != null)
+                vals.add(val);
         }
 
         /**

@@ -124,6 +124,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         assert updatesStgy!= null;
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
@@ -353,7 +354,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+    @Override public boolean isUpdateable(MultilayerPerceptron mdl) {
         return true;
     }
 

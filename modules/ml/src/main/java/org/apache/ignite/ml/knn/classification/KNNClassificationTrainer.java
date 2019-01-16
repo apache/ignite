@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.knn.classification;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -42,11 +43,11 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
+    @Override protected <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(datasetBuilder,
+        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(envBuilder, datasetBuilder,
             featureExtractor, lbExtractor));
         if (mdl != null)
             res.copyStateFrom(mdl);
@@ -54,7 +55,12 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KNNClassificationModel mdl) {
+    @Override public KNNClassificationTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (KNNClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isUpdateable(KNNClassificationModel mdl) {
         return true;
     }
 }

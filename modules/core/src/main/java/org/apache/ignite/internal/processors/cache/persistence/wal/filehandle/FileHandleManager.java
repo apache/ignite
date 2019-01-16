@@ -50,16 +50,6 @@ public interface FileHandleManager {
     FileWriteHandle nextHandle(SegmentIO fileIO, RecordSerializer serializer) throws IOException;
 
     /**
-     * Start manager.
-     */
-    void start();
-
-    /**
-     * On activate.
-     */
-    void onActivate();
-
-    /**
      * On deactivate.
      *
      * @throws IgniteCheckedException if fail.

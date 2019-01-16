@@ -29,22 +29,19 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest implements Serializable {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Threads number for multi-thread tests. */
     private static final int THREADS = 10;
 
@@ -53,15 +50,6 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
     /** */
     private final String msgStr = "message";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -75,6 +63,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -91,6 +80,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -107,6 +97,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode2Nodes() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -124,6 +115,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -141,6 +133,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -159,6 +152,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -176,6 +170,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultModeMultiThreads() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -185,6 +180,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultModeMultiThreadsWith2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);

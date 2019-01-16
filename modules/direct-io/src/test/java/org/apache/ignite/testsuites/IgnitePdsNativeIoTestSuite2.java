@@ -16,35 +16,47 @@
  */
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
-import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
  */
-public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
+@RunWith(IgnitePdsNativeIoTestSuite2.DynamicSuite.class)
+public class IgnitePdsNativeIoTestSuite2 {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         // Direct IO + Page compression.
-        suite.addTestSuite(DiskPageCompressionIntegrationDirectIOTest.class);
+        suite.add(DiskPageCompressionIntegrationDirectIOTest.class);
 
         //Integrity test with reduced count of pages.
-        suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
+        suite.add(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
 
-        suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
+        suite.add(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
 
-        suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
+        suite.add(IgniteNativeIoWalFlushFsyncSelfTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

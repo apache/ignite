@@ -62,6 +62,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,6 +78,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -85,6 +89,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
@@ -103,6 +108,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsPow2() {
         assertTrue(U.isPow2(1));
         assertTrue(U.isPow2(2));
@@ -127,6 +133,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalIps() throws Exception {
         Collection<String> ips = U.allLocalIps();
 
@@ -136,6 +143,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalMACs() throws Exception {
         Collection<String> macs = U.allLocalMACs();
 
@@ -147,6 +155,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalMACsMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -162,6 +171,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArray2String() throws Exception {
         assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
             U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
@@ -170,6 +180,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatMins() throws Exception {
         printFormatMins(0);
         printFormatMins(1);
@@ -197,6 +208,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromHttp() throws Exception {
         GridEmbeddedHttpServer srv = null;
         try {
@@ -220,6 +232,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromHttps() throws Exception {
         GridEmbeddedHttpServer srv = null;
         try {
@@ -243,6 +256,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromLocalFile() throws Exception {
         File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
@@ -256,6 +270,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOs() throws Exception {
         System.out.println("OS string: " + U.osString());
         System.out.println("JDK string: " + U.jdkString());
@@ -282,6 +297,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJavaSerialization() throws Exception {
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
@@ -300,6 +316,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHidePassword() {
         Collection<String> uriList = new ArrayList<>();
 
@@ -368,6 +385,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testDetectPeerDeployAwareInfiniteRecursion() throws Exception {
         Ignite g = startGrid(1);
 
@@ -402,6 +420,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPeerDeployAware0() throws Exception {
         Collection<Object> col = new ArrayList<>();
 
@@ -470,6 +489,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test UUID to bytes array conversion.
      */
+    @Test
     public void testsGetBytes() {
         for (int i = 0; i < 100; i++) {
             UUID id = UUID.randomUUID();
@@ -486,6 +506,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testReadByteArray() {
         assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
         assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
@@ -527,6 +548,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testHashCodeFromBuffers() {
         assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0)));
         assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0), ByteBuffer.allocate(0)));
@@ -551,6 +573,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test annotation look up.
      */
+    @Test
     public void testGetAnnotations() {
         assert U.getAnnotation(A1.class, Ann1.class) != null;
         assert U.getAnnotation(A2.class, Ann1.class) != null;
@@ -565,6 +588,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnique() {
         int[][][] arrays = new int[][][]{
             new int[][]{EMPTY, EMPTY, EMPTY},
@@ -591,6 +615,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDifference() {
         int[][][] arrays = new int[][][]{
             new int[][]{EMPTY, EMPTY, EMPTY},
@@ -614,6 +639,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopyIfExceeded() {
         int[][] arrays = new int[][]{new int[]{13, 14, 17, 11}, new int[]{13}, EMPTY};
 
@@ -631,6 +657,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsIncreasingArray() {
         assertTrue(U.isIncreasingArray(EMPTY, 0));
         assertTrue(U.isIncreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
@@ -649,6 +676,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsNonDecreasingArray() {
         assertTrue(U.isNonDecreasingArray(EMPTY, 0));
         assertTrue(U.isNonDecreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
@@ -667,6 +695,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test InetAddress Comparator.
      */
+    @Test
     public void testInetAddressesComparator() {
         List<InetSocketAddress> ips = new ArrayList<InetSocketAddress>() {
             {
@@ -691,6 +720,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
 
+    @Test
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
@@ -700,6 +730,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResolveLocalAddresses() throws Exception {
         InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
 
@@ -721,6 +752,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testToSocketAddressesNoDuplicates() {
         Collection<String> addrs = new ArrayList<>();
 
@@ -776,6 +808,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLongStringWriteUTF() throws Exception {
         checkString(null);
         checkString("");
@@ -797,6 +830,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCeilPow2() throws Exception {
         assertEquals(2, U.ceilPow2(2));
         assertEquals(4, U.ceilPow2(3));
@@ -823,6 +857,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsOldestNodeVersionAtLeast() {
         IgniteProductVersion v240 = IgniteProductVersion.fromString("2.4.0");
         IgniteProductVersion v241 = IgniteProductVersion.fromString("2.4.1");
@@ -850,6 +885,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
@@ -878,6 +914,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
@@ -911,6 +948,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test optimal splitting on batch sizes.
      */
+    @Test
     public void testOptimalBatchSize() {
         assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
 
@@ -942,6 +980,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test parallel execution in order.
      */
+    @Test
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
@@ -957,6 +996,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test parallel execution steal job.
      */
+    @Test
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
         ExecutorService executorService = Executors.newFixedThreadPool(1);
@@ -1029,6 +1069,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test parallel execution steal job.
      */
+    @Test
     public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
         // Pool size should be less that input data collection.
         ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -1055,14 +1096,31 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> res;
 
+        // Future for avoiding fast execution in only executor threads.
+        // Here we try to pass a number of tasks more that executor size,
+        // but there is a case when all task will be completed after last submit return control and
+        // current thread can not steal task because all task will be already finished.
+        GridFutureAdapter fut = new GridFutureAdapter();
+
         try {
             res = U.doInParallel(10,
                 executorService,
                 data,
                 new IgniteThrowableConsumer<Integer, Integer>() {
                     @Override public Integer accept(Integer cnt) {
-                        if (Thread.currentThread().getId() == threadId)
+                        if (Thread.currentThread().getId() == threadId) {
+                            fut.onDone();
+
                             curThreadCnt.incrementAndGet();
+                        }
+                        else {
+                            try {
+                                fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw U.convertException(e);
+                            }
+                        }
 
                         return -cnt;
                     }
@@ -1109,6 +1167,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDoInParallelException() {
         String expectedException = "ExpectedException";
 
