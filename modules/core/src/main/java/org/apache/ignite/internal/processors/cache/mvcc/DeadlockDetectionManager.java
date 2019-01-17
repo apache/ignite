@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
@@ -65,20 +66,6 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                 DeadlockProbe msg0 = (DeadlockProbe)msg;
 
                 handleDeadlockProbe(msg0);
-            }
-            else if (msg instanceof AbortTxMessage) {
-                if (log.isDebugEnabled())
-                    log.debug("Received a tx abort message msg=[" + msg + ']');
-
-                AbortTxMessage msg0 = (AbortTxMessage)msg;
-
-                GridNearTxLocal nearTx = cctx.tm().tx(msg0.nearTxVer());
-
-                if (nearTx != null)
-                    nearTx.rollbackNearTxLocalAsync(false, false);
-                else if (log.isDebugEnabled())
-                    log.debug("Tx which should be aborted not found xidVer=[" + msg0.nearTxVer() + ']');
-
             }
             else
                 log.warning("Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
@@ -217,9 +204,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                     cctx.coordinators().checkWaiting(tx.mvccSnapshot())
                         .flatMap(this::findTx)
                         .ifPresent(nextBlocker -> {
-                            ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 2);
+                            ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 1);
                             waitChain.addAll(probe.waitChain());
-                            waitChain.add(blocker);
                             waitChain.add(new ProbedTx(tx.nodeId(), tx.xidVersion(), tx.nearXidVersion(),
                                 blocker.startTime(), tx.lockCounter()));
 
@@ -240,18 +226,9 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void abortTx(GridDhtTxLocalAdapter tx) {
-        UUID destNode = tx.eventNodeId();
-
-        try {
-            // sends message to initiate proper tx abort on near node
-            cctx.gridIO().sendToGridTopic(destNode, TOPIC_DEADLOCK_DETECTION,
-                new AbortTxMessage(tx.nearXidVersion()), SYSTEM_POOL);
-        }
-        catch (ClusterTopologyCheckedException ignored) {
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Failed to send a deadlock probe [nodeId=" + destNode + ']', e);
-        }
+        cctx.coordinators().failWaiter(
+            tx.mvccSnapshot(),
+            new IgniteTxRollbackCheckedException("Deadlock detected. Transaction was rolled back."));
     }
 
     /**

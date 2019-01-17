@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -1826,10 +1827,19 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer) {
         return waitMap.entrySet().stream()
-            .filter(e -> e.getValue().hasWaiting(mvccVer))
+            .filter(e -> e.getValue().hasWaiting(mvccVer) != null)
             .map(Map.Entry::getKey)
             .map(key -> new MvccVersionImpl(key.major(), key.minor(), 0))
             .findAny();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void failWaiter(MvccVersion mvccVer, Exception e) {
+        waitMap.values().stream()
+            .map(w -> w.hasWaiting(mvccVer))
+            .filter(Objects::nonNull)
+            .findAny()
+            .ifPresent(w -> w.onDone(e));
     }
 
     /**
@@ -1991,9 +2001,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /**
          * @param checkedVer Version of transaction checking for wait.
-         * @return {@code True} if checked transaction is waiting in the queue.
+         * @return Waiter corresponding to checked transaction or {@code null} if it is not waiting.
          */
-        boolean hasWaiting(MvccVersion checkedVer);
+        GridFutureAdapter<?> hasWaiting(MvccVersion checkedVer);
     }
 
     /** */
@@ -2017,7 +2027,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public void run(GridKernalContext ctx) {
             try {
-                ctx.pools().poolForPolicy(plc).execute(this);
+                if (!isDone())
+                    ctx.pools().poolForPolicy(plc).execute(this);
             }
             catch (IgniteCheckedException e) {
                 U.error(ctx.log(LockFuture.class), e);
@@ -2040,8 +2051,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasWaiting(MvccVersion checkedVer) {
-            return belongToSameTx(waitingTxVer, checkedVer);
+        @Override public GridFutureAdapter<?> hasWaiting(MvccVersion checkedVer) {
+            return belongToSameTx(waitingTxVer, checkedVer) ? this : null;
         }
     }
 
@@ -2068,8 +2079,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasWaiting(MvccVersion checkedVer) {
-            return false;
+        @Override public GridFutureAdapter<?> hasWaiting(MvccVersion checkedVer) {
+            return null;
         }
     }
 
@@ -2134,14 +2145,16 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasWaiting(MvccVersion checkedVer) {
+        @Override public GridFutureAdapter<?> hasWaiting(MvccVersion checkedVer) {
             if (inner.getClass() == ArrayList.class) {
                 for (Waiter waiter : (List<Waiter>)inner) {
-                    if (waiter.hasWaiting(checkedVer))
-                        return true;
+                    GridFutureAdapter<?> waitFut;
+
+                    if ((waitFut = waiter.hasWaiting(checkedVer)) != null)
+                        return waitFut;
                 }
 
-                return false;
+                return null;
             }
             else
                 return ((Waiter)inner).hasWaiting(checkedVer);

@@ -251,4 +251,12 @@ public interface MvccProcessor extends GridProcessor {
      * @return Version of tx which blocks checked tx.
      */
     Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer);
+
+    /**
+     * Unfreezes waiter for specific version failing it with passed exception.
+     *
+     * @param mvccVer Version of a waiter to fail.
+     * @param e Exception reflecting failure reason.
+     */
+    void failWaiter(MvccVersion mvccVer, Exception e);
 }

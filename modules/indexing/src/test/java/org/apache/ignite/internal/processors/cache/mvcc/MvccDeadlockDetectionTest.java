@@ -31,11 +31,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -435,7 +435,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void nonDeadlockedTxDetectsDeadlock() throws Exception {
+    public void nonDeadlockedTxDetectsDeadlock1() throws Exception {
         // t0d0 remove or dress up this test
         setUpGrids(2, false);
 
@@ -478,6 +478,58 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         TimeUnit.SECONDS.sleep(2);
         cache.put(key0, 33);
+
+        assertExactlyOneAbortedDueDeadlock(fut0, fut1);
+    }
+
+    /** */
+    @Test
+    public void nonDeadlockedTxDetectsDeadlock2() throws Exception {
+        // t0d0 remove or dress up this test
+        setUpGrids(2, false);
+
+        List<Integer> keys0 = primaryKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2);
+        Integer key00 = keys0.get(0);
+        Integer key01 = keys0.get(1);
+        Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        assert client.configuration().isClientMode();
+
+        CyclicBarrier b = new CyclicBarrier(2);
+
+        IgniteInternalFuture<Object> fut0 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                blockProbe(grid(1), tx);
+
+                cache.put(key00, 0);
+                b.await();
+                cache.put(key1, 1);
+
+                tx.rollback();
+            }
+
+            return null;
+        });
+
+        IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                blockProbe(grid(0), tx);
+
+                cache.put(key1, 1);
+                cache.put(key01, 0);
+                b.await();
+                cache.put(key00, 0);
+
+                tx.rollback();
+            }
+
+            return null;
+        });
+
+        TimeUnit.SECONDS.sleep(2);
+        cache.put(key01, 33);
 
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
@@ -557,7 +609,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             catch (IgniteCheckedException e) {
                 e.printStackTrace();
                 // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
-                if (X.hasCause(e, IgniteFutureCancelledCheckedException.class))
+                if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
                     aborted++;
                 else
                     throw e;
