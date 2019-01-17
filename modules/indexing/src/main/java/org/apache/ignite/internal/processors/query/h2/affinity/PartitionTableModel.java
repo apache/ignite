@@ -52,7 +52,7 @@ public class PartitionTableModel {
     public void addTable(PartitionTable tbl, PartitionTableAffinityDescriptor aff) {
         int grpIdx = grpIdxGen++;
 
-        tbl.joinGorup(grpIdx);
+        tbl.joinGroup(grpIdx);
 
         tbls.put(tbl.alias(), tbl);
         grps.put(grpIdx, new PartitionJoinGroup(aff).addTable(tbl));
@@ -130,7 +130,7 @@ public class PartitionTableModel {
 
         // Safe to merge groups.
         for (PartitionTable tbl : rightGrp.tables()) {
-            tbl.joinGorup(leftTbl.joinGroup());
+            tbl.joinGroup(leftTbl.joinGroup());
 
             leftGrp.addTable(tbl);
         }

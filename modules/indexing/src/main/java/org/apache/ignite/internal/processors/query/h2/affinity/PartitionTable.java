@@ -82,13 +82,6 @@ public class PartitionTable {
     }
 
     /**
-     * @return {@code True} if affinity oclumn exists.
-     */
-    public boolean hasAffinityColumn() {
-        return affColName != null;
-    }
-
-    /**
      * Check whether passed column is affinity column.
      *
      * @param colName Column name.
@@ -108,7 +101,7 @@ public class PartitionTable {
     /**
      * @param joinGrp Join group index.
      */
-    public void joinGorup(int joinGrp) {
+    public void joinGroup(int joinGrp) {
         this.joinGrp = joinGrp;
     }
 

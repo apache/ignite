@@ -266,7 +266,7 @@ public class GridH2Table extends TableBase {
      * SELECT * FROM dept d INNER JOIN emp e ON d.id = e._KEY WHERE e.dept_id=? AND d.id=?
      * </pre>
      * NB: The last query is not logically correct and will produce empty result. However, it is correct from SQL
-     * perspective, so we should make incorrect assumptions about partitions as ti may make situation even worse.
+     * perspective, so we should make incorrect assumptions about partitions as it may make situation even worse.
      *
      * @param col Column.
      * @return {@code True} if column could be used for partition extraction on both server and client sides and for

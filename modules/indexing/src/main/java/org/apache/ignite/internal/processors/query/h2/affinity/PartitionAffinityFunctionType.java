@@ -52,7 +52,7 @@ public enum PartitionAffinityFunctionType {
      * Get type from value.
      *
      * @param val Value.
-     * @return Type or [@code null} if cannot be resolved..
+     * @return Type or {@code null} if cannot be resolved..
      */
     @Nullable public static PartitionAffinityFunctionType fromValue(int val) {
         for (PartitionAffinityFunctionType typ : values()) {

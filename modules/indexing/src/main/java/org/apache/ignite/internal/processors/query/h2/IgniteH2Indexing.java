@@ -140,6 +140,7 @@ import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -2080,7 +2081,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Collection<Integer> realParts = derivedParts.tree().apply(args);
 
                 if (F.isEmpty(realParts))
-                    return new int[0];
+                    return IgniteUtils.EMPTY_INTS;
                 else {
                     int[] realParts0 = new int[realParts.size()];
 
