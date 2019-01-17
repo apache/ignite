@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
@@ -37,21 +38,27 @@ public class PartitionTableAffinityDescriptor implements Serializable {
     /** Whether node filter is set. */
     private final boolean hasNodeFilter;
 
+    /** Data region name. */
+    private final String dataRegion;
+
     /**
      * Constructor.
      *
      * @param affFunc Affinity function type.
      * @param parts Number of partitions.
      * @param hasNodeFilter Whether node filter is set.
+     * @param dataRegion Data region.
      */
     public PartitionTableAffinityDescriptor(
         PartitionAffinityFunctionType affFunc,
         int parts,
-        boolean hasNodeFilter
+        boolean hasNodeFilter,
+        String dataRegion
     ) {
         this.affFunc = affFunc;
         this.parts = parts;
         this.hasNodeFilter = hasNodeFilter;
+        this.dataRegion = dataRegion;
     }
 
     /**
@@ -60,6 +67,7 @@ public class PartitionTableAffinityDescriptor implements Serializable {
      * @param other Other descriptor.
      * @return {@code True} if compatible.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isCompatible(PartitionTableAffinityDescriptor other) {
         if (other == null)
             return false;
@@ -74,7 +82,8 @@ public class PartitionTableAffinityDescriptor implements Serializable {
                 return
                     other.affFunc == PartitionAffinityFunctionType.RENDEZVOUS &&
                     !other.hasNodeFilter &&
-                    other.parts == parts;
+                    other.parts == parts &&
+                    F.eq(other.dataRegion, dataRegion);
             }
         }
 

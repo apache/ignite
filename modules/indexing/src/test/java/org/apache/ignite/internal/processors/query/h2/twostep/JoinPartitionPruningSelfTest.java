@@ -602,6 +602,12 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
             false
         );
 
+        checkAffinityFunctions(
+            cacheConfiguration(256, 1, false, false, false),
+            cacheConfiguration(1024, 1, false, false, false),
+            false
+        );
+
         // Backups.
         checkAffinityFunctions(
             cacheConfiguration(256, 1, false, false, false),
@@ -648,7 +654,23 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // With and without persistence.
-        // TODO
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, false, true),
+            cacheConfiguration(256, 2, false, false, false),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, false, false),
+            cacheConfiguration(256, 2, false, false, true),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, false, true),
+            cacheConfiguration(256, 2, false, false, true),
+            true
+        );
     }
 
     @SuppressWarnings("unchecked")

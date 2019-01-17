@@ -349,7 +349,8 @@ public class PartitionExtractor {
         return new PartitionTableAffinityDescriptor(
             aff,
             ccfg.getAffinity().partitions(),
-            hasNodeFilter
+            hasNodeFilter,
+            ccfg.getDataRegionName()
         );
     }
 
