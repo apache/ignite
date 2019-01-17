@@ -190,6 +190,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** Buffer for events arriving during the listener start. Used for MVCC races prevention.  */
     private final transient Set<PendingEvent> pendingEvts = new HashSet<>();
 
+    /** Local update counters values on listener start. */
+    private transient volatile Map<Integer, T2<Long, Long>> localInitUpdCntrs;
+
     /** */
     private transient GridKernalContext ctx;
 
@@ -314,7 +317,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> updateCounters() {
-        return initUpdCntrs;
+        return localInitUpdCntrs;
     }
 
     /** {@inheritDoc} */
@@ -388,13 +391,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                  */
                 if (cctx != null && cctx.mvccEnabled() && cctx.affinityNode()) {
                     synchronized (pendingEvts) {
-                        initUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
+                        localInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
 
                         // Flush all pending events to CQ listeners.
                         for (PendingEvent evt : pendingEvts) {
                             int part = evt.part();
                             long updCntr = evt.counter();
-                            T2<Long, Long> initCntr = initUpdCntrs.get(part);
+                            T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
 
                             if (initCntr == null || initCntr.get2() <= updCntr) {
                                 if (evt.skipCounter()) {
@@ -420,8 +423,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         pendingEvts.clear();
                     }
                 }
-                else
-                    initUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
+                else if (!cctx.isLocal())
+                    localInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
 
                 if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     //noinspection unchecked
@@ -678,8 +681,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 cntr = skipEvent ? cntr : evt.getPartitionUpdateCounter();
                 part = skipEvent ? part : evt.partitionId();
 
-                if (initUpdCntrs != null) {
-                    T2<Long, Long> initCntr = initUpdCntrs.get(part);
+                if (localInitUpdCntrs != null) {
+                    T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
 
                     // Do not notify listener if entry was updated before the query is started.
                     if (initCntr != null && cntr < initCntr.get2())
@@ -688,7 +691,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 else {
                     synchronized (pendingEvts) {
                         // Query was not started yet. Let's postpone event until start.
-                        if (initUpdCntrs == null) { // Double check.
+                        if (localInitUpdCntrs == null) { // Double check.
                             PendingEvent pendingEvent = skipEvent ? new PendingEvent(cctx, part, cntr, topVer, primary) :
                                 new PendingEvent(evt, primary, recordIgniteEvt);
 
@@ -697,7 +700,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             return false;
                         }
                         else {
-                            T2<Long, Long> initCntr = initUpdCntrs.get(part);
+                            T2<Long, Long> initCntr = localInitUpdCntrs.get(part);
 
                             if (initCntr != null && cntr < initCntr.get2())
                                 return false;

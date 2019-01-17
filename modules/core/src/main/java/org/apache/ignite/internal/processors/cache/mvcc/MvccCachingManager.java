@@ -148,16 +148,10 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         TxCounters txCntrs = tx.txCounters(false);
 
-        if (txCntrs == null)
+        Collection<PartitionUpdateCountersMessage> cntrsColl = txCntrs == null ? null : txCntrs.updateCounters();
+
+        if (txCntrs == null || F.isEmpty(cntrsColl))
             return;
-
-        Collection<PartitionUpdateCountersMessage> cntrsColl = txCntrs.updateCounters();
-
-        if (F.isEmpty(cntrsColl)) {
-            assert !commit;
-
-            return;
-        }
 
         GridIntList cacheIds = tx.txState().cacheIds();
 

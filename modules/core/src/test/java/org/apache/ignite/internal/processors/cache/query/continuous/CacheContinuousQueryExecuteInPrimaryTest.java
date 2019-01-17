@@ -231,7 +231,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                         }
                     }));
 
-                executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+                executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
             }
 
             assertTrue(noOneListen.get());
@@ -329,7 +329,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             ));
 
             // Execute query.
-            executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+            executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
 
             assertTrue(latch.await(LATCH_TIMEOUT, MILLISECONDS));
             assertEquals(16, cnt.get());
