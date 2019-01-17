@@ -32,7 +32,6 @@ public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
      * Consumer body.
      *
      * @param e Consumer parameter.
-     * @return Result of consumer operation.
      * @throws IgniteCheckedException if body execution was failed.
      */
     public void accept(E e, R r) throws IgniteCheckedException;

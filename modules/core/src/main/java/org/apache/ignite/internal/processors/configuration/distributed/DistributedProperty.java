@@ -57,7 +57,7 @@ public class DistributedProperty<T extends Serializable> {
      * @return {@code true} if value was successfully updated and {@code false} if cluster wide update have not
      * permitted yet.
      * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
-     * DistributedConfigurationProcessor#attach(DistributedProperty)} before this method.
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
     public boolean propagate(T newVal) throws IgniteCheckedException {
