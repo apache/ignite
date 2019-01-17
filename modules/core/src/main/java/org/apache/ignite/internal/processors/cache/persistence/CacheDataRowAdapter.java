@@ -337,8 +337,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (readCacheId && cacheId == 0) {
             incomplete = readIncompleteCacheId(buf, incomplete);
 
-            if (cacheId == 0)
+            if (cacheId == 0) {
+                assert incomplete != null;
                 return incomplete;
+            }
 
             incomplete = null;
         }
@@ -355,8 +357,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (key == null) {
             incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
 
-            if (key == null || keyOnly)
-                return incomplete;
+            if (key == null) {
+                assert incomplete != null;
+                return incomplete; // Need to finish reading the key.
+            }
+
+            if (keyOnly)
+                return null; // Key is ready - we are done!
 
             incomplete = null;
         }
@@ -364,8 +371,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (expireTime == -1) {
             incomplete = readIncompleteExpireTime(buf, incomplete);
 
-            if (expireTime == -1)
+            if (expireTime == -1) {
+                assert incomplete != null;
                 return incomplete;
+            }
 
             incomplete = null;
         }
@@ -374,15 +383,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (val == null) {
             incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
 
-            if (val == null)
+            if (val == null) {
+                assert incomplete != null;
                 return incomplete;
+            }
 
             incomplete = null;
         }
 
         // Read version.
-        if (ver == null)
+        if (ver == null) {
             incomplete = readIncompleteVersion(buf, incomplete);
+
+            assert ver != null || incomplete != null;
+        }
 
         return incomplete;
     }
@@ -464,10 +478,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) {
         if (incomplete == null) {
             int remaining = buf.remaining();
-
-            if (remaining == 0)
-                return null;
-
             int size = 4;
 
             if (remaining >= size) {
@@ -479,6 +489,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             incomplete = new IncompleteObject<>(new byte[size]);
+
+            if (remaining == 0)
+                return incomplete;
         }
 
         incomplete.readData(buf);
@@ -598,8 +611,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
-        if (incomplete == null) {
+        if (incomplete == null || incomplete.data() == null) {
             int remaining = buf.remaining();
+
+            if (remaining == 0)
+                return new IncompleteObject<>(); // Just to pass the next link.
+
             int size = CacheVersionIO.readSize(buf, false);
 
             if (remaining >= size) {
@@ -614,9 +631,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             // We have to read multipart version.
             incomplete = new IncompleteObject<>(new byte[size]);
-
-            if (remaining == 0)
-                return incomplete;
         }
 
         incomplete.readData(buf);

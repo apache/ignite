@@ -45,7 +45,7 @@ public class IncompleteObject<T> {
     /**
      * Constructor.
      */
-    protected IncompleteObject() {
+    public IncompleteObject() {
         // No-op.
     }
 
