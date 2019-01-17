@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -159,15 +160,15 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
      * @param content Content to check.
      */
     private JsonNode jsonResponse(String content) throws IOException {
-        assertNotNull(content);
-        assertFalse(content.isEmpty());
+        Assert.assertNotNull(content);
+        Assert.assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertFalse(node.get("affinityNodeId").asText().isEmpty());
-        assertEquals(0, node.get("successStatus").asInt());
-        assertTrue(node.get("error").isNull());
-        assertTrue(node.get("sessionToken").isNull());
+        Assert.assertFalse(node.get("affinityNodeId").asText().isEmpty());
+        Assert.assertEquals(0, node.get("successStatus").asInt());
+        Assert.assertTrue(node.get("error").isNull());
+        Assert.assertTrue(node.get("sessionToken").isNull());
 
         return node.get("response");
     }
@@ -185,13 +186,13 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         JsonNode res = jsonResponse(ret);
 
-        assertEquals("Incorrect put response", true, res.asBoolean());
+        Assert.assertEquals("Incorrect put response", true, res.asBoolean());
 
         // Escape '\' symbols disappear from response string on transformation to JSON object.
         ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", LOCAL_CACHE, "key", "a"));
 
         res = jsonResponse(ret);
 
-        assertEquals("Incorrect get response", val, res.asText());
+        Assert.assertEquals("Incorrect get response", val, res.asText());
     }
 }

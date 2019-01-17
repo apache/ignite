@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -173,15 +174,15 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         log.info("Checking cache,  " + cacheInfo);
 
-        assertEquals(cacheInfo + " offHeapEntriesCnt", offHeapEntriesCnt,
+        Assert.assertEquals(cacheInfo + " offHeapEntriesCnt", offHeapEntriesCnt,
             entriesStatMetrics.offHeapEntriesCount());
-        assertEquals(cacheInfo + " offHeapBackupEntriesCnt", offHeapBackupEntriesCnt,
+        Assert.assertEquals(cacheInfo + " offHeapBackupEntriesCnt", offHeapBackupEntriesCnt,
             entriesStatMetrics.offHeapBackupEntriesCount());
-        assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
+        Assert.assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
             entriesStatMetrics.offHeapPrimaryEntriesCount());
-        assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, entriesStatMetrics.heapEntriesCount());
-        assertEquals(cacheInfo + " size", size, entriesStatMetrics.size());
-        assertEquals(cacheInfo + " keySize", keySize, entriesStatMetrics.keySize());
-        assertEquals(cacheInfo + " isEmpty", isEmpty, entriesStatMetrics.isEmpty());
+        Assert.assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, entriesStatMetrics.heapEntriesCount());
+        Assert.assertEquals(cacheInfo + " size", size, entriesStatMetrics.size());
+        Assert.assertEquals(cacheInfo + " keySize", keySize, entriesStatMetrics.keySize());
+        Assert.assertEquals(cacheInfo + " isEmpty", isEmpty, entriesStatMetrics.isEmpty());
     }
 }

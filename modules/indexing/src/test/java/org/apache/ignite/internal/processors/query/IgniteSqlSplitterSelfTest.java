@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -173,9 +174,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             String map1 = (String)plan.get(1).get(0);
             String rdc = (String)plan.get(2).get(0);
 
-            assertTrue(map0.contains("ORDER BY"));
-            assertTrue(map1.contains("ORDER BY"));
-            assertEquals(3, rdc.split("merge_sorted").length);
+            Assert.assertTrue(map0.contains("ORDER BY"));
+            Assert.assertTrue(map1.contains("ORDER BY"));
+            Assert.assertEquals(3, rdc.split("merge_sorted").length);
         }
         finally {
             c.destroy();
@@ -195,32 +196,32 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             String qry = "select 1 from Person p0 join " + subqry + " p1 on p0.id = p1.id where p0.id = " +
                 " (select p.id from Person p where p.id = p0.id)";
 
-            assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
+            Assert.assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
 
             List<List<?>> plan = c.query(new SqlFieldsQuery("explain " + qry)).getAll();
 
             X.println(" Plan: " + plan);
 
-            assertEquals(3, plan.size());
+            Assert.assertEquals(3, plan.size());
 
             String rdc = (String)plan.get(2).get(0);
 
-            assertFalse(rdc.contains("PERSON"));
+            Assert.assertFalse(rdc.contains("PERSON"));
 
             qry = "select (select p.id from Person p where p.id = p0.id) from Person p0 join " +
                 subqry + " p1 on p0.id = p1.id";
 
-            assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
+            Assert.assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
 
             plan = c.query(new SqlFieldsQuery("explain " + qry)).getAll();
 
             X.println(" Plan: " + plan);
 
-            assertEquals(3, plan.size());
+            Assert.assertEquals(3, plan.size());
 
             rdc = (String)plan.get(2).get(0);
 
-            assertFalse(rdc.contains("PERSON"));
+            Assert.assertFalse(rdc.contains("PERSON"));
         }
         finally {
             c.destroy();
@@ -407,12 +408,12 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 r.put(i, new Value(i, -i));
 
             // Query data from replicated table using partitioned cache.
-            assertEquals(cnt, p.query(query("select 1 from \"r\".Value", replicatedOnlyFlag))
+            Assert.assertEquals(cnt, p.query(query("select 1 from \"r\".Value", replicatedOnlyFlag))
                 .getAll().size());
 
             List<List<?>> res = p.query(query("select count(1) from \"r\".Value", replicatedOnlyFlag)).getAll();
-            assertEquals(1, res.size());
-            assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
+            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
         }
         finally {
             p.destroy();
@@ -455,11 +456,11 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 p.put(i, new Value(i, -i));
 
             // Query data from replicated table using partitioned cache.
-            assertEquals(cnt, r.query(new SqlFieldsQuery("select 1 from \"p\".Value")).getAll().size());
+            Assert.assertEquals(cnt, r.query(new SqlFieldsQuery("select 1 from \"p\".Value")).getAll().size());
 
             List<List<?>> res = r.query(new SqlFieldsQuery("select count(1) from \"p\".Value")).getAll();
-            assertEquals(1, res.size());
-            assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
+            Assert.assertEquals(1, res.size());
+            Assert.assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
         }
         finally {
             p.destroy();
@@ -486,11 +487,11 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 "select count(1) from Person2 q where q.orgId = p.orgId " +
                 "from Person2 p order by name desc")).getAll();
 
-            assertEquals(2, rs.size());
-            assertEquals("Vasya", rs.get(0).get(0));
-            assertEquals(2L, rs.get(0).get(1));
-            assertEquals("Another Vasya", rs.get(1).get(0));
-            assertEquals(2L, rs.get(1).get(1));
+            Assert.assertEquals(2, rs.size());
+            Assert.assertEquals("Vasya", rs.get(0).get(0));
+            Assert.assertEquals(2L, rs.get(0).get(1));
+            Assert.assertEquals("Another Vasya", rs.get(1).get(0));
+            Assert.assertEquals(2L, rs.get(1).get(1));
         }
         finally {
             c1.destroy();
@@ -553,15 +554,15 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                     intersects.add(i);
             }
 
-            assertFalse(intersects.isEmpty());
+            Assert.assertFalse(intersects.isEmpty());
 
             List<List<?>> res = x.query(new SqlFieldsQuery("select _key from \"x\".Person2 px " +
                 "where exists(select 1 from \"y\".Person2 py where px._key = py._key)")).getAll();
 
-            assertEquals(intersects.size(), res.size());
+            Assert.assertEquals(intersects.size(), res.size());
 
             for (List<?> row : res)
-                assertTrue(intersects.contains(row.get(0)));
+                Assert.assertTrue(intersects.contains(row.get(0)));
         }
         finally {
             x.destroy();
@@ -594,15 +595,15 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 "explain select snd from Value order by fst desc")).getAll();
             String rdcPlan = (String)plan.get(1).get(0);
 
-            assertTrue(rdcPlan.contains("merge_sorted"));
-            assertTrue(rdcPlan.contains("/* index sorted */"));
+            Assert.assertTrue(rdcPlan.contains("merge_sorted"));
+            Assert.assertTrue(rdcPlan.contains("/* index sorted */"));
 
             plan = c.query(new SqlFieldsQuery(
                 "explain select snd from Value")).getAll();
             rdcPlan = (String)plan.get(1).get(0);
 
-            assertTrue(rdcPlan.contains("merge_scan"));
-            assertFalse(rdcPlan.contains("/* index sorted */"));
+            Assert.assertTrue(rdcPlan.contains("merge_scan"));
+            Assert.assertFalse(rdcPlan.contains("/* index sorted */"));
 
             for (int i = 0; i < 10; i++) {
                 X.println(" --> " + i);
@@ -611,7 +612,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                     "select fst from Value order by fst").setPageSize(5)
                 ).getAll();
 
-                assertEquals(cnt, res.size());
+                Assert.assertEquals(cnt, res.size());
 
                 Integer p = null;
 
@@ -620,7 +621,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
                     if (x != null) {
                         if (p != null)
-                            assertTrue(x + " >= " + p,  x >= p);
+                            Assert.assertTrue(x + " >= " + p,  x >= p);
 
                         p = x;
                     }
@@ -653,7 +654,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             info("Plan: " + plan);
 
-            assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
+            Assert.assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
 
             // Sorted list
             List<GroupIndexTestValue> list = F.asList(
@@ -670,45 +671,45 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 c.put(i, list.get(i));
 
             // Check results.
-            assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 1").size());
-            assertEquals(0, columnQuery(c, qry + "where a = 1 and b = 2").size());
-            assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a = 1 and b < 4").size());
-            assertEquals(2, columnQuery(c, qry + "where a = 1 and b <= 3").size());
-            assertEquals(1, columnQuery(c, qry + "where a = 1 and b < 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a = 1 and b > 0").size());
-            assertEquals(1, columnQuery(c, qry + "where a = 1 and b > 1").size());
-            assertEquals(2, columnQuery(c, qry + "where a = 1 and b >= 1").size());
+            Assert.assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 1").size());
+            Assert.assertEquals(0, columnQuery(c, qry + "where a = 1 and b = 2").size());
+            Assert.assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a = 1 and b < 4").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a = 1 and b <= 3").size());
+            Assert.assertEquals(1, columnQuery(c, qry + "where a = 1 and b < 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a = 1 and b > 0").size());
+            Assert.assertEquals(1, columnQuery(c, qry + "where a = 1 and b > 1").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a = 1 and b >= 1").size());
 
-            assertEquals(4, columnQuery(c, qry + "where a > 0").size());
-            assertEquals(4, columnQuery(c, qry + "where a >= 1").size());
-            assertEquals(4, columnQuery(c, qry + "where b > 0").size());
-            assertEquals(4, columnQuery(c, qry + "where b >= 1").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where a > 0").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where a >= 1").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where b > 0").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where b >= 1").size());
 
-            assertEquals(4, columnQuery(c, qry + "where a < 2").size());
-            assertEquals(4, columnQuery(c, qry + "where a <= 1").size());
-            assertEquals(4, columnQuery(c, qry + "where b < 3").size());
-            assertEquals(5, columnQuery(c, qry + "where b <= 3").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where a < 2").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where a <= 1").size());
+            Assert.assertEquals(4, columnQuery(c, qry + "where b < 3").size());
+            Assert.assertEquals(5, columnQuery(c, qry + "where b <= 3").size());
 
-            assertEquals(3, columnQuery(c, qry + "where a > 0 and b > 0").size());
-            assertEquals(2, columnQuery(c, qry + "where a > 0 and b >= 2").size());
-            assertEquals(3, columnQuery(c, qry + "where a >= 1 and b > 0").size());
-            assertEquals(2, columnQuery(c, qry + "where a >= 1 and b >= 2").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a > 0 and b > 0").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a > 0 and b >= 2").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a >= 1 and b > 0").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a >= 1 and b >= 2").size());
 
-            assertEquals(3, columnQuery(c, qry + "where a > 0 and b < 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a > 0 and b <= 1").size());
-            assertEquals(3, columnQuery(c, qry + "where a >= 1 and b < 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a >= 1 and b <= 1").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a > 0 and b < 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a > 0 and b <= 1").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a >= 1 and b < 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a >= 1 and b <= 1").size());
 
-            assertEquals(2, columnQuery(c, qry + "where a < 2 and b < 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a < 2 and b <= 1").size());
-            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b < 3").size());
-            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b <= 1").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a < 2 and b < 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a < 2 and b <= 1").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a <= 1 and b < 3").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a <= 1 and b <= 1").size());
 
-            assertEquals(3, columnQuery(c, qry + "where a < 2 and b > 0").size());
-            assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
-            assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
-            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a < 2 and b > 0").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
+            Assert.assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
+            Assert.assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
         }
         finally {
             c.destroy();
@@ -731,8 +732,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
+            Assert.assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
+            Assert.assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
 
             select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
 
@@ -740,8 +741,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
+            Assert.assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
+            Assert.assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
         }
         finally {
             c.destroy();
@@ -809,10 +810,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan : " + plan);
 
-            assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
+            Assert.assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
 
             select = "select * from (" + select + ")";
@@ -823,10 +824,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan : " + plan);
 
-            assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
+            Assert.assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, StringUtils.countOccurrencesOf(plan, "batched:unicast"));
 
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
                 .setEnforceJoinOrder(false)).getAll().size());
         }
         finally {
@@ -864,8 +865,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: " + plan);
 
-            assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll().size());
+            Assert.assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll().size());
 
             String select = "select * from (" + select0 + ")";
 
@@ -875,8 +876,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan : " + plan);
 
-            assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            Assert.assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
 
             String select1 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1" +
                 " union select * from (select o.name n1, p.name n2 from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key and o._key=2)";
@@ -886,8 +887,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: " + plan);
 
-            assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            Assert.assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
 
             select = "select * from (" + select1 + ")";
 
@@ -896,8 +897,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan : " + plan);
 
-            assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
-            assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
+            Assert.assertEquals(0, StringUtils.countOccurrencesOf(plan, "batched"));
+            Assert.assertEquals(2, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)).getAll().size());
         }
         finally {
             c1.destroy();
@@ -1354,8 +1355,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             List<List<?>> res = ppAf.query(new SqlFieldsQuery("select name from " +
                 schema + ".Person2 order by _key")).getAll();
 
-            assertEquals("Petya", res.get(0).get(0));
-            assertEquals("Kolya", res.get(1).get(0));
+            Assert.assertEquals("Petya", res.get(0).get(0));
+            Assert.assertEquals("Kolya", res.get(1).get(0));
         }
         finally {
             ppAf.destroy();
@@ -1439,7 +1440,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             List<List<?>> results = c1.query(qry).getAll();
 
-            assertEquals(2, results.size());
+            Assert.assertEquals(2, results.size());
 
             select0 += " order by n2 desc";
 
@@ -1449,10 +1450,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             results = c1.query(qry).getAll();
 
-            assertEquals(2, results.size());
+            Assert.assertEquals(2, results.size());
 
-            assertEquals("p2", results.get(0).get(1));
-            assertEquals("p1", results.get(1).get(1));
+            Assert.assertEquals("p2", results.get(0).get(1));
+            Assert.assertEquals("p1", results.get(1).get(1));
 
             // Test for replicated subquery with aggregate.
             select0 = "select p.name " +
@@ -1469,8 +1470,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             results = c1.query(qry).getAll();
 
-            assertEquals(1, results.size());
-            assertEquals("p2", results.get(0).get(0));
+            Assert.assertEquals(1, results.size());
+            Assert.assertEquals("p2", results.get(0).get(0));
         }
         finally {
             c1.destroy();
@@ -1636,7 +1637,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
         log.info("\n  Plan:\n" + plan);
 
-        assertEquals("Unexpected number of batched joins in plan [plan=" + plan + ", qry=" + qry + ']',
+        Assert.assertEquals("Unexpected number of batched joins in plan [plan=" + plan + ", qry=" + qry + ']',
             expBatchedJoins,
             StringUtils.countOccurrencesOf(plan, "batched"));
 
@@ -1681,7 +1682,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 cnt.incrementAndGet();
             }
 
-            assertTrue(cntMap.size() > 10);
+            Assert.assertTrue(cntMap.size() > 10);
 
             String sqlQry = "select _val, count(*) cnt from Integer group by _val having cnt > ?";
 
@@ -1694,8 +1695,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                     int v = (Integer)row.get(0);
                     long cnt = (Long)row.get(1);
 
-                    assertTrue(cnt + " > " + i, cnt > i);
-                    assertEquals(cntMap.get(v).longValue(), cnt);
+                    Assert.assertTrue(cnt + " > " + i, cnt > i);
+                    Assert.assertEquals(cntMap.get(v).longValue(), cnt);
                 }
             }
         }
@@ -1721,8 +1722,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         int pageSize,
         boolean enforceJoinOrder
     ) {
-        assertEquals(0, c1.size(CachePeekMode.ALL));
-        assertEquals(0, c2.size(CachePeekMode.ALL));
+        Assert.assertEquals(0, c1.size(CachePeekMode.ALL));
+        Assert.assertEquals(0, c2.size(CachePeekMode.ALL));
 
         int key = 0;
 
@@ -1754,18 +1755,18 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         X.println("Plan : " + plan);
 
         if (enforceJoinOrder)
-            assertTrue(plan, plan.contains("batched:broadcast"));
+            Assert.assertTrue(plan, plan.contains("batched:broadcast"));
         else
-            assertTrue(plan, plan.contains("batched:unicast"));
+            Assert.assertTrue(plan, plan.contains("batched:unicast"));
 
-        assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        Assert.assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
 
         c1.clear();
         c2.clear();
 
-        assertEquals(0, c1.size(CachePeekMode.ALL));
-        assertEquals(0L, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        Assert.assertEquals(0, c1.size(CachePeekMode.ALL));
+        Assert.assertEquals(0L, c1.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
     }
 
@@ -1843,7 +1844,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                     "left join O.Org org ON org.id=dep.orgId"
             )).getAll());
 
-            assertEquals(0, p.query(new SqlFieldsQuery(
+            Assert.assertEquals(0, p.query(new SqlFieldsQuery(
                 "select P.Person.*,dep.*,org.* " +
                     "from P.Person inner join D.Department dep ON dep.id=P.Person.depId " +
                     "left join O.Org org ON org.id=dep.orgId"
@@ -1885,7 +1886,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "INNER JOIN  (SELECT CO_ID FROM PromoContract EBP WHERE EBP.CO_ID = 5 LIMIT 1) VPMC  \n" +
             "ON PMC.CO_ID = VPMC.CO_ID ")).getAll();
 
-        assertFalse(res.isEmpty());
+        Assert.assertFalse(res.isEmpty());
     }
 
     /** @throws Exception if failed. */
@@ -1995,15 +1996,15 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "SELECT count(fst), sum(snd), avg(snd), min(snd), max(snd) FROM Value"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(1, result.size());
+            Assert.assertEquals(1, result.size());
 
             List<?> row = result.get(0);
 
-            assertEquals("count", 0L, ((Number)row.get(0)).longValue());
-            assertEquals("sum", null, row.get(1));
-            assertEquals("avg", null, row.get(2));
-            assertEquals("min", null, row.get(3));
-            assertEquals("max", null, row.get(4));
+            Assert.assertEquals("count", 0L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum", null, row.get(1));
+            Assert.assertEquals("avg", null, row.get(2));
+            Assert.assertEquals("min", null, row.get(3));
+            Assert.assertEquals("max", null, row.get(4));
         }
         finally {
             cache.destroy();
@@ -2064,13 +2065,13 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
         List<?> row = result.get(0);
 
-        assertEquals((byte)13, row.get(0));
-        assertEquals((short)13, row.get(1));
-        assertEquals(13, row.get(2));
-        assertEquals(13L, row.get(3));
-        assertEquals(new BigDecimal("13.125"), row.get(4));
-        assertEquals(13.125f, row.get(5));
-        assertEquals(13.125d, row.get(6));
+        Assert.assertEquals((byte)13, row.get(0));
+        Assert.assertEquals((short)13, row.get(1));
+        Assert.assertEquals(13, row.get(2));
+        Assert.assertEquals(13L, row.get(3));
+        Assert.assertEquals(new BigDecimal("13.125"), row.get(4));
+        Assert.assertEquals(13.125f, row.get(5));
+        Assert.assertEquals(13.125d, row.get(6));
     }
 
     /** Simple query with aggregates */
@@ -2079,15 +2080,15 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "SELECT count(fst), sum(snd), avg(snd), min(snd), max(snd) FROM Value"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(1, result.size());
+            Assert.assertEquals(1, result.size());
 
             List<?> row = result.get(0);
 
-            assertEquals("count", 15L, ((Number)row.get(0)).longValue());
-            assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
-            assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
-            assertEquals("min", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("count", 15L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("min", 1, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(4)).intValue());
         }
     }
 
@@ -2098,15 +2099,15 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 "FROM Value"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(1, result.size());
+            Assert.assertEquals(1, result.size());
 
             List<?> row = result.get(0);
 
-            assertEquals("count distinct", 6L, ((Number)row.get(0)).longValue());
-            assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
-            assertEquals("min distinct", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("count distinct", 6L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(4)).intValue());
         }
     }
 
@@ -2118,20 +2119,20 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 "FROM Value"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(1, result.size());
+            Assert.assertEquals(1, result.size());
 
             List<?> row = result.get(0);
 
-            assertEquals("count", 15L, ((Number)row.get(0)).longValue());
-            assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
-            assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
-            assertEquals("min", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(4)).intValue());
-            assertEquals("count distinct", 6L, ((Number)row.get(5)).longValue());
-            assertEquals("sum distinct", 6L, ((Number)row.get(6)).longValue());
-            assertEquals("avg distinct", 2, ((Integer)row.get(7)).intValue());
-            assertEquals("min distinct", 1, ((Integer)row.get(8)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(9)).intValue());
+            Assert.assertEquals("count", 15L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("min", 1, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("count distinct", 6L, ((Number)row.get(5)).longValue());
+            Assert.assertEquals("sum distinct", 6L, ((Number)row.get(6)).longValue());
+            Assert.assertEquals("avg distinct", 2, ((Integer)row.get(7)).intValue());
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(8)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(9)).intValue());
         }
     }
 
@@ -2142,36 +2143,36 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "min(snd), max(snd) FROM Value GROUP BY fst ORDER BY fst"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(6, result.size());
+            Assert.assertEquals(6, result.size());
 
             List<?> row = result.get(0);
-            assertEquals("fst", 1, ((Number)row.get(0)).intValue());
-            assertEquals("count", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 3, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("avg dbl", 3d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 3, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("fst", 1, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 3, ((Number)row.get(3)).doubleValue(), 0.001);
+            Assert.assertEquals("avg dbl", 3d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 3, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(6)).intValue());
 
 
             row = result.get(1);
-            assertEquals("fst", 2, ((Number)row.get(0)).intValue());
-            assertEquals("count", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 2, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("avg dbl", 2d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("fst", 2, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 2, ((Number)row.get(3)).doubleValue(), 0.001);
+            Assert.assertEquals("avg dbl", 2d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(6)).intValue());
 
 
             row = result.get(2);
-            assertEquals("fst", 3, ((Number)row.get(0)).intValue());
-            assertEquals("count", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 2, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("fst", 3, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 6L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 2, ((Integer)row.get(6)).intValue());
         }
     }
 
@@ -2183,31 +2184,31 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "FROM Value GROUP BY fst"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(6, result.size());
+            Assert.assertEquals(6, result.size());
 
             List<?> row = result.get(0);
-            assertEquals("count distinct", 1L, ((Number)row.get(0)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 3, ((Integer)row.get(2)).intValue());
-            assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min distinct", 3, ((Integer)row.get(4)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("count distinct", 1L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg distinct", 3, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(3)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 3, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
 
             row = result.get(1);
-            assertEquals("count distinct", 3L, ((Number)row.get(0)).longValue());
-            assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
-            assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("count distinct", 3L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(3)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
 
             row = result.get(2);
-            assertEquals("count distinct", 2L, ((Number)row.get(0)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 1, ((Integer)row.get(2)).intValue());
-            assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max distinct", 2, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("count distinct", 2L, ((Number)row.get(0)).longValue());
+            Assert.assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("avg distinct", 1, ((Integer)row.get(2)).intValue());
+            Assert.assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(3)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
+            Assert.assertEquals("max distinct", 2, ((Integer)row.get(5)).intValue());
         }
     }
 
@@ -2219,52 +2220,52 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             "min(distinct snd), max(distinct snd) FROM Value GROUP BY fst"))) {
             List<List<?>> result = qry.getAll();
 
-            assertEquals(6, result.size());
+            Assert.assertEquals(6, result.size());
 
             List<?> row = result.get(0);
-            assertEquals("fst", 1, ((Number)row.get(0)).intValue());
-            assertEquals("count", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 3, ((Integer)row.get(3)).intValue());
-            assertEquals("avg dbl", 3.0d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 3, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
-            assertEquals("count distinct", 1L, ((Number)row.get(7)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
-            assertEquals("avg distinct", 3, ((Integer)row.get(9)).intValue());
-            assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(10)).doubleValue(), 0.001);
-            assertEquals("min distinct", 3, ((Integer)row.get(11)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
+            Assert.assertEquals("fst", 1, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 3, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("avg dbl", 3.0d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 3, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("count distinct", 1L, ((Number)row.get(7)).longValue());
+            Assert.assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
+            Assert.assertEquals("avg distinct", 3, ((Integer)row.get(9)).intValue());
+            Assert.assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(10)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 3, ((Integer)row.get(11)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
 
             row = result.get(1);
-            assertEquals("fst", 2, ((Number)row.get(0)).intValue());
-            assertEquals("count", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 2, ((Integer)row.get(3)).intValue());
-            assertEquals("avg dbl", 2.0d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
-            assertEquals("count distinct", 3L, ((Number)row.get(7)).longValue());
-            assertEquals("sum distinct", 6L, ((Number)row.get(8)).longValue());
-            assertEquals("avg distinct", 2, ((Integer)row.get(9)).intValue());
-            assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(10)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
+            Assert.assertEquals("fst", 2, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 3L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 2, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("avg dbl", 2.0d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("count distinct", 3L, ((Number)row.get(7)).longValue());
+            Assert.assertEquals("sum distinct", 6L, ((Number)row.get(8)).longValue());
+            Assert.assertEquals("avg distinct", 2, ((Integer)row.get(9)).intValue());
+            Assert.assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(10)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
+            Assert.assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
 
             row = result.get(2);
-            assertEquals("fst", 3, ((Number)row.get(0)).intValue());
-            assertEquals("count", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
-            assertEquals("max", 2, ((Integer)row.get(6)).intValue());
-            assertEquals("count distinct", 2L, ((Number)row.get(7)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
-            assertEquals("avg distinct", 1, ((Integer)row.get(9)).intValue());
-            assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(10)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
-            assertEquals("max distinct", 2, ((Integer)row.get(12)).intValue());
+            Assert.assertEquals("fst", 3, ((Number)row.get(0)).intValue());
+            Assert.assertEquals("count", 6L, ((Number)row.get(1)).longValue());
+            Assert.assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
+            Assert.assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
+            Assert.assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
+            Assert.assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            Assert.assertEquals("max", 2, ((Integer)row.get(6)).intValue());
+            Assert.assertEquals("count distinct", 2L, ((Number)row.get(7)).longValue());
+            Assert.assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
+            Assert.assertEquals("avg distinct", 1, ((Integer)row.get(9)).intValue());
+            Assert.assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(10)).doubleValue(), 0.001);
+            Assert.assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
+            Assert.assertEquals("max distinct", 2, ((Integer)row.get(12)).intValue());
         }
     }
 

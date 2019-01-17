@@ -84,15 +84,6 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
     }
 
     /**
-     * Asserts that two doubles are equal concerning a delta.  If they are not
-     * an AssertionFailedError is thrown with the given msg.  If the exp
-     * value is infinity then the delta value is ignored.
-     */
-    protected static void assertEquals(String msg, double exp, double actual, double delta) {
-        // todo remove and edit
-    }
-
-    /**
      * Asserts that two doubles are equal concerning a delta. If the exp
      * value is infinity then the delta value is ignored.
      */
