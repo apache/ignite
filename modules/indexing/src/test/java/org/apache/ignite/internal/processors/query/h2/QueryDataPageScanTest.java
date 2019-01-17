@@ -114,25 +114,25 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         cache.put(2L, new TestData(777L));
         cache.put(3, 3);
 
-        CacheDataTree.isLastFindWithDirectDataPageScan();
+        CacheDataTree.isLastFindWithDataPageScan();
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("select z, _key, _val from TestData use index()")
             .setDataPageScanEnabled(true)).getAll();
         assertEquals(1, res.size());
         assertEquals(777L, res.get(0).get(0));
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         res = cache.query(new SqlFieldsQuery("select _val, _key from String use index()")
             .setDataPageScanEnabled(true)).getAll();
         assertEquals(1, res.size());
         assertEquals("bla-bla", res.get(0).get(0));
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         res = cache.query(new SqlFieldsQuery("select _key, _val from Integer use index()")
             .setDataPageScanEnabled(true)).getAll();
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).get(0));
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
     /**
@@ -181,7 +181,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         assertEquals(accounts * initialBalance,((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
             .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
-        assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         AtomicBoolean cancel = new AtomicBoolean();
 
@@ -305,7 +305,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     }
 
     private void checkLazySql(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, int keysCnt) {
-        CacheDataTree.isLastFindWithDirectDataPageScan();
+        CacheDataTree.isLastFindWithDataPageScan();
 
         DirectPageScanIndexing.expectedDataPageScanEnabled = dataPageScanEnabled;
 
@@ -329,9 +329,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
             for (List<?> row : cursor) {
                 if (dataPageScanEnabled == FALSE)
-                    assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIndex was never used.
+                    assertNull(CacheDataTree.isLastFindWithDataPageScan()); // HashIndex was never used.
                 else {
-                    Boolean x = CacheDataTree.isLastFindWithDirectDataPageScan();
+                    Boolean x = CacheDataTree.isLastFindWithDataPageScan();
 
                     if (x != null) {
                         assertTrue(x);
@@ -379,9 +379,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
     private void checkSqlLastFindDataPageScan(Boolean dataPageScanEnabled) {
         if (dataPageScanEnabled == FALSE)
-            assertNull(CacheDataTree.isLastFindWithDirectDataPageScan()); // HashIdx was not used.
+            assertNull(CacheDataTree.isLastFindWithDataPageScan()); // HashIdx was not used.
         else
-            assertTrue(CacheDataTree.isLastFindWithDirectDataPageScan());
+            assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
     private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
@@ -420,7 +420,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         int callsCnt = 0;
 
         assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
-        assertFalse(CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertFalse(CacheDataTree.isLastFindWithDataPageScan());
         assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
 
         checkScanQuery(cache, true, true);
@@ -439,7 +439,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     private void checkScanQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
         assertTrue(cache.query(new ScanQuery<>(new TestPredicate())
             .setDataPageScanEnabled(dataPageScanEnabled)).getAll().isEmpty());
-        assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDirectDataPageScan());
+        assertEquals(expLastDataPageScan, CacheDataTree.isLastFindWithDataPageScan());
     }
 
     /**

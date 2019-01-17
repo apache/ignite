@@ -63,7 +63,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
-    private static Boolean lastFindWithDirectDataPageScan;
+    private static Boolean lastFindWithDataPageScan;
 
     /** */
     private static final ThreadLocal<Boolean> dataPageScanEnabled =
@@ -131,11 +131,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /**
      * @return {@code true} If the last observed call to the method
      *         {@link #find(CacheSearchRow, CacheSearchRow, TreeRowClosure, Object)}
-     *         used direct data page scan.
+     *         used data page scan.
      */
-    public static Boolean isLastFindWithDirectDataPageScan() {
-        Boolean res = lastFindWithDirectDataPageScan;
-        lastFindWithDirectDataPageScan = null;
+    public static Boolean isLastFindWithDataPageScan() {
+        Boolean res = lastFindWithDataPageScan;
+        lastFindWithDataPageScan = null;
         return res;
     }
 
@@ -151,7 +151,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
-        lastFindWithDirectDataPageScan = FALSE;
+        lastFindWithDataPageScan = FALSE;
         return super.find(lower, upper, c, x);
     }
 
@@ -163,7 +163,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData, MvccDataPageClosure c)
         throws IgniteCheckedException {
-        lastFindWithDirectDataPageScan = TRUE;
+        lastFindWithDataPageScan = TRUE;
 
         checkDestroyed();
 
