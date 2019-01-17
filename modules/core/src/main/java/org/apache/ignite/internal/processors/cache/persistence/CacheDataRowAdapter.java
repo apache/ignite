@@ -557,10 +557,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) {
         if (incomplete == null) {
             int remaining = buf.remaining();
-
-            if (remaining == 0)
-                return null;
-
             int size = 8;
 
             if (remaining >= size) {
@@ -572,6 +568,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             incomplete = new IncompleteObject<>(new byte[size]);
+
+            if (remaining == 0)
+                return incomplete;
         }
 
         incomplete.readData(buf);
@@ -601,10 +600,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         if (incomplete == null) {
             int remaining = buf.remaining();
-
-            if (remaining == 0)
-                return null;
-
             int size = CacheVersionIO.readSize(buf, false);
 
             if (remaining >= size) {
@@ -619,6 +614,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             // We have to read multipart version.
             incomplete = new IncompleteObject<>(new byte[size]);
+
+            if (remaining == 0)
+                return incomplete;
         }
 
         incomplete.readData(buf);
