@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.mleap;
 
+/**
+ * List of supported Spark models.
+ *
+ * NOTE: Valid for Spark 2.4.
+ */
 public enum SupportedSparkModels {
-    LOG_REGRESSION
+    /** Logistic regression. */LOG_REGRESSION
 }

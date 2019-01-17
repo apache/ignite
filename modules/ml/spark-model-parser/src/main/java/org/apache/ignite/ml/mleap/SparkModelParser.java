@@ -41,7 +41,7 @@ public class SparkModelParser {
     private static Path parquetPath;
 
     /**
-     * Load LogReg model from parquet file.
+     * Load model from parquet file.
      *
      * @return Instance of LogReg model.
      */
@@ -54,6 +54,8 @@ public class SparkModelParser {
     }
 
     /**
+     * Load logistic regression model.
+     *
      * @param pathToMdl Path to model.
      */
     private static Model loadLogRegModel(Path pathToMdl) {
