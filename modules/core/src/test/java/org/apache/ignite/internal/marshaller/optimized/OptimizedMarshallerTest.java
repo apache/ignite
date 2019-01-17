@@ -45,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -98,11 +99,11 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
-        assertFalse(ipFinder.isShared());
+        Assert.assertFalse(ipFinder.isShared());
 
         ipFinder = marsh.unmarshal(marsh.marshal(new TcpDiscoveryVmIpFinder(true)), null);
 
-        assertTrue(ipFinder.isShared());
+        Assert.assertTrue(ipFinder.isShared());
     }
 
     /**
@@ -136,7 +137,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         ipFinder = marsh.unmarshal(bytes, null);
 
-        assertFalse(ipFinder.isShared());
+        Assert.assertFalse(ipFinder.isShared());
     }
 
     /**
@@ -154,7 +155,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
-        assertFalse(ipFinder.isShared());
+        Assert.assertFalse(ipFinder.isShared());
     }
 
     /**
@@ -174,7 +175,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         GridMarshallerTestInheritedBean bean = marsh.unmarshal(bytes, null);
 
-        assertTrue(bean.isFlag());
+        Assert.assertTrue(bean.isFlag());
     }
 
     /**
@@ -190,7 +191,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         Boolean val = marsh.unmarshal(bytes, null);
 
-        assertTrue(val);
+        Assert.assertTrue(val);
     }
 
     /**
@@ -239,8 +240,8 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         ExternalizableA outObj = marsh.unmarshal(marsh.marshal(new ExternalizableA(null, true)), null);
         ExternalizableA outObj1 = marsh.unmarshal(marsh.marshal(new ExternalizableA(null, false)), null);
 
-        assertNotNull(outObj);
-        assertNotNull(outObj1);
+        Assert.assertNotNull(outObj);
+        Assert.assertNotNull(outObj1);
     }
 
     /**
@@ -288,7 +289,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
 
-        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+        Assert.assertEquals(outItf.checkAfterUnmarshalled(), 17);
     }
 
     /** {@inheritDoc} */
@@ -321,14 +322,14 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
             ConcurrentMap<Class<?>, OptimizedClassDescriptor> cache =
                 U.field(ignite.configuration().getMarshaller(), "clsMap");
 
-            assertTrue(cache.containsKey(jobCls));
+            Assert.assertTrue(cache.containsKey(jobCls));
 
             ignite.compute().undeployTask(taskClsName);
 
             // Wait for undeploy.
             Thread.sleep(1000);
 
-            assertFalse(cache.containsKey(jobCls));
+            Assert.assertFalse(cache.containsKey(jobCls));
         }
         finally {
             stopAllGrids();
@@ -507,19 +508,19 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          * Checks correctness of the state after unmarshalling.
          */
         void checkAfterUnmarshalled() {
-            assertEquals(longVal, 0x33445566778899AAL);
+            Assert.assertEquals(longVal, 0x33445566778899AAL);
 
-            assertEquals(shortVal.shortValue(), (short)0xAABB);
+            Assert.assertEquals(shortVal.shortValue(), (short)0xAABB);
 
-            assertTrue(Arrays.equals(strArr, new String[] {"AA","BB"}));
+            Assert.assertTrue(Arrays.equals(strArr, new String[] {"AA","BB"}));
 
-            assertEquals(intVal, 0);
+            Assert.assertEquals(intVal, 0);
 
-            assertTrue(flag1);
-            assertFalse(flag2);
-            assertNull(flag3);
-            assertTrue(flag4);
-            assertFalse(flag5);
+            Assert.assertTrue(flag1);
+            Assert.assertFalse(flag2);
+            Assert.assertNull(flag3);
+            Assert.assertTrue(flag4);
+            Assert.assertFalse(flag5);
         }
     }
 
@@ -557,13 +558,13 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         @Override void checkAfterUnmarshalled() {
             super.checkAfterUnmarshalled();
 
-            assertEquals(shortVal.shortValue(), 0x1122);
+            Assert.assertEquals(shortVal.shortValue(), 0x1122);
 
-            assertEquals(longVal, 0x8877665544332211L);
+            Assert.assertEquals(longVal, 0x8877665544332211L);
 
-            assertNull(aArr);
+            Assert.assertNull(aArr);
 
-            assertEquals(doubleVal, 123.456);
+            Assert.assertEquals(doubleVal, 123.456, 0);
         }
     }
 
@@ -604,17 +605,16 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         @Override void checkAfterUnmarshalled() {
             super.checkAfterUnmarshalled();
 
-            assertEquals(idVal, -17);
+            Assert.assertEquals(idVal, -17);
 
             aVal.checkAfterUnmarshalled();
 
-            assertNull(bVal);
+            Assert.assertNull(bVal);
 
-            for (NonSerializableA a : bArr) {
+            for (NonSerializableA a : bArr)
                 a.checkAfterUnmarshalled();
-            }
 
-            assertEquals(floatVal, 567.89F);
+            Assert.assertEquals(floatVal, 567.89F, 0);
         }
     }
 
@@ -656,15 +656,15 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          * Checks correctness of the state after unmarshalling.
          */
         void checkAfterUnmarshalled() {
-            assertEquals(shortVal.shortValue(), 0x1122);
+            Assert.assertEquals(shortVal.shortValue(), 0x1122);
 
-            assertEquals(longVal, 0x8877665544332211L);
+            Assert.assertEquals(longVal, 0x8877665544332211L);
 
-            assertNull(aArr);
+            Assert.assertNull(aArr);
 
-            assertNull(strVal);
+            Assert.assertNull(strVal);
 
-            assertEquals(doubleVal, 123.456);
+            Assert.assertEquals(doubleVal, 123.456, 0);
         }
     }
 

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -150,9 +151,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             U.sleep(100);
 
-            assertNull("Exception occurred in server", err.get());
+            Assert.assertNull("Exception occurred in server", err.get());
 
-            assertEquals("Invalid count of sessions", RECONNECT_MSG_CNT * THREAD_CNT, sesSet.size());
+            Assert.assertEquals("Invalid count of sessions", RECONNECT_MSG_CNT * THREAD_CNT, sesSet.size());
         }
         finally {
             srvr.stop();
@@ -210,7 +211,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             U.sleep(100);
 
-            assertEquals(-1, inputStream.read());
+            Assert.assertEquals(-1, inputStream.read());
         }
         finally {
             s.close();
@@ -260,7 +261,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             srvr.stop();
         }
 
-        assertNull("Unexpected exception on socket close", err.get());
+        Assert.assertNull("Unexpected exception on socket close", err.get());
     }
 
     /**
@@ -390,9 +391,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                 GridNioSession ses = sesRef.get();
 
-                assertNotNull(ses);
+                Assert.assertNotNull(ses);
 
-                assertTrue(ses.close().get());
+                Assert.assertTrue(ses.close().get());
 
                 ses.send(new byte[2]).get();
 
@@ -411,13 +412,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 s.close();
             }
 
-            assertFalse(sesRef.get().close().get());
+            Assert.assertFalse(sesRef.get().close().get());
         }
         finally {
             srvr.stop();
         }
 
-        assertNull("Unexpected exception on socket close", err.get());
+        Assert.assertNull("Unexpected exception on socket close", err.get());
     }
 
     /**
@@ -459,7 +460,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             GridNioSession ses = sesRef.get();
 
-            assertNotNull(ses);
+            Assert.assertNotNull(ses);
 
             ses.send(new byte[1]);
 
@@ -509,10 +510,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     s.shutdownInput();
                 }
 
-                assertEquals(msg.length, res.length);
+                Assert.assertEquals(msg.length, res.length);
 
                 for (int i = 0; i < msg.length; i++)
-                    assertEquals("Mismatch in position " + i, msg[i], res[i]);
+                    Assert.assertEquals("Mismatch in position " + i, msg[i], res[i]);
             }
             finally {
                 s.close();
@@ -547,10 +548,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             rcvd += cnt;
         }
 
-        assertEquals(msg.length, res.length);
+        Assert.assertEquals(msg.length, res.length);
 
         for (int i = 0; i < msg.length; i++)
-            assertEquals("Mismatch in position " + i, msg[i], res[i]);
+            Assert.assertEquals("Mismatch in position " + i, msg[i], res[i]);
     }
 
     /**
@@ -663,7 +664,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
+            Assert.assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
         }
         finally {
             srvr.stop();
@@ -701,7 +702,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
+            Assert.assertEquals("Unexpected message count", 10, lsnr.getMessageCount());
         }
         finally {
             if (ses != null)
@@ -751,8 +752,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
-            assertFalse("Size check failed", lsnr.isSizeFailed());
+            Assert.assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
+            Assert.assertFalse("Size check failed", lsnr.isSizeFailed());
         }
         finally {
             srvr.stop();
@@ -915,8 +916,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             assert latch.await(30, SECONDS);
 
-            assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
-            assertFalse("Size check failed", lsnr.isSizeFailed());
+            Assert.assertEquals("Unexpected message count", MSG_CNT * THREAD_CNT, lsnr.getMessageCount());
+            Assert.assertFalse("Size check failed", lsnr.isSizeFailed());
 
             printDurationStatistics(deliveryDurations, sndTimes, MSG_CNT * THREAD_CNT, 300);
         }

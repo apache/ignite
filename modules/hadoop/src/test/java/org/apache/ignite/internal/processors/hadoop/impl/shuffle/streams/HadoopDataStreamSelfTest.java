@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOu
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -43,6 +44,7 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
+    /** */
     private static final int BUFF_SIZE = 4 * 1024;
 
     /**
@@ -110,8 +112,8 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
         List<String> dataInp = readLineByHadoopDataInStream(val);
         List<String> directDataInp = readLineByHadoopDirectDataInput(val);
 
-        assertEquals(expected, dataInp);
-        assertEquals(expected, directDataInp);
+        Assert.assertEquals(expected, dataInp);
+        Assert.assertEquals(expected, directDataInp);
     }
 
     /**
@@ -244,62 +246,62 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
      * @throws IOException On error.
      */
     private void checkRead(DataInput in) throws IOException {
-        assertEquals(false, in.readBoolean());
-        assertEquals(true, in.readBoolean());
-        assertEquals(false, in.readBoolean());
-        assertEquals(17, in.readUnsignedByte());
-        assertEquals(121, in.readUnsignedByte());
-        assertEquals(0xfa, in.readUnsignedByte());
-        assertEquals(17, in.readByte());
-        assertEquals(121, in.readByte());
-        assertEquals((byte)0xfa, in.readByte());
-        assertEquals('z', in.readChar());
-        assertEquals('o', in.readChar());
-        assertEquals('r', in.readChar());
-        assertEquals(100, in.readShort());
-        assertEquals(Short.MIN_VALUE, in.readShort());
-        assertEquals(Short.MAX_VALUE, in.readShort());
-        assertEquals(-1, in.readShort());
-        assertEquals(0, in.readShort());
-        assertEquals(Integer.MAX_VALUE, in.readInt());
-        assertEquals(Integer.MIN_VALUE, in.readInt());
-        assertEquals(-1, in.readInt());
-        assertEquals(0, in.readInt());
-        assertEquals(1, in.readInt());
-        assertEquals(0.33f, in.readFloat());
-        assertEquals(0.5f, in.readFloat());
-        assertEquals(-0.7f, in.readFloat());
-        assertEquals(Float.MAX_VALUE, in.readFloat());
-        assertEquals(Float.MIN_VALUE, in.readFloat());
-        assertEquals(Float.MIN_NORMAL, in.readFloat());
-        assertEquals(Float.POSITIVE_INFINITY, in.readFloat());
-        assertEquals(Float.NEGATIVE_INFINITY, in.readFloat());
-        assertEquals(Float.NaN, in.readFloat());
-        assertEquals(-12312312.3333333336666779, in.readDouble());
-        assertEquals(123123.234, in.readDouble());
-        assertEquals(Double.MAX_VALUE, in.readDouble());
-        assertEquals(Double.MIN_VALUE, in.readDouble());
-        assertEquals(Double.MIN_NORMAL, in.readDouble());
-        assertEquals(Double.NEGATIVE_INFINITY, in.readDouble());
-        assertEquals(Double.POSITIVE_INFINITY, in.readDouble());
-        assertEquals(Double.NaN, in.readDouble());
-        assertEquals(Long.MAX_VALUE, in.readLong());
-        assertEquals(Long.MIN_VALUE, in.readLong());
-        assertEquals(0, in.readLong());
-        assertEquals(-1, in.readLong());
+        Assert.assertFalse(in.readBoolean());
+        Assert.assertTrue(in.readBoolean());
+        Assert.assertFalse(in.readBoolean());
+        Assert.assertEquals(17, in.readUnsignedByte());
+        Assert.assertEquals(121, in.readUnsignedByte());
+        Assert.assertEquals(0xfa, in.readUnsignedByte());
+        Assert.assertEquals(17, in.readByte());
+        Assert.assertEquals(121, in.readByte());
+        Assert.assertEquals((byte)0xfa, in.readByte());
+        Assert.assertEquals('z', in.readChar());
+        Assert.assertEquals('o', in.readChar());
+        Assert.assertEquals('r', in.readChar());
+        Assert.assertEquals(100, in.readShort());
+        Assert.assertEquals(Short.MIN_VALUE, in.readShort());
+        Assert.assertEquals(Short.MAX_VALUE, in.readShort());
+        Assert.assertEquals(-1, in.readShort());
+        Assert.assertEquals(0, in.readShort());
+        Assert.assertEquals(Integer.MAX_VALUE, in.readInt());
+        Assert.assertEquals(Integer.MIN_VALUE, in.readInt());
+        Assert.assertEquals(-1, in.readInt());
+        Assert.assertEquals(0, in.readInt());
+        Assert.assertEquals(1, in.readInt());
+        Assert.assertEquals(0.33f, in.readFloat(), 0);
+        Assert.assertEquals(0.5f, in.readFloat(), 0);
+        Assert.assertEquals(-0.7f, in.readFloat(), 0);
+        Assert.assertEquals(Float.MAX_VALUE, in.readFloat(), 0);
+        Assert.assertEquals(Float.MIN_VALUE, in.readFloat(), 0);
+        Assert.assertEquals(Float.MIN_NORMAL, in.readFloat(), 0);
+        Assert.assertEquals(Float.POSITIVE_INFINITY, in.readFloat(), 0);
+        Assert.assertEquals(Float.NEGATIVE_INFINITY, in.readFloat(), 0);
+        Assert.assertEquals(Float.NaN, in.readFloat(), 0);
+        Assert.assertEquals(-12312312.3333333336666779, in.readDouble(), 0);
+        Assert.assertEquals(123123.234, in.readDouble(), 0);
+        Assert.assertEquals(Double.MAX_VALUE, in.readDouble(), 0);
+        Assert.assertEquals(Double.MIN_VALUE, in.readDouble(), 0);
+        Assert.assertEquals(Double.MIN_NORMAL, in.readDouble(), 0);
+        Assert.assertEquals(Double.NEGATIVE_INFINITY, in.readDouble(), 0);
+        Assert.assertEquals(Double.POSITIVE_INFINITY, in.readDouble(), 0);
+        Assert.assertEquals(Double.NaN, in.readDouble(), 0);
+        Assert.assertEquals(Long.MAX_VALUE, in.readLong());
+        Assert.assertEquals(Long.MIN_VALUE, in.readLong());
+        Assert.assertEquals(0, in.readLong());
+        Assert.assertEquals(-1, in.readLong());
 
         byte[] b = new byte[3];
 
         in.readFully(b);
 
-        assertTrue(Arrays.equals(new byte[] {1, 2, 3}, b));
+        Assert.assertArrayEquals(new byte[] {1, 2, 3}, b);
 
         b = new byte[4];
 
         in.readFully(b, 1, 2);
 
-        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 0}, b));
+        Assert.assertArrayEquals(new byte[] {0, 1, 2, 0}, b);
 
-        assertEquals("mom washes rum", in.readUTF());
+        Assert.assertEquals("mom washes rum", in.readUTF());
     }
 }

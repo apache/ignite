@@ -53,7 +53,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -96,14 +95,13 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
 
 /**
  * Binary marshaller tests.
@@ -116,7 +114,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNull() throws Exception {
-        assertNull(marshalUnmarshal(null));
+        Assert.assertNull(marshalUnmarshal(null));
     }
 
     /**
@@ -124,7 +122,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testByte() throws Exception {
-        assertEquals((byte)100, marshalUnmarshal((byte)100).byteValue());
+        Assert.assertEquals((byte)100, marshalUnmarshal((byte)100).byteValue());
     }
 
     /**
@@ -132,7 +130,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testShort() throws Exception {
-        assertEquals((short)100, marshalUnmarshal((short)100).shortValue());
+        Assert.assertEquals((short)100, marshalUnmarshal((short)100).shortValue());
     }
 
     /**
@@ -140,7 +138,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInt() throws Exception {
-        assertEquals(100, marshalUnmarshal(100).intValue());
+        Assert.assertEquals(100, marshalUnmarshal(100).intValue());
     }
 
     /**
@@ -148,7 +146,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLong() throws Exception {
-        assertEquals(100L, marshalUnmarshal(100L).longValue());
+        Assert.assertEquals(100L, marshalUnmarshal(100L).longValue());
     }
 
     /**
@@ -156,7 +154,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFloat() throws Exception {
-        assertEquals(100.001f, marshalUnmarshal(100.001f), 0);
+        Assert.assertEquals(100.001f, marshalUnmarshal(100.001f), 0);
     }
 
     /**
@@ -164,7 +162,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDouble() throws Exception {
-        assertEquals(100.001d, marshalUnmarshal(100.001d), 0);
+        Assert.assertEquals(100.001d, marshalUnmarshal(100.001d), 0);
     }
 
     /**
@@ -172,7 +170,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testChar() throws Exception {
-        assertEquals((char)100, marshalUnmarshal((char)100).charValue());
+        Assert.assertEquals((char)100, marshalUnmarshal((char)100).charValue());
     }
 
     /**
@@ -180,7 +178,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBoolean() throws Exception {
-        assertEquals(true, marshalUnmarshal(true).booleanValue());
+        Assert.assertEquals(true, marshalUnmarshal(true).booleanValue());
     }
 
     /**
@@ -190,13 +188,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDecimal() throws Exception {
         BigDecimal val;
 
-        assertEquals((val = BigDecimal.ZERO), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 0)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 0)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 8)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 8)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.ZERO), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 0)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 0)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 8)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 8)), marshalUnmarshal(val));
 
-        assertEquals((val = new BigDecimal(new BigInteger("-79228162514264337593543950336"))), marshalUnmarshal(val));
+        Assert.assertEquals((val = new BigDecimal(new BigInteger("-79228162514264337593543950336"))), marshalUnmarshal(val));
     }
 
 
@@ -207,10 +205,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testNegativeScaleDecimal() throws Exception {
         BigDecimal val;
 
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -1)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -2)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -3)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -4)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -1)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -2)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -3)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -4)), marshalUnmarshal(val));
     }
 
     /**
@@ -220,13 +218,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testNegativeScaleRoundingModeDecimal() throws Exception {
         BigDecimal val;
 
-        assertEquals((val = BigDecimal.ZERO.setScale(-1, RoundingMode.HALF_UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE).setScale(-3, RoundingMode.HALF_DOWN)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE).setScale(-5, RoundingMode.HALF_EVEN)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Integer.MAX_VALUE).setScale(-8, RoundingMode.UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Integer.MIN_VALUE).setScale(-10, RoundingMode.DOWN)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Double.MAX_VALUE).setScale(-12, RoundingMode.CEILING)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Double.MIN_VALUE).setScale(-15, RoundingMode.FLOOR)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.ZERO.setScale(-1, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE).setScale(-3, RoundingMode.HALF_DOWN)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE).setScale(-5, RoundingMode.HALF_EVEN)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Integer.MAX_VALUE).setScale(-8, RoundingMode.UP)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Integer.MIN_VALUE).setScale(-10, RoundingMode.DOWN)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Double.MAX_VALUE).setScale(-12, RoundingMode.CEILING)), marshalUnmarshal(val));
+        Assert.assertEquals((val = BigDecimal.valueOf(Double.MIN_VALUE).setScale(-15, RoundingMode.FLOOR)), marshalUnmarshal(val));
     }
 
 
@@ -252,52 +250,52 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private void doTestString(boolean ver2) throws Exception {
         // Ascii check.
         String str = "ascii0123456789";
-        assertEquals(str, marshalUnmarshal(str));
+        Assert.assertEquals(str, marshalUnmarshal(str));
 
         byte[] bytes = str.getBytes(UTF_8);
-        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+        Assert.assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
 
         bytes = BinaryUtils.strToUtf8Bytes(str);
-        assertEquals(str, new String(bytes, UTF_8));
+        Assert.assertEquals(str, new String(bytes, UTF_8));
 
         // Extended symbols set check set.
         str = "的的abcdкириллица";
-        assertEquals(str, marshalUnmarshal(str));
+        Assert.assertEquals(str, marshalUnmarshal(str));
 
         bytes = str.getBytes(UTF_8);
-        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+        Assert.assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
 
         bytes = BinaryUtils.strToUtf8Bytes(str);
-        assertEquals(str, new String(bytes, UTF_8));
+        Assert.assertEquals(str, new String(bytes, UTF_8));
 
         // Special symbols check.
         str = new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
         if (ver2) {
             bytes = BinaryUtils.strToUtf8Bytes(str);
-            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+            Assert.assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
         }
         else
-            assertNotEquals(str, marshalUnmarshal(str));
+            Assert.assertNotEquals(str, marshalUnmarshal(str));
 
         str = new String(new char[] {55296});
         if (ver2) {
             bytes = BinaryUtils.strToUtf8Bytes(str);
-            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+            Assert.assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
         }
         else
-            assertNotEquals(str, marshalUnmarshal(str));
+            Assert.assertNotEquals(str, marshalUnmarshal(str));
 
         bytes = str.getBytes(UTF_8);
-        assertNotEquals(str, new String(bytes, UTF_8));
+        Assert.assertNotEquals(str, new String(bytes, UTF_8));
 
         bytes = str.getBytes(UTF_8);
-        assertNotEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+        Assert.assertNotEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
 
         str = new String(new char[] {0xD801, 0xDC37});
-        assertEquals(str, marshalUnmarshal(str));
+        Assert.assertEquals(str, marshalUnmarshal(str));
 
         bytes = str.getBytes(UTF_8);
-        assertEquals(str, new String(bytes, UTF_8));
+        Assert.assertEquals(str, new String(bytes, UTF_8));
     }
 
     /**
@@ -307,7 +305,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testUuid() throws Exception {
         UUID uuid = UUID.randomUUID();
 
-        assertEquals(uuid, marshalUnmarshal(uuid));
+        Assert.assertEquals(uuid, marshalUnmarshal(uuid));
     }
 
     /**
@@ -317,7 +315,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testIgniteUuid() throws Exception {
         IgniteUuid uuid = IgniteUuid.randomUuid();
 
-        assertEquals(uuid, marshalUnmarshal(uuid));
+        Assert.assertEquals(uuid, marshalUnmarshal(uuid));
     }
 
     /**
@@ -329,8 +327,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Date val = marshalUnmarshal(date);
 
-        assertEquals(date, val);
-        assertEquals(Date.class, val.getClass());
+        Assert.assertEquals(date, val);
+        Assert.assertEquals(Date.class, val.getClass());
     }
 
     /**
@@ -342,7 +340,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         ts.setNanos(999999999);
 
-        assertEquals(ts, marshalUnmarshal(ts));
+        Assert.assertEquals(ts, marshalUnmarshal(ts));
     }
 
     /**
@@ -351,7 +349,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTime() throws Exception {
         Time time = new Time(System.currentTimeMillis());
-        assertEquals(time, marshalUnmarshal(time));
+        Assert.assertEquals(time, marshalUnmarshal(time));
     }
 
     /**
@@ -360,7 +358,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTimeArray() throws Exception {
         Time[] times = new Time[]{new Time(System.currentTimeMillis()), new Time(123456789)};
-        assertArrayEquals(times, marshalUnmarshal(times));
+        Assert.assertArrayEquals(times, marshalUnmarshal(times));
     }
 
     /**
@@ -370,7 +368,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testByteArray() throws Exception {
         byte[] arr = new byte[] {10, 20, 30};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -380,7 +378,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testShortArray() throws Exception {
         short[] arr = new short[] {10, 20, 30};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -390,7 +388,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testIntArray() throws Exception {
         int[] arr = new int[] {10, 20, 30};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -400,7 +398,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testLongArray() throws Exception {
         long[] arr = new long[] {10, 20, 30};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -410,7 +408,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testFloatArray() throws Exception {
         float[] arr = new float[] {10.1f, 20.1f, 30.1f};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr), 0);
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr), 0);
     }
 
     /**
@@ -420,7 +418,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDoubleArray() throws Exception {
         double[] arr = new double[] {10.1d, 20.1d, 30.1d};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr), 0);
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr), 0);
     }
 
     /**
@@ -430,7 +428,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testCharArray() throws Exception {
         char[] arr = new char[] {10, 20, 30};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -450,7 +448,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDecimalArray() throws Exception {
         BigDecimal[] arr = new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.TEN};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -460,7 +458,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testStringArray() throws Exception {
         String[] arr = new String[] {"str1", "str2", "str3"};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -470,7 +468,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testUuidArray() throws Exception {
         UUID[] arr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -480,7 +478,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDateArray() throws Exception {
         Date[] arr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -490,7 +488,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testObjectArray() throws Exception {
         Object[] arr = new Object[] {1, 2, 3};
 
-        assertArrayEquals(arr, marshalUnmarshal(arr));
+        Assert.assertArrayEquals(arr, marshalUnmarshal(arr));
     }
 
     /**
@@ -502,7 +500,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Checks that Optimize marshaller will be used, because Throwable has writeObject method.
         // Exception's stacktrace equals to zero-length array by default and generates at Throwable's writeObject method.
-        assertNotEquals(0, marshalUnmarshal(ex).getStackTrace().length);
+        Assert.assertNotEquals(0, marshalUnmarshal(ex).getStackTrace().length);
     }
 
     /**
@@ -525,7 +523,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         col.add(2);
         col.add(3);
 
-        assertEquals(col, marshalUnmarshal(col));
+        Assert.assertEquals(col, marshalUnmarshal(col));
     }
 
     /**
@@ -548,7 +546,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         map.put(2, "str2");
         map.put(3, "str3");
 
-        assertEquals(map, marshalUnmarshal(map));
+        Assert.assertEquals(map, marshalUnmarshal(map));
     }
 
     /**
@@ -568,11 +566,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assert copiedCc.customList.getClass().equals(CustomArrayList.class);
 
-        assertEquals(cc.list.size(), copiedCc.list.size());
-        assertEquals(cc.customList.size(), copiedCc.customList.size());
+        Assert.assertEquals(cc.list.size(), copiedCc.list.size());
+        Assert.assertEquals(cc.customList.size(), copiedCc.customList.size());
 
-        assertEquals(cc.list.get(0), copiedCc.list.get(0));
-        assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
+        Assert.assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        Assert.assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
     }
 
     /**
@@ -593,9 +591,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomArrayList customCp = (CustomArrayList)cp;
 
-        assertEquals(customCp.size(), arrList.size());
+        Assert.assertEquals(customCp.size(), arrList.size());
 
-        assertEquals(customCp.get(0), arrList.get(0));
+        Assert.assertEquals(customCp.get(0), arrList.get(0));
     }
 
     /**
@@ -613,11 +611,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomCollectionsWithFactory copiedCc = marshalUnmarshal(cc);
 
-        assertEquals(cc.list.size(), copiedCc.list.size());
-        assertEquals(cc.map.size(), copiedCc.map.size());
+        Assert.assertEquals(cc.list.size(), copiedCc.list.size());
+        Assert.assertEquals(cc.map.size(), copiedCc.map.size());
 
-        assertEquals(cc.list.get(0), copiedCc.list.get(0));
-        assertEquals(cc.map.get(new DummyHolder(2)), copiedCc.map.get(new DummyHolder(2)));
+        Assert.assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        Assert.assertEquals(cc.map.get(new DummyHolder(2)), copiedCc.map.get(new DummyHolder(2)));
     }
 
     /**
@@ -630,7 +628,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         SimpleEnclosingObject other = marshalUnmarshal(obj);
 
-        assertEquals(((SimpleExternalizable)obj.simpl).field, ((SimpleExternalizable)other.simpl).field);
+        Assert.assertEquals(((SimpleExternalizable)obj.simpl).field, ((SimpleExternalizable)other.simpl).field);
     }
 
     /**
@@ -640,7 +638,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testMapEntry() throws Exception {
         Map.Entry<Integer, String> e = new GridMapEntry<>(1, "str1");
 
-        assertEquals(e, marshalUnmarshal(e));
+        Assert.assertEquals(e, marshalUnmarshal(e));
 
         Map<Integer, String> map = new HashMap<>(1);
 
@@ -650,8 +648,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map.Entry<Integer, String> e0 = marshalUnmarshal(e);
 
-        assertEquals(2, e0.getKey().intValue());
-        assertEquals("str2", e0.getValue());
+        Assert.assertEquals(2, e0.getKey().intValue());
+        Assert.assertEquals("str2", e0.getValue());
     }
 
     /**
@@ -667,19 +665,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po0 = marshalUnmarshal(po, marsh);
 
-        assertTrue(po.hasField("b"));
-        assertTrue(po.hasField("s"));
-        assertTrue(po.hasField("i"));
-        assertTrue(po.hasField("l"));
-        assertTrue(po.hasField("f"));
-        assertTrue(po.hasField("d"));
-        assertTrue(po.hasField("c"));
-        assertTrue(po.hasField("bool"));
+        Assert.assertTrue(po.hasField("b"));
+        Assert.assertTrue(po.hasField("s"));
+        Assert.assertTrue(po.hasField("i"));
+        Assert.assertTrue(po.hasField("l"));
+        Assert.assertTrue(po.hasField("f"));
+        Assert.assertTrue(po.hasField("d"));
+        Assert.assertTrue(po.hasField("c"));
+        Assert.assertTrue(po.hasField("bool"));
 
-        assertFalse(po.hasField("no_such_field"));
+        Assert.assertFalse(po.hasField("no_such_field"));
 
-        assertEquals(obj, po.deserialize());
-        assertEquals(obj, po0.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po0.deserialize());
     }
 
     /**
@@ -689,7 +687,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testEnum() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(TestEnum.class.getName())));
 
-        assertEquals(TestEnum.B, marshalUnmarshal(TestEnum.B, marsh));
+        Assert.assertEquals(TestEnum.B, marshalUnmarshal(TestEnum.B, marsh));
     }
 
     /**
@@ -709,14 +707,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         final byte[] marshal = marsh.marshal(obj);
         final Object restored = marsh.unmarshal(marshal, null);
 
-        assertTrue(restored instanceof EnumObject);
+        Assert.assertTrue(restored instanceof EnumObject);
 
         obj = (EnumObject)restored;
 
-        assertEquals(1, obj.id);
-        assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
-        assertEquals(DeclaredBodyEnum.TWO, obj.type);
-        assertTrue(obj.type == DeclaredBodyEnum.TWO);
+        Assert.assertEquals(1, obj.id);
+        Assert.assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
+        Assert.assertEquals(DeclaredBodyEnum.TWO, obj.type);
+        Assert.assertTrue(obj.type == DeclaredBodyEnum.TWO);
     }
 
     /**
@@ -741,20 +739,20 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po1 = marshal(obj1, marsh);
 
-        assertEquals(date, po1.field("date"));
-        assertEquals(Date.class, po1.field("date").getClass());
-        assertEquals(ts, po1.field("ts"));
-        assertEquals(Timestamp.class, po1.field("ts").getClass());
-        assertEquals(time, po1.field("time"));
-        assertEquals(Time.class, po1.field("time").getClass());
-        assertArrayEquals(timeArr, (Object[])po1.field("timeArr"));
-        assertEquals(Time[].class, po1.field("timeArr").getClass());
+        Assert.assertEquals(date, po1.field("date"));
+        Assert.assertEquals(Date.class, po1.field("date").getClass());
+        Assert.assertEquals(ts, po1.field("ts"));
+        Assert.assertEquals(Timestamp.class, po1.field("ts").getClass());
+        Assert.assertEquals(time, po1.field("time"));
+        Assert.assertEquals(Time.class, po1.field("time").getClass());
+        Assert.assertArrayEquals(timeArr, (Object[])po1.field("timeArr"));
+        Assert.assertEquals(Time[].class, po1.field("timeArr").getClass());
 
         obj1 = po1.deserialize();
-        assertEquals(date, obj1.date);
-        assertEquals(ts, obj1.ts);
-        assertEquals(time, obj1.time);
-        assertArrayEquals(timeArr, obj1.timeArr);
+        Assert.assertEquals(date, obj1.date);
+        Assert.assertEquals(ts, obj1.ts);
+        Assert.assertEquals(time, obj1.time);
+        Assert.assertArrayEquals(timeArr, obj1.timeArr);
     }
 
     /**
@@ -770,75 +768,75 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
 
-        assertEquals(obj.b, (byte)po.field("b"));
-        assertEquals(obj.s, (short)po.field("s"));
-        assertEquals(obj.i, (int)po.field("i"));
-        assertEquals(obj.l, (long)po.field("l"));
-        assertEquals(obj.f, (float)po.field("f"), 0);
-        assertEquals(obj.d, (double)po.field("d"), 0);
-        assertEquals(obj.c, (char)po.field("c"));
-        assertEquals(obj.bool, (boolean)po.field("bool"));
-        assertEquals(obj.str, po.field("str"));
-        assertEquals(obj.uuid, po.field("uuid"));
-        assertEquals(obj.date, po.field("date"));
-        assertEquals(Date.class, obj.date.getClass());
-        assertEquals(obj.ts, po.field("ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
+        Assert.assertEquals(obj.b, (byte)po.field("b"));
+        Assert.assertEquals(obj.s, (short)po.field("s"));
+        Assert.assertEquals(obj.i, (int)po.field("i"));
+        Assert.assertEquals(obj.l, (long)po.field("l"));
+        Assert.assertEquals(obj.f, (float)po.field("f"), 0);
+        Assert.assertEquals(obj.d, (double)po.field("d"), 0);
+        Assert.assertEquals(obj.c, (char)po.field("c"));
+        Assert.assertEquals(obj.bool, (boolean)po.field("bool"));
+        Assert.assertEquals(obj.str, po.field("str"));
+        Assert.assertEquals(obj.uuid, po.field("uuid"));
+        Assert.assertEquals(obj.date, po.field("date"));
+        Assert.assertEquals(Date.class, obj.date.getClass());
+        Assert.assertEquals(obj.ts, po.field("ts"));
+        Assert.assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
+        Assert.assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
+        Assert.assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
+        Assert.assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
+        Assert.assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
+        Assert.assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
+        Assert.assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
         assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
-        assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
-        assertEquals(obj.col, po.field("col"));
-        assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
-        assertNull(po.field("unknown"));
+        Assert.assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
+        Assert.assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
+        Assert.assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
+        Assert.assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
+        Assert.assertEquals(obj.col, po.field("col"));
+        Assert.assertEquals(obj.map, po.field("map"));
+        Assert.assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        Assert.assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        Assert.assertNull(po.field("unknown"));
 
         BinaryObject innerPo = po.field("inner");
 
-        assertEquals(obj.inner, innerPo.deserialize());
+        Assert.assertEquals(obj.inner, innerPo.deserialize());
 
-        assertEquals(obj.inner.b, (byte)innerPo.field("b"));
-        assertEquals(obj.inner.s, (short)innerPo.field("s"));
-        assertEquals(obj.inner.i, (int)innerPo.field("i"));
-        assertEquals(obj.inner.l, (long)innerPo.field("l"));
-        assertEquals(obj.inner.f, (float)innerPo.field("f"), 0);
-        assertEquals(obj.inner.d, (double)innerPo.field("d"), 0);
-        assertEquals(obj.inner.c, (char)innerPo.field("c"));
-        assertEquals(obj.inner.bool, (boolean)innerPo.field("bool"));
-        assertEquals(obj.inner.str, innerPo.field("str"));
-        assertEquals(obj.inner.uuid, innerPo.field("uuid"));
-        assertEquals(obj.inner.date, innerPo.field("date"));
-        assertEquals(Date.class, obj.inner.date.getClass());
-        assertEquals(obj.inner.ts, innerPo.field("ts"));
-        assertArrayEquals(obj.inner.bArr, (byte[])innerPo.field("bArr"));
-        assertArrayEquals(obj.inner.sArr, (short[])innerPo.field("sArr"));
-        assertArrayEquals(obj.inner.iArr, (int[])innerPo.field("iArr"));
-        assertArrayEquals(obj.inner.lArr, (long[])innerPo.field("lArr"));
-        assertArrayEquals(obj.inner.fArr, (float[])innerPo.field("fArr"), 0);
-        assertArrayEquals(obj.inner.dArr, (double[])innerPo.field("dArr"), 0);
-        assertArrayEquals(obj.inner.cArr, (char[])innerPo.field("cArr"));
+        Assert.assertEquals(obj.inner.b, (byte)innerPo.field("b"));
+        Assert.assertEquals(obj.inner.s, (short)innerPo.field("s"));
+        Assert.assertEquals(obj.inner.i, (int)innerPo.field("i"));
+        Assert.assertEquals(obj.inner.l, (long)innerPo.field("l"));
+        Assert.assertEquals(obj.inner.f, (float)innerPo.field("f"), 0);
+        Assert.assertEquals(obj.inner.d, (double)innerPo.field("d"), 0);
+        Assert.assertEquals(obj.inner.c, (char)innerPo.field("c"));
+        Assert.assertEquals(obj.inner.bool, (boolean)innerPo.field("bool"));
+        Assert.assertEquals(obj.inner.str, innerPo.field("str"));
+        Assert.assertEquals(obj.inner.uuid, innerPo.field("uuid"));
+        Assert.assertEquals(obj.inner.date, innerPo.field("date"));
+        Assert.assertEquals(Date.class, obj.inner.date.getClass());
+        Assert.assertEquals(obj.inner.ts, innerPo.field("ts"));
+        Assert.assertArrayEquals(obj.inner.bArr, (byte[])innerPo.field("bArr"));
+        Assert.assertArrayEquals(obj.inner.sArr, (short[])innerPo.field("sArr"));
+        Assert.assertArrayEquals(obj.inner.iArr, (int[])innerPo.field("iArr"));
+        Assert.assertArrayEquals(obj.inner.lArr, (long[])innerPo.field("lArr"));
+        Assert.assertArrayEquals(obj.inner.fArr, (float[])innerPo.field("fArr"), 0);
+        Assert.assertArrayEquals(obj.inner.dArr, (double[])innerPo.field("dArr"), 0);
+        Assert.assertArrayEquals(obj.inner.cArr, (char[])innerPo.field("cArr"));
         assertBooleanArrayEquals(obj.inner.boolArr, (boolean[])innerPo.field("boolArr"));
-        assertArrayEquals(obj.inner.strArr, (String[])innerPo.field("strArr"));
-        assertArrayEquals(obj.inner.uuidArr, (UUID[])innerPo.field("uuidArr"));
-        assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
-        assertArrayEquals(obj.inner.objArr, (Object[])innerPo.field("objArr"));
-        assertEquals(obj.inner.col, innerPo.field("col"));
-        assertEquals(obj.inner.map, innerPo.field("map"));
-        assertEquals(new Integer(obj.inner.enumVal.ordinal()),
+        Assert.assertArrayEquals(obj.inner.strArr, (String[])innerPo.field("strArr"));
+        Assert.assertArrayEquals(obj.inner.uuidArr, (UUID[])innerPo.field("uuidArr"));
+        Assert.assertArrayEquals(obj.inner.dateArr, (Date[])innerPo.field("dateArr"));
+        Assert.assertArrayEquals(obj.inner.objArr, (Object[])innerPo.field("objArr"));
+        Assert.assertEquals(obj.inner.col, innerPo.field("col"));
+        Assert.assertEquals(obj.inner.map, innerPo.field("map"));
+        Assert.assertEquals(new Integer(obj.inner.enumVal.ordinal()),
             new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
-        assertNull(innerPo.field("inner"));
-        assertNull(innerPo.field("unknown"));
+        Assert.assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
+        Assert.assertNull(innerPo.field("inner"));
+        Assert.assertNull(innerPo.field("unknown"));
     }
 
     /**
@@ -855,112 +853,112 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
 
-        assertEquals(obj.b, (byte)po.field("_b"));
-        assertEquals(obj.s, (short)po.field("_s"));
-        assertEquals(obj.i, (int)po.field("_i"));
-        assertEquals(obj.l, (long)po.field("_l"));
-        assertEquals(obj.f, (float)po.field("_f"), 0);
-        assertEquals(obj.d, (double)po.field("_d"), 0);
-        assertEquals(obj.c, (char)po.field("_c"));
-        assertEquals(obj.bool, (boolean)po.field("_bool"));
-        assertEquals(obj.str, po.field("_str"));
-        assertEquals(obj.uuid, po.field("_uuid"));
-        assertEquals(obj.date, po.field("_date"));
-        assertEquals(obj.ts, po.field("_ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("_bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("_sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("_iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("_lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("_fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("_dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("_cArr"));
+        Assert.assertEquals(obj.b, (byte)po.field("_b"));
+        Assert.assertEquals(obj.s, (short)po.field("_s"));
+        Assert.assertEquals(obj.i, (int)po.field("_i"));
+        Assert.assertEquals(obj.l, (long)po.field("_l"));
+        Assert.assertEquals(obj.f, (float)po.field("_f"), 0);
+        Assert.assertEquals(obj.d, (double)po.field("_d"), 0);
+        Assert.assertEquals(obj.c, (char)po.field("_c"));
+        Assert.assertEquals(obj.bool, (boolean)po.field("_bool"));
+        Assert.assertEquals(obj.str, po.field("_str"));
+        Assert.assertEquals(obj.uuid, po.field("_uuid"));
+        Assert.assertEquals(obj.date, po.field("_date"));
+        Assert.assertEquals(obj.ts, po.field("_ts"));
+        Assert.assertArrayEquals(obj.bArr, (byte[])po.field("_bArr"));
+        Assert.assertArrayEquals(obj.sArr, (short[])po.field("_sArr"));
+        Assert.assertArrayEquals(obj.iArr, (int[])po.field("_iArr"));
+        Assert.assertArrayEquals(obj.lArr, (long[])po.field("_lArr"));
+        Assert.assertArrayEquals(obj.fArr, (float[])po.field("_fArr"), 0);
+        Assert.assertArrayEquals(obj.dArr, (double[])po.field("_dArr"), 0);
+        Assert.assertArrayEquals(obj.cArr, (char[])po.field("_cArr"));
         assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("_boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("_strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("_uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
-        assertArrayEquals(obj.objArr, (Object[])po.field("_objArr"));
-        assertEquals(obj.col, po.field("_col"));
-        assertEquals(obj.map, po.field("_map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
-        assertNull(po.field("unknown"));
+        Assert.assertArrayEquals(obj.strArr, (String[])po.field("_strArr"));
+        Assert.assertArrayEquals(obj.uuidArr, (UUID[])po.field("_uuidArr"));
+        Assert.assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
+        Assert.assertArrayEquals(obj.objArr, (Object[])po.field("_objArr"));
+        Assert.assertEquals(obj.col, po.field("_col"));
+        Assert.assertEquals(obj.map, po.field("_map"));
+        Assert.assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
+        Assert.assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
+        Assert.assertNull(po.field("unknown"));
 
         BinaryObject simplePo = po.field("_simple");
 
-        assertEquals(obj.simple, simplePo.deserialize());
+        Assert.assertEquals(obj.simple, simplePo.deserialize());
 
-        assertEquals(obj.simple.b, (byte)simplePo.field("b"));
-        assertEquals(obj.simple.s, (short)simplePo.field("s"));
-        assertEquals(obj.simple.i, (int)simplePo.field("i"));
-        assertEquals(obj.simple.l, (long)simplePo.field("l"));
-        assertEquals(obj.simple.f, (float)simplePo.field("f"), 0);
-        assertEquals(obj.simple.d, (double)simplePo.field("d"), 0);
-        assertEquals(obj.simple.c, (char)simplePo.field("c"));
-        assertEquals(obj.simple.bool, (boolean)simplePo.field("bool"));
-        assertEquals(obj.simple.str, simplePo.field("str"));
-        assertEquals(obj.simple.uuid, simplePo.field("uuid"));
-        assertEquals(obj.simple.date, simplePo.field("date"));
-        assertEquals(Date.class, obj.simple.date.getClass());
-        assertEquals(obj.simple.ts, simplePo.field("ts"));
-        assertArrayEquals(obj.simple.bArr, (byte[])simplePo.field("bArr"));
-        assertArrayEquals(obj.simple.sArr, (short[])simplePo.field("sArr"));
-        assertArrayEquals(obj.simple.iArr, (int[])simplePo.field("iArr"));
-        assertArrayEquals(obj.simple.lArr, (long[])simplePo.field("lArr"));
-        assertArrayEquals(obj.simple.fArr, (float[])simplePo.field("fArr"), 0);
-        assertArrayEquals(obj.simple.dArr, (double[])simplePo.field("dArr"), 0);
-        assertArrayEquals(obj.simple.cArr, (char[])simplePo.field("cArr"));
+        Assert.assertEquals(obj.simple.b, (byte)simplePo.field("b"));
+        Assert.assertEquals(obj.simple.s, (short)simplePo.field("s"));
+        Assert.assertEquals(obj.simple.i, (int)simplePo.field("i"));
+        Assert.assertEquals(obj.simple.l, (long)simplePo.field("l"));
+        Assert.assertEquals(obj.simple.f, (float)simplePo.field("f"), 0);
+        Assert.assertEquals(obj.simple.d, (double)simplePo.field("d"), 0);
+        Assert.assertEquals(obj.simple.c, (char)simplePo.field("c"));
+        Assert.assertEquals(obj.simple.bool, (boolean)simplePo.field("bool"));
+        Assert.assertEquals(obj.simple.str, simplePo.field("str"));
+        Assert.assertEquals(obj.simple.uuid, simplePo.field("uuid"));
+        Assert.assertEquals(obj.simple.date, simplePo.field("date"));
+        Assert.assertEquals(Date.class, obj.simple.date.getClass());
+        Assert.assertEquals(obj.simple.ts, simplePo.field("ts"));
+        Assert.assertArrayEquals(obj.simple.bArr, (byte[])simplePo.field("bArr"));
+        Assert.assertArrayEquals(obj.simple.sArr, (short[])simplePo.field("sArr"));
+        Assert.assertArrayEquals(obj.simple.iArr, (int[])simplePo.field("iArr"));
+        Assert.assertArrayEquals(obj.simple.lArr, (long[])simplePo.field("lArr"));
+        Assert.assertArrayEquals(obj.simple.fArr, (float[])simplePo.field("fArr"), 0);
+        Assert.assertArrayEquals(obj.simple.dArr, (double[])simplePo.field("dArr"), 0);
+        Assert.assertArrayEquals(obj.simple.cArr, (char[])simplePo.field("cArr"));
         assertBooleanArrayEquals(obj.simple.boolArr, (boolean[])simplePo.field("boolArr"));
-        assertArrayEquals(obj.simple.strArr, (String[])simplePo.field("strArr"));
-        assertArrayEquals(obj.simple.uuidArr, (UUID[])simplePo.field("uuidArr"));
-        assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
-        assertArrayEquals(obj.simple.objArr, (Object[])simplePo.field("objArr"));
-        assertEquals(obj.simple.col, simplePo.field("col"));
-        assertEquals(obj.simple.map, simplePo.field("map"));
-        assertEquals(new Integer(obj.simple.enumVal.ordinal()),
+        Assert.assertArrayEquals(obj.simple.strArr, (String[])simplePo.field("strArr"));
+        Assert.assertArrayEquals(obj.simple.uuidArr, (UUID[])simplePo.field("uuidArr"));
+        Assert.assertArrayEquals(obj.simple.dateArr, (Date[])simplePo.field("dateArr"));
+        Assert.assertArrayEquals(obj.simple.objArr, (Object[])simplePo.field("objArr"));
+        Assert.assertEquals(obj.simple.col, simplePo.field("col"));
+        Assert.assertEquals(obj.simple.map, simplePo.field("map"));
+        Assert.assertEquals(new Integer(obj.simple.enumVal.ordinal()),
             new Integer(((BinaryObject)simplePo.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
-        assertNull(simplePo.field("simple"));
-        assertNull(simplePo.field("binary"));
-        assertNull(simplePo.field("unknown"));
+        Assert.assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
+        Assert.assertNull(simplePo.field("simple"));
+        Assert.assertNull(simplePo.field("binary"));
+        Assert.assertNull(simplePo.field("unknown"));
 
         BinaryObject binaryPo = po.field("_binary");
 
-        assertEquals(obj.binary, binaryPo.deserialize());
+        Assert.assertEquals(obj.binary, binaryPo.deserialize());
 
-        assertEquals(obj.binary.b, (byte)binaryPo.field("_b"));
-        assertEquals(obj.binary.s, (short)binaryPo.field("_s"));
-        assertEquals(obj.binary.i, (int)binaryPo.field("_i"));
-        assertEquals(obj.binary.l, (long)binaryPo.field("_l"));
-        assertEquals(obj.binary.f, (float)binaryPo.field("_f"), 0);
-        assertEquals(obj.binary.d, (double)binaryPo.field("_d"), 0);
-        assertEquals(obj.binary.c, (char)binaryPo.field("_c"));
-        assertEquals(obj.binary.bool, (boolean)binaryPo.field("_bool"));
-        assertEquals(obj.binary.str, binaryPo.field("_str"));
-        assertEquals(obj.binary.uuid, binaryPo.field("_uuid"));
-        assertEquals(obj.binary.date, binaryPo.field("_date"));
-        assertEquals(obj.binary.ts, binaryPo.field("_ts"));
-        assertArrayEquals(obj.binary.bArr, (byte[])binaryPo.field("_bArr"));
-        assertArrayEquals(obj.binary.sArr, (short[])binaryPo.field("_sArr"));
-        assertArrayEquals(obj.binary.iArr, (int[])binaryPo.field("_iArr"));
-        assertArrayEquals(obj.binary.lArr, (long[])binaryPo.field("_lArr"));
-        assertArrayEquals(obj.binary.fArr, (float[])binaryPo.field("_fArr"), 0);
-        assertArrayEquals(obj.binary.dArr, (double[])binaryPo.field("_dArr"), 0);
-        assertArrayEquals(obj.binary.cArr, (char[])binaryPo.field("_cArr"));
+        Assert.assertEquals(obj.binary.b, (byte)binaryPo.field("_b"));
+        Assert.assertEquals(obj.binary.s, (short)binaryPo.field("_s"));
+        Assert.assertEquals(obj.binary.i, (int)binaryPo.field("_i"));
+        Assert.assertEquals(obj.binary.l, (long)binaryPo.field("_l"));
+        Assert.assertEquals(obj.binary.f, (float)binaryPo.field("_f"), 0);
+        Assert.assertEquals(obj.binary.d, (double)binaryPo.field("_d"), 0);
+        Assert.assertEquals(obj.binary.c, (char)binaryPo.field("_c"));
+        Assert.assertEquals(obj.binary.bool, (boolean)binaryPo.field("_bool"));
+        Assert.assertEquals(obj.binary.str, binaryPo.field("_str"));
+        Assert.assertEquals(obj.binary.uuid, binaryPo.field("_uuid"));
+        Assert.assertEquals(obj.binary.date, binaryPo.field("_date"));
+        Assert.assertEquals(obj.binary.ts, binaryPo.field("_ts"));
+        Assert.assertArrayEquals(obj.binary.bArr, (byte[])binaryPo.field("_bArr"));
+        Assert.assertArrayEquals(obj.binary.sArr, (short[])binaryPo.field("_sArr"));
+        Assert.assertArrayEquals(obj.binary.iArr, (int[])binaryPo.field("_iArr"));
+        Assert.assertArrayEquals(obj.binary.lArr, (long[])binaryPo.field("_lArr"));
+        Assert.assertArrayEquals(obj.binary.fArr, (float[])binaryPo.field("_fArr"), 0);
+        Assert.assertArrayEquals(obj.binary.dArr, (double[])binaryPo.field("_dArr"), 0);
+        Assert.assertArrayEquals(obj.binary.cArr, (char[])binaryPo.field("_cArr"));
         assertBooleanArrayEquals(obj.binary.boolArr, (boolean[])binaryPo.field("_boolArr"));
-        assertArrayEquals(obj.binary.strArr, (String[])binaryPo.field("_strArr"));
-        assertArrayEquals(obj.binary.uuidArr, (UUID[])binaryPo.field("_uuidArr"));
-        assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
-        assertArrayEquals(obj.binary.objArr, (Object[])binaryPo.field("_objArr"));
-        assertEquals(obj.binary.col, binaryPo.field("_col"));
-        assertEquals(obj.binary.map, binaryPo.field("_map"));
-        assertEquals(new Integer(obj.binary.enumVal.ordinal()),
+        Assert.assertArrayEquals(obj.binary.strArr, (String[])binaryPo.field("_strArr"));
+        Assert.assertArrayEquals(obj.binary.uuidArr, (UUID[])binaryPo.field("_uuidArr"));
+        Assert.assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
+        Assert.assertArrayEquals(obj.binary.objArr, (Object[])binaryPo.field("_objArr"));
+        Assert.assertEquals(obj.binary.col, binaryPo.field("_col"));
+        Assert.assertEquals(obj.binary.map, binaryPo.field("_map"));
+        Assert.assertEquals(new Integer(obj.binary.enumVal.ordinal()),
             new Integer(((BinaryObject)binaryPo.field("_enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.binary.enumArr), ordinals((BinaryObject[])binaryPo.field("_enumArr")));
-        assertNull(binaryPo.field("_simple"));
-        assertNull(binaryPo.field("_binary"));
-        assertNull(binaryPo.field("unknown"));
+        Assert.assertArrayEquals(ordinals(obj.binary.enumArr), ordinals((BinaryObject[])binaryPo.field("_enumArr")));
+        Assert.assertNull(binaryPo.field("_simple"));
+        Assert.assertNull(binaryPo.field("_binary"));
+        Assert.assertNull(binaryPo.field("unknown"));
     }
 
     /**
@@ -972,7 +970,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         obj.queue = new TestQueue("test");
 
-        assertEquals(obj, marshalUnmarshal(obj));
+        Assert.assertEquals(obj, marshalUnmarshal(obj));
     }
 
     /**
@@ -982,11 +980,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testVoid() throws Exception {
         Class clazz = Void.class;
 
-        assertEquals(clazz, marshalUnmarshal(clazz));
+        Assert.assertEquals(clazz, marshalUnmarshal(clazz));
 
         clazz = Void.TYPE;
 
-        assertEquals(clazz, marshalUnmarshal(clazz));
+        Assert.assertEquals(clazz, marshalUnmarshal(clazz));
     }
 
     /**
@@ -1002,9 +1000,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
 
-        assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
+        Assert.assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
     }
 
     /**
@@ -1022,7 +1020,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Object des = po.deserialize();
 
-        assertEquals(obj, des);
+        Assert.assertEquals(obj, des);
     }
 
     /**
@@ -1131,38 +1129,38 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param po Binary object.
      */
     private void checkSimpleObjectData(SimpleObject obj, BinaryObject po) {
-        assertEquals(obj.b, (byte)po.field("b"));
-        assertEquals(obj.s, (short)po.field("s"));
-        assertEquals(obj.i, (int)po.field("i"));
-        assertEquals(obj.l, (long)po.field("l"));
-        assertEquals(obj.f, (float)po.field("f"), 0);
-        assertEquals(obj.d, (double)po.field("d"), 0);
-        assertEquals(obj.c, (char)po.field("c"));
-        assertEquals(obj.bool, (boolean)po.field("bool"));
-        assertEquals(obj.str, po.field("str"));
-        assertEquals(obj.uuid, po.field("uuid"));
-        assertEquals(obj.date, po.field("date"));
-        assertEquals(Date.class, obj.date.getClass());
-        assertEquals(obj.ts, po.field("ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
+        Assert.assertEquals(obj.b, (byte)po.field("b"));
+        Assert.assertEquals(obj.s, (short)po.field("s"));
+        Assert.assertEquals(obj.i, (int)po.field("i"));
+        Assert.assertEquals(obj.l, (long)po.field("l"));
+        Assert.assertEquals(obj.f, (float)po.field("f"), 0);
+        Assert.assertEquals(obj.d, (double)po.field("d"), 0);
+        Assert.assertEquals(obj.c, (char)po.field("c"));
+        Assert.assertEquals(obj.bool, (boolean)po.field("bool"));
+        Assert.assertEquals(obj.str, po.field("str"));
+        Assert.assertEquals(obj.uuid, po.field("uuid"));
+        Assert.assertEquals(obj.date, po.field("date"));
+        Assert.assertEquals(Date.class, obj.date.getClass());
+        Assert.assertEquals(obj.ts, po.field("ts"));
+        Assert.assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
+        Assert.assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
+        Assert.assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
+        Assert.assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
+        Assert.assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
+        Assert.assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
+        Assert.assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
         assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
-        assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
-        assertEquals(obj.col, po.field("col"));
-        assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
-        assertNull(po.field("unknown"));
+        Assert.assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
+        Assert.assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
+        Assert.assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
+        Assert.assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
+        Assert.assertEquals(obj.col, po.field("col"));
+        Assert.assertEquals(obj.map, po.field("map"));
+        Assert.assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        Assert.assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
+        Assert.assertNull(po.field("unknown"));
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
     }
 
     /**
@@ -1179,17 +1177,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         NoPublicConstructor npc = new NoPublicConstructor();
         BinaryObject npc2 = marshal(npc, marsh);
 
-        assertEquals("test", npc2.<NoPublicConstructor>deserialize().val);
+        Assert.assertEquals("test", npc2.<NoPublicConstructor>deserialize().val);
 
         NoPublicDefaultConstructor npdc = new NoPublicDefaultConstructor(239);
         BinaryObject npdc2 = marshal(npdc, marsh);
 
-        assertEquals(239, npdc2.<NoPublicDefaultConstructor>deserialize().val);
+        Assert.assertEquals(239, npdc2.<NoPublicDefaultConstructor>deserialize().val);
 
         ProtectedConstructor pc = new ProtectedConstructor();
         BinaryObject pc2 = marshal(pc, marsh);
 
-        assertEquals(ProtectedConstructor.class, pc2.<ProtectedConstructor>deserialize().getClass());
+        Assert.assertEquals(ProtectedConstructor.class, pc2.<ProtectedConstructor>deserialize().getClass());
     }
 
     /**
@@ -1208,7 +1206,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po1 = marshal(obj1, marsh);
 
-        assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
+        Assert.assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
     }
 
     /**
@@ -1229,13 +1227,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po1 = marshal(obj1, marsh);
 
-        assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
+        Assert.assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
 
         CustomSerializedObject2 obj2 = new CustomSerializedObject2(10);
 
         BinaryObject po2 = marshal(obj2, marsh);
 
-        assertEquals(30, po2.<CustomSerializedObject2>deserialize().val);
+        Assert.assertEquals(30, po2.<CustomSerializedObject2>deserialize().val);
     }
 
     /**
@@ -1271,12 +1269,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.type().typeId());
-        assertEquals((Integer)10, po1.field(22222));
-        assertEquals("str", po1.field(33333));
+        Assert.assertEquals(11111, po1.type().typeId());
+        Assert.assertEquals((Integer)10, po1.field(22222));
+        Assert.assertEquals("str", po1.field(33333));
 
-        assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
-        assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
+        Assert.assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
+        Assert.assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
     }
 
     /**
@@ -1331,23 +1329,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.type().typeId());
-        assertEquals((Integer)10, po1.field(22222));
-        assertEquals("str1", po1.field(33333));
+        Assert.assertEquals(11111, po1.type().typeId());
+        Assert.assertEquals((Integer)10, po1.field(22222));
+        Assert.assertEquals("str1", po1.field(33333));
 
-        assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
-        assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
+        Assert.assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
+        Assert.assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
         BinaryObjectExImpl po2 = marshal(obj2, marsh);
 
-        assertEquals(44444, po2.type().typeId());
-        assertEquals((Integer)20, po2.field(55555));
-        assertEquals("str2", po2.field(66666));
+        Assert.assertEquals(44444, po2.type().typeId());
+        Assert.assertEquals((Integer)20, po2.field(55555));
+        Assert.assertEquals("str2", po2.field(66666));
 
-        assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
-        assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
+        Assert.assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
+        Assert.assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
     }
 
     /**
@@ -1385,27 +1383,27 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl innerBo = marshal(innerObj, marsh);
 
-        assertEquals("InnerMappedObject".toLowerCase().hashCode(), innerBo.type().typeId());
+        Assert.assertEquals("InnerMappedObject".toLowerCase().hashCode(), innerBo.type().typeId());
 
-        assertEquals(10, innerBo.<CustomMappedObject1>deserialize().val1);
-        assertEquals("str1", innerBo.<CustomMappedObject1>deserialize().val2);
+        Assert.assertEquals(10, innerBo.<CustomMappedObject1>deserialize().val1);
+        Assert.assertEquals("str1", innerBo.<CustomMappedObject1>deserialize().val2);
 
         TestMappedObject publicObj = new TestMappedObject();
 
         BinaryObjectExImpl publicBo = marshal(publicObj, marsh);
 
-        assertEquals("TestMappedObject".toLowerCase().hashCode(), publicBo.type().typeId());
+        Assert.assertEquals("TestMappedObject".toLowerCase().hashCode(), publicBo.type().typeId());
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
         BinaryObjectExImpl po2 = marshal(obj2, marsh);
 
-        assertEquals(44444, po2.type().typeId());
-        assertEquals((Integer)20, po2.field(55555));
-        assertEquals("str2", po2.field(66666));
+        Assert.assertEquals(44444, po2.type().typeId());
+        Assert.assertEquals((Integer)20, po2.field(55555));
+        Assert.assertEquals("str2", po2.field(66666));
 
-        assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
-        assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
+        Assert.assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
+        Assert.assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
     }
 
     /**
@@ -1419,39 +1417,39 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
-        assertEquals(new Integer(10), po1.field("val1"));
-        assertEquals(null, po1.field("val2"));
-        assertEquals(null, po1.field("val3"));
+        Assert.assertEquals(new Integer(10), po1.field("val1"));
+        Assert.assertEquals(null, po1.field("val2"));
+        Assert.assertEquals(null, po1.field("val3"));
 
         DynamicObject do1 = po1.deserialize();
 
-        assertEquals(10, do1.val1);
-        assertEquals(0, do1.val2);
-        assertEquals(0, do1.val3);
+        Assert.assertEquals(10, do1.val1);
+        Assert.assertEquals(0, do1.val2);
+        Assert.assertEquals(0, do1.val3);
 
         BinaryObject po2 = marshal(new DynamicObject(1, 10, 20, 30), marsh);
 
-        assertEquals(new Integer(10), po2.field("val1"));
-        assertEquals(new Integer(20), po2.field("val2"));
-        assertEquals(null, po2.field("val3"));
+        Assert.assertEquals(new Integer(10), po2.field("val1"));
+        Assert.assertEquals(new Integer(20), po2.field("val2"));
+        Assert.assertEquals(null, po2.field("val3"));
 
         DynamicObject do2 = po2.deserialize();
 
-        assertEquals(10, do2.val1);
-        assertEquals(20, do2.val2);
-        assertEquals(0, do2.val3);
+        Assert.assertEquals(10, do2.val1);
+        Assert.assertEquals(20, do2.val2);
+        Assert.assertEquals(0, do2.val3);
 
         BinaryObject po3 = marshal(new DynamicObject(2, 10, 20, 30), marsh);
 
-        assertEquals(new Integer(10), po3.field("val1"));
-        assertEquals(new Integer(20), po3.field("val2"));
-        assertEquals(new Integer(30), po3.field("val3"));
+        Assert.assertEquals(new Integer(10), po3.field("val1"));
+        Assert.assertEquals(new Integer(20), po3.field("val2"));
+        Assert.assertEquals(new Integer(30), po3.field("val3"));
 
         DynamicObject do3 = po3.deserialize();
 
-        assertEquals(10, do3.val1);
-        assertEquals(20, do3.val2);
-        assertEquals(30, do3.val3);
+        Assert.assertEquals(10, do3.val1);
+        Assert.assertEquals(20, do3.val2);
+        Assert.assertEquals(30, do3.val3);
     }
 
     /**
@@ -1489,8 +1487,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         DetachedTestObject obj = marshal(new DetachedTestObject(
             new DetachedInnerTestObject(null, id)), marsh).deserialize();
 
-        assertEquals(id, obj.inner1.id);
-        assertEquals(id, obj.inner4.id);
+        Assert.assertEquals(id, obj.inner1.id);
+        Assert.assertEquals(id, obj.inner4.id);
 
         assert obj.inner1 == obj.inner4;
 
@@ -1500,7 +1498,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         DetachedInnerTestObject inner = innerPo.deserialize();
 
-        assertEquals(id, inner.id);
+        Assert.assertEquals(id, inner.id);
 
         BinaryObjectImpl detachedPo = (BinaryObjectImpl)innerPo.detach();
 
@@ -1508,7 +1506,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         inner = detachedPo.deserialize();
 
-        assertEquals(id, inner.id);
+        Assert.assertEquals(id, inner.id);
 
         innerPo = (BinaryObjectImpl)obj.inner3;
 
@@ -1516,8 +1514,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         inner = innerPo.deserialize();
 
-        assertEquals(id, inner.id);
-        assertNotNull(inner.inner);
+        Assert.assertEquals(id, inner.id);
+        Assert.assertNotNull(inner.inner);
 
         detachedPo = (BinaryObjectImpl)innerPo.detach();
 
@@ -1525,8 +1523,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         inner = innerPo.deserialize();
 
-        assertEquals(id, inner.id);
-        assertNotNull(inner.inner);
+        Assert.assertEquals(id, inner.id);
+        Assert.assertNotNull(inner.inner);
     }
 
     /**
@@ -1550,24 +1548,24 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Object[] arr0 = po.field("arr");
 
-        assertEquals(3, arr0.length);
+        Assert.assertEquals(3, arr0.length);
 
         int i = 1;
 
         for (Object valPo : arr0)
-            assertEquals(i++, ((BinaryObject)valPo).<Value>deserialize().val);
+            Assert.assertEquals(i++, ((BinaryObject)valPo).<Value>deserialize().val);
 
         Collection<BinaryObject> col0 = po.field("col");
 
         i = 4;
 
         for (BinaryObject valPo : col0)
-            assertEquals(i++, valPo.<Value>deserialize().val);
+            Assert.assertEquals(i++, valPo.<Value>deserialize().val);
 
         Map<BinaryObject, BinaryObject> map0 = po.field("map");
 
         for (Map.Entry<BinaryObject, BinaryObject> e : map0.entrySet())
-            assertEquals(e.getKey().<Key>deserialize().key, e.getValue().<Value>deserialize().val);
+            Assert.assertEquals(e.getKey().<Key>deserialize().key, e.getValue().<Value>deserialize().val);
     }
 
     /**
@@ -1606,7 +1604,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         po = marshal(obj, marsh2);
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
     }
 
     /**
@@ -1676,16 +1674,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryContext ctx = binaryContext(marsh);
 
         // Full name hashCode.
-        assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
-        assertEquals("key".hashCode(), ctx.typeId(Key.class.getName()));
-        assertEquals("nonexistentclass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
-        assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
-        assertEquals(300, ctx.typeId(Value.class.getName()));
-        assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
-        assertEquals(500, ctx.typeId("NonExistentClass2"));
+        Assert.assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
+        Assert.assertEquals("key".hashCode(), ctx.typeId(Key.class.getName()));
+        Assert.assertEquals("nonexistentclass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
+        Assert.assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
+        Assert.assertEquals(300, ctx.typeId(Value.class.getName()));
+        Assert.assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
+        Assert.assertEquals(500, ctx.typeId("NonExistentClass2"));
 
         // BinaryIdMapper.typeId() contract.
-        assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
+        Assert.assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
     }
 
     /**
@@ -1755,16 +1753,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryContext ctx = binaryContext(marsh);
 
         // Full name hashCode.
-        assertEquals("NotConfiguredClass".hashCode(), ctx.typeId("NotConfiguredClass"));
-        assertEquals(Key.class.getName().hashCode(), ctx.typeId(Key.class.getName()));
-        assertEquals("org.gridgain.NonExistentClass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
-        assertEquals("NonExistentClass4".hashCode(), ctx.typeId("NonExistentClass4"));
-        assertEquals(300, ctx.typeId(Value.class.getName()));
-        assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
-        assertEquals(500, ctx.typeId("NonExistentClass2"));
+        Assert.assertEquals("NotConfiguredClass".hashCode(), ctx.typeId("NotConfiguredClass"));
+        Assert.assertEquals(Key.class.getName().hashCode(), ctx.typeId(Key.class.getName()));
+        Assert.assertEquals("org.gridgain.NonExistentClass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
+        Assert.assertEquals("NonExistentClass4".hashCode(), ctx.typeId("NonExistentClass4"));
+        Assert.assertEquals(300, ctx.typeId(Value.class.getName()));
+        Assert.assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
+        Assert.assertEquals(500, ctx.typeId("NonExistentClass2"));
 
         // BinaryIdMapper.typeId() contract.
-        assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
+        Assert.assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
     }
 
     /**
@@ -1839,20 +1837,20 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
-        assertEquals("notconfiguredclass".hashCode(), ctx.typeId("org.blabla.NotConfiguredClass"));
-        assertEquals("key".hashCode(), ctx.typeId(Key.class.getName()));
-        assertEquals("nonexistentclass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
-        assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
+        Assert.assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
+        Assert.assertEquals("notconfiguredclass".hashCode(), ctx.typeId("org.blabla.NotConfiguredClass"));
+        Assert.assertEquals("key".hashCode(), ctx.typeId(Key.class.getName()));
+        Assert.assertEquals("nonexistentclass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
+        Assert.assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
 
-        assertEquals(300, ctx.typeId(Value.class.getName()));
-        assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
-        assertEquals(500, ctx.typeId("NonExistentClass2"));
+        Assert.assertEquals(300, ctx.typeId(Value.class.getName()));
+        Assert.assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
+        Assert.assertEquals(500, ctx.typeId("NonExistentClass2"));
 
-        assertEquals(DateClass1.class.getName().hashCode(), ctx.typeId(DateClass1.class.getName()));
+        Assert.assertEquals(DateClass1.class.getName().hashCode(), ctx.typeId(DateClass1.class.getName()));
 
         // BinaryIdMapper.typeId() contract.
-        assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
+        Assert.assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
     }
 
     /**
@@ -1948,26 +1946,26 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        assertEquals(999, ctx.typeId("NotConfiguredClass"));
-        assertEquals(999, ctx.typeId("org.blabla.NotConfiguredClass"));
+        Assert.assertEquals(999, ctx.typeId("NotConfiguredClass"));
+        Assert.assertEquals(999, ctx.typeId("org.blabla.NotConfiguredClass"));
 
         // BinaryIdMapper.typeId() contract.
-        assertEquals("notconfiguredspecialclass".hashCode(), ctx.typeId("org.blabla.NotConfiguredSpecialClass"));
+        Assert.assertEquals("notconfiguredspecialclass".hashCode(), ctx.typeId("org.blabla.NotConfiguredSpecialClass"));
 
-        assertEquals(991, ctx.typeId(Key.class.getName()));
-        assertEquals(992, ctx.typeId("org.gridgain.NonExistentClass3"));
-        assertEquals(993, ctx.typeId("NonExistentClass4"));
+        Assert.assertEquals(991, ctx.typeId(Key.class.getName()));
+        Assert.assertEquals(992, ctx.typeId("org.gridgain.NonExistentClass3"));
+        Assert.assertEquals(993, ctx.typeId("NonExistentClass4"));
 
         // Custom types.
-        assertEquals(300, ctx.typeId(Value.class.getName()));
-        assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
-        assertEquals(500, ctx.typeId("NonExistentClass2"));
+        Assert.assertEquals(300, ctx.typeId(Value.class.getName()));
+        Assert.assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
+        Assert.assertEquals(500, ctx.typeId("NonExistentClass2"));
 
         // BinaryIdMapper.typeId() contract.
-        assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
+        Assert.assertEquals("nonexistentclass0".hashCode(), ctx.typeId("NonExistentClass0"));
 
-        assertEquals(DateClass1.class.getName().hashCode(), ctx.typeId(DateClass1.class.getName()));
-        assertEquals("mytestclass".hashCode(), ctx.typeId(MyTestClass.class.getName()));
+        Assert.assertEquals(DateClass1.class.getName().hashCode(), ctx.typeId(DateClass1.class.getName()));
+        Assert.assertEquals("mytestclass".hashCode(), ctx.typeId(MyTestClass.class.getName()));
     }
 
     /**
@@ -1985,9 +1983,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, false);
 
-        assertEquals(Value.class, descriptor.describedClass());
-        assertEquals(true, descriptor.registered());
-        assertEquals(true, descriptor.userType());
+        Assert.assertEquals(Value.class, descriptor.describedClass());
+        Assert.assertEquals(true, descriptor.registered());
+        Assert.assertEquals(true, descriptor.userType());
 
         // Custom explicit types must be registered in 'predefinedTypes' in order not to break the interoperability.
         Field field = ctx.getClass().getDeclaredField("predefinedTypes");
@@ -1996,9 +1994,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, BinaryClassDescriptor> map = (Map<Integer, BinaryClassDescriptor>)field.get(ctx);
 
-        assertTrue(!map.isEmpty());
+        Assert.assertTrue(!map.isEmpty());
 
-        assertNotNull(map.get(typeId));
+        Assert.assertNotNull(map.get(typeId));
 
         // Custom explicit types must NOT be registered in 'predefinedTypeNames'.
         field = ctx.getClass().getDeclaredField("predefinedTypeNames");
@@ -2007,9 +2005,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<String, Integer> map2 = (Map<String, Integer>)field.get(ctx);
 
-        assertTrue(!map2.isEmpty());
+        Assert.assertTrue(!map2.isEmpty());
 
-        assertNull(map2.get(ctx.userTypeName(Value.class.getName())));
+        Assert.assertNull(map2.get(ctx.userTypeName(Value.class.getName())));
     }
 
     /**
@@ -2066,15 +2064,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
-        assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
-        assertEquals("val".hashCode(), ctx.fieldId("notconfiguredclass".hashCode(), "val"));
-        assertEquals(301, ctx.fieldId(300, "val1"));
-        assertEquals(302, ctx.fieldId(300, "val2"));
-        assertEquals("val3".hashCode(), ctx.fieldId(300, "val3"));
-        assertEquals(401, ctx.fieldId(400, "val1"));
-        assertEquals(402, ctx.fieldId(400, "val2"));
-        assertEquals("val3".hashCode(), ctx.fieldId(400, "val3"));
+        Assert.assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
+        Assert.assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
+        Assert.assertEquals("val".hashCode(), ctx.fieldId("notconfiguredclass".hashCode(), "val"));
+        Assert.assertEquals(301, ctx.fieldId(300, "val1"));
+        Assert.assertEquals(302, ctx.fieldId(300, "val2"));
+        Assert.assertEquals("val3".hashCode(), ctx.fieldId(300, "val3"));
+        Assert.assertEquals(401, ctx.fieldId(400, "val1"));
+        Assert.assertEquals(402, ctx.fieldId(400, "val2"));
+        Assert.assertEquals("val3".hashCode(), ctx.fieldId(400, "val3"));
     }
 
     /**
@@ -2110,7 +2108,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             binaryMarshaller(Arrays.asList(customType1, customType2));
         }
         catch (IgniteCheckedException e) {
-            assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]",
+            Assert.assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]",
                 e.getCause().getCause().getMessage());
 
             return;
@@ -2132,15 +2130,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         final BinaryObject po = marshal(obj, marsh);
 
-        assertEquals(obj, po.deserialize());
+        Assert.assertEquals(obj, po.deserialize());
 
         BinaryObject copy = copy(po, null);
 
-        assertEquals(obj, copy.deserialize());
+        Assert.assertEquals(obj, copy.deserialize());
 
         copy = copy(po, new HashMap<String, Object>());
 
-        assertEquals(obj, copy.deserialize());
+        Assert.assertEquals(obj, copy.deserialize());
 
         Map<String, Object> map = new HashMap<>(1, 1.0f);
 
@@ -2148,25 +2146,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         copy = copy(po, map);
 
-        assertEquals((byte)2, copy.<Byte>field("b").byteValue());
-        assertEquals((short)2, copy.<Short>field("s").shortValue());
-        assertEquals(3, copy.<Integer>field("i").intValue());
-        assertEquals(2L, copy.<Long>field("l").longValue());
-        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)2, copy.<Character>field("c").charValue());
-        assertEquals(false, copy.<Boolean>field("bool").booleanValue());
+        Assert.assertEquals((byte)2, copy.<Byte>field("b").byteValue());
+        Assert.assertEquals((short)2, copy.<Short>field("s").shortValue());
+        Assert.assertEquals(3, copy.<Integer>field("i").intValue());
+        Assert.assertEquals(2L, copy.<Long>field("l").longValue());
+        Assert.assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
+        Assert.assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
+        Assert.assertEquals((char)2, copy.<Character>field("c").charValue());
+        Assert.assertEquals(false, copy.<Boolean>field("bool").booleanValue());
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals((byte)2, obj0.b);
-        assertEquals((short)2, obj0.s);
-        assertEquals(3, obj0.i);
-        assertEquals(2L, obj0.l);
-        assertEquals(2.2f, obj0.f, 0);
-        assertEquals(2.2d, obj0.d, 0);
-        assertEquals((char)2, obj0.c);
-        assertEquals(false, obj0.bool);
+        Assert.assertEquals((byte)2, obj0.b);
+        Assert.assertEquals((short)2, obj0.s);
+        Assert.assertEquals(3, obj0.i);
+        Assert.assertEquals(2L, obj0.l);
+        Assert.assertEquals(2.2f, obj0.f, 0);
+        Assert.assertEquals(2.2d, obj0.d, 0);
+        Assert.assertEquals((char)2, obj0.c);
+        Assert.assertEquals(false, obj0.bool);
 
         map = new HashMap<>(3, 1.0f);
 
@@ -2176,25 +2174,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         copy = copy(po, map);
 
-        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
-        assertEquals((short)2, copy.<Short>field("s").shortValue());
-        assertEquals(2, copy.<Integer>field("i").intValue());
-        assertEquals(3L, copy.<Long>field("l").longValue());
-        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)2, copy.<Character>field("c").charValue());
-        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
+        Assert.assertEquals((byte)3, copy.<Byte>field("b").byteValue());
+        Assert.assertEquals((short)2, copy.<Short>field("s").shortValue());
+        Assert.assertEquals(2, copy.<Integer>field("i").intValue());
+        Assert.assertEquals(3L, copy.<Long>field("l").longValue());
+        Assert.assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
+        Assert.assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
+        Assert.assertEquals((char)2, copy.<Character>field("c").charValue());
+        Assert.assertEquals(true, copy.<Boolean>field("bool").booleanValue());
 
         obj0 = copy.deserialize();
 
-        assertEquals((byte)3, obj0.b);
-        assertEquals((short)2, obj0.s);
-        assertEquals(2, obj0.i);
-        assertEquals(3L, obj0.l);
-        assertEquals(2.2f, obj0.f, 0);
-        assertEquals(2.2d, obj0.d, 0);
-        assertEquals((char)2, obj0.c);
-        assertEquals(true, obj0.bool);
+        Assert.assertEquals((byte)3, obj0.b);
+        Assert.assertEquals((short)2, obj0.s);
+        Assert.assertEquals(2, obj0.i);
+        Assert.assertEquals(3L, obj0.l);
+        Assert.assertEquals(2.2f, obj0.f, 0);
+        Assert.assertEquals(2.2d, obj0.d, 0);
+        Assert.assertEquals((char)2, obj0.c);
+        Assert.assertEquals(true, obj0.bool);
 
         map = new HashMap<>(8, 1.0f);
 
@@ -2209,25 +2207,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         copy = copy(po, map);
 
-        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
-        assertEquals((short)3, copy.<Short>field("s").shortValue());
-        assertEquals(3, copy.<Integer>field("i").intValue());
-        assertEquals(3L, copy.<Long>field("l").longValue());
-        assertEquals(3.3f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(3.3d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)3, copy.<Character>field("c").charValue());
-        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
+        Assert.assertEquals((byte)3, copy.<Byte>field("b").byteValue());
+        Assert.assertEquals((short)3, copy.<Short>field("s").shortValue());
+        Assert.assertEquals(3, copy.<Integer>field("i").intValue());
+        Assert.assertEquals(3L, copy.<Long>field("l").longValue());
+        Assert.assertEquals(3.3f, copy.<Float>field("f").floatValue(), 0);
+        Assert.assertEquals(3.3d, copy.<Double>field("d").doubleValue(), 0);
+        Assert.assertEquals((char)3, copy.<Character>field("c").charValue());
+        Assert.assertEquals(true, copy.<Boolean>field("bool").booleanValue());
 
         obj0 = copy.deserialize();
 
-        assertEquals((byte)3, obj0.b);
-        assertEquals((short)3, obj0.s);
-        assertEquals(3, obj0.i);
-        assertEquals(3L, obj0.l);
-        assertEquals(3.3f, obj0.f, 0);
-        assertEquals(3.3d, obj0.d, 0);
-        assertEquals((char)3, obj0.c);
-        assertEquals(true, obj0.bool);
+        Assert.assertEquals((byte)3, obj0.b);
+        Assert.assertEquals((short)3, obj0.s);
+        Assert.assertEquals(3, obj0.i);
+        Assert.assertEquals(3L, obj0.l);
+        Assert.assertEquals(3.3f, obj0.f, 0);
+        Assert.assertEquals(3.3d, obj0.d, 0);
+        Assert.assertEquals((char)3, obj0.c);
+        Assert.assertEquals(true, obj0.bool);
 
 //        GridTestUtils.assertThrows(
 //            log,
@@ -2258,11 +2256,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("str", "str3"));
 
-        assertEquals("str3", copy.<String>field("str"));
+        Assert.assertEquals("str3", copy.<String>field("str"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals("str3", obj0.str);
+        Assert.assertEquals("str3", obj0.str);
     }
 
     /**
@@ -2282,11 +2280,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("uuid", uuid));
 
-        assertEquals(uuid, copy.<UUID>field("uuid"));
+        Assert.assertEquals(uuid, copy.<UUID>field("uuid"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals(uuid, obj0.uuid);
+        Assert.assertEquals(uuid, obj0.uuid);
     }
 
     /**
@@ -2304,11 +2302,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("bArr", new byte[] {1, 2, 3}));
 
-        assertArrayEquals(new byte[] {1, 2, 3}, copy.<byte[]>field("bArr"));
+        Assert.assertArrayEquals(new byte[] {1, 2, 3}, copy.<byte[]>field("bArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new byte[] {1, 2, 3}, obj0.bArr);
+        Assert.assertArrayEquals(new byte[] {1, 2, 3}, obj0.bArr);
     }
 
     /**
@@ -2342,11 +2340,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("sArr", new short[] {1, 2, 3}));
 
-        assertArrayEquals(new short[] {1, 2, 3}, copy.<short[]>field("sArr"));
+        Assert.assertArrayEquals(new short[] {1, 2, 3}, copy.<short[]>field("sArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new short[] {1, 2, 3}, obj0.sArr);
+        Assert.assertArrayEquals(new short[] {1, 2, 3}, obj0.sArr);
     }
 
     /**
@@ -2364,11 +2362,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("iArr", new int[] {1, 2, 3}));
 
-        assertArrayEquals(new int[] {1, 2, 3}, copy.<int[]>field("iArr"));
+        Assert.assertArrayEquals(new int[] {1, 2, 3}, copy.<int[]>field("iArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new int[] {1, 2, 3}, obj0.iArr);
+        Assert.assertArrayEquals(new int[] {1, 2, 3}, obj0.iArr);
     }
 
     /**
@@ -2386,11 +2384,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("lArr", new long[] {1, 2, 3}));
 
-        assertArrayEquals(new long[] {1, 2, 3}, copy.<long[]>field("lArr"));
+        Assert.assertArrayEquals(new long[] {1, 2, 3}, copy.<long[]>field("lArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new long[] {1, 2, 3}, obj0.lArr);
+        Assert.assertArrayEquals(new long[] {1, 2, 3}, obj0.lArr);
     }
 
     /**
@@ -2408,11 +2406,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("fArr", new float[] {1, 2, 3}));
 
-        assertArrayEquals(new float[] {1, 2, 3}, copy.<float[]>field("fArr"), 0);
+        Assert.assertArrayEquals(new float[] {1, 2, 3}, copy.<float[]>field("fArr"), 0);
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new float[] {1, 2, 3}, obj0.fArr, 0);
+        Assert.assertArrayEquals(new float[] {1, 2, 3}, obj0.fArr, 0);
     }
 
     /**
@@ -2430,11 +2428,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("dArr", new double[] {1, 2, 3}));
 
-        assertArrayEquals(new double[] {1, 2, 3}, copy.<double[]>field("dArr"), 0);
+        Assert.assertArrayEquals(new double[] {1, 2, 3}, copy.<double[]>field("dArr"), 0);
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new double[] {1, 2, 3}, obj0.dArr, 0);
+        Assert.assertArrayEquals(new double[] {1, 2, 3}, obj0.dArr, 0);
     }
 
     /**
@@ -2452,11 +2450,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("cArr", new char[] {1, 2, 3}));
 
-        assertArrayEquals(new char[] {1, 2, 3}, copy.<char[]>field("cArr"));
+        Assert.assertArrayEquals(new char[] {1, 2, 3}, copy.<char[]>field("cArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new char[] {1, 2, 3}, obj0.cArr);
+        Assert.assertArrayEquals(new char[] {1, 2, 3}, obj0.cArr);
     }
 
     /**
@@ -2474,11 +2472,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("strArr", new String[] {"str1", "str2"}));
 
-        assertArrayEquals(new String[] {"str1", "str2"}, copy.<String[]>field("strArr"));
+        Assert.assertArrayEquals(new String[] {"str1", "str2"}, copy.<String[]>field("strArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new String[] {"str1", "str2"}, obj0.strArr);
+        Assert.assertArrayEquals(new String[] {"str1", "str2"}, obj0.strArr);
     }
 
     /**
@@ -2502,11 +2500,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("inner", newObj));
 
-        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
+        Assert.assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals(newObj, obj0.inner);
+        Assert.assertEquals(newObj, obj0.inner);
     }
 
     /**
@@ -2536,15 +2534,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, map);
 
-        assertEquals("str555", copy.<String>field("str"));
-        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
-        assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
+        Assert.assertEquals("str555", copy.<String>field("str"));
+        Assert.assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
+        Assert.assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals("str555", obj0.str);
-        assertEquals(newObj, obj0.inner);
-        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
+        Assert.assertEquals("str555", obj0.str);
+        Assert.assertEquals(newObj, obj0.inner);
+        Assert.assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
     }
 
     /**
@@ -2575,21 +2573,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, map);
 
-        assertEquals(1234, copy.<Integer>field("i").intValue());
-        assertEquals("str555", copy.<String>field("str"));
-        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
-        assertEquals((short)2323, copy.<Short>field("s").shortValue());
-        assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
-        assertEquals((byte)111, copy.<Byte>field("b").byteValue());
+        Assert.assertEquals(1234, copy.<Integer>field("i").intValue());
+        Assert.assertEquals("str555", copy.<String>field("str"));
+        Assert.assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
+        Assert.assertEquals((short)2323, copy.<Short>field("s").shortValue());
+        Assert.assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
+        Assert.assertEquals((byte)111, copy.<Byte>field("b").byteValue());
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertEquals(1234, obj0.i);
-        assertEquals("str555", obj0.str);
-        assertEquals(newObj, obj0.inner);
-        assertEquals((short)2323, obj0.s);
-        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
-        assertEquals((byte)111, obj0.b);
+        Assert.assertEquals(1234, obj0.i);
+        Assert.assertEquals("str555", obj0.str);
+        Assert.assertEquals(newObj, obj0.inner);
+        Assert.assertEquals((short)2323, obj0.s);
+        Assert.assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
+        Assert.assertEquals((byte)111, obj0.b);
     }
 
     /**
@@ -2637,11 +2635,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 0,
                 obj.array().length);
 
-            assertTrue(offheapObj.equals(offheapObj));
-            assertFalse(offheapObj.equals(null));
-            assertFalse(offheapObj.equals("str"));
-            assertTrue(offheapObj.equals(obj));
-            assertTrue(obj.equals(offheapObj));
+            Assert.assertTrue(offheapObj.equals(offheapObj));
+            Assert.assertFalse(offheapObj.equals(null));
+            Assert.assertFalse(offheapObj.equals("str"));
+            Assert.assertTrue(offheapObj.equals(obj));
+            Assert.assertTrue(obj.equals(offheapObj));
 
             ptr1 = copyOffheap(obj);
 
@@ -2650,30 +2648,30 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 0,
                 obj.array().length);
 
-            assertTrue(offheapObj.equals(offheapObj1));
-            assertTrue(offheapObj1.equals(offheapObj));
+            Assert.assertTrue(offheapObj.equals(offheapObj1));
+            Assert.assertTrue(offheapObj1.equals(offheapObj));
 
-            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
-            assertEquals(obj.hashCode(), offheapObj.hashCode());
+            Assert.assertEquals(obj.type().typeId(), offheapObj.type().typeId());
+            Assert.assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, offheapObj);
 
             BinaryObjectOffheapImpl innerOffheapObj = offheapObj.field("inner");
 
-            assertNotNull(innerOffheapObj);
+            Assert.assertNotNull(innerOffheapObj);
 
             checkSimpleObjectData(simpleObj.inner, innerOffheapObj);
 
             obj = (BinaryObjectImpl)offheapObj.heapCopy();
 
-            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
-            assertEquals(obj.hashCode(), offheapObj.hashCode());
+            Assert.assertEquals(obj.type().typeId(), offheapObj.type().typeId());
+            Assert.assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, obj);
 
             BinaryObjectImpl innerObj = obj.field("inner");
 
-            assertNotNull(innerObj);
+            Assert.assertNotNull(innerObj);
 
             checkSimpleObjectData(simpleObj.inner, innerObj);
 
@@ -2681,8 +2679,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             obj = marshal(simpleObj, marsh);
 
-            assertFalse(offheapObj.equals(obj));
-            assertFalse(obj.equals(offheapObj));
+            Assert.assertFalse(offheapObj.equals(obj));
+            Assert.assertFalse(obj.equals(offheapObj));
 
             ptr2 = copyOffheap(obj);
 
@@ -2691,8 +2689,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 0,
                 obj.array().length);
 
-            assertFalse(offheapObj.equals(offheapObj2));
-            assertFalse(offheapObj2.equals(offheapObj));
+            Assert.assertFalse(offheapObj.equals(offheapObj2));
+            Assert.assertFalse(offheapObj2.equals(offheapObj));
         }
         finally {
             GridUnsafe.freeMemory(ptr);
@@ -2716,11 +2714,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl binaryObj = marshal(MySingleton.INSTANCE, marsh);
 
-        assertTrue(binaryObj.array().length <= 1024); // Check that big string was not serialized.
+        Assert.assertTrue(binaryObj.array().length <= 1024); // Check that big string was not serialized.
 
         MySingleton singleton = binaryObj.deserialize();
 
-        assertSame(MySingleton.INSTANCE, singleton);
+        Assert.assertSame(MySingleton.INSTANCE, singleton);
     }
 
     /**
@@ -2735,7 +2733,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         MyTestClass obj = binaryObj.deserialize();
 
-        assertEquals("readResolve", obj.s);
+        Assert.assertEquals("readResolve", obj.s);
     }
 
     /**
@@ -2761,9 +2759,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         obj1.valArr = valArr;
         BinaryObjectImpl portObj = marshal(obj1, marsh);
 
-        assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
-        assertArrayEquals(obj1.valArr, portObj.<DecimalReflective>deserialize().valArr);
-        assertArrayEquals(obj1.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+        Assert.assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
+        Assert.assertArrayEquals(obj1.valArr, portObj.<DecimalReflective>deserialize().valArr);
+        Assert.assertArrayEquals(obj1.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
 
         obj1.valArr = null;
 
@@ -2772,9 +2770,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             portObj = marshal(obj1, marsh);
 
-            assertEquals(obj1.val, portObj.field("val"));
-            assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
-            assertEquals(obj1.val, portObj.type().field("val").value(portObj));
+            Assert.assertEquals(obj1.val, portObj.field("val"));
+            Assert.assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
+            Assert.assertEquals(obj1.val, portObj.type().field("val").value(portObj));
         }
 
         // 2. Test marshal aware stuff.
@@ -2787,25 +2785,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         portObj = marshal(obj2, marsh);
 
-        assertEquals(obj2.val, portObj.field("val"));
-        assertArrayEquals(obj2.valArr, portObj.<BigDecimal[]>field("valArr"));
+        Assert.assertEquals(obj2.val, portObj.field("val"));
+        Assert.assertArrayEquals(obj2.valArr, portObj.<BigDecimal[]>field("valArr"));
 
-        assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
-        assertArrayEquals(obj2.valArr, portObj.<DecimalMarshalAware>deserialize().valArr);
-        assertEquals(obj2.rawVal, portObj.<DecimalMarshalAware>deserialize().rawVal);
-        assertArrayEquals(obj2.rawValArr, portObj.<DecimalMarshalAware>deserialize().rawValArr);
+        Assert.assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
+        Assert.assertArrayEquals(obj2.valArr, portObj.<DecimalMarshalAware>deserialize().valArr);
+        Assert.assertEquals(obj2.rawVal, portObj.<DecimalMarshalAware>deserialize().rawVal);
+        Assert.assertArrayEquals(obj2.rawValArr, portObj.<DecimalMarshalAware>deserialize().rawValArr);
 
-        assertEquals(obj2.val, portObj.type().field("val").value(portObj));
-        assertArrayEquals(obj2.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+        Assert.assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+        Assert.assertArrayEquals(obj2.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
 
         for (BigDecimal v: valArr) {
             obj2.val = v;
 
             portObj = marshal(obj2, marsh);
 
-            assertEquals(obj2.val, portObj.field("val"));
-            assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
-            assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+            Assert.assertEquals(obj2.val, portObj.field("val"));
+            Assert.assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
+            Assert.assertEquals(obj2.val, portObj.type().field("val").value(portObj));
         }
     }
 
@@ -2820,7 +2818,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         SimpleObjectWithFinal po0 = marshalUnmarshal(obj, marsh);
 
-        assertEquals(obj.time, po0.time);
+        Assert.assertEquals(obj.time, po0.time);
     }
 
     /**
@@ -2829,28 +2827,28 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
-        assertEquals(false, INSTANCE.isAcquired());
+        Assert.assertEquals(false, INSTANCE.isAcquired());
 
         BinaryMarshaller marsh = binaryMarshaller();
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryContext(marsh))) {
-            assertEquals(true, INSTANCE.isAcquired());
+            Assert.assertEquals(true, INSTANCE.isAcquired());
 
             writer.writeString("Thread local test");
 
             writer.array();
 
-            assertEquals(true, INSTANCE.isAcquired());
+            Assert.assertEquals(true, INSTANCE.isAcquired());
         }
 
         // Checking the binary marshaller.
-        assertEquals(false, INSTANCE.isAcquired());
+        Assert.assertEquals(false, INSTANCE.isAcquired());
 
         marsh = binaryMarshaller();
 
         marsh.marshal(new SimpleObject());
 
-        assertEquals(false, INSTANCE.isAcquired());
+        Assert.assertEquals(false, INSTANCE.isAcquired());
 
         marsh = binaryMarshaller();
 
@@ -2862,7 +2860,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binaryObj = builder.build();
 
-        assertEquals(false, INSTANCE.isAcquired());
+        Assert.assertEquals(false, INSTANCE.isAcquired());
     }
 
     /**
@@ -2882,7 +2880,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             marsh.marshal(job2);
         }
         catch (BinaryObjectException e) {
-            assertEquals(true, e.getMessage().contains("Failed to register class"));
+            Assert.assertEquals(true, e.getMessage().contains("Failed to register class"));
 
             return;
         }
@@ -2934,14 +2932,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         ObjectWithClassFields obj2 = marsh.unmarshal(marshal, null);
 
-        assertEquals(obj.cls1, obj2.cls1);
-        assertNull(obj2.cls2);
+        Assert.assertEquals(obj.cls1, obj2.cls1);
+        Assert.assertNull(obj2.cls2);
 
         BinaryObject portObj = marshal(obj, marsh);
 
         Class cls1 = portObj.field("cls1");
 
-        assertEquals(obj.cls1, cls1);
+        Assert.assertEquals(obj.cls1, cls1);
     }
 
     /**
@@ -2957,8 +2955,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         InetSocketAddress addr2 = marsh.unmarshal(arr, null);
 
-        assertEquals(addr.getHostString(), addr2.getHostString());
-        assertEquals(addr.getPort(), addr2.getPort());
+        Assert.assertEquals(addr.getHostString(), addr2.getHostString());
+        Assert.assertEquals(addr.getPort(), addr2.getPort());
 
         TestAddress testAddr = new TestAddress();
         testAddr.addr = addr;
@@ -2974,11 +2972,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         TestAddress testAddr2 = marsh.unmarshal(arr, null);
 
-        assertEquals(testAddr.addr.getHostString(), testAddr2.addr.getHostString());
-        assertEquals(testAddr.addr.getPort(), testAddr2.addr.getPort());
-        assertEquals(testAddr.str1, testAddr2.str1);
-        assertEquals(testAddr.obj.c, testAddr2.obj.c);
-        assertEquals(testAddr.obj.date, testAddr2.obj.date);
+        Assert.assertEquals(testAddr.addr.getHostString(), testAddr2.addr.getHostString());
+        Assert.assertEquals(testAddr.addr.getPort(), testAddr2.addr.getPort());
+        Assert.assertEquals(testAddr.str1, testAddr2.str1);
+        Assert.assertEquals(testAddr.obj.c, testAddr2.obj.c);
+        Assert.assertEquals(testAddr.obj.date, testAddr2.obj.date);
     }
 
     /**
@@ -2996,7 +2994,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<String, Integer> map = (Map<String, Integer>)field.get(bCtx);
 
-        assertTrue(!map.isEmpty());
+        Assert.assertTrue(!map.isEmpty());
 
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             int id = entry.getValue();
@@ -3006,7 +3004,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, false);
 
-            assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
+            Assert.assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
         }
     }
 
@@ -3035,7 +3033,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
 
-        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+        Assert.assertEquals(outItf.checkAfterUnmarshalled(), 17);
     }
 
     /**
@@ -3065,7 +3063,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
 
-        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+        Assert.assertEquals(outItf.checkAfterUnmarshalled(), 17);
     }
 
     /**
@@ -3091,16 +3089,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assert objBin.hasField(fieldNameB);
 
         // Check direct field access.
-        assertNull(objBin.field(fieldName));
-        assertEquals(Integer.valueOf(1), objBin.field(fieldNameA));
-        assertEquals(Integer.valueOf(2), objBin.field(fieldNameB));
+        Assert.assertNull(objBin.field(fieldName));
+        Assert.assertEquals(Integer.valueOf(1), objBin.field(fieldNameA));
+        Assert.assertEquals(Integer.valueOf(2), objBin.field(fieldNameB));
 
         // Check metadata.
         BinaryType type = objBin.type();
 
         Collection<String> fieldNames = type.fieldNames();
 
-        assertEquals(2, fieldNames.size());
+        Assert.assertEquals(2, fieldNames.size());
 
         assert !fieldNames.contains(fieldName);
         assert fieldNames.contains(fieldNameA);
@@ -3115,15 +3113,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assert fieldA.exists(objBin);
         assert fieldB.exists(objBin);
 
-        assertNull(field.value(objBin));
-        assertEquals(Integer.valueOf(1), fieldA.value(objBin));
-        assertEquals(Integer.valueOf(2), fieldB.value(objBin));
+        Assert.assertNull(field.value(objBin));
+        Assert.assertEquals(Integer.valueOf(1), fieldA.value(objBin));
+        Assert.assertEquals(Integer.valueOf(2), fieldB.value(objBin));
 
         // Check object deserialization.
         DuplicateFieldsB deserialized = objBin.deserialize();
 
-        assertEquals(obj.xA(), deserialized.xA());
-        assertEquals(obj.xB(), deserialized.xB());
+        Assert.assertEquals(obj.xA(), deserialized.xA());
+        Assert.assertEquals(obj.xB(), deserialized.xB());
     }
 
     /**
@@ -3139,7 +3137,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject innerBo = map.get("key");
 
-        assertEquals(SingleHandleB.class, innerBo.deserialize().getClass());
+        Assert.assertEquals(SingleHandleB.class, innerBo.deserialize().getClass());
     }
 
     /**
@@ -3151,7 +3149,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         ClassFieldObject res = m.unmarshal(m.marshal(new ClassFieldObject(Value.class)), null);
 
-        assertEquals(Value.class, res.cls);
+        Assert.assertEquals(Value.class, res.cls);
     }
 
     /**
@@ -3210,9 +3208,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl binObjRaw0 = marshal(objectRaw, m0);
         BinaryObjectImpl binObjRaw1 = marshal(objectRaw, m1);
 
-        assertNotEquals(binObj0.array().length, binObj1.array().length);
-        assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
-        assertNotEquals(binObjRaw0.array().length, binObjRaw1.array().length);
+        Assert.assertNotEquals(binObj0.array().length, binObj1.array().length);
+        Assert.assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
+        Assert.assertNotEquals(binObjRaw0.array().length, binObjRaw1.array().length);
 
         checkEquals(binObj0, binObj1);
 
@@ -3234,19 +3232,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl binObjRawOther0 = marshal(objectRawOther, m0);
         BinaryObjectImpl binObjRawOther1 = marshal(objectRawOther, m1);
 
-        assertEquals(binObjOther0.length(), binObj0.length());
-        assertEquals(binObjOther1.length(), binObj1.length());
-        assertEquals(binObjWithRawOther0.length(), binObjWithRaw0.length());
-        assertEquals(binObjWithRawOther1.length(), binObjWithRaw1.length());
-        assertEquals(binObjRawOther0.length(), binObjRaw0.length());
-        assertEquals(binObjRawOther1.length(), binObjRaw1.length());
+        Assert.assertEquals(binObjOther0.length(), binObj0.length());
+        Assert.assertEquals(binObjOther1.length(), binObj1.length());
+        Assert.assertEquals(binObjWithRawOther0.length(), binObjWithRaw0.length());
+        Assert.assertEquals(binObjWithRawOther1.length(), binObjWithRaw1.length());
+        Assert.assertEquals(binObjRawOther0.length(), binObjRaw0.length());
+        Assert.assertEquals(binObjRawOther1.length(), binObjRaw1.length());
 
-        assertNotEquals(binObjOther0, binObj0);
-        assertNotEquals(binObjOther1, binObj1);
-        assertNotEquals(binObjWithRawOther0, binObjWithRaw0);
-        assertNotEquals(binObjWithRawOther1, binObjWithRaw1);
-        assertNotEquals(binObjRawOther0, binObjRaw0);
-        assertNotEquals(binObjRawOther1, binObjRaw1);
+        Assert.assertNotEquals(binObjOther0, binObj0);
+        Assert.assertNotEquals(binObjOther1, binObj1);
+        Assert.assertNotEquals(binObjWithRawOther0, binObjWithRaw0);
+        Assert.assertNotEquals(binObjWithRawOther1, binObjWithRaw1);
+        Assert.assertNotEquals(binObjRawOther0, binObjRaw0);
+        Assert.assertNotEquals(binObjRawOther1, binObjRaw1);
 
         try {
             binObjOffheap0 = marshalOffHeap(binObj0, m0);
@@ -3312,10 +3310,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param binObj1 Object #1.
      */
     private void checkEquals(Object binObj0, Object binObj1) {
-        assertEquals(binObj0, binObj1);
-        assertEquals(binObj1, binObj0);
-        assertEquals(binObj0, binObj0);
-        assertEquals(binObj1, binObj1);
+        Assert.assertEquals(binObj0, binObj1);
+        Assert.assertEquals(binObj1, binObj0);
+        Assert.assertEquals(binObj0, binObj0);
+        Assert.assertEquals(binObj1, binObj1);
     }
 
     /**
@@ -3340,37 +3338,37 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl binObj02 = marshal(obj2, m0);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj00.array().length, binObj01.array().length);
-        assertEquals(binObj00.array().length, binObj02.array().length);
+        Assert.assertEquals(binObj00.array().length, binObj01.array().length);
+        Assert.assertEquals(binObj00.array().length, binObj02.array().length);
 
         BinaryObjectImpl binObj10 = marshal(obj0, m1);
         BinaryObjectImpl binObj11 = marshal(obj1, m1);
         BinaryObjectImpl binObj12 = marshal(obj2, m1);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj10.array().length, binObj11.array().length);
-        assertEquals(binObj10.array().length, binObj12.array().length);
+        Assert.assertEquals(binObj10.array().length, binObj11.array().length);
+        Assert.assertEquals(binObj10.array().length, binObj12.array().length);
 
-        assertNotEquals(binObj10.array().length, binObj00.array().length);
+        Assert.assertNotEquals(binObj10.array().length, binObj00.array().length);
 
-        assertEquals(binObj00, binObj10);
-        assertEquals(binObj01, binObj11);
-        assertEquals(binObj02, binObj12);
+        Assert.assertEquals(binObj00, binObj10);
+        Assert.assertEquals(binObj01, binObj11);
+        Assert.assertEquals(binObj02, binObj12);
 
-        assertNotEquals(binObj00, binObj01);
-        assertNotEquals(binObj00, binObj02);
-        assertNotEquals(binObj00, binObj11);
-        assertNotEquals(binObj00, binObj12);
+        Assert.assertNotEquals(binObj00, binObj01);
+        Assert.assertNotEquals(binObj00, binObj02);
+        Assert.assertNotEquals(binObj00, binObj11);
+        Assert.assertNotEquals(binObj00, binObj12);
 
-        assertNotEquals(binObj01, binObj00);
-        assertNotEquals(binObj01, binObj02);
-        assertNotEquals(binObj01, binObj10);
-        assertNotEquals(binObj01, binObj12);
+        Assert.assertNotEquals(binObj01, binObj00);
+        Assert.assertNotEquals(binObj01, binObj02);
+        Assert.assertNotEquals(binObj01, binObj10);
+        Assert.assertNotEquals(binObj01, binObj12);
 
-        assertNotEquals(binObj02, binObj00);
-        assertNotEquals(binObj02, binObj01);
-        assertNotEquals(binObj02, binObj00);
-        assertNotEquals(binObj02, binObj11);
+        Assert.assertNotEquals(binObj02, binObj00);
+        Assert.assertNotEquals(binObj02, binObj01);
+        Assert.assertNotEquals(binObj02, binObj00);
+        Assert.assertNotEquals(binObj02, binObj11);
     }
 
 
@@ -3393,12 +3391,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Field[] fields = SimpleObject.class.getDeclaredFields();
 
-        assertEquals(fields.length, fieldsBin.size());
+        Assert.assertEquals(fields.length, fieldsBin.size());
 
         int i = 0;
 
         for (String fieldName : fieldsBin) {
-            assertEquals(fields[i].getName(), fieldName);
+            Assert.assertEquals(fields[i].getName(), fieldName);
 
             ++i;
         }
@@ -3429,12 +3427,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Collection<String> fieldsBin =  binObj.type().fieldNames();
 
-        assertEquals(fieldNames.length, fieldsBin.size());
+        Assert.assertEquals(fieldNames.length, fieldsBin.size());
 
         int i = 0;
 
         for (String fieldName : fieldsBin) {
-            assertEquals(fieldNames[i], fieldName);
+            Assert.assertEquals(fieldNames[i], fieldName);
 
             ++i;
         }
@@ -3508,19 +3506,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          * Checks correctness of the state after unmarshalling.
          */
         void checkAfterUnmarshalled() {
-            assertEquals(longVal, 0x33445566778899AAL);
+            Assert.assertEquals(longVal, 0x33445566778899AAL);
 
-            assertEquals(shortVal.shortValue(), (short)0xAABB);
+            Assert.assertEquals(shortVal.shortValue(), (short)0xAABB);
 
-            assertTrue(Arrays.equals(strArr, new String[] {"AA", "BB"}));
+            Assert.assertTrue(Arrays.equals(strArr, new String[] {"AA", "BB"}));
 
-            assertEquals(0, intVal);
+            Assert.assertEquals(0, intVal);
 
-            assertTrue(flag1);
-            assertFalse(flag2);
-            assertNull(flag3);
-            assertTrue(flag4);
-            assertFalse(flag5);
+            Assert.assertTrue(flag1);
+            Assert.assertFalse(flag2);
+            Assert.assertNull(flag3);
+            Assert.assertTrue(flag4);
+            Assert.assertFalse(flag5);
         }
     }
 
@@ -3558,13 +3556,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         @Override void checkAfterUnmarshalled() {
             super.checkAfterUnmarshalled();
 
-            assertEquals(shortValue.shortValue(), 0x1122);
+            Assert.assertEquals(shortValue.shortValue(), 0x1122);
 
-            assertEquals(longValue, 0x8877665544332211L);
+            Assert.assertEquals(longValue, 0x8877665544332211L);
 
-            assertNull(aArr);
+            Assert.assertNull(aArr);
 
-            assertEquals(doubleVal, 123.456);
+            Assert.assertEquals(123.456, doubleVal, 0);
         }
     }
 
@@ -3605,16 +3603,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         @Override void checkAfterUnmarshalled() {
             super.checkAfterUnmarshalled();
 
-            assertEquals(idVal, -17);
+            Assert.assertEquals(idVal, -17);
 
             aVal.checkAfterUnmarshalled();
 
-            assertNull(bVal);
+            Assert.assertNull(bVal);
 
             for (NonSerializableA a : bArr)
                 a.checkAfterUnmarshalled();
 
-            assertEquals(floatVal, 567.89F, 0);
+            Assert.assertEquals(floatVal, 567.89F, 0);
         }
     }
 
@@ -3858,10 +3856,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param act Actual.
      */
     private void assertBooleanArrayEquals(boolean[] exp, boolean[] act) {
-        assertEquals(exp.length, act.length);
+        Assert.assertEquals(exp.length, act.length);
 
         for (int i = 0; i < act.length; i++)
-            assertEquals(exp[i], act[i]);
+            Assert.assertEquals(exp[i], act[i]);
     }
 
     /**

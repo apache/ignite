@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -83,15 +84,15 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridClientMessage msg = parser.decode(ses, raw);
 
-            assertTrue(msg instanceof GridMemcachedMessage);
+            Assert.assertTrue(msg instanceof GridMemcachedMessage);
 
             GridMemcachedMessage packet = (GridMemcachedMessage)msg;
 
-            assertEquals("Parser leaved unparsed bytes", 0, raw.remaining());
+            Assert.assertEquals("Parser leaved unparsed bytes", 0, raw.remaining());
 
-            assertEquals("Invalid opcode", opCode, packet.operationCode());
-            assertEquals("Invalid key", key, packet.key());
-            assertEquals("Invalid value", val, packet.value());
+            Assert.assertEquals("Invalid opcode", opCode, packet.operationCode());
+            Assert.assertEquals("Invalid key", key, packet.key());
+            Assert.assertEquals("Invalid value", val, packet.value());
         }
     }
 
@@ -167,19 +168,19 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
         GridClientMessage msg = parser.decode(ses, raw);
 
-        assertNotNull(msg);
+        Assert.assertNotNull(msg);
 
-        assertEquals("Parser leaved unparsed bytes", 0, raw.remaining());
+        Assert.assertEquals("Parser leaved unparsed bytes", 0, raw.remaining());
 
-        assertTrue(msg instanceof GridClientCacheRequest);
+        Assert.assertTrue(msg instanceof GridClientCacheRequest);
 
         GridClientCacheRequest res = (GridClientCacheRequest) msg;
 
-        assertEquals("Invalid operation", req.operation(), res.operation());
-        assertEquals("Invalid clientId", req.clientId(), res.clientId());
-        assertEquals("Invalid key", req.key(), res.key());
-        assertEquals("Invalid value 1", req.value(), res.value());
-        assertEquals("Invalid value 2", req.value2(), res.value2());
+        Assert.assertEquals("Invalid operation", req.operation(), res.operation());
+        Assert.assertEquals("Invalid clientId", req.clientId(), res.clientId());
+        Assert.assertEquals("Invalid key", req.key(), res.key());
+        Assert.assertEquals("Invalid value 1", req.value(), res.value());
+        Assert.assertEquals("Invalid value 2", req.value2(), res.value2());
     }
 
     /**
@@ -226,25 +227,25 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
             GridClientMessage msg = parser.decode(ses1, packet1[0]);
 
-            assertNull(msg);
+            Assert.assertNull(msg);
 
             msg = parser.decode(ses2, packet2[0]);
 
-            assertNull(msg);
+            Assert.assertNull(msg);
 
             msg = parser.decode(ses1, packet1[1]);
 
-            assertTrue(msg instanceof GridMemcachedMessage);
+            Assert.assertTrue(msg instanceof GridMemcachedMessage);
 
-            assertEquals(key, ((GridMemcachedMessage)msg).key());
-            assertEquals(val, ((GridMemcachedMessage)msg).value());
+            Assert.assertEquals(key, ((GridMemcachedMessage)msg).key());
+            Assert.assertEquals(val, ((GridMemcachedMessage)msg).value());
 
             msg = parser.decode(ses2, packet2[1]);
 
-            assertTrue(msg instanceof GridClientCacheRequest);
+            Assert.assertTrue(msg instanceof GridClientCacheRequest);
 
-            assertEquals(val, ((GridClientCacheRequest)msg).value());
-            assertEquals(val, ((GridClientCacheRequest)msg).value2());
+            Assert.assertEquals(val, ((GridClientCacheRequest)msg).value());
+            Assert.assertEquals(val, ((GridClientCacheRequest)msg).value2());
 
             raw1.reset();
 
@@ -290,17 +291,17 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
                 while (buf.hasRemaining() && (r = (GridClientCacheRequest)parser.decode(ses, buf)) != null)
                     lst.add(r);
 
-                assertTrue("Parser has left unparsed bytes.", buf.remaining() == 0);
+                Assert.assertTrue("Parser has left unparsed bytes.", buf.remaining() == 0);
             }
 
-            assertEquals(5, lst.size());
+            Assert.assertEquals(5, lst.size());
 
             for (GridClientCacheRequest res : lst) {
-                assertEquals("Invalid operation", req.operation(), res.operation());
-                assertEquals("Invalid clientId", req.clientId(), res.clientId());
-                assertEquals("Invalid key", req.key(), res.key());
-                assertEquals("Invalid value 1", req.value(), res.value());
-                assertEquals("Invalid value 2", req.value2(), res.value2());
+                Assert.assertEquals("Invalid operation", req.operation(), res.operation());
+                Assert.assertEquals("Invalid clientId", req.clientId(), res.clientId());
+                Assert.assertEquals("Invalid key", req.key(), res.key());
+                Assert.assertEquals("Invalid value 1", req.value(), res.value());
+                Assert.assertEquals("Invalid value 2", req.value2(), res.value2());
             }
         }
     }
@@ -333,15 +334,15 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
                 while (buf.hasRemaining() && (r = parser.decode(ses, buf)) != null)
                     lst.add(r);
 
-                assertTrue("Parser has left unparsed bytes.", buf.remaining() == 0);
+                Assert.assertTrue("Parser has left unparsed bytes.", buf.remaining() == 0);
             }
 
-            assertEquals(1, lst.size());
+            Assert.assertEquals(1, lst.size());
 
             GridClientHandshakeRequest req = (GridClientHandshakeRequest)F.first(lst);
 
-            assertNotNull(req);
-            assertEquals(U.bytesToShort(new byte[]{5, 0}, 0), req.version());
+            Assert.assertNotNull(req);
+            Assert.assertEquals(U.bytesToShort(new byte[]{5, 0}, 0), req.version());
         }
     }
 

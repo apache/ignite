@@ -249,18 +249,18 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             Assert.assertEquals(m.getCacheRemovals(), 0);
             Assert.assertEquals(m.getCacheHits(), 0);
             Assert.assertEquals(m.getCacheMisses(), 0);
-            Assert.assertEquals(m.getAverageGetTime(), 0f);
-            Assert.assertEquals(m.getAverageRemoveTime(), 0f);
-            Assert.assertEquals(m.getAveragePutTime(), 0f);
-            Assert.assertEquals(m.getAverageTxCommitTime(), 0f);
-            Assert.assertEquals(m.getAverageTxRollbackTime(), 0f);
+            Assert.assertEquals(m.getAverageGetTime(), 0f, 0);
+            Assert.assertEquals(m.getAverageRemoveTime(), 0f, 0);
+            Assert.assertEquals(m.getAveragePutTime(), 0f, 0);
+            Assert.assertEquals(m.getAverageTxCommitTime(), 0f, 0);
+            Assert.assertEquals(m.getAverageTxRollbackTime(), 0f, 0);
 
             Assert.assertEquals(m.getEntryProcessorPuts(), 0);
             Assert.assertEquals(m.getEntryProcessorRemovals(), 0);
             Assert.assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
-            Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
-            Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
-            Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
+            Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f, 0);
+            Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0, 0f);
+            Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f, 0);
             Assert.assertEquals(m.getEntryProcessorInvocations(), 0);
         }
     }
@@ -550,7 +550,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
+        Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime(), 0);
 
         cache.putIfAbsentAsync(key, key).get();
 
@@ -576,7 +576,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
+        Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime(), 0);
 
         cache.getAndPutIfAbsentAsync(key, key).get();
 
@@ -1157,14 +1157,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         if (emptyCache) {
             Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
 
-            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage(), 0);
+            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage(), 0);
         }
         else {
             Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
 
-            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage(), 0);
+            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage(), 0);
         }
 
         for (int i = 1; i < gridCount(); i++) {
@@ -1216,14 +1216,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         if (emptyCache) {
             Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
 
-            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage(), 0);
+            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage(), 0);
         }
         else {
             Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
 
-            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage(), 0);
+            Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage(), 0);
         }
 
         for (int i = 1; i < gridCount(); i++)

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -38,17 +39,17 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         ByteBuffer b1 = GridUnsafe.allocateBuffer(10);
         ByteBuffer b2 = GridUnsafe.allocateBuffer(20);
 
-        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b2.order());
-        assertTrue(b2.isDirect());
-        assertEquals(20, b2.capacity());
-        assertEquals(20, b2.limit());
-        assertEquals(0, b2.position());
+        Assert.assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b2.order());
+        Assert.assertTrue(b2.isDirect());
+        Assert.assertEquals(20, b2.capacity());
+        Assert.assertEquals(20, b2.limit());
+        Assert.assertEquals(0, b2.position());
 
-        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b1.order());
-        assertTrue(b1.isDirect());
-        assertEquals(10, b1.capacity());
-        assertEquals(10, b1.limit());
-        assertEquals(0, b1.position());
+        Assert.assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b1.order());
+        Assert.assertTrue(b1.isDirect());
+        Assert.assertEquals(10, b1.capacity());
+        Assert.assertEquals(10, b1.limit());
+        Assert.assertEquals(0, b1.position());
 
         b1.putLong(1L);
         b1.putShort((short)7);
@@ -111,13 +112,13 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             byte b2 = mem.readByte(addr);
 
-            assertEquals(b1, b2);
+            Assert.assertEquals(b1, b2);
 
             byte b3 = 11;
 
             mem.writeByteVolatile(addr, b3);
 
-            assertEquals(b3, mem.readByteVolatile(addr));
+            Assert.assertEquals(b3, mem.readByteVolatile(addr));
         }
         finally {
             mem.release(addr, size);
@@ -140,7 +141,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             mem.writeShort(addr, s1);
 
-            assertEquals(s1, mem.readShort(addr));
+            Assert.assertEquals(s1, mem.readShort(addr));
         }
         finally {
             mem.release(addr, size);
@@ -163,7 +164,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             mem.writeFloat(addr, f1);
 
-            assertEquals(f1, mem.readFloat(addr));
+            Assert.assertEquals(f1, mem.readFloat(addr), 0);
         }
         finally {
             mem.release(addr, size);
@@ -186,7 +187,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             mem.writeDouble(addr, d1);
 
-            assertEquals(d1, mem.readDouble(addr));
+            Assert.assertEquals(d1, mem.readDouble(addr), 0);
         }
         finally {
             mem.release(addr, size);
@@ -212,7 +213,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             int i2 = mem.readInt(addr);
 
-            assertEquals(i1, i2);
+            Assert.assertEquals(i1, i2);
 
             int i3 = 321;
 
@@ -220,10 +221,10 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             int i4 = 222;
 
-            assertTrue(mem.casInt(addr, i3, i4));
-            assertFalse(mem.casInt(addr, i3, 0));
+            Assert.assertTrue(mem.casInt(addr, i3, i4));
+            Assert.assertFalse(mem.casInt(addr, i3, 0));
 
-            assertEquals(i4, mem.readIntVolatile(addr));
+            Assert.assertEquals(i4, mem.readIntVolatile(addr));
 
         }
         finally {
@@ -249,7 +250,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             long l2 = mem.readLong(addr);
 
-            assertEquals(l1, l2);
+            Assert.assertEquals(l1, l2);
 
             long l3 = 654321;
 
@@ -257,10 +258,10 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             long l4 = 666666;
 
-            assertTrue(mem.casLong(addr, l3, l4));
-            assertFalse(mem.casLong(addr, l3, 0));
+            Assert.assertTrue(mem.casLong(addr, l3, l4));
+            Assert.assertFalse(mem.casLong(addr, l3, 0));
 
-            assertEquals(l4, mem.readLongVolatile(addr));
+            Assert.assertEquals(l4, mem.readLongVolatile(addr));
         }
         finally {
             mem.release(addr, size);
@@ -347,7 +348,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
                 addrs.add(addr);
 
                 if (!reserved) {
-                    assertEquals(i, allowed);
+                    Assert.assertEquals(i, allowed);
 
                     oom = true;
 
@@ -355,13 +356,13 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            assertTrue(oom);
+            Assert.assertTrue(oom);
         }
         finally {
             for (Long addr : addrs)
                 mem.release(addr, block);
         }
 
-        assertEquals(mem.allocatedSize(), 0);
+        Assert.assertEquals(mem.allocatedSize(), 0);
     }
 }

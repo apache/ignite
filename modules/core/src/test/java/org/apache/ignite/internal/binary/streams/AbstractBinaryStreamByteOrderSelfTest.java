@@ -77,7 +77,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteShort(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readShort());
+        Assert.assertEquals(val, in.readShort());
 
         reset();
 
@@ -85,7 +85,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(2);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readShortFast());
+        Assert.assertEquals(val, in.readShortFast());
 
         reset();
 
@@ -93,14 +93,14 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(2);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readShortPositioned(0));
+        Assert.assertEquals(val, in.readShortPositioned(0));
 
         reset();
 
         out.writeShort(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readShortPositioned(0));
+        Assert.assertEquals(val, in.readShortPositioned(0));
 
         reset();
 
@@ -108,7 +108,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(2);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readShortPositioned(0));
+        Assert.assertEquals(val, in.readShortPositioned(0));
     }
 
     /**
@@ -126,7 +126,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getShortByByteLE(outArr, i * 2));
+            Assert.assertEquals(arr[i], getShortByByteLE(outArr, i * 2));
 
         Assert.assertArrayEquals(arr, in.readShortArray(ARR_LEN));
     }
@@ -143,7 +143,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteChar(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readChar());
+        Assert.assertEquals(val, in.readChar());
 
         reset();
 
@@ -151,14 +151,14 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(2);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readCharFast());
+        Assert.assertEquals(val, in.readCharFast());
 
         reset();
 
         out.writeChar(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readChar());
+        Assert.assertEquals(val, in.readChar());
     }
 
     /**
@@ -176,7 +176,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getCharByByteLE(outArr, i * 2));
+            Assert.assertEquals(arr[i], getCharByByteLE(outArr, i * 2));
 
         Assert.assertArrayEquals(arr, in.readCharArray(ARR_LEN));
     }
@@ -193,7 +193,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteInt(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readInt());
+        Assert.assertEquals(val, in.readInt());
 
         reset();
 
@@ -201,7 +201,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(4);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readIntFast());
+        Assert.assertEquals(val, in.readIntFast());
 
         reset();
 
@@ -209,14 +209,14 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(4);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readIntPositioned(0));
+        Assert.assertEquals(val, in.readIntPositioned(0));
 
         reset();
 
         out.writeInt(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readIntPositioned(0));
+        Assert.assertEquals(val, in.readIntPositioned(0));
 
         reset();
 
@@ -224,14 +224,14 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(4);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readIntPositioned(0));
+        Assert.assertEquals(val, in.readIntPositioned(0));
 
         reset();
 
         out.writeIntArray(new int[] {val});
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readIntArray(1)[0]);
+        Assert.assertEquals(val, in.readIntArray(1)[0]);
     }
 
     /**
@@ -249,7 +249,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getIntByByteLE(outArr, i * 4));
+            Assert.assertEquals(arr[i], getIntByByteLE(outArr, i * 4));
 
         Assert.assertArrayEquals(arr, in.readIntArray(ARR_LEN));
     }
@@ -266,7 +266,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteLong(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readLong());
+        Assert.assertEquals(val, in.readLong());
 
         reset();
 
@@ -274,21 +274,21 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.shift(8);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readLongFast());
+        Assert.assertEquals(val, in.readLongFast());
 
         reset();
 
         out.writeLong(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readLong());
+        Assert.assertEquals(val, in.readLong());
 
         reset();
 
         out.writeLongArray(new long[] {val});
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readLongArray(1)[0]);
+        Assert.assertEquals(val, in.readLongArray(1)[0]);
     }
 
     /**
@@ -306,7 +306,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getLongByByteLE(outArr, i * 8));
+            Assert.assertEquals(arr[i], getLongByByteLE(outArr, i * 8));
 
         Assert.assertArrayEquals(arr, in.readLongArray(ARR_LEN));
     }
@@ -323,21 +323,21 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteFloat(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readFloat(), 0);
+        Assert.assertEquals(val, in.readFloat(), 0);
 
         reset();
 
         out.writeFloat(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readFloat(), 0);
+        Assert.assertEquals(val, in.readFloat(), 0);
 
         reset();
 
         out.writeFloatArray(new float[] {val});
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readFloatArray(1)[0], 0);
+        Assert.assertEquals(val, in.readFloatArray(1)[0], 0);
     }
 
     /**
@@ -355,7 +355,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getFloatByByteLE(outArr, i * 4), 0);
+            Assert.assertEquals(arr[i], getFloatByByteLE(outArr, i * 4), 0);
 
         Assert.assertArrayEquals(arr, in.readFloatArray(ARR_LEN), 0);
     }
@@ -372,21 +372,21 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         out.unsafeWriteDouble(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readDouble(), 0);
+        Assert.assertEquals(val, in.readDouble(), 0);
 
         reset();
 
         out.writeDouble(val);
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readDouble(), 0);
+        Assert.assertEquals(val, in.readDouble(), 0);
 
         reset();
 
         out.writeDoubleArray(new double[] {val});
 
         checkValueLittleEndian(val);
-        assertEquals(val, in.readDoubleArray(1)[0], 0);
+        Assert.assertEquals(val, in.readDoubleArray(1)[0], 0);
     }
 
     /**
@@ -404,7 +404,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         byte[] outArr = array();
 
         for (int i = 0; i < ARR_LEN; i++)
-            assertEquals(arr[i], getDoubleByByteLE(outArr, i * 8), 0);
+            Assert.assertEquals(arr[i], getDoubleByByteLE(outArr, i * 8), 0);
 
         Assert.assertArrayEquals(arr, in.readDoubleArray(ARR_LEN), 0);
     }
@@ -430,7 +430,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(short exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getShortByByteLE(arr));
+        Assert.assertEquals(exp, getShortByByteLE(arr));
     }
 
     /**
@@ -439,7 +439,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(char exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getCharByByteLE(arr));
+        Assert.assertEquals(exp, getCharByByteLE(arr));
     }
 
     /**
@@ -448,7 +448,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(int exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getIntByByteLE(arr));
+        Assert.assertEquals(exp, getIntByByteLE(arr));
     }
 
     /**
@@ -457,7 +457,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(long exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getLongByByteLE(arr));
+        Assert.assertEquals(exp, getLongByByteLE(arr));
     }
 
     /**
@@ -466,7 +466,7 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(float exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getFloatByByteLE(arr), 0);
+        Assert.assertEquals(exp, getFloatByByteLE(arr), 0);
     }
 
     /**
@@ -475,6 +475,6 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
     private void checkValueLittleEndian(double exp) {
         byte[] arr = array();
 
-        assertEquals(exp, getDoubleByByteLE(arr), 0);
+        Assert.assertEquals(exp, getDoubleByByteLE(arr), 0);
     }
 }

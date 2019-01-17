@@ -122,32 +122,10 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
     }
 
     /**
-     * Asserts that two bytes are equal. If they are not
-     * an AssertionFailedError is thrown with the given msg.
-     */
-    protected static void assertEquals(String msg, byte exp, byte actual) {
-        // todo remove and edit
-    }
-
-    /**
      * Asserts that two bytes are equal.
      */
     protected static void assertEquals(byte exp, byte actual) {
         // todo keep and deledate
-    }
-
-    /**
-     * Asserts that two chars are equal.
-     */
-    protected static void assertEquals(char exp, char actual) {
-        // todo re-check whether to deledate
-    }
-
-    /**
-     * Asserts that two shorts are equal.
-     */
-    protected static void assertEquals(short exp, short actual) {
-        // todo re-check whether to deledate
     }
 
     /**
