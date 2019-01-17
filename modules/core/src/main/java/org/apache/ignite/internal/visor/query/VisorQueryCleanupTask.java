@@ -34,6 +34,7 @@ import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logMapped;
 
 /**
@@ -106,14 +107,21 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupT
 
         /** {@inheritDoc} */
         @Override protected Void run(Collection<String> qryIds) {
-            if (debug)
-                ignite.log().warning("Queries cancellation: [" + String.join(", ", qryIds) + "]");
+            long start = U.currentTimeMillis();
+
+            if (debug) {
+                start = log(
+                    ignite.log(),
+                    "Queries cancellation started: [" + String.join(", ", qryIds) + "]",
+                    getClass(),
+                    start);
+            }
 
             for (String qryId : qryIds)
                 removeQueryHolder(ignite, qryId);
 
             if (debug)
-                ignite.log().warning("Queries cancelled");
+                log(ignite.log(), "Queries cancellation finished", getClass(), start);
 
             return null;
         }
