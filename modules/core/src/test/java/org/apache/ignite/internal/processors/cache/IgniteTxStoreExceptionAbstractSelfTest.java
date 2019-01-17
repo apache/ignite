@@ -43,6 +43,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -319,7 +320,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
-        assertTrue(keys.length > 0);
+        Assert.assertTrue(keys.length > 0);
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
@@ -396,10 +397,10 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             log.info("Entry: " + entry);
 
             if (entry != null) {
-                assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
+                Assert.assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
+                Assert.assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                     entry.hasValue());
-                assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
+                Assert.assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
                     entry.rawGet().value(cache.ctx.cacheObjectContext(), false));
             }
 
@@ -409,17 +410,17 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                 log.info("Dht entry: " + entry);
 
                 if (entry != null) {
-                    assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-                    assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
+                    Assert.assertFalse("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', entry.lockedByAny());
+                    Assert.assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                         entry.hasValue());
-                    assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
+                    Assert.assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
                         entry.rawGet().value(cache.ctx.cacheObjectContext(), false));
                 }
             }
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Unexpected value for grid " + i, putBefore ? 1 : null, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
+            Assert.assertEquals("Unexpected value for grid " + i, putBefore ? 1 : null, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
     }
 
     /**
@@ -491,7 +492,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             }
         }, CacheWriterException.class, null);
 
-        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionRollbackException);
+        Assert.assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionRollbackException);
 
         checkValue(key, putBefore);
     }

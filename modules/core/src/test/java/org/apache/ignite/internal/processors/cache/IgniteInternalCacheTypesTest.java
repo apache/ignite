@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -75,7 +76,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
 
         ccfg.setName(CACHE2);
 
-        assertNotNull(ignite0.createCache(ccfg));
+        Assert.assertNotNull(ignite0.createCache(ccfg));
 
         checkCacheTypes(ignite0, CACHE1, CACHE2);
         checkCacheTypes(ignite1, CACHE1, CACHE2);
@@ -121,9 +122,9 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
         boolean sysTx) {
         GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(name);
 
-        assertNotNull("No cache " + name, cache);
-        assertEquals("Unexpected property for cache: " + cache.name(), plc, cache.context().ioPolicy());
-        assertEquals("Unexpected property for cache: " + cache.name(), user, cache.context().userCache());
-        assertEquals("Unexpected property for cache: " + cache.name(), sysTx, cache.context().systemTx());
+        Assert.assertNotNull("No cache " + name, cache);
+        Assert.assertEquals("Unexpected property for cache: " + cache.name(), plc, cache.context().ioPolicy());
+        Assert.assertEquals("Unexpected property for cache: " + cache.name(), user, cache.context().userCache());
+        Assert.assertEquals("Unexpected property for cache: " + cache.name(), sysTx, cache.context().systemTx());
     }
 }

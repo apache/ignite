@@ -88,6 +88,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -203,7 +204,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             // Will actually delete entry from map.
             CU.invalidate(jcache(i), "key0");
 
-            assertNull("Failed check for grid: " + i, jcache(i).localPeek("key0", ONHEAP));
+            Assert.assertNull("Failed check for grid: " + i, jcache(i).localPeek("key0", ONHEAP));
 
             Collection<String> keysCol = mapped.get(grid(i).localNode());
 
@@ -216,23 +217,23 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keysCol = mapped.get(grid(i).localNode());
 
-            assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
+            Assert.assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
                 jcache(i).localSize(PRIMARY));
         }
 
         int globalPrimarySize = map.size();
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
+            Assert.assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalPrimarySize, jcache(i).sizeLong(PRIMARY));
+            Assert.assertEquals(globalPrimarySize, jcache(i).sizeLong(PRIMARY));
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalPrimarySize, (int)jcache(i).sizeAsync(PRIMARY).get());
+            Assert.assertEquals(globalPrimarySize, (int)jcache(i).sizeAsync(PRIMARY).get());
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals((long)globalPrimarySize, (long)jcache(i).sizeLongAsync(PRIMARY).get());
+            Assert.assertEquals((long)globalPrimarySize, (long)jcache(i).sizeLongAsync(PRIMARY).get());
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteCacheProxy cache = (IgniteCacheProxy)jcache(i);
@@ -244,7 +245,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (int part = 0; part < parts; ++part)
                 cacheSize += jcache(i).sizeLong(part, PRIMARY);
 
-            assertEquals((long)globalPrimarySize, cacheSize);
+            Assert.assertEquals((long)globalPrimarySize, cacheSize);
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -257,7 +258,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (int part = 0; part < parts; ++part)
                 cacheSize += jcache(i).sizeLongAsync(part, PRIMARY).get();
 
-            assertEquals((long)globalPrimarySize, cacheSize);
+            Assert.assertEquals((long)globalPrimarySize, cacheSize);
         }
 
         int times = 1;
@@ -270,7 +271,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         int globalSize = globalPrimarySize * times;
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalSize, jcache(i).size(ALL));
+            Assert.assertEquals(globalSize, jcache(i).size(ALL));
     }
 
     /**
@@ -290,8 +291,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         checkContainsKey(false, "testContainsKeyWrongKey");
 
         for (int i = 0; i < gridCount(); i++) {
-            assertTrue(jcache(i).containsKeys(vals.keySet()));
-            assertTrue(jcache(i).containsKeysAsync(vals.keySet()).get());
+            Assert.assertTrue(jcache(i).containsKeys(vals.keySet()));
+            Assert.assertTrue(jcache(i).containsKeysAsync(vals.keySet()).get());
         }
     }
 
@@ -311,19 +312,19 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             String key = String.valueOf(i);
 
             try (Transaction tx = txs.txStart()) {
-                assertNull(key, cache.get(key));
+                Assert.assertNull(key, cache.get(key));
 
-                assertFalse(cache.containsKey(key));
+                Assert.assertFalse(cache.containsKey(key));
 
                 tx.commit();
             }
 
             try (Transaction tx = txs.txStart()) {
-                assertNull(key, cache.get(key));
+                Assert.assertNull(key, cache.get(key));
 
                 cache.put(key, i);
 
-                assertTrue(cache.containsKey(key));
+                Assert.assertTrue(cache.containsKey(key));
 
                 tx.commit();
             }
@@ -352,21 +353,21 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         try (Transaction tx = txs.txStart()) {
             for (String key : keys)
-                assertNull(key, cache.get(key));
+                Assert.assertNull(key, cache.get(key));
 
-            assertFalse(cache.containsKeys(keys));
+            Assert.assertFalse(cache.containsKeys(keys));
 
             tx.commit();
         }
 
         try (Transaction tx = txs.txStart()) {
             for (String key : keys)
-                assertNull(key, cache.get(key));
+                Assert.assertNull(key, cache.get(key));
 
             for (String key : keys)
                 cache.put(key, 0);
 
-            assertTrue(cache.containsKeys(keys));
+            Assert.assertTrue(cache.containsKeys(keys));
 
             tx.commit();
         }
@@ -412,9 +413,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         jcache.withSkipStore().removeAll();
 
-        assertEquals((Integer)1, jcache.get("1"));
-        assertEquals((Integer)2, jcache.get("2"));
-        assertEquals((Integer)3, jcache.get("3"));
+        Assert.assertEquals((Integer)1, jcache.get("1"));
+        Assert.assertEquals((Integer)2, jcache.get("2"));
+        Assert.assertEquals((Integer)3, jcache.get("3"));
     }
 
     /**
@@ -427,7 +428,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         final int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c.getAndPutIfAbsent("k" + i, i));
+            Assert.assertNull(c.getAndPutIfAbsent("k" + i, i));
 
         for (int i = 0; i < cnt; i++) {
             boolean wrong = i % 2 == 0;
@@ -436,7 +437,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             boolean res = c.replace(key, wrong ? i + 1 : i, -1);
 
-            assertEquals(wrong, !res);
+            Assert.assertEquals(wrong, !res);
         }
 
         for (int i = 0; i < cnt; i++) {
@@ -446,7 +447,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             boolean res = c.remove(key, -1);
 
-            assertTrue(success == res);
+            Assert.assertTrue(success == res);
         }
     }
 
@@ -462,10 +463,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 cache.put(key(1), value(1));
                 cache.put(key(2), value(2));
 
-                assertEquals(value(1), cache.get(key(1)));
-                assertEquals(value(2), cache.get(key(2)));
+                Assert.assertEquals(value(1), cache.get(key(1)));
+                Assert.assertEquals(value(2), cache.get(key(2)));
                 // Wrong key.
-                assertNull(cache.get(key(3)));
+                Assert.assertNull(cache.get(key(3)));
             }
         });
     }
@@ -566,9 +567,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assert 2 == map1.size() : "Invalid map: " + map1;
 
-                assertEquals(val1, map1.get(key1));
-                assertEquals(val2, map1.get(key2));
-                assertNull(map1.get(key9999));
+                Assert.assertEquals(val1, map1.get(key1));
+                Assert.assertEquals(val2, map1.get(key2));
+                Assert.assertNull(map1.get(key9999));
 
                 Map<Object, Object> map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
@@ -576,9 +577,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assert 2 == map2.size() : "Invalid map: " + map2;
 
-                assertEquals(val1, map2.get(key1));
-                assertEquals(val2, map2.get(key2));
-                assertNull(map2.get(key9999));
+                Assert.assertEquals(val1, map2.get(key1));
+                Assert.assertEquals(val2, map2.get(key2));
+                Assert.assertNull(map2.get(key9999));
 
                 // Now do the same checks but within transaction.
                 if (txShouldBeUsed()) {
@@ -591,9 +592,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                         assert 2 == map1.size() : "Invalid map: " + map1;
 
-                        assertEquals(val1, map2.get(key1));
-                        assertEquals(val2, map2.get(key2));
-                        assertNull(map2.get(key9999));
+                        Assert.assertEquals(val1, map2.get(key1));
+                        Assert.assertEquals(val2, map2.get(key2));
+                        Assert.assertNull(map2.get(key9999));
 
                         map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
@@ -601,9 +602,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                         assert 2 == map2.size() : "Invalid map: " + map2;
 
-                        assertEquals(val1, map2.get(key1));
-                        assertEquals(val2, map2.get(key2));
-                        assertNull(map2.get(key9999));
+                        Assert.assertEquals(val1, map2.get(key1));
+                        Assert.assertEquals(val2, map2.get(key2));
+                        Assert.assertNull(map2.get(key9999));
 
                         tx0.commit();
                     }
@@ -723,12 +724,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 assert cache.getAndPut(key2, val2) == null;
 
                 // Check inside transaction.
-                assertEquals(val1, cache.get(key1));
-                assertEquals(val2, cache.get(key2));
+                Assert.assertEquals(val1, cache.get(key1));
+                Assert.assertEquals(val2, cache.get(key2));
 
                 // Put again to check returned values.
-                assertEquals(val1, cache.getAndPut(key1, val1));
-                assertEquals(val2, cache.getAndPut(key2, val2));
+                Assert.assertEquals(val1, cache.getAndPut(key1, val1));
+                Assert.assertEquals(val2, cache.getAndPut(key2, val2));
 
                 checkContainsKey(true, key1);
                 checkContainsKey(true, key2);
@@ -741,12 +742,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 checkContainsKey(true, key1);
                 checkContainsKey(true, key2);
 
-                assertEquals(val1, cache.get(key1));
-                assertEquals(val2, cache.get(key2));
+                Assert.assertEquals(val1, cache.get(key1));
+                Assert.assertEquals(val2, cache.get(key2));
                 assert cache.get(key(100500)) == null;
 
-                assertEquals(val1, cache.getAndPut(key1, value(10)));
-                assertEquals(val2, cache.getAndPut(key2, value(11)));
+                Assert.assertEquals(val1, cache.getAndPut(key1, value(10)));
+                Assert.assertEquals(val2, cache.getAndPut(key2, value(11)));
             }
         });
     }
@@ -786,8 +787,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             assert cache.get("key2") == 2;
             assert cache.get("wrong") == null;
 
-            assertEquals((Integer)1, cache.getAndPut("key1", 10));
-            assertEquals((Integer)2, cache.getAndPut("key2", 11));
+            Assert.assertEquals((Integer)1, cache.getAndPut("key1", 10));
+            Assert.assertEquals((Integer)2, cache.getAndPut("key2", 11));
         }
     }
 
@@ -922,9 +923,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
-            assertNull(cache.invoke(key1, incrProcessor, dataMode));
-            assertEquals(val1, cache.invoke(key2, incrProcessor, dataMode));
-            assertEquals(val3, cache.invoke(key3, rmvProseccor));
+            Assert.assertNull(cache.invoke(key1, incrProcessor, dataMode));
+            Assert.assertEquals(val1, cache.invoke(key2, incrProcessor, dataMode));
+            Assert.assertEquals(val3, cache.invoke(key3, rmvProseccor));
 
             if (tx != null)
                 tx.commit();
@@ -939,27 +940,27 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertNull(cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertNull(cache.get(key3));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull("Failed for cache: " + i, jcache(i).localPeek(key3, ONHEAP));
+            Assert.assertNull("Failed for cache: " + i, jcache(i).localPeek(key3, ONHEAP));
 
         cache.remove(key1);
         cache.put(key2, val1);
         cache.put(key3, val3);
 
-        assertNull(cache.invoke(key1, incrProcessor, dataMode));
-        assertEquals(val1, cache.invoke(key2, incrProcessor, dataMode));
-        assertEquals(val3, cache.invoke(key3, rmvProseccor));
+        Assert.assertNull(cache.invoke(key1, incrProcessor, dataMode));
+        Assert.assertEquals(val1, cache.invoke(key2, incrProcessor, dataMode));
+        Assert.assertEquals(val3, cache.invoke(key3, rmvProseccor));
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertNull(cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertNull(cache.get(key3));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek(key3, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key3, ONHEAP));
     }
 
     /**
@@ -1100,15 +1101,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.commit();
             }
 
-            assertEquals(val1, cache.get(key1));
-            assertEquals(val2, cache.get(key2));
-            assertEquals(val4, cache.get(key3));
+            Assert.assertEquals(val1, cache.get(key1));
+            Assert.assertEquals(val2, cache.get(key2));
+            Assert.assertEquals(val4, cache.get(key3));
 
-            assertNull(res.get(key1));
-            assertEquals(val1, res.get(key2).get());
-            assertEquals(val3, res.get(key3).get());
+            Assert.assertNull(res.get(key1));
+            Assert.assertEquals(val1, res.get(key2).get());
+            Assert.assertEquals(val3, res.get(key3).get());
 
-            assertEquals(2, res.size());
+            Assert.assertEquals(2, res.size());
 
             cache.remove(key1);
             cache.put(key2, val1);
@@ -1118,16 +1119,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Map<Object, EntryProcessorResult<Object>> res = cache.invokeAll(F.asSet(key1, key2, key3), RMV_PROCESSOR);
 
         for (int i = 0; i < gridCount(); i++) {
-            assertNull(jcache(i).localPeek(key1, ONHEAP));
-            assertNull(jcache(i).localPeek(key2, ONHEAP));
-            assertNull(jcache(i).localPeek(key3, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key1, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key2, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key3, ONHEAP));
         }
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
 
         cache.remove(key1);
         cache.put(key2, val1);
@@ -1135,15 +1136,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         res = cache.invokeAll(F.asSet(key1, key2, key3), INCR_PROCESSOR, dataMode);
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertEquals(val4, cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertEquals(val4, cache.get(key3));
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
 
         cache.remove(key1);
         cache.put(key2, val1);
@@ -1151,15 +1152,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         res = cache.invokeAll(F.asMap(key1, INCR_PROCESSOR, key2, INCR_PROCESSOR, key3, INCR_PROCESSOR), dataMode);
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertEquals(val4, cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertEquals(val4, cache.get(key3));
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
     }
 
     /**
@@ -1195,15 +1196,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.commit();
             }
 
-            assertEquals(val1, cache.get(key1));
-            assertEquals(val2, cache.get(key2));
-            assertEquals(val4, cache.get(key3));
+            Assert.assertEquals(val1, cache.get(key1));
+            Assert.assertEquals(val2, cache.get(key2));
+            Assert.assertEquals(val4, cache.get(key3));
 
-            assertNull(res.get(key1));
-            assertEquals(val1, res.get(key2).get());
-            assertEquals(val3, res.get(key3).get());
+            Assert.assertNull(res.get(key1));
+            Assert.assertEquals(val1, res.get(key2).get());
+            Assert.assertEquals(val3, res.get(key3).get());
 
-            assertEquals(2, res.size());
+            Assert.assertEquals(2, res.size());
 
             cache.remove(key1);
             cache.put(key2, val1);
@@ -1214,16 +1215,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             cache.invokeAllAsync(F.asSet(key1, key2, key3), RMV_PROCESSOR).get();
 
         for (int i = 0; i < gridCount(); i++) {
-            assertNull(jcache(i).localPeek(key1, ONHEAP));
-            assertNull(jcache(i).localPeek(key2, ONHEAP));
-            assertNull(jcache(i).localPeek(key3, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key1, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key2, ONHEAP));
+            Assert.assertNull(jcache(i).localPeek(key3, ONHEAP));
         }
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
 
         cache.remove(key1);
         cache.put(key2, val1);
@@ -1231,15 +1232,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         res = cache.invokeAllAsync(F.asSet(key1, key2, key3), INCR_PROCESSOR, dataMode).get();
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertEquals(val4, cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertEquals(val4, cache.get(key3));
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
 
         cache.remove(key1);
         cache.put(key2, val1);
@@ -1248,15 +1249,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         res = cache.invokeAllAsync(
             F.asMap(key1, INCR_PROCESSOR, key2, INCR_PROCESSOR, key3, INCR_PROCESSOR), dataMode).get();
 
-        assertEquals(val1, cache.get(key1));
-        assertEquals(val2, cache.get(key2));
-        assertEquals(val4, cache.get(key3));
+        Assert.assertEquals(val1, cache.get(key1));
+        Assert.assertEquals(val2, cache.get(key2));
+        Assert.assertEquals(val4, cache.get(key3));
 
-        assertNull(res.get(key1));
-        assertEquals(val1, res.get(key2).get());
-        assertEquals(val3, res.get(key3).get());
+        Assert.assertNull(res.get(key1));
+        Assert.assertEquals(val1, res.get(key2).get());
+        Assert.assertEquals(val3, res.get(key3).get());
 
-        assertEquals(2, res.size());
+        Assert.assertEquals(2, res.size());
     }
 
     /**
@@ -1381,19 +1382,19 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (startVal)
                 cache.put(key, val2);
             else
-                assertEquals(null, cache.get(key));
+                Assert.assertEquals(null, cache.get(key));
 
             Object expRes = startVal ? val2 : null;
 
-            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
+            Assert.assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
 
             expRes = startVal ? val3 : val1;
 
-            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
+            Assert.assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
 
             expRes = value(valueOf(expRes) + 1);
 
-            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
+            Assert.assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, dataMode));
 
             if (tx != null)
                 tx.commit();
@@ -1405,11 +1406,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         Object exp = value((startVal ? 2 : 0) + 3);
 
-        assertEquals(exp, cache.get(key));
+        Assert.assertEquals(exp, cache.get(key));
 
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key))
-                assertEquals(exp, jcache(i).localPeek(key));
+                Assert.assertEquals(exp, jcache(i).localPeek(key));
         }
     }
 
@@ -1465,7 +1466,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        assertEquals(value(3), cache.get(key));
+        Assert.assertEquals(value(3), cache.get(key));
     }
 
     /**
@@ -1555,11 +1556,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cache.invoke(key, INCR_PROCESSOR, dataMode);
 
-            assertEquals(val2, cache.get(key));
+            Assert.assertEquals(val2, cache.get(key));
 
             if (tx != null) {
                 // Second get inside tx. Make sure read value is not transformed twice.
-                assertEquals(val2, cache.get(key));
+                Assert.assertEquals(val2, cache.get(key));
 
                 tx.commit();
             }
@@ -1590,11 +1591,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteFuture<Integer> fut2 = cacheAsync.future();
 
-        assertEquals((Integer)1, fut1.get(5000));
-        assertEquals((Integer)2, fut2.get(5000));
+        Assert.assertEquals((Integer)1, fut1.get(5000));
+        Assert.assertEquals((Integer)2, fut2.get(5000));
 
-        assertEquals((Integer)10, cache.get("key1"));
-        assertEquals((Integer)11, cache.get("key2"));
+        Assert.assertEquals((Integer)10, cache.get("key1"));
+        Assert.assertEquals((Integer)11, cache.get("key2"));
     }
 
     /**
@@ -1611,11 +1612,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteFuture<Integer> fut2 = cache.getAndPutAsync("key2", 11);
 
-        assertEquals((Integer)1, fut1.get(5000));
-        assertEquals((Integer)2, fut2.get(5000));
+        Assert.assertEquals((Integer)1, fut1.get(5000));
+        Assert.assertEquals((Integer)2, fut2.get(5000));
 
-        assertEquals((Integer)10, cache.get("key1"));
-        assertEquals((Integer)11, cache.get("key2"));
+        Assert.assertEquals((Integer)10, cache.get("key1"));
+        Assert.assertEquals((Integer)11, cache.get("key2"));
     }
 
     /**
@@ -1672,15 +1673,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
-                assertNull(cacheAsync.invoke(key1, INCR_PROCESSOR, dataMode));
+                Assert.assertNull(cacheAsync.invoke(key1, INCR_PROCESSOR, dataMode));
 
                 IgniteFuture<?> fut0 = cacheAsync.future();
 
-                assertNull(cacheAsync.invoke(key2, INCR_PROCESSOR, dataMode));
+                Assert.assertNull(cacheAsync.invoke(key2, INCR_PROCESSOR, dataMode));
 
                 IgniteFuture<?> fut1 = cacheAsync.future();
 
-                assertNull(cacheAsync.invoke(key3, RMV_PROCESSOR));
+                Assert.assertNull(cacheAsync.invoke(key3, RMV_PROCESSOR));
 
                 IgniteFuture<?> fut2 = cacheAsync.future();
 
@@ -1688,12 +1689,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 fut1.get();
                 fut2.get();
 
-                assertEquals(val1, cache.get(key1));
-                assertEquals(val2, cache.get(key2));
-                assertNull(cache.get(key3));
+                Assert.assertEquals(val1, cache.get(key1));
+                Assert.assertEquals(val2, cache.get(key2));
+                Assert.assertNull(cache.get(key3));
 
                 for (int i = 0; i < gridCount(); i++)
-                    assertNull(jcache(i).localPeek(key3, ONHEAP));
+                    Assert.assertNull(jcache(i).localPeek(key3, ONHEAP));
             }
         });
     }
@@ -1729,12 +1730,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 fut1.get();
                 fut2.get();
 
-                assertEquals(val1, cache.get(key1));
-                assertEquals(val2, cache.get(key2));
-                assertNull(cache.get(key3));
+                Assert.assertEquals(val1, cache.get(key1));
+                Assert.assertEquals(val2, cache.get(key2));
+                Assert.assertNull(cache.get(key3));
 
                 for (int i = 0; i < gridCount(); i++)
-                    assertNull(jcache(i).localPeek(key3, ONHEAP));
+                    Assert.assertNull(jcache(i).localPeek(key3, ONHEAP));
             }
         });
     }
@@ -1755,31 +1756,31 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 final IgniteCache<Object, Object> cache = jcache();
 
-                assertNull(cache.invoke(k0, INCR_PROCESSOR, dataMode));
+                Assert.assertNull(cache.invoke(k0, INCR_PROCESSOR, dataMode));
 
-                assertEquals(k1, cache.get(k0));
+                Assert.assertEquals(k1, cache.get(k0));
 
-                assertEquals(val1, cache.invoke(k0, INCR_PROCESSOR, dataMode));
+                Assert.assertEquals(val1, cache.invoke(k0, INCR_PROCESSOR, dataMode));
 
-                assertEquals(val2, cache.get(k0));
+                Assert.assertEquals(val2, cache.get(k0));
 
                 cache.put(k1, val1);
 
-                assertEquals(val1, cache.invoke(k1, INCR_PROCESSOR, dataMode));
+                Assert.assertEquals(val1, cache.invoke(k1, INCR_PROCESSOR, dataMode));
 
-                assertEquals(val2, cache.get(k1));
+                Assert.assertEquals(val2, cache.get(k1));
 
-                assertEquals(val2, cache.invoke(k1, INCR_PROCESSOR, dataMode));
+                Assert.assertEquals(val2, cache.invoke(k1, INCR_PROCESSOR, dataMode));
 
-                assertEquals(val3, cache.get(k1));
+                Assert.assertEquals(val3, cache.get(k1));
 
                 RemoveAndReturnNullEntryProcessor c = new RemoveAndReturnNullEntryProcessor();
 
-                assertNull(cache.invoke(k1, c));
-                assertNull(cache.get(k1));
+                Assert.assertNull(cache.invoke(k1, c));
+                Assert.assertNull(cache.get(k1));
 
                 for (int i = 0; i < gridCount(); i++)
-                    assertNull(jcache(i).localPeek(k1, ONHEAP));
+                    Assert.assertNull(jcache(i).localPeek(k1, ONHEAP));
 
                 final EntryProcessor<Object, Object, Object> errProcessor = new FailedEntryProcessor();
 
@@ -1878,8 +1879,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 f = tx.future();
             }
 
-            assertNull(fut1.get());
-            assertNull(fut2.get());
+            Assert.assertNull(fut1.get());
+            Assert.assertNull(fut2.get());
 
             assert f == null || f.get().state() == COMMITTED;
         }
@@ -1913,8 +1914,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (tx != null)
                 f = tx.commitAsync();
 
-            assertNull(fut1.get());
-            assertNull(fut2.get());
+            Assert.assertNull(fut1.get());
+            Assert.assertNull(fut2.get());
 
             try {
                 if (f != null)
@@ -1974,7 +1975,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < 100; i++) {
             final String key = "key-" + i;
 
-            assertNull(cache.get(key));
+            Assert.assertNull(cache.get(key));
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1992,11 +1993,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
             }, NullPointerException.class, null);
 
-            assertNull(cache.get(key));
+            Assert.assertNull(cache.get(key));
 
             cache.put(key, 1);
 
-            assertEquals(1, (int)cache.get(key));
+            Assert.assertEquals(1, (int)cache.get(key));
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -2014,11 +2015,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
             }, NullPointerException.class, null);
 
-            assertEquals(1, (int)cache.get(key));
+            Assert.assertEquals(1, (int)cache.get(key));
 
             cache.put(key, 2);
 
-            assertEquals(2, (int)cache.get(key));
+            Assert.assertEquals(2, (int)cache.get(key));
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -2042,14 +2043,14 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
             }, NullPointerException.class, null);
 
-            assertNull(cache.get("k1"));
-            assertNull(cache.get("k2"));
+            Assert.assertNull(cache.get("k1"));
+            Assert.assertNull(cache.get("k2"));
 
-            assertEquals(2, (int)cache.get(key));
+            Assert.assertEquals(2, (int)cache.get(key));
 
             cache.put(key, 3);
 
-            assertEquals(3, (int)cache.get(key));
+            Assert.assertEquals(3, (int)cache.get(key));
         }
     }
 
@@ -2076,7 +2077,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cache.put("key1", 1);
 
-            assertEquals(1, (int)cache.get("key1"));
+            Assert.assertEquals(1, (int)cache.get("key1"));
         }
 
         {
@@ -2097,8 +2098,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cache.putAll(m);
 
-            assertEquals(3, (int)cache.get("key3"));
-            assertEquals(4, (int)cache.get("key4"));
+            Assert.assertEquals(3, (int)cache.get("key3"));
+            Assert.assertEquals(4, (int)cache.get("key4"));
         }
 
         assertThrows(log, new Callable<Object>() {
@@ -2204,8 +2205,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteFuture<?> f2 = cacheAsync.future();
 
-        assertNull(f2.get());
-        assertNull(f1.get());
+        Assert.assertNull(f2.get());
+        Assert.assertNull(f1.get());
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -2229,8 +2230,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteFuture<?> f2 = cache.putAllAsync(map);
 
-        assertNull(f2.get());
-        assertNull(f1.get());
+        Assert.assertNull(f2.get());
+        Assert.assertNull(f1.get());
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -2274,7 +2275,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 grid(i).cache(cacheName()).localPeek("key", ONHEAP) + ']');
         }
 
-        assertEquals((Integer)1, cache.getAndPutIfAbsent("key", 2));
+        Assert.assertEquals((Integer)1, cache.getAndPutIfAbsent("key", 2));
 
         assert cache.get("key") != null;
         assert cache.get("key") == 1;
@@ -2290,18 +2291,18 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (!isLoadPreviousValue())
             cache.get("key2");
 
-        assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
+        Assert.assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key3", 3);
 
-            assertEquals((Integer)3, cache.getAndPutIfAbsent("key3", 4));
+            Assert.assertEquals((Integer)3, cache.getAndPutIfAbsent("key3", 4));
 
-            assertEquals((Integer)3, cache.get("key3"));
+            Assert.assertEquals((Integer)3, cache.get("key3"));
         }
 
-        assertEquals((Integer)1, cache.get("key2"));
+        Assert.assertEquals((Integer)1, cache.get("key2"));
 
         cache.localEvict(Collections.singleton("key2"));
 
@@ -2312,12 +2313,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
+            Assert.assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
 
             if (tx != null)
                 tx.commit();
 
-            assertEquals((Integer)1, cache.get("key2"));
+            Assert.assertEquals((Integer)1, cache.get("key2"));
         }
         finally {
             if (tx != null)
@@ -2341,15 +2342,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             IgniteFuture<Integer> fut1 = cacheAsync.future();
 
-            assertNull(fut1.get());
-            assertEquals((Integer)1, cache.get("key"));
+            Assert.assertNull(fut1.get());
+            Assert.assertEquals((Integer)1, cache.get("key"));
 
             cacheAsync.getAndPutIfAbsent("key", 2);
 
             IgniteFuture<Integer> fut2 = cacheAsync.future();
 
-            assertEquals((Integer)1, fut2.get());
-            assertEquals((Integer)1, cache.get("key"));
+            Assert.assertEquals((Integer)1, fut2.get());
+            Assert.assertEquals((Integer)1, cache.get("key"));
 
             if (tx != null)
                 tx.commit();
@@ -2372,7 +2373,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         cacheAsync.getAndPutIfAbsent("key2", 3);
 
-        assertEquals((Integer)1, cacheAsync.<Integer>future().get());
+        Assert.assertEquals((Integer)1, cacheAsync.<Integer>future().get());
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
@@ -2380,7 +2381,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cacheAsync.getAndPutIfAbsent("key3", 4);
 
-            assertEquals((Integer)3, cacheAsync.<Integer>future().get());
+            Assert.assertEquals((Integer)3, cacheAsync.<Integer>future().get());
         }
 
         cache.localEvict(Collections.singleton("key2"));
@@ -2394,12 +2395,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         try {
             cacheAsync.getAndPutIfAbsent("key2", 3);
 
-            assertEquals(1, cacheAsync.future().get());
+            Assert.assertEquals(1, cacheAsync.future().get());
 
             if (tx != null)
                 tx.commit();
 
-            assertEquals((Integer)1, cache.get("key2"));
+            Assert.assertEquals((Integer)1, cache.get("key2"));
         }
         finally {
             if (tx != null)
@@ -2419,13 +2420,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         try {
             IgniteFuture<Integer> fut1 = cache.getAndPutIfAbsentAsync("key", 1);
 
-            assertNull(fut1.get());
-            assertEquals((Integer)1, cache.get("key"));
+            Assert.assertNull(fut1.get());
+            Assert.assertEquals((Integer)1, cache.get("key"));
 
             IgniteFuture<Integer> fut2 = cache.getAndPutIfAbsentAsync("key", 2);
 
-            assertEquals((Integer)1, fut2.get());
-            assertEquals((Integer)1, cache.get("key"));
+            Assert.assertEquals((Integer)1, fut2.get());
+            Assert.assertEquals((Integer)1, cache.get("key"));
 
             if (tx != null)
                 tx.commit();
@@ -2446,13 +2447,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (!isLoadPreviousValue())
             cache.get("key2");
 
-        assertEquals((Integer)1, cache.getAndPutIfAbsentAsync("key2", 3).get());
+        Assert.assertEquals((Integer)1, cache.getAndPutIfAbsentAsync("key2", 3).get());
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key3", 3);
 
-            assertEquals((Integer)3, cache.getAndPutIfAbsentAsync("key3", 4).get());
+            Assert.assertEquals((Integer)3, cache.getAndPutIfAbsentAsync("key3", 4).get());
         }
 
         cache.localEvict(Collections.singleton("key2"));
@@ -2464,12 +2465,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
+            Assert.assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
 
             if (tx != null)
                 tx.commit();
 
-            assertEquals((Integer)1, cache.get("key2"));
+            Assert.assertEquals((Integer)1, cache.get("key2"));
         }
         finally {
             if (tx != null)
@@ -2484,7 +2485,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     public void testPutIfAbsent() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        assertNull(cache.get("key"));
+        Assert.assertNull(cache.get("key"));
         assert cache.putIfAbsent("key", 1);
         assert cache.get("key") != null && cache.get("key") == 1;
         assert !cache.putIfAbsent("key", 2);
@@ -2501,13 +2502,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (!isLoadPreviousValue())
             cache.get("key2");
 
-        assertFalse(cache.putIfAbsent("key2", 3));
+        Assert.assertFalse(cache.putIfAbsent("key2", 3));
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key3", 3);
 
-            assertFalse(cache.putIfAbsent("key3", 4));
+            Assert.assertFalse(cache.putIfAbsent("key3", 4));
         }
 
         cache.localEvict(Collections.singleton("key2"));
@@ -2519,12 +2520,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertFalse(cache.putIfAbsent("key2", 3));
+            Assert.assertFalse(cache.putIfAbsent("key2", 3));
 
             if (tx != null)
                 tx.commit();
 
-            assertEquals((Integer)1, cache.get("key2"));
+            Assert.assertEquals((Integer)1, cache.get("key2"));
         }
         finally {
             if (tx != null)
@@ -2602,7 +2603,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         cacheAsync.putIfAbsent("key2", 3);
 
-        assertFalse(cacheAsync.<Boolean>future().get());
+        Assert.assertFalse(cacheAsync.<Boolean>future().get());
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
@@ -2610,7 +2611,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cacheAsync.putIfAbsent("key3", 4);
 
-            assertFalse(cacheAsync.<Boolean>future().get());
+            Assert.assertFalse(cacheAsync.<Boolean>future().get());
         }
 
         cache.localEvict(Collections.singletonList("key2"));
@@ -2624,12 +2625,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         try {
             cacheAsync.putIfAbsent("key2", 3);
 
-            assertFalse(cacheAsync.<Boolean>future().get());
+            Assert.assertFalse(cacheAsync.<Boolean>future().get());
 
             if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
                 cacheAsync.putIfAbsent("key3", 4);
 
-                assertFalse(cacheAsync.<Boolean>future().get());
+                Assert.assertFalse(cacheAsync.<Boolean>future().get());
             }
 
             if (tx != null)
@@ -2640,10 +2641,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        assertEquals((Integer)1, cache.get("key2"));
+        Assert.assertEquals((Integer)1, cache.get("key2"));
 
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
-            assertEquals((Integer)3, cache.get("key3"));
+            Assert.assertEquals((Integer)3, cache.get("key3"));
     }
 
     /**
@@ -2674,13 +2675,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (!isLoadPreviousValue())
             cache.get("key2");
 
-        assertFalse(cache.putIfAbsentAsync("key2", 3).get());
+        Assert.assertFalse(cache.putIfAbsentAsync("key2", 3).get());
 
         // Check db.
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key3", 3);
 
-            assertFalse(cache.putIfAbsentAsync("key3", 4).get());
+            Assert.assertFalse(cache.putIfAbsentAsync("key3", 4).get());
         }
 
         cache.localEvict(Collections.singletonList("key2"));
@@ -2692,10 +2693,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Transaction tx = inTx ? transactions().txStart() : null;
 
         try {
-            assertFalse(cache.putIfAbsentAsync("key2", 3).get());
+            Assert.assertFalse(cache.putIfAbsentAsync("key2", 3).get());
 
             if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
-                assertFalse(cache.putIfAbsentAsync("key3", 4).get());
+                Assert.assertFalse(cache.putIfAbsentAsync("key3", 4).get());
 
             if (tx != null)
                 tx.commit();
@@ -2705,10 +2706,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        assertEquals((Integer)1, cache.get("key2"));
+        Assert.assertEquals((Integer)1, cache.get("key2"));
 
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
-            assertEquals((Integer)3, cache.get("key3"));
+            Assert.assertEquals((Integer)3, cache.get("key3"));
     }
 
     /**
@@ -2817,7 +2818,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
-            assertEquals((Integer)6, cache.get("key2"));
+            Assert.assertEquals((Integer)6, cache.get("key2"));
 
         cache.localEvict(Collections.singleton("key"));
 
@@ -2874,7 +2875,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             cache.replace("key2", 6);
 
-            assertEquals((Integer)6, cache.get("key2"));
+            Assert.assertEquals((Integer)6, cache.get("key2"));
         }
 
         cache.localEvict(Collections.singleton("key"));
@@ -2962,7 +2963,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assert cacheAsync.<Boolean>future().get();
 
-            assertEquals((Integer)6, cache.get("key2"));
+            Assert.assertEquals((Integer)6, cache.get("key2"));
         }
 
         cache.localEvict(Collections.singleton("key"));
@@ -3036,7 +3037,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assert cache.replaceAsync("key2", 5, 6).get();
 
-            assertEquals((Integer)6, cache.get("key2"));
+            Assert.assertEquals((Integer)6, cache.get("key2"));
         }
 
         cache.localEvict(Collections.singleton("key"));
@@ -3079,7 +3080,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         info("Finished replace.");
 
-        assertEquals((Integer)2, cache.get("key"));
+        Assert.assertEquals((Integer)2, cache.get("key"));
 
         cacheAsync.replace("wrond", 2);
 
@@ -3147,7 +3148,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         info("Finished replace.");
 
-        assertEquals((Integer)2, cache.get("key"));
+        Assert.assertEquals((Integer)2, cache.get("key"));
 
         assert !cache.replaceAsync("wrond", 2).get();
 
@@ -3232,16 +3233,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                     cache.put(key, val);
 
-                    assertFalse(cache.remove(key, new SerializableObject(-1)));
+                    Assert.assertFalse(cache.remove(key, new SerializableObject(-1)));
 
                     Object oldVal = cache.get(key);
 
-                    assertNotNull(oldVal);
-                    assertEquals(val, oldVal);
+                    Assert.assertNotNull(oldVal);
+                    Assert.assertEquals(val, oldVal);
 
-                    assertTrue(cache.remove(key));
+                    Assert.assertTrue(cache.remove(key));
 
-                    assertNull(cache.get(key));
+                    Assert.assertNull(cache.get(key));
                 }
 
                 for (Map.Entry<String, Object> e : map.entrySet()) {
@@ -3252,10 +3253,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                     Object oldVal = cache.getAndRemove(key);
 
-                    assertEquals(val, oldVal);
+                    Assert.assertEquals(val, oldVal);
 
-                    assertNull(cache.get(key));
-                    assertNull(cache.getAndRemove(key));
+                    Assert.assertNull(cache.get(key));
+                    Assert.assertNull(cache.getAndRemove(key));
                 }
             }
         });
@@ -3275,15 +3276,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         SerializableObject oldVal = cache.get("key1");
 
-        assertEquals(val1, oldVal);
+        Assert.assertEquals(val1, oldVal);
 
         oldVal = cache.getAndPut("key1", val2);
 
-        assertEquals(val1, oldVal);
+        Assert.assertEquals(val1, oldVal);
 
         SerializableObject updVal = cache.get("key1");
 
-        assertEquals(val2, updVal);
+        Assert.assertEquals(val2, updVal);
     }
 
     /**
@@ -3335,9 +3336,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 String key = String.valueOf(i);
 
                 if (grid(0).affinity(cacheName()).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
-                    assertEquals(i, jcache(g).localPeek(key));
+                    Assert.assertEquals(i, jcache(g).localPeek(key));
                 else
-                    assertNull(jcache(g).localPeek(key));
+                    Assert.assertNull(jcache(g).localPeek(key));
             }
         }
     }
@@ -3531,14 +3532,14 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         else
             jcache(gridCount() > 1 ? 1 : 0).removeAll();
 
-        assertEquals(0, cache.localSize());
+        Assert.assertEquals(0, cache.localSize());
         long entryCnt = hugeRemoveAllEntryCount();
 
         for (int i = 0; i < entryCnt; i++)
             cache.put(String.valueOf(i), i);
 
         for (int i = 0; i < entryCnt; i++)
-            assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
+            Assert.assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
 
         if (async) {
             if (oldAsync) {
@@ -3553,7 +3554,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             cache.removeAll();
 
         for (int i = 0; i < entryCnt; i++)
-            assertNull(cache.get(String.valueOf(i)));
+            Assert.assertNull(cache.get(String.valueOf(i)));
     }
 
     /**
@@ -3583,7 +3584,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         }, NullPointerException.class, null);
 
-        assertEquals(0, jcache().localSize());
+        Assert.assertEquals(0, jcache().localSize());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -3665,7 +3666,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         cacheAsync.removeAll(F.asSet("key1", "key2"));
 
-        assertNull(cacheAsync.future().get());
+        Assert.assertNull(cacheAsync.future().get());
 
         checkSize(F.asSet("key3"));
 
@@ -3687,7 +3688,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        assertNull(cache.removeAllAsync(F.asSet("key1", "key2")).get());
+        Assert.assertNull(cache.removeAllAsync(F.asSet("key1", "key2")).get());
 
         checkSize(F.asSet("key3"));
 
@@ -3709,7 +3710,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Set<String> keys = new HashSet<>(primaryKeysForCache(2));
 
         for (String key : keys)
-            assertNull(cache.localPeek(key, ONHEAP));
+            Assert.assertNull(cache.localPeek(key, ONHEAP));
 
         Map<String, Integer> vals = new HashMap<>();
 
@@ -3724,17 +3725,17 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.localPeek(key));
+            Assert.assertEquals(vals.get(key), cache.localPeek(key));
 
         cache.clear();
 
         for (String key : keys)
-            assertNull(cache.localPeek(key));
+            Assert.assertNull(cache.localPeek(key));
 
         loadAll(cache, keys, true);
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.localPeek(key));
+            Assert.assertEquals(vals.get(key), cache.localPeek(key));
     }
 
     /**
@@ -3780,7 +3781,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             grid0.cache(cacheName()).removeAll();
 
-            assertTrue(grid0.cache(cacheName()).localSize() == 0);
+            Assert.assertTrue(grid0.cache(cacheName()).localSize() == 0);
         }
     }
 
@@ -3794,7 +3795,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Set<String> keys = new HashSet<>(primaryKeysForCache(3));
 
         for (String key : keys)
-            assertNull(cache.get(key));
+            Assert.assertNull(cache.get(key));
 
         Map<String, Integer> vals = new HashMap<>(keys.size());
 
@@ -3809,12 +3810,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.localPeek(key));
+            Assert.assertEquals(vals.get(key), cache.localPeek(key));
 
         cache.clear();
 
         for (String key : keys)
-            assertNull(cache.localPeek(key));
+            Assert.assertNull(cache.localPeek(key));
 
         for (i = 0; i < gridCount(); i++)
             jcache(i).clear();
@@ -3826,7 +3827,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             cache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(vals.get(key), cache.localPeek(key));
+            Assert.assertEquals(vals.get(key), cache.localPeek(key));
 
         String first = F.first(keys);
 
@@ -3843,7 +3844,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(first) :
                     cctx.cache().peekEx(first);
 
-                assertNotNull(entry);
+                Assert.assertNotNull(entry);
             }
             finally {
                 lock.unlock();
@@ -4112,13 +4113,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Ignite ignite = primaryIgnite("key");
         IgniteCache<String, Integer> cache = ignite.cache(cacheName());
 
-        assertNull(cache.localPeek("key"));
+        Assert.assertNull(cache.localPeek("key"));
 
         cache.put("key", 1);
 
         cache.replace("key", 2);
 
-        assertEquals(2, cache.localPeek("key").intValue());
+        Assert.assertEquals(2, cache.localPeek("key").intValue());
     }
 
     /**
@@ -4151,8 +4152,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try (Transaction tx = ignite.transactions().txStart(concurrency, READ_COMMITTED)) {
                 cache.remove("key");
 
-                assertNull(cache.get("key")); // localPeek ignores transactions.
-                assertNotNull(cache.localPeek("key")); // localPeek ignores transactions.
+                Assert.assertNull(cache.get("key")); // localPeek ignores transactions.
+                Assert.assertNotNull(cache.localPeek("key")); // localPeek ignores transactions.
 
                 tx.commit();
             }
@@ -4169,7 +4170,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put("key", 1);
         cache.remove("key");
 
-        assertNull(cache.localPeek("key"));
+        Assert.assertNull(cache.localPeek("key"));
     }
 
     /**
@@ -4183,7 +4184,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         cache.put(key, 1);
 
-        assertEquals((Integer)1, cache.get(key));
+        Assert.assertEquals((Integer)1, cache.get(key));
 
         long ttl = 500;
 
@@ -4202,16 +4203,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         }, ttl + 1000);
 
-        assertTrue("Failed to wait for entry expiration.", wait);
+        Assert.assertTrue("Failed to wait for entry expiration.", wait);
 
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));
 
-        assertNull(cache.localPeek("key"));
+        Assert.assertNull(cache.localPeek("key"));
 
-        assertNull(cache.localPeek(key, ONHEAP));
+        Assert.assertNull(cache.localPeek(key, ONHEAP));
 
-        assertTrue(cache.localSize() == 0);
+        Assert.assertTrue(cache.localSize() == 0);
 
         if (storeEnabled()) {
             load(cache, key, true);
@@ -4220,10 +4221,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             for (int i = 0; i < gridCount(); i++) {
                 if (aff.isPrimary(grid(i).cluster().localNode(), key))
-                    assertEquals(1, jcache(i).localPeek(key));
+                    Assert.assertEquals(1, jcache(i).localPeek(key));
 
                 if (aff.isBackup(grid(i).cluster().localNode(), key))
-                    assertEquals(1, jcache(i).localPeek(key));
+                    Assert.assertEquals(1, jcache(i).localPeek(key));
             }
         }
     }
@@ -4243,7 +4244,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         c.put(key, 1);
 
-        assertEquals(Integer.valueOf(1), c.localPeek(key));
+        Assert.assertEquals(Integer.valueOf(1), c.localPeek(key));
 
         int ttl = 500;
 
@@ -4259,7 +4260,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         }, 2000);
 
-        assertNull(c.localPeek(key));
+        Assert.assertNull(c.localPeek(key));
 
         assert c.localSize() == 0 : "Cache is not empty.";
     }
@@ -4291,7 +4292,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
             }, 2000);
 
-            assertNull(c.localPeek(key));
+            Assert.assertNull(c.localPeek(key));
 
             assert c.localSize() == 0;
         }
@@ -4365,8 +4366,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             c.put(key, 1);
 
             entryTtl = entryTtl(serverNodeCache(), key);
-            assertEquals((Long)0L, entryTtl.get1());
-            assertEquals((Long)0L, entryTtl.get2());
+            Assert.assertEquals((Long)0L, entryTtl.get1());
+            Assert.assertEquals((Long)0L, entryTtl.get2());
         }
 
         long startTime = System.currentTimeMillis();
@@ -4385,10 +4386,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (oldEntry) {
                 entryTtl = entryTtl(serverNodeCache(), key);
 
-                assertNotNull(entryTtl.get1());
-                assertNotNull(entryTtl.get2());
-                assertEquals((Long)0L, entryTtl.get1());
-                assertEquals((Long)0L, entryTtl.get2());
+                Assert.assertNotNull(entryTtl.get1());
+                Assert.assertNotNull(entryTtl.get2());
+                Assert.assertEquals((Long)0L, entryTtl.get1());
+                Assert.assertEquals((Long)0L, entryTtl.get2());
             }
         }
 
@@ -4412,9 +4413,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                assertNotNull(curEntryTtl.get1());
-                assertNotNull(curEntryTtl.get2());
-                assertTrue(curEntryTtl.get2() > startTime);
+                Assert.assertNotNull(curEntryTtl.get1());
+                Assert.assertNotNull(curEntryTtl.get2());
+                Assert.assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
         }
@@ -4439,9 +4440,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                assertNotNull(curEntryTtl.get1());
-                assertNotNull(curEntryTtl.get2());
-                assertTrue(curEntryTtl.get2() > startTime);
+                Assert.assertNotNull(curEntryTtl.get1());
+                Assert.assertNotNull(curEntryTtl.get2());
+                Assert.assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
         }
@@ -4466,9 +4467,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                assertNotNull(curEntryTtl.get1());
-                assertNotNull(curEntryTtl.get2());
-                assertTrue(curEntryTtl.get2() > startTime);
+                Assert.assertNotNull(curEntryTtl.get1());
+                Assert.assertNotNull(curEntryTtl.get2());
+                Assert.assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
         }
@@ -4497,16 +4498,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                assertNotNull(curEntryTtl.get1());
-                assertNotNull(curEntryTtl.get2());
-                assertEquals(expireTimes[i], (long)curEntryTtl.get2());
+                Assert.assertNotNull(curEntryTtl.get1());
+                Assert.assertNotNull(curEntryTtl.get2());
+                Assert.assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
 
         // Avoid reloading from store.
         storeStgy.removeFromStore(key);
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);
@@ -4547,7 +4548,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         // Ensure that old TTL and expire time are not longer "visible".
         entryTtl = entryTtl(srvNodeCache, key);
-        assertNull(entryTtl);
+        Assert.assertNull(entryTtl);
 
         // Ensure that next update will not pick old expire time.
 
@@ -4568,12 +4569,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         entryTtl = entryTtl(srvNodeCache, key);
 
-        assertEquals((Integer)10, c.get(key));
+        Assert.assertEquals((Integer)10, c.get(key));
 
-        assertNotNull(entryTtl.get1());
-        assertNotNull(entryTtl.get2());
-        assertEquals(0, (long)entryTtl.get1());
-        assertEquals(0, (long)entryTtl.get2());
+        Assert.assertNotNull(entryTtl.get1());
+        Assert.assertNotNull(entryTtl.get2());
+        Assert.assertEquals(0, (long)entryTtl.get1());
+        Assert.assertEquals(0, (long)entryTtl.get2());
     }
 
     /**
@@ -4593,15 +4594,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put(key2, 2);
         cache.put(key3, 3);
 
-        assertEquals((Integer)1, cache.localPeek(key1));
-        assertEquals((Integer)2, cache.localPeek(key2));
-        assertEquals((Integer)3, cache.localPeek(key3));
+        Assert.assertEquals((Integer)1, cache.localPeek(key1));
+        Assert.assertEquals((Integer)2, cache.localPeek(key2));
+        Assert.assertEquals((Integer)3, cache.localPeek(key3));
 
         cache.localEvict(F.asList(key1, key2));
 
         assert cache.localPeek(key1, ONHEAP) == null;
         assert cache.localPeek(key2, ONHEAP) == null;
-        assertEquals((Integer)3, cache.localPeek(key3, OFFHEAP));
+        Assert.assertEquals((Integer)3, cache.localPeek(key3, OFFHEAP));
 
         if (storeEnabled()) {
             loadAll(cache, ImmutableSet.of(key1, key2), true);
@@ -4610,13 +4611,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             for (int i = 0; i < gridCount(); i++) {
                 if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
-                    assertEquals(1, jcache(i).localPeek(key1));
+                    Assert.assertEquals(1, jcache(i).localPeek(key1));
 
                 if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
-                    assertEquals(2, jcache(i).localPeek(key2));
+                    Assert.assertEquals(2, jcache(i).localPeek(key2));
 
                 if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key3))
-                    assertEquals(3, jcache(i).localPeek(key3));
+                    Assert.assertEquals(3, jcache(i).localPeek(key3));
             }
         }
     }
@@ -4626,8 +4627,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @param k Key.
      */
     private void checkKeyAfterLocalEvict(IgniteCache<String, Integer> cache, String k) {
-        assertNull(cache.localPeek(k, ONHEAP));
-        assertNotNull(cache.localPeek(k, OFFHEAP));
+        Assert.assertNull(cache.localPeek(k, ONHEAP));
+        Assert.assertNotNull(cache.localPeek(k, OFFHEAP));
     }
 
     /**
@@ -4666,7 +4667,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }, ttl + 1000);
 
         // Peek will actually remove entry from cache.
-        assertNull(cache.localPeek(key));
+        Assert.assertNull(cache.localPeek(key));
 
         assert cache.localSize() == 0;
 
@@ -4684,7 +4685,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
-                assertFalse(jcache().remove(UUID.randomUUID().toString()));
+                Assert.assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
                 tx.commit();
             }
@@ -4701,7 +4702,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
-                assertFalse(jcache().remove(UUID.randomUUID().toString()));
+                Assert.assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
                 tx.setRollbackOnly();
             }
@@ -4760,7 +4761,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
                 @Override public void applyx(IgniteCache<Object, Object> cache) {
                     for (int i = 0; i < cnt; i++)
-                        assertEquals(new Integer(i), cache.get("key" + i));
+                        Assert.assertEquals(new Integer(i), cache.get("key" + i));
                 }
             });
 
@@ -4769,7 +4770,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                     for (int i = 0; i < cnt; i++) {
                         boolean removed = cache.remove("key" + i);
 
-                        assertTrue(removed);
+                        Assert.assertTrue(removed);
                     }
                 }
             });
@@ -4777,7 +4778,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
                 @Override public void applyx(IgniteCache<Object, Object> cache) {
                     for (int i = 0; i < cnt; i++)
-                        assertNull(cache.get("key" + i));
+                        Assert.assertNull(cache.get("key" + i));
                 }
             });
         }
@@ -4793,7 +4794,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
-                assertFalse(jcache().remove(UUID.randomUUID().toString()));
+                Assert.assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
                 tx.commit();
             }
@@ -4810,7 +4811,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
-                assertFalse(jcache().remove(UUID.randomUUID().toString()));
+                Assert.assertFalse(jcache().remove(UUID.randomUUID().toString()));
 
                 tx.setRollbackOnly();
             }
@@ -4871,7 +4872,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     protected void checkSize(final Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
+            Assert.assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++)
                 executeOnLocalOrRemoteJvm(i, new CheckEntriesTask(keys, cacheName()));
@@ -4884,7 +4885,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     protected void checkKeySize(final Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals("Invalid key size: " + jcache().localSize(ALL),
+            Assert.assertEquals("Invalid key size: " + jcache().localSize(ALL),
                 keys.size(), jcache().localSize(ALL));
         else {
             for (int i = 0; i < gridCount(); i++)
@@ -4899,8 +4900,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     private void checkContainsKey(boolean exp, Object key) throws Exception {
         if (nearEnabled()) {
-            assertEquals(exp, jcache().containsKey(key));
-            assertEquals(exp, (boolean)jcache().containsKeyAsync(key).get());
+            Assert.assertEquals(exp, jcache().containsKey(key));
+            Assert.assertEquals(exp, (boolean)jcache().containsKeyAsync(key).get());
         }
         else {
             boolean contains = false;
@@ -4912,7 +4913,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                     break;
                 }
 
-            assertEquals("Key: " + key, exp, contains);
+            Assert.assertEquals("Key: " + key, exp, contains);
         }
     }
 
@@ -5020,7 +5021,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             cache = grid(i).cache(cacheName());
 
             for (int k = 0; k < KEYS; k++)
-                assertEquals((Object)k, cache.get(k));
+                Assert.assertEquals((Object)k, cache.get(k));
         }
 
         int cnt = 0;
@@ -5028,7 +5029,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (Cache.Entry e : cache)
             cnt++;
 
-        assertEquals(KEYS, cnt);
+        Assert.assertEquals(KEYS, cnt);
     }
 
     /**
@@ -5043,7 +5044,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         boolean hasNext = it.hasNext();
 
         if (hasNext)
-            assertFalse("Cache has value: " + it.next(), hasNext);
+            Assert.assertFalse("Cache has value: " + it.next(), hasNext);
 
         final int SIZE = 10_000;
 
@@ -5084,12 +5085,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     private void checkIteratorHasNext() {
         Iterator<Cache.Entry<Object, Object>> iter = jcache(0).iterator();
 
-        assertEquals(iter.hasNext(), iter.hasNext());
+        Assert.assertEquals(iter.hasNext(), iter.hasNext());
 
         while (iter.hasNext())
             iter.next();
 
-        assertFalse(iter.hasNext());
+        Assert.assertFalse(iter.hasNext());
     }
 
     /**
@@ -5104,15 +5105,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         entries.remove(rmvKey);
 
-        assertFalse(cache.containsKey(rmvKey));
-        assertNull(cache.get(rmvKey));
+        Assert.assertFalse(cache.containsKey(rmvKey));
+        Assert.assertNull(cache.get(rmvKey));
 
         checkIteratorCache(entries);
 
         // Check that we cannot call Iterator.remove() without next().
         final Iterator<Cache.Entry<Object, Object>> iter = jcache(0).iterator();
 
-        assertTrue(iter.hasNext());
+        Assert.assertTrue(iter.hasNext());
 
         iter.next();
 
@@ -5146,7 +5147,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         }
 
-        assertEquals(1, delCnt);
+        Assert.assertEquals(1, delCnt);
     }
 
     /**
@@ -5169,13 +5170,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         while (iter.hasNext()) {
             Cache.Entry<String, Integer> cur = iter.next();
 
-            assertTrue(entries.containsKey(cur.getKey()));
-            assertEquals(entries.get(cur.getKey()), cur.getValue());
+            Assert.assertTrue(entries.containsKey(cur.getKey()));
+            Assert.assertEquals(entries.get(cur.getKey()), cur.getValue());
 
             cnt++;
         }
 
-        assertEquals(entries.size(), cnt);
+        Assert.assertEquals(entries.size(), cnt);
     }
 
     /**
@@ -5264,13 +5265,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 for (int j = 0; j < gridCount(); ++j) {
                     if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
-                        assertTrue("Not found on backup removed key ", grid(j).cache(cacheName()).localPeek(key) != null);
+                        Assert.assertTrue("Not found on backup removed key ", grid(j).cache(cacheName()).localPeek(key) != null);
                 }
 
-                assertFalse("Found removed key " + key, found);
+                Assert.assertFalse("Found removed key " + key, found);
             }
             else
-                assertTrue("Not found key " + key, found);
+                Assert.assertTrue("Not found key " + key, found);
         }
     }
 
@@ -5313,10 +5314,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             boolean found = ignite.cache(cacheName()).localPeek(key) != null;
 
             if (keysToRmv.contains(key))
-                assertFalse("Found removed key [key=" + key + ", node=" + ignite.cluster().localNode().id() + ']',
+                Assert.assertFalse("Found removed key [key=" + key + ", node=" + ignite.cluster().localNode().id() + ']',
                     found);
             else
-                assertTrue("Not found key " + key, found);
+                Assert.assertTrue("Not found key " + key, found);
         }
     }
 
@@ -5447,9 +5448,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
 
             if (!keysToRmv.contains(key))
-                assertTrue("Not found key " + key, found);
+                Assert.assertTrue("Not found key " + key, found);
             else
-                assertFalse("Found removed key " + key, found);
+                Assert.assertFalse("Found removed key " + key, found);
         }
     }
 
@@ -5470,24 +5471,24 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < keys.size(); ++i)
             putToStore(keys.get(i), i);
 
-        assertFalse(cacheSkipStore.iterator().hasNext());
+        Assert.assertFalse(cacheSkipStore.iterator().hasNext());
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
+            Assert.assertNull(cacheSkipStore.get(key));
 
-            assertNotNull(cache.get(key));
+            Assert.assertNotNull(cache.get(key));
         }
 
         for (String key : keys) {
             cacheSkipStore.remove(key);
 
-            assertNotNull(cache.get(key));
+            Assert.assertNotNull(cache.get(key));
         }
 
         cache.removeAll(new HashSet<>(keys));
 
         for (String key : keys)
-            assertNull(cache.get(key));
+            Assert.assertNull(cache.get(key));
 
         final int KEYS = 250;
 
@@ -5504,9 +5505,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < keys.size(); ++i) {
             String key = keys.get(i);
 
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertEquals(i, storeStgy.getFromStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertEquals(i, storeStgy.getFromStore(key));
         }
 
         for (int i = 0; i < keys.size(); ++i) {
@@ -5515,61 +5516,61 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             Integer val1 = -1;
 
             cacheSkipStore.put(key, val1);
-            assertEquals(i, storeStgy.getFromStore(key));
-            assertEquals(val1, cacheSkipStore.get(key));
+            Assert.assertEquals(i, storeStgy.getFromStore(key));
+            Assert.assertEquals(val1, cacheSkipStore.get(key));
 
             Integer val2 = -2;
 
-            assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
-            assertEquals(i, storeStgy.getFromStore(key));
-            assertEquals(val2, cacheSkipStore.get(key));
+            Assert.assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
+            Assert.assertEquals(i, storeStgy.getFromStore(key));
+            Assert.assertEquals(val2, cacheSkipStore.get(key));
         }
 
         for (String key : keys) {
             cacheSkipStore.remove(key);
 
-            assertNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         for (String key : keys) {
             cache.remove(key);
 
-            assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
 
             storeStgy.putToStore(key, 0);
 
             Integer val = -1;
 
-            assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
-            assertEquals(0, storeStgy.getFromStore(key));
-            assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
 
             cache.remove(key);
 
             storeStgy.putToStore(key, 0);
 
-            assertTrue(cacheSkipStore.putIfAbsent(key, val));
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertTrue(cacheSkipStore.putIfAbsent(key, val));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
 
             cache.remove(key);
 
             storeStgy.putToStore(key, 0);
 
-            assertNull(cacheSkipStore.getAndPut(key, val));
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertNull(cacheSkipStore.getAndPut(key, val));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
 
             cache.remove(key);
         }
 
-        assertFalse(cacheSkipStore.iterator().hasNext());
-        assertTrue(storeStgy.getStoreSize() == 0);
-        assertTrue(cache.size(ALL) == 0);
+        Assert.assertFalse(cacheSkipStore.iterator().hasNext());
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(cache.size(ALL) == 0);
 
         // putAll/removeAll from multiple nodes.
 
@@ -5581,89 +5582,89 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cacheSkipStore.putAll(data);
 
         for (String key : keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
         cache.putAll(data);
 
         for (String key : keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll(data.keySet());
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.putAll(data);
 
         for (String key : keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll(data.keySet());
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll(data.keySet());
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
-        assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
 
         // Miscellaneous checks.
 
         String newKey = "New key";
 
-        assertFalse(storeStgy.isInStore(newKey));
+        Assert.assertFalse(storeStgy.isInStore(newKey));
 
         cacheSkipStore.put(newKey, 1);
 
-        assertFalse(storeStgy.isInStore(newKey));
+        Assert.assertFalse(storeStgy.isInStore(newKey));
 
         cache.put(newKey, 1);
 
-        assertTrue(storeStgy.isInStore(newKey));
+        Assert.assertTrue(storeStgy.isInStore(newKey));
 
         Iterator<Cache.Entry<String, Integer>> it = cacheSkipStore.iterator();
 
-        assertTrue(it.hasNext());
+        Assert.assertTrue(it.hasNext());
 
         Cache.Entry<String, Integer> entry = it.next();
 
         String rmvKey = entry.getKey();
 
-        assertTrue(storeStgy.isInStore(rmvKey));
+        Assert.assertTrue(storeStgy.isInStore(rmvKey));
 
         it.remove();
 
-        assertNull(cacheSkipStore.get(rmvKey));
+        Assert.assertNull(cacheSkipStore.get(rmvKey));
 
-        assertTrue(storeStgy.isInStore(rmvKey));
+        Assert.assertTrue(storeStgy.isInStore(rmvKey));
 
-        assertTrue(cache.size(ALL) == 0);
-        assertTrue(cacheSkipStore.size(ALL) == 0);
+        Assert.assertTrue(cache.size(ALL) == 0);
+        Assert.assertTrue(cacheSkipStore.size(ALL) == 0);
 
         cache.remove(rmvKey);
 
-        assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
     }
 
     /**
@@ -5689,25 +5690,25 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.putAll(data);
 
         for (String key : data.keySet()) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll();
 
         for (String key : data.keySet()) {
-            assertNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll();
 
         for (String key : data.keySet()) {
-            assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
     }
 
@@ -5780,21 +5781,21 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 cacheSkipStore.put(key, val);
 
             for (String key : keys) {
-                assertEquals(val, cacheSkipStore.get(key));
-                assertEquals(val, cache.get(key));
-                assertFalse(storeStgy.isInStore(key));
+                Assert.assertEquals(val, cacheSkipStore.get(key));
+                Assert.assertEquals(val, cache.get(key));
+                Assert.assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
         }
 
         for (String key : keys) {
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(val, cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(val, cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
-        assertEquals(0, storeStgy.getStoreSize());
+        Assert.assertEquals(0, storeStgy.getStoreSize());
 
         // cacheSkipStore putAll(..)/removeAll(..) check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -5806,9 +5807,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             val = data.get(key);
 
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(val, cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(val, cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
         storeStgy.putAllToStore(data);
@@ -5820,37 +5821,37 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
 
             cache.remove(key);
         }
 
-        assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
 
         // cache putAll(..)/removeAll(..) check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             cache.putAll(data);
 
             for (String key : keys) {
-                assertNotNull(cacheSkipStore.get(key));
-                assertNotNull(cache.get(key));
-                assertFalse(storeStgy.isInStore(key));
+                Assert.assertNotNull(cacheSkipStore.get(key));
+                Assert.assertNotNull(cache.get(key));
+                Assert.assertFalse(storeStgy.isInStore(key));
             }
 
             cache.removeAll(data.keySet());
 
             for (String key : keys) {
-                assertNull(cacheSkipStore.get(key));
-                assertNull(cache.get(key));
-                assertFalse(storeStgy.isInStore(key));
+                Assert.assertNull(cacheSkipStore.get(key));
+                Assert.assertNull(cache.get(key));
+                Assert.assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
         }
 
-        assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
 
         // putAll(..) from both cacheSkipStore and cache.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -5869,9 +5870,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             cache.putAll(subMap);
 
             for (String key : keys) {
-                assertNotNull(cacheSkipStore.get(key));
-                assertNotNull(cache.get(key));
-                assertFalse(storeStgy.isInStore(key));
+                Assert.assertNotNull(cacheSkipStore.get(key));
+                Assert.assertNotNull(cache.get(key));
+                Assert.assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
@@ -5880,44 +5881,44 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < keys.size() / 2; i++) {
             String key = keys.get(i);
 
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
         for (int i = keys.size() / 2; i < keys.size(); i++) {
             String key = keys.get(i);
 
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertTrue(storeStgy.isInStore(key));
+            Assert.assertNotNull(cacheSkipStore.get(key));
+            Assert.assertNotNull(cache.get(key));
+            Assert.assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll(data.keySet());
 
         for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(storeStgy.isInStore(key));
+            Assert.assertNull(cacheSkipStore.get(key));
+            Assert.assertNull(cache.get(key));
+            Assert.assertFalse(storeStgy.isInStore(key));
         }
 
         // Check that read-through is disabled when cacheSkipStore is used.
         for (int i = 0; i < keys.size(); i++)
             putToStore(keys.get(i), i);
 
-        assertTrue(cacheSkipStore.size(ALL) == 0);
-        assertTrue(cache.size(ALL) == 0);
-        assertTrue(storeStgy.getStoreSize() != 0);
+        Assert.assertTrue(cacheSkipStore.size(ALL) == 0);
+        Assert.assertTrue(cache.size(ALL) == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() != 0);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            assertTrue(cacheSkipStore.getAll(data.keySet()).isEmpty());
+            Assert.assertTrue(cacheSkipStore.getAll(data.keySet()).isEmpty());
 
             for (String key : keys) {
-                assertNull(cacheSkipStore.get(key));
+                Assert.assertNull(cacheSkipStore.get(key));
 
                 if (txIsolation == READ_COMMITTED) {
-                    assertNotNull(cache.get(key));
-                    assertNotNull(cacheSkipStore.get(key));
+                    Assert.assertNotNull(cache.get(key));
+                    Assert.assertNotNull(cacheSkipStore.get(key));
                 }
             }
 
@@ -5932,17 +5933,17 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : data.keySet()) {
                 storeStgy.putToStore(key, 0);
 
-                assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+                Assert.assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
             }
 
             tx.commit();
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
 
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(val, cache.get(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(val, cache.get(key));
         }
 
         cache.removeAll(data.keySet());
@@ -5951,17 +5952,17 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : data.keySet()) {
                 storeStgy.putToStore(key, 0);
 
-                assertTrue(cacheSkipStore.putIfAbsent(key, val));
+                Assert.assertTrue(cacheSkipStore.putIfAbsent(key, val));
             }
 
             tx.commit();
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
 
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(val, cache.get(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(val, cache.get(key));
         }
 
         cache.removeAll(data.keySet());
@@ -5970,17 +5971,17 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : data.keySet()) {
                 storeStgy.putToStore(key, 0);
 
-                assertNull(cacheSkipStore.getAndPut(key, val));
+                Assert.assertNull(cacheSkipStore.getAndPut(key, val));
             }
 
             tx.commit();
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, storeStgy.getFromStore(key));
+            Assert.assertEquals(0, storeStgy.getFromStore(key));
 
-            assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(val, cache.get(key));
+            Assert.assertEquals(val, cacheSkipStore.get(key));
+            Assert.assertEquals(val, cache.get(key));
         }
 
         cache.removeAll(data.keySet());
@@ -5994,9 +5995,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
         throws Exception {
-        assertTrue(cache.size(ALL) == 0);
-        assertTrue(cacheSkipStore.size(ALL) == 0);
-        assertTrue(storeStgy.getStoreSize() == 0);
+        Assert.assertTrue(cache.size(ALL) == 0);
+        Assert.assertTrue(cacheSkipStore.size(ALL) == 0);
+        Assert.assertTrue(storeStgy.getStoreSize() == 0);
     }
 
     /**
@@ -6044,7 +6045,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             List<String> keys = primaryKeysForCache(0, 2, 1);
 
-            assertEquals(2, keys.size());
+            Assert.assertEquals(2, keys.size());
 
             cache.put(keys.get(0), 0);
             cache.put(keys.get(1), 1);
@@ -6070,7 +6071,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                     val0 = cache.get(keys.get(0));
 
 
-                assertEquals(0, val0.intValue());
+                Assert.assertEquals(0, val0.intValue());
 
                 Map<String, Integer> allOutTx;
 
@@ -6086,14 +6087,14 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 else
                     allOutTx = cache.getAllOutTx(F.asSet(keys.get(1)));
 
-                assertEquals(1, allOutTx.size());
+                Assert.assertEquals(1, allOutTx.size());
 
-                assertTrue(allOutTx.containsKey(keys.get(1)));
+                Assert.assertTrue(allOutTx.containsKey(keys.get(1)));
 
-                assertEquals(1, allOutTx.get(keys.get(1)).intValue());
+                Assert.assertEquals(1, allOutTx.get(keys.get(1)).intValue());
             }
 
-            assertTrue(GridTestUtils.waitForCondition(new PA() {
+            Assert.assertTrue(GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
                     info("Lock event count: " + lockEvtCnt.get());
                     if (atomicityMode() == ATOMIC)
@@ -6199,7 +6200,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                             int v = valueOf(evt.getKey());
 
                             // Check filter.
-                            assertTrue("v=" + v, v >= 10 && v < 15);
+                            Assert.assertTrue("v=" + v, v >= 10 && v < 15);
 
                             updCnt.incrementAndGet();
                         }
@@ -6221,10 +6222,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                         int val = valueOf(e.getKey());
 
-                        assertTrue("v=" + val, val >= 3);
+                        Assert.assertTrue("v=" + val, val >= 3);
                     }
 
-                    assertEquals(7, cnt);
+                    Assert.assertEquals(7, cnt);
 
                     for (int i = 10; i < 20; i++)
                         cache.put(key(i), value(i));
@@ -6254,10 +6255,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 jcache(0).putAll(vals);
 
                 for (int i = 0; i < gridCount(); i++) {
-                    assertEquals(0, jcache(i).getEntry("key0").getValue());
-                    assertEquals(0, jcache(i).getEntryAsync("key0").get().getValue());
+                    Assert.assertEquals(0, jcache(i).getEntry("key0").getValue());
+                    Assert.assertEquals(0, jcache(i).getEntryAsync("key0").get().getValue());
 
-                    assertTrue(
+                    Assert.assertTrue(
                         F.transform(
                             jcache(i).getEntries(vals.keySet()),
                             new IgniteClosure<CacheEntry<Object, Object>, Object>() {
@@ -6266,7 +6267,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                                 }
                             }).containsAll(vals.values()));
 
-                    assertTrue(
+                    Assert.assertTrue(
                         F.transform(
                             jcache(i).getEntriesAsync(vals.keySet()).get(),
                             new IgniteClosure<CacheEntry<Object, Object>, Object>() {
@@ -6310,7 +6311,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     private static class RemoveEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
-            assertNotNull(e.getKey());
+            Assert.assertNotNull(e.getKey());
 
             Object old = e.getValue();
 
@@ -6330,7 +6331,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             DataMode mode = (DataMode)args[0];
 
-            assertNotNull(e.getKey());
+            Assert.assertNotNull(e.getKey());
 
             Object old = e.getValue();
 
@@ -6382,7 +6383,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
             }
 
-            assertEquals("Incorrect size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
+            Assert.assertEquals("Incorrect size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
         }
     }
 
@@ -6416,7 +6417,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
-            assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
+            Assert.assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
         }
     }
 
@@ -6484,8 +6485,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             entry.unswap();
 
             if (!entry.hasValue()) {
-                assertEquals(0, entry.ttl());
-                assertEquals(0, entry.expireTime());
+                Assert.assertEquals(0, entry.ttl());
+                Assert.assertEquals(0, entry.expireTime());
 
                 return null;
             }
@@ -6567,7 +6568,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
             for (Object obj : map.values())
-                assertEquals("Iterators not removed for grid " + idx, 0, ((Map)obj).size());
+                Assert.assertEquals("Iterators not removed for grid " + idx, 0, ((Map)obj).size());
 
             return null;
         }
@@ -6610,11 +6611,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 GridCacheEntryEx entry = ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
                 if (ignite.affinity(cacheName).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
-                    assertNotNull(entry);
-                    assertTrue(entry.deleted());
+                    Assert.assertNotNull(entry);
+                    Assert.assertTrue(entry.deleted());
                 }
                 else
-                    assertNull(entry);
+                    Assert.assertNull(entry);
             }
         }
     }
@@ -6648,7 +6649,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
-            assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(cacheName).localSize(ALL));
+            Assert.assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(cacheName).localSize(ALL));
         }
     }
 

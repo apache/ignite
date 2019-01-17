@@ -115,14 +115,6 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
     }
 
     /**
-     * Asserts that two booleans are equal. If they are not
-     * an AssertionFailedError is thrown with the given msg.
-     */
-    protected static void assertEquals(String msg, boolean exp, boolean actual) {
-        // todo remove and edit
-    }
-
-    /**
      * Asserts that two booleans are equal.
      */
     protected static void assertEquals(boolean exp, boolean actual) {

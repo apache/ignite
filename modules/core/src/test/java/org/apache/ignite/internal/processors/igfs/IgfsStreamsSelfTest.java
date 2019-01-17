@@ -49,6 +49,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -157,7 +158,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         long max = 100L * CFG_BLOCK_SIZE / WRITING_THREADS_CNT;
 
         for (long size = 0; size <= max; size = size * 15 / 10 + 1) {
-            assertTrue(F.isEmpty(fs.listPaths(IgfsPath.ROOT)));
+            Assert.assertTrue(F.isEmpty(fs.listPaths(IgfsPath.ROOT)));
 
             testCreateFile(path, size, new Random().nextInt());
         }
@@ -194,12 +195,12 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         Collection<IgfsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
 
-        assertEquals(1, affNodes.size());
+        Assert.assertEquals(1, affNodes.size());
 
         Collection<UUID> nodeIds = F.first(affNodes).nodeIds();
 
-        assertEquals(1, nodeIds.size());
-        assertEquals(grid(0).localNode().id(), F.first(nodeIds));
+        Assert.assertEquals(1, nodeIds.size());
+        Assert.assertEquals(grid(0).localNode().id(), F.first(nodeIds));
     }
 
     /** @throws Exception If failed. */
@@ -251,25 +252,25 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
             List<IgfsFileAffinityRange> ranges = map.ranges();
 
-            assertEquals(2, ranges.size());
+            Assert.assertEquals(2, ranges.size());
 
-            assertTrue(ranges.get(0).startOffset() == 0);
-            assertTrue(ranges.get(0).endOffset() == 2 * CFG_BLOCK_SIZE - 1);
+            Assert.assertEquals(0, ranges.get(0).startOffset());
+            Assert.assertEquals(ranges.get(0).endOffset(), 2 * CFG_BLOCK_SIZE - 1);
 
-            assertTrue(ranges.get(1).startOffset() == 2 * CFG_BLOCK_SIZE);
-            assertTrue(ranges.get(1).endOffset() == 3 * CFG_BLOCK_SIZE - 1);
+            Assert.assertEquals(ranges.get(1).startOffset(), 2 * CFG_BLOCK_SIZE);
+            Assert.assertEquals(ranges.get(1).endOffset(), 3 * CFG_BLOCK_SIZE - 1);
 
             // Validate data read after colocated writes.
             try (IgfsInputStream in = fs2.open(path)) {
                 // Validate first part of file.
                 for (int i = 0; i < CFG_BLOCK_SIZE * 3 / 2; i++)
-                    assertEquals((byte)1, in.read());
+                    Assert.assertEquals((byte)1, in.read());
 
                 // Validate second part of file.
                 for (int i = 0; i < CFG_BLOCK_SIZE * 3 / 2; i++)
-                    assertEquals((byte)2, in.read());
+                    Assert.assertEquals((byte)2, in.read());
 
-                assertEquals(-1, in.read());
+                Assert.assertEquals(-1, in.read());
             }
         }
         finally {
@@ -280,7 +281,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < NODES_CNT; i++)
                 hasData |= !grid(i).cachex(dataCacheName).isEmpty();
 
-            assertTrue(hasData);
+            Assert.assertTrue(hasData);
 
             fs.delete(path, true);
         }
@@ -288,7 +289,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         GridTestUtils.retryAssert(log, ASSERT_RETRIES, ASSERT_RETRY_INTERVAL, new CAX() {
             @Override public void applyx() {
                 for (int i = 0; i < NODES_CNT; i++)
-                    assertTrue(grid(i).cachex(dataCacheName).isEmpty());
+                    Assert.assertTrue(grid(i).cachex(dataCacheName).isEmpty());
             }
         });
     }
@@ -314,7 +315,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
                 IgfsPath f = new IgfsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
 
                 try (IgfsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
-                    assertNotNull(out);
+                    Assert.assertNotNull(out);
 
                     cleanUp.add(f); // Add all created into cleanup list.
 
@@ -363,29 +364,29 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         info("Validate stored file info: " + desc);
 
-        assertNotNull(desc);
+        Assert.assertNotNull(desc);
 
         if (log.isDebugEnabled())
             log.debug("File descriptor: " + desc);
 
         Collection<IgfsBlockLocation> aff = fs.affinity(path, 0, desc.length());
 
-        assertFalse("Affinity: " + aff, desc.length() != 0 && aff.isEmpty());
+        Assert.assertFalse("Affinity: " + aff, desc.length() != 0 && aff.isEmpty());
 
         int blockSize = desc.blockSize();
 
-        assertEquals("File size", size, desc.length());
-        assertEquals("Binary block size", CFG_BLOCK_SIZE, blockSize);
+        Assert.assertEquals("File size", size, desc.length());
+        Assert.assertEquals("Binary block size", CFG_BLOCK_SIZE, blockSize);
         //assertEquals("Permission", "rwxr-xr-x", desc.getPermission().toString());
         //assertEquals("Permission sticky bit marks this is file", false, desc.getPermission().getStickyBit());
-        assertEquals("Type", true, desc.isFile());
-        assertEquals("Type", false, desc.isDirectory());
+        Assert.assertTrue("Type", desc.isFile());
+        Assert.assertFalse("Type", desc.isDirectory());
 
         info("Cleanup files: " + cleanUp);
 
         for (IgfsPath f : cleanUp) {
             fs.delete(f, true);
-            assertNull(fs.info(f));
+            Assert.assertNull(fs.info(f));
         }
     }
 
@@ -438,8 +439,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
             // i1 == bufSize => compare buffers.
             // i1 <  bufSize => Compare part of buffers, rest of buffers are equal from previous iteration.
-            assertTrue("Expects the same data [read=" + read + ", pos=" + pos + ", seek=" + seek +
-                ", i1=" + i1 + ", i2=" + i2 + ']', Arrays.equals(buf1, buf2));
+            Assert.assertArrayEquals("Expects the same data [read=" + read + ", pos=" + pos + ", seek=" + seek +
+                ", i1=" + i1 + ", i2=" + i2 + ']', buf1, buf2);
 
             if (read == 0)
                 break; // Nothing more to read.
@@ -448,7 +449,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         }
 
         if (expSize != null)
-            assertEquals(expSize.longValue(), pos);
+            Assert.assertEquals(expSize.longValue(), pos);
 
         long time = System.currentTimeMillis() - start;
 

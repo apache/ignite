@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.runners.model.Statement;
 
 /**
@@ -116,7 +117,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (testsCfg.withClients()) {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("i: " + i, expectedClient(getTestIgniteInstanceName(i)),
+                Assert.assertEquals("i: " + i, expectedClient(getTestIgniteInstanceName(i)),
                     (boolean)grid(i).configuration().isClientMode());
         }
     }
@@ -329,7 +330,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static int valueOf(Object obj) {
-        assertNotNull(obj);
+        Assert.assertNotNull(obj);
 
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();

@@ -86,6 +86,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -316,7 +317,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         primaryFsCfg = configuration(PRIMARY_AUTHORITY, skipEmbed, skipLocShmem);
 
         UserGroupInformation clientUgi = UserGroupInformation.getBestUGI(null, getClientFsUser());
-        assertNotNull(clientUgi);
+        Assert.assertNotNull(clientUgi);
 
         // Create the Fs on behalf of the specific user:
         clientUgi.doAs(new PrivilegedExceptionAction<Object>() {
@@ -499,12 +500,12 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             fail();
         }
         catch (IOException e) {
-            assertTrue(e.getMessage().contains("File system is already initialized"));
+            Assert.assertTrue(e.getMessage().contains("File system is already initialized"));
         }
 
-        assertEquals(primaryFsUri, fs.getUri());
+        Assert.assertEquals(primaryFsUri, fs.getUri());
 
-        assertEquals(0, fs.getUsed());
+        Assert.assertEquals(0, fs.getUsed());
 
         fs.close();
     }
@@ -541,11 +542,11 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
                 assert fs != fsOther;
 
-                assertEquals(initSize, cache.size());
+                Assert.assertEquals(initSize, cache.size());
 
                 fsOther.close();
 
-                assertEquals(initSize, cache.size());
+                Assert.assertEquals(initSize, cache.size());
 
                 Field stopField = HadoopIgfsIpcIo.class.getDeclaredField("stopping");
 
@@ -708,9 +709,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         // Check file status.
         FileStatus fileStatus = fs.getFileStatus(file);
 
-        assertFalse(fileStatus.isDir());
-        assertEquals(file, fileStatus.getPath());
-        assertEquals(fsPerm, fileStatus.getPermission());
+        Assert.assertFalse(fileStatus.isDir());
+        Assert.assertEquals(file, fileStatus.getPath());
+        Assert.assertEquals(fsPerm, fileStatus.getPermission());
     }
 
     /** @throws Exception If failed. */
@@ -727,9 +728,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         out.close();
 
         // Check intermediate directory permissions.
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir).getPermission());
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir.getParent()).getPermission());
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir.getParent().getParent()).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir.getParent()).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir.getParent().getParent()).getPermission());
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -751,7 +752,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         assertPathDoesNotExist(fs, dir);
 
-        assertFalse(fs.delete(dir, true));
+        Assert.assertFalse(fs.delete(dir, true));
     }
 
     /** @throws Exception If failed. */
@@ -772,7 +773,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final FSDataInputStream is = fs.open(file, -1);
 
         for (int i = 0; i < cnt / 2; i++)
-            assertEquals(i, is.readInt());
+            Assert.assertEquals(i, is.readInt());
 
         assert fs.delete(file, false);
 
@@ -791,7 +792,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertTrue(fs.delete(file, false));
+        Assert.assertTrue(fs.delete(file, false));
 
         assertPathDoesNotExist(fs, file);
     }
@@ -806,7 +807,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertTrue(fs.delete(dir, false));
+        Assert.assertTrue(fs.delete(dir, false));
 
         assertPathDoesNotExist(fs, dir);
     }
@@ -821,7 +822,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Path someDir2 = new Path(fsHome, "/someDir1/someDir2");
 
-        assertFalse(fs.delete(someDir2, false));
+        Assert.assertFalse(fs.delete(someDir2, false));
 
         assertPathExists(fs, someDir2);
         assertPathExists(fs, someDir3);
@@ -839,7 +840,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Path someDir2 = new Path(fsHome, "/someDir1/someDir2");
 
-        assertTrue(fs.delete(someDir2, true));
+        Assert.assertTrue(fs.delete(someDir2, true));
 
         assertPathDoesNotExist(fs, someDir2);
         assertPathDoesNotExist(fs, someDir3);
@@ -857,8 +858,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Path root = new Path(fsHome, "/");
 
-        assertFalse(fs.delete(root, true));
-        assertTrue(fs.delete(new Path("/someDir1"), true));
+        Assert.assertFalse(fs.delete(root, true));
+        Assert.assertTrue(fs.delete(new Path("/someDir1"), true));
 
         assertPathDoesNotExist(fs, someDir3);
         assertPathDoesNotExist(fs, new Path(fsHome, "/someDir1/someDir2"));
@@ -880,8 +881,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         fs.setPermission(file, null);
 
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(file).getPermission());
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(file.getParent()).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(file).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(file.getParent()).getPermission());
     }
 
     /** @throws Exception If failed. */
@@ -902,8 +903,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         fs.setPermission(tmpDir, perm);
 
-        assertEquals(perm, fs.getFileStatus(tmpDir).getPermission());
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(file).getPermission());
+        Assert.assertEquals(perm, fs.getFileStatus(tmpDir).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(file).getPermission());
     }
 
     /** @throws Exception If failed. */
@@ -922,7 +923,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
             fs.setPermission(file, perm);
 
-            assertEquals(perm, fs.getFileStatus(file).getPermission());
+            Assert.assertEquals(perm, fs.getFileStatus(file).getPermission());
         }
     }
 
@@ -940,7 +941,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertEquals(perm, fs.getFileStatus(file).getPermission());
+        Assert.assertEquals(perm, fs.getFileStatus(file).getPermission());
     }
 
     /** @throws Exception If failed. */
@@ -1010,12 +1011,12 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertEquals(getClientFsUser(), fs.getFileStatus(file).getOwner());
+        Assert.assertEquals(getClientFsUser(), fs.getFileStatus(file).getOwner());
 
         fs.setOwner(file, "aUser", "aGroup");
 
-        assertEquals("aUser", fs.getFileStatus(file).getOwner());
-        assertEquals("aGroup", fs.getFileStatus(file).getGroup());
+        Assert.assertEquals("aUser", fs.getFileStatus(file).getOwner());
+        Assert.assertEquals("aGroup", fs.getFileStatus(file).getGroup());
     }
 
     /**
@@ -1030,8 +1031,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         FileStatus status = fs.getFileStatus(file);
 
-        assertTrue(status.getAccessTime() > 0);
-        assertTrue(status.getModificationTime() > 0);
+        Assert.assertTrue(status.getAccessTime() > 0);
+        Assert.assertTrue(status.getModificationTime() > 0);
 
         long mtime = System.currentTimeMillis() - 5000;
         long atime = System.currentTimeMillis() - 4000;
@@ -1040,8 +1041,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         status = fs.getFileStatus(file);
 
-        assertEquals(mtime, status.getModificationTime());
-        assertEquals(atime, status.getAccessTime());
+        Assert.assertEquals(mtime, status.getModificationTime());
+        Assert.assertEquals(atime, status.getAccessTime());
 
         mtime -= 5000;
 
@@ -1049,8 +1050,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         status = fs.getFileStatus(file);
 
-        assertEquals(mtime, status.getModificationTime());
-        assertEquals(atime, status.getAccessTime());
+        Assert.assertEquals(mtime, status.getModificationTime());
+        Assert.assertEquals(atime, status.getAccessTime());
 
         atime -= 5000;
 
@@ -1058,8 +1059,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         status = fs.getFileStatus(file);
 
-        assertEquals(mtime, status.getModificationTime());
-        assertEquals(atime, status.getAccessTime());
+        Assert.assertEquals(mtime, status.getModificationTime());
+        Assert.assertEquals(atime, status.getAccessTime());
     }
 
     /**
@@ -1076,8 +1077,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertEquals("aUser", fs.getFileStatus(file).getOwner());
-        assertEquals("aGroup", fs.getFileStatus(file).getGroup());
+        Assert.assertEquals("aUser", fs.getFileStatus(file).getOwner());
+        Assert.assertEquals("aGroup", fs.getFileStatus(file).getGroup());
     }
 
     /** @throws Exception If failed. */
@@ -1095,11 +1096,11 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         fs.setOwner(file, "fUser", "fGroup");
         fs.setOwner(tmpDir, "dUser", "dGroup");
 
-        assertEquals("dUser", fs.getFileStatus(tmpDir).getOwner());
-        assertEquals("dGroup", fs.getFileStatus(tmpDir).getGroup());
+        Assert.assertEquals("dUser", fs.getFileStatus(tmpDir).getOwner());
+        Assert.assertEquals("dGroup", fs.getFileStatus(tmpDir).getGroup());
 
-        assertEquals("fUser", fs.getFileStatus(file).getOwner());
-        assertEquals("fGroup", fs.getFileStatus(file).getGroup());
+        Assert.assertEquals("fUser", fs.getFileStatus(file).getOwner());
+        Assert.assertEquals("fGroup", fs.getFileStatus(file).getGroup());
     }
 
     /** @throws Exception If failed. */
@@ -1156,12 +1157,12 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
                 out.writeLong(i);
         }
 
-        assertEquals(getClientFsUser(), fs.getFileStatus(file).getOwner());
+        Assert.assertEquals(getClientFsUser(), fs.getFileStatus(file).getOwner());
 
         try (FSDataInputStream in = fs.open(file, 1024)) {
 
             for (long i = 0; i < cnt; i++)
-                assertEquals(i, in.readLong());
+                Assert.assertEquals(i, in.readLong());
         }
     }
 
@@ -1239,7 +1240,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         FSDataInputStream in = fs.open(file, 1024);
 
         for (int i = 0; i < cnt * 2; i++)
-            assertEquals(i, in.readLong());
+            Assert.assertEquals(i, in.readLong());
 
         in.close();
     }
@@ -1280,7 +1281,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         assertPathDoesNotExist(fs, srcFile);
 
-        assertFalse(fs.rename(srcFile, dstFile));
+        Assert.assertFalse(fs.rename(srcFile, dstFile));
 
         assertPathDoesNotExist(fs, dstFile);
     }
@@ -1298,7 +1299,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os = fs.append(srcFile);
 
-        assertTrue(fs.rename(srcFile, dstFile));
+        Assert.assertTrue(fs.rename(srcFile, dstFile));
 
         assertPathExists(fs, dstFile);
 
@@ -1316,7 +1317,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
             is.readFully(buf);
 
-            assertEquals(testStr, new String(buf));
+            Assert.assertEquals(testStr, new String(buf));
         }
     }
 
@@ -1335,7 +1336,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertFalse(fs.rename(srcFile, dstFile));
+        Assert.assertFalse(fs.rename(srcFile, dstFile));
 
         assertPathExists(fs, srcFile);
         assertPathExists(fs, dstFile);
@@ -1352,7 +1353,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertTrue(fs.rename(srcFile, dstFile));
+        Assert.assertTrue(fs.rename(srcFile, dstFile));
 
         assertPathDoesNotExist(fs, srcFile);
         assertPathExists(fs, dstFile);
@@ -1379,9 +1380,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         for (int i = 0; i < cnt; i++) {
             if (i == 100)
                 // Rename file during the read process.
-                assertTrue(fs.rename(srcFile, dstFile));
+                Assert.assertTrue(fs.rename(srcFile, dstFile));
 
-            assertEquals(i, is.readInt());
+            Assert.assertEquals(i, is.readInt());
         }
 
         assertPathDoesNotExist(fs, srcFile);
@@ -1406,7 +1407,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertTrue("Rename succeeded [srcDir=" + srcDir + ", dstDir=" + dstDir + ']', fs.rename(srcDir, dstDir));
+        Assert.assertTrue("Rename succeeded [srcDir=" + srcDir + ", dstDir=" + dstDir + ']', fs.rename(srcDir, dstDir));
 
         assertPathExists(fs, dstDir);
         assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp"));
@@ -1424,7 +1425,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        assertTrue("Rename failed [dir=" + dir + ", newDir=" + newDir + ']', fs.rename(dir, newDir));
+        Assert.assertTrue("Rename failed [dir=" + dir + ", newDir=" + newDir + ']', fs.rename(dir, newDir));
 
         assertPathDoesNotExist(fs, dir);
         assertPathExists(fs, newDir);
@@ -1509,7 +1510,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         String path = fs.getFileStatus(file).getPath().toString();
 
-        assertTrue(path.endsWith("/user/" + getClientFsUser() + "/file"));
+        Assert.assertTrue(path.endsWith("/user/" + getClientFsUser() + "/file"));
     }
 
     /** @throws Exception If failed. */
@@ -1534,7 +1535,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         String filePath = fs.getFileStatus(new Path(dir, file)).getPath().toString();
 
-        assertTrue(filePath.contains("/tmp/nested/dir/file"));
+        Assert.assertTrue(filePath.contains("/tmp/nested/dir/file"));
     }
 
     /** @throws Exception If failed. */
@@ -1542,7 +1543,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     public void testGetWorkingDirectoryIfDefault() throws Exception {
         String path = fs.getWorkingDirectory().toString();
 
-        assertTrue(path.endsWith("/user/" + getClientFsUser()));
+        Assert.assertTrue(path.endsWith("/user/" + getClientFsUser()));
     }
 
     /** @throws Exception If failed. */
@@ -1556,7 +1557,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         String path = fs.getWorkingDirectory().toString();
 
-        assertTrue(path.endsWith("/tmp/some/dir"));
+        Assert.assertTrue(path.endsWith("/tmp/some/dir"));
     }
 
     /** @throws Exception If failed. */
@@ -1574,9 +1575,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     public void testMkdirsIfPermissionIsNull() throws Exception {
         Path dir = new Path("/tmp");
 
-        assertTrue(fs.mkdirs(dir, null));
+        Assert.assertTrue(fs.mkdirs(dir, null));
 
-        assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir).getPermission());
+        Assert.assertEquals(FsPermission.getDefault(), fs.getFileStatus(dir).getPermission());
     }
 
     /** @throws Exception If failed. */
@@ -1590,14 +1591,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final FsPermission dirPerm = FsPermission.createImmutable((short)0700);
         final FsPermission nestedDirPerm = FsPermission.createImmutable((short)111);
 
-        assertTrue(fs.mkdirs(dir, dirPerm));
-        assertTrue(fs.mkdirs(nestedDir, nestedDirPerm));
+        Assert.assertTrue(fs.mkdirs(dir, dirPerm));
+        Assert.assertTrue(fs.mkdirs(nestedDir, nestedDirPerm));
 
-        assertEquals(dirPerm, fs.getFileStatus(dir).getPermission());
-        assertEquals(nestedDirPerm, fs.getFileStatus(nestedDir).getPermission());
+        Assert.assertEquals(dirPerm, fs.getFileStatus(dir).getPermission());
+        Assert.assertEquals(nestedDirPerm, fs.getFileStatus(nestedDir).getPermission());
 
-        assertEquals(getClientFsUser(), fs.getFileStatus(dir).getOwner());
-        assertEquals(getClientFsUser(), fs.getFileStatus(nestedDir).getOwner());
+        Assert.assertEquals(getClientFsUser(), fs.getFileStatus(dir).getOwner());
+        Assert.assertEquals(getClientFsUser(), fs.getFileStatus(nestedDir).getOwner());
     }
 
     /** @throws Exception If failed. */
@@ -1644,7 +1645,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         BlockLocation[] locations = fs.getFileBlockLocations(status, 1, 2);
 
-        assertEquals(0, locations.length);
+        Assert.assertEquals(0, locations.length);
     }
 
     /** @throws Exception If failed. */
@@ -1682,14 +1683,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         BlockLocation[] locations = fs.getFileBlockLocations(status, 0, status.getLen());
 
-        assertEquals(grpCnt, locations.length);
+        Assert.assertEquals(grpCnt, locations.length);
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("deprecation")
     @Test
     public void testGetDefaultBlockSize() throws Exception {
-        assertEquals(1L << 26, fs.getDefaultBlockSize());
+        Assert.assertEquals(1L << 26, fs.getDefaultBlockSize());
     }
 
     /** @throws Exception If failed. */
@@ -1715,11 +1716,11 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
             Collection<IgfsBlockLocation> locations = igfs.affinity(filePath, 0, fileInfo.length());
 
-            assertEquals(1, locations.size());
+            Assert.assertEquals(1, locations.size());
 
             IgfsBlockLocation location = F.first(locations);
 
-            assertEquals(1, location.nodeIds().size());
+            Assert.assertEquals(1, location.nodeIds().size());
         }
     }
 
@@ -2162,7 +2163,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             startNodes(); // Start server again.
 
             // Check that client is again operational.
-            assertTrue(fs.mkdirs(new Path(PRIMARY_URI, "dir1/dir2")));
+            Assert.assertTrue(fs.mkdirs(new Path(PRIMARY_URI, "dir1/dir2")));
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -2175,7 +2176,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
                 }
             }, IOException.class, null);
 
-            assertFalse(fs.exists(filePath));
+            Assert.assertFalse(fs.exists(filePath));
         }
         finally {
             U.closeQuiet(s); // Safety.
@@ -2189,7 +2190,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     public void testModeResolver() throws Exception {
         IgfsModeResolver mr = ((IgniteHadoopFileSystem)fs).getModeResolver();
 
-        assertEquals(mode, mr.resolveMode(IgfsPath.ROOT));
+        Assert.assertEquals(mode, mr.resolveMode(IgfsPath.ROOT));
     }
 
     /**
@@ -2224,7 +2225,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
                 try {
                     // Check that client is again operational.
-                    assertTrue(fs.mkdirs(new Path("/" + Thread.currentThread().getName())));
+                    Assert.assertTrue(fs.mkdirs(new Path("/" + Thread.currentThread().getName())));
 
                     return true;
                 }
@@ -2262,7 +2263,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         FSDataInputStream is = fs.open(file, openAfterCreateBufSize);
 
         for (int i = 0; i < writeCntsInCreate; i++)
-            assertEquals(i, is.readInt());
+            Assert.assertEquals(i, is.readInt());
 
         is.close();
 
@@ -2276,7 +2277,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         is = fs.open(file, openAfterAppendBufSize);
 
         for (int i = 0; i < writeCntsInCreate + writeCntsInAppend; i++)
-            assertEquals(i, is.readInt());
+            Assert.assertEquals(i, is.readInt());
 
         is.close();
     }
@@ -2337,26 +2338,26 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         for (Config c = queue.poll(); c != null; c = queue.poll()) {
             boolean exists;
 
-            assertEquals("Check existence [src=" + c.src + ", dest=" + c.dest + ']',
+            Assert.assertEquals("Check existence [src=" + c.src + ", dest=" + c.dest + ']',
                 exists = c.srcFs.exists(c.src), c.destFs.exists(c.dest));
 
-            assertEquals("Check types (files?) [src=" + c.src + ", dest=" + c.dest + ']',
+            Assert.assertEquals("Check types (files?) [src=" + c.src + ", dest=" + c.dest + ']',
                 c.srcFs.isFile(c.src), c.destFs.isFile(c.dest));
 
             if (exists) {
                 ContentSummary srcSummary = c.srcFs.getContentSummary(c.src);
                 ContentSummary dstSummary = c.destFs.getContentSummary(c.dest);
 
-                assertEquals("Directories number comparison failed",
+                Assert.assertEquals("Directories number comparison failed",
                     srcSummary.getDirectoryCount(), dstSummary.getDirectoryCount());
 
-                assertEquals("Files number comparison failed",
+                Assert.assertEquals("Files number comparison failed",
                     srcSummary.getFileCount(), dstSummary.getFileCount());
 
-                assertEquals("Space consumed comparison failed",
+                Assert.assertEquals("Space consumed comparison failed",
                     srcSummary.getSpaceConsumed(), dstSummary.getSpaceConsumed());
 
-                assertEquals("Length comparison failed",
+                Assert.assertEquals("Length comparison failed",
                     srcSummary.getLength(), dstSummary.getLength());
 
                 // Intentionally skipping quotas checks as they can vary.
@@ -2375,14 +2376,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             assert srcSt != null && destSt != null : "Both not null" +
                 " [srcSt=" + Arrays.toString(srcSt) + ", destSt=" + Arrays.toString(destSt) + ']';
 
-            assertEquals("Check listing [src=" + c.src + ", dest=" + c.dest + ']', srcSt.length, destSt.length);
+            Assert.assertEquals("Check listing [src=" + c.src + ", dest=" + c.dest + ']', srcSt.length, destSt.length);
 
             // Listing of the file returns the only element with this file.
             if (srcSt.length == 1 && c.src.equals(srcSt[0].getPath())) {
-                assertEquals(c.dest, destSt[0].getPath());
+                Assert.assertEquals(c.dest, destSt[0].getPath());
 
-                assertTrue("Expects file [src=" + c.src + ", srcSt[0]=" + srcSt[0] + ']', !srcSt[0].isDir());
-                assertTrue("Expects file [dest=" + c.dest + ", destSt[0]=" + destSt[0] + ']', !destSt[0].isDir());
+                Assert.assertTrue("Expects file [src=" + c.src + ", srcSt[0]=" + srcSt[0] + ']', !srcSt[0].isDir());
+                Assert.assertTrue("Expects file [dest=" + c.dest + ", destSt[0]=" + destSt[0] + ']', !destSt[0].isDir());
 
                 FSDataInputStream srcIn = null;
                 FSDataInputStream destIn = null;
@@ -2456,8 +2457,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private void assertPathExists(FileSystem fs, Path p) throws IOException {
         FileStatus fileStatus = fs.getFileStatus(p);
 
-        assertEquals(p, fileStatus.getPath());
-        assertNotSame(0, fileStatus.getModificationTime());
+        Assert.assertEquals(p, fileStatus.getPath());
+        Assert.assertNotSame(0, fileStatus.getModificationTime());
     }
 
     /**
