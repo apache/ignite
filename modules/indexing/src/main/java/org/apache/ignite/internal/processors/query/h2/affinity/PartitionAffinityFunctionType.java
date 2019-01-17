@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Affinity function type.
  */
@@ -46,20 +44,5 @@ public enum PartitionAffinityFunctionType {
      */
     public int value() {
         return val;
-    }
-
-    /**
-     * Get type from value.
-     *
-     * @param val Value.
-     * @return Type or {@code null} if cannot be resolved..
-     */
-    @Nullable public static PartitionAffinityFunctionType fromValue(int val) {
-        for (PartitionAffinityFunctionType typ : values()) {
-            if (typ.val == val)
-                return typ;
-        }
-
-        return null;
     }
 }

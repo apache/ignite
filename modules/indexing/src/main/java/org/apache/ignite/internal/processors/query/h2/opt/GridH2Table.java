@@ -1149,8 +1149,8 @@ public class GridH2Table extends TableBase {
         }
     }
 
-    @Override
-    protected void setColumns(Column[] columns) {
+    /** {@inheritDoc} */
+    @Override protected void setColumns(Column[] columns) {
         this.safeColumns = columns;
 
         super.setColumns(columns);

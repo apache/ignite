@@ -87,6 +87,7 @@ public class PartitionTable {
      * @param colName Column name.
      * @return {@code True} if affinity column.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isAffinityColumn(String colName) {
         return F.eq(colName, affColName) || F.eq(colName, secondAffColName);
     }

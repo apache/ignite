@@ -56,13 +56,6 @@ public class PartitionResult {
         return aff;
     }
 
-    /**
-     * @return Join group.
-     */
-    public int joinGroup() {
-        return tree.joinGroup();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionResult.class, this);
