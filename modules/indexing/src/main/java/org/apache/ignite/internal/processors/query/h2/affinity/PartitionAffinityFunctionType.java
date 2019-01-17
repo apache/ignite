@@ -17,36 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
-
 /**
- * Node denoting all available partitions
+ * Affinity function type.
  */
-public class PartitionAllNode implements PartitionNode {
-    /** Singleton. */
-    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
+public enum PartitionAffinityFunctionType {
+    /** Custom affintiy function. */
+    CUSTOM(0),
+
+    /** Rendezvous affinity function. */
+    RENDEZVOUS(1);
+
+    /** Value. */
+    private final int val;
 
     /**
      * Constructor.
+     *
+     * @param val Value.
      */
-    private PartitionAllNode() {
-        // No-op.
+    PartitionAffinityFunctionType(int val) {
+        this.val = val;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int joinGroup() {
-        return PartitionTableModel.GRP_NONE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionAllNode.class, this);
+    /**
+     * @return Value.
+     */
+    public int value() {
+        return val;
     }
 }
