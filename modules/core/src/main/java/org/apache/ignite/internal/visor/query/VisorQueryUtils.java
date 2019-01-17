@@ -377,6 +377,8 @@ public class VisorQueryUtils {
                 if (!F.isEmpty(cacheName))
                     qry.setSchema(cacheName);
 
+                long start = U.currentTimeMillis();
+
                 List<FieldsQueryCursor<List<?>>> qryCursors = ignite
                     .context()
                     .query()
@@ -398,14 +400,18 @@ public class VisorQueryUtils {
                     if (meta == null)
                         actualHolder.setError(new SQLException("Fail to execute query. No metadata available."));
                     else {
-                        List<VisorQueryField> names = new ArrayList<>(meta.size());
+                        List<VisorQueryField> cols = new ArrayList<>(meta.size());
 
-                        for (GridQueryFieldMetadata col : meta)
-                            names.add(new VisorQueryField(col.schemaName(), col.typeName(),
-                                col.fieldName(), col.fieldTypeName()));
+                        for (GridQueryFieldMetadata col : meta) {
+                            cols.add(new VisorQueryField(
+                                col.schemaName(),
+                                col.typeName(),
+                                col.fieldName(),
+                                col.fieldTypeName())
+                            );
+                        }
 
-                        actualHolder.setCursor(cur);
-                        actualHolder.setColumns(names);
+                        actualHolder.complete(cur, U.currentTimeMillis() - start, cols);
 
                         scheduleQueryHolderRemoval(ignite, actualHolder.getQueryID());
                     }
@@ -445,6 +451,8 @@ public class VisorQueryUtils {
 
                 VisorQueryCursor<Cache.Entry<Object, Object>> cur;
 
+                long start = U.currentTimeMillis();
+
                 if (arg.isNear())
                     cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
                 else {
@@ -459,8 +467,7 @@ public class VisorQueryUtils {
                     // Ensure holder was not removed from node local storage from separate thread if user cancel query.
                     VisorQueryHolder actualHolder = getQueryHolder(ignite, holder.getQueryID());
 
-                    actualHolder.setCursor(cur);
-                    actualHolder.setColumns(SCAN_COL_NAMES);
+                    actualHolder.complete(cur, U.currentTimeMillis() - start, SCAN_COL_NAMES);
 
                     scheduleQueryHolderRemoval(ignite, actualHolder.getQueryID());
                 }

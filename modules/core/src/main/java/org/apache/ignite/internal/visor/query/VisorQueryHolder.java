@@ -37,9 +37,6 @@ public class VisorQueryHolder {
     /** Cancel query object. */
     private final GridQueryCancel cancel;
 
-    /** Query start time in ms. */
-    private final long start;
-
     /** Wrapper for query cursor. */
     private volatile VisorQueryCursor<?> cur;
 
@@ -50,7 +47,7 @@ public class VisorQueryHolder {
     private volatile Throwable err;
 
     /** Query duration in ms. */
-    private long duration = -1;
+    private volatile long duration;
 
     /** Flag indicating that this cursor was read from last check. */
     private volatile boolean accessed;
@@ -76,8 +73,6 @@ public class VisorQueryHolder {
 
         // Generate query ID to store query cursor in node local storage.
         qryId = (sqlQry ? SQL_QRY_PREFIX : SCAN_QRY_PREFIX) + "-" + UUID.randomUUID();
-
-        start = System.currentTimeMillis();
     }
 
     /**
@@ -95,15 +90,6 @@ public class VisorQueryHolder {
     }
 
     /**
-     * Set wrapper for query cursor.
-     *
-     * @param cur Wrapper for query cursor.
-     */
-    public void setCursor(VisorQueryCursor<?> cur) {
-        this.cur = cur;
-    }
-
-    /**
      * @return Query column descriptors.
      */
     public List<VisorQueryField> getColumns() {
@@ -111,13 +97,15 @@ public class VisorQueryHolder {
     }
 
     /**
-     * Get query column descriptors.
+     * Complete query execution.
      *
+     * @param cur Wrapper for query cursor.
+     * @param duration Duration of query execution.
      * @param cols Query column descriptors.
      */
-    public void setColumns(List<VisorQueryField> cols) {
-        duration = System.currentTimeMillis() - start;
-
+    public void complete(VisorQueryCursor<?> cur, long duration, List<VisorQueryField> cols) {
+        this.cur = cur;
+        this.duration = duration;
         this.cols = cols;
     }
 
@@ -169,9 +157,6 @@ public class VisorQueryHolder {
      * @return Duration of query execution.
      */
     public long duration() {
-        if (duration > 0)
-            return duration;
-
-        return System.currentTimeMillis() - start;
+        return duration;
     }
 }
