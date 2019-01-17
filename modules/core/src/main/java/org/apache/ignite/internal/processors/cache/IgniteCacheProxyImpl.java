@@ -808,9 +808,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (e instanceof TransactionException)
                 throw (TransactionException)e;
 
-            if (e instanceof IgniteSQLException && e.getCause() instanceof IgniteCheckedException)
-                //TODO IGNITE-10377: Move IgniteSqlException handling to Util method and unwrap in proper way.
-                throw CU.convertToCacheException((IgniteCheckedException)e.getCause());
+            if (e instanceof IgniteSQLException)
+                throw CU.convertToCacheException((IgniteSQLException)e);
 
             throw new CacheException(e.getMessage(), e);
         }
