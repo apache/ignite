@@ -15,13 +15,19 @@
  * limitations under the License.
  */
 
-import {pluck, distinctUntilChanged} from 'rxjs/operators';
+import {of} from 'rxjs';
+import {pluck, distinctUntilChanged, switchMap} from 'rxjs/operators';
 
 export default class NoDataCmpCtrl {
     static $inject = ['AgentManager', 'AgentModal'];
 
     connectionState$ = this.AgentManager.connectionSbj.pipe(
-        pluck('state'),
+        switchMap((sbjValue) => {
+            if (sbjValue.cluster && !sbjValue.cluster.active)
+                return of('CLUSTER_NOT_ACTIVE');
+
+            return of(sbjValue.state);
+        }),
         distinctUntilChanged()
     );
 
