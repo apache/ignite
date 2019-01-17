@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
@@ -121,6 +123,103 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
+    public void testClusterRestartStaticCaches1() throws Exception {
+        clusterRestart(1, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterRestartStaticCaches2() throws Exception {
+        clusterRestart(3, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterRestartDynamicCaches1() throws Exception {
+        clusterRestart(1, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterRestartDynamicCaches2() throws Exception {
+        clusterRestart(3, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testClusterRestartCachesWithH2Indexes() throws Exception {
+        CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
+
+        // Several caches with the same indexed type (and index names).
+        ccfgs1[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1).
+            setIndexedTypes(Integer.class, Person.class);
+        ccfgs1[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1).
+            setIndexedTypes(Integer.class, Person.class);
+        ccfgs1[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1).
+            setIndexedTypes(Integer.class, Person.class);
+        ccfgs1[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1).
+            setIndexedTypes(Integer.class, Person.class);
+        ccfgs1[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1).
+            setIndexedTypes(Integer.class, Person.class);
+
+        String[] caches = {"c1", "c2", "c3", "c4", "c5"};
+
+        startGrids(3);
+
+        Ignite node = ignite(0);
+
+        node.active(true);
+
+        node.createCaches(Arrays.asList(ccfgs1));
+
+        putPersons(caches, node);
+
+        checkPersons(caches, node);
+        checkPersonsQuery(caches, node);
+
+        stopAllGrids();
+
+        startGrids(3);
+
+        node = ignite(0);
+
+        node.active(true);
+
+        awaitPartitionMapExchange();
+
+        checkPersons(caches, node);
+        checkPersonsQuery(caches, node);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        int idx = rnd.nextInt(caches.length);
+
+        String cacheName = caches[idx];
+        CacheConfiguration cacheCfg = ccfgs1[idx];
+
+        node.destroyCache(cacheName);
+
+        node.createCache(cacheCfg);
+
+        putPersons(new String[]{cacheName}, node);
+
+        checkPersons(caches, node);
+        checkPersonsQuery(caches, node);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testExpiryPolicy() throws Exception {
         long ttl = 10 * 60000;
 
@@ -189,6 +288,72 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
                 assertEquals(expTimes.get(cacheName).get(key), (Long)entry.expireTime());
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateDropCache() throws Exception {
+        ccfgs = new CacheConfiguration[]{cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
+            .setIndexedTypes(Integer.class, Person.class)};
+
+        Ignite ignite = startGrid();
+
+        ignite.active(true);
+
+        ignite.cache("c1").destroy();
+
+        stopGrid();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateDropCache1() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
+
+        CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1);
+
+        Ignite ignite = startGrid();
+
+        ignite.active(true);
+
+        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
+
+        ignite.cache("c1").destroy();
+
+        ignite.cache("c2").destroy();
+
+        ignite.createCache(ccfg1);
+        ignite.createCache(ccfg2);
+
+        stopGrid();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateDropCache2() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
+            .setIndexedTypes(Integer.class, Person.class);
+
+        CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1)
+            .setIndexedTypes(Integer.class, Person.class);
+
+        Ignite ignite = startGrid();
+
+        ignite.active(true);
+
+        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
+
+        ignite.cache("c1").destroy();
+
+        ignite.createCache(ccfg1);
+
+        stopGrid();
     }
 
     /**
