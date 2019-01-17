@@ -159,7 +159,7 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
      * an AssertionFailedError is thrown with the given msg.
      */
     protected static void fail(String msg) {
-        // todo remove after merge of IGNITE-10178
+        // todo keep and deledate
     }
 
     /**
