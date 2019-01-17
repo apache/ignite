@@ -3247,14 +3247,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", newNextNode=" + newNextNode +
                                         ", forceSndPending=" + forceSndPending + ']');
 
-                                Set<UUID> failedNodesForPending = prepareFailedNodeIds(failedNodes);
+                                List<TcpDiscoveryNodeFailedMessage> failedMsgs = prepareFailedNodeMessages(failedNodes);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Prepared failed nodes messages to send before pending [messages=" + failedMsgs + ']');
+
+                                if (debugMode)
+                                    debugLog(msg, "Prepared failed nodes messages to send before pending [messages=" + failedMsgs + ']');
+
+                                for (TcpDiscoveryNodeFailedMessage failedMsg : failedMsgs) {
+                                    spi.writeToSocket(sock, out, failedMsg,
+                                        new IgniteSpiOperationTimeoutHelper(spi, true).nextTimeoutChunk(spi.getSocketTimeout()));
+
+                                    timeoutHelper = null;
+                                }
 
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
                                     prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs);
-
-                                    pendingMsg.failedNodes(failedNodesForPending);
 
                                     if (timeoutHelper == null)
                                         timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
@@ -3453,6 +3464,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     break;
             }
 
+            // TODO ServerImpl.this.failedNodes is only updated in disco-msg-worker, how could have it been changed?
             synchronized (mux) {
                 failedNodes.removeAll(ServerImpl.this.failedNodes.keySet());
             }
@@ -3471,12 +3483,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryNode failedNode : failedNodes) {
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
                             ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                        // TODO else - if node is already in failed, why send NodeFailedMessage?
                     }
 
                     for (TcpDiscoveryNode failedNode : failedNodes)
                         failedNodesMsgSent.add(failedNode.id());
                 }
 
+                // TODO looks like we do not need to send these messages now if we resent pending messages.
                 for (TcpDiscoveryNode n : failedNodes)
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
 
@@ -3534,26 +3548,29 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Constructs a set of failed node IDs based on current state of failed nodes.
          * Will add the IDs of passed in collection of nodes to the failed set.
          *
+         * TODO this is a prototype, need to understand whether we need to update failedNodes after sending
+         * TODO these messages
+         *
          * @param failed Optional collection of failed nodes.
          * @return Set of failed node IDs or {@code null} if there no failed nodes.
          */
-        private Set<UUID> prepareFailedNodeIds(Collection<TcpDiscoveryNode> failed) {
+        private List<TcpDiscoveryNodeFailedMessage> prepareFailedNodeMessages(Collection<TcpDiscoveryNode> failed) {
             synchronized (mux) {
-                if (!failedNodes.isEmpty() || !F.isEmpty(failed)) {
-                    Set <UUID> res = U.newHashSet(failedNodes.size() + failed.size());
-
-                    res.addAll(failedNodes.values());
+                if (!F.isEmpty(failed)) {
+                    List<TcpDiscoveryNodeFailedMessage> res = new ArrayList<>(failed.size());
 
                     if (!F.isEmpty(failed)) {
-                        for (TcpDiscoveryNode failedNode : failed)
-                            res.add(failedNode.id());
+                        for (TcpDiscoveryNode failedNode : failed) {
+                            if (!failedNodes.containsKey(failedNode))
+                                res.add(new TcpDiscoveryNodeFailedMessage(locNode.id(), failedNode.id(), failedNode.internalOrder()));
+                        }
                     }
 
                     return res;
                 }
             }
 
-            return null;
+            return Collections.emptyList();
         }
 
         /**
