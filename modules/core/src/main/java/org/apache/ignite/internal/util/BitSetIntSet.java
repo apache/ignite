@@ -82,7 +82,8 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
                     next = nextBit;
 
                     return true;
-                } else
+                }
+                else
                     return false;
             }
 
@@ -135,7 +136,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
 
     /** {@inheritDoc} */
     @Override public boolean containsAll(@NotNull Collection<?> c) {
-        for(Object o : c) {
+        for (Object o : c) {
             if (!contains(o))
                 return false;
         }
@@ -147,7 +148,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     @Override public boolean addAll(@NotNull Collection<? extends Integer> c) {
         boolean atLeastOneAdded = false;
 
-        for(Integer o : c) {
+        for (Integer o : c) {
             if (add(o))
                 atLeastOneAdded = true;
         }
@@ -166,7 +167,7 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     @Override public boolean removeAll(@NotNull Collection<?> c) {
         boolean atLeastOneRemoved = false;
 
-        for(Object o : c) {
+        for (Object o : c) {
             if (remove(o))
                 atLeastOneRemoved = true;
         }

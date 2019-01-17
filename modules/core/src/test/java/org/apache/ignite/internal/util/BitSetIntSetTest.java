@@ -63,15 +63,14 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertFalse(bitSetIntSet.isEmpty());
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testItetator() {
         testIterator(0);
         testIterator(1024);
     }
 
+    /** */
     private void testIterator(int initCap) {
         BitSetIntSet bitSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
 
@@ -131,9 +130,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertFalse(bitSet.isEmpty());
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testContains() {
         BitSetIntSet bitSetInt = new BitSetIntSet();
@@ -225,8 +222,9 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
             }});
 
             fail("retainAll is not supported");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
     }
 
@@ -293,44 +291,49 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         try {
             bitSetInt.add(null);
             fail("add should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             bitSetInt.add(-1);
             fail("add should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             bitSetInt.contains(null);
             fail("contains should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             bitSetInt.contains(-1);
             fail("contains should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             bitSetInt.remove(null);
             fail("remove should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             bitSetInt.remove(-1);
             fail("remove should fail here");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
     }
-
 }

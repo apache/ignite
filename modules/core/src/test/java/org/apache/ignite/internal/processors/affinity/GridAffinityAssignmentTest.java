@@ -141,16 +141,18 @@ public class GridAffinityAssignmentTest {
             gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
 
         try {
             gridAffinityAssignment.backupPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
-        } catch (UnsupportedOperationException ignored) {
-
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
         }
     }
 
@@ -194,5 +196,4 @@ public class GridAffinityAssignmentTest {
             consistentId
         );
     }
-
 }
