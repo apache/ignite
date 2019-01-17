@@ -65,6 +65,21 @@
     "code": "CHN"
   },
   {
+    "label": "Taiwan",
+    "value": "Taiwan",
+    "code": "TW"
+  },
+  {
+    "label": "Hong Kong",
+    "value": "Hong Kong",
+    "code": "HK"
+  },
+  {
+    "label": "Singapore",
+    "value": "Singapore",
+    "code": "SG"
+  },
+  {
     "label": "India",
     "value": "India",
     "code": "IND"
