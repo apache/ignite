@@ -30,6 +30,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
+ * Test scenario:
+ *
+ * 1. Create topology in specific order: srv1 srv2 client srv3 srv4
+ * 2. Delay client reconnect.
+ * 3. Trigger topology change by restarting srv2 (will trigger reconnect to next node), srv3, srv4
+ * 4. Resume reconnect to node with empty EnsuredMessageHistory and wait for completion.
+ * 5. Add new node to topology.
+ *
+ * Pass condition: new node successfully joins topology.
  */
 @RunWith(JUnit4.class)
 public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstractTest {
@@ -40,11 +49,10 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.setAutoActivationEnabled(false);
-        cfg.setIncludeEventTypes(EventType.EVTS_DISCOVERY);
 
         BlockTcpDiscoverySpi spi = new BlockTcpDiscoverySpi();
-        spi.setJoinTimeout(1000000000L);
 
+        // Guarantees client join to srv2.
         Field rndAddrsField = U.findField(BlockTcpDiscoverySpi.class, "skipAddrsRandomization");
 
         assertNotNull(rndAddrsField);
@@ -54,10 +62,6 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
         cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
 
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
-        cfg.setFailureDetectionTimeout(1000000000L);
-        cfg.setClientFailureDetectionTimeout(1000000000L);
-        cfg.setMetricsUpdateFrequency(1000000000L / 2);
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -117,6 +121,8 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
             lsnr.stopBlockRestart();
 
             fut.get();
+
+            doSleep(1500); // Wait for reconnect.
 
             startGrid(4);
         }
