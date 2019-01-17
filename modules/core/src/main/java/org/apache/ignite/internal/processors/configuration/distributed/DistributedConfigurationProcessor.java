@@ -46,7 +46,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     private final Map<String, DistributedProperty> props = new ConcurrentHashMap<>();
 
     /** Global metastorage. */
-    private volatile DistributedMetaStorage globalMetastorage;
+    private volatile DistributedMetaStorage distributedMetastorage;
 
     /** Max allowed action. All action with less ordinal than this also allowed. */
     private volatile AllowableAction allowableAction = REGISTER;
@@ -62,12 +62,12 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     @Override public void start() throws IgniteCheckedException {
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
-        isp.registerGlobalMetastorageListener(new DistributedMetastorageLifecycleListener() {
+        isp.registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                globalMetastorage = ctx.globalMetastorage();
+                distributedMetastorage = ctx.distributedMetastorage();
 
                 //Listener for handling of cluster wide change of specific properties. Do local update.
-                globalMetastorage.listen(
+                distributedMetastorage.listen(
                     (key) -> key.startsWith(DIST_CONF_PREFIX),
                     (String key, Serializable oldVal, Serializable newVal) -> {
                         DistributedProperty prop = props.get(toPropertyKey(key));
@@ -234,7 +234,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     private void doActualize(DistributedProperty prop) {
         Serializable readVal = null;
         try {
-            readVal = globalMetastorage.read(toMetaStorageKey(prop.getName()));
+            readVal = distributedMetastorage.read(toMetaStorageKey(prop.getName()));
         }
         catch (IgniteCheckedException e) {
             log.error("Can not read value of property '" + prop.getName() + "'", e);
@@ -254,7 +254,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
             (IgniteThrowableBiConsumer<String, Serializable>)(key, value) ->
-                globalMetastorage.write(toMetaStorageKey(key), value)
+                distributedMetastorage.write(toMetaStorageKey(key), value)
         );
     }
 
