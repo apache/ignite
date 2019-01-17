@@ -5596,6 +5596,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheUpdateTxResult updRes = valid ? new GridCacheUpdateTxResult(true, 0L, logPtr)
                 : new GridCacheUpdateTxResult(false, logPtr);
 
+            updRes.newValue(res.newValue());
+
             if (invoke) {
                 assert res.invokeResult() != null;
 
