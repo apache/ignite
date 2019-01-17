@@ -17,10 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
@@ -112,20 +112,19 @@ import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocal
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(IgniteCacheMvccTestSuite1.DynamicSuite.class)
 public class IgniteCacheMvccTestSuite1 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 1");
 
         Set<Class> ignoredTests = new HashSet<>();
 
@@ -236,14 +235,22 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(IgniteCacheTxInvokeTest.class); // See IgniteCacheMvccTxInvokeTest.
         ignoredTests.add(IgniteCacheTxNearEnabledInvokeTest.class); // See IgniteCacheMvccTxNearEnabledInvokeTest.
 
-        suite.addTest(IgniteBinaryCacheTestSuite.suite(ignoredTests));
+        List<Class<?>> suite = new ArrayList<>(IgniteBinaryCacheTestSuite.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTest(new JUnit4TestAdapter(GridCacheMvccMultiThreadedUpdateSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheMvccTxFastFinishTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxInvokeTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheMvccTxNearEnabledInvokeTest.class));
+        suite.add(GridCacheMvccMultiThreadedUpdateSelfTest.class);
+        suite.add(CacheMvccTxFastFinishTest.class);
+        suite.add(IgniteCacheMvccTxInvokeTest.class);
+        suite.add(IgniteCacheMvccTxNearEnabledInvokeTest.class);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

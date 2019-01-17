@@ -75,6 +75,9 @@ public interface GridComponent {
         /** Service processor. */
         SERVICE_PROC,
 
+        /** Distributed MetaStorage processor. */
+        META_STORAGE,
+
         /** Transactional data replication processor. */
         TX_DR_PROC
     }

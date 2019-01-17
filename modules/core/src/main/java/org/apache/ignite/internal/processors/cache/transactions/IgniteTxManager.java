@@ -2503,24 +2503,26 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (cctx.wal() != null && logTxRecords()) {
             TxRecord txRecord = newTxRecord(tx);
 
-            try {
-                WALPointer ptr = cctx.wal().log(txRecord);
+            if (txRecord != null) {
+                try {
+                    WALPointer ptr = cctx.wal().log(txRecord);
 
-                TransactionState txState = tx.state();
+                    TransactionState txState = tx.state();
 
-                if (txState == PREPARED)
-                    cctx.tm().pendingTxsTracker().onTxPrepared(tx.nearXidVersion());
-                else if (txState == ROLLED_BACK)
-                    cctx.tm().pendingTxsTracker().onTxRolledBack(tx.nearXidVersion());
-                else
-                    cctx.tm().pendingTxsTracker().onTxCommitted(tx.nearXidVersion());
+                    if (txState == PREPARED)
+                        cctx.tm().pendingTxsTracker().onTxPrepared(tx.nearXidVersion());
+                    else if (txState == ROLLED_BACK)
+                        cctx.tm().pendingTxsTracker().onTxRolledBack(tx.nearXidVersion());
+                    else
+                        cctx.tm().pendingTxsTracker().onTxCommitted(tx.nearXidVersion());
 
-                return ptr;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to log TxRecord: " + txRecord, e);
+                    return ptr;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log TxRecord: " + txRecord, e);
 
-                throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                    throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                }
             }
         }
 
@@ -2536,12 +2538,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private TxRecord newTxRecord(IgniteTxAdapter tx) {
         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
-        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+        if (baselineTop != null && baselineTop.consistentIds().contains(cctx.localNode().consistentId())) {
+            Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
 
-        if (tx.txState().mvccEnabled())
-            return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
-        else
-            return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+            if (tx.txState().mvccEnabled())
+                return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+            else
+                return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+        }
+
+        return null;
     }
 
     /**

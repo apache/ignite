@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +46,7 @@ import org.junit.runners.JUnit4;
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 @RunWith(JUnit4.class)
-public class H2RowCacheSelfTest extends GridCommonAbstractTest {
+public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
 

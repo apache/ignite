@@ -121,7 +121,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(SVMLinearClassificationModel mdl) {
+    @Override public boolean isUpdateable(SVMLinearClassificationModel mdl) {
         return true;
     }
 
