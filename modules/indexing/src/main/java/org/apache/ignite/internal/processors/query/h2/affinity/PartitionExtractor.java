@@ -41,15 +41,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Partition tree extractor.
@@ -429,8 +427,7 @@ public class PartitionExtractor {
         throws IgniteCheckedException {
         assert op.size() == 2;
 
-        // TODO: Pass model?
-        PartitionNode betweenNodes = tryExtractBetween(op);
+        PartitionNode betweenNodes = tryExtractBetween(op, tblModel);
 
         if (betweenNodes != null)
             return betweenNodes;
@@ -644,12 +641,14 @@ public class PartitionExtractor {
      * Try to extract partitions from {@code op} assuming that it's between operation or simple range.
      *
      * @param op Sql operation.
+     * @param tblModel Table model.
      * @return {@code PartitionSingleNode} if operation reduced to one partition,
      *   {@code PartitionGroupNode} if operation reduced to multiple partitions or null if operation is neither
      *   between nor simple range. Null also returns if it's not possible to extract partitions from given operation.
      * @throws IgniteCheckedException If failed.
      */
-    private PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode tryExtractBetween(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         // Between operation (or similar range) should contain exact two children.
         assert op.size() == 2;
 
@@ -740,11 +739,18 @@ public class PartitionExtractor {
 
         Set<PartitionSingleNode> parts = new HashSet<>();
 
-        PartitionTableDescriptor desc = descriptor(tbl);
+        PartitionTable tbl0 = tblModel.table(leftCol.tableAlias());
+
+        // If table is in ignored set, then we cannot use it for partition extraction.
+        if (tbl0 == null)
+            return null;
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            parts.add(new PartitionConstantNode(desc,
-                idx.kernalContext().affinity().partition((tbl).cacheName(), i)));
+            Object constVal = H2Utils.convert(i, idx, leftCol.column().getType());
+
+            int part = idx.kernalContext().affinity().partition(tbl0.cacheName(), constVal);
+
+            parts.add(new PartitionConstantNode(tbl0, part));
 
             if (parts.size() > maxPartsCntBetween)
                 return null;
