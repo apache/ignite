@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.Callable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -153,9 +154,9 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
      * @param cache Cache.
      */
     private void checkCache(GridCacheAdapter cache) {
-        assertNotNull(cache);
-        assertFalse(cache.context().userCache());
-        assertTrue(cache.context().systemTx());
-        assertEquals(SYSTEM_POOL, cache.context().ioPolicy());
+        Assert.assertNotNull(cache);
+        Assert.assertFalse(cache.context().userCache());
+        Assert.assertTrue(cache.context().systemTx());
+        Assert.assertEquals(SYSTEM_POOL, cache.context().ioPolicy());
     }
 }

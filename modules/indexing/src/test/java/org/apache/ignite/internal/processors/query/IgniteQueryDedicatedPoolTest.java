@@ -44,6 +44,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -112,12 +113,12 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             cursor.close();
 
-            assertEquals(1, result.size());
+            Assert.assertEquals(1, result.size());
 
             Byte plc = (Byte)result.get(0).get(0);
 
-            assertNotNull(plc);
-            assertEquals(GridIoPolicy.QUERY_POOL, (byte)plc);
+            Assert.assertNotNull(plc);
+            Assert.assertEquals(GridIoPolicy.QUERY_POOL, (byte)plc);
         }
     }
 
@@ -139,7 +140,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
                     }
                 }));
 
-            assertEquals(1, cursor.getAll().size());
+            Assert.assertEquals(1, cursor.getAll().size());
 
             cursor.close();
         }
@@ -161,8 +162,8 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             List<Cache.Entry<Byte, Byte>> all = cursor.getAll();
 
-            assertEquals(1, all.size());
-            assertEquals(GridIoPolicy.QUERY_POOL, (byte)all.get(0).getValue());
+            Assert.assertEquals(1, all.size());
+            Assert.assertEquals(GridIoPolicy.QUERY_POOL, (byte)all.get(0).getValue());
 
             cursor.close();
         }

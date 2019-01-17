@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -134,7 +135,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 cache1.get(i); // put entry to near cache
         }
 
-        assertEquals(beforeSize, cache1.localMetrics().getSize());
+        Assert.assertEquals(beforeSize, cache1.localMetrics().getSize());
     }
 
     /**
@@ -176,19 +177,19 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             info("Reads: " + jcache.localMetrics().getCacheGets());
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(1, jcache.localMetrics().getCachePuts());
+                Assert.assertEquals(1, jcache.localMetrics().getCachePuts());
             else
-                assertEquals(0, jcache.localMetrics().getCachePuts());
+                Assert.assertEquals(0, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(2, jcache.localMetrics().getCacheGets());
-                assertEquals(1, jcache.localMetrics().getCacheHits());
-                assertEquals(1, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -226,24 +227,24 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(1, jcache.localMetrics().getCachePuts());
+                Assert.assertEquals(1, jcache.localMetrics().getCachePuts());
             else
-                assertEquals(0, jcache.localMetrics().getCachePuts());
+                Assert.assertEquals(0, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(1, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheMisses());
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
-                assertEquals(1, jcache.localMetrics().getCacheGets());
-                assertEquals(1, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -281,22 +282,22 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
-            assertEquals(1, jcache.localMetrics().getCachePuts());
+            Assert.assertEquals(1, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(1, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheMisses());
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(1, jcache.localMetrics().getCacheGets());
-                assertEquals(1, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(1, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -343,17 +344,17 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             info("Writes: " + jcache.localMetrics().getCachePuts());
             info("Reads: " + jcache.localMetrics().getCacheGets());
 
-            assertEquals(0, jcache.localMetrics().getCachePuts());
+            Assert.assertEquals(0, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(2, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(2, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -395,17 +396,17 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
-            assertEquals(0, jcache.localMetrics().getCachePuts());
+            Assert.assertEquals(0, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key)) {
-                assertEquals(2, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(2, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -444,22 +445,22 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
-            assertEquals(0, jcache.localMetrics().getCachePuts());
+            Assert.assertEquals(0, jcache.localMetrics().getCachePuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(2, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(2, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
-                assertEquals(0, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(0, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheMisses());
             }
             else {
-                assertEquals(2, jcache.localMetrics().getCacheGets());
-                assertEquals(0, jcache.localMetrics().getCacheHits());
-                assertEquals(2, jcache.localMetrics().getCacheMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheGets());
+                Assert.assertEquals(0, jcache.localMetrics().getCacheHits());
+                Assert.assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
         }
     }
@@ -487,33 +488,33 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
             else
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             }
             else
                 assertNoMetricsChanged(jcache);
@@ -543,33 +544,33 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
             else
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             }
             else
                 assertNoMetricsChanged(jcache);
@@ -606,28 +607,28 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
-            assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
-            assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-            assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+            Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+            Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+            Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             } else {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
 
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
             }
         }
     }
@@ -653,26 +654,26 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
 
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else
                 assertNoMetricsChanged(jcache);
@@ -700,25 +701,25 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
 
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else
                 assertNoMetricsChanged(jcache);
@@ -754,34 +755,34 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
             else {
-                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
-                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
 
-                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                Assert.assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
 
-                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                Assert.assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
             }
         }
     }
@@ -792,16 +793,16 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
      * @param jcache Cache to be checked.
      */
     private void assertNoMetricsChanged(IgniteCache<Object, Object> jcache) {
-        assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
-        assertEquals(0, jcache.localMetrics().getEntryProcessorRemovals());
-        assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
-        assertEquals(0, jcache.localMetrics().getEntryProcessorInvocations());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorRemovals());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorInvocations());
 
-        assertEquals(0, jcache.localMetrics().getEntryProcessorMisses());
-        assertEquals(0, jcache.localMetrics().getEntryProcessorHits());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorMisses());
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorHits());
 
-        assertEquals(0, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
-        assertEquals(0, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+        Assert.assertEquals(0, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
     }
 
     /**

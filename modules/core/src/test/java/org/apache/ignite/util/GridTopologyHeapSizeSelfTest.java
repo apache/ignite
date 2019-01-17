@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,7 +50,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
 
             double size1 = U.heapSize(node1, 10);
 
-            assertEquals(size1, allSize, 1E-5);
+            Assert.assertEquals(size1, allSize, 1E-5);
         }
         finally {
             stopAllGrids();
@@ -65,9 +66,9 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
         double size1 = U.heapSize(node1, 10);
         double size2 = U.heapSize(node2, 10);
 
-        double allSize = U.heapSize(F.asList((ClusterNode)node1, node2), 10);
+        double allSize = U.heapSize(F.asList(node1, node2), 10);
 
-        assertEquals(size1 + size2, allSize, 1E-5);
+        Assert.assertEquals(size1 + size2, allSize, 1E-5);
     }
 
     /** */
@@ -79,9 +80,9 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
         double size1 = U.heapSize(node1, 10);
         double size2 = U.heapSize(node2, 10);
 
-        double allSize = U.heapSize(F.asList((ClusterNode)node1, node2), 10);
+        double allSize = U.heapSize(F.asList(node1, node2), 10);
 
-        assertEquals(size1 + size2, allSize, 1E-5);
+        Assert.assertEquals(size1 + size2, allSize, 1E-5);
     }
 
     /**

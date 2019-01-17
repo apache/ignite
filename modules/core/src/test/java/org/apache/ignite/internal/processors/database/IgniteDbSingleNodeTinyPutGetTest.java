@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,7 +45,7 @@ public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTe
             cache.put(i, (byte) i);
 
         for (short i = 0; i < 1000; i++)
-            assertEquals((byte) i, cache.get(i).byteValue());
+            Assert.assertEquals((byte) i, cache.get(i).byteValue());
     }
 
     /** {@inheritDoc} */

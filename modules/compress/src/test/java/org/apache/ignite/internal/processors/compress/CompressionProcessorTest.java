@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -847,7 +848,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         if (io.isLeaf())
-            assertEquals(pageSize, io.getItemsEnd(pageAddr)); // Page must be full.
+            Assert.assertEquals(pageSize, io.getItemsEnd(pageAddr)); // Page must be full.
 
         // Full page.
         checkCompressDecompress(page, getContents, io.isLeaf());
@@ -919,7 +920,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
             io.addRowFragment(pageId, pageAddr, lastRow, 777L, pageSize);
 
-            assertEquals(0, io.getRealFreeSpace(pageAddr));
+            Assert.assertEquals(0, io.getRealFreeSpace(pageAddr));
         }
 
         // Full data page.
@@ -932,11 +933,13 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         checkCompressDecompress(page, getContents, false);
     }
 
+    /** */
     private void checkIo(PageIO io, ByteBuffer page) throws IgniteCheckedException {
-        assertSame(io, PageIO.getPageIO(bufferAddress(page)));
-        assertSame(io, PageIO.getPageIO(page));
+        Assert.assertSame(io, PageIO.getPageIO(bufferAddress(page)));
+        Assert.assertSame(io, PageIO.getPageIO(page));
     }
 
+    /** */
     private void checkCompressDecompress(ByteBuffer page, Function<ByteBuffer, ?> getPageContents, boolean fullPage)
         throws IgniteCheckedException {
         PageIO.setCrc(page, 0xABCDEF13);
@@ -948,43 +951,43 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         int compressedSize = PageIO.getCompressedSize(compressed);
 
-        assertNotSame(page, compressed); // This is generally possible but not interesting in this test.
+        Assert.assertNotSame(page, compressed); // This is generally possible but not interesting in this test.
 
-        assertTrue(compressedSize > 0);
-        assertTrue(compressedSize <= pageSize);
-        assertEquals(compressedSize, compressed.limit());
+        Assert.assertTrue(compressedSize > 0);
+        Assert.assertTrue(compressedSize <= pageSize);
+        Assert.assertEquals(compressedSize, compressed.limit());
 
         if (!fullPage || compression != SKIP_GARBAGE)
-            assertTrue(pageSize > compressedSize);
+            Assert.assertTrue(pageSize > compressedSize);
 
-        assertEquals(0, compressed.position());
+        Assert.assertEquals(0, compressed.position());
 
         checkIo(io, compressed);
-        assertEquals(0, page.position());
-        assertEquals(pageSize, page.limit());
+        Assert.assertEquals(0, page.position());
+        Assert.assertEquals(pageSize, page.limit());
 
         info(io.getClass().getSimpleName() + " " + compression + " " + compressLevel + ": " + compressedSize + "/" + pageSize);
 
         if (!fullPage || compression != SKIP_GARBAGE)
-            assertTrue(compressedSize < pageSize);
+            Assert.assertTrue(compressedSize < pageSize);
 
-        assertEquals(pageId, PageIO.getPageId(compressed));
+        Assert.assertEquals(pageId, PageIO.getPageId(compressed));
 
         ByteBuffer decompress = allocateDirectBuffer(pageSize);
         decompress.put(compressed).clear();
 
         p.decompressPage(decompress, pageSize);
 
-        assertEquals(0, decompress.position());
-        assertEquals(pageSize, decompress.limit());
+        Assert.assertEquals(0, decompress.position());
+        Assert.assertEquals(pageSize, decompress.limit());
 
         checkIo(io, decompress);
-        assertEquals(UNCOMPRESSED_PAGE, PageIO.getCompressionType(page));
-        assertEquals(0, PageIO.getCompressedSize(page));
-        assertEquals(0, PageIO.getCompactedSize(page));
+        Assert.assertEquals(UNCOMPRESSED_PAGE, PageIO.getCompressionType(page));
+        Assert.assertEquals(0, PageIO.getCompressedSize(page));
+        Assert.assertEquals(0, PageIO.getCompactedSize(page));
 
-        assertTrue(Arrays.equals(getPageCommonHeader(page), getPageCommonHeader(decompress)));
-        assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));
+        Assert.assertTrue(Arrays.equals(getPageCommonHeader(page), getPageCommonHeader(decompress)));
+        Assert.assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));
     }
 
     /**

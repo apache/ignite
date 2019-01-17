@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -88,19 +89,19 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
             (k, v) -> v[v.length - 1]
         );
 
-        assertTrue(tree instanceof DecisionTreeConditionalNode);
+        Assert.assertTrue(tree instanceof DecisionTreeConditionalNode);
 
         DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) tree;
 
-        assertEquals(0, node.getThreshold(), 1e-3);
+        Assert.assertEquals(0, node.getThreshold(), 1e-3);
 
-        assertTrue(node.getThenNode() instanceof DecisionTreeLeafNode);
-        assertTrue(node.getElseNode() instanceof DecisionTreeLeafNode);
+        Assert.assertTrue(node.getThenNode() instanceof DecisionTreeLeafNode);
+        Assert.assertTrue(node.getElseNode() instanceof DecisionTreeLeafNode);
 
         DecisionTreeLeafNode thenNode = (DecisionTreeLeafNode) node.getThenNode();
         DecisionTreeLeafNode elseNode = (DecisionTreeLeafNode) node.getElseNode();
 
-        assertEquals(1, thenNode.getVal(), 1e-10);
-        assertEquals(0, elseNode.getVal(), 1e-10);
+        Assert.assertEquals(1, thenNode.getVal(), 1e-10);
+        Assert.assertEquals(0, elseNode.getVal(), 1e-10);
     }
 }

@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -285,7 +286,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             for (FullPageId initialWrite : initWrites) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-                assertTrue(String.valueOf(tup.get2()), tup.get2() instanceof PageSnapshot);
+                Assert.assertTrue(String.valueOf(tup.get2()), tup.get2() instanceof PageSnapshot);
 
                 PageSnapshot snap = (PageSnapshot)tup.get2();
 
@@ -295,12 +296,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 if (TrackingPageIO.VERSIONS.latest().trackingPageFor(actual.pageId(), mem.pageSize()) == actual.pageId()) {
                     tup = it.next();
 
-                    assertTrue(tup.get2() instanceof PageSnapshot);
+                    Assert.assertTrue(tup.get2() instanceof PageSnapshot);
 
                     actual = ((PageSnapshot)tup.get2()).fullPageId();
                 }
 
-                assertEquals(initialWrite, actual);
+                Assert.assertEquals(initialWrite, actual);
             }
         }
     }
@@ -335,7 +336,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
         IgniteWriteAheadLogManager wal = sharedCtx.wal();
 
-        assertTrue(wal.isAlwaysWriteFullPages());
+        Assert.assertTrue(wal.isAlwaysWriteFullPages());
 
         db.enableCheckpoints(false).get();
 
@@ -389,13 +390,13 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             assert cpRecordTup.get2() instanceof CheckpointRecord;
 
-            assertEquals(start, cpRecordTup.get1());
+            Assert.assertEquals(start, cpRecordTup.get1());
 
             CheckpointRecord cpRec = (CheckpointRecord)cpRecordTup.get2();
 
-            assertEquals(cpId, cpRec.checkpointId());
-            assertNull(cpRec.checkpointMark());
-            assertFalse(cpRec.end());
+            Assert.assertEquals(cpId, cpRec.checkpointId());
+            Assert.assertNull(cpRec.checkpointMark());
+            Assert.assertFalse(cpRec.end());
 
             int idx = 0;
             CacheObjectContext coctx = cctx.cacheObjectContext();
@@ -412,28 +413,28 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 DataEntry entry = entries.get(idx);
 
-                assertEquals(1, dataRec.writeEntries().size());
+                Assert.assertEquals(1, dataRec.writeEntries().size());
 
                 DataEntry readEntry = dataRec.writeEntries().get(0);
 
-                assertEquals(entry.cacheId(), readEntry.cacheId());
-                assertEquals(entry.key().<Integer>value(coctx, true), readEntry.key().<Integer>value(coctx, true));
-                assertEquals(entry.op(), readEntry.op());
+                Assert.assertEquals(entry.cacheId(), readEntry.cacheId());
+                Assert.assertEquals(entry.key().<Integer>value(coctx, true), readEntry.key().<Integer>value(coctx, true));
+                Assert.assertEquals(entry.op(), readEntry.op());
 
                 if (entry.op() == GridCacheOperation.UPDATE)
-                    assertEquals(entry.value().value(coctx, true), readEntry.value().value(coctx, true));
+                    Assert.assertEquals(entry.value().value(coctx, true), readEntry.value().value(coctx, true));
                 else
-                    assertNull(entry.value());
+                    Assert.assertNull(entry.value());
 
-                assertEquals(entry.writeVersion(), readEntry.writeVersion());
-                assertEquals(entry.nearXidVersion(), readEntry.nearXidVersion());
-                assertEquals(entry.partitionCounter(), readEntry.partitionCounter());
+                Assert.assertEquals(entry.writeVersion(), readEntry.writeVersion());
+                Assert.assertEquals(entry.nearXidVersion(), readEntry.nearXidVersion());
+                Assert.assertEquals(entry.partitionCounter(), readEntry.partitionCounter());
 
                 if (mvcc) {
                     assert entry instanceof MvccDataEntry;
                     assert readEntry instanceof MvccDataEntry;
 
-                    assertEquals(((MvccDataEntry) entry).mvccVer(), ((MvccDataEntry) readEntry).mvccVer());
+                    Assert.assertEquals(((MvccDataEntry) entry).mvccVer(), ((MvccDataEntry) readEntry).mvccVer());
                 }
 
                 idx++;
@@ -509,13 +510,13 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             assert tup.get2() instanceof CheckpointRecord : tup.get2();
 
-            assertEquals(start, tup.get1());
+            Assert.assertEquals(start, tup.get1());
 
             CheckpointRecord cpRec = (CheckpointRecord)tup.get2();
 
-            assertEquals(cpId, cpRec.checkpointId());
-            assertNull(cpRec.checkpointMark());
-            assertFalse(cpRec.end());
+            Assert.assertEquals(cpId, cpRec.checkpointId());
+            Assert.assertNull(cpRec.checkpointMark());
+            Assert.assertFalse(cpRec.end());
 
             int idx = 0;
 
@@ -530,12 +531,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 if (TrackingPageIO.VERSIONS.latest().trackingPageFor(snap.fullPageId().pageId(), pageMem.pageSize()) == snap.fullPageId().pageId()) {
                     tup = it.next();
 
-                    assertTrue(tup.get2() instanceof PageSnapshot);
+                    Assert.assertTrue(tup.get2() instanceof PageSnapshot);
 
                     snap = (PageSnapshot)tup.get2();
                 }
 
-                assertEquals(pageIds.get(idx), snap.fullPageId());
+                Assert.assertEquals(pageIds.get(idx), snap.fullPageId());
 
                 idx++;
             }
@@ -576,20 +577,20 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
                 try {
-                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page)); //page is dirty right after allocation
+                    Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page)); //page is dirty right after allocation
 
                     long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                     try {
                         pageIO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
 
-                        assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                        Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
                     }
                     finally {
                         mem.writeUnlock(fullId.groupId(), fullId.pageId(),page, null,true);
                     }
 
-                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                    Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
                 }
                 finally {
                     mem.releasePage(fullId.groupId(), fullId.pageId(), page);
@@ -606,19 +607,19 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         try {
             for (FullPageId fullId : pageIds) {
-                assertTrue(cpPages.contains(fullId));
+                Assert.assertTrue(cpPages.contains(fullId));
 
                 ByteBuffer buf = ByteBuffer.allocate(mem.pageSize());
 
                 long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
                 try {
-                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                    Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
                     long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                     try {
-                        assertFalse(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                        Assert.assertFalse(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
                         for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
                             PageUtils.putByte(pageAddr, i, (byte)1);
@@ -627,7 +628,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                         mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                     }
 
-                    assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                    Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
 
                     buf.rewind();
 
@@ -636,7 +637,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     buf.position(PageIO.COMMON_HEADER_END);
 
                     while (buf.hasRemaining())
-                        assertEquals((byte)0, buf.get());
+                        Assert.assertEquals((byte)0, buf.get());
                 }
                 finally {
                     mem.releasePage(fullId.groupId(), fullId.pageId(), page);
@@ -652,7 +653,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         for (FullPageId fullId : pageIds) {
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
             try {
-                assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
+                Assert.assertTrue(mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {
                 mem.releasePage(fullId.groupId(), fullId.pageId(), page);
@@ -700,7 +701,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(start))) {
             IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-            assertTrue("Invalid record: " + tup, tup.get2() instanceof CheckpointRecord);
+            Assert.assertTrue("Invalid record: " + tup, tup.get2() instanceof CheckpointRecord);
 
             CheckpointRecord cpRec = (CheckpointRecord)tup.get2();
 
@@ -737,7 +738,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             byte[] walData = replay.get(fullId);
 
-            assertNotNull("Missing WAL record for a written page: " + fullId, walData);
+            Assert.assertNotNull("Missing WAL record for a written page: " + fullId, walData);
 
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
             try {
@@ -750,11 +751,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                         int walState = walData[i] & 0xFF;
 
                         if (expState != pageState)
-                            assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
+                            Assert.assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
                                 expState, pageState);
 
                         if (expState != walState)
-                            assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
+                            Assert.assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
                                 expState, walState);
                     }
                 }
@@ -857,7 +858,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                                         for (int i = PageIO.COMMON_HEADER_END; i < mem.realPageSize(fullId.groupId());
                                             i++) {
-                                            assertEquals("Verify page failed [fullId=" + fullId +
+                                            Assert.assertEquals("Verify page failed [fullId=" + fullId +
                                                     ", i=" + i +
                                                     ", state=" + state +
                                                     ", buf=" + pageAddr +
@@ -973,12 +974,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                             // Avoid string concat.
                             if (first != val)
-                                assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
+                                Assert.assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
                                     (int)first, val);
 
                             // Avoid string concat.
                             if (state != val)
-                                assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
+                                Assert.assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
                                     (int)state, val);
                         }
                     }
@@ -1031,17 +1032,17 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         updFut.get();
 
-        assertEquals(0, mem.activePagesCount());
+        Assert.assertEquals(0, mem.activePagesCount());
 
         for (FullPageId fullId : pages) {
 
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
-                assertFalse("Page has a temp heap copy after the last checkpoint: [cacheId=" +
+                Assert.assertFalse("Page has a temp heap copy after the last checkpoint: [cacheId=" +
                     fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
 
-                assertFalse("Page is dirty after the last checkpoint: [cacheId=" +
+                Assert.assertFalse("Page is dirty after the last checkpoint: [cacheId=" +
                     fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {

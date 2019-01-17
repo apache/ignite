@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -153,7 +154,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), 200, 0L, null,
                 IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
-            assertNull(mgr.dataBlock(info, path, 0, null).get());
+            Assert.assertNull(mgr.dataBlock(info, path, 0, null).get());
 
             byte[] data = new byte[rnd.nextInt(20000) + 5];
 
@@ -193,10 +194,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int pos = 0, block = 0; pos < info.length(); block++) {
                 byte[] stored = mgr.dataBlock(info, path, block, null).get();
 
-                assertNotNull("Expects data exist [data.length=" + data.length + ", block=" + block + ']', stored);
+                Assert.assertNotNull("Expects data exist [data.length=" + data.length + ", block=" + block + ']', stored);
 
                 for (int j = 0; j < stored.length; j++)
-                    assertEquals(stored[j], data[pos + j]);
+                    Assert.assertEquals(stored[j], data[pos + j]);
 
                 pos += stored.length;
             }
@@ -219,7 +220,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 rmvBlocks = b;
             }
 
-            assertTrue("All blocks should be removed from cache.", rmvBlocks);
+            Assert.assertTrue("All blocks should be removed from cache.", rmvBlocks);
         }
     }
 
@@ -240,7 +241,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
                 IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
-            assertNull(mgr.dataBlock(info, path, 0, null).get());
+            Assert.assertNull(mgr.dataBlock(info, path, 0, null).get());
 
             byte[] data = new byte[blockSize];
 
@@ -289,10 +290,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int pos = 0, block = 0; pos < info.length(); block++) {
                 byte[] stored = mgr.dataBlock(info, path, block, null).get();
 
-                assertNotNull("Expects data exist [data.length=" + concat.length + ", block=" + block + ']', stored);
+                Assert.assertNotNull("Expects data exist [data.length=" + concat.length + ", block=" + block + ']', stored);
 
                 for (int j = 0; j < stored.length; j++)
-                    assertEquals(stored[j], concat[pos + j]);
+                    Assert.assertEquals(stored[j], concat[pos + j]);
 
                 pos += stored.length;
             }
@@ -315,7 +316,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 rmvBlocks = b;
             }
 
-            assertTrue("All blocks should be removed from cache.", rmvBlocks);
+            Assert.assertTrue("All blocks should be removed from cache.", rmvBlocks);
         }
     }
 
@@ -335,7 +336,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-            assertNull(mgr.dataBlock(info, path, 0, null).get());
+            Assert.assertNull(mgr.dataBlock(info, path, 0, null).get());
 
             int chunkSize = blockSize / 4;
 
@@ -356,7 +357,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             mgr.writeClose(info.id());
 
-            assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
+            Assert.assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 
             fut.get(3000);
 
@@ -373,10 +374,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int pos = 0, block = 0; pos < info.length(); block++) {
                 byte[] stored = mgr.dataBlock(info, path, block, null).get();
 
-                assertNotNull("Expects data exist [block=" + block + ']', stored);
+                Assert.assertNotNull("Expects data exist [block=" + block + ']', stored);
 
                 for (byte b : stored)
-                    assertEquals(b, (byte)block);
+                    Assert.assertEquals(b, (byte)block);
 
                 pos += stored.length;
             }
@@ -386,7 +387,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             delFut.get();
 
             for (long block = 0; block < info.blocksCount(); block++)
-                assertNull(mgr.dataBlock(info, path, block, null).get());
+                Assert.assertNull(mgr.dataBlock(info, path, block, null).get());
         }
     }
 
@@ -407,7 +408,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             null, t, t);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
-            assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
+            Assert.assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
                 mgr.affinity(info, pos, 0));
 
             // Expects grouped data blocks are interpreted as a single block location.
@@ -415,34 +416,34 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int len = 1, maxLen = grpSize - pos % grpSize; len < maxLen; len++) {
                 Collection<IgfsBlockLocation> aff = mgr.affinity(info, pos, len);
 
-                assertEquals("Unexpected affinity: " + aff, 1, aff.size());
+                Assert.assertEquals("Unexpected affinity: " + aff, 1, aff.size());
 
                 IgfsBlockLocation loc = F.first(aff);
 
-                assertEquals("Unexpected block location: " + loc, pos, loc.start());
-                assertEquals("Unexpected block location: " + loc, len, loc.length());
+                Assert.assertEquals("Unexpected block location: " + loc, pos, loc.start());
+                Assert.assertEquals("Unexpected block location: " + loc, len, loc.length());
             }
 
             // Validate ranges.
             for (int len = grpSize * 4 + 1, maxLen = 5 * grpSize - pos % grpSize; len < maxLen; len++) {
                 Collection<IgfsBlockLocation> aff = mgr.affinity(info, pos, len);
 
-                assertTrue("Unexpected affinity [aff=" + aff + ", pos=" + pos + ", len=" + len + ']', aff.size() <= 5);
+                Assert.assertTrue("Unexpected affinity [aff=" + aff + ", pos=" + pos + ", len=" + len + ']', aff.size() <= 5);
 
                 IgfsBlockLocation first = F.first(aff);
 
-                assertEquals("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
+                Assert.assertEquals("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     pos, first.start());
 
-                assertTrue("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
+                Assert.assertTrue("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     first.length() >= grpSize - pos % grpSize);
 
                 IgfsBlockLocation last = F.last(aff);
 
-                assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
+                Assert.assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     last.start() <= (pos / grpSize + 4) * grpSize);
 
-                assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
+                Assert.assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     last.length() >= (pos + len - 1) % grpSize + 1);
             }
         }
@@ -473,7 +474,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
                     .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
-                assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
+                Assert.assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
 
                 endPos = (block + 1) * blockSize;
@@ -550,7 +551,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
                     .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
-                assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
+                Assert.assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
 
                 endPos = (block + 1) * blockSize;

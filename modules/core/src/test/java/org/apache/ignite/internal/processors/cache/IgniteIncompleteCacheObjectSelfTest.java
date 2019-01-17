@@ -85,7 +85,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         assert incompleteObj.isReady();
 
         // Check that cache object data assembled correctly.
-        assertEquals(obj.cacheObjectType(), incompleteObj.type());
+        Assert.assertEquals(obj.cacheObjectType(), incompleteObj.type());
         Assert.assertArrayEquals(data, incompleteObj.data());
     }
 

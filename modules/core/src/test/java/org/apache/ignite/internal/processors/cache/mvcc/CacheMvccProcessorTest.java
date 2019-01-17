@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -70,7 +71,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         MvccProcessorImpl mvccProcessor = mvccProcessor(grid);
 
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
 
         grid.context().cache().context().database().checkpointReadLock();
         try {
@@ -94,20 +95,20 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
             mvccProcessor = mvccProcessor(grid);
         }
 
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.COMMITTED, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.COMMITTED, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
 
         mvccProcessor.removeUntil(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA));
 
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
+        Assert.assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
     }
 }

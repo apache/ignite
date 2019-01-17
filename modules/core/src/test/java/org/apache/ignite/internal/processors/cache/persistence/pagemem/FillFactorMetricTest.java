@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -103,9 +104,9 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
 
         DataRegionMetrics m = grid(0).dataRegionMetrics(MY_DATA_REGION);
 
-        assertEquals(0, m.getTotalAllocatedPages());
+        Assert.assertEquals(0, m.getTotalAllocatedPages());
 
-        assertEquals(0, m.getPagesFillFactor(), Float.MIN_VALUE);
+        Assert.assertEquals(0, m.getPagesFillFactor(), Float.MIN_VALUE);
     }
 
     /**
@@ -194,7 +195,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
 
             // Fill factor will typically be 0.98
             for (float fillFactor : curFillFactor)
-                assertTrue("FillFactor too low: " + fillFactor, fillFactor > 0.9);
+                Assert.assertTrue("FillFactor too low: " + fillFactor, fillFactor > 0.9);
 
             log.info("Going downward");
 
@@ -224,7 +225,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
             // Since refactoring of AbstractFreeList with recycling empty data pages,
             // fill factor after cache cleaning will about 0.99, no more obsolete typically value 0.8
             for (float fillFactor : curFillFactor)
-                assertTrue("FillFactor too low: " + fillFactor, fillFactor > 0.9);
+                Assert.assertTrue("FillFactor too low: " + fillFactor, fillFactor > 0.9);
         }
 
         doneFlag.set(true);

@@ -84,22 +84,6 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
     }
 
     /**
-     * Asserts that two doubles are equal concerning a delta. If the exp
-     * value is infinity then the delta value is ignored.
-     */
-    protected static void assertEquals(double exp, double actual, double delta) {
-        // todo keep and deledate
-    }
-
-    /**
-     * Asserts that two floats are equal concerning a delta. If the exp
-     * value is infinity then the delta value is ignored.
-     */
-    protected static void assertEquals(float exp, float actual, float delta) {
-        // todo keep and deledate
-    }
-
-    /**
      * Asserts that two longs are equal. If they are not
      * an AssertionFailedError is thrown with the given msg.
      */
@@ -118,13 +102,6 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
      * Asserts that two booleans are equal.
      */
     protected static void assertEquals(boolean exp, boolean actual) {
-        // todo keep and deledate
-    }
-
-    /**
-     * Asserts that two bytes are equal.
-     */
-    protected static void assertEquals(byte exp, byte actual) {
         // todo keep and deledate
     }
 
@@ -190,7 +167,7 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
      * an AssertionFailedError is thrown with the given msg.
      */
     protected static void fail() {
-        // todo re-check whether to deledate
+        // todo keep and deledate
     }
 
     /**
@@ -198,7 +175,7 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
      * refer to the same object an AssertionFailedError is thrown.
      */
     protected static void assertSame(Object exp, Object actual) {
-        // todo re-check whether to deledate
+        // todo keep and deledate
     }
 
     /**
@@ -206,6 +183,6 @@ class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
      * refer to the same object an AssertionFailedError is thrown.
      */
     protected static void assertNotSame(Object exp, Object actual) {
-        // todo re-check whether to deledate
+        // todo keep and deledate
     }
 }
