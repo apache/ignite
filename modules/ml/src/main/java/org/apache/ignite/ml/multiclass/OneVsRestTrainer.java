@@ -101,7 +101,7 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultiClassModel<M> mdl) {
+    @Override public boolean isUpdateable(MultiClassModel<M> mdl) {
         return true;
     }
 
