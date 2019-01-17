@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Base package for Mleap model parser.
+ * Base package for Spark model parser.
  */
-package org.apache.ignite.ml.mleap;
+package org.apache.ignite.ml.sparkmodelparser;
