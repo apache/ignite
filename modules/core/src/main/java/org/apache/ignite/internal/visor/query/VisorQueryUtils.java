@@ -350,14 +350,14 @@ public class VisorQueryUtils {
      *
      * @param holder Query holder.
      */
-    public static void fetchQueryRows(VisorQueryHolder holder) {
+    public static List<Object[]> fetchQueryRows(VisorQueryHolder holder, int pageSize) {
         VisorQueryCursor<?> cur = holder.getCursor();
 
-        holder.setRows(cur.hasNext()
+        return cur.hasNext()
             ? (VisorQueryHolder.isSqlQuery(holder.getQueryID())
-                ? fetchSqlQueryRows(cur, holder.getPageSize())
-                : fetchScanQueryRows(cur, holder.getPageSize()))
-            : Collections.emptyList());
+                ? fetchSqlQueryRows(cur, pageSize)
+                : fetchScanQueryRows(cur, pageSize))
+            : Collections.emptyList();
     }
 
     /**
@@ -411,19 +411,16 @@ public class VisorQueryUtils {
                     if (meta == null)
                         h.setError(new SQLException("Fail to execute query. No metadata available."));
                     else {
-                        h.setCursor(cur);
-
                         List<VisorQueryField> names = new ArrayList<>(meta.size());
 
                         for (GridQueryFieldMetadata col : meta)
                             names.add(new VisorQueryField(col.schemaName(), col.typeName(),
                                 col.fieldName(), col.fieldTypeName()));
 
+                        h.setCursor(cur);
                         h.setColumns(names);
 
                         scheduleQueryHolderRemoval(ignite, h.getQueryID());
-
-                        fetchQueryRows(h);
                     }
                 }
                 catch (Throwable e) {
@@ -475,10 +472,9 @@ public class VisorQueryUtils {
                     VisorQueryHolder h = getQueryHolder(ignite, holder.getQueryID());
 
                     h.setCursor(cur);
+                    h.setColumns(SCAN_COL_NAMES);
 
                     scheduleQueryHolderRemoval(ignite, h.getQueryID());
-
-                    fetchQueryRows(h);
                 }
                 catch (Throwable e) {
                     U.closeQuiet(cur);

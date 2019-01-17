@@ -63,15 +63,13 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, 
             try {
                 UUID nid = ignite.localNode().id();
 
-                VisorQueryHolder holder = new VisorQueryHolder(false, null, arg.getPageSize(), null);
-
-                holder.setColumns(SCAN_COL_NAMES);
+                VisorQueryHolder holder = new VisorQueryHolder(false, null, null);
 
                 ignite.cluster().<String, VisorQueryHolder>nodeLocalMap().put(holder.getQueryID(), holder);
 
                 scheduleScanStart(ignite, holder, arg);
 
-                return new VisorEither<>(new VisorQueryResult(nid, holder.getQueryID(), SCAN_COL_NAMES, null, false, 0));
+                return new VisorEither<>(new VisorQueryResult(nid, holder.getQueryID(), null, null, false, 0));
             }
             catch (Throwable e) {
                 return new VisorEither<>(new VisorExceptionWrapper(e));

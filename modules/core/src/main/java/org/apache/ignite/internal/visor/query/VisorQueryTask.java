@@ -70,7 +70,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
 
                 Map<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
 
-                VisorQueryHolder holder = new VisorQueryHolder(true, null, arg.getPageSize(), cancel);
+                VisorQueryHolder holder = new VisorQueryHolder(true, null, cancel);
 
                 storage.put(holder.getQueryID(), holder);
 

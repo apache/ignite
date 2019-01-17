@@ -106,8 +106,14 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupT
 
         /** {@inheritDoc} */
         @Override protected Void run(Collection<String> qryIds) {
+            if (debug)
+                ignite.log().warning("Queries cancellation: [" + String.join(", ", qryIds) + "]");
+
             for (String qryId : qryIds)
                 removeQueryHolder(ignite, qryId);
+
+            if (debug)
+                ignite.log().warning("Queries cancelled");
 
             return null;
         }

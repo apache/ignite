@@ -25,6 +25,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchQueryRows;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
 
@@ -32,19 +33,19 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQuery
  * Task for check a query execution and receiving first page of query result.
  */
 @GridInternal
-public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
+public class VisorQueryFetchFirstPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryCheckNextPageJob job(VisorQueryNextPageTaskArg arg) {
-        return new VisorQueryCheckNextPageJob(arg, debug);
+    @Override protected VisorQueryFetchFirstPageJob job(VisorQueryNextPageTaskArg arg) {
+        return new VisorQueryFetchFirstPageJob(arg, debug);
     }
 
     /**
-     * Job for collecting next page previously executed SQL or SCAN query.
+     * Job for collecting first page previously executed SQL or SCAN query.
      */
-    private static class VisorQueryCheckNextPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
+    private static class VisorQueryFetchFirstPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,7 +55,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryCheckNextPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
+        private VisorQueryFetchFirstPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -67,14 +68,14 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
             if (holder.getErr() != null)
                 return new VisorEither<>(new VisorExceptionWrapper(holder.getErr()));
 
-            VisorQueryCursor<?> cur = holder.getCursor();
-            List<Object[]> rows = holder.getRows();
-            List<VisorQueryField> cols = null;
+            List<Object[]> rows = null;
+            List<VisorQueryField> cols = holder.getColumns();
 
-            boolean hasMore = cur == null || rows == null;
+            boolean hasMore = cols == null;
 
-            if (rows != null) {
-                cols = holder.getColumns();
+            if (cols != null) {
+                VisorQueryCursor<?> cur = holder.getCursor();
+                rows = fetchQueryRows(holder, arg.getPageSize());
                 hasMore = cur.hasNext();
             }
 
@@ -89,7 +90,7 @@ public class VisorQueryCheckNextPageTask extends VisorOneNodeTask<VisorQueryNext
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorQueryCheckNextPageJob.class, this);
+            return S.toString(VisorQueryFetchFirstPageJob.class, this);
         }
     }
 }

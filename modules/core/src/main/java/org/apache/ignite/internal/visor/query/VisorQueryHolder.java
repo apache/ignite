@@ -37,9 +37,6 @@ public class VisorQueryHolder {
     /** Cancel query object. */
     private final GridQueryCancel cancel;
 
-    /** Size of result to extract by query. */
-    private final int pageSize;
-
     /** Query start time in ms. */
     private final long start;
 
@@ -48,9 +45,6 @@ public class VisorQueryHolder {
 
     /** Query column descriptors. */
     private volatile List<VisorQueryField> cols;
-
-    /** Rows fetched from query. */
-    private volatile List<Object[]> rows;
 
     /** Error in process of query result receiving. */
     private volatile Throwable err;
@@ -74,12 +68,10 @@ public class VisorQueryHolder {
      *
      * @param sqlQry Flag indicating that holder contains SQL or SCAN query.
      * @param cur Wrapper for query cursor.
-     * @param pageSize Page size to fetch.
      * @param cancel Cancel object.
      */
-    VisorQueryHolder(boolean sqlQry, VisorQueryCursor<?> cur, int pageSize, GridQueryCancel cancel) {
+    VisorQueryHolder(boolean sqlQry, VisorQueryCursor<?> cur, GridQueryCancel cancel) {
         this.cur = cur;
-        this.pageSize = pageSize;
         this.cancel = cancel;
 
         // Generate query ID to store query cursor in node local storage.
@@ -124,14 +116,9 @@ public class VisorQueryHolder {
      * @param cols Query column descriptors.
      */
     public void setColumns(List<VisorQueryField> cols) {
-        this.cols = cols;
-    }
+        duration = System.currentTimeMillis() - start;
 
-    /**
-     * @return Size of result to extract by query.
-     */
-    public int getPageSize() {
-        return pageSize;
+        this.cols = cols;
     }
 
     /**
@@ -143,27 +130,6 @@ public class VisorQueryHolder {
 
         if (cancel != null)
             cancel.cancel();
-    }
-
-    /**
-     * @return Rows fetched from query or `null` if result is not fetched yet.
-     */
-    public List<Object[]> getRows() {
-        List<Object[]> res = rows;
-        rows = null;
-
-        return res;
-    }
-
-    /**
-     * Set fetched from query rows.
-     *
-     * @param rows Rows fetched from query.
-     */
-    public void setRows(List<Object[]> rows) {
-        duration = System.currentTimeMillis() - start;
-
-        this.rows = rows;
     }
 
     /**
