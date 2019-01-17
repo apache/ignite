@@ -603,13 +603,49 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         );
 
         // Backups.
-        // TODO
+        checkAffinityFunctions(
+            cacheConfiguration(256, 1, false, false, false),
+            cacheConfiguration(256, 2, false, false, false),
+            true
+        );
 
         // Different affinity functions.
-        // TODO
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, true, false, false),
+            cacheConfiguration(256, 2, false, false, false),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, false, false),
+            cacheConfiguration(256, 2, true, false, false),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, true, false, false),
+            cacheConfiguration(256, 2, true, false, false),
+            false
+        );
 
         // Node filters.
-        // TODO
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, true, false),
+            cacheConfiguration(256, 2, false, false, false),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, false, false),
+            cacheConfiguration(256, 2, false, true, false),
+            false
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(256, 2, false, true, false),
+            cacheConfiguration(256, 2, false, true, false),
+            false
+        );
 
         // With and without persistence.
         // TODO
