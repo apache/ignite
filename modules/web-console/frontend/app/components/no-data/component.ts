@@ -23,6 +23,7 @@ import './style.scss';
 export default {
     controller,
     templateUrl,
+    transclude: true,
     bindings: {
         gridApi: '<?'
     }

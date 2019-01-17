@@ -25,4 +25,4 @@ div(ng-switch='($ctrl.connectionState$ | async:this)')
         | Cluster is not active. Please activate cluster.
 
     div(ng-switch-default)
-        | Data is not available.
+        ng-transclude

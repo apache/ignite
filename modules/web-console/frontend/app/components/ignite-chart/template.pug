@@ -32,6 +32,7 @@ header
 .ignite-chart-placeholder
     canvas
 
-.no-data(ng-if='!$ctrl.config.data.datasets')
-    no-data
-
+no-data.no-data
+    div(ng-if='!$ctrl.config.data.datasets')
+        | No Data #[br]
+        | Make sure you are connected to the right grid.
