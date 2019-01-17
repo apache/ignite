@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -110,9 +110,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
-
-    /** Counter tracking number of entries locked by this tx. */
-    private final AtomicInteger lockCntr = new AtomicInteger();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -949,13 +946,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * Increments lock counter.
      */
     public void incrementLockCounter() {
-        lockCntr.incrementAndGet();
+        txCounters(true).incrementLockCounter();
     }
 
     /**
      * @return Current value of lock counter.
      */
     public int lockCounter() {
-        return lockCntr.get();
+        TxCounters txCntrs = txCounters(false);
+
+        return txCntrs != null ? txCntrs.lockCounter() : 0;
     }
 }
