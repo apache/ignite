@@ -48,6 +48,7 @@ public interface PartitionNode {
     /**
      * Get partitions.
      *
+     * @param sql Sql query (used to produce clear error message).
      * @param args Query arguments.
      * @return Partitions.
      */

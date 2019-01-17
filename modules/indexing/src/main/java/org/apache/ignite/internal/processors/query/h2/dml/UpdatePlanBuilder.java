@@ -853,7 +853,7 @@ public final class UpdatePlanBuilder {
 
                 return new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
                     idx.collectCacheIds(CU.cacheId(cacheName), qry),
-                    (qry.derivedPartitions() != null) ? qry.derivedPartitions().tree() : null);
+                    qry.derivedPartitions() != null ? qry.derivedPartitions().tree() : null);
             }
         }
         catch (SQLException e) {

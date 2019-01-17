@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
 
 /**
