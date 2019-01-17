@@ -14,22 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
-/**
- *
- */
-public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
+import java.util.ArrayList;
+import java.util.List;
+
+/** */
+@SuppressWarnings("PublicField")
+class StartupExtras {
     /** */
-    public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
-
-    /** */
-    public void writeRaw(String key, byte[] data) throws IgniteCheckedException;
+    public List<DistributedMetaStorageHistoryItem> deferredUpdates = new ArrayList<>();
 
     /** */
-    public void remove(@NotNull String key) throws IgniteCheckedException;
+    public DistributedMetaStorageClusterNodeData fullNodeData;
 }

@@ -14,22 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
-/**
- *
- */
-public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+/** */
+class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
     /** */
-    public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    public void writeRaw(String key, byte[] data) throws IgniteCheckedException;
+    private final boolean updated;
 
     /** */
-    public void remove(@NotNull String key) throws IgniteCheckedException;
+    public DistributedMetaStorageCasAckMessage(UUID reqId, boolean active, boolean updated) {
+        super(reqId, active);
+        this.updated = updated;
+    }
+
+    /** */
+    public boolean updated() {
+        return updated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DistributedMetaStorageCasAckMessage.class, this);
+    }
 }
