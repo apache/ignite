@@ -5417,8 +5417,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 initialize(cfg, cacheObjCtx);
 
-                if (cachesInfo.restartingCaches().contains(req.cacheName()))
-                    req.schema(new QuerySchema(qryEntities == null? cfg.getQueryEntities() : qryEntities));
+                if (restartId != null)
+                    req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
                 else
                     req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
                             : cfg.getQueryEntities()));

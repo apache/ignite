@@ -160,7 +160,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean isUpdateable(LinearRegressionModel mdl) {
         return true;
     }
 

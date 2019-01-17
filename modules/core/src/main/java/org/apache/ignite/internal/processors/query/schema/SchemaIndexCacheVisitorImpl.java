@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.schema;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -242,7 +241,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     entry.updateIndex(rowFilter, clo);
                 }
                 finally {
-                    entry.touch(AffinityTopologyVersion.NONE);
+                    entry.touch();
                 }
 
                 break;
