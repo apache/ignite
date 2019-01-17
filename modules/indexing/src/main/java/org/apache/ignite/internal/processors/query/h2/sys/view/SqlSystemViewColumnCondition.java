@@ -33,15 +33,20 @@ public class SqlSystemViewColumnCondition {
     /** Value 1. */
     private final Value val;
 
+    /** Value 2. */
+    private final Value val2;
+
     /**
      * @param isEquality Is equality.
      * @param isRange Is range.
-     * @param val Value for equality.
+     * @param val Value for equality or start range for range condition.
+     * @param val2 Value for end range for range condition.
      */
-    private SqlSystemViewColumnCondition(boolean isEquality, boolean isRange, Value val) {
+    private SqlSystemViewColumnCondition(boolean isEquality, boolean isRange, Value val, Value val2) {
         this.isEquality = isEquality;
         this.isRange = isRange;
         this.val = val;
+        this.val2 = val2;
     }
 
     /**
@@ -73,7 +78,7 @@ public class SqlSystemViewColumnCondition {
         else if (val != null || val2 != null)
             isRange = true;
 
-        return new SqlSystemViewColumnCondition(isEquality, isRange, val);
+        return new SqlSystemViewColumnCondition(isEquality, isRange, val, val2);
     }
 
     /**
@@ -98,5 +103,26 @@ public class SqlSystemViewColumnCondition {
             return val;
 
         return null;
+    }
+
+    /**
+     * @return Value for start range, if condition is range.
+     */
+    public Value valueForStartRange(){
+        if(isRange)
+            return val;
+
+        return null;
+    }
+
+    /**
+     * @return Value for end range, if condition is range.
+     */
+    public Value valueForEndRange(){
+        if(isRange)
+            return val2;
+
+        return null;
+
     }
 }
