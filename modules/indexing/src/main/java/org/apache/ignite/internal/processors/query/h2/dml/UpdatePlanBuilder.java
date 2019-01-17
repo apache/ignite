@@ -837,7 +837,7 @@ public final class UpdatePlanBuilder {
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
                 idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
-                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
+                final GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
                     GridSqlQueryParser.prepared(stmt),
                     fieldsQry.getArgs(),
                     fieldsQry.isCollocated(),
@@ -848,8 +848,12 @@ public final class UpdatePlanBuilder {
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                return distributed ? new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
-                    idx.collectCacheIds(CU.cacheId(cacheName), qry)): null;
+                if (!distributed)
+                    return null;
+
+                return new DmlDistributedPlanInfo(qry.isReplicatedOnly(),
+                    idx.collectCacheIds(CU.cacheId(cacheName), qry),
+                    (qry.derivedPartitions() != null) ? qry.derivedPartitions().tree() : null);
             }
         }
         catch (SQLException e) {

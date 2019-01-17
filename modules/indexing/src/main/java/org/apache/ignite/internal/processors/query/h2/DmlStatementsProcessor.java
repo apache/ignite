@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
@@ -558,8 +560,12 @@ public class DmlStatementsProcessor {
 
                         it = new DmlUpdateSingleEntryIterator<>(op, op.isDeleteOrLock() ? row.getKey() : row);
                     }
-                    else if (plan.hasRows())
-                        it = new DmlUpdateResultsIterator(UpdatePlan.enlistOperation(plan.mode()), plan, plan.createRows(fieldsQry.getArgs()));
+                    else if (plan.hasRows()) {
+                        it = new DmlUpdateResultsIterator(
+                            UpdatePlan.enlistOperation(plan.mode()),
+                            plan,
+                            plan.createRows(fieldsQry.getArgs()));
+                    }
                     else {
                         // TODO IGNITE-8865 if there is no ORDER BY statement it's no use to retain entries order on locking (sequential = false).
                         SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
@@ -598,6 +604,15 @@ public class DmlStatementsProcessor {
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
                 int[] parts = fieldsQry.getPartitions();
+
+                if (F.isEmpty(parts) && distributedPlan.partitionTree() != null) {
+                    parts = distributedPlan.partitionTree().calculateDerivedPartitions(
+                        fieldsQry.getSql(),
+                        fieldsQry.getArgs());
+
+                    if (F.isEmpty(parts))
+                        return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                }
 
                 IgniteInternalFuture<Long> fut = tx.updateAsync(
                     cctx,

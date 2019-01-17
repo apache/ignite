@@ -2009,42 +2009,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
             int partitions[] = qry.getPartitions();
 
-            if (partitions == null && twoStepQry.derivedPartitions() != null) {
-                try {
-                    PartitionNode partTree = twoStepQry.derivedPartitions().tree();
+            if (F.isEmpty(partitions) && twoStepQry.derivedPartitions() != null) {
+                partitions = twoStepQry.derivedPartitions().tree().calculateDerivedPartitions(
+                    qry.getSql(),
+                    qry.getArgs());
 
-                    Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
+                if (F.isEmpty(partitions)) { //here we know that result of requested query is empty
+                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
+                        @Override public Iterator<List<?>> iterator() {
+                            return new Iterator<List<?>>() {
+                                @Override public boolean hasNext() {
+                                    return false;
+                                }
 
-                    if (F.isEmpty(partitions0))
-                        partitions = new int[0];
-                    else {
-                        partitions = new int[partitions0.size()];
-
-                        int i = 0;
-
-                        for (Integer part : partitions0)
-                            partitions[i++] = part;
-                    }
-
-                    if (partitions.length == 0) { //here we know that result of requested query is empty
-                        return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
-                            @Override public Iterator<List<?>> iterator() {
-                                return new Iterator<List<?>>() {
-                                    @Override public boolean hasNext() {
-                                        return false;
-                                    }
-
-                                    @Override public List<?> next() {
-                                        return null;
-                                    }
-                                };
-                            }
-                        });
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() +
-                        ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                                @Override public List<?> next() {
+                                    return null;
+                                }
+                            };
+                        }
+                    });
                 }
             }
 

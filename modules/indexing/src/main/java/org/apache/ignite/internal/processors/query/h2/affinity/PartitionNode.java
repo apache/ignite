@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-
+import java.util.Arrays;
 import java.util.Collection;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Common node of partition tree.
@@ -41,5 +43,35 @@ public interface PartitionNode {
      */
     default PartitionNode optimize() {
         return this;
+    }
+
+    /**
+     * Get partitions.
+     *
+     * @param args Query arguments.
+     * @return Partitions.
+     */
+    default int[] calculateDerivedPartitions(String sql, Object... args) {
+        try {
+            int[] parts;
+            Collection<Integer> partitions0 = apply(args);
+
+            if (F.isEmpty(partitions0))
+                parts = new int[0];
+            else {
+                parts = new int[partitions0.size()];
+
+                int i = 0;
+
+                for (Integer part : partitions0)
+                    parts[i++] = part;
+            }
+
+            return parts;
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to calculate derived partitions: [qry=" + sql +
+                ", params=" + Arrays.deepToString(args) + "]", e);
+        }
     }
 }
