@@ -22,7 +22,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.TransactionState;
 
 /**
@@ -36,6 +35,8 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
      * @param finishFut Finish future.
      */
     GridNearTxFinishAndAckFuture(NearTxFinishFuture finishFut) {
+        finishFut.listen(this::onFinishFutureDone);
+
         this.finishFut = finishFut;
     }
 
@@ -57,21 +58,20 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     /** {@inheritDoc} */
     @Override public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
         finishFut.finish(commit, clearThreadMap, onTimeout);
+    }
 
-        finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                GridNearTxLocal tx = tx(); Throwable err = fut.error();
+    /** */
+    private void onFinishFutureDone(IgniteInternalFuture<IgniteInternalTx> fut) {
+        GridNearTxLocal tx = tx(); Throwable err = fut.error();
 
-                if (tx.state() == TransactionState.COMMITTED)
-                    tx.context().coordinators().ackTxCommit(tx.mvccSnapshot())
-                        .listen(fut0 -> onDone(tx, addSuppressed(err, fut0.error())));
-                else {
-                    tx.context().coordinators().ackTxRollback(tx.mvccSnapshot());
+        if (tx.state() == TransactionState.COMMITTED)
+            tx.context().coordinators().ackTxCommit(tx.mvccSnapshot())
+                .listen(fut0 -> onDone(tx, addSuppressed(err, fut0.error())));
+        else {
+            tx.context().coordinators().ackTxRollback(tx.mvccSnapshot());
 
-                    onDone(tx, err);
-                }
-            }
-        });
+            onDone(tx, err);
+        }
     }
 
     /** */
