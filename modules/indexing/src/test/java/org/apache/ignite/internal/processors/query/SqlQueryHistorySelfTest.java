@@ -287,7 +287,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
 
-        cache.query(new SqlQuery("String", "from String")).getAll();
+        cache.query(new SqlQuery<>("String", "from String")).getAll();
 
         waitingFor("size", QUERY_HISTORY_SIZE);
 
@@ -612,7 +612,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     protected void startTestGrid() throws Exception {
-        startGridsMultiThreaded(2);
+        startGrids(2);
     }
 
     /**

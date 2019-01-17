@@ -49,7 +49,7 @@ public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
 
     /** {@inheritDoc} */
     @Override protected void startTestGrid() throws Exception {
-        startGridsMultiThreaded(3);
+        startGrids(3);
     }
 
 }
