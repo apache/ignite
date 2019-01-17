@@ -16,8 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,8 +45,6 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -74,6 +70,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
 /**
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
@@ -271,8 +268,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             try {
-                if(arg.isCheckCrc() && isCheckpointNow(db))
-                    throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
+                if(arg.isCheckCrc() && IdleVerifyUtility.isCheckpointNow(db))
+                    throw new GridNotIdleException(IdleVerifyUtility.CLUSTER_NOT_IDLE_MSG);
 
                 List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =
                     calcPartitionHashAsync(grpIds, cpFlag);
@@ -608,28 +605,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                     pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), part.id());
 
-                    long pageId = PageIdUtils.pageId(part.id(), PageIdAllocator.FLAG_DATA, 0);
-
-                    ByteBuffer buf = ByteBuffer.allocateDirect(grpCtx.dataRegion().pageMemory().pageSize());
-
-                    buf.order(ByteOrder.nativeOrder());
-
-                    for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
-                        buf.clear();
-
-                        if (cpFlag.get())
-                            throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
-
-                        pageStore.read(pageId, buf, true);
-                    }
-
-                    if (cpFlag.get())
-                        throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
+                    IdleVerifyUtility.checkPartitionsPageCrcSum(pageStore, grpCtx, part.id(), FLAG_DATA, cpFlag);
                 }
                 catch (GridNotIdleException e){
                     throw e;
                 }
                 catch (Exception | AssertionError e) {
+                    if (cpFlag.get())
+                        throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!", e);
+
                     String msg = new SB("CRC check of partition: ").a(part.id()).a(", for cache group ")
                         .a(grpCtx.cacheOrGroupName()).a(" failed.")
                         .a(pageStore != null ? " file: " + pageStore.getFileAbsolutePath() : "").toString();
@@ -639,22 +623,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     throw new IgniteException(msg, e);
                 }
             }
-        }
-
-        /**
-         * @param db Shared DB manager.
-         * @return {@code True} if checkpoint is now, {@code False} otherwise.
-         */
-        private boolean isCheckpointNow(@Nullable GridCacheDatabaseSharedManager db) {
-            if (db==null)
-                return false;
-
-            GridCacheDatabaseSharedManager.CheckpointProgress progress = db.getCheckpointer().currentProgress();
-
-            if (progress == null)
-                return false;
-
-            return progress.started() && !progress.finished();
         }
     }
 }

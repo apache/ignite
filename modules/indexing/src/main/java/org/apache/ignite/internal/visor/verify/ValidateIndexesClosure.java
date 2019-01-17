@@ -18,8 +18,6 @@ package org.apache.ignite.internal.visor.verify;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,9 +40,6 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -61,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -80,6 +76,9 @@ import org.apache.ignite.resources.LoggerResource;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  * Closure that locally validates indexes of given caches.
@@ -325,8 +324,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(lsnr);
 
-                if (isCheckpointNow(db))
-                    throw new GridNotIdleException("Checkpoint is now! Cluster isn't idle.");
+                if (IdleVerifyUtility.isCheckpointNow(db))
+                    throw new GridNotIdleException(IdleVerifyUtility.CLUSTER_NOT_IDLE_MSG);
             }
 
             for (Integer grpId: grpIds) {
@@ -382,34 +381,14 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         try {
             FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cctx.pageStore();
 
-            if (pageStoreMgr == null)
-                return null;
-
-            int pageSz = gctx.dataRegion().pageMemory().pageSize();
-
-            PageStore pageStore = pageStoreMgr.getStore(gctx.groupId(), PageIdAllocator.INDEX_PARTITION);
-
-            long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
-
-            ByteBuffer buf = ByteBuffer.allocateDirect(pageSz);
-
-            buf.order(ByteOrder.nativeOrder());
-
-            for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
-                buf.clear();
-
-                if (cpFlag.get())
-                    throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
-
-                pageStore.read(pageId, buf, true);
-            }
-
-            if (cpFlag.get())
-                throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
+            IdleVerifyUtility.checkPartitionsPageCrcSum(pageStoreMgr, gctx, INDEX_PARTITION, FLAG_IDX, cpFlag);
 
             return null;
         }
         catch (Throwable t) {
+            if (cpFlag.get())
+                throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!", t);
+
             log.error("Integrity check of index partition of cache group " + gctx.cacheOrGroupName() + " failed", t);
 
             return new IndexIntegrityCheckIssue(gctx.cacheOrGroupName(), t);
@@ -768,19 +747,5 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             return  (IgniteException)e.getCause();
         else
             return new IgniteException(e.getCause());
-    }
-
-    /**
-     * @param db Shared DB manager.
-     * @return {@code True} if checkpoint is now, {@code False} otherwise.
-     */
-    private boolean isCheckpointNow(IgniteCacheDatabaseSharedManager db) {
-        GridCacheDatabaseSharedManager.CheckpointProgress progress =
-                ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
-
-        if (progress == null)
-            return false;
-
-        return progress.started() && !progress.finished();
     }
 }
