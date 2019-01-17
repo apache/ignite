@@ -129,6 +129,9 @@ public class GridSqlQuerySplitter {
     private boolean collocatedGrpBy;
 
     /** */
+    private boolean distributedJoins;
+
+    /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
     /** Partition extractor. */
@@ -137,11 +140,14 @@ public class GridSqlQuerySplitter {
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
+     * @param distributedJoins Distributed joins flag.
      * @param extractor Partition extractor.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, PartitionExtractor extractor) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, boolean distributedJoins,
+        PartitionExtractor extractor) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
+        this.distributedJoins = distributedJoins;
         this.extractor = extractor;
     }
 
@@ -206,7 +212,8 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.partitionExtractor());
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, distributedJoins,
+            h2.partitionExtractor());
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -1548,7 +1555,7 @@ public class GridSqlQuerySplitter {
         map.partitioned(hasPartitionedTables(mapQry));
         map.hasSubQueries(hasSubQueries);
 
-        if (map.isPartitioned())
+        if (map.isPartitioned() && !distributedJoins)
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);

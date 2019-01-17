@@ -121,6 +121,9 @@ public class GridH2Table extends TableBase {
     /** Flag remove index or not when table will be destroyed. */
     private volatile boolean rmIndex;
 
+    /** Columns with thread-safe access. */
+    private volatile Column[] safeColumns;
+
     /**
      * Creates table.
      *
@@ -1038,12 +1041,14 @@ public class GridH2Table extends TableBase {
         lock(true);
 
         try {
-            int pos = columns.length;
+            Column[] safeColumns0 = safeColumns;
 
-            Column[] newCols = new Column[columns.length + cols.size()];
+            int pos = safeColumns0.length;
+
+            Column[] newCols = new Column[safeColumns0.length + cols.size()];
 
             // First, let's copy existing columns to new array
-            System.arraycopy(columns, 0, newCols, 0, columns.length);
+            System.arraycopy(safeColumns0, 0, newCols, 0, safeColumns0.length);
 
             // And now, let's add new columns
             for (QueryField col : cols) {
@@ -1084,13 +1089,16 @@ public class GridH2Table extends TableBase {
      * @param cols Columns.
      * @param ifExists If EXISTS flag.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
 
         lock(true);
 
         try {
-            int size = columns.length;
+            Column[] safeColumns0 = safeColumns;
+
+            int size = safeColumns0.length;
 
             for (String name : cols) {
                 if (!doesColumnExist(name)) {
@@ -1110,8 +1118,8 @@ public class GridH2Table extends TableBase {
 
             int dst = 0;
 
-            for (int i = 0; i < columns.length; i++) {
-                Column column = columns[i];
+            for (int i = 0; i < safeColumns0.length; i++) {
+                Column column = safeColumns0[i];
 
                 for (String name : cols) {
                     if (F.eq(name, column.getName())) {
@@ -1141,8 +1149,17 @@ public class GridH2Table extends TableBase {
         }
     }
 
+    @Override
+    protected void setColumns(Column[] columns) {
+        this.safeColumns = columns;
+
+        super.setColumns(columns);
+    }
+
     /** {@inheritDoc} */
     @Override public Column[] getColumns() {
+        Column[] safeColumns0 = safeColumns;
+
         Boolean insertHack = INSERT_HACK.get();
 
         if (insertHack != null && insertHack) {
@@ -1151,15 +1168,15 @@ public class GridH2Table extends TableBase {
             StackTraceElement elem = elems[2];
 
             if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[columns.length - 3];
+                Column[] columns0 = new Column[safeColumns0.length - 3];
 
-                System.arraycopy(columns, 3, columns0, 0, columns0.length);
+                System.arraycopy(safeColumns0, 3, columns0, 0, columns0.length);
 
                 return columns0;
             }
         }
 
-        return columns;
+        return safeColumns0;
     }
 
     /**
