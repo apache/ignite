@@ -82,6 +82,7 @@ libignite_odbc_la_SOURCES = \
     src/query/special_columns_query.cpp \
     src/query/streaming_query.cpp \
     src/sql/sql_parser.cpp \
+    src/sql/sql_lexer.cpp \
     src/sql/sql_set_streaming_command.cpp \
     src/sql/sql_utils.cpp \
     src/streaming/streaming_batch.cpp \
