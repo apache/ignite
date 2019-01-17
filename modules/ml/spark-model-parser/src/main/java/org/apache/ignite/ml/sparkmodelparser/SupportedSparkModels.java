@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.mleap;
+package org.apache.ignite.ml.sparkmodelparser;
 
 /**
  * List of supported Spark models.

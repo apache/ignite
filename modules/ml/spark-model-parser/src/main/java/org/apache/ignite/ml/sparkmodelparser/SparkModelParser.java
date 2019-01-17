@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.mleap;
+package org.apache.ignite.ml.sparkmodelparser;
 
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
