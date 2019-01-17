@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1626,33 +1625,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void waitMvccQueriesDone() throws Exception {
-        UUID crdId = null;
-
         for (Ignite node : G.allGrids()) {
-            MvccProcessorImpl crd = mvccProcessor(node);
-
-            crdId = crd.currentCoordinatorId();
-
-            if (crdId != null)
-                break;
+            checkActiveQueriesCleanup(node);
         }
-
-        if (crdId == null)
-            return; // No mvcc node is alive.
-
-        Ignite crdNode = G.ignite(crdId);
-
-        MvccProcessorImpl crd = mvccProcessor(crdNode);
-
-        assertNotNull(crd);
-
-        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return crd.minimalActiveQuery() == null;
-            }
-        }, 1000);
-
-        assertTrue(res);
     }
 
     /**

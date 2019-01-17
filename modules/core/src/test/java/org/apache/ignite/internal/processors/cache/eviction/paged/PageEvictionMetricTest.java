@@ -57,6 +57,8 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
      */
     @Test
     public void testPageEvictionMetricMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+
         checkPageEvictionMetric(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
