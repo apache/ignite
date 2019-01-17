@@ -26,11 +26,11 @@ import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.sparkmodelparser.;
-import org.apache.ignite.ml.mleap.SupportedSparkModels;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
+import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
 
 /**
  * Run logistic regression model loaded from snappy.parquet file.
