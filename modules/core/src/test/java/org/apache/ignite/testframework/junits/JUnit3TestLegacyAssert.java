@@ -123,11 +123,11 @@ class JUnit3TestLegacyAssert {
 
     /** See class javadocs. */
     protected static void assertSame(Object exp, Object actual) {
-        //   todo keep and deledate
+        Assert.assertSame(exp, actual);
     }
 
     /** See class javadocs. */
-    protected static void assertNotSame(Object exp, Object actual) {
-        //   todo keep and deledate
+    protected static void assertNotSame(Object unexpected, Object actual) {
+        Assert.assertNotSame(unexpected, actual);
     }
 }
