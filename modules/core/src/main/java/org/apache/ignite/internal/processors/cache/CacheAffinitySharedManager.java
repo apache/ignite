@@ -470,8 +470,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     CacheGroupHolder grpHolder = grpHolders.get(grp.groupId());
 
-                    // TODO : remove crd check
-                    assert !crd || (grpHolder != null && grpHolder.affinity().idealAssignment() != null);
+                    assert grpHolder != null && grpHolder.affinity().idealAssignment() != null;
 
                     if (grpHolder == null)
                         groupHolder(topVer, desc.groupDescriptor());
@@ -1013,8 +1012,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (data.descriptor().config().getCacheMode() != LOCAL) {
                 CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
 
-                // TODO: remove crd check
-                assert !crd || cacheGrp != null || forceClose : data.descriptor();
+                assert cacheGrp != null || forceClose : data.descriptor();
 
                 if (cacheGrp != null) {
                     if (stoppedGrps == null)
