@@ -17,171 +17,116 @@
 
 package org.apache.ignite.testframework.junits;
 
+import org.junit.Assert;
+
 /**
- * Supports compatibility with old tests that expect inherited assertions.
+ * Supports compatibility with legacy tests that expect inherited assertions by delegating these to respective methods
+ * in {@link Assert} in org.junit package.
+ * Deprecation notice: instead of invoking inherited methods, directly refer to respective static methods of
+ * {@link Assert} class.
  */
-class JUnit3TestLegacyAssert /*extends  junit.framework.Assert*/ {
-    /**
-     * Asserts that a cond is true. If it isn't it throws
-     * an AssertionFailedError with the given msg.
-     */
+class JUnit3TestLegacyAssert {
+    /** See class javadocs. */
     protected static void assertTrue(String msg, boolean cond) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that a cond is true. If it isn't it throws
-     * an AssertionFailedError.
-     */
+    /** See class javadocs. */
     protected static void assertTrue(boolean cond) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that a cond is false. If it isn't it throws
-     * an AssertionFailedError with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertFalse(String msg, boolean cond) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that a cond is false. If it isn't it throws
-     * an AssertionFailedError.
-     */
+    /** See class javadocs. */
     protected static void assertFalse(boolean cond) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two objs are equal. If they are not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(String msg, Object exp, Object actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two objs are equal. If they are not
-     * an AssertionFailedError is thrown.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(Object exp, Object actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two Strings are equal.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(String msg, String exp, String actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two Strings are equal.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(String exp, String actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two longs are equal. If they are not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(String msg, long exp, long actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two longs are equal.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(long exp, long actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two booleans are equal.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(boolean exp, boolean actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two ints are equal. If they are not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(String msg, int exp, int actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two ints are equal.
-     */
+    /** See class javadocs. */
     protected static void assertEquals(int exp, int actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj isn't null.
-     */
+    /** See class javadocs. */
     protected static void assertNotNull(Object obj) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj isn't null. If it is
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertNotNull(String msg, Object obj) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj is null. If it isn't an {@link AssertionError} is
-     * thrown.
-     * msg contains: exp: <null> but was: obj
-     *
-     * @param obj Object to check or <code>null</code>
-     */
+    /** See class javadocs. */
     protected static void assertNull(Object obj) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj is null.  If it is not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void assertNull(String msg, Object obj) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj is null.  If it is not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void fail(String msg) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that an obj is null.  If it is not
-     * an AssertionFailedError is thrown with the given msg.
-     */
+    /** See class javadocs. */
     protected static void fail() {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two objects do not refer to the same object. If they do
-     * refer to the same object an AssertionFailedError is thrown.
-     */
+    /** See class javadocs. */
     protected static void assertSame(Object exp, Object actual) {
         // todo keep and deledate
     }
 
-    /**
-     * Asserts that two objects do not refer to the same object. If they do
-     * refer to the same object an AssertionFailedError is thrown.
-     */
+    /** See class javadocs. */
     protected static void assertNotSame(Object exp, Object actual) {
         // todo keep and deledate
     }
