@@ -2435,8 +2435,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null)
-                    ptr = cctx.wal().log(newTxRecord(tx));
+                TxRecord rec;
+                if (cctx.wal() != null && (rec = newTxRecord(tx)) != null)
+                    cctx.wal().log(rec);
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
             }
@@ -2460,8 +2461,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null)
-                    cctx.wal().log(newTxRecord(tx));
+                TxRecord rec;
+                if (cctx.wal() != null && (rec = newTxRecord(tx)) != null)
+                    cctx.wal().log(rec);
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
             }
@@ -2503,7 +2505,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @return Tx state record.
      */
-    private TxRecord newTxRecord(IgniteTxAdapter tx) {
+    private @Nullable TxRecord newTxRecord(IgniteTxAdapter tx) {
         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
         if (baselineTop != null && baselineTop.consistentIds().contains(cctx.localNode().consistentId())) {
