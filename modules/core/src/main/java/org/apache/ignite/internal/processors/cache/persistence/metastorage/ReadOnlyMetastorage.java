@@ -17,10 +17,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
-import java.util.Map;
-
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  *
@@ -29,12 +27,21 @@ public interface ReadOnlyMetastorage {
     /** */
     Serializable read(String key) throws IgniteCheckedException;
 
+    /** */
+    byte[] readRaw(String key) throws IgniteCheckedException;
+
     /**
-     * Read all keys matching provided predicate.
+     * Read all key/value pairs where key has provided prefix.
+     * It is guaranteed that callback will be applied to matching keys in ascending order.
      *
-     * @param keyPred Key predicate.
-     * @return Matched key-value pairs.
+     * @param keyPrefix Key prefix.
+     * @param cb Callback to invoke on each matching key/value pair.
+     * @param unmarshal {@code True} if object passed into {@code cb} should be unmarshalled.
      * @throws IgniteCheckedException If failed.
      */
-    Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
+    public void iterate(
+        String keyPrefix,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException;
 }
