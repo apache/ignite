@@ -55,8 +55,11 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
 
-    /** Parititions tracked during query execution. */
+    /** Partitions tracked during query execution. */
     private static final ConcurrentSkipListSet<Integer> INTERCEPTED_PARTS = new ConcurrentSkipListSet<>();
+
+    /** Partitions tracked during query execution. */
+    private static final ConcurrentSkipListSet<ClusterNode> INTERCEPTED_NODES = new ConcurrentSkipListSet<>();
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
@@ -337,6 +340,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     protected static void clearIoState() {
         INTERCEPTED_REQS.set(0);
         INTERCEPTED_PARTS.clear();
+        INTERCEPTED_NODES.clear();
     }
 
     /**
@@ -391,6 +395,42 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     }
 
     /**
+     * Make sure that expected nodes are logged.
+     *
+     * @param expNodes Expected nodes.
+     */
+    protected static void assertNodes(ClusterNode... expNodes) {
+        Collection<ClusterNode> expNodes0 = new TreeSet<>();
+
+        for (ClusterNode expNode : expNodes)
+            expNodes0.add(expNode);
+
+        assertNodes(expNodes0);
+    }
+
+    /**
+     * Make sure that expected nodes are logged.
+     *
+     * @param expNodes Expected nodes.
+     */
+    protected static void assertNodes(Collection<ClusterNode> expNodes) {
+        TreeSet<ClusterNode> expNodes0 = new TreeSet<>(expNodes);
+        TreeSet<ClusterNode> actualNodes = new TreeSet<>(INTERCEPTED_NODES);
+
+        assertEquals("Unexpected nodes [exp=" + expNodes + ", actual=" + actualNodes + ']',
+            expNodes0, actualNodes);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param key Key.
+     * @return Node.
+     */
+    protected ClusterNode node(String cacheName, Object key) {
+        return client().affinity(cacheName).mapKeyToNode(key);
+    }
+
+    /**
      * TCP communication SPI which will track outgoing query requests.
      */
     private static class TrackingTcpCommunicationSpi extends TcpCommunicationSpi {
@@ -399,6 +439,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                 GridIoMessage msg0 = (GridIoMessage)msg;
 
                 if (msg0.message() instanceof GridH2QueryRequest) {
+                    INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 
                     GridH2QueryRequest req = (GridH2QueryRequest)msg0.message();
@@ -411,6 +452,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                     }
                 }
                 else if(msg0.message() instanceof GridNearTxQueryEnlistRequest) {
+                    INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 
                     GridNearTxQueryEnlistRequest req = (GridNearTxQueryEnlistRequest)msg0.message();

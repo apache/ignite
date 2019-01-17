@@ -80,6 +80,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
                 assertPartitions(
                     parititon("t1", "1")
                 );
+                assertNodes(
+                    node("t1", "1")
+                );
                 assertUpdatedRows(res, 1);
             },
             "1"
@@ -90,6 +93,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
             (res) -> {
                 assertPartitions(
                     parititon("t1", "2")
+                );
+                assertNodes(
+                    node("t1", "2")
                 );
                 assertUpdatedRows(res, 1);
             },
@@ -111,6 +117,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
                 assertPartitions(
                     parititon("t2", "1")
                 );
+                assertNodes(
+                    node("t2", "1")
+                );
                 assertUpdatedRows(res, 1);
             },
             "1"
@@ -120,9 +129,14 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
+                );
+                assertNodes(
+                    node("t1", "1"),
+                    node("t1", "2"),
+                    node("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -133,9 +147,14 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
+                );
+                assertNodes(
+                    node("t1", "1"),
+                    node("t1", "2"),
+                    node("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -160,6 +179,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         List<List<?>> res = executeSingle("UPDATE t2 SET v2 = 'new1' WHERE _KEY = ?", key);
         assertPartitions(
             parititon("t2", "5")
+        );
+        assertNodes(
+            node("t2", "5")
         );
         assertUpdatedRows(res, 1);
     }
@@ -186,9 +208,14 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("DELETE FROM t1 WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
+                );
+                assertNodes(
+                    node("t1", "1"),
+                    node("t1", "2"),
+                    node("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -199,9 +226,14 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("DELETE FROM t1 WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
+                );
+                assertNodes(
+                    node("t1", "1"),
+                    node("t1", "2"),
+                    node("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },

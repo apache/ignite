@@ -2571,7 +2571,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         dataEntry.key(),
                         dataEntry.value(),
                         dataEntry.writeVersion(),
-                        0L,
+                        dataEntry.expireTime(),
                         locPart,
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
@@ -2581,7 +2581,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         dataEntry.key(),
                         dataEntry.value(),
                         dataEntry.writeVersion(),
-                        0L,
+                        dataEntry.expireTime(),
                         locPart,
                         null);
                 }
