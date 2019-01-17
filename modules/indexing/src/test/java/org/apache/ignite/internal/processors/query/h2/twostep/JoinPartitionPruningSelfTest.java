@@ -20,14 +20,24 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -40,6 +50,7 @@ import org.junit.runners.JUnit4;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,13 +77,23 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     /** Client node name. */
     private static final String CLI_NAME = "cli";
 
+    /** Memory. */
+    private static final String REGION_MEM = "mem";
+
+    /** Disk. */
+    private static final String REGION_DISK = "disk";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGrid(getConfiguration("srv1"));
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
         startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+
+        client().cluster().active(true);
     }
 
     /** {@inheritDoc} */
@@ -87,6 +108,8 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -97,6 +120,15 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         res.setCommunicationSpi(new TrackingTcpCommunicationSpi());
 
         res.setLocalHost("127.0.0.1");
+
+        DataRegionConfiguration memRegion =
+            new DataRegionConfiguration().setName(REGION_MEM).setPersistenceEnabled(false);
+
+        DataRegionConfiguration diskRegion =
+            new DataRegionConfiguration().setName(REGION_DISK).setPersistenceEnabled(true);
+
+        res.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(diskRegion)
+            .setDefaultDataRegionConfiguration(memRegion));
 
         return res;
     }
@@ -571,6 +603,80 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         // With and without persistence.
         // TODO
+
+        // Different affinity key mappers?
+        // TODO
+    }
+
+    @SuppressWarnings("unchecked")
+    private void checkAffinityFunctions(CacheConfiguration ccfg1, CacheConfiguration ccfg2, boolean compatible) {
+        // Destroy old caches.
+        Ignite cli = client();
+
+        cli.destroyCaches(cli.cacheNames());
+
+        // Start new caches.
+        QueryEntity entity1 = new QueryEntity(KeyClass1.class, ValueClass.class).setTableName("t1");
+        QueryEntity entity2 = new QueryEntity(KeyClass2.class, ValueClass.class).setTableName("t2");
+
+        ccfg1.setQueryEntities(Collections.singletonList(entity1));
+        ccfg2.setQueryEntities(Collections.singletonList(entity2));
+
+        client().createCache(ccfg1);
+        client().createCache(ccfg2);
+
+        // Conduct tests.
+        // TODO.
+    }
+
+    /**
+     * Create custom cache configuration.
+     *
+     * @param name Name.
+     * @param parts Partitions.
+     * @param backups Backups.
+     * @param customAffinity Custom affinity function flag.
+     * @param customAffinityMapper Custom affinity key mapper flag.
+     * @param nodeFilter Whether to set node filter.
+     * @param persistent Whether to enable persistence.
+     * @return Cache configuration.
+     */
+    private static CacheConfiguration cacheConfiguration(
+        String name,
+        int parts,
+        int backups,
+        boolean customAffinity,
+        boolean customAffinityMapper,
+        boolean nodeFilter,
+        boolean persistent
+    ) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName(name);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setBackups(backups);
+
+        RendezvousAffinityFunction affFunc;
+
+        if (customAffinity)
+            affFunc = new CustomRendezvousAffinityFunction();
+        else
+            affFunc = new RendezvousAffinityFunction();
+
+        affFunc.setPartitions(parts);
+
+        ccfg.setAffinity(affFunc);
+
+        if (customAffinityMapper)
+            ccfg.setAffinityMapper(new CustomAffinityMapper());
+
+        if (nodeFilter)
+            ccfg.setNodeFilter(new CustomNodeFilter());
+
+        if (persistent)
+            ccfg.setDataRegionName(REGION_DISK);
+
+        return ccfg;
     }
 
     /**
@@ -1049,5 +1155,71 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         public boolean affinity() {
             return aff;
         }
+    }
+
+    /**
+     * Custom affinity function.
+     */
+    private static class CustomRendezvousAffinityFunction extends RendezvousAffinityFunction {
+        // No-op.
+    }
+
+    /**
+     * Custom affinity mapper.
+     */
+    private static class CustomAffinityMapper implements AffinityKeyMapper {
+        /** {@inheritDoc} */
+        @Override public Object affinityKey(Object key) {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+    }
+
+    /**
+     * Custom node filter.
+     */
+    private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return true;
+        }
+    }
+
+    /**
+     * Key class 1.
+     */
+    @SuppressWarnings("unused")
+    private static class KeyClass1 {
+        /** Key. */
+        @QuerySqlField
+        private long k1;
+    }
+
+    /**
+     * Key class 2.
+     */
+    @SuppressWarnings("unused")
+    private static class KeyClass2 {
+        /** Key. */
+        @QuerySqlField
+        private long k1;
+
+        /** Affinity key. */
+        @QuerySqlField
+        @AffinityKeyMapped
+        private long ak2;
+    }
+
+    /**
+     * Value class.
+     */
+    @SuppressWarnings("unused")
+    private static class ValueClass {
+        /** Value. */
+        @QuerySqlField
+        private long v;
     }
 }
