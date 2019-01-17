@@ -150,10 +150,9 @@ public interface GridQueryTypeDescriptor {
 
     /**
      * @param val Value cache object.
-     * @return {@code true} If the given value cache object is of correct type
-     *         for this descriptor.
+     * @return {@code true} If the type of the given value cache object matches this descriptor.
      */
-    public boolean matchTypeId(CacheObject val);
+    public boolean matchType(CacheObject val);
 
     /**
      * Gets key field name.

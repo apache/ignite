@@ -243,20 +243,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matchTypeId(CacheObject val) {
-        return typeId(val) == typeId;
-    }
-
-    /**
-     * @param val Value cache object.
-     * @return Type ID as in {@link #typeId()}.
-     */
-    private int typeId(CacheObject val) {
+    @Override public boolean matchType(CacheObject val) {
         if (val instanceof BinaryObject)
-            return ((BinaryObject)val).type().typeId();
+            return ((BinaryObject)val).type().typeId() == typeId;
 
         Object v = val.value(coCtx, false);
-        return coCtx.kernalContext().cacheObjects().typeId(v);
+
+        // Value type name can be manually set in QueryEntity to any random value,
+        // also for some reason our conversion from setIndexedTypes sets a full class name
+        // instead of a simple name there, thus we can have a typeId mismatch.
+        return v.getClass() == valCls ||
+            coCtx.kernalContext().cacheObjects().typeId(v) == typeId;
     }
 
     /**

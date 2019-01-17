@@ -255,7 +255,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                         while (curr.next()) {
                             // Need to filter rows by value type because in a single cache
                             // we can have multiple indexed types.
-                            if (type.matchTypeId(curr.get().value()))
+                            if (type.matchType(curr.get().value()))
                                 return true;
                         }
                     }
