@@ -162,6 +162,7 @@ import formSignup from './components/form-signup';
 import sidebar from './components/web-console-sidebar';
 import permanentNotifications from './components/permanent-notifications';
 import signupConfirmation from './components/page-signup-confirmation';
+import noDataCmp from './components/no-data';
 
 import igniteServices from './services';
 
@@ -271,7 +272,8 @@ export default angular.module('ignite-console', [
     sidebar.name,
     permanentNotifications.name,
     timedRedirection.name,
-    signupConfirmation.name
+    signupConfirmation.name,
+    noDataCmp.name
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.
