@@ -42,7 +42,9 @@ public class IdleVerifyException extends IgniteException {
 
     /** {@inheritDoc} */
     @Override public String getMessage() {
-        return exceptions.stream().map(e->e.getMessage()).collect(Collectors.joining(", "));
+        return exceptions.stream()
+            .map(Throwable::getMessage)
+            .collect(Collectors.joining(", "));
     }
 
     /**
@@ -54,6 +56,6 @@ public class IdleVerifyException extends IgniteException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass() +": " + getMessage();
+        return getClass() + ": " + getMessage();
     }
 }

@@ -201,7 +201,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         int skippedRecords,
         PrintWriter writer
     ) {
-        if(!F.isEmpty(conflictRes.exceptions())) {
+        if (!F.isEmpty(conflictRes.exceptions())) {
             int size = conflictRes.exceptions().size();
 
             writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");

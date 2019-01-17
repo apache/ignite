@@ -363,8 +363,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             throw unwrapFutureException(e);
         }
         finally {
-           if (db instanceof GridCacheDatabaseSharedManager && lsnr != null)
-               ((GridCacheDatabaseSharedManager)db).removeCheckpointListener(lsnr);
+            if (db instanceof GridCacheDatabaseSharedManager && lsnr != null)
+                ((GridCacheDatabaseSharedManager)db).removeCheckpointListener(lsnr);
         }
 
         return integrityCheckResults;

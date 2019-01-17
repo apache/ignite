@@ -2121,7 +2121,7 @@ public final class GridTestUtils {
     public static void cleanIdleVerifyLogFiles() {
         File dir = new File(".");
 
-        for(File f : dir.listFiles(n->n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
             f.delete();
     }
 }

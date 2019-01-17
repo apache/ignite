@@ -130,7 +130,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             if (superRes == ComputeJobResultPolicy.FAILOVER) {
                 superRes = ComputeJobResultPolicy.WAIT;
 
-                if(log != null) {
+                if (log != null) {
                     log.warning("VerifyBackupPartitionsJobV2 failed on node " +
                         "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
                 }
@@ -249,7 +249,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             DbCheckpointListener lsnr = null;
 
-            if(arg.isCheckCrc() &&
+            if (arg.isCheckCrc() &&
                 ignite.context().cache().context().database() instanceof GridCacheDatabaseSharedManager) {
                 db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
@@ -268,7 +268,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             try {
-                if(arg.isCheckCrc() && IdleVerifyUtility.isCheckpointNow(db))
+                if (arg.isCheckCrc() && IdleVerifyUtility.isCheckpointNow(db))
                     throw new GridNotIdleException(IdleVerifyUtility.CLUSTER_NOT_IDLE_MSG);
 
                 List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFuts =
@@ -323,7 +323,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 return res;
             }
             finally {
-                if(db != null && lsnr != null)
+                if (db != null && lsnr != null)
                     db.removeCheckpointListener(lsnr);
             }
         }
@@ -424,7 +424,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         *  Checks and throw exception if caches was missed.
+         * Checks and throw exception if caches was missed.
          *
          * @param missingCaches Missing caches.
          */
@@ -490,7 +490,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         break;
 
                     default:
-                        assert false: "Illegal cache filter: " + vdta.getCacheFilterEnum();
+                        assert false : "Illegal cache filter: " + vdta.getCacheFilterEnum();
                 }
             }
 
@@ -545,7 +545,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                 partSize = part.dataStore().fullSize();
 
-                if(arg.isCheckCrc())
+                if (arg.isCheckCrc())
                     checkPartitionCrc(grpCtx, part, cpFlag);
 
                 GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
@@ -607,7 +607,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                     IdleVerifyUtility.checkPartitionsPageCrcSum(pageStore, grpCtx, part.id(), FLAG_DATA, cpFlag);
                 }
-                catch (GridNotIdleException e){
+                catch (GridNotIdleException e) {
                     throw e;
                 }
                 catch (Exception | AssertionError e) {

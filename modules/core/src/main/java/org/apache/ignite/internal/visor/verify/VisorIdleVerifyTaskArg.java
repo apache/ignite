@@ -110,7 +110,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
          *
          * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
-        if(instanceOfCurrentClass()) {
+        if (instanceOfCurrentClass()) {
             U.writeCollection(out, excludeCaches);
 
             out.writeBoolean(checkCrc);
@@ -130,7 +130,7 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
          *
          * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
-        if(instanceOfCurrentClass()) {
+        if (instanceOfCurrentClass()) {
             if (protoVer >= V2)
                 excludeCaches = U.readSet(in);
 

@@ -144,7 +144,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         return exceptions;
     }
 
-
     /**
      * Print formatted result to given printer. If exceptions presented exception messages will be written to log file.
      *
@@ -154,10 +153,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     public @Nullable String print(Consumer<String> printer) {
         print(printer, false);
 
-        if(!F.isEmpty(exceptions)){
+        if (!F.isEmpty(exceptions)) {
             File f = new File(IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
-            try(PrintWriter pw = new PrintWriter(f)) {
+            try (PrintWriter pw = new PrintWriter(f)) {
                 print(pw::write, true);
 
                 pw.flush();
@@ -178,7 +177,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** */
     private void print(Consumer<String> printer, boolean printExceptionMessages) {
-        if(!F.isEmpty(exceptions)) {
+        if (!F.isEmpty(exceptions)) {
             int size = exceptions.size();
 
             printer.accept("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
@@ -209,8 +208,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 printer.accept("Node ID: " + n.id() + " " + n.addresses() + " consistent ID: " + n.consistentId() + "\n");
 
-                if(printExceptionMessages) {
+                if (printExceptionMessages) {
                     printer.accept("Exception message:" + "\n");
+
                     printer.accept(e.getValue().getMessage() + "\n");
                 }
             }

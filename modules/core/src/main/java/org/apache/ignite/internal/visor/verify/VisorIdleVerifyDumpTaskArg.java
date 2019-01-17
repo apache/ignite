@@ -112,7 +112,7 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
          *
          * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
-        if(instanceOfCurrentClass()) {
+        if (instanceOfCurrentClass()) {
             if (protoVer >= V2)
                 cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
             else
@@ -128,7 +128,7 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return (byte) Math.max(V2, super.getProtocolVersion());
+        return (byte)Math.max(V2, super.getProtocolVersion());
     }
 
     /** {@inheritDoc} */

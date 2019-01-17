@@ -3809,22 +3809,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             boolean hasPages
         ) {
             return new DbCheckpointListener.Context() {
+                /** {@inheritDoc} */
                 @Override public boolean nextSnapshot() {
                     return delegate.nextSnapshot();
                 }
 
+                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
 
+                /** {@inheritDoc} */
                 @Override public boolean needToSnapshot(String cacheOrGrpName) {
                     return delegate.needToSnapshot(cacheOrGrpName);
                 }
 
+                /** {@inheritDoc} */
                 @Override public @Nullable Executor executor() {
                     return delegate.executor();
                 }
 
+                /** {@inheritDoc} */
                 @Override public boolean hasPages() {
                     return hasPages;
                 }
@@ -3838,22 +3843,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridCompoundFuture asyncLsnrFut
         ) {
            return new DbCheckpointListener.Context() {
-                @Override public boolean nextSnapshot() {
+               /** {@inheritDoc} */
+               @Override public boolean nextSnapshot() {
                     return currCpProgress.nextSnapshot;
                 }
 
-                /** {@inheritDoc} */
-                @Override public PartitionAllocationMap partitionStatMap() {
+               /** {@inheritDoc} */
+               @Override public PartitionAllocationMap partitionStatMap() {
                     return map;
                 }
 
-                /** {@inheritDoc} */
-                @Override public boolean needToSnapshot(String cacheOrGrpName) {
+               /** {@inheritDoc} */
+               @Override public boolean needToSnapshot(String cacheOrGrpName) {
                     return currCpProgress.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
-                }
+               }
 
-                /** {@inheritDoc} */
-                @Override public Executor executor() {
+               /** {@inheritDoc} */
+               @Override public Executor executor() {
                     return asyncRunner == null ? null : cmd -> {
                         try {
                             GridFutureAdapter<?> res = new GridFutureAdapter<>();
@@ -3866,15 +3872,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             throw new IgniteException("A task should never be rejected by async runner", e);
                         }
                     };
-                }
+               }
 
-                /** {@inheritDoc} */
-                @Override public boolean hasPages() {
+               /** {@inheritDoc} */
+               @Override public boolean hasPages() {
                     throw new IllegalStateException(
                         "Property is unknown at this moment. You should use onCheckpointBegin() method."
                     );
-                }
-            };
+               }
+           };
         }
 
         /**

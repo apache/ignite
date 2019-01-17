@@ -179,7 +179,8 @@ public class PageMemoryTracker implements IgnitePlugin {
                     cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
                 }
 
-                @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+                @Override
+                public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
                     super.onPartitionDestroyed(grpId, partId, tag);
 
                     cleanupPages(fullPageId -> fullPageId.groupId() == grpId
@@ -206,7 +207,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
         Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer) mock.getArguments()[0];
+            int grpId = (Integer)mock.getArguments()[0];
 
             if (gridCtx.encryption().groupKey(grpId) == null)
                 return pageSize;
@@ -297,7 +298,6 @@ public class PageMemoryTracker implements IgnitePlugin {
     private boolean isEnabled() {
         return (cfg != null && cfg.isEnabled() && CU.isPersistenceEnabled(ctx.igniteConfiguration()));
     }
-
 
     /**
      * Cleanup pages by predicate.
