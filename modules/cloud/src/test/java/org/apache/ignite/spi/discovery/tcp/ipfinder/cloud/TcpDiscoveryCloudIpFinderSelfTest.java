@@ -77,6 +77,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
     public void testRackspace() throws Exception {

@@ -277,7 +277,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         // Check.
         for (Integer k : map.keySet())
-            Assert.assertEquals(map.get(k), cache.get(k));
+            assertEquals(map.get(k), cache.get(k));
 
         stopGrid(1);
 
@@ -289,7 +289,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         // Check.
         for (Integer k : map.keySet())
-            Assert.assertEquals(map.get(k), cache.get(k));
+            assertEquals(map.get(k), cache.get(k));
     }
 
     /**
@@ -327,7 +327,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             int[] val = (int[])cache.get("key_" + i);
 
-            Assert.assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
+            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
         }
     }
 
@@ -409,7 +409,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             else
                 o = null;
 
-            Assert.assertEquals(o, cache.get(i));
+            assertEquals(o, cache.get(i));
         }
 
         stopGrid(1);
@@ -435,7 +435,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             else
                 o = null;
 
-            Assert.assertEquals(o, cache.get(i));
+            assertEquals(o, cache.get(i));
         }
 
         info(" --> ok");
@@ -552,10 +552,10 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
         });
 
-        Assert.assertTrue(files.length > 0);
+        assertTrue(files.length > 0);
 
         for (final File file : files)
-            Assert.assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
+            assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
 
         startGrids(2);
 
@@ -577,7 +577,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     if (nodeName.equals(ig2Name)) {
                         // Checkpoint history initialized on node start.
-                        Assert.assertFalse(((GridCacheDatabaseSharedManager)sharedCtx.database())
+                        assertFalse(((GridCacheDatabaseSharedManager)sharedCtx.database())
                             .checkpointHistory().checkpoints().isEmpty());
                     }
 
@@ -589,7 +589,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Assert.assertEquals(restoredIg2.cache(CACHE_TO_DESTROY_NAME).get(1), objToCheck);
+        assertEquals(restoredIg2.cache(CACHE_TO_DESTROY_NAME).get(1), objToCheck);
     }
 
     /**
@@ -723,7 +723,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cache = ignite.cache(RENAMED_CACHE_NAME);
 
         for (int i = 0; i < 100; i++)
-            Assert.assertEquals(new IndexedObject(i), cache.get(i));
+            assertEquals(new IndexedObject(i), cache.get(i));
     }
 
     /**
@@ -787,17 +787,17 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = cacheGrid.cache(CACHE_NAME);
 
         for (int i = 0; i < ENTRY_COUNT; i++)
-            Assert.assertEquals(new IndexedObject(i), cache.get(i));
+            assertEquals(new IndexedObject(i), cache.get(i));
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("select count(iVal) from IndexedObject")).getAll();
 
-        Assert.assertEquals(1, res.size());
-        Assert.assertEquals((long)ENTRY_COUNT, res.get(0).get(0));
+        assertEquals(1, res.size());
+        assertEquals((long)ENTRY_COUNT, res.get(0).get(0));
 
         IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
 
         for (int i = 0; i < ENTRY_COUNT; i++)
-            Assert.assertEquals(new IndexedObject(i), locCache.get(i));
+            assertEquals(new IndexedObject(i), locCache.get(i));
     }
 
     /**
@@ -884,7 +884,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         Boolean res = rmt.call(new VerifyCallable());
 
-        Assert.assertTrue(res);
+        assertTrue(res);
     }
 
     /**
@@ -920,7 +920,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         Boolean res = rmt.call(new VerifyLargeCallable());
 
-        Assert.assertTrue(res);
+        assertTrue(res);
     }
 
     /**
@@ -951,7 +951,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cache = ignite.getOrCreateCache("test");
 
         // No entry available after cache destroy.
-        Assert.assertNull(cache.get(1));
+        assertNull(cache.get(1));
     }
 
     /**
@@ -973,8 +973,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache2 = ignite2.cache(CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
-            Assert.assertEquals(new IndexedObject(i), cache1.get(i));
-            Assert.assertEquals(new IndexedObject(i), cache2.get(i));
+            assertEquals(new IndexedObject(i), cache1.get(i));
+            assertEquals(new IndexedObject(i), cache2.get(i));
         }
 
         ignite1.close();
@@ -989,8 +989,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cache2 = ignite2.cache(CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
-            Assert.assertEquals(new IndexedObject(i), cache1.get(i));
-            Assert.assertEquals(new IndexedObject(i), cache2.get(i));
+            assertEquals(new IndexedObject(i), cache1.get(i));
+            assertEquals(new IndexedObject(i), cache2.get(i));
         }
     }
 
@@ -1018,7 +1018,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage0.putData(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
+                storage0.writeRaw(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1032,7 +1032,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx1.database().checkpointReadLock();
 
             try {
-                storage1.putData(String.valueOf(i), b1);
+                storage1.writeRaw(String.valueOf(i), b1);
             }
             finally {
                 sharedCtx1.database().checkpointReadUnlock();
@@ -1040,17 +1040,17 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] d1 = storage0.getData(String.valueOf(i));
-            Assert.assertEquals(3, d1.length);
-            Assert.assertEquals((byte)(i % 256), d1[0]);
-            Assert.assertEquals(2, d1[1]);
-            Assert.assertEquals(3, d1[2]);
+            byte[] d1 = storage0.readRaw(String.valueOf(i));
+            assertEquals(3, d1.length);
+            assertEquals((byte)(i % 256), d1[0]);
+            assertEquals(2, d1[1]);
+            assertEquals(3, d1[2]);
 
-            byte[] d2 = storage1.getData(String.valueOf(i));
-            Assert.assertEquals(i + 3, d2.length);
-            Assert.assertEquals(1, d2[0]);
-            Assert.assertEquals(2, d2[1]);
-            Assert.assertEquals(3, d2[2]);
+            byte[] d2 = storage1.readRaw(String.valueOf(i));
+            assertEquals(i + 3, d2.length);
+            assertEquals(1, d2[0]);
+            assertEquals(2, d2[1]);
+            assertEquals(3, d2[2]);
         }
     }
 
@@ -1079,7 +1079,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), b1);
+                storage.writeRaw(String.valueOf(i), b1);
             }
             finally {
                 sharedCtx.database().checkpointReadUnlock();
@@ -1087,11 +1087,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] d2 = storage.getData(String.valueOf(i));
-            Assert.assertEquals(arraySize, d2.length);
+            byte[] d2 = storage.readRaw(String.valueOf(i));
+            assertEquals(arraySize, d2.length);
 
             for (int k = 0; k < arraySize; k++) {
-                Assert.assertEquals((byte)(k % 100), d2[k]);
+                assertEquals((byte)(k % 100), d2[k]);
             }
         }
     }
@@ -1117,7 +1117,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1136,11 +1136,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 10; i < cnt; i++) {
-            byte[] d1 = storage.getData(String.valueOf(i));
-            Assert.assertEquals(3, d1.length);
-            Assert.assertEquals(1, d1[0]);
-            Assert.assertEquals(2, d1[1]);
-            Assert.assertEquals(3, d1[2]);
+            byte[] d1 = storage.readRaw(String.valueOf(i));
+            assertEquals(3, d1.length);
+            assertEquals(1, d1[0]);
+            assertEquals(2, d1[1]);
+            assertEquals(3, d1[2]);
         }
     }
 
@@ -1166,7 +1166,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                    storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1177,7 +1177,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[] {2, 2, 3, 4});
+                    storage.writeRaw(String.valueOf(i), new byte[] {2, 2, 3, 4});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1185,11 +1185,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < cnt; i++) {
-                byte[] d1 = storage.getData(String.valueOf(i));
-                Assert.assertEquals(4, d1.length);
-                Assert.assertEquals(2, d1[0]);
-                Assert.assertEquals(2, d1[1]);
-                Assert.assertEquals(3, d1[2]);
+                byte[] d1 = storage.readRaw(String.valueOf(i));
+                assertEquals(4, d1.length);
+                assertEquals(2, d1[0]);
+                assertEquals(2, d1[1]);
+                assertEquals(3, d1[2]);
             }
         }
         finally {
@@ -1218,7 +1218,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1226,7 +1226,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.getData(String.valueOf(i));
+            byte[] value = storage.readRaw(String.valueOf(i));
             assert value != null;
             assert value.length == 3;
         }
@@ -1244,7 +1244,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         assert storage != null;
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.getData(String.valueOf(i));
+            byte[] value = storage.readRaw(String.valueOf(i));
             assert value != null;
         }
     }
@@ -1385,7 +1385,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                         rolledPages.put(fullId, pageData);
                     }
 
-                    Assert.assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
+                    assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
 
                     buf.order(ByteOrder.nativeOrder());
 
@@ -1426,7 +1426,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                             if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
                                 continue; // Skip tracking pages.
 
-                            Assert.assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
+                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
                         }
                     }
                     finally {
@@ -1733,7 +1733,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -1768,7 +1768,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -1820,7 +1820,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -1882,7 +1882,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -1930,7 +1930,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -1986,7 +1986,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                Assert.assertTrue(successfulWaiting);
+                assertTrue(successfulWaiting);
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
@@ -2007,7 +2007,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     return false;
                 }
 
-                Assert.assertTrue(Arrays.equals(data, (long[])val));
+                assertTrue(Arrays.equals(data, (long[])val));
             }
 
             return true;
