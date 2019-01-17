@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -39,12 +34,11 @@ import org.junit.runners.JUnit4;
 
 /**
  * Negative java API tests for dml queries (insert, merge, update).
- *
  */
 @RunWith(JUnit4.class)
 public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     /** Dummy cache, just cache api entry point. */
-    private static IgniteCache<?,?> cache;
+    private static IgniteCache<?, ?> cache;
 
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
@@ -73,88 +67,75 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together
-     * in the insert/merge dml statement. Same constraints are right for (_val, _val alias, val fields).
+     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together in
+     * the insert/merge dml statement. Same constraints are right for (_val, _val alias, val fields).
      */
     @Test
     public void testInsertMixingPlaceholderAndFields() {
-        assertThrows(()->
-            execute("INSERT INTO COMPOSITE (_key, id2, name1, name2) VALUES (?, ?, ?, ?)",
-            new CompositeKey(), 42, "name#1", "name#2"),
+        assertThrows(() ->
+                execute("INSERT INTO COMPOSITE (_key, id2, name1, name2) VALUES (?, ?, ?, ?)",
+                    new CompositeKey(), 42, "name#1", "name#2"),
             "Column _KEY refers to entire key cache object.");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO COMPOSITE (id1, id2, _val, name2) VALUES (?, ?, ?, ?)",
                     1, 2, new CompositeValue(), "name#2"),
             "Column _VAL refers to entire value cache object.");
 
-        assertThrows(()->
-            execute("INSERT INTO SIMPLE (_key, id, name) VALUES (?, ?, ?)",  42, 43, "some name"),
+        assertThrows(() ->
+                execute("INSERT INTO SIMPLE (_key, id, name) VALUES (?, ?, ?)", 42, 43, "some name"),
             "Columns _KEY and ID both refer to entire cache key object.");
 
-        assertThrows(()->
-                execute("INSERT INTO SIMPLE (_key, _val, name) VALUES (?, ?, ?)",  42, "name#1", "name#2"),
+        assertThrows(() ->
+                execute("INSERT INTO SIMPLE (_key, _val, name) VALUES (?, ?, ?)", 42, "name#1", "name#2"),
             "Columns _VAL and NAME both refer to entire cache value object.");
-        
+
         // And the same asserts for the MERGE:
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO COMPOSITE (_key, id2, name1, name2) VALUES (?, ?, ?, ?)",
                     new CompositeKey(), 42, "name#1", "name#2"),
             "Column _KEY refers to entire key cache object.");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO COMPOSITE (id1, id2, _val, name2) VALUES (?, ?, ?, ?)",
                     1, 2, new CompositeValue(), "name#2"),
             "Column _VAL refers to entire value cache object.");
 
-        assertThrows(()->
-                execute("MERGE INTO SIMPLE (_key, id, name) VALUES (?, ?, ?)",  42, 43, "some name"),
+        assertThrows(() ->
+                execute("MERGE INTO SIMPLE (_key, id, name) VALUES (?, ?, ?)", 42, 43, "some name"),
             "Columns _KEY and ID both refer to entire cache key object.");
 
-        assertThrows(()->
-                execute("MERGE INTO SIMPLE (_key, _val, name) VALUES (?, ?, ?)",  42, "name#1", "name#2"),
+        assertThrows(() ->
+                execute("MERGE INTO SIMPLE (_key, _val, name) VALUES (?, ?, ?)", 42, "name#1", "name#2"),
             "Columns _VAL and NAME both refer to entire cache value object.");
     }
 
     /**
-     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together
-     * in the COPY (aka bulk load) sql statement. Same constraints are right for (_val, _val alias, val fields).
+     * Check it's forbidden to specify any two of _key, _key alias or key field (column that belongs to key) together in
+     * the COPY (aka bulk load) sql statement. Same constraints are right for (_val, _val alias, val fields).
      */
     @Test
     public void testCopyMixingPlaceholderAndFields() {
-        File duplicatedKeyCsv = createTmpCsvFileWithContent("42, 43, myName");
-        try {
-            assertThrows(() ->
-                    execute("COPY FROM \'" + duplicatedKeyCsv.getAbsolutePath() + "\' " +
-                        "INTO SIMPLE (_key, id, name) FORMAT CSV"),
-                "Columns _KEY and ID both refer to entire cache key object.");
+        assertThrows(() ->
+                execute("COPY FROM \'stub/file/path\' " +
+                    "INTO SIMPLE (_key, id, name) FORMAT CSV"),
+            "Columns _KEY and ID both refer to entire cache key object.");
 
-            assertThrows(() ->
-                    execute("COPY FROM \'" + duplicatedKeyCsv.getAbsolutePath() + "\' " +
-                        "INTO SIMPLE_WRAPPED (_key, id, name) FORMAT CSV"),
-                "Column _KEY refers to entire key cache object.");
+        assertThrows(() ->
+                execute("COPY FROM \'stub/file/path\' " +
+                    "INTO SIMPLE_WRAPPED (_key, id, name) FORMAT CSV"),
+            "Column _KEY refers to entire key cache object.");
 
-        }
-        finally {
-            duplicatedKeyCsv.delete();
-        }
+        assertThrows(() ->
+                execute("COPY FROM \'stub/file/path\' " +
+                    "INTO SIMPLE (id, _val, name) FORMAT CSV"),
+            "Columns _VAL and NAME both refer to entire cache value object.");
 
-        File duplicatedValCsv = createTmpCsvFileWithContent("42, myName, anotherName");
-        try {
-            assertThrows(() ->
-                    execute("COPY FROM \'" + duplicatedValCsv.getAbsolutePath() + "\' " +
-                        "INTO SIMPLE (id, _val, name) FORMAT CSV"),
-                "Columns _VAL and NAME both refer to entire cache value object.");
+        assertThrows(() ->
+                execute("COPY FROM \'stub/file/path\' " +
+                    "INTO SIMPLE_WRAPPED (id, _val, name) FORMAT CSV"),
+            "Column _VAL refers to entire value cache object.");
 
-            assertThrows(() ->
-                    execute("COPY FROM \'" + duplicatedValCsv.getAbsolutePath() + "\' " +
-                        "INTO SIMPLE_WRAPPED (id, _val, name) FORMAT CSV"),
-                "Column _VAL refers to entire value cache object.");
-
-        }
-        finally {
-            duplicatedValCsv.delete();
-        }
     }
 
     /**
@@ -163,12 +144,12 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateMixingValueAndValueFields() {
-        assertThrows(()->
+        assertThrows(() ->
                 execute("UPDATE COMPOSITE SET _val = ?, name2 = ?",
                     new CompositeValue(), "name#2"),
             "Column _VAL refers to entire value cache object.");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("UPDATE SIMPLE SET _val = ?, name = ?",
                     "name#1", "name#2"),
             "Columns _VAL and NAME both refer to entire cache value object.");
@@ -179,52 +160,52 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInsertNullKeyValue() {
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO COMPOSITE (_key, _val) VALUES (?, ?)", null, new CompositeKey()),
             "Key for INSERT, COPY, or MERGE must not be null");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO COMPOSITE (_key, _val) VALUES (?, ?)", new CompositeKey(), null),
             "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
-        assertThrows(()->
-            execute("INSERT INTO SIMPLE (_key, _val) VALUES(?, ?)", null, "name#1"),
+        assertThrows(() ->
+                execute("INSERT INTO SIMPLE (_key, _val) VALUES(?, ?)", null, "name#1"),
             "Null value is not allowed for column 'ID'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO SIMPLE (id, _val) VALUES(?, ?)", null, "name#1"),
             "Null value is not allowed for column 'ID'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO SIMPLE (_key, _val) VALUES(?, ?)", 42, null),
             "Null value is not allowed for column 'NAME'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("INSERT INTO SIMPLE (_key, name) VALUES(?, ?)", 42, null),
             "Null value is not allowed for column 'NAME'");
-        
+
         // And the same checks for the MERGE:
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO COMPOSITE (_key, _val) VALUES (?, ?)", null, new CompositeKey()),
             "Key for INSERT, COPY, or MERGE must not be null");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO COMPOSITE (_key, _val) VALUES (?, ?)", new CompositeKey(), null),
             "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO SIMPLE (_key, _val) VALUES(?, ?)", null, "name#1"),
             "Null value is not allowed for column 'ID'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO SIMPLE (id, _val) VALUES(?, ?)", null, "name#1"),
             "Null value is not allowed for column 'ID'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO SIMPLE (_key, _val) VALUES(?, ?)", 42, null),
             "Null value is not allowed for column 'NAME'");
 
-        assertThrows(()->
+        assertThrows(() ->
                 execute("MERGE INTO SIMPLE (_key, name) VALUES(?, ?)", 42, null),
             "Null value is not allowed for column 'NAME'");
     }
@@ -234,19 +215,19 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdateKey() {
-        assertThrows(()->
-            execute("UPDATE COMPOSITE SET _key = ?, _val = ?",  new CompositeKey(), new CompositeValue()),
+        assertThrows(() ->
+                execute("UPDATE COMPOSITE SET _key = ?, _val = ?", new CompositeKey(), new CompositeValue()),
             "SQL UPDATE can't modify key or its fields directly");
-        assertThrows(()->
-                execute("UPDATE COMPOSITE SET id1 = ?, _val = ?",  42, new CompositeValue()),
-            "SQL UPDATE can't modify key or its fields directly");
-
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET _key = ?, _val = ?",  42, "simple name"),
+        assertThrows(() ->
+                execute("UPDATE COMPOSITE SET id1 = ?, _val = ?", 42, new CompositeValue()),
             "SQL UPDATE can't modify key or its fields directly");
 
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET id = ?, _val = ?",  42, "simple name"),
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET _key = ?, _val = ?", 42, "simple name"),
+            "SQL UPDATE can't modify key or its fields directly");
+
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET id = ?, _val = ?", 42, "simple name"),
             "SQL UPDATE can't modify key or its fields directly");
     }
 
@@ -254,22 +235,22 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      * Check that setting entire cache key to {@code null} via sql is forbidden.
      */
     @Test
-    public void testUpdateKeyToNull () {
-        // It's ok to just fail if we update key to null.
+    public void testUpdateKeyToNull() {
+        // It's ok to assert just fact of failure if we update key to null.
         // Both reasons (the fact of updating key and setting _key to null) are correct.
         // Empty string is contained by any exception message.
         final String ANY_MESSAGE = "";
 
-        assertThrows(()->
-                execute("UPDATE COMPOSITE SET _key = ?, _val = ?",  null, new CompositeValue()),
+        assertThrows(() ->
+                execute("UPDATE COMPOSITE SET _key = ?, _val = ?", null, new CompositeValue()),
             ANY_MESSAGE);
 
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET id = ?, _val = ?",  null, "simple name"),
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET id = ?, _val = ?", null, "simple name"),
             ANY_MESSAGE);
 
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET id = ?, _val = ?",  null, "simple name"),
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET id = ?, _val = ?", null, "simple name"),
             ANY_MESSAGE);
     }
 
@@ -277,17 +258,17 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
      * Check that setting entire cache value to {@code null} via sql is forbidden.
      */
     @Test
-    public void testUpdateValToNull () {
-        assertThrows(()->
-                execute("UPDATE COMPOSITE SET _val = ?",  (Object)null),
+    public void testUpdateValToNull() {
+        assertThrows(() ->
+                execute("UPDATE COMPOSITE SET _val = ?", (Object)null),
             "New value for UPDATE must not be null");
 
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET _val = ?",  (Object)null),
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET _val = ?", (Object)null),
             "New value for UPDATE must not be null");
 
-        assertThrows(()->
-                execute("UPDATE SIMPLE SET name = ?",  (Object)null),
+        assertThrows(() ->
+                execute("UPDATE SIMPLE SET name = ?", (Object)null),
             "New value for UPDATE must not be null");
     }
 
@@ -320,34 +301,6 @@ public class IgniteCacheSqlDmlErrorSelfTest extends GridCommonAbstractTest {
             qryClos,
             IgniteSQLException.class,
             expErrMsg);
-    }
-
-    /**
-     * @param content content of the csv file.
-     * @return csv file to be loaded into test table.
-     */
-    public File createTmpCsvFileWithContent(String content) {
-        File csv;
-
-        try {
-           csv = File.createTempFile("copy_", ".csv");
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Couldn't create file for the COPY command", e);
-        }
-
-        try (OutputStream os = new FileOutputStream(csv);
-             OutputStreamWriter w =  new OutputStreamWriter(os)) {
-            w.write(content);
-        }
-        catch (IOException e) {
-            csv.delete();
-
-            throw new RuntimeException("Couldn't write to file for the COPY command. " +
-                "[File=" + csv.getAbsolutePath() + "]" , e);
-        }
-
-        return csv;
     }
 
     /**
