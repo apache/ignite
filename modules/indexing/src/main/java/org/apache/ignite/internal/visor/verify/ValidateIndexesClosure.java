@@ -404,6 +404,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                 pageStore.read(pageId, buf, true);
             }
 
+            if (cpFlag.get())
+                throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
+
             return null;
         }
         catch (Throwable t) {
@@ -766,7 +769,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         else
             return new IgniteException(e.getCause());
     }
-    
+
     /**
      * @param db Shared DB manager.
      * @return {@code True} if checkpoint is now, {@code False} otherwise.
