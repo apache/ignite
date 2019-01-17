@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,7 +68,7 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
 
             fail();
         }
-        catch (AssertionFailedError er) {
+        catch (AssertionError er) {
                 throw er;
         }
         catch (Throwable e) {
