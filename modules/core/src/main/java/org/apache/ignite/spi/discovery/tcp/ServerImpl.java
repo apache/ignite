@@ -3242,7 +3242,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
                             // Shouldn't send pending messages to joining node.
-                            if (failure || forceSndPending || (newNextNode && next.order() != 0)) {
+                            if (failure || forceSndPending || newNextNode && next.order() != 0) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
