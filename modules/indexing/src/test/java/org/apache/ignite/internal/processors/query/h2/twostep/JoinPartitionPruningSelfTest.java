@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -590,7 +590,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     @Test
     public void testJoinWithDifferentAffinityFunctions() {
         // Partition count.
-        // TODO: Doesn't work
         checkAffinityFunctions(
             cacheConfiguration(256, 1, false, false, false),
             cacheConfiguration(256, 1, false, false, false),
@@ -632,6 +631,9 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
 
         ccfg1.setQueryEntities(Collections.singletonList(entity1));
         ccfg2.setQueryEntities(Collections.singletonList(entity2));
+
+        ccfg1.setKeyConfiguration(new CacheKeyConfiguration(entity1.getKeyType(), "k1"));
+        ccfg2.setKeyConfiguration(new CacheKeyConfiguration(entity2.getKeyType(), "ak2"));
 
         ccfg1.setSqlSchema(QueryUtils.DFLT_SCHEMA);
         ccfg2.setSqlSchema(QueryUtils.DFLT_SCHEMA);
@@ -1214,7 +1216,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     private static class KeyClass1 {
         /** Key. */
         @QuerySqlField
-        private long k1;
+        private String k1;
     }
 
     /**
@@ -1224,12 +1226,11 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     private static class KeyClass2 {
         /** Key. */
         @QuerySqlField
-        private long k1;
+        private String k1;
 
         /** Affinity key. */
         @QuerySqlField
-        @AffinityKeyMapped
-        private long ak2;
+        private String ak2;
     }
 
     /**
@@ -1239,6 +1240,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     private static class ValueClass {
         /** Value. */
         @QuerySqlField
-        private long v;
+        private String v;
     }
 }
