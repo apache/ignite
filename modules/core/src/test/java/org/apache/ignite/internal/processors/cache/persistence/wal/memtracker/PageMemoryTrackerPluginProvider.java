@@ -168,6 +168,10 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
         // No-op
     }
 
+    @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
+        // No-op
+    }
+
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
         if (plugin != null) {
