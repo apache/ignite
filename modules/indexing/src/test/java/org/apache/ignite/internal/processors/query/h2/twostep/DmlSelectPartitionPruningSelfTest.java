@@ -92,9 +92,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -105,9 +105,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -158,9 +158,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("DELETE FROM t1 WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -171,9 +171,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("DELETE FROM t1 WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1"),
-                    parititon("t2", "2"),
-                    parititon("t2", "3")
+                    parititon("t1", "1"),
+                    parititon("t1", "2"),
+                    parititon("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
