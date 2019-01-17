@@ -226,9 +226,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void abortTx(GridDhtTxLocalAdapter tx) {
-        cctx.coordinators().failWaiter(
-            tx.mvccSnapshot(),
-            new IgniteTxRollbackCheckedException("Deadlock detected. Transaction was rolled back."));
+        cctx.coordinators().failWaiter(tx.mvccSnapshot(), new IgniteTxRollbackCheckedException(
+            "Deadlock detected. Transaction will be rolled back [tx=" + tx + ']'));
     }
 
     /**
