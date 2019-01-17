@@ -22,6 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -34,10 +35,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
-    private List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
+    private final List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
 
     /** */
-    private List<DatabaseLifecycleListener> databaseListeners = new ArrayList<>();
+    private final List<DistributedMetastorageLifecycleListener> distributedMetastorageListeners = new ArrayList<>();
+
+    /** */
+    private final List<DatabaseLifecycleListener> dbListeners = new ArrayList<>();
 
 
     /**
@@ -61,15 +65,28 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /** */
+    public void registerDistributedMetastorageListener(@NotNull DistributedMetastorageLifecycleListener lsnr) {
+        if (lsnr == null)
+            throw new NullPointerException("Global metastorage subscriber should be not-null.");
+
+        distributedMetastorageListeners.add(lsnr);
+    }
+
+    /** */
+    public List<DistributedMetastorageLifecycleListener> getDistributedMetastorageSubscribers() {
+        return distributedMetastorageListeners;
+    }
+
+    /** */
     public void registerDatabaseListener(@NotNull DatabaseLifecycleListener databaseListener) {
         if (databaseListener == null)
             throw new NullPointerException("Database subscriber should be not-null.");
 
-        databaseListeners.add(databaseListener);
+        dbListeners.add(databaseListener);
     }
 
     /** */
     public List<DatabaseLifecycleListener> getDatabaseListeners() {
-        return databaseListeners;
+        return dbListeners;
     }
 }
