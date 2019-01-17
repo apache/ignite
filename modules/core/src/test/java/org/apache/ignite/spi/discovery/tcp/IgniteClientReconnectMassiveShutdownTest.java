@@ -82,11 +82,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 2 * 60 * 1000;
-    }
-
     /**
      * @throws Exception If any error occurs.
      */
@@ -98,7 +93,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-//    @Test
+    @Test
     public void testMassiveServersShutdown2() throws Exception {
         massiveServersShutdown(StopType.SIMULATE_FAIL);
     }
@@ -106,7 +101,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-//    @Test
+    @Test
     public void testMassiveServersShutdown3() throws Exception {
         massiveServersShutdown(StopType.CLOSE);
     }
@@ -163,7 +158,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                     try {
                         int idx = clientIdx.take();
 
-                        IgniteEx ignite = grid(idx);
+                        Ignite ignite = grid(idx);
 
                         Thread.currentThread().setName("client-thread-" + ignite.name());
 

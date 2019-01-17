@@ -72,37 +72,72 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class,
-    IgniteClientReconnectMassiveShutdownTest.class
+    TcpDiscoveryVmIpFinderSelfTest.class,
+    TcpDiscoverySharedFsIpFinderSelfTest.class,
+    TcpDiscoveryJdbcIpFinderSelfTest.class,
+    TcpDiscoveryMulticastIpFinderSelfTest.class,
+    TcpDiscoveryIpFinderCleanerTest.class,
 
+    TcpDiscoverySelfTest.class,
+    TcpDiscoverySpiSelfTest.class,
+    //TcpDiscoverySpiRandomStartStopTest.class,
+    //TcpDiscoverySpiSslSelfTest.class,
+    //TcpDiscoverySpiWildcardSelfTest.class,
+    TcpDiscoverySpiFailureTimeoutSelfTest.class,
+    TcpDiscoverySpiMBeanTest.class,
+    TcpDiscoverySpiStartStopSelfTest.class,
+    TcpDiscoverySpiConfigSelfTest.class,
+    TcpDiscoveryMarshallerCheckSelfTest.class,
+    TcpDiscoverySnapshotHistoryTest.class,
+
+    GridTcpSpiForwardingSelfTest.class,
+
+    TcpClientDiscoverySpiSelfTest.class,
+    LongClientConnectToClusterTest.class,
+    TcpClientDiscoveryMarshallerCheckSelfTest.class,
+    TcpClientDiscoverySpiCoordinatorChangeTest.class,
+    TcpClientDiscoverySpiMulticastTest.class,
+    TcpClientDiscoverySpiFailureTimeoutSelfTest.class,
+    TcpClientDiscoveryUnresolvedHostTest.class,
+
+    TcpDiscoveryNodeConsistentIdSelfTest.class,
+    TcpDiscoveryNodeConfigConsistentIdSelfTest.class,
+
+    TcpDiscoveryRestartTest.class,
+    TcpDiscoveryMultiThreadedTest.class,
+    //TcpDiscoveryConcurrentStartTest.class,
+
+    TcpDiscoverySegmentationPolicyTest.class,
+
+    TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class,
+    AuthenticationRestartTest.class,
+
+    TcpDiscoveryWithWrongServerTest.class,
+
+    TcpDiscoverySpiReconnectDelayTest.class,
+
+    IgniteDiscoveryMassiveNodeFailTest.class,
+
+    // Client connect.
+    IgniteClientConnectTest.class,
+    IgniteClientReconnectMassiveShutdownTest.class,
+    TcpDiscoveryClientSuspensionSelfTest.class,
+
+    // SSL.
+    TcpDiscoverySslSelfTest.class,
+    TcpDiscoverySslTrustedSelfTest.class,
+    TcpDiscoverySslSecuredUnsecuredTest.class,
+    TcpDiscoverySslTrustedUntrustedTest.class,
+    TcpDiscoverySslParametersTest.class,
+
+    // Disco cache reuse.
+    IgniteDiscoveryCacheReuseSelfTest.class,
+
+    DiscoveryUnmarshalVulnerabilityTest.class,
+
+    FilterDataForClientNodeDiscoveryTest.class,
+
+    TcpDiscoveryPendingMessageDeliveryTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
