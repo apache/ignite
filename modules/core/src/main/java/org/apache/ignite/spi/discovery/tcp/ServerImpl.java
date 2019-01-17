@@ -257,12 +257,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Discovery state. */
     private TcpDiscoverySpiState spiState = DISCONNECTED;
 
-    /**
-     * Local node coordinator flag.
-     * Used to detect previous coordinator failure and send node add finished messages if needed.
-     */
-    private boolean isLocNodeCrd;
-
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
 
@@ -951,8 +945,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spiState = CONNECTED;
 
-                    isLocNodeCrd = true;
-
                     mux.notifyAll();
                 }
 
@@ -1598,15 +1590,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param msg Message to prepare.
      * @param destNodeId Destination node ID.
      * @param msgs Messages to include.
-     * @param discardMsgId Discarded message ID.
      */
     private void prepareNodeAddedMessage(
         TcpDiscoveryAbstractMessage msg,
         UUID destNodeId,
-        @Nullable Collection<PendingMessage> msgs,
-        @Nullable IgniteUuid discardMsgId,
-        @Nullable IgniteUuid discardCustomMsgId
-        ) {
+        @Nullable Collection<PendingMessage> msgs
+    ) {
         assert destNodeId != null;
 
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
@@ -1642,7 +1631,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                nodeAddedMsg.messages(msgs0, discardMsgId, discardCustomMsgId);
+                // No need to send discardMsgId and discardCustomMsgId because we already filtered out
+                // cleaned up messages.
+                nodeAddedMsg.messages(msgs0, null, null);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -2125,39 +2116,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
         }
-
-        // Check if node became a coordinator node before further message processing.
-        // Otherwise, we may have a node add finished message sent out of order and this will result
-        // in 'Invalid node order' assertion on joining node.
-        checkBecameCoordinator();
-    }
-
-    /**
-     * Checks if local node became a coordinator of the ring. This
-     */
-    private void checkBecameCoordinator() {
-        boolean becameCrd = false;
-
-        synchronized (mux) {
-            if (!isLocNodeCrd) {
-                boolean crd = isLocalNodeCoordinator();
-
-                if (crd) {
-                    becameCrd = true;
-
-                    isLocNodeCrd = true;
-
-                    if (log.isDebugEnabled())
-                        log.debug("Local node detected ");
-                }
-            }
-        }
-
-        if (becameCrd) {
-            for (TcpDiscoveryNode node : ring.remoteNodes())
-                if (node.order() == 0)
-                    msgWorker.addMessage(new TcpDiscoveryNodeAddFinishedMessage(locNode.id(), node.id()));
-        }
     }
 
     /**
@@ -2400,7 +2358,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryNodeAddedMessage msg0 = new TcpDiscoveryNodeAddedMessage(addedMsg);
 
-                    prepareNodeAddedMessage(msg0, destNodeId, null, null, null);
+                    prepareNodeAddedMessage(msg0, destNodeId, null);
 
                     msg0.topology(addedMsg.clientTopology());
 
@@ -2905,10 +2863,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 failureThresholdReached = false;
             }
 
-            // Check if the local node became a coorindinator node after this message is processed to finish
-            // pending joins, if any.
-            checkBecameCoordinator();
-
             spi.stats.onMessageProcessingFinished(msg);
         }
 
@@ -2963,7 +2917,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 msg0 = U.unmarshal(spi.marshaller(), msgBytes,
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
-                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null, null);
+                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
 
                                 msgBytes0 = null;
                             }
@@ -3277,11 +3231,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", newNextNode=" + newNextNode +
                                         ", forceSndPending=" + forceSndPending + ']');
 
+                                Set<UUID> failedNodesForPending = prepareFailedNodeIds(failedNodes);
+
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs,
-                                        pendingMsgs.discardId, pendingMsgs.customDiscardId);
+                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs);
+
+                                    pendingMsg.failedNodes(failedNodesForPending);
 
                                     if (timeoutHelper == null)
                                         timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
@@ -3317,8 +3274,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             if (!(msg instanceof TcpDiscoveryConnectionCheckMessage))
-                                prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs, pendingMsgs.discardId,
-                                    pendingMsgs.customDiscardId);
+                                prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs);
 
                             try {
                                 SecurityUtils.serializeVersion(1);
@@ -3518,8 +3474,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "Pending messages will be resent to local node");
 
                     for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
-                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs, pendingMsgs.discardId,
-                            pendingMsgs.customDiscardId);
+                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs);
 
                         pendingMsg.senderNodeId(locNodeId);
 
@@ -3557,6 +3512,32 @@ class ServerImpl extends TcpDiscoveryImpl {
             queue.clear();
 
             notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+        }
+
+        /**
+         * Constructs a set of failed node IDs based on current state of failed nodes.
+         * Will add the IDs of passed in collection of nodes to the failed set.
+         *
+         * @param failed Optional collection of failed nodes.
+         * @return Set of failed node IDs or {@code null} if there no failed nodes.
+         */
+        private Set<UUID> prepareFailedNodeIds(Collection<TcpDiscoveryNode> failed) {
+            synchronized (mux) {
+                if (!failedNodes.isEmpty() || !F.isEmpty(failed)) {
+                    Set <UUID> res = U.newHashSet(failedNodes.size() + failed.size());
+
+                    res.addAll(failedNodes.values());
+
+                    if (!F.isEmpty(failed)) {
+                        for (TcpDiscoveryNode failedNode : failed)
+                            res.add(failedNode.id());
+                    }
+
+                    return res;
+                }
+            }
+
+            return null;
         }
 
         /**
