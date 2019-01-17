@@ -169,65 +169,69 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** */
     private void handleDeadlockProbeForDht(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
-        ProbedTx blocker = probe.blocker();
-
         cctx.tm().activeTransactions().stream()
             .filter(IgniteInternalTx::local)
-            .filter(tx -> tx.nearXidVersion().equals(blocker.nearXidVersion()))
+            .filter(tx -> tx.nearXidVersion().equals(probe.blocker().nearXidVersion()))
             .findAny()
             .map(GridDhtTxLocalAdapter.class::cast)
             .ifPresent(tx -> {
+                // search for locally checked tx (identified as blocker previously) in the wait chain
                 Optional<ProbedTx> repeatedTx = probe.waitChain().stream()
                     .filter(wTx -> wTx.xidVersion().equals(tx.xidVersion()))
                     .findAny();
 
                 if (repeatedTx.isPresent()) {
                     // a deadlock found
-                    ProbedTx victim = chooseVictim(
-                        repeatedTx.get().withStartTime(blocker.startTime()),
-                        probe.waitChain());
-
-                    if (victim.xidVersion().equals(tx.xidVersion())) {
-                        // if a victim tx has made a progress since it was identified as waiting
-                        // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
-                        if (victim.lockCounter() == tx.lockCounter())
-                            abortTx(tx);
-                    }
-                    else {
-                        // destination node must determine itself as a victim
-                        sendProbe(victim.nodeId(), probe.initiatorVersion(), singleton(victim), victim, false);
-                    }
+                    resolveDeadlock(probe, repeatedTx.get(), tx);
                 }
-                else {
-                    assert tx.mvccSnapshot() != null;
-
-                    cctx.coordinators().checkWaiting(tx.mvccSnapshot())
-                        .flatMap(this::findTx)
-                        .ifPresent(nextBlocker -> {
-                            ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 1);
-                            waitChain.addAll(probe.waitChain());
-                            waitChain.add(new ProbedTx(tx.nodeId(), tx.xidVersion(), tx.nearXidVersion(),
-                                blocker.startTime(), tx.lockCounter()));
-
-                            // real start time will be filled later when corresponding near node is visited
-                            ProbedTx nextProbedTx = new ProbedTx(nextBlocker.nodeId(), nextBlocker.xidVersion(),
-                                nextBlocker.nearXidVersion(), -1, nextBlocker.lockCounter());
-
-                            sendProbe(
-                                nextBlocker.eventNodeId(),
-                                probe.initiatorVersion(),
-                                waitChain,
-                                nextProbedTx,
-                                true);
-                        });
-                }
+                else
+                    relayProbeIfLocalTxIsWaiting(probe, tx);
             });
     }
 
     /** */
-    private void abortTx(GridDhtTxLocalAdapter tx) {
-        cctx.coordinators().failWaiter(tx.mvccSnapshot(), new IgniteTxRollbackCheckedException(
-            "Deadlock detected. Transaction will be rolled back [tx=" + tx + ']'));
+    private void resolveDeadlock(DeadlockProbe probe, ProbedTx repeatedTx, GridDhtTxLocalAdapter locTx) {
+        ProbedTx victim = chooseVictim(
+            // real start time is filled here for repeated tx
+            repeatedTx.withStartTime(probe.blocker().startTime()),
+            probe.waitChain());
+
+        if (victim.xidVersion().equals(locTx.xidVersion())) {
+            // if a victim tx has made a progress since it was identified as waiting
+            // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
+            if (victim.lockCounter() == locTx.lockCounter())
+                abortTx(locTx);
+        }
+        else {
+            // destination node must determine itself as a victim
+            sendProbe(victim.nodeId(), probe.initiatorVersion(), singleton(victim), victim, false);
+        }
+    }
+
+    /** */
+    private void relayProbeIfLocalTxIsWaiting(DeadlockProbe probe, GridDhtTxLocalAdapter locTx) {
+        assert locTx.mvccSnapshot() != null;
+
+        cctx.coordinators().checkWaiting(locTx.mvccSnapshot())
+            .flatMap(this::findTx)
+            .ifPresent(nextBlocker -> {
+                ArrayList<ProbedTx> waitChain = new ArrayList<>(probe.waitChain().size() + 1);
+                waitChain.addAll(probe.waitChain());
+                // real start time is filled here
+                waitChain.add(new ProbedTx(locTx.nodeId(), locTx.xidVersion(), locTx.nearXidVersion(),
+                    probe.blocker().startTime(), locTx.lockCounter()));
+
+                // real start time will be filled later when corresponding near node is visited
+                ProbedTx nextProbedTx = new ProbedTx(nextBlocker.nodeId(), nextBlocker.xidVersion(),
+                    nextBlocker.nearXidVersion(), -1, nextBlocker.lockCounter());
+
+                sendProbe(
+                    nextBlocker.eventNodeId(),
+                    probe.initiatorVersion(),
+                    waitChain,
+                    nextProbedTx,
+                    true);
+            });
     }
 
     /**
@@ -264,6 +268,12 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
         }
 
         return victim;
+    }
+
+    /** */
+    private void abortTx(GridDhtTxLocalAdapter tx) {
+        cctx.coordinators().failWaiter(tx.mvccSnapshot(), new IgniteTxRollbackCheckedException(
+            "Deadlock detected. Transaction will be rolled back [tx=" + tx + ']'));
     }
 
     /** */
