@@ -99,7 +99,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
         if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name())
                 && cctx.group().groupId() != CU.cacheId(DEFAULT_VOLATILE_DS_GROUP_NAME)) {
-            return new IgniteCheckedException("Failed to perform cache operation (cluster is in read only mode) " +
+            return new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in read only mode) " +
                     "[cacheGrp=" + cctx.group().name() + ", cache=" + cctx.name() + ']');
         }
 
