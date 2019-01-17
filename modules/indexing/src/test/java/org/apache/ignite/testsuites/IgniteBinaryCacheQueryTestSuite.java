@@ -206,7 +206,7 @@ import org.apache.ignite.internal.processors.query.h2.H2StatementCacheSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.PreparedStatementExSelfTest;
-import org.apache.ignite.internal.processors.query.h2.QueryDirectDataPageScanTest;
+import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
@@ -351,7 +351,7 @@ import org.junit.runners.Suite;
     IgniteCrossCachesJoinsQueryTest.class,
 
     IgniteCacheMultipleIndexedTypesTest.class,
-    QueryDirectDataPageScanTest.class,
+    QueryDataPageScanTest.class,
 
     // DML.
     IgniteCacheMergeSqlQuerySelfTest.class,

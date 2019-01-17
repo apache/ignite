@@ -62,7 +62,7 @@ import static java.lang.Boolean.FALSE;
 /**
  */
 @RunWith(JUnit4.class)
-public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
+public class QueryDataPageScanTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -262,7 +262,7 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDirectDataPageScan() throws Exception {
+    public void testDataPageScan() throws Exception {
         final String cacheName = "test";
 
         GridQueryProcessor.idxCls = DirectPageScanIndexing.class;
@@ -274,7 +274,7 @@ public class QueryDirectDataPageScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long,TestData> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, TestData.class);
-        ccfg.setSqlFunctionClasses(QueryDirectDataPageScanTest.class);
+        ccfg.setSqlFunctionClasses(QueryDataPageScanTest.class);
 
         IgniteCache<Long,TestData> clientCache = client.createCache(ccfg);
 
