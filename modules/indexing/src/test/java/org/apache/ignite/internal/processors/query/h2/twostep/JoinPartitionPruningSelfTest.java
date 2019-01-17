@@ -23,7 +23,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -34,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -590,6 +590,20 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     @Test
     public void testJoinWithDifferentAffinityFunctions() {
         // Partition count.
+        // TODO: Doesn't work
+        checkAffinityFunctions(
+            cacheConfiguration(256, 1, false, false, false),
+            cacheConfiguration(256, 1, false, false, false),
+            true
+        );
+
+        checkAffinityFunctions(
+            cacheConfiguration(1024, 1, false, false, false),
+            cacheConfiguration(256, 1, false, false, false),
+            false
+        );
+
+        // Backups.
         // TODO
 
         // Different affinity functions.
@@ -598,13 +612,7 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         // Node filters.
         // TODO
 
-        // Backups.
-        // TODO
-
         // With and without persistence.
-        // TODO
-
-        // Different affinity key mappers?
         // TODO
     }
 
@@ -616,43 +624,72 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         cli.destroyCaches(cli.cacheNames());
 
         // Start new caches.
+        ccfg1.setName("t1");
+        ccfg2.setName("t2");
+
         QueryEntity entity1 = new QueryEntity(KeyClass1.class, ValueClass.class).setTableName("t1");
         QueryEntity entity2 = new QueryEntity(KeyClass2.class, ValueClass.class).setTableName("t2");
 
         ccfg1.setQueryEntities(Collections.singletonList(entity1));
         ccfg2.setQueryEntities(Collections.singletonList(entity2));
 
+        ccfg1.setSqlSchema(QueryUtils.DFLT_SCHEMA);
+        ccfg2.setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
         client().createCache(ccfg1);
         client().createCache(ccfg2);
 
         // Conduct tests.
-        // TODO.
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ?",
+            (res) -> assertPartitions(
+                partition("t1", "1")
+            ),
+            "1"
+        );
+
+        execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t2.ak2 = ?",
+            (res) -> assertPartitions(
+                partition("t2", "2")
+            ),
+            "2"
+        );
+
+        if (compatible) {
+            execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+                (res) -> assertPartitions(
+                    partition("t1", "1"),
+                    partition("t2", "2")
+                ),
+                "1", "2"
+            );
+        }
+        else {
+            execute("SELECT * FROM t1 INNER JOIN t2 ON t1.k1 = t2.ak2 WHERE t1.k1 = ? OR t2.ak2 = ?",
+                (res) -> assertNoPartitions(),
+                "1", "2"
+            );
+        }
     }
 
     /**
      * Create custom cache configuration.
      *
-     * @param name Name.
      * @param parts Partitions.
      * @param backups Backups.
      * @param customAffinity Custom affinity function flag.
-     * @param customAffinityMapper Custom affinity key mapper flag.
      * @param nodeFilter Whether to set node filter.
      * @param persistent Whether to enable persistence.
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfiguration(
-        String name,
         int parts,
         int backups,
         boolean customAffinity,
-        boolean customAffinityMapper,
         boolean nodeFilter,
         boolean persistent
     ) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName(name);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(backups);
 
@@ -666,9 +703,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
         affFunc.setPartitions(parts);
 
         ccfg.setAffinity(affFunc);
-
-        if (customAffinityMapper)
-            ccfg.setAffinityMapper(new CustomAffinityMapper());
 
         if (nodeFilter)
             ccfg.setNodeFilter(new CustomNodeFilter());
@@ -1162,21 +1196,6 @@ public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
      */
     private static class CustomRendezvousAffinityFunction extends RendezvousAffinityFunction {
         // No-op.
-    }
-
-    /**
-     * Custom affinity mapper.
-     */
-    private static class CustomAffinityMapper implements AffinityKeyMapper {
-        /** {@inheritDoc} */
-        @Override public Object affinityKey(Object key) {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            // No-op.
-        }
     }
 
     /**
