@@ -622,6 +622,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                         pageStore.read(pageId, buf, true);
                     }
+
+                    if (cpFlag.get())
+                        throw new GridNotIdleException("Checkpoint with dirty pages started! Cluster not idle!");
                 }
                 catch (GridNotIdleException e){
                     throw e;

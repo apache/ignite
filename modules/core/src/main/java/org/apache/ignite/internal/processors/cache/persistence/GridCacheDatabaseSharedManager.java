@@ -3863,7 +3863,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             asyncLsnrFut.add(res);
                         }
                         catch (RejectedExecutionException e) {
-                            assert false : "A task should never be rejected by async runner";
+                            throw new IgniteException("A task should never be rejected by async runner", e);
                         }
                     };
                 }
