@@ -1244,6 +1244,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void forAllRegisteredCacheGroups(IgniteInClosureX<CacheGroupDescriptor> c) {
         Collection<CacheGroupDescriptor> affinityCaches = cachesRegistry.allGroups().values().stream()
             .filter(desc -> desc.config().getCacheMode() != LOCAL)
+            .filter(desc -> !cctx.localNode().isClient() || cctx.kernalContext().cache().cacheGroup(desc.groupId()) != null)
             .collect(Collectors.toList());
 
         try {
@@ -2107,11 +2108,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
         cctx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
-            new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
-                @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                    processAffinityAssignmentResponse(nodeId, res);
-                }
-            }
+            (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>)this::processAffinityAssignmentResponse
         );
 
         if (grp == null)
