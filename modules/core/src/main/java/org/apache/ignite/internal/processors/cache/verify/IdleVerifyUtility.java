@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 public class IdleVerifyUtility {
     /** Cluster not idle message. */
     public static final String CLUSTER_NOT_IDLE_MSG = "Checkpoint with dirty pages started! Cluster not idle!";
+
     /**
      * See {@link IdleVerifyUtility#checkPartitionsPageCrcSum(FilePageStore, CacheGroupContext, int, byte,
      * AtomicBoolean)}.
@@ -57,9 +58,7 @@ public class IdleVerifyUtility {
 
     /**
      * Checks CRC sum of pages with {@code pageType} page type stored in partiion with {@code partId} id and assosiated
-     * with cache group.
-     * <br/>
-     * Method could be invoked only on idle cluster!
+     * with cache group. <br/> Method could be invoked only on idle cluster!
      *
      * @param pageStore Page store.
      * @param grpCtx Passed cache group context.
@@ -102,11 +101,11 @@ public class IdleVerifyUtility {
      * @return {@code True} if checkpoint is now, {@code False} otherwise.
      */
     public static boolean isCheckpointNow(@Nullable IgniteCacheDatabaseSharedManager db) {
-        if(!(db instanceof GridCacheDatabaseSharedManager))
+        if (!(db instanceof GridCacheDatabaseSharedManager))
             return false;
 
         GridCacheDatabaseSharedManager.CheckpointProgress progress =
-            ((GridCacheDatabaseSharedManager) db).getCheckpointer().currentProgress();
+            ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
 
         if (progress == null)
             return false;
@@ -114,8 +113,7 @@ public class IdleVerifyUtility {
         return progress.started() && !progress.finished();
     }
 
-
-
+    /** */
     private IdleVerifyUtility() {
         /* No-op. */
     }
