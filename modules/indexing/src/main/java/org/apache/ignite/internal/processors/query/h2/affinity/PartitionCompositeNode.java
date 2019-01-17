@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
@@ -65,6 +66,8 @@ public class PartitionCompositeNode implements PartitionNode {
                 return null;
 
             // (A, B) and (B, C) -> (B)
+            leftParts = new HashSet<>(leftParts);
+
             leftParts.retainAll(rightParts);
         }
         else {
@@ -77,10 +80,18 @@ public class PartitionCompositeNode implements PartitionNode {
                 return leftParts;
 
             // (A, B) or (B, C) -> (A, B, C)
+            leftParts = new HashSet<>(leftParts);
+
             leftParts.addAll(rightParts);
         }
 
         return leftParts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        // Similar to group node, we cannot cache join group value here as it may be changed dynamically.
+        return left.joinGroup();
     }
 
     /** {@inheritDoc} */
@@ -103,9 +114,15 @@ public class PartitionCompositeNode implements PartitionNode {
             return optimizeSpecial(right, left);
 
         // If one of child nodes cannot be optimized, nothing can be done further.
-        // Note that we cannot return "this" here because left or right parts might have been optimized.
-        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
+        // Note that we cannot return "this" here because left or right parts might have been changed.
+        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode) {
+            // Should be "NONE" for AND in fact, but this would violate current non-collocated join semantics as
+            // explained in "optimizeSimpleAnd" method below.
+            if (left.joinGroup() != right.joinGroup())
+                return PartitionAllNode.INSTANCE;
+
             return new PartitionCompositeNode(left, right, op);
+        }
 
         // Try optimizing composite nodes.
         if (left instanceof PartitionGroupNode)
@@ -182,6 +199,11 @@ public class PartitionCompositeNode implements PartitionNode {
     private PartitionNode optimizeGroupAnd(PartitionGroupNode left, PartitionNode right) {
         assert op == PartitionCompositeNodeOperator.AND;
 
+        // Should be "NONE" for AND in fact, but this would violate current non-collocated join semantics as
+        // explained in "optimizeSimpleAnd" method below.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
+
         // Optimistic check whether both sides are equal.
         if (right instanceof PartitionGroupNode) {
             PartitionGroupNode right0 = (PartitionGroupNode)right;
@@ -206,22 +228,50 @@ public class PartitionCompositeNode implements PartitionNode {
             }
 
             if (rightConsts != null) {
-                // {A, B) and (B, C) -> (B).
-                consts.retainAll(rightConsts);
+                // Try to merge nodes if they belong to the same table.
+                boolean sameTbl = true;
+                String curTblAlias = null;
 
-                if (consts.isEmpty())
-                    // {A, B) and (C, D) -> NONE.
-                    return PartitionNoneNode.INSTANCE;
-                else if (consts.size() == 1)
+                for (PartitionSingleNode curConst : consts) {
+                    if (curTblAlias == null)
+                        curTblAlias = curConst.table().alias();
+                    else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                        sameTbl = false;
+
+                        break;
+                    }
+                }
+
+                if (sameTbl) {
+                    for (PartitionSingleNode curConst : rightConsts) {
+                        if (curTblAlias == null)
+                            curTblAlias = curConst.table().alias();
+                        else if (!F.eq(curTblAlias, curConst.table().alias())) {
+                            sameTbl = false;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (sameTbl) {
                     // {A, B) and (B, C) -> (B).
-                    return consts.iterator().next();
-                else
-                    // {A, B, C) and (B, C, D) -> (B, C).
-                    return new PartitionGroupNode(consts);
+                    consts.retainAll(rightConsts);
+
+                    if (consts.isEmpty())
+                        // {A, B) and (C, D) -> NONE.
+                        return PartitionNoneNode.INSTANCE;
+                    else if (consts.size() == 1)
+                        // {A, B) and (B, C) -> (B).
+                        return consts.iterator().next();
+                    else
+                        // {A, B, C) and (B, C, D) -> (B, C).
+                        return new PartitionGroupNode(consts);
+                }
             }
         }
 
-        // Otherwise it is a mixed set of concrete partitions and arguments. Cancel optimization.
+        // Otherwise it is a mixed set of concrete partitions and arguments possibly from different caches.
         // Note that in fact we can optimize expression to certain extent (e.g. (A) and (B, :C) -> (A) and (:C)),
         // but resulting expression is always composite node still, which cannot be optimized on upper levels.
         // So we skip any fine-grained optimization in favor of simplicity.
@@ -237,6 +287,10 @@ public class PartitionCompositeNode implements PartitionNode {
      */
     private PartitionNode optimizeGroupOr(PartitionGroupNode left, PartitionNode right) {
         assert op == PartitionCompositeNodeOperator.OR;
+
+        // Cannot merge disjunctive nodes if they belong to different join groups.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
 
         HashSet<PartitionSingleNode> siblings = new HashSet<>(left.siblings());
 
@@ -278,18 +332,28 @@ public class PartitionCompositeNode implements PartitionNode {
     private PartitionNode optimizeSimpleAnd(PartitionSingleNode left, PartitionSingleNode right) {
         assert op == PartitionCompositeNodeOperator.AND;
 
+        // Currently we do not merge such nodes because it may violate existing broken (!!!) join semantics.
+        // Normally, if we have two non-collocated partition sets, then this should be an empty set for collocated
+        // query mode. Unfortunately, current semantics of collocated query mode assume that even though both sides
+        // of expression are located on random nodes, there is a slight chance that they may accidentally reside on
+        // a single node and hence return some rows. We return "ALL" here to keep this broken semantics consistent
+        // irrespective of whether partition pruning is used or not. Once non-collocated joins are fixed, this
+        // condition will be changed to "NONE".
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
+
         // Check if both sides are equal.
         if (left.equals(right))
             // (X) and (X) -> X
             // (:X) and (:X) -> :X
             return left;
 
-        // If both sides are constants, and they are not equal, this is empty set.
-        if (left.constant() && right.constant())
+        // If both sides are constants from the same table and they are not equal, this is empty set.
+        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.tbl.alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
-        // Otherwise it is a mixed set, cannot reduce.
+        // Otherwise this is a mixed set, cannot reduce.
         // X and :Y -> (X) AND (:Y)
         return new PartitionCompositeNode(left, right, PartitionCompositeNodeOperator.AND);
     }
@@ -304,7 +368,21 @@ public class PartitionCompositeNode implements PartitionNode {
     private PartitionNode optimizeSimpleOr(PartitionSingleNode left, PartitionSingleNode right) {
         assert op == PartitionCompositeNodeOperator.OR;
 
-        return left.equals(right) ? left : PartitionGroupNode.merge(left, right);
+        // Cannot merge disjunctive nodes if they belong to different join groups.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
+
+        // (A) or (A) -> (A)
+        if (left.equals(right))
+            return left;
+
+        // (A) or (B) -> (A, B)
+        HashSet<PartitionSingleNode> nodes = new HashSet<>();
+
+        nodes.add(left);
+        nodes.add(right);
+
+        return new PartitionGroupNode(nodes);
     }
 
     /** {@inheritDoc} */
