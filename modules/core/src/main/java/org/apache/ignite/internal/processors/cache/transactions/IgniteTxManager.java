@@ -2429,8 +2429,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null)
-                    ptr = cctx.wal().log(newTxRecord(tx));
+                TxRecord rec;
+                if (cctx.wal() != null && (rec = newTxRecord(tx)) != null)
+                    cctx.wal().log(rec);
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
             }
@@ -2454,8 +2455,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null)
-                    cctx.wal().log(newTxRecord(tx));
+                TxRecord rec;
+                if (cctx.wal() != null && (rec = newTxRecord(tx)) != null)
+                    cctx.wal().log(rec);
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
             }
@@ -2476,13 +2478,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (cctx.wal() != null && logTxRecords) {
             TxRecord txRecord = newTxRecord(tx);
 
-            try {
-                return cctx.wal().log(txRecord);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to log TxRecord: " + txRecord, e);
+            if (txRecord != null) {
+                try {
+                    return cctx.wal().log(txRecord);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log TxRecord: " + txRecord, e);
 
-                throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                    throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                }
             }
         }
 
@@ -2495,15 +2499,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @return Tx state record.
      */
-    private TxRecord newTxRecord(IgniteTxAdapter tx) {
+    private @Nullable TxRecord newTxRecord(IgniteTxAdapter tx) {
         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
-        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+        if (baselineTop != null && baselineTop.consistentIds().contains(cctx.localNode().consistentId())) {
+            Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
 
-        if (tx.txState().mvccEnabled())
-            return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
-        else
-            return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+            if (tx.txState().mvccEnabled())
+                return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+            else
+                return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+        }
+
+        return null;
     }
 
     /**

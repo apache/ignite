@@ -35,22 +35,6 @@ public class PartitionGroupNode implements PartitionNode {
     private final Set<PartitionSingleNode> siblings;
 
     /**
-     * Merge two simple nodes.
-     *
-     * @param node1 Node 1.
-     * @param node2 Node 2.
-     * @return Group node.
-     */
-    public static PartitionGroupNode merge(PartitionSingleNode node1, PartitionSingleNode node2) {
-        HashSet<PartitionSingleNode> nodes = new HashSet<>();
-
-        nodes.add(node1);
-        nodes.add(node2);
-
-        return new PartitionGroupNode(nodes);
-    }
-
-    /**
      * Constructor.
      *
      * @param siblings Partitions.
@@ -70,6 +54,13 @@ public class PartitionGroupNode implements PartitionNode {
             res.add(sibling.applySingle(args));
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        // Note that we cannot cache join group in constructor. We have strong invariant that all siblings always
+        // belongs to the same group. However, number of this group may be changed during expression tree traversing.
+        return siblings.iterator().next().joinGroup();
     }
 
     /**
