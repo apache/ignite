@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
-import it.sauronsoftware.cron4j.Scheduler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.X;
@@ -35,8 +33,8 @@ import org.jetbrains.annotations.Nullable;
  * Schedules cron-based execution of grid tasks and closures.
  */
 public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
-    /** Cron scheduler. */
-    private Scheduler sched;
+    /** Spring scheduler. */
+    private SpringScheduler sched;
 
     /** Schedule futures. */
     private Set<SchedulerFuture<?>> schedFuts = new GridConcurrentHashSet<>();
@@ -67,11 +65,11 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String ptrn) {
         assert c != null;
-        assert pattern != null;
+        assert ptrn != null;
 
-        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
+        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
 
         fut.schedule(c);
 
@@ -109,18 +107,18 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        sched = new Scheduler();
-
-        sched.start();
+    @Override public void start() {
+        if (sched == null)
+            sched = new SpringScheduler();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (sched.isStarted())
+    @Override public void stop(boolean cancel) {
+        if (sched != null) {
             sched.stop();
 
-        sched = null;
+            sched = null;
+        }
     }
 
     /** {@inheritDoc} */

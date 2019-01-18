@@ -21,9 +21,9 @@
     <feature name="ignite-all" version="${project.version}" description="Apache Ignite :: All">
         <details>
             <![CDATA[Aggregate feature for installing all Apache Ignite module + their dependencies.
-            
+
             NOTE #1: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
-            - manually refresh the pax-logging-api framework bundle  - or - 
+            - manually refresh the pax-logging-api framework bundle  - or -
             - restart the Apache Karaf container.
             You may safely ignore the 'Resource has no uri' exception if you follow this method.
 
@@ -64,7 +64,7 @@
     <feature name="ignite-aop" version="${project.version}" description="Apache Ignite :: AOP">
         <details><![CDATA[The Apache Ignite AOP module + dependencies.]]></details>
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-aspects</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>        
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/${aspectj.bundle.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-aop/${project.version}</bundle>
     </feature>
@@ -237,7 +237,6 @@
             <![CDATA[The Apache Ignite Schedule module + dependencies. This module is a fragment of ignite-core.]]>
         </details>
         <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">wrap:mvn:it.sauronsoftware.cron4j/cron4j/${cron4j.version}$Bundle-SymbolicName=cron4j&amp;Bundle-Version=${cron4j.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-schedule/${project.version}</bundle>
     </feature>
 
