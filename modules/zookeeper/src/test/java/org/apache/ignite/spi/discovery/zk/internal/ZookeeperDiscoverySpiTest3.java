@@ -35,7 +35,7 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */
@@ -54,7 +54,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
                 @Override public Void call() throws Exception {
                     int threadIdx = idx.getAndIncrement();
 
-                    clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+                    helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
 
                     startGrid(threadIdx);
 
@@ -158,9 +158,9 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
             startGridsMultiThreaded(initNodes, NODES);
 
             for (int j = 0; j < NODES; j++)
-                expEvts[j] = joinEvent(++topVer);
+                expEvts[j] = ZookeeperDiscoverySpiTestHelper.joinEvent(++topVer);
 
-            checkEvents(ignite(0), expEvts);
+            helper.checkEvents(ignite(0), evts, expEvts);
 
             checkEventsConsistency();
 
@@ -182,7 +182,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
             }, NODES, "stop-node");
 
             for (int j = 0; j < NODES; j++)
-                expEvts[j] = failEvent(++topVer);
+                expEvts[j] = ZookeeperDiscoverySpiTestHelper.failEvent(++topVer);
 
             checkEventsConsistency();
         }
@@ -277,7 +277,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
      */
     @Test
     public void testStartStop_2_Nodes() throws Exception {
-        ackEveryEventSystemProperty();
+        ZookeeperDiscoverySpiTestHelper.ackEveryEventSystemProperty();
 
         startGrid(0);
 
@@ -288,11 +288,11 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
         waitForTopology(2);
 
         for (Ignite node : G.allGrids())
-            node.compute().broadcast(new ZookeeperDiscoverySpiTestShared.DummyCallable(null));
+            node.compute().broadcast(new ZookeeperDiscoverySpiTestHelper.DummyCallable(null));
 
         awaitPartitionMapExchange();
 
-        waitForEventsAcks(ignite(0));
+        helper.waitForEventsAcks(ignite(0));
     }
 
     /**
@@ -355,7 +355,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
      */
     @Test
     public void testStartStop1() throws Exception {
-        ackEveryEventSystemProperty();
+        ZookeeperDiscoverySpiTestHelper.ackEveryEventSystemProperty();
 
         startGridsMultiThreaded(5, false);
 
@@ -363,14 +363,14 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
 
         awaitPartitionMapExchange();
 
-        waitForEventsAcks(ignite(0));
+        helper.waitForEventsAcks(ignite(0));
 
         stopGrid(0);
 
         waitForTopology(4);
 
         for (Ignite node : G.allGrids())
-            node.compute().broadcast(new ZookeeperDiscoverySpiTestShared.DummyCallable(null));
+            node.compute().broadcast(new ZookeeperDiscoverySpiTestHelper.DummyCallable(null));
 
         startGrid(0);
 
@@ -378,7 +378,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
 
         awaitPartitionMapExchange();
 
-        waitForEventsAcks(grid(CU.oldest(ignite(1).cluster().nodes())));
+        helper.waitForEventsAcks(grid(CU.oldest(ignite(1).cluster().nodes())));
     }
 
     /**
@@ -451,7 +451,7 @@ public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(SRVS);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         final int THREADS = 30;
 

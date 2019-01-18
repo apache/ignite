@@ -20,7 +20,11 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import junit.framework.Assert;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -39,10 +43,33 @@ import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl
 
 /**
  * Non-base functionality shared by some of Zookeeper SPI discovery test classes in this package.
+ * 0. this rename to ...Helper and add as protected final member of base
+ * 1. client and clientMode and clientThreadLoc move inside, adjust base with obtaining getters
+ * 2. info into constructor as Consumer<String>
+ * 3. evts into parameter of checkEvents and waitForEventsAcks
+ * 4. spis into parameter of waitSpi
  */
-class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
+class ZookeeperDiscoverySpiTestHelper {
+    /** */
+    private static ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
+
+    /** */
+    private boolean client;
+
+    /** */
+    private final Consumer<String> info;
+
+    /** */
+    private final AtomicInteger clusterNum;
+
     /** */
     static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
+
+    /** */
+    ZookeeperDiscoverySpiTestHelper(Consumer<String> info, AtomicInteger clusterNum) {
+        this.info = info;
+        this.clusterNum = clusterNum;
+    }
 
     /**
      * @param clientMode Client mode flag for started nodes.
@@ -51,11 +78,26 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
         client = clientMode;
     }
 
+    /** */
+    boolean clientMode() {
+        return client;
+    }
+
     /**
      * @param clientMode Client mode flag for nodes started from current thread.
      */
     void clientModeThreadLocal(boolean clientMode) {
         clientThreadLoc.set(clientMode);
+    }
+
+    /** */
+    boolean clientModeThreadLocal() {
+        return clientThreadLoc.get();
+    }
+
+    /** */
+    void clientModeThreadLocalReset() {
+        clientThreadLoc.set(null);
     }
 
     /** */
@@ -68,8 +110,9 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
      * @param expEvts Expected events.
      * @throws Exception If fialed.
      */
-    void checkEvents(final Ignite node, final DiscoveryEvent...expEvts) throws Exception {
-        checkEvents(node.cluster().localNode().id(), expEvts);
+    void checkEvents(final Ignite node, ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts,
+        final DiscoveryEvent...expEvts) throws Exception {
+        checkEvents(node.cluster().localNode().id(), evts, expEvts);
     }
 
     /**
@@ -77,14 +120,15 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
      * @param expEvts Expected events.
      * @throws Exception If failed.
      */
-    private void checkEvents(final UUID nodeId, final DiscoveryEvent...expEvts) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+    private void checkEvents(final UUID nodeId, ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts,
+        final DiscoveryEvent...expEvts) throws Exception {
+        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
             @Override public boolean apply() {
                 Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts = evts.get(nodeId);
 
                 if (nodeEvts == null) {
-                    info("No events for node: " + nodeId);
+                    info.accept("No events for node: " + nodeId);
 
                     return false;
                 }
@@ -94,12 +138,12 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
                         DiscoveryEvent evt0 = nodeEvts.get(new T2<>(clusterNum.get(), expEvt.topologyVersion()));
 
                         if (evt0 == null) {
-                            info("No event for version: " + expEvt.topologyVersion());
+                            info.accept("No event for version: " + expEvt.topologyVersion());
 
                             return false;
                         }
 
-                        assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() +
+                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() +//todo check
                             ", exp=" + U.gridEventName(expEvt.type()) +
                             ", evt=" + evt0 + ']', expEvt.type(), evt0.type());
                     }
@@ -139,7 +183,8 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
      * @return Node's discovery SPI.
      * @throws Exception If failed.
      */
-    ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
+    ZookeeperDiscoverySpi waitSpi(final String nodeName, ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis)
+        throws Exception {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 ZookeeperDiscoverySpi spi = spis.get(nodeName);
@@ -151,7 +196,7 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
 
         ZookeeperDiscoverySpi spi = spis.get(nodeName);
 
-        assertNotNull("Failed to get SPI for node: " + nodeName, spi);
+        Assert.assertNotNull("Failed to get SPI for node: " + nodeName, spi);
 
         return spi;
     }
@@ -179,13 +224,13 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
      * @throws Exception If failed.
      */
     void waitForEventsAcks(final Ignite node) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
                     "impl", "rtState", "evtsData", "evts");
 
                 if (!evts.isEmpty()) {
-                    info("Unacked events: " + evts);
+                    info.accept("Unacked events: " + evts);
 
                     return false;
                 }
@@ -206,7 +251,7 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
 
             U.dumpThreads(log);
 
-            fail("Failed to wait for disconnect/reconnect event.");
+            Assert.fail("Failed to wait for disconnect/reconnect event.");
         }
     }
 
@@ -234,7 +279,7 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {//todo check
                 @Override public boolean apply() {
                     try {
                         List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/" + ZkIgnitePaths.ALIVE_NODES_DIR);
@@ -252,7 +297,7 @@ class ZookeeperDiscoverySpiTestShared extends ZookeeperDiscoverySpiTestBase {
                     catch (Exception e) {
                         e.printStackTrace();
 
-                        fail();
+                        Assert.fail();
 
                         return true;
                     }

@@ -69,7 +69,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */
@@ -439,7 +439,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         startGridsMultiThreaded(10);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(10, 5);
 
@@ -471,7 +471,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
             boolean clientMode = ThreadLocalRandom.current().nextBoolean();
 
-            clientMode(clientMode);
+            helper.clientMode(clientMode);
 
             startGrid(nodeIdx++);
 
@@ -518,7 +518,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(3);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(3, 2);
 
@@ -910,7 +910,7 @@ public class ZookeeperDiscoverySpiTest5 extends ZookeeperDiscoverySpiTestShared 
 
         startGridsMultiThreaded(5);
 
-        client = true;
+        helper.clientMode(true);
 
         startGridsMultiThreaded(5, 5);
 

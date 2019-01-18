@@ -98,9 +98,6 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  */
 class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */
-    protected boolean client;
-
-    /** */
     protected UUID nodeId;
 
     /** */
@@ -119,9 +116,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
     /** */
-    protected static ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
-
-    /** */
     protected Map<String, Object> userAttrs;
 
     /** */
@@ -132,6 +126,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** The number of clusters started in one test (increments when the first node in the cluster starts). */
     protected final AtomicInteger clusterNum = new AtomicInteger(0);
+
+    /** */
+    protected final ZookeeperDiscoverySpiTestHelper helper = new ZookeeperDiscoverySpiTestHelper(this::info, clusterNum);
 
     /** */
     protected boolean testSockNio;
@@ -306,7 +303,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             error("Failed to delete DB files: " + e, e);
         }
 
-        clientThreadLoc.set(null);
+        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -410,12 +407,12 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(getCacheConfiguration());
 
-        Boolean clientMode = clientThreadLoc.get();
+        Boolean clientMode = helper.clientModeThreadLocal();
 
         if (clientMode != null)
             cfg.setClientMode(clientMode);
         else
-            cfg.setClientMode(client);
+            cfg.setClientMode(helper.clientMode());
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);

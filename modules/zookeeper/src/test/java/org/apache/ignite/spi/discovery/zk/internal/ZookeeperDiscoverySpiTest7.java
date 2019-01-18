@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestBase {
     /**
      * A simple split-brain test, where cluster spliited on 2 parts of server nodes (2 and 3).
      * There is also client which sees both parts of splitted cluster.
@@ -49,11 +49,11 @@ public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestShared 
 
         startGridsMultiThreaded(5);
 
-        client = true;
+        helper.clientMode(true);
 
         startGridsMultiThreaded(5, 3);
 
-        client = false;
+        helper.clientMode(false);
 
         awaitPartitionMapExchange();
 
@@ -106,11 +106,11 @@ public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestShared 
 
         Assert.assertEquals(5, srvNodes.size());
 
-        client = true;
+        helper.clientMode(true);
 
         startGridsMultiThreaded(5, 3);
 
-        client = false;
+        helper.clientMode(false);
 
         awaitPartitionMapExchange();
 
@@ -157,11 +157,11 @@ public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestShared 
         List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
         List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
 
-        client = true;
+        helper.clientMode(true);
 
         startGridsMultiThreaded(6, 5);
 
-        client = false;
+        helper.clientMode(false);
 
         awaitPartitionMapExchange();
 

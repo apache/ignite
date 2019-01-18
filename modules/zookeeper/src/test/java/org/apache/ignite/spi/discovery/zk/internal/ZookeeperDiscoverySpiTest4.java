@@ -59,7 +59,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */
@@ -218,12 +218,12 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             30_000,
             null);
 
-        final String basePath = IGNITE_ZK_ROOT + "/";
+        final String basePath = ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT + "/";
 
         final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
 
         try {
-            List<String> znodes = listSubTree(zkClient.zk(), IGNITE_ZK_ROOT);
+            List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
 
             boolean foundAlive = false;
 
@@ -240,7 +240,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             assertTrue("Failed to wait for unused znodes cleanup", GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     try {
-                        List<String> znodes = listSubTree(zkClient.zk(), IGNITE_ZK_ROOT);
+                        List<String> znodes = listSubTree(zkClient.zk(), ZookeeperDiscoverySpiTestHelper.IGNITE_ZK_ROOT);
 
                         for (String znode : znodes) {
                             if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
@@ -309,11 +309,11 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
      */
     @Test
     public void testDeployService2() throws Exception {
-        clientMode(false);
+        helper.clientMode(false);
 
         startGrid(0);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(1);
 
@@ -327,7 +327,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
     public void testDeployService3() throws Exception {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                clientModeThreadLocal(true);
+                helper.clientModeThreadLocal(true);
 
                 startGrid(0);
 
@@ -335,7 +335,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             }
         }, "start-node");
 
-        clientModeThreadLocal(false);
+        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -361,7 +361,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         startGrid(1);
 
-        waitForEventsAcks(ignite(0));
+        helper.waitForEventsAcks(ignite(0));
 
         waitForTopology(2);
     }
@@ -379,7 +379,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         startGrid(1);
 
-        waitForEventsAcks(ignite(0));
+        helper.waitForEventsAcks(ignite(0));
 
         checkZkNodesCleanup();
     }
@@ -407,7 +407,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             else
                 userAttrs = null;
 
-            clientMode(i > 5);
+            helper.clientMode(i > 5);
 
             startGrid(i);
         }
@@ -444,7 +444,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         assertEquals(1, cache.get(1));
 
-        waitForEventsAcks(ignite(0));
+        helper.waitForEventsAcks(ignite(0));
 
         startGridsMultiThreaded(1, 3);
 
@@ -485,7 +485,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
         startGrid(0);
 
         sesTimeout = 2000;
-        clientMode(true);
+        helper.clientMode(true);
         testSockNio = true;
 
         Ignite client = startGrid(1);
@@ -496,7 +496,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(1));
 
-        client.compute().broadcast(new DummyCallable(null));
+        client.compute().broadcast(new ZookeeperDiscoverySpiTestHelper.DummyCallable(null));
     }
 
     /**
@@ -508,13 +508,13 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(SRVS);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(SRVS));
+                ZookeeperDiscoverySpi spi = helper.waitSpi(getTestIgniteInstanceName(SRVS), spis);
 
                 spi.clientReconnect();
 
@@ -534,13 +534,13 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(SRVS);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(0));
+                ZookeeperDiscoverySpi spi = helper.waitSpi(getTestIgniteInstanceName(0), spis);
 
                 spi.failNode(ignite(SRVS).cluster().localNode().id(), "Test forcible node fail");
 
@@ -603,7 +603,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         startGrids(3);
 
-        final ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(1));
+        final ZookeeperDiscoverySpi spi = helper.waitSpi(getTestIgniteInstanceName(1), spis);
 
         final UUID nodeId = ignite(2).cluster().localNode().id();
 
@@ -689,7 +689,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
         for (Ignite client : clients) {
             client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
-            zkNodes.add(aliveZkNodePath(client));
+            zkNodes.add(ZookeeperDiscoverySpiTestHelper.aliveZkNodePath(client));
         }
 
         long timeout = 15_000;
@@ -713,7 +713,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
             for (Ignite client : clients) {
                 ZookeeperDiscoverySpi spi = (ZookeeperDiscoverySpi)client.configuration().getDiscoverySpi();
 
-                ZooKeeper zk = zkClient(spi);
+                ZooKeeper zk = ZookeeperDiscoverySpiTestHelper.zkClient(spi);
 
                 for (String s : spi.getZkConnectionString().split(",")) {
                     try {
@@ -740,7 +740,7 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
                 zk.close();
         }
 
-        waitNoAliveZkNodes(log,
+        ZookeeperDiscoverySpiTestHelper.waitNoAliveZkNodes(log,
             ((ZookeeperDiscoverySpi)clients.get(0).configuration().getDiscoverySpi()).getZkConnectionString(),
             zkNodes,
             timeout);
@@ -750,9 +750,9 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
                 ZkTestClientCnxnSocketNIO.forNode(client.name()).allowConnect();
         }
 
-        waitReconnectEvent(log, disconnectLatch);
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 
-        waitReconnectEvent(log, reconnectLatch);
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnectLatch);
 
         for (Ignite client : clients)
             client.events().stopLocalListen(p);
@@ -822,9 +822,9 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
 
         c.call();
 
-        waitReconnectEvent(log, disconnectLatch);
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 
-        waitReconnectEvent(log, reconnectLatch);
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnectLatch);
 
         for (Ignite client : clients)
             client.events().stopLocalListen(p);
@@ -1017,11 +1017,11 @@ public class ZookeeperDiscoverySpiTest4 extends ZookeeperDiscoverySpiTestShared 
         for (int i = 0; i < 3; i++) {
             info("Iteration: " + i);
 
-            clientMode(false);
+            helper.clientMode(false);
 
             startGridsMultiThreaded(4, i == 0);
 
-            clientMode(true);
+            helper.clientMode(true);
 
             startGridsMultiThreaded(4, 3);
 

@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJ
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * Verifies that node attributes returned through public API are presented in standard form.
      *
@@ -137,7 +137,7 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
     public void testNodeAddresses() throws Exception {
         startGridsMultiThreaded(3);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -163,7 +163,7 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
     public void testSetConsistentId() throws Exception {
         startGridsMultiThreaded(3);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -191,7 +191,7 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
 
         startGridsMultiThreaded(3);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -252,7 +252,7 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(1);
 
@@ -261,11 +261,11 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        clientMode(false);
+        helper.clientMode(false);
 
         startGrid(2);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(3);
 
@@ -332,13 +332,13 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
         checkTestSecuritySubject(1);
 
         {
-            clientMode(false);
+            helper.clientMode(false);
             checkStartFail(1);
 
-            clientMode(true);
+            helper.clientMode(true);
             checkStartFail(1);
 
-            clientMode(false);
+            helper.clientMode(false);
         }
 
         startGrid(2);
@@ -359,15 +359,15 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
 
         checkStartFail(1);
 
-        clientMode(false);
+        helper.clientMode(false);
 
         startGrid(3);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGrid(4);
 
-        clientMode(false);
+        helper.clientMode(false);
 
         startGrid(0);
 
@@ -376,7 +376,7 @@ public class ZookeeperDiscoverySpiTest extends ZookeeperDiscoverySpiTestShared {
         checkStartFail(1);
         checkStartFail(5);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         checkStartFail(1);
         checkStartFail(5);

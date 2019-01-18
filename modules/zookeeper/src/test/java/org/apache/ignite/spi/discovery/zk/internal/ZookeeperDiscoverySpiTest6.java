@@ -59,7 +59,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestBase {
     /**
      * Test reproduces failure in case of client resolution failure
      * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi#createTcpClient} from server side, further
@@ -73,7 +73,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
 
         Ignite srv1 = startGrid("server1-block");
 
-        clientModeThreadLocal(true);
+        helper.clientModeThreadLocal(true);
 
         IgniteEx cli = startGrid("client-block");
 
@@ -133,7 +133,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
 
         sesTimeout = 3000;
         testSockNio = true;
-        client = true;
+        helper.clientMode(true);
 
         Ignite client = startGrid(1);
 
@@ -152,9 +152,9 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
         nio.closeSocket(true);
 
         try {
-            waitNoAliveZkNodes(log,
+            ZookeeperDiscoverySpiTestHelper.waitNoAliveZkNodes(log,
                 zkCluster.getConnectString(),
-                Collections.singletonList(aliveZkNodePath(client)),
+                Collections.singletonList(ZookeeperDiscoverySpiTestHelper.aliveZkNodePath(client)),
                 10_000);
         }
         finally {
@@ -175,7 +175,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
 
         joinTimeout = 3000;
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(1, CLIENTS);
 
@@ -209,7 +209,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
     public void testStartNoServers_FailOnTimeout() {
         joinTimeout = 3000;
 
-        clientMode(true);
+        helper.clientMode(true);
 
         long start = System.currentTimeMillis();
 
@@ -254,7 +254,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                clientModeThreadLocal(true);
+                helper.clientModeThreadLocal(true);
 
                 startGrid(0);
 
@@ -264,9 +264,9 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
 
         U.sleep(3000);
 
-        waitSpi(getTestIgniteInstanceName(0));
+        helper.waitSpi(getTestIgniteInstanceName(0), spis);
 
-        clientModeThreadLocal(false);
+        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -325,7 +325,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
     private void disconnectOnServersLeft(int srvs, int clients) throws Exception {
         startGridsMultiThreaded(srvs);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(srvs, clients);
 
@@ -370,17 +370,17 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
                 }
             }, srvs, "stop-server");
 
-            waitReconnectEvent(log, disconnectLatch);
+            ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, disconnectLatch);
 
             evts.clear();
 
-            clientMode(false);
+            helper.clientMode(false);
 
             log.info("Restart servers.");
 
             startGridsMultiThreaded(0, srvs);
 
-            waitReconnectEvent(log, reconnectLatch);
+            ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnectLatch);
 
             waitForTopology(srvs + clients);
 
@@ -412,7 +412,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
     public void testReconnectServersRestart_3() throws Exception {
         startGrid(0);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         startGridsMultiThreaded(10, 10);
 
@@ -429,7 +429,7 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
             @Override public Void call() throws Exception {
                 int threadIdx = idx.getAndIncrement();
 
-                clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
 
                 startGrid(threadIdx);
 
@@ -486,13 +486,13 @@ public class ZookeeperDiscoverySpiTest6 extends ZookeeperDiscoverySpiTestShared 
     private void reconnectServersRestart(int srvs) throws Exception {
         startGridsMultiThreaded(srvs);
 
-        clientMode(true);
+        helper.clientMode(true);
 
         final int CLIENTS = 10;
 
         startGridsMultiThreaded(srvs, CLIENTS);
 
-        clientMode(false);
+        helper.clientMode(false);
 
         long stopTime = System.currentTimeMillis() + 30_000;
 

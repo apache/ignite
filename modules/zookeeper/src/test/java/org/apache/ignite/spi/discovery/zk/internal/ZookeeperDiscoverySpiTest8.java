@@ -45,19 +45,19 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testCustomEventsSimple1_SingleNode() throws Exception {
-        ackEveryEventSystemProperty();
+        ZookeeperDiscoverySpiTestHelper.ackEveryEventSystemProperty();
 
         Ignite srv0 = startGrid(0);
 
         srv0.createCache(new CacheConfiguration<>("c1"));
 
-        waitForEventsAcks(srv0);
+        helper.waitForEventsAcks(srv0);
     }
 
     /**
@@ -65,7 +65,7 @@ public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared 
      */
     @Test
     public void testCustomEventsSimple1_5_Nodes() throws Exception {
-        ackEveryEventSystemProperty();
+        ZookeeperDiscoverySpiTestHelper.ackEveryEventSystemProperty();
 
         Ignite srv0 = startGrids(5);
 
@@ -73,7 +73,7 @@ public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared 
 
         awaitPartitionMapExchange();
 
-        waitForEventsAcks(srv0);
+        helper.waitForEventsAcks(srv0);
     }
 
     /**
@@ -98,7 +98,7 @@ public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared 
      * @throws Exception If failed.
      */
     private void customEvents_FastStopProcess(int srvs, int clients) throws Exception {
-        ackEveryEventSystemProperty();
+        ZookeeperDiscoverySpiTestHelper.ackEveryEventSystemProperty();
 
         Map<UUID, List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>>> rcvdMsgs =
             new ConcurrentHashMap<>();
@@ -111,7 +111,7 @@ public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared 
             startGridsMultiThreaded(1, srvs - 1);
 
         if (clients > 0) {
-            client = true;
+            helper.clientMode(true);
 
             startGridsMultiThreaded(srvs, clients);
         }
@@ -184,7 +184,7 @@ public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestShared 
                 rcvdMsgs.clear();
             }
 
-            waitForEventsAcks(crd);
+            helper.waitForEventsAcks(crd);
         }
     }
 

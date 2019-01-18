@@ -54,7 +54,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared {
+public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestBase {
     /**
      * Verifies correct handling of SEGMENTATION event with STOP segmentation policy: node is stopped successfully,
      * all its threads are shut down.
@@ -83,7 +83,7 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
 
             node0.cluster().active(true);
 
-            clientMode(true);
+            helper.clientMode(true);
 
             final IgniteEx client = startGrid(2);
 
@@ -389,22 +389,22 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
             }
         }, "start-node");
 
-        checkEvents(node0, joinEvent(3));
+        helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.joinEvent(3));
 
         if (failWhenDisconnected) {
             ZookeeperDiscoverySpi spi = spis.get(getTestIgniteInstanceName(2));
 
             closeZkClient(spi);
 
-            checkEvents(node0, failEvent(4));
+            helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
         }
 
         c1.allowConnect();
 
-        checkEvents(ignite(1), joinEvent(3));
+        helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.joinEvent(3));
 
         if (failWhenDisconnected) {
-            checkEvents(ignite(1), failEvent(4));
+            helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
 
             IgnitionEx.stop(getTestIgniteInstanceName(2), true, true);
         }
@@ -498,7 +498,7 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
         final List<String> failedZkNodes = new ArrayList<>(failCnt);
 
         for (int i = initNodes; i < initNodes + startNodes; i++) {
-            final ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
+            final ZookeeperDiscoverySpi spi = helper.waitSpi(getTestIgniteInstanceName(i), spis);
 
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -520,16 +520,16 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
 
                 blockedC.add(c);
 
-                failedZkNodes.add(aliveZkNodePath(spi));
+                failedZkNodes.add(ZookeeperDiscoverySpiTestHelper.aliveZkNodePath(spi));
             }
             else {
-                expEvts[expEvtCnt] = joinEvent(initNodes + expEvtCnt + 1);
+                expEvts[expEvtCnt] = ZookeeperDiscoverySpiTestHelper.joinEvent(initNodes + expEvtCnt + 1);
 
                 expEvtCnt++;
             }
         }
 
-        waitNoAliveZkNodes(log, zkCluster.getConnectString(), failedZkNodes, 30_000);
+        ZookeeperDiscoverySpiTestHelper.waitNoAliveZkNodes(log, zkCluster.getConnectString(), failedZkNodes, 30_000);
 
         c0.allowConnect();
 
@@ -538,7 +538,7 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
 
         if (expEvts.length > 0) {
             for (int i = 0; i < initNodes; i++)
-                checkEvents(ignite(i), expEvts);
+                helper.checkEvents(ignite(i), evts, expEvts);
         }
 
         fut.get();
@@ -550,7 +550,7 @@ public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestShared 
      * @param spi Spi instance.
      */
     private static void closeZkClient(ZookeeperDiscoverySpi spi) {
-        ZooKeeper zk = zkClient(spi);
+        ZooKeeper zk = ZookeeperDiscoverySpiTestHelper.zkClient(spi);
 
         try {
             zk.close();
