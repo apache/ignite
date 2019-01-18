@@ -1917,19 +1917,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             final int timeout = 1000;
 
-            //Invalid executor
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setNetworkTimeout(null, timeout);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Executor cannot be null"
-            );
-
             //Invalid timeout
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
