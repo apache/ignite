@@ -21,8 +21,5 @@ div(ng-switch='($ctrl.connectionState$ | async:this)')
     div(ng-switch-when='CLUSTER_DISCONNECTED')
         | Cluster is not available. #[a(ng-click='$ctrl.openNodeMissingDialog()') Check] cluster is up and running.
 
-    div(ng-switch-when='CLUSTER_NOT_ACTIVE')
-        | Cluster is not active. Please activate cluster.
-
     div(ng-switch-default)
         ng-transclude
