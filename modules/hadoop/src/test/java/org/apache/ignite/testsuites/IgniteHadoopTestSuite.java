@@ -105,7 +105,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.testframework.GridTestUtils.modeToPermissionSet;
 
@@ -176,7 +175,7 @@ public class IgniteHadoopTestSuite {
 
         suite.add(ldr.loadClass(IgniteHadoopFileSystemHandshakeSelfTest.class.getName()));
 
-        suite.add(IgfsEventsNoarchOnlyTest.class);
+        suite.add(IgfsEventsTestSuite.IgfsEventsNoarchOnlyTest.class);
 
         suite.add(ldr.loadClass(HadoopFileSystemsTest.class.getName()));
 
@@ -377,19 +376,6 @@ public class IgniteHadoopTestSuite {
         }
 
         throw new IllegalStateException("Failed to install " + appName + ".");
-    }
-
-    /** */
-    @RunWith(IgniteHadoopTestSuite.IgfsEventsNoarchOnlyTestSuite.class)
-    public static class IgfsEventsNoarchOnlyTest {
-    }
-
-    /** */
-    public static class IgfsEventsNoarchOnlyTestSuite extends Suite {
-        /** */
-        public IgfsEventsNoarchOnlyTestSuite(Class<?> cls) throws ClassNotFoundException, InitializationError {
-            super(cls, IgfsEventsTestSuite.suiteNoarchOnly().toArray(new Class<?>[] {null}));
-        }
     }
 
     /** */

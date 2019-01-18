@@ -69,7 +69,7 @@ public class IgfsEventsTestSuite {
      * @return Test suite with only tests that are supported on all platforms.
      * @throws ClassNotFoundException If the class was not found by class loader.
      */
-    public static List<Class<?>> suiteNoarchOnly() throws ClassNotFoundException {
+    private static List<Class<?>> suiteNoarchOnly() throws ClassNotFoundException {
         ClassLoader ldr = IgfsEventsTestSuite.class.getClassLoader();
 
         List<Class<?>> suite = new ArrayList<>();
@@ -86,6 +86,19 @@ public class IgfsEventsTestSuite {
         /** */
         public DynamicSuite(Class<?> cls) throws ClassNotFoundException, InitializationError {
             super(cls, suite().toArray(new Class<?>[] {null}));
+        }
+    }
+
+    /** */
+    @RunWith(IgfsEventsTestSuite.IgfsEventsNoarchOnlyTestSuite.class)
+    public static class IgfsEventsNoarchOnlyTest {
+    }
+
+    /** */
+    public static class IgfsEventsNoarchOnlyTestSuite extends Suite {
+        /** */
+        public IgfsEventsNoarchOnlyTestSuite(Class<?> cls) throws ClassNotFoundException, InitializationError {
+            super(cls, suiteNoarchOnly().toArray(new Class<?>[] {null}));
         }
     }
 
