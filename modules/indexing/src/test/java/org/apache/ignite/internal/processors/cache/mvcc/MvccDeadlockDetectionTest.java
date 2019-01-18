@@ -436,7 +436,6 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void nonDeadlockedTxDetectsDeadlock1() throws Exception {
-        // t0d0 remove or dress up this test
         setUpGrids(2, false);
 
         Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
@@ -446,7 +445,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         assert client.configuration().isClientMode();
 
-        CyclicBarrier b = new CyclicBarrier(2);
+        CyclicBarrier b = new CyclicBarrier(3);
 
         IgniteInternalFuture<Object> fut0 = GridTestUtils.runAsync(() -> {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -476,8 +475,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        TimeUnit.SECONDS.sleep(2);
-        cache.put(key0, 33);
+        b.await();
+        tryPutRepeatedly(cache, key0);
 
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
@@ -485,7 +484,6 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void nonDeadlockedTxDetectsDeadlock2() throws Exception {
-        // t0d0 remove or dress up this test
         setUpGrids(2, false);
 
         List<Integer> keys0 = primaryKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2);
@@ -497,7 +495,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         assert client.configuration().isClientMode();
 
-        CyclicBarrier b = new CyclicBarrier(2);
+        CyclicBarrier b = new CyclicBarrier(3);
 
         IgniteInternalFuture<Object> fut0 = GridTestUtils.runAsync(() -> {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -528,8 +526,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             return null;
         });
 
-        TimeUnit.SECONDS.sleep(2);
-        cache.put(key01, 33);
+        b.await();
+        tryPutRepeatedly(cache, key01);
 
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
@@ -538,6 +536,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     @Test
     public void randomizedPuts() throws Exception {
         // t0d0 remove or extract test
+        // t0d0 ensure that deadlock detection does not left any messages after finishing all txs
         int gridCnt = 10;
 
         setUpGrids(gridCnt, false);
@@ -604,10 +603,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         for (IgniteInternalFuture<?> fut : futs) {
             try {
-                fut.get(100, TimeUnit.SECONDS);
+                fut.get(10, TimeUnit.SECONDS);
             }
             catch (IgniteCheckedException e) {
-                e.printStackTrace();
                 // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
                 if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
                     aborted++;
@@ -618,5 +616,18 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         if (aborted != 1)
             fail("Exactly one tx is expected to be aborted, but was " + aborted);
+    }
+
+    /** */
+    private void tryPutRepeatedly(IgniteCache<Object, Object> cache, Integer key0) {
+        for (int i = 0; i < 100; i++) {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 1)) {
+                cache.put(key0, 33);
+
+                break;
+            }
+            catch (Exception ignored) {
+            }
+        }
     }
 }
