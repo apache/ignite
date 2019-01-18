@@ -1220,17 +1220,21 @@ export class NotebookCtrl {
 
         const _showLoading = (paragraph, enable) => paragraph.loading = enable;
 
-        const checkQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
-            if (!_.isNil(res.rows))
-                return _processQueryResult(paragraph, clearChart, res);
+        const _fetchQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
+            if (!_.isNil(res.rows)) {
+                _processQueryResult(paragraph, clearChart, res);
+
+                $scope.$apply();
+            }
 
             const subscription = timer(interval).pipe(exhaustMap((_) => {
-                return agentMgr.queryGet(qryArg.nid, res.queryId, qryArg.pageSize)
+                return agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)
                     .then((res) => {
-                        return checkQueryResult(paragraph, false, res, qryArg, 333);
+                        return _fetchQueryResult(paragraph, false, res, qryArg, 333);
                     })
                     .catch((err) => {
-                        paragraph.setError(err);
+                        if (paragraph.subscription)
+                            paragraph.setError(err);
                     });
             })).subscribe();
 
@@ -1345,10 +1349,33 @@ export class NotebookCtrl {
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
-            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.find(nodes, {nid: nid.toUpperCase()})))
-                return agentMgr.queryClose(nid, paragraph.queryId);
+            if (paragraph.queryId) {
+                const qryId = paragraph.queryId;
+                delete paragraph.queryId;
+
+                return agentMgr.queryClose(nid, qryId);
+            }
 
             return $q.when();
+        };
+
+        $scope.cancelQuery = (paragraph) => {
+            if (paragraph.subscription) {
+                paragraph.subscription.unsubscribe();
+                paragraph.subscription = null;
+            }
+
+            _showLoading(paragraph, false);
+
+            _closeOldQuery(paragraph)
+                .catch((err) => {
+                    _showLoading(paragraph, false);
+                    paragraph.setError(err);
+                });
+        };
+
+        $scope.cancelQueryAvailable = (paragraph) => {
+            return !!paragraph.subscription;
         };
 
         /**
@@ -1419,7 +1446,7 @@ export class NotebookCtrl {
 
                     return agentMgr.querySql(qryArg)
                         .then((res) => {
-                            return checkQueryResult(paragraph, false, res, qryArg);
+                            return _fetchQueryResult(paragraph, false, res, qryArg);
                         });
                 })
                 .catch((err) => {
@@ -1468,6 +1495,19 @@ export class NotebookCtrl {
 
         $scope.cacheNameForSql = (paragraph) => {
             return $scope.ddlAvailable() && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+        };
+
+        const _initQueryResult = (paragraph, res) => {
+            paragraph.resNodeId = res.responseNodeId;
+            paragraph.queryId = res.queryId;
+
+            paragraph.rows = [];
+            paragraph.gridOptions.adjustHeight(paragraph.rows.length);
+
+            paragraph.meta = [];
+            paragraph.setError({message: ''});
+
+            paragraph.hasNext = false;
         };
 
         $scope.execute = (paragraph, local = false) => {
@@ -1522,8 +1562,8 @@ export class NotebookCtrl {
 
                             return agentMgr.querySql(qryArg)
                                 .then((res) => {
-                                    checkQueryResult(paragraph, true, res, qryArg);
-
+                                    _initQueryResult(paragraph, res);
+                                    _fetchQueryResult(paragraph, true, res, qryArg);
                                     _tryStartRefresh(paragraph);
                                 });
                         })
@@ -1590,7 +1630,11 @@ export class NotebookCtrl {
                     };
 
                     return agentMgr.querySql(qryArg)
-                        .then((res) => checkQueryResult(paragraph, true, res, qryArg));
+                        .then((res) => {
+                            _initQueryResult(paragraph, res);
+
+                            return _fetchQueryResult(paragraph, true, res, qryArg);
+                        });
                 })
                 .catch((err) => {
                     paragraph.setError(err);
@@ -1644,7 +1688,11 @@ export class NotebookCtrl {
                                 pageSize
                             };
 
-                            return agentMgr.queryScan(qryArg).then((res) => checkQueryResult(paragraph, true, res, qryArg));
+                            return agentMgr.queryScan(qryArg).then((res) => {
+                                _initQueryResult(paragraph, res);
+
+                                return _fetchQueryResult(paragraph, true, res, qryArg);
+                            });
                         })
                         .catch((err) => {
                             paragraph.setError(err);

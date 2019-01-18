@@ -768,7 +768,7 @@ export default class AgentManager {
      * @param {Number} pageSize
      * @returns {Promise}
      */
-    queryGet(nid, queryId, pageSize) {
+    queryFetchFistsPage(nid, queryId, pageSize) {
         return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
             if (_.isEmpty(error))
                 return result;
