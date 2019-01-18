@@ -1299,7 +1299,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         SqlCommand cmd, @Nullable SqlClientContext cliCtx) {
-
         boolean fail = false;
 
         // Execute.
