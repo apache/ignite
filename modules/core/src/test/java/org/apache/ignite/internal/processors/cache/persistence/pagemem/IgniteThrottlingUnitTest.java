@@ -17,7 +17,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
@@ -27,8 +29,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -301,6 +306,8 @@ public class IgniteThrottlingUnitTest {
     public void checkWrittenCounterIsIncreased() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+        int checkpointFreqMs = 5 * 1000;
+        dsCfg.setCheckpointFrequency(checkpointFreqMs);
         cfg.setDataStorageConfiguration(dsCfg);
 
         //instead of init default SPI
@@ -343,8 +350,13 @@ public class IgniteThrottlingUnitTest {
 
         //binding
         GridCacheProcessor cacheProcessor = mock(GridCacheProcessor.class);
+        List<CacheGroupContext> cacheGrpContexts = new ArrayList<>();
+        when(cacheProcessor.cacheGroups()).thenReturn(cacheGrpContexts);
+
         when(cacheProcessor.context()).thenReturn(sctx);
+
         when(kctx.cache()).thenReturn(cacheProcessor);
+        when(sctx.cache()).thenReturn(cacheProcessor);
 
         //start GCDSM
         GridCacheDatabaseSharedManager mgr = new GridCacheDatabaseSharedManager(kctx);
@@ -353,7 +365,25 @@ public class IgniteThrottlingUnitTest {
 
         assertNotNull(mgr.getCheckpointer());
 
+        Thread t = new Thread(() -> {
+            try {
+                mgr.onStateRestored(mock(AffinityTopologyVersion.class));
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+
+        CheckpointFuture fut = mgr.forceCheckpoint("test");
+
+        fut.beginFuture().get();
+        assertNotNull(mgr.writtenPagesCounter());
+
         int startCnt = mgr.writtenPagesCounter().get();
+
+        fut.finishFuture().get();
 
 
         assertTrue(mgr.writtenPagesCounter().get() > startCnt);
