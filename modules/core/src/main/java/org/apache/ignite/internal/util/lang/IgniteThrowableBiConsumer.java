@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.util.lang;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Annotation which indicates that the test is ignored.
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
+ * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
+ *
+ * @param <E> Type of closure parameter.
+ * @param <R> Type of result value.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
-public @interface IgniteIgnore {
+public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
     /**
-     * Reason for ignore (usually link to JIRA ticket).
+     * Consumer body.
+     *
+     * @param e Consumer parameter.
+     * @throws IgniteCheckedException if body execution was failed.
      */
-    String value();
-
-    /**
-     * Whether test should be failed immediately. Useful when test hangs or consumes a lot of time.
-     */
-    boolean forceFailure() default false;
+    public void accept(E e, R r) throws IgniteCheckedException;
 }
