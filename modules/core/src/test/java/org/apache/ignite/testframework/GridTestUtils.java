@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -1954,12 +1955,30 @@ public final class GridTestUtils {
     }
 
     /**
+     * Adds test class to the list only if it's not in {@code ignoredTests} set.
+     *
+     * @param suite List where to place the test class.
+     * @param test Test.
+     * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
+     */
+    public static void addTestIfNeeded(@NotNull final List<Class<?>> suite, @NotNull final Class<?> test,
+        @Nullable final Collection<Class> ignoredTests) {
+        if (ignoredTests != null && ignoredTests.contains(test))
+            return;
+
+        suite.add(test);
+    }
+
+    /**
      * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     * TODO IGNITE-10777 remove this method.
      *
      * @param suite TestSuite where to place the test.
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
+     * @deprecated Use {@link GridTestUtils#addTestIfNeeded(List, Class, Collection)} instead.
      */
+    @Deprecated
     public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<?> test,
         @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
@@ -2112,5 +2131,15 @@ public final class GridTestUtils {
             connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
+    }
+
+    /**
+     * Removes idle_verify log files created in tests.
+     */
+    public static void cleanIdleVerifyLogFiles() {
+        File dir = new File(".");
+
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+            f.delete();
     }
 }

@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
@@ -1059,6 +1060,19 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
     /**
+     * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
+     * All nodes in the cluster must have the same value of this property.
+     * <p/>
+     * If the property is {@code true} then event-driven implementation of the service processor will be used.
+     * <p/>
+     * If the property is {@code false} then internal cache based implementation of service processor will be used.
+     * <p/>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
+        = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
+
+    /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
      * case message contains only cluster metrics). By default cache metrics are included into the message and
      * calculated each time the message is sent.
@@ -1067,6 +1081,18 @@ public final class IgniteSystemProperties {
      * metrics will be unavailable via JMX too.
      */
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
+
+    /**
+     * Maximum number of different partitions to be extracted from between expression within sql query.
+     * In case of limit exceeding all partitions will be used.
+     */
+    public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
+        "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
+
+    /**
+     * Maximum amount of bytes that can be stored in history of {@link DistributedMetaStorage} updates.
+     */
+    public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
 
     /**
      * Enforces singleton.

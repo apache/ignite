@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import com.sun.org.apache.xml.internal.utils.ObjectPool;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +35,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     private transient MvccQueryTracker mvccTracker;
 
     /** Detached connection. */
-    private final ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn;
+    private final ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
 
     /**
      * @param data Data.
@@ -46,7 +45,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker, boolean forUpdate,
-        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConn)
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn)
         throws IgniteCheckedException {
         super(data, forUpdate);
 
