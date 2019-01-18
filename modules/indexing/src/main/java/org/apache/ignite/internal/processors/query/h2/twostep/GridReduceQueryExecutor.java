@@ -107,8 +107,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
 /**
@@ -476,9 +476,6 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
-                qry.mapQueries().size(), qry.pageSize(), sfuFut);
-
             Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
@@ -541,7 +538,38 @@ public class GridReduceQueryExecutor {
 
             int tblIdx = 0;
 
-            final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
+            boolean singlePartMode = parts != null && parts.length == 1;
+
+            final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
+
+            if (singlePartMode) {
+                boolean hasSubQries = false;
+
+                for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                    hasSubQries |= mapQry.hasSubQueries();
+
+                qry.mapQueries().clear();
+
+                GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
+
+                if (!F.isEmpty(params)) {
+                    int[] paramIdxs = new int[params.length];
+
+                    for (int i = 0; i < params.length; i++)
+                        paramIdxs[i] = i;
+
+                    originalQry.parameterIndexes(paramIdxs);
+                }
+
+                originalQry.partitioned(true);
+                
+                originalQry.hasSubQueries(hasSubQries);
+
+                qry.addMapQuery(originalQry);
+            }
+
+            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
+                qry.mapQueries().size(), qry.pageSize(), sfuFut);
 
             final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cacheIds).config().getQueryParallelism();
@@ -580,8 +608,15 @@ public class GridReduceQueryExecutor {
 
                     idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
                 }
-                else
+                else {
+                    if (singlePartMode) {
+                        assert nodes.size() == 1;
+
+                        mapQry.node(nodes.iterator().next().id());
+                    }
+
                     idx.setSources(nodes, segmentsPerIndex);
+                }
 
                 idx.setPageSize(r.pageSize());
 
@@ -610,7 +645,7 @@ public class GridReduceQueryExecutor {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
 
                     for (GridCacheSqlQuery mapQry : qry.mapQueries())
-                        mapQrys.add(new GridCacheSqlQuery("EXPLAIN " + mapQry.query())
+                        mapQrys.add(new GridCacheSqlQuery(singlePartMode ? "" : "EXPLAIN " + mapQry.query())
                             .parameterIndexes(mapQry.parameterIndexes()));
                 }
 
@@ -626,8 +661,9 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                // Always enforce join order on map side to have consistent behavior.
-                int flags = GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+                int flags = singlePartMode ?
+                    enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0 :
+                    GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
 
                 if (distributedJoins)
                     flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
