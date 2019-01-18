@@ -101,7 +101,7 @@ import org.junit.runners.model.InitializationError;
     IgfsProcessorValidationSelfTest.class,
     IgfsCacheSelfTest.class,
 
-    IgniteIgfsTestSuite.WindowsOInlyTests.class,
+    IgniteIgfsTestSuite.WindowsOnlyTests.class,
 
     IgfsCachePerBlockLruEvictionPolicySelfTest.class,
 
@@ -155,7 +155,7 @@ import org.junit.runners.model.InitializationError;
 public class IgniteIgfsTestSuite {
     /** */
     @RunWith(IgniteIgfsTestSuite.DynamicSuite.class)
-    public static class WindowsOInlyTests {
+    public static class WindowsOnlyTests {
         /** */
         @BeforeClass
         public static void init() {

@@ -34,6 +34,6 @@ public class IgniteCacheFailoverTestSuiteSsl {
     @BeforeClass
     public static void init() {
         Assume.assumeTrue("Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.",
-            !IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65"));
+            !IgniteUtils.isHotSpot());
     }
 }
