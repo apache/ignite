@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -523,6 +526,69 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test IO statistics system views for cache groups and SQL indexes.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testIoStatisticsViews() throws Exception {
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+
+        ignite.cluster().active(true);
+
+        execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
+
+        execSql("CREATE INDEX TST_IDX ON DEFAULT.TST(name, age)");
+
+        for (int i = 0; i < 1000; i++)
+            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+
+        String sql1 = "SELECT CACHE_GRP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.STATIO_CACHE_GRP";
+        String sql2 = "SELECT * FROM IGNITE.STATIO_IDX";
+
+        List<List<?>> res1 = execSql(sql1);
+
+        List<List<?>> res2 = execSql(sql2);
+
+        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(0), v -> v.get(2)));
+
+        assertEquals(2, map.size());
+
+        assertTrue(map.containsKey("SQL_default_TST"));
+
+        assertTrue((Long)map.get("SQL_default_TST") > 0);
+
+        assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
+
+        map = res2.stream().collect(Collectors.toMap(k -> k.get(0) + "," + k.get(1), v -> v.get(3)));
+
+        List<String> exp = Arrays.asList("SQL_default_TST,HASH_PK", "SQL_default_TST,_key_PK", "SQL_default_TST,TST_IDX", "default,HASH_PK");
+
+        assertEquals(exp.size(), map.size());
+
+        for (String val : exp) {
+            assertTrue("expected value " + val, map.containsKey(val));
+        }
+
+        sql1 = "SELECT CACHE_GRP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.STATIO_CACHE_GRP WHERE CACHE_GRP_NAME='SQL_default_TST'";
+        sql2 = "SELECT * FROM IGNITE.STATIO_IDX WHERE IDX_NAME='_key_PK'";
+
+        assertEquals(1, execSql(sql1).size());
+
+        assertEquals(1, execSql(sql2).size());
+
+        sql2 = "SELECT * FROM IGNITE.STATIO_IDX WHERE IDX_NAME='HASH_PK' AND CACHE_GRP_NAME='default'";
+
+        res2 = execSql(sql2);
+
+        assertEquals(1, res2.size());
+
+        assertEquals(DEFAULT_CACHE_NAME, res2.get(0).get(0));
+
+        assertEquals("HASH_PK", res2.get(0).get(1));
     }
 
     /**

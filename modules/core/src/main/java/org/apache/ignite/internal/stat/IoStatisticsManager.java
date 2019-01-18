@@ -201,4 +201,12 @@ public class IoStatisticsManager {
 
         return (stat != null) ? stat.logicalReads() : null;
     }
+
+    /**
+     * @param statType Type of statistics which need to take.
+     * @return All tracked statistics for given type.
+     */
+    public Map<IoStatisticsHolderKey, IoStatisticsHolder> statistics(IoStatisticsType statType){
+        return Collections.unmodifiableMap(statByType.get(statType));
+    }
 }
