@@ -412,7 +412,9 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public void resetQueryHistoryMetrics() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
