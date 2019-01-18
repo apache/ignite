@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
@@ -84,6 +85,12 @@ public final class UpdatePlanBuilder {
     private UpdatePlanBuilder() {
         // No-op.
     }
+
+    private static final IgniteClosure<GridSqlColumn, Column> toH2Column = new IgniteClosure<GridSqlColumn, Column>() {
+        @Override public Column apply(GridSqlColumn column) {
+            return column.column();
+        }
+    };
 
     /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
@@ -311,7 +318,9 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        verifyDmlColumns(tbl.dataTable(), Arrays.asList(colNames));
+        Collection<Column> h2ColsView = F.viewReadOnly(Arrays.asList(cols), toH2Column);
+
+        verifyDmlColumns(tbl.dataTable(), h2ColsView);
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
@@ -555,6 +564,8 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.size()];
 
+        Column[] h2Cols = new Column[cols.size()];
+
         int[] colTypes = new int[cols.size()];
 
         int keyColIdx = -1;
@@ -569,6 +580,8 @@ public final class UpdatePlanBuilder {
             colNames[i] = colName;
 
             Column h2Col = tbl.getColumn(colName);
+
+            h2Cols[i] = h2Col;
 
             colTypes[i] = h2Col.getType();
             int colId = h2Col.getColumnId();
@@ -593,7 +606,7 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        verifyDmlColumns(tbl, Arrays.asList(colNames));
+        verifyDmlColumns(tbl, Arrays.asList(h2Cols));
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
             true, false);
@@ -790,7 +803,7 @@ public final class UpdatePlanBuilder {
                 IgniteQueryErrorCode.KEY_UPDATE);
 
         if (gridTbl != null)
-            verifyDmlColumns(gridTbl, update.set().keySet());
+            verifyDmlColumns(gridTbl, F.viewReadOnly(update.cols(), toH2Column));
     }
 
     /**
@@ -826,11 +839,11 @@ public final class UpdatePlanBuilder {
      * 2) doesn't contain both entire value (_val or alias) and columns referring to part of the value. <br/>
      *
      * @param tab - updated table.
-     * @param affectedColumns - table's column names affected by dml query. Their order should be the same as in the
+     * @param affectedCols - table's column names affected by dml query. Their order should be the same as in the
      * dml statement only to have the same columns order in the error message.
      * @throws IgniteSQLException if check failed.
      */
-    private static void verifyDmlColumns(GridH2Table tab, Collection<String> affectedColumns) {
+    private static void verifyDmlColumns(GridH2Table tab, Collection<Column> affectedCols) {
         GridH2RowDescriptor desc = tab.rowDescriptor();
 
         // _key (_val) or it alias exist in the update columns.
@@ -841,15 +854,15 @@ public final class UpdatePlanBuilder {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        for (String colName : affectedColumns) {
-            int colId = tab.getColumn(colName).getColumnId();
+        for (Column col : affectedCols) {
+            int colId = col.getColumnId();
 
             if (desc.isKeyColumn(colId)) {
                 if (keyColName == null)
-                    keyColName = colName;
+                    keyColName = col.getName();
                 else
                     throw new IgniteSQLException(
-                        "Columns " + keyColName + " and " + colName + " both refer to entire cache key object.",
+                        "Columns " + keyColName + " and " + col + " both refer to entire cache key object.",
                         IgniteQueryErrorCode.PARSING);
 
                 continue;
@@ -857,17 +870,17 @@ public final class UpdatePlanBuilder {
 
             if (desc.isValueColumn(colId)) {
                 if (valColName == null)
-                    valColName = colName;
+                    valColName = col.getName();
                 else
                     throw new IgniteSQLException(
-                        "Columns " + valColName + " and " + colName + " both refer to entire cache value object.",
+                        "Columns " + valColName + " and " + col + " both refer to entire cache value object.",
                         IgniteQueryErrorCode.PARSING);
 
                 continue;
             }
 
             // column ids 0..2 are _key, _val, _ver
-            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + colName + ", id=" + colId + "].";
+            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + col + ", id=" + colId + "].";
 
             if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
                 hasKeyProps = true;
