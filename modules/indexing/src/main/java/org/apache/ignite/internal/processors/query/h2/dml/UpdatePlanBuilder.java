@@ -873,21 +873,20 @@ public final class UpdatePlanBuilder {
                 hasKeyProps = true;
             else
                 hasValProps = true;
+
+            boolean hasEntireKeyCol = keyColName != null;
+            boolean hasEntireValcol = valColName != null;
+
+            if (hasEntireKeyCol && hasKeyProps)
+                throw new IgniteSQLException("Column " + keyColName + " refers to entire key cache object. " +
+                    "It must not be mixed with other columns that refer to parts of key.",
+                    IgniteQueryErrorCode.PARSING);
+
+            if (hasEntireValcol && hasValProps)
+                throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
+                    "It must not be mixed with other columns that refer to parts of value.",
+                    IgniteQueryErrorCode.PARSING);
         }
-
-        boolean hasEntireKeyCol = keyColName != null;
-        boolean hasEntireValcol = valColName != null;
-
-        if (hasEntireKeyCol && hasKeyProps)
-            throw new IgniteSQLException("Column " + keyColName + " refers to entire key cache object. " +
-                "It must not be mixed with other columns that refer to parts of key.",
-                IgniteQueryErrorCode.PARSING);
-
-        if (hasEntireValcol && hasValProps)
-            throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
-                "It must not be mixed with other columns that refer to parts of value.",
-                IgniteQueryErrorCode.PARSING);
-
     }
 
     /**
