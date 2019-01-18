@@ -51,10 +51,10 @@ import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl
  */
 class ZookeeperDiscoverySpiTestHelper {
     /** */
-    private static ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
+    static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
 
     /** */
-    private boolean client;
+    private static final ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
 
     /** */
     private final Consumer<String> info;
@@ -63,7 +63,7 @@ class ZookeeperDiscoverySpiTestHelper {
     private final AtomicInteger clusterNum;
 
     /** */
-    static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
+    private boolean client;
 
     /** */
     ZookeeperDiscoverySpiTestHelper(Consumer<String> info, AtomicInteger clusterNum) {
@@ -91,7 +91,7 @@ class ZookeeperDiscoverySpiTestHelper {
     }
 
     /** */
-    boolean clientModeThreadLocal() {
+    Boolean clientModeThreadLocal() {
         return clientThreadLoc.get();
     }
 
