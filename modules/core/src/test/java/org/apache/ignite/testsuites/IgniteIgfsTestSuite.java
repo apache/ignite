@@ -65,12 +65,8 @@ import org.apache.ignite.internal.processors.igfs.split.IgfsByteDelimiterRecordR
 import org.apache.ignite.internal.processors.igfs.split.IgfsFixedLengthRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsNewLineDelimiterRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsStringDelimiterRecordResolverSelfTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for Hadoop file system over Ignite cache.
@@ -101,7 +97,7 @@ import org.junit.runners.model.InitializationError;
     IgfsProcessorValidationSelfTest.class,
     IgfsCacheSelfTest.class,
 
-    IgniteIgfsTestSuite.WindowsOnlyTests.class,
+    IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class,
 
     IgfsCachePerBlockLruEvictionPolicySelfTest.class,
 
@@ -153,21 +149,4 @@ import org.junit.runners.model.InitializationError;
     IgfsSecondaryFileSystemInjectionSelfTest.class,
 })
 public class IgniteIgfsTestSuite {
-    /** */
-    @RunWith(IgniteIgfsTestSuite.DynamicSuite.class)
-    public static class WindowsOnlyTests {
-        /** */
-        @BeforeClass
-        public static void init() {
-            Assume.assumeTrue("Test is intended to run only on Windows.", U.isWindows());
-        }
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, new Class<?>[] {IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class});
-        }
-    }
 }

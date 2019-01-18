@@ -47,7 +47,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 public class IgfsEventsTestSuite {
     /**
      * @return Test suite.
-     * @throws ClassNotFoundException Thrown in case of the failure.
+     * @throws ClassNotFoundException If the class was not found by class loader.
      */
     public static List<Class<?>> suite() throws ClassNotFoundException {
         ClassLoader ldr = IgfsEventsTestSuite.class.getClassLoader();
@@ -67,7 +67,7 @@ public class IgfsEventsTestSuite {
 
     /**
      * @return Test suite with only tests that are supported on all platforms.
-     * @throws ClassNotFoundException Thrown in case of the failure.
+     * @throws ClassNotFoundException If the class was not found by class loader.
      */
     public static List<Class<?>> suiteNoarchOnly() throws ClassNotFoundException {
         ClassLoader ldr = IgfsEventsTestSuite.class.getClassLoader();
