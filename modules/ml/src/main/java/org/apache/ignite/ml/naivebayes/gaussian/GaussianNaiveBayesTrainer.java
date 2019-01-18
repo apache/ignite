@@ -55,7 +55,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(GaussianNaiveBayesModel mdl) {
+    @Override public boolean isUpdateable(GaussianNaiveBayesModel mdl) {
         return true;
     }
 

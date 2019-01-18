@@ -140,7 +140,7 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      */
     public double computeError(Vector features, Double answer, ModelsComposition currMdl) {
         Double realAnswer = externalLbToInternalMapping.apply(answer);
-        Double mdlAnswer = currMdl.apply(features);
+        Double mdlAnswer = currMdl.predict(features);
         return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
     }
 }

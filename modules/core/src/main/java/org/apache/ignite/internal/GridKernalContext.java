@@ -54,6 +54,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -65,7 +67,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
@@ -206,6 +208,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridClusterStateProcessor state();
 
     /**
+     * Gets global metastorage.
+     *
+     * @return Global metastorage.
+     */
+    public DistributedMetaStorage distributedMetastorage();
+
+    /**
+     * Gets distributed configuration processor.
+     *
+     * @return Distributed configuration processor.
+     */
+    public DistributedConfigurationProcessor distributedConfiguration();
+
+    /**
      * Gets task session processor.
      *
      * @return Session processor.
@@ -224,7 +240,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Service processor.
      */
-    public GridServiceProcessor service();
+    public ServiceProcessorAdapter service();
 
     /**
      * Gets port processor.
