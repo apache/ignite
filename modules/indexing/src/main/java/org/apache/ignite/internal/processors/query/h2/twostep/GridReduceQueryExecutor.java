@@ -393,9 +393,12 @@ public class GridReduceQueryExecutor {
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
-        final int[] parts,
+        int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker) {
+        if (qry.isLocal() && parts != null)
+            parts = null;
+
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
