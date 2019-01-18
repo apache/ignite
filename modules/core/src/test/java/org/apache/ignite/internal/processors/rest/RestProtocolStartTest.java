@@ -45,10 +45,10 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
     /** Failure detection timeout. */
     private static final int FAILURE_DETECTION_TIMEOUT = 2_000;
 
-    /** Node local host.*/
+    /** Node local host. */
     private static final String HOST = "127.0.0.1";
 
-    /** Binary rest port.*/
+    /** Binary rest port. */
     private static final int BINARY_PORT = 11212;
 
     /** Recording communication spi. */
@@ -58,9 +58,10 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
+            .setSystemWorkerBlockedTimeout(10_000)
             .setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT)
-            .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).setAffinity(new
-                RendezvousAffinityFunction(false, 64)))
+            .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 8)))
             .setCommunicationSpi(igniteInstanceName.equals(getTestIgniteInstanceName(0))
                 ? recordingCommunicationSpi :
                 new TestRecordingCommunicationSpi())
@@ -86,7 +87,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
 
         try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < 100; i++)
-                streamer.addData(i,i);
+                streamer.addData(i, i);
         }
 
         IgniteInternalFuture startFut = GridTestUtils.runAsync(() -> {
@@ -104,17 +105,6 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
 
         GridClient gridClient = client();
 
-        IgniteInternalFuture deactivateFut = GridTestUtils.runAsync(() -> {
-            try {
-                gridClient.state().active(false);
-
-                fail("Rest client can not execute command before marshaller initialized.");
-            }
-            catch (GridClientException e) {
-                info("Can not deactivate grid. Msg: " + e.getMessage());
-            }
-        });
-
         ((TcpDiscoverySpi)ignite.configuration().getDiscoverySpi()).brakeConnection();
 
         doSleep(FAILURE_DETECTION_TIMEOUT);
@@ -123,11 +113,10 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
 
         try {
             startFut.get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
             fail("Failed to wait rebalance completed. Node has hang.");
         }
-
-        deactivateFut.get();
 
         assertTrue("Is active " + ignite.cluster().active(), ignite.cluster().active());
     }
@@ -138,6 +127,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
      */
     protected GridClient client() throws GridClientException {
         return GridClientFactory.start(new GridClientConfiguration()
+            .setConnectTimeout(300)
             .setServers(Collections
                 .singleton(HOST + ":" + BINARY_PORT)));
     }
