@@ -434,7 +434,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             return;
         }
 
-        Assert.fail("Expected GridClientClosedException.");
+        junit.framework.Assert.fail("Expected GridClientClosedException.");
     }
 
     /**

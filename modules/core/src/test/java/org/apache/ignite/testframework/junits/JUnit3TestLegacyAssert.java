@@ -113,12 +113,12 @@ class JUnit3TestLegacyAssert {
 
     /** See class javadocs. */
     protected static void fail(String msg) {
-        Assert.fail(msg);
+        junit.framework.Assert.fail(msg);
     }
 
     /** See class javadocs. */
     protected static void fail() {
-        Assert.fail();
+        junit.framework.Assert.fail();
     }
 
     /** See class javadocs. */

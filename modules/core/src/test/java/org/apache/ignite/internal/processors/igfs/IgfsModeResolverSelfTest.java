@@ -36,7 +36,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static junit.framework.Assert.fail;
 
 /**
  *

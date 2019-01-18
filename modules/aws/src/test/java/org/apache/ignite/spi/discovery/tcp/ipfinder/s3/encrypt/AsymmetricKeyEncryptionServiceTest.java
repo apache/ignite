@@ -81,7 +81,7 @@ public class AsymmetricKeyEncryptionServiceTest extends GridCommonAbstractTest {
             encryptionSvc.init();
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            Assert.fail();
+            junit.framework.Assert.fail();
         }
     }
 

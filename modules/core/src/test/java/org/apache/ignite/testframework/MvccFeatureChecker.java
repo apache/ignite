@@ -26,7 +26,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-import static org.junit.Assert.fail;
+import static junit.framework.Assert.fail;
 
 /**
  * Provides checks for features supported when FORCE_MVCC mode is on.

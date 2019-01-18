@@ -17,7 +17,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,7 +41,7 @@ public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoveryS
         try {
             startGrid(0);
 
-            Assert.fail("Ignite node with invalid password should fail on join.");
+            junit.framework.Assert.fail("Ignite node with invalid password should fail on join.");
         }
         catch (Exception ignored) {
             //ignored
