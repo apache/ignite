@@ -16,43 +16,32 @@
  */
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Arrays;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Mvcc CQ client test.
  */
+@RunWith(Parameterized.class)
 public class CacheMvccContinuousQueryClientTest extends IgniteCacheContinuousQueryClientTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 90 * 60 * 1000; // 90 minutes
+    @Parameterized.Parameters
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[60][0]);
     }
 
-    /** {@inheritDoc} */
 
+    /** {@inheritDoc} */
     @Test
     @Override public void testNodeJoinsRestartQuery() throws Exception {
-        long start = System.currentTimeMillis();
-        long end = (long)(start + getTestTimeout() * 0.9);
-
-        long iteration = 0;
-
-        while (System.currentTimeMillis() < end) {
-            System.out.println("========iteration=" + iteration + ", left " + (end - System.currentTimeMillis()) / 1000 + " sec ");
-
-            super.beforeTest();
-
             super.testNodeJoinsRestartQuery();
-
-            super.afterTest();
-
-            iteration++;
-        }
     }
 }
