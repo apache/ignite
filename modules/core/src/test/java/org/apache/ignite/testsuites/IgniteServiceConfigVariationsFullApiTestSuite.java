@@ -17,26 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import junit.framework.TestSuite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.service.IgniteServiceConfigVariationsFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
-import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
-import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runner.Runner;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
+import org.junit.runners.AllTests;
 
 /**
  * Full API service test suit.
  */
-@RunWith(IgniteServiceConfigVariationsFullApiTestSuite.DynamicSuite.class)
+@RunWith(AllTests.class)
 public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -44,63 +37,49 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 
-    /** */
-    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
-        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
+    /**
+     * @return Compute API test suite.
+     */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Service Deployment New Full API Test Suite");
 
-        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "Single server",
+            IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(1)
-            .appendTo(classes, cfgs);
+            .build());
 
         // Tests run on server (node#0) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "1 server, 1 client",
+            IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(2)
             .testedNodesCount(2)
             .withClients()
-            .appendTo(classes, cfgs);
+            .build());
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "3 servers, 1 client",
+            IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(4)
             .testedNodesCount(2)
             .withClients()
-            .appendTo(classes, cfgs);
+            .build());
 
         // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
-        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "3 servers, 2 clients",
+            IgniteServiceConfigVariationsFullApiTest.class)
             .igniteParams(PARAMS)
             .gridsCount(5)
             .testedNodesCount(2)
             .withClients()
-            .appendTo(classes, cfgs);
+            .build());
 
-        return classes;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
-
-        /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
-
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
-        }
-
-        /** */
-        @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
-
-            super.runChild(runner, ntf);
-        }
+        return suite;
     }
 }
