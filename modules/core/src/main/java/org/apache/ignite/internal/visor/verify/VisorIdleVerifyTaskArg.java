@@ -35,6 +35,9 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** Caches. */
     private Set<String> caches;
 
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
+
     /**
      * Default constructor.
      */
@@ -44,9 +47,19 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
+     * @param excludeCaches Exclude caches or group.
+     */
+    public VisorIdleVerifyTaskArg(Set<String> caches, Set<String> excludeCaches) {
+        this.caches = caches;
+        this.excludeCaches = excludeCaches;
+    }
+
+    /**
+     * @param caches Caches.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches) {
         this.caches = caches;
+        this.excludeCaches = excludeCaches;
     }
 
 
@@ -57,14 +70,30 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
         return caches;
     }
 
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
+        U.writeCollection(out, excludeCaches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
+
+        if (protoVer >= V2)
+            excludeCaches = U.readSet(in);
     }
 
     /** {@inheritDoc} */

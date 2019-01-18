@@ -42,9 +42,6 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
      */
     @Test
     public final void testPutRemoveAfterCheckpoint() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -76,9 +73,10 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     /**
      * @throws Exception If failed.
      */
+    @Test
     public final void testNotEmptyPds() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+            fail("https://issues.apache.org/jira/browse/IGNITE-10822");
 
         IgniteEx ignite = startGrid(0);
 

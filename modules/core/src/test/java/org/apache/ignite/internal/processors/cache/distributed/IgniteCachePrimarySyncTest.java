@@ -24,15 +24,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -53,9 +51,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 @RunWith(JUnit4.class)
 public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
@@ -73,8 +68,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(ATOMIC_CACHE)
             .setAtomicityMode(ATOMIC)
@@ -116,8 +109,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGet() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10520");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10520", MvccFeatureChecker.forcedMvcc());
 
         Ignite ignite = ignite(SRVS);
 

@@ -1817,7 +1817,7 @@ export class NotebookCtrl {
         $scope.dblclickMetadata = function(paragraph, node) {
             paragraph.ace.insert(node.name);
 
-            setTimeout(() => paragraph.ace.focus(), 1);
+            setTimeout(() => paragraph.ace.focus(), 100);
         };
 
         $scope.importMetadata = function() {

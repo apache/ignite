@@ -52,9 +52,6 @@ import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
  */
 @RunWith(JUnit4.class)
 public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache mode for the current test. */
     private CacheMode mode;
 
@@ -64,12 +61,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -86,9 +77,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongPartitioned() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         mode = CacheMode.PARTITIONED;
 
         startGrids(2);
@@ -104,9 +92,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongReplicated() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         mode = CacheMode.REPLICATED;
 
         startGrids(2);

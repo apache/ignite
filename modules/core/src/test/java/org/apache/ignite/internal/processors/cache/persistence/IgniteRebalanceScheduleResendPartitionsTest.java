@@ -45,8 +45,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -61,14 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 @RunWith(JUnit4.class)
 public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstractTest {
-    /** */
-    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setConsistentId(name);
 
@@ -228,7 +221,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
                 if (val1 == null)
                     prevEquals.set(false);
 
-                boolean equals = v0.map().equals(val1.map());
+                boolean equals = v0.map().equals(val1.map()) && (v0.topologyVersion().equals(val1.topologyVersion()));
 
                 prevEquals.set(prevEquals.get() && equals);
             });
