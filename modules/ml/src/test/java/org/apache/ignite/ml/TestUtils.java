@@ -429,7 +429,7 @@ public class TestUtils {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean checkState(M mdl) {
+            @Override public boolean isUpdateable(M mdl) {
                 return true;
             }
 
