@@ -193,7 +193,7 @@ public class JdbcThinConnectionTimeoutSelfTest extends JdbcThinAbstractSelfTest 
      */
     @Test
     public void testQueryTimeoutOccursBeforeConnectionTimeout() throws Exception {
-        conn.setNetworkTimeout(EXECUTOR_STUB, 2000);
+        conn.setNetworkTimeout(EXECUTOR_STUB, 10_000);
 
         stmt.setQueryTimeout(1);
 
