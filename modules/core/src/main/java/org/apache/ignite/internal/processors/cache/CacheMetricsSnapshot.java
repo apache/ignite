@@ -160,8 +160,14 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
 
+    /** Number of non-{@code null} values in the cache. */
+    private int size;
+
     /** Cache size. */
     private long cacheSize;
+
+    /** Number of keys in the cache, possibly with {@code null} values. */
+    private int keySize;
 
     /** Cache is empty. */
     private boolean isEmpty;
@@ -354,6 +360,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
         cacheSize = entriesStat.cacheSize();
+        keySize = entriesStat.keySize();
+        size = entriesStat.size();
         isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
@@ -419,7 +427,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindFlushFreq = loc.getWriteBehindFlushFrequency();
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
+        size = loc.getSize();
         cacheSize = loc.getCacheSize();
+        keySize = loc.getKeySize();
 
         keyType = loc.getKeyType();
         valType = loc.getValueType();
@@ -767,7 +777,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return 0;
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -777,7 +787,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return 0;
+        return keySize;
     }
 
     /** {@inheritDoc} */

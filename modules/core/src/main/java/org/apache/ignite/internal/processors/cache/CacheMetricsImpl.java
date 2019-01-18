@@ -24,9 +24,9 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -275,7 +275,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return 0;
+        return getEntriesStat().size();
     }
 
     /** {@inheritDoc} */
@@ -285,7 +285,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return 0;
+        return getEntriesStat().keySize();
     }
 
     /** {@inheritDoc} */
@@ -964,6 +964,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapPrimaryEntriesCnt = 0L;
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
+        int size = 0;
         long sizeLong = 0L;
         boolean isEmpty;
 
@@ -972,6 +973,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
             if (cache != null) {
                 offHeapEntriesCnt = cache.offHeapEntriesCount();
+
+                size = cache.localSize(null);
                 sizeLong = cache.localSizeLong(null);
             }
 
@@ -1023,6 +1026,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapPrimaryEntriesCnt = -1L;
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
+            size = -1;
             sizeLong = -1L;
         }
 
@@ -1034,7 +1038,9 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
+        stat.size(size);
         stat.cacheSize(sizeLong);
+        stat.keySize(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
@@ -1256,8 +1262,14 @@ public class CacheMetricsImpl implements CacheMetrics {
         /** Onheap entries count. */
         private long heapEntriesCnt;
 
+        /** Size. */
+        private int size;
+
         /** Long size. */
         private long cacheSize;
+
+        /** Key size. */
+        private int keySize;
 
         /** Is empty. */
         private boolean isEmpty;
@@ -1344,6 +1356,34 @@ public class CacheMetricsImpl implements CacheMetrics {
          */
         public void heapEntriesCount(long heapEntriesCnt) {
             this.heapEntriesCnt = heapEntriesCnt;
+        }
+
+        /**
+         * @return Size.
+         */
+        public int size() {
+            return size;
+        }
+
+        /**
+         * @param size Size.
+         */
+        public void size(int size) {
+            this.size = size;
+        }
+
+        /**
+         * @return Key size.
+         */
+        public int keySize() {
+            return keySize;
+        }
+
+        /**
+         * @param keySize Key size.
+         */
+        public void keySize(int keySize) {
+            this.keySize = keySize;
         }
 
         /**

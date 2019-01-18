@@ -221,6 +221,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
 
         long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
+        int  size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
 
         boolean isEmpty = cache.isEmpty();
 
@@ -235,8 +236,8 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
             offHeapPrimaryEntriesCount, metrics.getOffHeapPrimaryEntriesCount());
         assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, metrics.getHeapEntriesCount());
-        assertEquals(cacheInfo + " size", 0, metrics.getSize());
-        assertEquals(cacheInfo + " keySize", 0, metrics.getKeySize());
+        assertEquals(cacheInfo + " size", size, metrics.getSize());
+        assertEquals(cacheInfo + " keySize", size, metrics.getKeySize());
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
         assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
     }
@@ -273,8 +274,8 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
                 metrics.getOffHeapPrimaryEntriesCount());
             assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
-            assertEquals(cacheInfo + " size", 0, metrics.getSize());
-            assertEquals(cacheInfo + " keySize", 0, metrics.getKeySize());
+            assertEquals(cacheInfo + " size", cacheSize, metrics.getSize());
+            assertEquals(cacheInfo + " keySize", cacheSize, metrics.getKeySize());
             assertEquals(cacheInfo + " isEmpty", cacheSize == 0, metrics.isEmpty());
 
             metrics = cache.localMetrics();

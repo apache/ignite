@@ -160,8 +160,14 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
 
+    /** Number of non-{@code null} values in the cache. */
+    private int size;
+
     /** Cache size. */
     private long cacheSize;
+
+    /** Number of keys in the cache, possibly with {@code null} values. */
+    private int keySize;
 
     /** Cache is empty. */
     private boolean isEmpty;
@@ -372,6 +378,8 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
         cacheSize = entriesStat.cacheSize();
+        size = entriesStat.size();
+        keySize = entriesStat.keySize();
         isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
@@ -437,6 +445,8 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         writeBehindFlushFreq = loc.getWriteBehindFlushFrequency();
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
+        size = 0;
+        keySize = 0;
         cacheSize = 0;
 
         keyType = loc.getKeyType();
@@ -452,7 +462,10 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
             puts += e.getCachePuts();
+            size += e.getSize();
+            keySize += e.getKeySize();
             cacheSize += e.getCacheSize();
+            isEmpty &= e.isEmpty();
             hits += e.getCacheHits();
             misses += e.getCacheMisses();
             txCommits += e.getCacheTxCommits();
@@ -787,7 +800,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return 0;
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -797,7 +810,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return 0;
+        return keySize;
     }
 
     /** {@inheritDoc} */
@@ -1108,6 +1121,9 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         out.writeLong(entryProcessorRemovals);
 
         out.writeLong(cacheSize);
+        out.writeBoolean(isEmpty);
+        out.writeInt(size);
+        out.writeInt(keySize);
     }
 
     /** {@inheritDoc} */
@@ -1183,5 +1199,8 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         entryProcessorRemovals = in.readLong();
 
         cacheSize = in.readLong();
+        isEmpty = in.readBoolean();
+        size = in.readInt();
+        keySize = in.readInt();
     }
 }
