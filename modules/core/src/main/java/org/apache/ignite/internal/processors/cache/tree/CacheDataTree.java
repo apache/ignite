@@ -129,9 +129,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /**
-     * @return {@code true} If the last observed call to the method
-     *         {@link #find(CacheSearchRow, CacheSearchRow, TreeRowClosure, Object)}
-     *         used data page scan.
+     * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
      */
     public static Boolean isLastFindWithDataPageScan() {
         Boolean res = lastFindWithDataPageScan;
