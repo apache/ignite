@@ -35,7 +35,7 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest3 extends ZookeeperDiscoverySpiTestBase {
+public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */

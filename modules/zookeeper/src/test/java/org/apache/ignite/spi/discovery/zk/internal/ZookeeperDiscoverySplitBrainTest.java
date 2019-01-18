@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest7 extends ZookeeperDiscoverySpiTestBase {
+public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * A simple split-brain test, where cluster spliited on 2 parts of server nodes (2 and 3).
      * There is also client which sees both parts of splitted cluster.

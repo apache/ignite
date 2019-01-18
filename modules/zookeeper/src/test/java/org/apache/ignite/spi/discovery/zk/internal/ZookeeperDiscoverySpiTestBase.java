@@ -565,13 +565,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         private static volatile boolean failure;
 
         /** Connections failure matrix. */
-        private static volatile ZookeeperDiscoverySpiTest7.ConnectionsFailureMatrix matrix;
+        private static volatile ZookeeperDiscoverySplitBrainTest.ConnectionsFailureMatrix matrix;
 
         /**
          * Start failing connections according to given matrix {@code with}.
          * @param with Failure matrix.
          */
-        static void fail(ZookeeperDiscoverySpiTest7.ConnectionsFailureMatrix with) {
+        static void fail(ZookeeperDiscoverySplitBrainTest.ConnectionsFailureMatrix with) {
             matrix = with;
             failure = true;
         }

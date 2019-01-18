@@ -45,7 +45,7 @@ import org.junit.Test;
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest8 extends ZookeeperDiscoverySpiTestBase {
+public class ZookeeperDiscoveryCustomEventsTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * @throws Exception If failed.
      */

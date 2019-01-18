@@ -54,7 +54,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Tests for Zookeeper SPI discovery.
  */
-public class ZookeeperDiscoverySpiTest2 extends ZookeeperDiscoverySpiTestBase {
+public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * Verifies correct handling of SEGMENTATION event with STOP segmentation policy: node is stopped successfully,
      * all its threads are shut down.
