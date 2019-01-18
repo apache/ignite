@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
@@ -601,34 +602,32 @@ public class DmlStatementsProcessor {
                 if (distributedPlan.isReplicatedOnly())
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
-                int[] parts = fieldsQry.getPartitions();
+                int[] parts = PartitionResult.calculatePartitions(
+                    fieldsQry.getPartitions(),
+                    distributedPlan.derivedPartitions(),
+                    fieldsQry.getArgs());
 
-                if (F.isEmpty(parts) && distributedPlan.partitionTree() != null) {
-                    parts = distributedPlan.partitionTree().calculateDerivedPartitions(
+                if (parts != null && parts.length == 0)
+                    return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                else {
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(
+                        cctx,
+                        ids,
+                        parts,
+                        schemaName,
                         fieldsQry.getSql(),
-                        fieldsQry.getArgs());
+                        fieldsQry.getArgs(),
+                        flags,
+                        fieldsQry.getPageSize(),
+                        timeout);
 
-                    if (F.isEmpty(parts))
-                        return new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+                    UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+
+                    if (commit)
+                        toCommit.commit();
+
+                    return res;
                 }
-
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx,
-                    ids,
-                    parts,
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
-
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
-
-                if (commit)
-                    toCommit.commit();
-
-                return res;
             }
             catch (IgniteCheckedException e) {
                 checkSqlException(e);

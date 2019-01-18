@@ -31,6 +31,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -64,20 +66,34 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
 
+    /** Memory. */
+    protected static final String REGION_MEM = "mem";
+
+    /** Disk. */
+    protected static final String REGION_DISK = "disk";
+
     /** Client node name. */
     private static final String CLI_NAME = "cli";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+
         startGrid(getConfiguration("srv1"));
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
         startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+
+        client().cluster().active(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         Ignite cli = client();
 
         cli.destroyCaches(cli.cacheNames());
@@ -86,6 +102,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -93,7 +113,14 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         return super.getConfiguration(name)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setCommunicationSpi(new TrackingTcpCommunicationSpi())
-            .setLocalHost("127.0.0.1");
+            .setLocalHost("127.0.0.1")
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName(REGION_DISK)
+                    .setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setName(REGION_MEM)
+                    .setPersistenceEnabled(false)));
     }
 
     /**
@@ -103,7 +130,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createPartitionedTable(String name, Object... cols) {
-        createPartitionedTable(name, false, cols);
+        createPartitionedTable(false, name, cols);
     }
 
     /**
@@ -124,7 +151,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createReplicatedTable(String name, Object... cols) {
-        createReplicatedTable(name, false, cols);
+        createReplicatedTable(false, name, cols);
     }
 
     /**
@@ -261,7 +288,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             // Prepare new SQL and arguments.
             int paramPos = paramPoss.get(i);
 
-            String newSql = sql.substring(0, paramPos) + inlineParameter(args[i]) + sql.substring(paramPos + 1);
+            String newSql = sql.substring(0, paramPos) + args[i] + sql.substring(paramPos + 1);
 
             Object[] newArgs = new Object[args.length - 1];
 
@@ -283,14 +310,6 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             if (newArgs.length > 0)
                 executeCombinations0(newSql, resConsumer, executedSqls, newArgs);
         }
-    }
-
-    /**
-     * @param arg Parameter argument.
-     * @return Quoted string parameter or not-quoted numeric.
-     */
-    private static String inlineParameter(Object arg) {
-        return arg instanceof String ? "\'" + arg + '\'' : arg.toString();
     }
 
     /**
@@ -324,6 +343,16 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         if (args != null && args.length > 0)
             qry.setArgs(args);
 
+        return executeSqlFieldsQuery(qry);
+    }
+
+    /**
+     * Execute prepared SQL fields query.
+     *
+     * @param qry Query.
+     * @return Result.
+     */
+    protected List<List<?>> executeSqlFieldsQuery(SqlFieldsQuery qry) {
         return client().context().query().querySqlFields(qry, false).getAll();
     }
 
@@ -390,7 +419,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param key Key.
      * @return Partition.
      */
-    protected int parititon(String cacheName, Object key) {
+    protected int partition(String cacheName, Object key) {
         return client().affinity(cacheName).partition(key);
     }
 

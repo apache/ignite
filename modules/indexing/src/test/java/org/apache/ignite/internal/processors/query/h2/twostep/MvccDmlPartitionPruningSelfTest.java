@@ -39,30 +39,6 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
     /** Recreate tables before each test statement. */
     private boolean recreateTables;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        return super.getConfiguration(name)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
-        super.beforeTestsStarted();
-
-        client().cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        cleanPersistenceDir();
-    }
-
     /**
      * Test UPDATE statement.
      */
@@ -76,7 +52,7 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1")
+                    partition("t1", "1")
                 );
                 assertNodes(
                     node("t1", "1")
@@ -90,7 +66,7 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new2' WHERE _KEY = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "2")
+                    partition("t1", "2")
                 );
                 assertNodes(
                     node("t1", "2")
@@ -113,7 +89,7 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t2 SET v2 = 'new1' WHERE ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1")
+                    partition("t2", "1")
                 );
                 assertNodes(
                     node("t2", "1")
@@ -127,9 +103,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertNodes(
                     node("t1", "1"),
@@ -145,9 +121,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertNodes(
                     node("t1", "1"),
@@ -176,7 +152,7 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
 
         List<List<?>> res = executeSingle("UPDATE t2 SET v2 = 'new1' WHERE _KEY = ?", key);
         assertPartitions(
-            parititon("t2", "5")
+            partition("t2", "5")
         );
         assertNodes(
             node("t2", "5")
@@ -191,24 +167,13 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
     public void testDelete() {
         recreateTables = true;
 
-//        // Affinity key.
-//        execute("DELETE FROM t2 WHERE ak2 = ?",
-//            (res) -> {
-//                assertPartitions(
-//                    parititon("t2", "2")
-//                );
-//                assertUpdatedRows(res, 1);
-//            },
-//            "2"
-//        );
-
         // Expression: condition IN (...)
         execute("DELETE FROM t1 WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertNodes(
                     node("t1", "1"),
@@ -224,9 +189,9 @@ public class MvccDmlPartitionPruningSelfTest extends AbstractPartitionPruningBas
         execute("DELETE FROM t1 WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertNodes(
                     node("t1", "1"),

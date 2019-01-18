@@ -17,37 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import java.util.Collection;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition extraction result.
  */
 public class PartitionResult {
-    /** Descriptor. */
-    @GridToStringInclude
-    private final PartitionTableDescriptor desc;
-
     /** Tree. */
     @GridToStringInclude
     private final PartitionNode tree;
 
+    /** Affinity function. */
+    private final PartitionTableAffinityDescriptor aff;
+
     /**
      * Constructor.
      *
-     * @param desc Descriptor.
      * @param tree Tree.
+     * @param aff Affinity function.
      */
-    public PartitionResult(PartitionTableDescriptor desc, PartitionNode tree) {
-        this.desc = desc;
+    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff) {
         this.tree = tree;
-    }
-
-    /**
-     * Descriptor.
-     */
-    public PartitionTableDescriptor descriptor() {
-        return desc;
+        this.aff = aff;
     }
 
     /**
@@ -55,6 +52,50 @@ public class PartitionResult {
      */
     public PartitionNode tree() {
         return tree;
+    }
+
+    /**
+     * @return Affinity function.
+     */
+    public PartitionTableAffinityDescriptor affinity() {
+        return aff;
+    }
+
+    /**
+     * Calculate partitions for the query.
+     *
+     * @param explicitParts Explicit partitions provided in SqlFieldsQuery.partitions property.
+     * @param derivedParts Derived partitions found during partition pruning.
+     * @param args Arguments.
+     * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    public static int[] calculatePartitions(int[] explicitParts, PartitionResult derivedParts, Object[] args) {
+        if (!F.isEmpty(explicitParts))
+            return explicitParts;
+        else if (derivedParts != null) {
+            try {
+                Collection<Integer> realParts = derivedParts.tree().apply(args);
+
+                if (F.isEmpty(realParts))
+                    return IgniteUtils.EMPTY_INTS;
+                else {
+                    int[] realParts0 = new int[realParts.size()];
+
+                    int i = 0;
+
+                    for (Integer realPart : realParts)
+                        realParts0[i++] = realPart;
+
+                    return realParts0;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to calculate derived partitions for query.", e);
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
