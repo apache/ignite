@@ -29,13 +29,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -657,7 +655,7 @@ public class MvccUtils {
      */
     public static GridNearTxLocal checkActive(GridNearTxLocal tx) {
         if (tx != null && tx.state() != TransactionState.ACTIVE)
-            throw new IgniteSQLException("Transaction is already completed.", TRANSACTION_COMPLETED);
+            throw new TxCompletedException();
 
         return tx;
     }
@@ -666,6 +664,8 @@ public class MvccUtils {
     /**
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
+     * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
+     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
@@ -675,28 +675,10 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
-     */
-    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
-        try {
-            return currentTx(ctx, txId);
-        }
-        catch (UnsupportedTxModeException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-        catch (NonMvccTransactionException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-        }
-    }
-
-    /**
-     * @param ctx Grid kernal context.
-     * @param txId Transaction ID.
-     * @return Currently started user transaction, or {@code null} if none started.
      * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
      * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
      */
-    @Nullable public static GridNearTxLocal currentTx(GridKernalContext ctx,
-        @Nullable GridCacheVersion txId) throws UnsupportedTxModeException, NonMvccTransactionException {
+    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -943,7 +925,7 @@ public class MvccUtils {
     }
 
     /** */
-    public static class UnsupportedTxModeException extends IgniteCheckedException {
+    public static class UnsupportedTxModeException extends TransactionException {
         /** */
         private static final long serialVersionUID = 0L;
         /** */
@@ -953,7 +935,17 @@ public class MvccUtils {
     }
 
     /** */
-    public static class NonMvccTransactionException extends IgniteCheckedException {
+    public static class TxCompletedException extends TransactionException {
+        /** */
+        private static final long serialVersionUID = 0L;
+        /** */
+        private TxCompletedException() {
+            super("Transaction is already completed.");
+        }
+    }
+
+    /** */
+    public static class NonMvccTransactionException extends TransactionException {
         /** */
         private static final long serialVersionUID = 0L;
         /** */

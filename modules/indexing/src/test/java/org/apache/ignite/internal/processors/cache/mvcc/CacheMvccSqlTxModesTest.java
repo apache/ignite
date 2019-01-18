@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -25,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -128,7 +128,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -140,7 +140,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -152,7 +152,7 @@ public class CacheMvccSqlTxModesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, "Only pessimistic transactions are supported when MVCC is enabled");
+        }, TransactionException.class, "Only pessimistic transactions are supported when MVCC is enabled");
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             mvccCache.query(new SqlFieldsQuery("SELECT * FROM Integer")).getAll();

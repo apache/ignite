@@ -2317,17 +2317,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
-    /** */
+    /**
+     * @throws MvccUtils.UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
+     * @throws MvccUtils.NonMvccTransactionException If started transaction spans non MVCC caches.
+     */
     protected GridNearTxLocal checkCurrentTx() {
         if (!ctx.mvccEnabled())
             return ctx.tm().threadLocalTx(ctx);
 
-        try {
-            return MvccUtils.currentTx(ctx.kernalContext(), null);
-        }
-        catch (MvccUtils.UnsupportedTxModeException | MvccUtils.NonMvccTransactionException e) {
-            throw new TransactionException(e.getMessage());
-        }
+        return MvccUtils.tx(ctx.kernalContext(), null);
     }
 
     /**

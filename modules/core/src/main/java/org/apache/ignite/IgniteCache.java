@@ -370,6 +370,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
+     * @throws TransactionException //TODO IGNITE-10377: add description
+     * @throws CacheException //TODO IGNITE-10377: add description
      *
      */
     public <R> QueryCursor<R> query(Query<R> qry);
@@ -380,6 +382,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry SqlFieldsQuery.
      * @return Cursor.
      * @see SqlFieldsQuery
+     * @throws TransactionException //TODO IGNITE-10377: add description
+     * @throws CacheException //TODO IGNITE-10377: add description
      */
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
 
@@ -394,6 +398,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry Query.
      * @param transformer Transformer.
      * @return Cursor.
+     * @throws TransactionException //TODO IGNITE-10377: add description
+     * @throws CacheException //TODO IGNITE-10377: add description
      */
     public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
 
