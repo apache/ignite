@@ -2369,24 +2369,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets query history statistics.
-     *
-     * @return Queries history statistics.
-     */
-    // TODO: Remove
-    public Collection<QueryHistoryMetrics> queryHistory() {
-        return idx.queryHistoryMetrics();
-    }
-
-    /**
-     * Reset query history metrics.
-     */
-    // TODO: Remove
-    public void resetQueryHistoryMetrics() {
-        idx.resetQueryHistoryMetrics();
-    }
-
-    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.

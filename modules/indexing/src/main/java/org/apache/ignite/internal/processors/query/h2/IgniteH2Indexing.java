@@ -1299,18 +1299,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         SqlCommand cmd, @Nullable SqlClientContext cliCtx) {
-        Long qryId = null;
 
         boolean fail = false;
+
         // Execute.
+        if (cmd instanceof SqlBulkLoadCommand)
+            return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
+
+        //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
+        Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
+
         try {
-            // TODO: Move out of try-finally
-            if (cmd instanceof SqlBulkLoadCommand)
-                return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
-
-            //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
-            qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
-
             if (cmd instanceof SqlCreateIndexCommand
                 || cmd instanceof SqlDropIndexCommand
                 || cmd instanceof SqlAlterTableCommand
@@ -2683,13 +2682,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return runningQueryMgr.longRunningQueries(duration);
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+    /**
+     * Gets query history metrics.
+     *
+     * @return Queries history metrics.
+     */
+    public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
         return runningQueryMgr.queryHistoryMetrics();
     }
 
-    /** {@inheritDoc} */
-    @Override public void resetQueryHistoryMetrics() {
+    /**
+     * Reset query history metrics.
+     */
+    public void resetQueryHistoryMetrics() {
         runningQueryMgr.resetQueryHistoryMetrics();
     }
 

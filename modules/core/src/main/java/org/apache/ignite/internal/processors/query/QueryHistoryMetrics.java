@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -29,41 +28,15 @@ import org.jsr166.ConcurrentLinkedDeque8;
  * Query history metrics.
  */
 public class QueryHistoryMetrics {
-    /** */
-    // TODO: Why do we need it?
-    private static final long serialVersionUID = 0L;
-
     /** Link to internal node in eviction deque. */
     @GridToStringExclude
     private final AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
 
-    /** Textual query representation. */
-    private final String qry;
-
-    /** Schema name. */
-    private final String schema;
-
-    /** Flag of local query. */
-    private final boolean loc;
+    /** Query history metrics immutable wrapper. */
+    private volatile QueryHistoryMetricsValue value;
 
     /** Query history metrics group key. */
     private final QueryHistoryMetricsKey key;
-
-    /** Number of executions. */
-    private int execs;
-
-    /** Number of failures. */
-    private int failures;
-
-    /** Minimum time of execution. */
-    /// TODO: Remove -1?
-    private long minTime = -1;
-
-    /** Maximum time of execution. */
-    private long maxTime;
-
-    /** Last start time of execution. */
-    private long lastStartTime;
 
     /**
      * Constructor with metrics.
@@ -77,22 +50,13 @@ public class QueryHistoryMetrics {
      */
     public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime,
         long duration, boolean failed) {
-        this.qry = qry;
-        this.schema = schema;
-        this.loc = loc;
 
         key = new QueryHistoryMetricsKey(qry, schema, loc);
 
-        execs = 1;
-
         if (failed)
-            failures = 1;
-        else {
-            minTime = duration;
-            maxTime = duration;
-        }
-
-        lastStartTime = startTime;
+            value = new QueryHistoryMetricsValue(qry, schema, loc, 1, 1, 0, 0, startTime);
+        else
+            value = new QueryHistoryMetricsValue(qry, schema, loc, 1, 0, duration, duration, startTime);
 
         linkRef = new AtomicReference<>();
     }
@@ -111,11 +75,15 @@ public class QueryHistoryMetrics {
      * @return Aggregated metrics.
      */
     public QueryHistoryMetrics aggregateWithNew(QueryHistoryMetrics m) {
-        execs += m.execs;
-        failures += m.failures;
-        minTime = Math.min(minTime, m.minTime);
-        maxTime = Math.max(maxTime, m.maxTime);
-        lastStartTime = Math.max(lastStartTime, m.lastStartTime);
+        value = new QueryHistoryMetricsValue(
+            m.query(),
+            m.schema(),
+            m.local(),
+            value.execs() + m.executions(),
+            value.failures() + m.failures(),
+            Math.min(value.minTime(), m.minimumTime()),
+            Math.max(value.maxTime(), m.maximumTime()),
+            Math.max(value.lastStartTime(), m.lastStartTime()));
 
         return this;
     }
@@ -124,21 +92,21 @@ public class QueryHistoryMetrics {
      * @return Textual representation of query.
      */
     public String query() {
-        return qry;
+        return value.qry();
     }
 
     /**
      * @return Schema.
      */
     public String schema() {
-        return schema;
+        return value.schema();
     }
 
     /**
      * @return {@code true} For query with enabled local flag.
      */
     public boolean local() {
-        return loc;
+        return value.loc();
     }
 
     /**
@@ -147,7 +115,7 @@ public class QueryHistoryMetrics {
      * @return Number of executions.
      */
     public int executions() {
-        return execs;
+        return value.execs();
     }
 
     /**
@@ -156,7 +124,7 @@ public class QueryHistoryMetrics {
      * @return Number of times a query execution failed.
      */
     public int failures() {
-        return failures;
+        return value.failures();
     }
 
     /**
@@ -165,7 +133,7 @@ public class QueryHistoryMetrics {
      * @return Minimum execution time of query.
      */
     public long minimumTime() {
-        return minTime < 0 ? 0 : minTime;
+        return value.minTime();
     }
 
     /**
@@ -174,7 +142,7 @@ public class QueryHistoryMetrics {
      * @return Maximum execution time of query.
      */
     public long maximumTime() {
-        return maxTime;
+        return value.maxTime();
     }
 
     /**
@@ -182,9 +150,8 @@ public class QueryHistoryMetrics {
      *
      * @return Latest time query was stared.
      */
-    // TODO: Unused?
     public long lastStartTime() {
-        return lastStartTime;
+        return value.lastStartTime();
     }
 
     /**
@@ -192,28 +159,6 @@ public class QueryHistoryMetrics {
      */
     @Nullable public ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link() {
         return linkRef.get();
-    }
-
-    /**
-     * Atomically set link only if previous values was {@code null}.
-     *
-     * @param link Link to internal node in eviction deque.
-     * @return {@code true} in case link has been set, {@code false} otherwise.
-     */
-    // TODO: Do we need it?
-    public boolean setLinkIfAbsent(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
-        return linkRef.compareAndSet(null, link);
-    }
-
-    /**
-     * Atomically remove link.
-     *
-     * @param link Link to internal node in eviction deque.
-     * @return {@code true} if given link has been removed, {@code false} otherwise.
-     */
-    // TODO: Do we need it?
-    public boolean unlink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
-        return linkRef.compareAndSet(link, null);
     }
 
     /**

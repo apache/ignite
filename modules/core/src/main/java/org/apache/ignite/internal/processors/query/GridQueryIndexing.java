@@ -323,20 +323,6 @@ public interface GridQueryIndexing {
     public Collection<GridRunningQueryInfo> runningQueries(long duration);
 
     /**
-     * Gets query history statistics.
-     *
-     * @return Queries history statistics.
-     */
-    // TODO: Remove
-    public Collection<QueryHistoryMetrics> queryHistoryMetrics();
-
-    /**
-     * Reset query history metrics.
-     */
-    // TODO: Remove
-    public void resetQueryHistoryMetrics();
-
-    /**
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.

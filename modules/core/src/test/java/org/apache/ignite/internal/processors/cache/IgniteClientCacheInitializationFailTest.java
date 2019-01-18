@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -405,16 +404,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resetQueryHistoryMetrics() {
-            // No-op.
         }
 
         /** {@inheritDoc} */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -57,15 +56,5 @@ public abstract class JdbcCursor implements Closeable {
      */
     public long requestId() {
         return reqId;
-    }
-
-    /**
-     * Close the cursor with flag about fail or success.
-     *
-     * @param failed {@code true} in case of failure.
-     * @throws IOException if an I/O error occurs
-     */
-    public void close(boolean failed) throws IOException {
-        close();
     }
 }

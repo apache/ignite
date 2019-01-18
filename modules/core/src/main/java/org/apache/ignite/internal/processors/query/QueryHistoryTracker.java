@@ -18,12 +18,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -82,7 +79,7 @@ class QueryHistoryTracker {
         if (node == null) {
             node = evictionQueue.offerLastx(entry);
 
-            if (!entry.setLinkIfAbsent(node)) {
+            if (!entry.replaceLink(null, node)) {
                 // Was concurrently added, need to clear it from queue.
                 removeLink(node);
 
@@ -91,7 +88,7 @@ class QueryHistoryTracker {
 
             if (node.item() == null) {
                 // Was concurrently shrinked.
-                entry.unlink(node);
+                entry.replaceLink(node, null);
 
                 return false;
             }
@@ -145,29 +142,9 @@ class QueryHistoryTracker {
      * @return SQL queries history aggregated by query text, schema and local flag.
      */
     Collection<QueryHistoryMetrics> queryHistoryMetrics() {
-        // TODO: Can we simply do qryMetrics.values() instead?
-        // TODO: If key duplicates are not possible, then it should be enough for us.
         if (histSz <= 0)
             return Collections.emptyList();
 
-        ArrayList<QueryHistoryMetrics> latestMetrics = new ArrayList<>(histSz);
-
-        // We need filter possible duplicates which can appear due to concurrent update.
-        Set<QueryHistoryMetricsKey> addedKeysSet = new HashSet<>(histSz);
-
-        Iterator<QueryHistoryMetrics> itr = evictionQueue.descendingIterator();
-
-        while (itr.hasNext()) {
-            QueryHistoryMetrics metrics = itr.next();
-            //Skip not fully applied changes and duplicates
-            if (metrics.link() != null && addedKeysSet.add(metrics.key()))
-                latestMetrics.add(metrics);
-
-            if (latestMetrics.size() == histSz)
-                break;
-
-        }
-
-        return latestMetrics;
+        return new HashSet<>(qryMetrics.values());
     }
 }

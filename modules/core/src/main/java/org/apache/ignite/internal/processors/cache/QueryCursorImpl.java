@@ -62,9 +62,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
-    /** */
-    protected boolean failed;
-
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
@@ -98,7 +95,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /**
      * @return An simple iterator.
      */
-    private Iterator<T> iter() {
+    protected Iterator<T> iter() {
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
@@ -126,11 +123,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             while (iter.hasNext())
                 all.add(iter.next());
         }
-        catch (Exception e) {
-            failed = true;
-
-            throw e;
-        }
         finally {
             close();
         }
@@ -145,11 +137,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
             while (iter.hasNext())
                 clo.consume(iter.next());
-        }
-        catch (Exception e) {
-            failed = true;
-
-            throw e;
         }
         finally {
             close();
@@ -227,14 +214,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         assert this.fieldsMeta != null;
 
         return fieldsMeta.size();
-    }
-
-    /**
-     * @param failed {@code true} In case any errors occurred.
-     */
-    // TODO: Investigate why it is needed by JDBC. Most likely needs to be removed.
-    public void failed(boolean failed) {
-        this.failed = failed;
     }
 
     /** Query cursor state */

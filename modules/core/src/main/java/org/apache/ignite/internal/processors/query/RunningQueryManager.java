@@ -190,9 +190,6 @@ public class RunningQueryManager {
      * Reset query history metrics.
      */
     public void resetQueryHistoryMetrics() {
-        if (histSz <= 0)
-            return;
-
         queryHistoryTracker = new QueryHistoryTracker(histSz);
     }
 
