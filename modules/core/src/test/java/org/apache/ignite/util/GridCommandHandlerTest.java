@@ -62,6 +62,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
@@ -112,6 +113,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
@@ -488,6 +490,54 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test that baseline autoadjustment settings update works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentSettings() throws Exception {
+        Ignite ignite = startGrid();
+
+        ignite.cluster().active(true);
+
+        DistributedBaselineConfiguration bc = ignite.cluster().baselineConfiguration();
+
+        assertFalse(bc.isBaselineAutoAdjustEnabled());
+
+        long softTimeout = bc.getBaselineAutoAdjustTimeout();
+
+        long hardTimeout = bc.getBaselineAutoAdjustMaxTimeout();
+
+        assertEquals(EXIT_CODE_OK, execute(
+            "--baseline",
+            "autoadjust",
+            "enable",
+            Long.toString(softTimeout + 1),
+            Long.toString(hardTimeout + 1)
+        ));
+
+        assertTrue(bc.isBaselineAutoAdjustEnabled());
+
+        assertEquals(softTimeout + 1, bc.getBaselineAutoAdjustTimeout());
+
+        assertEquals(hardTimeout + 1, bc.getBaselineAutoAdjustMaxTimeout());
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+
+        assertFalse(bc.isBaselineAutoAdjustEnabled());
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "true"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "enable", "x"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "enable", "600000", "x"));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "disable", "x"));
     }
 
     /**

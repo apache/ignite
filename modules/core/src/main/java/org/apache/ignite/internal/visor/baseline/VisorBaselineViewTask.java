@@ -57,11 +57,18 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
         @Override protected VisorBaselineTaskResult run(@Nullable Void arg) throws IgniteException {
             IgniteClusterEx cluster = ignite.cluster();
 
+            VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
+                cluster.baselineConfiguration().isBaselineAutoAdjustEnabled(),
+                cluster.baselineConfiguration().getBaselineAutoAdjustTimeout(),
+                cluster.baselineConfiguration().getBaselineAutoAdjustMaxTimeout()
+            );
+
             return new VisorBaselineTaskResult(
                 ignite.cluster().active(),
                 cluster.topologyVersion(),
                 cluster.currentBaselineTopology(),
-                cluster.forServers().nodes()
+                cluster.forServers().nodes(),
+                autoAdjustSettings
             );
         }
 

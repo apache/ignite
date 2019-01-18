@@ -41,6 +41,9 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
     /** */
     private List<String> consistentIds;
 
+    /** */
+    private VisorBaselineAutoAdjustSettings autoAdjustSettings;
+
     /**
      * Default constructor.
      */
@@ -50,11 +53,19 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
 
     /**
      * @param topVer Topology version.
+     * @param consistentIds Consistent ids.
+     * @param autoAdjustSettings Baseline autoadjustment settings.
      */
-    public VisorBaselineTaskArg(VisorBaselineOperation op, long topVer, List<String> consistentIds) {
+    public VisorBaselineTaskArg(
+        VisorBaselineOperation op,
+        long topVer,
+        List<String> consistentIds,
+        VisorBaselineAutoAdjustSettings autoAdjustSettings
+    ) {
         this.op = op;
         this.topVer = topVer;
         this.consistentIds = consistentIds;
+        this.autoAdjustSettings = autoAdjustSettings;
     }
 
     /**
@@ -78,11 +89,19 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
         return consistentIds;
     }
 
+    /**
+     * @return Baseline autoadjustment settings.
+     */
+    public VisorBaselineAutoAdjustSettings getAutoAdjustSettings() {
+        return autoAdjustSettings;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, op);
         out.writeLong(topVer);
         U.writeCollection(out, consistentIds);
+        VisorBaselineAutoAdjustSettings.writeExternalData(out, autoAdjustSettings);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +109,7 @@ public class VisorBaselineTaskArg extends VisorDataTransferObject {
         op = VisorBaselineOperation.fromOrdinal(in.readByte());
         topVer = in.readLong();
         consistentIds = U.readList(in);
+        autoAdjustSettings = VisorBaselineAutoAdjustSettings.readExternalData(in);
     }
 
     /** {@inheritDoc} */
