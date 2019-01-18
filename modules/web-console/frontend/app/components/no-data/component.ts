@@ -25,6 +25,7 @@ export default {
     templateUrl,
     transclude: true,
     bindings: {
-        gridApi: '<?'
+        gridApi: '<?',
+        resultDataStatus: '<'
     }
 } as ng.IComponentOptions;

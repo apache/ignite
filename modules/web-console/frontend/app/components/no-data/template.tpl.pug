@@ -22,4 +22,9 @@ div(ng-switch='($ctrl.connectionState$ | async:this)')
         | Cluster is not available. #[a(ng-click='$ctrl.openNodeMissingDialog()') Check] cluster is up and running.
 
     div(ng-switch-default)
-        ng-transclude
+        div(ng-if='$ctrl.resultDataStatus === "WAITING"').data-loading-wrapper
+            .spinner-circle
+            div Data is loading...
+
+        div(ng-if='$ctrl.resultDataStatus !== "WAITING"')
+            ng-transclude
