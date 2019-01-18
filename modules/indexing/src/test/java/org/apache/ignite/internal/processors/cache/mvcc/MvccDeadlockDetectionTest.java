@@ -39,6 +39,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.After;
@@ -535,9 +536,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void randomizedPuts() throws Exception {
-        // t0d0 remove or extract test
-        // t0d0 ensure that deadlock detection does not left any messages after finishing all txs
-        int gridCnt = 10;
+        int gridCnt = SF.applyLB(10, 2);
+        int opsByWorker = SF.applyLB(1000, 10);
 
         setUpGrids(gridCnt, false);
 
@@ -551,23 +551,20 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt * 2; i++) {
             IgniteEx ign = grid(i % gridCnt);
             IgniteCache<Object, Object> cache = ign.cache(DEFAULT_CACHE_NAME);
+
             IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                for (int k = 0; k < 100; k++) {
+                for (int k = 0; k < opsByWorker; k++) {
                     try (Transaction tx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         ArrayList<Integer> keys0 = new ArrayList<>(keys);
                         Collections.shuffle(keys0);
                         int nkeys = ThreadLocalRandom.current().nextInt(8) + 5;
-                        for (int j = 0; j < nkeys; j++) {
-//                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5));
-//                            Thread.yield();
+                        for (int j = 0; j < nkeys; j++)
                             cache.put(keys0.get(j), j);
-                        }
 
                         tx.rollback();
                     }
                     catch (Exception e) {
-//                        if (X.hasCause(e, TransactionRollbackException.class)
-//                            || X.hasCause(e, IgniteTxRollbackCheckedException.class))
+                        if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
                             aborted.incrementAndGet();
                     }
                 }
@@ -576,9 +573,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         }
 
         for (IgniteInternalFuture<?> fut : futs)
-            fut.get();
+            fut.get(10, TimeUnit.MINUTES);
 
-        System.err.println("ABORTED " + aborted);
+        log.info("Number of txs aborted: " + aborted);
     }
 
     /** */
