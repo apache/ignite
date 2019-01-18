@@ -18,6 +18,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 /**
  * Immutable query metrics key used to group metrics.
  */
@@ -88,12 +90,6 @@ public class QueryHistoryMetricsKey {
 
         QueryHistoryMetricsKey key = (QueryHistoryMetricsKey)o;
 
-        if (loc != key.loc)
-            return false;
-
-        if (!qry.equals(key.qry))
-            return false;
-
-        return schema.equals(key.schema);
+        return F.eq(qry, key.qry) && F.eq(schema, key.schema) && F.eq(loc, key.loc);
     }
 }

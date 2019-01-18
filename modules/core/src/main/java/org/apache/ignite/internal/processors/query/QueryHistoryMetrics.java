@@ -19,6 +19,8 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -28,9 +30,11 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 public class QueryHistoryMetrics {
     /** */
+    // TODO: Why do we need it?
     private static final long serialVersionUID = 0L;
 
     /** Link to internal node in eviction deque. */
+    @GridToStringExclude
     private final AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
 
     /** Textual query representation. */
@@ -52,6 +56,7 @@ public class QueryHistoryMetrics {
     private int failures;
 
     /** Minimum time of execution. */
+    /// TODO: Remove -1?
     private long minTime = -1;
 
     /** Maximum time of execution. */
@@ -91,7 +96,6 @@ public class QueryHistoryMetrics {
 
         linkRef = new AtomicReference<>();
     }
-
 
     /**
      * @return Metrics group key.
@@ -178,6 +182,7 @@ public class QueryHistoryMetrics {
      *
      * @return Latest time query was stared.
      */
+    // TODO: Unused?
     public long lastStartTime() {
         return lastStartTime;
     }
@@ -195,6 +200,7 @@ public class QueryHistoryMetrics {
      * @param link Link to internal node in eviction deque.
      * @return {@code true} in case link has been set, {@code false} otherwise.
      */
+    // TODO: Do we need it?
     public boolean setLinkIfAbsent(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
         return linkRef.compareAndSet(null, link);
     }
@@ -205,6 +211,7 @@ public class QueryHistoryMetrics {
      * @param link Link to internal node in eviction deque.
      * @return {@code true} if given link has been removed, {@code false} otherwise.
      */
+    // TODO: Do we need it?
     public boolean unlink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> link) {
         return linkRef.compareAndSet(link, null);
     }

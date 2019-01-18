@@ -327,11 +327,13 @@ public interface GridQueryIndexing {
      *
      * @return Queries history statistics.
      */
+    // TODO: Remove
     public Collection<QueryHistoryMetrics> queryHistoryMetrics();
 
     /**
      * Reset query history metrics.
      */
+    // TODO: Remove
     public void resetQueryHistoryMetrics();
 
     /**

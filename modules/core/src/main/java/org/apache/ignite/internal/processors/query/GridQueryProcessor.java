@@ -2373,6 +2373,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @return Queries history statistics.
      */
+    // TODO: Remove
     public Collection<QueryHistoryMetrics> queryHistory() {
         return idx.queryHistoryMetrics();
     }
@@ -2380,6 +2381,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Reset query history metrics.
      */
+    // TODO: Remove
     public void resetQueryHistoryMetrics() {
         idx.resetQueryHistoryMetrics();
     }

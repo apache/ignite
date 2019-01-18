@@ -1304,6 +1304,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean fail = false;
         // Execute.
         try {
+            // TODO: Move out of try-finally
             if (cmd instanceof SqlBulkLoadCommand)
                 return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
 

@@ -230,8 +230,9 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     }
 
     /**
-     * @param failed {@code true} In case any errors occured.
+     * @param failed {@code true} In case any errors occurred.
      */
+    // TODO: Investigate why it is needed by JDBC. Most likely needs to be removed.
     public void failed(boolean failed) {
         this.failed = failed;
     }

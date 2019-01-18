@@ -90,7 +90,7 @@ class QueryHistoryTracker {
             }
 
             if (node.item() == null) {
-                // Was concurrently schrinked.
+                // Was concurrently shrinked.
                 entry.unlink(node);
 
                 return false;
@@ -122,7 +122,7 @@ class QueryHistoryTracker {
             if (entry == null)
                 return;
 
-            //Metrics has been changed if we can't remove metric entry.
+            // Metrics has been changed if we can't remove metric entry.
             // In this case eviction queue already offered by the entry and we don't put it back. Just try to do new
             // attempt to remove oldest entry.
             if (qryMetrics.remove(entry.key(), entry))
@@ -145,6 +145,8 @@ class QueryHistoryTracker {
      * @return SQL queries history aggregated by query text, schema and local flag.
      */
     Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+        // TODO: Can we simply do qryMetrics.values() instead?
+        // TODO: If key duplicates are not possible, then it should be enough for us.
         if (histSz <= 0)
             return Collections.emptyList();
 
