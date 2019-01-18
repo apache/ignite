@@ -32,24 +32,27 @@ public class VisorQueryCursor<T> implements Iterator<T>, AutoCloseable {
     private final QueryCursor<T> cur;
 
     /** */
-    private final Iterator<T> itr;
+    private Iterator<T> itr;
 
     /**
      * @param cur Cursor.
      */
     public VisorQueryCursor(QueryCursor<T> cur) {
         this.cur = cur;
-
-        itr = cur.iterator();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override public synchronized boolean hasNext() {
+        if (itr == null)
+            itr = cur.iterator();
+
         return itr.hasNext();
     }
 
     /** {@inheritDoc} */
     @Override public T next() {
+        assert itr != null;
+
         return itr.next();
     }
 
