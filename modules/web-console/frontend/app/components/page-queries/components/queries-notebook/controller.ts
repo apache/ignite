@@ -1220,6 +1220,25 @@ export class NotebookCtrl {
 
         const _showLoading = (paragraph, enable) => paragraph.loading = enable;
 
+        const checkQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
+            if (!_.isNil(res.rows))
+                return _processQueryResult(paragraph, clearChart, res);
+
+            const subscription = timer(interval).pipe(exhaustMap((_) => {
+                return agentMgr.queryGet(qryArg.nid, res.queryId, qryArg.pageSize)
+                    .then((res) => {
+                        return checkQueryResult(paragraph, false, res, qryArg, 333);
+                    })
+                    .catch((err) => {
+                        paragraph.setError(err);
+                    });
+            })).subscribe();
+
+            paragraph.subscription = subscription;
+
+            return subscription;
+        };
+
         /**
          * @param {Object} paragraph Query
          * @param {Boolean} clearChart Flag is need clear chart model.
@@ -1229,6 +1248,9 @@ export class NotebookCtrl {
         const _processQueryResult = (paragraph, clearChart, res) => {
             const prevKeyCols = paragraph.chartKeyCols;
             const prevValCols = paragraph.chartValCols;
+
+            paragraph.subscription.unsubscribe();
+            paragraph.subscription = null;
 
             if (!_.eq(paragraph.meta, res.columns)) {
                 paragraph.meta = [];
@@ -1381,10 +1403,28 @@ export class NotebookCtrl {
             agentMgr.awaitCluster()
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy, args.collocated))
-                .then((res) => _processQueryResult(paragraph, false, res))
-                .catch((err) => paragraph.setError(err));
+                .then((nid) => {
+                    const qryArg = {
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins: args.nonCollocatedJoins,
+                        enforceJoinOrder: args.enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: !!args.localNid,
+                        pageSize: args.pageSize,
+                        lazy: args.lazy,
+                        collocated: args.collocated
+                    };
+
+                    return agentMgr.querySql(qryArg)
+                        .then((res) => {
+                            return checkQueryResult(paragraph, false, res, qryArg);
+                        });
+                })
+                .catch((err) => {
+                    paragraph.setError(err);
+                });
         };
 
         const _tryStartRefresh = function(paragraph) {
@@ -1467,13 +1507,25 @@ export class NotebookCtrl {
                             ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
+                            const qryArg = {
+                                nid,
+                                cacheName: args.cacheName,
+                                query: qry,
+                                nonCollocatedJoins,
+                                enforceJoinOrder,
+                                replicatedOnly: false,
+                                local,
+                                pageSize: args.pageSize,
+                                lazy,
+                                collocated
+                            };
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy, collocated);
-                        })
-                        .then((res) => {
-                            _processQueryResult(paragraph, true, res);
+                            return agentMgr.querySql(qryArg)
+                                .then((res) => {
+                                    checkQueryResult(paragraph, true, res, qryArg);
 
-                            _tryStartRefresh(paragraph);
+                                    _tryStartRefresh(paragraph);
+                                });
                         })
                         .catch((err) => {
                             paragraph.setError(err);
@@ -1525,9 +1577,21 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
+                    const qryArg = {
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins,
+                        enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: false,
+                        pageSize: args.pageSize,
+                        lazy: false, collocated
+                    };
+
+                    return agentMgr.querySql(qryArg)
+                        .then((res) => checkQueryResult(paragraph, true, res, qryArg));
                 })
-                .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
                     paragraph.setError(err);
 
@@ -1569,9 +1633,19 @@ export class NotebookCtrl {
 
                             ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
 
-                            return agentMgr.queryScan(nid, cacheName, filter, false, caseSensitive, false, local, pageSize);
+                            const qryArg = {
+                                nid,
+                                cacheName,
+                                filter,
+                                regEx: false,
+                                caseSensitive,
+                                near: false,
+                                local,
+                                pageSize
+                            };
+
+                            return agentMgr.queryScan(qryArg).then((res) => checkQueryResult(paragraph, true, res, qryArg));
                         })
-                        .then((res) => _processQueryResult(paragraph, true, res))
                         .catch((err) => {
                             paragraph.setError(err);
 
@@ -1719,7 +1793,17 @@ export class NotebookCtrl {
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy, !!args.collocated))
+                    : agentMgr.querySqlGetAll({
+                        nid,
+                        cacheName: args.cacheName,
+                        query: args.query,
+                        nonCollocatedJoins: !!args.nonCollocatedJoins,
+                        enforceJoinOrder: !!args.enforceJoinOrder,
+                        replicatedOnly: false,
+                        local: !!args.localNid,
+                        lazy: !!args.lazy,
+                        collocated: !!args.collocated
+                    }))
                 .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => {
@@ -1995,6 +2079,11 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
+        _.forEach(this.$scope.notebook.paragraphs, ({subscription}) => {
+            if (subscription)
+                subscription.unsubscribe();
+        });
+
         if (this.refresh$)
             this.refresh$.unsubscribe();
     }
