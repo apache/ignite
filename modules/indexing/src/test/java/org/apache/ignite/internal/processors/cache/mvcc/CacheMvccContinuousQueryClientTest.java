@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -31,9 +30,29 @@ public class CacheMvccContinuousQueryClientTest extends IgniteCacheContinuousQue
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10769")
+    @Override protected long getTestTimeout() {
+        return 90 * 60 * 1000; // 90 minutes
+    }
+
+    /** {@inheritDoc} */
+
     @Test
     @Override public void testNodeJoinsRestartQuery() throws Exception {
-        super.testNodeJoinsRestartQuery();
+        long start = System.currentTimeMillis();
+        long end = (long)(start + getTestTimeout() * 0.9);
+
+        long iteration = 0;
+
+        while (System.currentTimeMillis() < end) {
+            System.out.println("========iteration=" + iteration + ", left " + (end - System.currentTimeMillis()) / 1000 + " sec ");
+
+            super.beforeTest();
+
+            super.testNodeJoinsRestartQuery();
+
+            super.afterTest();
+
+            iteration++;
+        }
     }
 }

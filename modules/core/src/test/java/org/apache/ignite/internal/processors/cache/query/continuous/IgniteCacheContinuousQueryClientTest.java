@@ -85,7 +85,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test
+    //@Test
     public void testNodeJoins() throws Exception {
         startGrids(2);
 
@@ -197,7 +197,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test
+    //@Test
     public void testServerNodeLeft() throws Exception {
         startGrids(3);
 
