@@ -1917,7 +1917,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final GridDhtPartitionsExchangeFuture fut,
         final boolean newAff
     ) throws IgniteCheckedException {
-        if (true)
+        boolean locJoin = fut.firstEvent().eventNode().isLocal();
+
+        if (!locJoin)
             return null;
 
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = Collections.synchronizedList(new ArrayList<>());
@@ -1926,9 +1928,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
-                CacheGroupHolder grpHolder = grpHolders.get(desc.groupId());
+                CacheGroupHolder grpHolder = groupHolder(topVer, desc);
 
-                if (grpHolder != null)
+                if (grpHolder.affinity().idealAssignment() != null)
                     return;
 
                 // Need initialize holders and affinity if this node became coordinator during this exchange.
@@ -1937,14 +1939,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
-                    cctx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
-                        new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
-                            @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                                processAffinityAssignmentResponse(nodeId, res);
-                            }
-                        }
-                    );
-
                     grpHolder = CacheGroupHolder2.create(cctx, desc, topVer, null);
 
                     final GridAffinityAssignmentCache aff = grpHolder.affinity();
@@ -2037,7 +2031,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 CacheGroupHolder old = grpHolders.put(grpHolder.groupId(), grpHolder);
 
-                assert old == null : old;
+//                assert old == null : old;
 
                 cctx.exchange().exchangerUpdateHeartbeat();
 
