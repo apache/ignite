@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var localMetrics = metrics.Item1;
             var remoteMetrics = metrics.Item2;
 
-            Assert.AreEqual(0, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
@@ -88,12 +88,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var localMetrics = metrics.Item1;
             var remoteMetrics = metrics.Item2;
 
-            Assert.AreEqual(0, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
-            Assert.AreEqual(0, remoteMetrics.Size);
+            Assert.AreEqual(1, remoteMetrics.Size);
             Assert.AreEqual(1, remoteMetrics.CacheSize);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var localMetrics = metrics.Item2;
             var remoteMetrics = metrics.Item1;
 
-            Assert.AreEqual(0, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
