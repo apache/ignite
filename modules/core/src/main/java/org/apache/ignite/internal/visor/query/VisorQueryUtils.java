@@ -22,7 +22,6 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -41,6 +40,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -148,19 +148,19 @@ public class VisorQueryUtils {
     /**
      * Fetch rows from SCAN query future.
      *
-     * @param cur Query cursor to fetch rows from.
+     * @param itr Result set iterator.
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows.
      */
-    public static List<Object[]> fetchScanQueryRows(VisorQueryCursor<?> cur, int pageSize) {
+    public static List<Object[]> fetchScanQueryRows(Iterator itr, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        VisorQueryCursor<Cache.Entry<Object, Object>> scanCur = (VisorQueryCursor<Cache.Entry<Object, Object>>)cur;
+        Iterator<Cache.Entry<Object, Object>> scanItr = (Iterator<Cache.Entry<Object, Object>>)itr;
 
-        while (scanCur.hasNext() && cnt < pageSize) {
-            Cache.Entry<Object, Object> next = scanCur.next();
+        while (scanItr.hasNext() && cnt < pageSize) {
+            Cache.Entry<Object, Object> next = scanItr.next();
 
             Object k = next.getKey();
             Object v = next.getValue();
@@ -267,19 +267,19 @@ public class VisorQueryUtils {
     /**
      * Collects rows from sql query future, first time creates meta and column names arrays.
      *
-     * @param cur Query cursor to fetch rows from.
+     * @param itr Result set iterator.
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows.
      */
-    public static List<Object[]> fetchSqlQueryRows(VisorQueryCursor<?> cur, int pageSize) {
+    public static List<Object[]> fetchSqlQueryRows(Iterator itr, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        VisorQueryCursor<List<?>> sqlCur = (VisorQueryCursor<List<?>>)cur;
+        Iterator<List<?>> sqlItr = (Iterator<List<?>>)itr;
 
-        while (sqlCur.hasNext() && cnt < pageSize) {
-            List<?> next = sqlCur.next();
+        while (sqlItr.hasNext() && cnt < pageSize) {
+            List<?> next = sqlItr.next();
 
             int sz = next.size();
 
@@ -328,21 +328,21 @@ public class VisorQueryUtils {
         VisorQueryHolder holder = storage.remove(qryId);
 
         if (holder != null)
-            holder.cancelQuery();
+            holder.close();
     }
 
     /**
      * Fetch rows from query cursor.
      *
-     * @param holder Query holder.
+     * @param itr Result set iterator.
+     * @param qryId Query ID.
+     * @param pageSize Page size.
      */
-    public static List<Object[]> fetchQueryRows(VisorQueryHolder holder, int pageSize) {
-        VisorQueryCursor<?> cur = holder.getCursor();
-
-        return cur.hasNext()
-            ? (VisorQueryHolder.isSqlQuery(holder.getQueryID())
-                ? fetchSqlQueryRows(cur, pageSize)
-                : fetchScanQueryRows(cur, pageSize))
+    public static List<Object[]> fetchQueryRows(Iterator itr, String qryId, int pageSize) {
+        return itr.hasNext()
+            ? (VisorQueryHolder.isSqlQuery(qryId)
+                ? fetchSqlQueryRows(itr, pageSize)
+                : fetchScanQueryRows(itr, pageSize))
             : Collections.emptyList();
     }
 
@@ -389,13 +389,13 @@ public class VisorQueryUtils {
                     U.closeQuiet(qryCursors.get(i));
 
                 // In case of multiple statements return last cursor as result.
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
+                FieldsQueryCursor<List<?>> cur = F.last(qryCursors);
 
                 try {
                     // Ensure holder was not removed from node local storage from separate thread if user cancel query.
                     VisorQueryHolder actualHolder = getQueryHolder(ignite, holder.getQueryID());
 
-                    Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
+                    List<GridQueryFieldMetadata> meta = ((QueryCursorEx)cur).fieldsMeta();
 
                     if (meta == null)
                         actualHolder.setError(new SQLException("Fail to execute query. No metadata available."));
@@ -449,18 +449,18 @@ public class VisorQueryUtils {
                 if (!F.isEmpty(filterText))
                     filter = new VisorQueryScanRegexFilter(arg.isCaseSensitive(), arg.isRegEx(), filterText);
 
-                VisorQueryCursor<Cache.Entry<Object, Object>> cur;
+                QueryCursor<Cache.Entry<Object, Object>> cur;
 
                 long start = U.currentTimeMillis();
 
                 if (arg.isNear())
-                    cur = new VisorQueryCursor<>(new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator()));
+                    cur = new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator());
                 else {
                     ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
                     qry.setPageSize(arg.getPageSize());
                     qry.setLocal(arg.isLocal());
 
-                    cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
+                    cur = c.withKeepBinary().query(qry);
                 }
 
                 try {

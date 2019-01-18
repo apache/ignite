@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -65,13 +66,13 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
 
             VisorQueryHolder holder = getQueryHolder(ignite, qryId);
 
-            VisorQueryCursor<?> cur = holder.getCursor();
+            Iterator itr = holder.getIterator();
 
             List<Object[]> nextRows = VisorQueryHolder.isSqlQuery(qryId)
-                ? VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize())
-                : VisorQueryUtils.fetchScanQueryRows(cur, arg.getPageSize());
+                ? VisorQueryUtils.fetchSqlQueryRows(itr, arg.getPageSize())
+                : VisorQueryUtils.fetchScanQueryRows(itr, arg.getPageSize());
 
-            boolean hasMore = cur.hasNext();
+            boolean hasMore = itr.hasNext();
 
             if (hasMore)
                 holder.setAccessed(true);

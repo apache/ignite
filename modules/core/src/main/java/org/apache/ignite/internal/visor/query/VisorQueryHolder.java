@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
  * Holds identify information of executing query and its result.
  */
-public class VisorQueryHolder {
+public class VisorQueryHolder implements AutoCloseable {
     /** Prefix for node local key for SQL queries. */
     private static final String SQL_QRY_PREFIX = "VISOR_SQL_QUERY";
 
@@ -36,9 +38,6 @@ public class VisorQueryHolder {
 
     /** Cancel query object. */
     private final GridQueryCancel cancel;
-
-    /** Wrapper for query cursor. */
-    private volatile VisorQueryCursor<?> cur;
 
     /** Query column descriptors. */
     private volatile List<VisorQueryField> cols;
@@ -52,6 +51,12 @@ public class VisorQueryHolder {
     /** Flag indicating that this cursor was read from last check. */
     private volatile boolean accessed;
 
+    /** Query cursor. */
+    private volatile QueryCursor cur;
+
+    /** Result set iterator. */
+    private volatile Iterator itr;
+
     /**
      * @param qryId Query ID.
      * @return {@code true} if holder contains SQL query.
@@ -64,10 +69,10 @@ public class VisorQueryHolder {
      * Constructor.
      *
      * @param sqlQry Flag indicating that holder contains SQL or SCAN query.
-     * @param cur Wrapper for query cursor.
+     * @param cur Query cursor.
      * @param cancel Cancel object.
      */
-    VisorQueryHolder(boolean sqlQry, VisorQueryCursor<?> cur, GridQueryCancel cancel) {
+    VisorQueryHolder(boolean sqlQry, QueryCursor cur, GridQueryCancel cancel) {
         this.cur = cur;
         this.cancel = cancel;
 
@@ -83,10 +88,15 @@ public class VisorQueryHolder {
     }
 
     /**
-     * @return Wrapper for query cursor.
+     * @return Result set iterator.
      */
-    public VisorQueryCursor<?> getCursor() {
-        return cur;
+    public synchronized Iterator getIterator() {
+        assert cur != null;
+
+        if (itr == null)
+            itr = cur.iterator();
+
+        return itr;
     }
 
     /**
@@ -99,20 +109,18 @@ public class VisorQueryHolder {
     /**
      * Complete query execution.
      *
-     * @param cur Wrapper for query cursor.
+     * @param cur Query cursor.
      * @param duration Duration of query execution.
      * @param cols Query column descriptors.
      */
-    public void complete(VisorQueryCursor<?> cur, long duration, List<VisorQueryField> cols) {
+    public void complete(QueryCursor cur, long duration, List<VisorQueryField> cols) {
         this.cur = cur;
         this.duration = duration;
         this.cols = cols;
     }
 
-    /**
-     * Cancel query.
-     */
-    public void cancelQuery() {
+    /** {@inheritDoc} */
+    @Override public void close() {
         if (cur != null)
             cur.close();
 

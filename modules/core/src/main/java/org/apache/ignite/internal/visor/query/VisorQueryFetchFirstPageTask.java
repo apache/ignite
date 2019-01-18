@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,9 +82,9 @@ public class VisorQueryFetchFirstPageTask extends VisorOneNodeTask<VisorQueryNex
             boolean hasMore = cols == null;
 
             if (cols != null) {
-                VisorQueryCursor<?> cur = holder.getCursor();
-                rows = fetchQueryRows(holder, arg.getPageSize());
-                hasMore = cur.hasNext();
+                Iterator itr = holder.getIterator();
+                rows = fetchQueryRows(itr, qryId, arg.getPageSize());
+                hasMore = itr.hasNext();
             }
 
             if (hasMore)
