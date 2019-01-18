@@ -50,7 +50,7 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1")
+                    partition("t1", "1")
                 );
                 assertUpdatedRows(res, 1);
             },
@@ -61,7 +61,7 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new2' WHERE _KEY = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "2")
+                    partition("t1", "2")
                 );
                 assertUpdatedRows(res, 1);
             },
@@ -81,7 +81,7 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t2 SET v2 = 'new1' WHERE ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "1")
+                    partition("t2", "1")
                 );
                 assertUpdatedRows(res, 1);
             },
@@ -92,9 +92,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -105,9 +105,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("UPDATE t1 SET v1 = 'new1' WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -131,7 +131,7 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
 
         List<List<?>> res = executeSingle("UPDATE t2 SET v2 = 'new1' WHERE _KEY = ?", key);
         assertPartitions(
-            parititon("t2", "5")
+            partition("t2", "5")
         );
         assertUpdatedRows(res, 1);
     }
@@ -147,7 +147,7 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("DELETE FROM t2 WHERE ak2 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t2", "2")
+                    partition("t2", "2")
                 );
                 assertUpdatedRows(res, 1);
             },
@@ -158,9 +158,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("DELETE FROM t1 WHERE k1 in (?, ?, ?)",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },
@@ -171,9 +171,9 @@ public class DmlSelectPartitionPruningSelfTest extends AbstractPartitionPruningB
         execute("DELETE FROM t1 WHERE k1 in (?, ?) or k1 = ?",
             (res) -> {
                 assertPartitions(
-                    parititon("t1", "1"),
-                    parititon("t1", "2"),
-                    parititon("t1", "3")
+                    partition("t1", "1"),
+                    partition("t1", "2"),
+                    partition("t1", "3")
                 );
                 assertUpdatedRows(res, 3);
             },

@@ -35,6 +35,11 @@ public interface PartitionNode {
     Collection<Integer> apply(Object... args) throws IgniteCheckedException;
 
     /**
+     * @return Join group for the given node.
+     */
+    int joinGroup();
+
+    /**
      * Try optimizing partition nodes into a simpler form.
      *
      * @return Optimized node or {@code this} if optimization failed.

@@ -31,9 +31,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -54,26 +57,43 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
 
-    /** Parititions tracked during query execution. */
+    /** Partitions tracked during query execution. */
     private static final ConcurrentSkipListSet<Integer> INTERCEPTED_PARTS = new ConcurrentSkipListSet<>();
+
+    /** Partitions tracked during query execution. */
+    private static final ConcurrentSkipListSet<ClusterNode> INTERCEPTED_NODES = new ConcurrentSkipListSet<>();
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
+
+    /** Memory. */
+    protected static final String REGION_MEM = "mem";
+
+    /** Disk. */
+    protected static final String REGION_DISK = "disk";
 
     /** Client node name. */
     private static final String CLI_NAME = "cli";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+
         startGrid(getConfiguration("srv1"));
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
         startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+
+        client().cluster().active(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         Ignite cli = client();
 
         cli.destroyCaches(cli.cacheNames());
@@ -82,18 +102,25 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration res = super.getConfiguration(name);
-
-        res.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-        res.setCommunicationSpi(new TrackingTcpCommunicationSpi());
-
-        res.setLocalHost("127.0.0.1");
-
-        return res;
+        return super.getConfiguration(name)
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setCommunicationSpi(new TrackingTcpCommunicationSpi())
+            .setLocalHost("127.0.0.1")
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName(REGION_DISK)
+                    .setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setName(REGION_MEM)
+                    .setPersistenceEnabled(false)));
     }
 
     /**
@@ -103,7 +130,18 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createPartitionedTable(String name, Object... cols) {
-        createTable0(name, false, cols);
+        createPartitionedTable(false, name, cols);
+    }
+
+    /**
+     * Create PARTITIONED table.
+     *
+     * @param mvcc MVCC flag.
+     * @param name Name.
+     * @param cols Columns.
+     */
+    protected void createPartitionedTable(boolean mvcc, String name, Object... cols) {
+        createTable0(name, false, mvcc, cols);
     }
 
     /**
@@ -113,7 +151,18 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createReplicatedTable(String name, Object... cols) {
-        createTable0(name, true, cols);
+        createReplicatedTable(false, name, cols);
+    }
+
+    /**
+     * Create REPLICATED table.
+     *
+     * @param mvcc MVCC flag.
+     * @param name Name.
+     * @param cols Columns.
+     */
+    protected void createReplicatedTable(boolean mvcc, String name, Object... cols) {
+        createTable0(name, true, mvcc, cols);
     }
 
     /**
@@ -121,10 +170,11 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      *
      * @param name Name.
      * @param replicated Replicated table flag.
+     * @param mvcc MVCC flag.
      * @param cols Columns.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private void createTable0(String name, boolean replicated, Object... cols) {
+    private void createTable0(String name, boolean replicated, boolean mvcc, Object... cols) {
         List<String> pkCols = new ArrayList<>();
 
         String affCol = null;
@@ -171,6 +221,9 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             sql.append(", AFFINITY_KEY=" + affCol);
             sql.append(", KEY_TYPE=" + name + "_key");
         }
+
+        if (mvcc)
+            sql.append(", atomicity=TRANSACTIONAL_SNAPSHOT");
 
         sql.append("\"");
 
@@ -235,7 +288,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             // Prepare new SQL and arguments.
             int paramPos = paramPoss.get(i);
 
-            String newSql = sql.substring(0, paramPos) + inlineParameter(args[i]) + sql.substring(paramPos + 1);
+            String newSql = sql.substring(0, paramPos) + args[i] + sql.substring(paramPos + 1);
 
             Object[] newArgs = new Object[args.length - 1];
 
@@ -257,14 +310,6 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             if (newArgs.length > 0)
                 executeCombinations0(newSql, resConsumer, executedSqls, newArgs);
         }
-    }
-
-    /**
-     * @param arg Parameter argument.
-     * @return Quoted string parameter or not-quoted numeric.
-     */
-    private static String inlineParameter(Object arg) {
-        return arg instanceof String ? "\'" + arg + '\'' : arg.toString();
     }
 
     /**
@@ -298,6 +343,16 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         if (args != null && args.length > 0)
             qry.setArgs(args);
 
+        return executeSqlFieldsQuery(qry);
+    }
+
+    /**
+     * Execute prepared SQL fields query.
+     *
+     * @param qry Query.
+     * @return Result.
+     */
+    protected List<List<?>> executeSqlFieldsQuery(SqlFieldsQuery qry) {
         return client().context().query().querySqlFields(qry, false).getAll();
     }
 
@@ -314,6 +369,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     protected static void clearIoState() {
         INTERCEPTED_REQS.set(0);
         INTERCEPTED_PARTS.clear();
+        INTERCEPTED_NODES.clear();
     }
 
     /**
@@ -363,8 +419,44 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param key Key.
      * @return Partition.
      */
-    protected int parititon(String cacheName, Object key) {
+    protected int partition(String cacheName, Object key) {
         return client().affinity(cacheName).partition(key);
+    }
+
+    /**
+     * Make sure that expected nodes are logged.
+     *
+     * @param expNodes Expected nodes.
+     */
+    protected static void assertNodes(ClusterNode... expNodes) {
+        Collection<ClusterNode> expNodes0 = new TreeSet<>();
+
+        for (ClusterNode expNode : expNodes)
+            expNodes0.add(expNode);
+
+        assertNodes(expNodes0);
+    }
+
+    /**
+     * Make sure that expected nodes are logged.
+     *
+     * @param expNodes Expected nodes.
+     */
+    protected static void assertNodes(Collection<ClusterNode> expNodes) {
+        TreeSet<ClusterNode> expNodes0 = new TreeSet<>(expNodes);
+        TreeSet<ClusterNode> actualNodes = new TreeSet<>(INTERCEPTED_NODES);
+
+        assertEquals("Unexpected nodes [exp=" + expNodes + ", actual=" + actualNodes + ']',
+            expNodes0, actualNodes);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param key Key.
+     * @return Node.
+     */
+    protected ClusterNode node(String cacheName, Object key) {
+        return client().affinity(cacheName).mapKeyToNode(key);
     }
 
     /**
@@ -376,11 +468,25 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                 GridIoMessage msg0 = (GridIoMessage)msg;
 
                 if (msg0.message() instanceof GridH2QueryRequest) {
+                    INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 
                     GridH2QueryRequest req = (GridH2QueryRequest)msg0.message();
 
                     int[] parts = req.queryPartitions();
+
+                    if (!F.isEmpty(parts)) {
+                        for (int part : parts)
+                            INTERCEPTED_PARTS.add(part);
+                    }
+                }
+                else if(msg0.message() instanceof GridNearTxQueryEnlistRequest) {
+                    INTERCEPTED_NODES.add(node);
+                    INTERCEPTED_REQS.incrementAndGet();
+
+                    GridNearTxQueryEnlistRequest req = (GridNearTxQueryEnlistRequest)msg0.message();
+
+                    int[] parts = req.partitions();
 
                     if (!F.isEmpty(parts)) {
                         for (int part : parts)
