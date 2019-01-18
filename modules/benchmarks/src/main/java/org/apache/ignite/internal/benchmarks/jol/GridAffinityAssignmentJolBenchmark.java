@@ -63,13 +63,11 @@ public class GridAffinityAssignmentJolBenchmark {
 
     /** */
     public static void main(String[] args) throws Exception {
-        boolean a = GridAffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION;
-
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(true, 65000);
 
         int[] parts = new int[] {1024, 8192, 32768, 65000};
 
-        int[] nodes = new int[] {16, 160, 600};
+        int[] nodes = new int[] {1, 16, 160, 600};
 
         for (int part : parts)
             for (int node : nodes) {
@@ -156,7 +154,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
         setOptimization(true);
 
-        ga = new GridAffinityAssignment(
+        GridAffinityAssignment ga2 = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             assignment,
             new ArrayList<>(),
@@ -165,7 +163,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
         System.gc();
 
-        long totalSize2 = GraphLayout.parseInstance(ga).totalSize();
+        long totalSize2 = GraphLayout.parseInstance(ga2).totalSize();
 
         System.out.println("Deoptimized, parts " + parts
             +" nodeCount " + nodeCnt
