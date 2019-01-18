@@ -52,7 +52,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -138,7 +137,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore
     @Test
     public void testConcurrentUpdatesWithMvcc() throws Exception {
         doTestConcurrentUpdates(true);
@@ -194,6 +192,13 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
                 if (accountId1 == accountId2)
                     continue;
+
+                // Sort to avoid MVCC deadlock.
+                if (accountId1 > accountId2) {
+                    long tmp = accountId1;
+                    accountId1 = accountId2;
+                    accountId2 = tmp;
+                }
 
                 try (
                     Transaction tx = server.transactions().txStart()
