@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionState;
@@ -280,7 +280,7 @@ public class MvccUtils {
      * @param opCntr Mvcc operation counter.
      * @return State exception.
      */
-    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+    public static IgniteTxUnexpectedStateCheckedException unexpectedStateException(
         CacheGroupContext grp, byte state, long crd, long cntr,
         int opCntr) {
         return unexpectedStateException(grp.shared().kernalContext(), state, crd, cntr, opCntr, null);
@@ -296,14 +296,14 @@ public class MvccUtils {
      * @param snapshot Mvcc snapshot
      * @return State exception.
      */
-    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+    public static IgniteTxUnexpectedStateCheckedException unexpectedStateException(
         GridCacheContext cctx, byte state, long crd, long cntr,
         int opCntr, MvccSnapshot snapshot) {
         return unexpectedStateException(cctx.kernalContext(), state, crd, cntr, opCntr, snapshot);
     }
 
     /** */
-    private static IgniteTxMvccVersionCheckedException unexpectedStateException(GridKernalContext ctx, byte state, long crd, long cntr,
+    private static IgniteTxUnexpectedStateCheckedException unexpectedStateException(GridKernalContext ctx, byte state, long crd, long cntr,
         int opCntr, MvccSnapshot snapshot) {
         String msg = "Unexpected state: [state=" + state + ", rowVer=" + crd + ":" + cntr + ":" + opCntr;
 
@@ -312,7 +312,7 @@ public class MvccUtils {
 
         msg += ", localNodeId=" + ctx.localNodeId()  + "]";
 
-        return new IgniteTxMvccVersionCheckedException(msg);
+        return new IgniteTxUnexpectedStateCheckedException(msg);
     }
 
     /**

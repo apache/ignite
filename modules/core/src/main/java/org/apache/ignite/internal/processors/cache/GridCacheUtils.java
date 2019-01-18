@@ -58,8 +58,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -76,14 +74,17 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -104,6 +105,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
@@ -1328,15 +1330,16 @@ public class GridCacheUtils {
         if (knownEx != null)
             return knownEx;
 
+        if (e instanceof IgniteTxDuplicateKeyCheckedException)
+            return new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.DUPLICATE_KEY);
+
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
         Exception converted = converter != null ? converter.apply(e) : e;
 
         //TODO IGNITE-10377: Remove this and make method called from Jdbc call path. TxException should be converted to certain Sql exception.
-        if (converted instanceof TransactionException)
-            throw (TransactionException)converted;
-
-        return new IgniteSQLException(converted.getMessage(), converted);
+        return converted instanceof TransactionException ? (RuntimeException)converted :
+            new IgniteSQLException(converted.getMessage(), converted);
     }
 
     /**
@@ -1362,7 +1365,7 @@ public class GridCacheUtils {
 
         Exception converted = converter != null ? converter.apply(e) : e;
 
-        return new CacheException(converted);
+        return converted instanceof TransactionException ? (RuntimeException)converted : new CacheException(converted);
     }
 
     /**

@@ -71,6 +71,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -1238,7 +1240,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse exceptionToResult(Exception e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
-        if (e instanceof IgniteSQLException)
+        if (e instanceof TransactionSerializationException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof MvccUtils.TxCompletedException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
+        if (e instanceof MvccUtils.NonMvccTransactionException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
+        if (e instanceof TransactionException)
             return new JdbcResponse(((IgniteSQLException)e).statusCode(), e.getMessage());
         else
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());

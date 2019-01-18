@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.transactions;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown whenever transaction enters an unknown state.
  */
-public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException {
+public class IgniteTxMvccWriteConflictCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +32,7 @@ public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException 
      *
      * @param msg Error message.
      */
-    public IgniteTxMvccVersionCheckedException(String msg) {
+    public IgniteTxMvccWriteConflictCheckedException(String msg) {
         super(msg);
     }
 
@@ -41,7 +42,7 @@ public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException 
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public IgniteTxMvccVersionCheckedException(String msg, Throwable cause) {
+    public IgniteTxMvccWriteConflictCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

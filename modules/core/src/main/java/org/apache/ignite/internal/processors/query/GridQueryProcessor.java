@@ -1578,6 +1578,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         catch (CacheException e) {
             if (e.getCause() instanceof SchemaOperationException)
                 throw (SchemaOperationException)e.getCause();
+            if (e.getCause() instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e.getCause(); //TODO IGNITE-10377: Let's aviod unnecessacy wrap-unwrap.
             else
                 throw e;
         }

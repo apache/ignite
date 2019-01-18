@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link TransactionOptimisticException} If operation with optimistic behavior failed.
  * {@link TransactionRollbackException} If operation performs within transaction that automatically rolled back.
  * {@link TransactionTimeoutException} If operation performs within transaction and timeout occurred.
+ * {@link TransactionSerializationException} If Mvcc transactional operation fails with write conflict.
  */
 public class TransactionException extends IgniteException {
 	/** Serial version UID. */
