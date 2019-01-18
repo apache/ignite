@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -148,6 +151,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.cleanIdleVerifyLogFiles();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
@@ -157,7 +167,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(128 * 1024);
+        testOut = new ByteArrayOutputStream(1024 * 1024);
     }
 
     /** {@inheritDoc} */
@@ -1220,6 +1230,83 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             checkExceptionMessageOnReport(unstableId);
     }
 
+    /** */
+    @Test
+    public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
+
+        String out = testOut.toString();
+
+        assertTrue(out.contains("idle_verify failed on 1 node."));
+        assertTrue(out.contains("See log for additional information."));
+    }
+
+    /** */
+    @Test
+    public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
+
+        String parts[] = testOut.toString().split("VisorIdleVerifyDumpTask successfully written output to '");
+
+        assertEquals(2, parts.length);
+
+        String dumpFile = parts[1].split("\\.")[0] + ".txt";
+
+        for (String line : Files.readAllLines(new File(dumpFile).toPath()))
+            System.out.println(line);
+
+        String outputStr = testOut.toString();
+
+        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+    }
+
+    /** */
+    private void corruptPartition(File partitionsDir) throws IOException {
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        for(File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
+            try (RandomAccessFile raf = new RandomAccessFile(partFile, "rw")) {
+                byte[] buf = new byte[1024];
+
+                rand.nextBytes(buf);
+
+                raf.seek(4096 * 2 + 1);
+
+                raf.write(buf);
+            }
+        }
+    }
+
+    /** */
+    private void testCacheIdleVerifyWithCorruptedPartition(String... args) throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        createCacheAndPreload(ignite, 1000);
+
+        Serializable consistId = ignite.configuration().getConsistentId();
+
+        File partitionsDir = U.resolveWorkDirectory(
+            ignite.configuration().getWorkDirectory(),
+            "db/" + consistId + "/cache-" + DEFAULT_CACHE_NAME,
+            false
+        );
+
+        stopGrid(0);
+
+        corruptPartition(partitionsDir);
+
+        startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute(args));
+    }
+
     /**
      * Creates default cache and preload some data entries.
      *
@@ -1250,9 +1337,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:"));
 
-            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
-                "Exception message:\n" +
-                "Node has left grid: " + unstableNodeId));
+            assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
@@ -1413,7 +1498,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", "shared_grp"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--exclude-caches", "shared_grp"));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1458,7 +1543,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", DEFAULT_CACHE_NAME
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--exclude-caches", DEFAULT_CACHE_NAME
             + "," + DEFAULT_CACHE_NAME + "_second"));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();

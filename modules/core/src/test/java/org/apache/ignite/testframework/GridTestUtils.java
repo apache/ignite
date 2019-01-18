@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -2096,5 +2097,15 @@ public final class GridTestUtils {
         public static int applyUB(int val, int upperBound) {
             return Math.min(apply(val), upperBound);
         }
+    }
+
+    /**
+     * Removes idle_verify log files created in tests.
+     */
+    public static void cleanIdleVerifyLogFiles() {
+        File dir = new File(".");
+
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+            f.delete();
     }
 }
