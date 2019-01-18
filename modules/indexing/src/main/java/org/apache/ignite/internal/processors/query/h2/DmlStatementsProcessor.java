@@ -88,6 +88,7 @@ import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -618,11 +619,9 @@ public class DmlStatementsProcessor {
                 return res;
             }
             catch (IgniteCheckedException e) {
-                checkSqlException(e);
-
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
-                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
+                throw CU.convertToSqlException(e);
             }
             finally {
                 if (commit)
@@ -683,16 +682,6 @@ public class DmlStatementsProcessor {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(plan, cur, pageSize);
-    }
-
-    /**
-     * @param e Exception.
-     */
-    private void checkSqlException(IgniteCheckedException e) {
-        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
-
-        if(sqlEx != null)
-            throw sqlEx;
     }
 
     /**

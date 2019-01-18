@@ -86,6 +86,7 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -944,7 +945,14 @@ public class GridReduceQueryExecutor {
 
             throw new CacheException("Failed to send update request to participating nodes.");
         }
-        catch (IgniteCheckedException | RuntimeException e) {
+        catch (IgniteCheckedException e) {
+            release = true;
+
+            U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", e);
+
+            throw CU.convertToCacheException(e);
+        }
+        catch (RuntimeException e) {
             release = true;
 
             U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", e);

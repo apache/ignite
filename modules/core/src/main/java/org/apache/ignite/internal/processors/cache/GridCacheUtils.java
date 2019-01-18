@@ -106,6 +106,7 @@ import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
@@ -1307,6 +1308,36 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param e Ignite SQL exception.
+     * @return CacheException runtime exception, never null.
+     */
+    public static @NotNull RuntimeException convertToSqlException(IgniteCheckedException e) {
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
+        RuntimeException knownEx = extractKnownException(e);
+
+        if (knownEx != null)
+            return knownEx;
+
+        C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
+
+        Exception converted = converter != null ? converter.apply(e) : e;
+
+        //TODO IGNITE-10377: Remove this and make method called from Jdbc call path. TxException should be converted to certain Sql exception.
+        if (converted instanceof TransactionException)
+            throw (TransactionException)converted;
+
+        return new IgniteSQLException(converted.getMessage(), converted);
+    }
+
+    /**
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
@@ -1320,6 +1351,23 @@ public class GridCacheUtils {
             e = disconnectedErr;
         }
 
+        RuntimeException knownEx = extractKnownException(e);
+
+        if (knownEx != null)
+            return knownEx;
+
+        C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
+
+        Exception converted = converter != null ? converter.apply(e) : e;
+
+        return new CacheException(converted);
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return RuntimeException known runtime exception or null.
+     */
+    private static @Nullable RuntimeException extractKnownException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
             return new CacheWriterException(U.convertExceptionNoWrap(e));
 
@@ -1340,9 +1388,7 @@ public class GridCacheUtils {
         if (e.getCause() instanceof SecurityException)
             return (SecurityException)e.getCause();
 
-        C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
-
-        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
+        return null;
     }
 
     /**

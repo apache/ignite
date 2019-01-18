@@ -1623,15 +1623,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                             true);
                                     }
                                     catch (IgniteCheckedException e) {
-                                        throw new IgniteException(e);
+                                        throw CU.convertToCacheException(e);
                                     }
                                 }
                             }, cancel));
                         }
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                            ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                        throw CU.convertToCacheException(e);
                     }
                 }
 
