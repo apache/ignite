@@ -17,10 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
-import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,10 +27,4 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({IgniteCacheSslStartStopSelfTest.class})
 public class IgniteCacheFailoverTestSuiteSsl {
-    /** */
-    @BeforeClass
-    public static void init() {
-        Assume.assumeTrue("Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.",
-            !IgniteUtils.isHotSpot());
-    }
 }
