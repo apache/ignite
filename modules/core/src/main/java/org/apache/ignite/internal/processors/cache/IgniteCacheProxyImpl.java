@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -105,7 +104,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -804,12 +802,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         catch (Exception e) {
             if (e instanceof CacheException)
                 throw (CacheException)e;
-
-            if (e instanceof TransactionException)
-                throw (TransactionException)e;
-
-            if (e instanceof IgniteSQLException)
-                throw CU.convertToCacheException((IgniteSQLException)e);
 
             throw new CacheException(e.getMessage(), e);
         }

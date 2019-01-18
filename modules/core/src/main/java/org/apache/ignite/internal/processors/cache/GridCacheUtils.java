@@ -1294,19 +1294,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param e Ignite SQL exception.
-     * @return CacheException runtime exception, never null.
-     */
-    public static @NotNull RuntimeException convertToCacheException(IgniteSQLException e) {
-        IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
-
-        if (cause != null)
-            return convertToCacheException(cause);
-
-        return new CacheException(e);
-    }
-
-    /**
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
