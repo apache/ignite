@@ -117,6 +117,7 @@ public class VisorQueryHolder implements AutoCloseable {
         this.cur = cur;
         this.duration = duration;
         this.cols = cols;
+        this.accessed = false;
     }
 
     /** {@inheritDoc} */
