@@ -1845,7 +1845,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-//    @Test TODO the scenario became incorrect after IGNITE-10395
+    @Test
     public void testFailedNodes4() throws Exception {
         try {
             final int FAIL_ORDER = 3;
