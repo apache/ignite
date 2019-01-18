@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiCfgPreprocessor {
+public class ZookeeperDiscoverySpiTestConfigurator {
     /** */
     private static final Lock lock = new ReentrantLock();
 
@@ -54,7 +54,7 @@ public class ZookeeperDiscoverySpiCfgPreprocessor {
         }
 
         System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS,
-            ZookeeperDiscoverySpiCfgPreprocessor.class.getName());
+            ZookeeperDiscoverySpiTestConfigurator.class.getName());
     }
 
     /**

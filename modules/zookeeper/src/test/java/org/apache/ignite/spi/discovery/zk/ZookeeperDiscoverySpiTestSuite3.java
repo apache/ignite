@@ -49,6 +49,6 @@ public class ZookeeperDiscoverySpiTestSuite3 {
     /** */
     @BeforeClass
     public static void init() throws Exception {
-        ZookeeperDiscoverySpiCfgPreprocessor.initTestSuite();
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }
