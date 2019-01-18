@@ -151,7 +151,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             doTestConcurrentUpdates(false);
 
             throw new IllegalStateException("Expected to detect data inconsistency.");
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             assertTrue(e.getMessage().startsWith("wrong sum!"));
         }
     }
@@ -215,8 +216,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                         if (transfer == 0)
                             transfer = balance2;
 
-                        cache.put(accountId1, balance1 + transfer);
-                        cache.put(accountId2, balance2 - transfer);
+                        balance1 += transfer;
+                        balance2 -= transfer;
                     }
                     else {
                         long transfer = rnd.nextInt((int)balance1);
@@ -224,9 +225,12 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                         if (transfer == 0)
                             transfer = balance1;
 
-                        cache.put(accountId1, balance1 - transfer);
-                        cache.put(accountId2, balance2 + transfer);
+                        balance1 -= transfer;
+                        balance2 += transfer;
                     }
+
+                    cache.put(accountId1, balance1);
+                    cache.put(accountId2, balance2);
 
                     tx.commit();
                 }
