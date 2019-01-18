@@ -33,7 +33,7 @@ public class QueryHistoryMetrics {
     private final AtomicReference<ConcurrentLinkedDeque8.Node<QueryHistoryMetrics>> linkRef;
 
     /** Query history metrics immutable wrapper. */
-    private volatile QueryHistoryMetricsValue value;
+    private volatile QueryHistoryMetricsValue val;
 
     /** Query history metrics group key. */
     private final QueryHistoryMetricsKey key;
@@ -48,15 +48,13 @@ public class QueryHistoryMetrics {
      * @param duration Duration of queue execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
      */
-    public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime,
-        long duration, boolean failed) {
-
+    public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime, long duration, boolean failed) {
         key = new QueryHistoryMetricsKey(qry, schema, loc);
 
         if (failed)
-            value = new QueryHistoryMetricsValue(qry, schema, loc, 1, 1, 0, 0, startTime);
+            val = new QueryHistoryMetricsValue(1, 1, 0, 0, startTime);
         else
-            value = new QueryHistoryMetricsValue(qry, schema, loc, 1, 0, duration, duration, startTime);
+            val = new QueryHistoryMetricsValue(1, 0, duration, duration, startTime);
 
         linkRef = new AtomicReference<>();
     }
@@ -75,15 +73,12 @@ public class QueryHistoryMetrics {
      * @return Aggregated metrics.
      */
     public QueryHistoryMetrics aggregateWithNew(QueryHistoryMetrics m) {
-        value = new QueryHistoryMetricsValue(
-            m.query(),
-            m.schema(),
-            m.local(),
-            value.execs() + m.executions(),
-            value.failures() + m.failures(),
-            Math.min(value.minTime(), m.minimumTime()),
-            Math.max(value.maxTime(), m.maximumTime()),
-            Math.max(value.lastStartTime(), m.lastStartTime()));
+        val = new QueryHistoryMetricsValue(
+            val.execs() + m.executions(),
+            val.failures() + m.failures(),
+            Math.min(val.minTime(), m.minimumTime()),
+            Math.max(val.maxTime(), m.maximumTime()),
+            Math.max(val.lastStartTime(), m.lastStartTime()));
 
         return this;
     }
@@ -92,21 +87,21 @@ public class QueryHistoryMetrics {
      * @return Textual representation of query.
      */
     public String query() {
-        return value.qry();
+        return key.query();
     }
 
     /**
      * @return Schema.
      */
     public String schema() {
-        return value.schema();
+        return key.schema();
     }
 
     /**
      * @return {@code true} For query with enabled local flag.
      */
     public boolean local() {
-        return value.loc();
+        return key.local();
     }
 
     /**
@@ -115,7 +110,7 @@ public class QueryHistoryMetrics {
      * @return Number of executions.
      */
     public int executions() {
-        return value.execs();
+        return val.execs();
     }
 
     /**
@@ -124,7 +119,7 @@ public class QueryHistoryMetrics {
      * @return Number of times a query execution failed.
      */
     public int failures() {
-        return value.failures();
+        return val.failures();
     }
 
     /**
@@ -133,7 +128,7 @@ public class QueryHistoryMetrics {
      * @return Minimum execution time of query.
      */
     public long minimumTime() {
-        return value.minTime();
+        return val.minTime();
     }
 
     /**
@@ -142,7 +137,7 @@ public class QueryHistoryMetrics {
      * @return Maximum execution time of query.
      */
     public long maximumTime() {
-        return value.maxTime();
+        return val.maxTime();
     }
 
     /**
@@ -151,7 +146,7 @@ public class QueryHistoryMetrics {
      * @return Latest time query was stared.
      */
     public long lastStartTime() {
-        return value.lastStartTime();
+        return val.lastStartTime();
     }
 
     /**

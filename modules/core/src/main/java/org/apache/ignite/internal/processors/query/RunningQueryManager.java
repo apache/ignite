@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -182,7 +183,7 @@ public class RunningQueryManager {
      *
      * @return Queries history statistics aggregated by query text, schema and local flag.
      */
-    public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
         return queryHistoryTracker.queryHistoryMetrics();
     }
 

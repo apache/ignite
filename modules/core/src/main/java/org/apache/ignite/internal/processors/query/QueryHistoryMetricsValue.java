@@ -22,15 +22,6 @@ package org.apache.ignite.internal.processors.query;
  * Immutable query metrics.
  */
 class QueryHistoryMetricsValue {
-    /** Textual query representation. */
-    private final String qry;
-
-    /** Schema name. */
-    private final String schema;
-
-    /** Flag of local query. */
-    private final boolean loc;
-
     /** Number of executions. */
     private final int execs;
 
@@ -47,21 +38,13 @@ class QueryHistoryMetricsValue {
     private final long lastStartTime;
 
     /**
-     * @param qry Query.
-     * @param schema Schema.
-     * @param loc Local flag.
      * @param execs Number of executions.
      * @param failures Number of failure.
      * @param minTime Min time of execution.
      * @param maxTime Max time of execution.
      * @param lastStartTime Last start time of execution.
      */
-    public QueryHistoryMetricsValue(String qry, String schema, boolean loc, int execs, int failures, long minTime,
-        long maxTime,
-        long lastStartTime) {
-        this.qry = qry;
-        this.schema = schema;
-        this.loc = loc;
+    public QueryHistoryMetricsValue(int execs, int failures, long minTime, long maxTime, long lastStartTime) {
         this.execs = execs;
         this.failures = failures;
         this.minTime = minTime;
@@ -69,28 +52,7 @@ class QueryHistoryMetricsValue {
         this.lastStartTime = lastStartTime;
     }
 
-    /**
-     * @return Textual representation of query.
-     */
-    public String qry() {
-        return qry;
-    }
-
-    /**
-     * @return Schema.
-     */
-    public String schema() {
-        return schema;
-    }
-
-    /**
-     * @return {@code true} For query with enabled local flag.
-     */
-    public boolean loc() {
-        return loc;
-    }
-
-    /**
+   /**
      * Gets total number execution of query.
      *
      * @return Number of executions.

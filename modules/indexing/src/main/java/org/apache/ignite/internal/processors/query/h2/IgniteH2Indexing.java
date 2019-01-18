@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
+import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -2686,7 +2687,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @return Queries history metrics.
      */
-    public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
         return runningQueryMgr.queryHistoryMetrics();
     }
 
