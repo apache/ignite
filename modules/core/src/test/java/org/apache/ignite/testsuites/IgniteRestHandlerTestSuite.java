@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
@@ -40,6 +41,7 @@ public class IgniteRestHandlerTestSuite extends TestSuite {
         suite.addTestSuite(GridLogCommandHandlerTest.class);
         suite.addTestSuite(GridQueryCommandHandlerTest.class);
         suite.addTestSuite(CacheTopologyCommandHandlerTest.class);
+        suite.addTestSuite(RestProtocolStartTest.class);
 
         return suite;
     }
