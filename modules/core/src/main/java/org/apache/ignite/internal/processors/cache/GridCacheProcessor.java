@@ -1986,7 +1986,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Caches to be started when this node starts.
      */
     @Nullable public LocalJoinCachesContext localJoinCachesContext() {
-        if (ctx.discovery().localNode().order() == 1)
+        if (ctx.discovery().localNode().order() == 1 && localConfigs != null)
             cachesInfo.filterDynamicCacheDescriptors(localConfigs);
 
         localConfigs = null;
