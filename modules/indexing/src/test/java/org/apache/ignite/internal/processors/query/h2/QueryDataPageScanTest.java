@@ -206,9 +206,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     long balance1 = cache.get(accountId1);
                     long balance2 = cache.get(accountId2);
 
-                    if (balance1 == 0) {
+                    if (balance1 <= balance2) {
                         if (balance2 == 0)
-                            continue;
+                            continue; // balance1 is 0 as well here
 
                         long transfer = rnd.nextInt((int)balance2);
 
@@ -254,7 +254,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         long start = U.currentTimeMillis();
 
-        while (!cancel.get() && U.currentTimeMillis() - start < 30_000)
+        while (!cancel.get() && U.currentTimeMillis() - start < 15_000)
             doSleep(100);
 
         cancel.set(true);
