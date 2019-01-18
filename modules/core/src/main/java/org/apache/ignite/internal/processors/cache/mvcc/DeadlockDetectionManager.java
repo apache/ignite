@@ -61,7 +61,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
             if (msg instanceof DeadlockProbe) {
                 if (log.isDebugEnabled())
-                    log.debug("Received a probe message msg=[" + msg + ']');
+                    log.debug("Received a probe message [msg=" + msg + ']');
 
                 DeadlockProbe msg0 = (DeadlockProbe)msg;
 
@@ -98,7 +98,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      * @param waiterVer Version of the waiting transaction.
      * @param blockerVer Version of the waited for transaction.
      */
-    public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
+    private void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
+        if (log.isDebugEnabled())
+            log.debug("Starting deadlock detection [waiterVer=" + waiterVer + ", blockerVer=" + blockerVer + ']');
+
         Optional<GridDhtTxLocalAdapter> waitingTx = findTx(waiterVer);
 
         Optional<GridDhtTxLocalAdapter> blockerTx = findTx(blockerVer);
@@ -110,7 +113,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
             sendProbe(
                 bTx.eventNodeId(),
-                waitingTx.get().nearXidVersion(),
+                wTx.xidVersion(),
                 // real start time will be filled later when corresponding near node is visited
                 singleton(new ProbedTx(wTx.nodeId(), wTx.xidVersion(), wTx.nearXidVersion(), -1, wTx.lockCounter())),
                 new ProbedTx(bTx.nodeId(), bTx.xidVersion(), bTx.nearXidVersion(), -1, bTx.lockCounter()),
@@ -191,18 +194,27 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void resolveDeadlock(DeadlockProbe probe, ProbedTx repeatedTx, GridDhtTxLocalAdapter locTx) {
+        if (log.isDebugEnabled())
+            log.debug("Deadlock detected [probe=" + probe + ']');
+
         ProbedTx victim = chooseVictim(
             // real start time is filled here for repeated tx
             repeatedTx.withStartTime(probe.blocker().startTime()),
             probe.waitChain());
 
         if (victim.xidVersion().equals(locTx.xidVersion())) {
+            if (log.isDebugEnabled())
+                log.debug("Chosen victim is on local node, tx will be aborted [victim=" + victim + ']');
+
             // if a victim tx has made a progress since it was identified as waiting
             // it means that detected deadlock was broken by other means (e.g. timeout of another tx)
             if (victim.lockCounter() == locTx.lockCounter())
                 abortTx(locTx);
         }
         else {
+            if (log.isDebugEnabled())
+                log.debug("Chosen victim is on remote node, message will be sent [victim=" + victim + ']');
+
             // destination node must determine itself as a victim
             sendProbe(victim.nodeId(), probe.initiatorVersion(), singleton(victim), victim, false);
         }
@@ -289,7 +301,11 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** */
     private void sendProbe(UUID destNodeId, GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
         ProbedTx blocker, boolean near) {
+
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waitChain, blocker, near);
+
+        if (log.isDebugEnabled())
+            log.debug("Sending probe [probe=" + probe + ", destNode=" + destNodeId + ']');
 
         try {
             cctx.gridIO().sendToGridTopic(destNodeId, TOPIC_DEADLOCK_DETECTION, probe, SYSTEM_POOL);

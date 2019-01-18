@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -38,6 +39,7 @@ public class DeadlockProbe implements Message {
     /** */
     private GridCacheVersion initiatorVer;
     /** */
+    @GridToStringInclude
     @GridDirectCollection(ProbedTx.class)
     private Collection<ProbedTx> waitChain;
     /** */
