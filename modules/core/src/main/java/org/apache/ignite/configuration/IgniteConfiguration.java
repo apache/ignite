@@ -632,6 +632,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
         sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
@@ -648,7 +649,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        sqlQryHistSize = cfg.getSqlQueryHistorySize();
     }
 
     /**
@@ -1014,7 +1014,6 @@ public class IgniteConfiguration {
      * will be switched off.
      *
      * @return SQL query history size.
-     * @see #DFLT_SQL_QUERY_HISTORY_SIZE
      */
     public int getSqlQueryHistorySize() {
         return sqlQryHistSize;
@@ -1024,10 +1023,8 @@ public class IgniteConfiguration {
      * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
      * #DFLT_SQL_QUERY_HISTORY_SIZE}.
      *
-     * @param size Number of SQL query history elements kept in memory. If value is less or equals 0, then gathering
-     * SQL query history will be switched off.
+     * @param size Number of SQL query history elements kept in memory.
      * @return {@code this} for chaining.
-     * @see #DFLT_SQL_QUERY_HISTORY_SIZE
      */
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
         sqlQryHistSize = size;
