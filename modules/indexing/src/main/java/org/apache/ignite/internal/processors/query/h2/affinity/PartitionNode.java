@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+
+import java.util.Collection;
 
 /**
  * Common node of partition tree.
