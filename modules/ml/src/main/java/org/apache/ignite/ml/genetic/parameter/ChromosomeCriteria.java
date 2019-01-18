@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic.parameter;
 
 import java.util.ArrayList;
-
 import java.util.List;
 
 /**

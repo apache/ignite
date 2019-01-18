@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.composition.bagging.BaggedModel;
+import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -77,18 +79,16 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
-        trainer.withEnvironmentBuilder(TestUtils.testEnvBuilder());
+        BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
+            trainer,
+            10,
+            0.7,
+            2,
+            2,
+            new OnMajorityPredictionsAggregator())
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
-        DatasetTrainer<ModelsComposition, Double> baggedTrainer =
-            TrainerTransformers.makeBagged(
-                trainer,
-                10,
-                0.7,
-                2,
-                2,
-                new OnMajorityPredictionsAggregator());
-
-        ModelsComposition mdl = baggedTrainer.fit(
+        BaggedModel mdl = baggedTrainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -111,14 +111,17 @@ public class BaggingTest extends TrainerTest {
 
         double subsampleRatio = 0.3;
 
-        ModelsComposition mdl = TrainerTransformers.makeBagged(
+        BaggedModel mdl = TrainerTransformers.makeBagged(
             cntTrainer,
             100,
             subsampleRatio,
             2,
             2,
             new MeanValuePredictionsAggregator())
-            .fit(cacheMock, parts, null, null);
+            .fit(cacheMock,
+                parts,
+                (integer, doubles) -> VectorUtils.of(doubles),
+                (integer, doubles) -> doubles[doubles.length - 1]);
 
         Double res = mdl.predict(null);
 
@@ -177,7 +180,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkState(IgniteModel<Vector, Double> mdl) {
+        @Override public boolean isUpdateable(IgniteModel<Vector, Double> mdl) {
             return true;
         }
 

@@ -117,13 +117,13 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cacheCustOrd = null;
         cacheReplOrd = null;
         cacheOrdParam = null;
         cacheCancel = null;
         cacheExec = null;
+
+        super.afterTestsStopped();
     }
 
     /**

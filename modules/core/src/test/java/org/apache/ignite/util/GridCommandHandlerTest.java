@@ -103,6 +103,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -414,6 +415,39 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test baseline remove node on not active cluster via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineRemoveOnNotActiveCluster() throws Exception {
+        Ignite ignite = startGrids(1);
+        Ignite other = startGrid("nodeToStop");
+
+        assertFalse(ignite.cluster().active());
+
+        String offlineNodeConsId = consistentIds(other);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "remove", offlineNodeConsId));
+
+        ignite.cluster().active(true);
+
+        stopGrid("nodeToStop");
+
+        assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+
+        ignite.cluster().active(false);
+
+        assertFalse(ignite.cluster().active());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "remove", offlineNodeConsId));
+
+        assertTrue(testOut.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+    }
+
+    /**
      * Test baseline set works via control.sh
      *
      * @throws Exception If failed.
@@ -691,6 +725,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10899")
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 
@@ -1351,6 +1386,94 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertTrue(dumpWithConflicts.contains("found 1 conflict partitions: [counterConflicts=0, " +
                 "hashConflicts=1]"));
+        }
+        else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify print partitions info with exclude cache group.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        IgniteCache<Object, Object> secondCache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_second"));
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", "shared_grp"));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 0 partitions"));
+        }
+        else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify print partitions info with exclude caches.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_second"));
+
+        ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_third"));
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--excludeCaches", DEFAULT_CACHE_NAME
+            + "," + DEFAULT_CACHE_NAME + "_second"));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
+            assertTrue(dumpWithConflicts.contains("default_third"));
+            assertTrue(!dumpWithConflicts.contains("shared_grp"));
         }
         else
             fail("Should be found dump with conflicts");
