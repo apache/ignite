@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -41,8 +43,10 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 
+/**
+ */
 @RunWith(JUnit4.class)
-public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
+public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "test";
 
@@ -84,17 +88,12 @@ public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-//    /** {@inheritDoc} */
-//    @Override protected long getTestTimeout() {
-//        return 15 * 60 * 1000;
-//    }
-
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void testDirtyScan() throws Exception {
+    public void testDataPageScanWithRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
         ignite.cluster().active(true);
 
@@ -102,11 +101,11 @@ public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
         CacheGroupMetricsMXBean gmx = cache.context().group().mxBean();
         DataRegionMetricsImpl rmx = cache.context().dataRegion().memoryMetrics();
 
-        long maxKey = 1_000_000;
+        long maxKey = 100_000;
 
         Map<Long,String> map = new ConcurrentHashMap<>();
 
-        int threads = 32;
+        int threads = 16;
         AtomicInteger threadShift = new AtomicInteger();
 
         multithreaded((Callable<Void>)() -> {
@@ -130,24 +129,25 @@ public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
         info("Alloc size: " + gmx.getTotalAllocatedSize());
         info("Store size: " + gmx.getStorageSize());
 
+        HashMap<Long,String> map2 = new HashMap<>(map);
+
         IgniteCache<Long,String> c = ignite.cache(CACHE);
-        ScanQuery<Long,String> qry = new ScanQuery<>();
-
-        qry.setLocal(true)
-//            .setFilter((k, v) -> k == -1)
-            .setPartition(0);
-
-        for (Cache.Entry<Long,String> e : c.query(qry))
+        for (Cache.Entry<Long,String> e : c.query(new ScanQuery<Long,String>().setDataPageScanEnabled(true)).getAll())
             assertEquals(e.getValue(), map.remove(e.getKey()));
 
         assertTrue(map.isEmpty());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
-//        for (int i = 0; i < 1000; i++) {
-//            long start = System.nanoTime();
-//
-//            assertEquals(0, c.query(qry).getAll().size());
-//
-//            info("Scan time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-//        }
+        stopAllGrids(true);
+
+        ignite = startGrid(0);
+        ignite.cluster().active(true);
+
+        c = ignite.cache(CACHE);
+        for (Cache.Entry<Long,String> e : c.query(new ScanQuery<Long,String>().setDataPageScanEnabled(true)).getAll())
+            assertEquals(e.getValue(), map2.remove(e.getKey()));
+
+        assertTrue(map2.isEmpty());
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 }
