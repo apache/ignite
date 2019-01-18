@@ -957,6 +957,9 @@ public class GridReduceQueryExecutor {
 
             U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", e);
 
+            //TODO IGNITE-10377: To be removed. Just for find out corner cases.
+            assert !(e instanceof TransactionException);
+
             throw new CacheException("Failed to run update. " + e.getMessage(), e);
         }
         finally {

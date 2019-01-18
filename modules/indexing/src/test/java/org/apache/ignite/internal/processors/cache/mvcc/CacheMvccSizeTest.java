@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -304,7 +305,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             fut.join();
         }
         catch (Exception e) {
-            if (e.getCause().getCause() instanceof IgniteSQLException)
+            if (e.getCause().getCause() instanceof TransactionException)
                 assertTrue(e.getMessage().contains("Failed to finish transaction because it has been rolled back"));
             else {
                 e.printStackTrace();

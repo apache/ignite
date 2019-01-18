@@ -1299,10 +1299,12 @@ public class GridCacheUtils {
      * @return CacheException runtime exception, never null.
      */
     public static @NotNull RuntimeException convertToCacheException(IgniteSQLException e) {
-        IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
+        // TODO IGNITE-10377: Does this method really useful?
+        assert !e.hasCause(TransactionException.class) : e.getCause();
+        assert !e.hasCause(CacheException.class) : e.getCause();
 
-        if (cause != null)
-            return convertToCacheException(cause);
+        if (e.getCause() != null && e.getCause() instanceof IgniteCheckedException)
+            return convertToCacheException((IgniteCheckedException)e.getCause());
 
         return new CacheException(e);
     }

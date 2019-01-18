@@ -73,7 +73,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
         try {
             update("insert into Integer(_key, _val) values(3, 3),(1, 1)");
         } catch (CacheException e) {
-            assertTrue(e.getCause() instanceof IgniteSQLException);
+            assertTrue(e.getCause().getMessage(), e.getCause() instanceof IgniteSQLException);
             assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY, ((IgniteSQLException)e.getCause()).statusCode());
         }
 

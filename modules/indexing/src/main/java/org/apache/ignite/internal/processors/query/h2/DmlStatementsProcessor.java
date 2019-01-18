@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
@@ -943,8 +944,7 @@ public class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    DUPLICATE_KEY);
+                throw new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             // Keys that failed to INSERT due to duplication.

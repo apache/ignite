@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -352,6 +353,9 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                 tx.commit();
             }
             catch (Exception e) {
+                //TODO IGNITE-10377: remove this. Just for find out corner cases.
+                assert !(e instanceof IgniteCheckedException): "All internal exceptions should be converted.";
+
                 assertTrue(msgContains(e, "Failed to acquire lock within provided timeout for transaction")
                     || msgContains(e, "Cannot serialize transaction due to write conflict"));
             }
