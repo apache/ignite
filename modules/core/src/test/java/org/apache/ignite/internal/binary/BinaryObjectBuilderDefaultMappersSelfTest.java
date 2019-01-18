@@ -138,9 +138,9 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject obj = builder.build();
 
-        assertNull(obj.field("objField"));
-        assertEquals("value", obj.field("otherField"));
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(obj), obj.hashCode());
+        Assert.assertNull(obj.field("objField"));
+        Assert.assertEquals("value", obj.field("otherField"));
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(obj), obj.hashCode());
 
         builder = builder(obj);
 
@@ -149,9 +149,9 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         obj = builder.build();
 
-        assertNull(obj.field("otherField"));
-        assertEquals("value", obj.field("objField"));
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(obj), obj.hashCode());
+        Assert.assertNull(obj.field("otherField"));
+        Assert.assertEquals("value", obj.field("objField"));
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(obj), obj.hashCode());
     }
 
     /**
@@ -165,10 +165,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals((byte) 1, po.<Byte>field("byteField").byteValue());
+        Assert.assertEquals((byte) 1, po.<Byte>field("byteField").byteValue());
     }
 
     /**
@@ -182,10 +182,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals((short)1, po.<Short>field("shortField").shortValue());
+        Assert.assertEquals((short)1, po.<Short>field("shortField").shortValue());
     }
 
     /**
@@ -199,10 +199,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(1, po.<Integer>field("intField").intValue());
+        Assert.assertEquals(1, po.<Integer>field("intField").intValue());
     }
 
     /**
@@ -216,10 +216,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(1L, po.<Long>field("longField").longValue());
+        Assert.assertEquals(1L, po.<Long>field("longField").longValue());
     }
 
     /**
@@ -233,10 +233,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(1.0f, po.<Float>field("floatField").floatValue(), 0);
+        Assert.assertEquals(1.0f, po.<Float>field("floatField").floatValue(), 0);
     }
 
     /**
@@ -250,10 +250,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(1.0d, po.<Double>field("doubleField").doubleValue(), 0);
+        Assert.assertEquals(1.0d, po.<Double>field("doubleField").doubleValue(), 0);
     }
 
     /**
@@ -267,10 +267,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals((char)1, po.<Character>field("charField").charValue());
+        Assert.assertEquals((char)1, po.<Character>field("charField").charValue());
     }
 
     /**
@@ -301,10 +301,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(po.<Boolean>field("booleanField"));
+        Assert.assertTrue(po.<Boolean>field("booleanField"));
     }
 
     /**
@@ -318,10 +318,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(BigDecimal.TEN, po.<BigDecimal>field("decimalField"));
+        Assert.assertEquals(BigDecimal.TEN, po.<BigDecimal>field("decimalField"));
     }
 
     /**
@@ -335,10 +335,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals("str", po.<String>field("stringField"));
+        Assert.assertEquals("str", po.<String>field("stringField"));
     }
 
     /**
@@ -348,7 +348,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     public void testDateField() throws Exception {
         Date date = new Date();
 
-        assertEquals(date, builder("C").setField("d", date).build().<Date>field("d"));
+        Assert.assertEquals(date, builder("C").setField("d", date).build().<Date>field("d"));
     }
 
     /**
@@ -359,7 +359,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         Timestamp ts = new Timestamp(new Date().getTime());
         ts.setNanos(1000);
 
-        assertEquals(ts, builder("C").setField("t", ts).build().<Timestamp>field("t"));
+        Assert.assertEquals(ts, builder("C").setField("t", ts).build().<Timestamp>field("t"));
     }
 
     /**
@@ -375,10 +375,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(uuid, po.<UUID>field("uuidField"));
+        Assert.assertEquals(uuid, po.<UUID>field("uuidField"));
     }
 
     /**
@@ -392,10 +392,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new byte[] {1, 2, 3}, po.<byte[]>field("byteArrayField")));
+        Assert.assertTrue(Arrays.equals(new byte[] {1, 2, 3}, po.<byte[]>field("byteArrayField")));
     }
 
     /**
@@ -409,10 +409,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new short[] {1, 2, 3}, po.<short[]>field("shortArrayField")));
+        Assert.assertTrue(Arrays.equals(new short[] {1, 2, 3}, po.<short[]>field("shortArrayField")));
     }
 
     /**
@@ -426,10 +426,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new int[] {1, 2, 3}, po.<int[]>field("intArrayField")));
+        Assert.assertTrue(Arrays.equals(new int[] {1, 2, 3}, po.<int[]>field("intArrayField")));
     }
 
     /**
@@ -443,10 +443,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new long[] {1, 2, 3}, po.<long[]>field("longArrayField")));
+        Assert.assertTrue(Arrays.equals(new long[] {1, 2, 3}, po.<long[]>field("longArrayField")));
     }
 
     /**
@@ -460,10 +460,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new float[] {1, 2, 3}, po.<float[]>field("floatArrayField")));
+        Assert.assertTrue(Arrays.equals(new float[] {1, 2, 3}, po.<float[]>field("floatArrayField")));
     }
 
     /**
@@ -477,10 +477,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new double[] {1, 2, 3}, po.<double[]>field("doubleArrayField")));
+        Assert.assertTrue(Arrays.equals(new double[] {1, 2, 3}, po.<double[]>field("doubleArrayField")));
     }
 
     /**
@@ -494,10 +494,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new char[] {1, 2, 3}, po.<char[]>field("charArrayField")));
+        Assert.assertTrue(Arrays.equals(new char[] {1, 2, 3}, po.<char[]>field("charArrayField")));
     }
 
     /**
@@ -511,15 +511,15 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
         boolean[] arr = po.field("booleanArrayField");
 
-        assertEquals(2, arr.length);
+        Assert.assertEquals(2, arr.length);
 
-        assertTrue(arr[0]);
-        assertFalse(arr[1]);
+        Assert.assertTrue(arr[0]);
+        Assert.assertFalse(arr[1]);
     }
 
     /**
@@ -533,10 +533,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN}, po.<String[]>field("decimalArrayField")));
+        Assert.assertTrue(Arrays.equals(new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN}, po.<String[]>field("decimalArrayField")));
     }
 
     /**
@@ -550,10 +550,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(new String[] {"str1", "str2", "str3"}, po.<String[]>field("stringArrayField")));
+        Assert.assertTrue(Arrays.equals(new String[] {"str1", "str2", "str3"}, po.<String[]>field("stringArrayField")));
     }
 
     /**
@@ -566,7 +566,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         Date[] dateArr = new Date[] { date1, date2 };
 
-        assertTrue(Arrays.equals(dateArr, builder("C").setField("da", dateArr).build().<Date[]>field("da")));
+        Assert.assertTrue(Arrays.equals(dateArr, builder("C").setField("da", dateArr).build().<Date[]>field("da")));
     }
 
     /**
@@ -582,7 +582,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         Timestamp[] tsArr = new Timestamp[] { ts1, ts2 };
 
-        assertTrue(Arrays.equals(tsArr, builder("C").setField("ta", tsArr).build().<Timestamp[]>field("ta")));
+        Assert.assertTrue(Arrays.equals(tsArr, builder("C").setField("ta", tsArr).build().<Timestamp[]>field("ta")));
     }
 
     /**
@@ -598,10 +598,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertTrue(Arrays.equals(arr, po.<UUID[]>field("uuidArrayField")));
+        Assert.assertTrue(Arrays.equals(arr, po.<UUID[]>field("uuidArrayField")));
     }
 
     /**
@@ -615,10 +615,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(1, po.<BinaryObject>field("objectField").<Value>deserialize().i);
+        Assert.assertEquals(1, po.<BinaryObject>field("objectField").<Value>deserialize().i);
     }
 
     /**
@@ -632,15 +632,15 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
         Object[] arr = po.field("objectArrayField");
 
-        assertEquals(2, arr.length);
+        Assert.assertEquals(2, arr.length);
 
-        assertEquals(1, ((BinaryObject)arr[0]).<Value>deserialize().i);
-        assertEquals(2, ((BinaryObject)arr[1]).<Value>deserialize().i);
+        Assert.assertEquals(1, ((BinaryObject)arr[0]).<Value>deserialize().i);
+        Assert.assertEquals(2, ((BinaryObject)arr[1]).<Value>deserialize().i);
     }
 
     /**
@@ -655,20 +655,20 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
         List<Value> list = po.field("collectionField");
 
-        assertEquals(2, list.size());
-        assertEquals(1, list.get(0).i);
-        assertEquals(2, list.get(1).i);
+        Assert.assertEquals(2, list.size());
+        Assert.assertEquals(1, list.get(0).i);
+        Assert.assertEquals(2, list.get(1).i);
 
         List<BinaryObject> list2 = po.field("collectionField2");
 
-        assertEquals(2, list2.size());
-        assertEquals(1, list2.get(0).<Value>deserialize().i);
-        assertEquals(2, list2.get(1).<Value>deserialize().i);
+        Assert.assertEquals(2, list2.size());
+        Assert.assertEquals(1, list2.get(0).<Value>deserialize().i);
+        Assert.assertEquals(2, list2.get(1).<Value>deserialize().i);
     }
 
     /**
@@ -683,24 +683,24 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
         // Test non-standard map.
         Map<Key, Value> map = po.field("mapField");
 
-        assertEquals(2, map.size());
+        Assert.assertEquals(2, map.size());
 
         for (Map.Entry<Key, Value> e : map.entrySet())
-            assertEquals(e.getKey().i, e.getValue().i);
+            Assert.assertEquals(e.getKey().i, e.getValue().i);
 
         // Test binary map
         Map<BinaryObject, BinaryObject> map2 = po.field("mapField2");
 
-        assertEquals(2, map2.size());
+        Assert.assertEquals(2, map2.size());
 
         for (Map.Entry<BinaryObject, BinaryObject> e : map2.entrySet())
-            assertEquals(e.getKey().<Key>deserialize().i, e.getValue().<Value>deserialize().i);
+            Assert.assertEquals(e.getKey().<Key>deserialize().i, e.getValue().<Value>deserialize().i);
     }
 
     /**
@@ -718,20 +718,20 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject po = builder.build();
 
-        assertEquals(expectedHashCode("Class"), po.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
+        Assert.assertEquals(expectedHashCode("Class"), po.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals(111, po.<Integer>field("i").intValue());
-        assertEquals(111.111f, po.<Float>field("f").floatValue(), 0);
-        assertTrue(Arrays.equals(new int[] {1, 2, 3}, po.<int[]>field("iArr")));
-        assertEquals(1, po.<BinaryObject>field("obj").<Key>deserialize().i);
+        Assert.assertEquals(111, po.<Integer>field("i").intValue());
+        Assert.assertEquals(111.111f, po.<Float>field("f").floatValue(), 0);
+        Assert.assertTrue(Arrays.equals(new int[] {1, 2, 3}, po.<int[]>field("iArr")));
+        Assert.assertEquals(1, po.<BinaryObject>field("obj").<Key>deserialize().i);
 
         List<BinaryObject> list = po.field("col");
 
-        assertEquals(2, list.size());
+        Assert.assertEquals(2, list.size());
 
-        assertEquals(1, list.get(0).<Value>deserialize().i);
-        assertEquals(2, list.get(1).<Value>deserialize().i);
+        Assert.assertEquals(1, list.get(0).<Value>deserialize().i);
+        Assert.assertEquals(2, list.get(1).<Value>deserialize().i);
     }
 
     /**
@@ -770,25 +770,25 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             BinaryObject offheapObj = (BinaryObject)
                 ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
 
-            assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
+            Assert.assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
 
-            assertEquals(expectedHashCode("Class"), offheapObj.type().typeId());
-            assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), offheapObj.hashCode());
+            Assert.assertEquals(expectedHashCode("Class"), offheapObj.type().typeId());
+            Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), offheapObj.hashCode());
 
-            assertEquals(111, offheapObj.<Integer>field("i").intValue());
-            assertEquals(111.111f, offheapObj.<Float>field("f").floatValue(), 0);
-            assertTrue(Arrays.equals(new int[] {1, 2, 3}, offheapObj.<int[]>field("iArr")));
-            assertEquals(1, offheapObj.<BinaryObject>field("obj").<Key>deserialize().i);
+            Assert.assertEquals(111, offheapObj.<Integer>field("i").intValue());
+            Assert.assertEquals(111.111f, offheapObj.<Float>field("f").floatValue(), 0);
+            Assert.assertTrue(Arrays.equals(new int[] {1, 2, 3}, offheapObj.<int[]>field("iArr")));
+            Assert.assertEquals(1, offheapObj.<BinaryObject>field("obj").<Key>deserialize().i);
 
             List<BinaryObject> list = offheapObj.field("col");
 
-            assertEquals(2, list.size());
+            Assert.assertEquals(2, list.size());
 
-            assertEquals(1, list.get(0).<Value>deserialize().i);
-            assertEquals(2, list.get(1).<Value>deserialize().i);
+            Assert.assertEquals(1, list.get(0).<Value>deserialize().i);
+            Assert.assertEquals(2, list.get(1).<Value>deserialize().i);
 
-            assertEquals(po, offheapObj);
-            assertEquals(offheapObj, po);
+            Assert.assertEquals(po, offheapObj);
+            Assert.assertEquals(offheapObj, po);
         }
         finally {
             GridUnsafe.freeMemory(ptr);
@@ -806,10 +806,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryObject bo = builder.build();
 
-        assertEquals(expectedHashCode(Value.class.getName()), bo.type().typeId());
-        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
+        Assert.assertEquals(expectedHashCode(Value.class.getName()), bo.type().typeId());
+        Assert.assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
 
-        assertEquals(1, bo.<Value>deserialize().i);
+        Assert.assertEquals(1, bo.<Value>deserialize().i);
     }
 
     /**
@@ -825,8 +825,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryType meta = bo.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest2"), meta.typeName());
-        assertEquals("Object", meta.fieldTypeName("objectField"));
+        Assert.assertEquals(expectedTypeName("org.test.MetaTest2"), meta.typeName());
+        Assert.assertEquals("Object", meta.fieldTypeName("objectField"));
     }
 
     /**
@@ -856,17 +856,17 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryType meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        Assert.assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
-        assertEquals(2, fields.size());
+        Assert.assertEquals(2, fields.size());
 
-        assertTrue(fields.contains("intField"));
-        assertTrue(fields.contains("byteArrayField"));
+        Assert.assertTrue(fields.contains("intField"));
+        Assert.assertTrue(fields.contains("byteArrayField"));
 
-        assertEquals("int", meta.fieldTypeName("intField"));
-        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
+        Assert.assertEquals("int", meta.fieldTypeName("intField"));
+        Assert.assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
 
         builder = builder("org.test.MetaTest");
 
@@ -877,19 +877,19 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        Assert.assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
 
         fields = meta.fieldNames();
 
-        assertEquals(3, fields.size());
+        Assert.assertEquals(3, fields.size());
 
-        assertTrue(fields.contains("intField"));
-        assertTrue(fields.contains("byteArrayField"));
-        assertTrue(fields.contains("uuidField"));
+        Assert.assertTrue(fields.contains("intField"));
+        Assert.assertTrue(fields.contains("byteArrayField"));
+        Assert.assertTrue(fields.contains("uuidField"));
 
-        assertEquals("int", meta.fieldTypeName("intField"));
-        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
-        assertEquals("UUID", meta.fieldTypeName("uuidField"));
+        Assert.assertEquals("int", meta.fieldTypeName("intField"));
+        Assert.assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
+        Assert.assertEquals("UUID", meta.fieldTypeName("uuidField"));
     }
 
     /**
@@ -900,12 +900,12 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         BinaryObject objStr = builder(GridBinaryTestClasses.TestObjectAllTypes.class.getName()).setField("str", "aaa").build();
 
         BinaryObjectBuilderImpl builder = builder(objStr);
-        assertEquals("aaa", builder.getField("str"));
+        Assert.assertEquals("aaa", builder.getField("str"));
 
         builder.setField("str", "bbb");
-        assertEquals("bbb", builder.getField("str"));
+        Assert.assertEquals("bbb", builder.getField("str"));
 
-        assertNull(builder.getField("i_"));
+        Assert.assertNull(builder.getField("i_"));
         Assert.assertEquals("bbb", builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
@@ -930,9 +930,9 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         List deserializedList = (List)deserialized.foo;
 
-        assertSame(deserializedList.get(0), deserializedList.get(1));
-        assertEquals("!!!", deserializedList.get(2));
-        assertTrue(deserializedList.get(0) instanceof GridBinaryTestClasses.TestObjectAllTypes);
+        Assert.assertSame(deserializedList.get(0), deserializedList.get(1));
+        Assert.assertEquals("!!!", deserializedList.get(2));
+        Assert.assertTrue(deserializedList.get(0) instanceof GridBinaryTestClasses.TestObjectAllTypes);
     }
 
     /**
@@ -951,7 +951,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             .setField("foo", toBinary(new GridBinaryTestClasses.TestObjectAllTypes()))
             .build();
 
-        assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof
+        Assert.assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof
             GridBinaryTestClasses.TestObjectAllTypes);
     }
 
@@ -963,10 +963,10 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         GridBinaryTestClasses.TestObjectPlainBinary obj = new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
         BinaryObjectBuilderImpl builder = builder(toBinary(obj));
-        assertTrue(builder.getField("plainBinary") instanceof BinaryObject);
+        Assert.assertTrue(builder.getField("plainBinary") instanceof BinaryObject);
 
         GridBinaryTestClasses.TestObjectPlainBinary deserialized = builder.build().deserialize();
-        assertTrue(deserialized.plainBinary != null);
+        Assert.assertTrue(deserialized.plainBinary != null);
     }
 
     /**
@@ -1000,7 +1000,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         GridBinaryTestClasses.TestObjectAllTypes deserialzied = binary.deserialize();
 
-        assertNull(deserialzied.str);
+        Assert.assertNull(deserialzied.str);
     }
 
     /**
@@ -1037,8 +1037,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         GridBinaryTestClasses.TestObjectOuter res = builder.build().deserialize();
 
-        assertEquals("b", res.foo);
-        assertSame(res, res.inner.outer);
+        Assert.assertEquals("b", res.foo);
+        Assert.assertSame(res, res.inner.outer);
     }
 
     /**
