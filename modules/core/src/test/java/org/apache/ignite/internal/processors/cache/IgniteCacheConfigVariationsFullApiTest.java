@@ -49,6 +49,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -4336,7 +4337,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 checkTtl0(inTx, oldEntry, ttlVals[i]);
                 break;
             }
-            catch (AssertionError e) {
+            catch (AssertionFailedError e) {
                 if (i < ttlVals.length - 1)
                     info("Ttl test failed, try execute with increased ttl");
                 else
@@ -5211,7 +5212,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 checkIteratorsCleared();
             }
-            catch (AssertionError e) {
+            catch (AssertionFailedError e) {
                 if (i == 9)
                     throw e;
 

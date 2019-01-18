@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -114,7 +115,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 return;
             }
-            catch (AssertionError e) {
+            catch (AssertionFailedError e) {
                 if (i == MAX_CHECK - 1)
                     throw e;
 
@@ -551,7 +552,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 assertSetIteratorsCleared();
             }
-            catch (AssertionError e) {
+            catch (AssertionFailedError e) {
                 if (i == 9)
                     throw e;
 
@@ -573,7 +574,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             try {
                 assertSetIteratorsCleared();
             }
-            catch (AssertionError e) {
+            catch (AssertionFailedError e) {
                 if (i == 9)
                     throw e;
 
