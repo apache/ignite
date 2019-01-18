@@ -24,18 +24,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for {@link GridAffinityAssignment} without IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION.
+ * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
 @RunWith(JUnit4.class)
 public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
     /** */
     @BeforeClass
     public static void beforeTests() {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "false");
     }
 
     @AfterClass
     public static void afterTests() {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION);
+        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
     }
 }

@@ -142,10 +142,10 @@ public class GridAffinityAssignmentTest {
         for (int i = 0; i < 4; i++)
             assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNodes.get(i).id()));
 
-        if (AffinityAssignment.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-        else
+        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
             assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
+        else
+            assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
 
         try {
             gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);
@@ -170,10 +170,10 @@ public class GridAffinityAssignmentTest {
             "c"
         );
 
-        if (AffinityAssignment.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertTrue(unwrapped instanceof BitSetIntSet);
-        else
+        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
             assertTrue(unwrapped instanceof HashSet);
+        else
+            assertTrue(unwrapped instanceof BitSetIntSet);
     }
 
     /**
@@ -196,44 +196,6 @@ public class GridAffinityAssignmentTest {
         );
 
         assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-    }
-
-    /**
-     *
-     */
-    private GridAffinityAssignment makeGridAffinityAssignment(int parts, int nodesCount, int backups) {
-        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, parts);
-
-        List<ClusterNode> nodes = new ArrayList<>();
-        for (int i = 0; i < nodesCount; i++) {
-            TcpDiscoveryNode node = new TcpDiscoveryNode(
-                UUID.randomUUID(),
-                Collections.singletonList("127.0.0.1"),
-                Collections.singletonList("127.0.0.1"),
-                0,
-                metrics,
-                ver,
-                i
-            );
-            node.setAttributes(new HashMap<>());
-            nodes.add(node);
-        }
-
-        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
-            nodes,
-            new ArrayList<>(),
-            new DiscoveryEvent(),
-            new AffinityTopologyVersion(),
-            backups
-        );
-        List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
-
-        return new GridAffinityAssignment(
-            new AffinityTopologyVersion(1, 0),
-            assignment,
-            new ArrayList<>(),
-            backups
-        );
     }
 
     /**

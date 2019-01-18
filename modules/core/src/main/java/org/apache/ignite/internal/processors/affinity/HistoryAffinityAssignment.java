@@ -83,13 +83,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION) {
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            return assignments2ids(assignment.get(part));
+        else
             return backups > 5
                 ? assignments2ids(assignment.get(part))
                 : F.viewReadOnly(assignment.get(part), F.node2id());
-        }
-        else
-            return assignments2ids(assignment.get(part));
      }
 
     /** {@inheritDoc} */
@@ -122,7 +121,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
     /** {@inheritDoc} */
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
-        Set<Integer> res = IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>();
+        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
@@ -136,7 +135,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
     /** {@inheritDoc} */
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
-        Set<Integer> res = IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>();
+        Set<Integer> res = IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new HashSet<>() : new BitSetIntSet();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -118,7 +119,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                     We need to replace it with sparse bitsets.
                  */
                 tmp.computeIfAbsent(id, uuid ->
-                    IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>()
+                    !IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>()
                 ).add(p);
 
                 isPrimary =  false;
@@ -190,10 +191,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            return backups > 5 ? getOrCreateAssigmentsIds(part) : F.viewReadOnly(assignment.get(part), F.node2id());
-        else
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
             return getOrCreateAssigmentsIds(part);
+        else
+            return backups > 5 ? getOrCreateAssigmentsIds(part) : F.viewReadOnly(assignment.get(part), F.node2id());
     }
 
     /**

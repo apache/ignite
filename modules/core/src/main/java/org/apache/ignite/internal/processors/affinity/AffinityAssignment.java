@@ -31,10 +31,10 @@ import org.apache.ignite.cluster.ClusterNode;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
-    /** Use memory affinity optimizations. */
-    boolean IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION,
-        true
+    /** Disable memory affinity optimizations. */
+    boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
+        false
     );
 
     /**
