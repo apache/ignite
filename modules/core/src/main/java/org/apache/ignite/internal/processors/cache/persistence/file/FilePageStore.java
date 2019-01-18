@@ -677,6 +677,13 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * @return File absolute path.
+     */
+    public String getFileAbsolutePath() {
+        return cfgFile.getAbsolutePath();
+    }
+
+    /**
      *
      */
     private long allocPage() {
