@@ -43,6 +43,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
@@ -123,6 +124,7 @@ import org.junit.runners.Suite;
     GridReleaseTypeSelfTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentTest.class,
+    GridAffinityAssignmentTestNoOptimizations.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,
     GridClosureProcessorSelfTest.class,

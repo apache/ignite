@@ -1082,12 +1082,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
-     * The backups threshold to use HashMaps for optimization.
-     * When number of backups per partion is reached we use HashMap to improve contains()
-     * which leads to extra memory consumption, when threshold is not reached, we use view on the
+     * Memory optimization flag to use:
+     * BitSets instead of HashSets to store partitions.
+     * When number of backups per partion is > 5 we use HashMap to improve contains()
+     * which leads to extra memory consumption, otherwise we use view on the
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
-    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUPS_THRESHOLD";
+    public static final String IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION";
 
     /**
      * Enforces singleton.

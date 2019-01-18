@@ -84,7 +84,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param assignment Assignment.
      * @param idealAssignment Ideal assignment.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer,
+    public GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
         List<List<ClusterNode>> idealAssignment,
         int backups
@@ -94,8 +94,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert idealAssignment != null;
 
         this.topVer = topVer;
-        this.assignment = assignment;
-        this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
+        this.assignment = Collections.unmodifiableList(assignment);
+        this.idealAssignment = Collections.unmodifiableList(
+            idealAssignment.equals(assignment) ? assignment : idealAssignment
+        );
 
         // Temporary mirrors with modifiable partition's collections.
         Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
@@ -110,7 +112,14 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
                 Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
 
-                tmp.computeIfAbsent(id, uuid -> new BitSetIntSet()).add(p);
+                /*
+                    https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet.
+                    However with 65k partition and high number of nodes (700+) BitSet is loosing HashSet.
+                    We need to replace it with sparse bitsets.
+                 */
+                tmp.computeIfAbsent(id, uuid ->
+                    IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION ? new BitSetIntSet() : new HashSet<>()
+                ).add(p);
 
                 isPrimary =  false;
             }
@@ -138,17 +147,17 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     }
 
     /**
-     * @return Affinity assignment computed by affinity function.
+     * @return Unmodifiable ideal affinity assignment computed by affinity function.
      */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return Collections.unmodifiableList(idealAssignment);
+        return idealAssignment;
     }
 
     /**
-     * @return Affinity assignment.
+     * @return Unmodifiable affinity assignment.
      */
     @Override public List<List<ClusterNode>> assignment() {
-        return Collections.unmodifiableList(assignment);
+        return assignment;
     }
 
     /**
@@ -181,21 +190,30 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-        if (backups > AFFINITY_BACKUPS_THRESHOLD) {
-            List<Collection<UUID>> assignmentIds0 = assignmentIds;
+        if (IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            return backups > 5 ? getOrCreateAssigmentsIds(part) : F.viewReadOnly(assignment.get(part), F.node2id());
+        else
+            return getOrCreateAssigmentsIds(part);
+    }
 
-            if (assignmentIds0 == null) {
-                assignmentIds0 = new ArrayList<>(assignment.size());
+    /**
+     *
+     * @param part Partition ID.
+     * @return Collection of UUIDs
+     */
+    private Collection<UUID> getOrCreateAssigmentsIds(int part) {
+        List<Collection<UUID>> assignmentIds0 = assignmentIds;
 
-                for (List<ClusterNode> assignmentPart : assignment)
-                    assignmentIds0.add(assignments2ids(assignmentPart));
+        if (assignmentIds0 == null) {
+            assignmentIds0 = new ArrayList<>(assignment.size());
 
-                assignmentIds = assignmentIds0;
-            }
+            for (List<ClusterNode> assignmentPart : assignment)
+                assignmentIds0.add(assignments2ids(assignmentPart));
 
-            return assignmentIds0.get(part);
-        } else
-            return F.viewReadOnly(assignment.get(part), F.node2id());
+            assignmentIds = assignmentIds0;
+        }
+
+        return assignmentIds0.get(part);
     }
 
     /** {@inheritDoc} */

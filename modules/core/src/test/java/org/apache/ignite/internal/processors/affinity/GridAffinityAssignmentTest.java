@@ -19,19 +19,26 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertSame;
@@ -46,7 +53,7 @@ import static org.junit.Assert.fail;
 @RunWith(JUnit4.class)
 public class GridAffinityAssignmentTest {
     /**  */
-    private DiscoveryMetricsProvider metrics = new DiscoveryMetricsProvider() {
+    protected DiscoveryMetricsProvider metrics = new DiscoveryMetricsProvider() {
         @Override public ClusterMetrics metrics() {
             return null;
         }
@@ -57,7 +64,7 @@ public class GridAffinityAssignmentTest {
     };
 
     /** */
-    private IgniteProductVersion ver = new IgniteProductVersion();
+    protected IgniteProductVersion ver = new IgniteProductVersion();
 
     /**
      * Test GridAffinityAssignment logic when backup threshold is not reached.
@@ -135,7 +142,10 @@ public class GridAffinityAssignmentTest {
         for (int i = 0; i < 4; i++)
             assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNodes.get(i).id()));
 
-        assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
+        if (AffinityAssignment.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
+        else
+            assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
 
         try {
             gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);
@@ -154,6 +164,16 @@ public class GridAffinityAssignmentTest {
         catch (UnsupportedOperationException ignored) {
             // Ignored.
         }
+
+        Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
+            gridAffinityAssignment.primaryPartitions(clusterNode1.id()),
+            "c"
+        );
+
+        if (AffinityAssignment.IGNITE_ENABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            assertTrue(unwrapped instanceof BitSetIntSet);
+        else
+            assertTrue(unwrapped instanceof HashSet);
     }
 
     /**
@@ -180,12 +200,50 @@ public class GridAffinityAssignmentTest {
 
     /**
      *
+     */
+    private GridAffinityAssignment makeGridAffinityAssignment(int parts, int nodesCount, int backups) {
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+
+        List<ClusterNode> nodes = new ArrayList<>();
+        for (int i = 0; i < nodesCount; i++) {
+            TcpDiscoveryNode node = new TcpDiscoveryNode(
+                UUID.randomUUID(),
+                Collections.singletonList("127.0.0.1"),
+                Collections.singletonList("127.0.0.1"),
+                0,
+                metrics,
+                ver,
+                i
+            );
+            node.setAttributes(new HashMap<>());
+            nodes.add(node);
+        }
+
+        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
+            nodes,
+            new ArrayList<>(),
+            new DiscoveryEvent(),
+            new AffinityTopologyVersion(),
+            backups
+        );
+        List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
+
+        return new GridAffinityAssignment(
+            new AffinityTopologyVersion(1, 0),
+            assignment,
+            new ArrayList<>(),
+            backups
+        );
+    }
+
+    /**
+     *
      * @param metrics Metrics.
      * @param v Version.
      * @param consistentId ConsistentId.
      * @return TcpDiscoveryNode.
      */
-    private TcpDiscoveryNode node(DiscoveryMetricsProvider metrics, IgniteProductVersion v, String consistentId) {
+    protected TcpDiscoveryNode node(DiscoveryMetricsProvider metrics, IgniteProductVersion v, String consistentId) {
         return new TcpDiscoveryNode(
             UUID.randomUUID(),
             Collections.singletonList("127.0.0.1"),
