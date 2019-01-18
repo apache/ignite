@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
@@ -1087,6 +1088,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
         "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
+
+    /**
+     * Maximum amount of bytes that can be stored in history of {@link DistributedMetaStorage} updates.
+     */
+    public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
 
     /**
      * Enforces singleton.
