@@ -50,8 +50,6 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
 
         boolean nodeStopped = super.handle(ignite, failureCtx);
 
-        TestCase.fail(failureCtx.toString());
-
         test.handleFailure(failureCtx.error());
 
         return nodeStopped;
