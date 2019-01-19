@@ -247,13 +247,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (val instanceof BinaryObject)
             return ((BinaryObject)val).type().typeId() == typeId;
 
-        Object v = val.value(coCtx, false);
-
         // Value type name can be manually set in QueryEntity to any random value,
         // also for some reason our conversion from setIndexedTypes sets a full class name
         // instead of a simple name there, thus we can have a typeId mismatch.
-        return v.getClass() == valCls ||
-            coCtx.kernalContext().cacheObjects().typeId(v) == typeId;
+        // Also, if the type is not in binary format, we always must have it's class available.
+        return val.value(coCtx, false).getClass() == valCls;
     }
 
     /**

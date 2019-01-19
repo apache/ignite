@@ -16,13 +16,21 @@
  */
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +39,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -106,12 +115,27 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             Long.class, String.class,
             Long.class, TestData.class
         );
+        ccfg.setQueryEntities(
+            Arrays.asList(
+                new QueryEntity()
+                    .setValueType(UUID.class.getName())
+                    .setKeyType(Integer.class.getName())
+                    .setTableName("Uuids"),
+                new QueryEntity()
+                    .setValueType(Person.class.getName())
+                    .setKeyType(Integer.class.getName())
+                    .setTableName("My_Persons")
+                    .setFields(Person.getFields())
+            )
+        );
 
         IgniteCache<Object,Object> cache = server.createCache(ccfg);
 
         cache.put(1L, "bla-bla");
         cache.put(2L, new TestData(777L));
         cache.put(3, 3);
+        cache.put(7, UUID.randomUUID());
+        cache.put(9, new Person("Vasya", 99));
 
         CacheDataTree.isLastFindWithDataPageScan();
 
@@ -131,6 +155,19 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             .setDataPageScanEnabled(true)).getAll();
         assertEquals(1, res.size());
         assertEquals(3, res.get(0).get(0));
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
+
+        res = cache.query(new SqlFieldsQuery("select _key, _val from uuids use index()")
+            .setDataPageScanEnabled(true)).getAll();
+        assertEquals(1, res.size());
+        assertEquals(7, res.get(0).get(0));
+        assertTrue(CacheDataTree.isLastFindWithDataPageScan());
+
+        res = cache.query(new SqlFieldsQuery("select age, name from my_persons use index()")
+            .setDataPageScanEnabled(true)).getAll();
+        assertEquals(1, res.size());
+        assertEquals(99, res.get(0).get(0));
+        assertEquals("Vasya", res.get(0).get(1));
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
     }
 
@@ -532,6 +569,42 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return (int)(z ^ (z >>> 32));
+        }
+    }
+
+    /**
+     * Externalizable class to make it non-binary.
+     */
+    static class Person implements Externalizable {
+        String name;
+        int age;
+
+        public Person() {
+            // No-op
+        }
+
+        Person(String name, int age) {
+            this.name = Objects.requireNonNull(name);
+            this.age = age;
+        }
+
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeUTF(name);
+            out.writeInt(age);
+        }
+
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            name = in.readUTF();
+            age = in.readInt();
+        }
+
+        static LinkedHashMap<String,String> getFields() {
+            LinkedHashMap<String,String> m = new LinkedHashMap<>();
+
+            m.put("age", "INT");
+            m.put("name", "VARCHAR");
+
+            return m;
         }
     }
 }
