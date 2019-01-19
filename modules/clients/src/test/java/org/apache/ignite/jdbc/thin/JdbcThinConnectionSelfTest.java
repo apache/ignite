@@ -51,8 +51,6 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
@@ -72,7 +70,6 @@ import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTIO
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";

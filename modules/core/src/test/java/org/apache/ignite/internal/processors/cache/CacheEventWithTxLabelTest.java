@@ -45,8 +45,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -56,7 +54,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * Test to check passing transaction's label for EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT,
  * EVT_CACHE_OBJECT_REMOVED events.
  */
-@RunWith(JUnit4.class)
 public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     /** Types event to be checked. */
     private static final int[] CACHE_EVENT_TYPES = {EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED};

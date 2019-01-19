@@ -33,8 +33,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +40,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
     private static final Class[] E = new Class[]{};

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
-import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 

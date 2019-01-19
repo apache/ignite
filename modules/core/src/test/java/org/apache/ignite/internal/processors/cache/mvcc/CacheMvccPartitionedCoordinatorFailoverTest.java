@@ -23,8 +23,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
@@ -36,7 +34,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Coordinator failover test for partitioned caches.
  */
-@RunWith(JUnit4.class)
 public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstractCoordinatorFailoverTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

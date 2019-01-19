@@ -17,7 +17,6 @@
 
 package org.apache.ignite.stream.camel;
 
-import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**

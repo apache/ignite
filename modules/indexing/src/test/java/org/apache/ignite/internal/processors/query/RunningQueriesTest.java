@@ -67,15 +67,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * Tests for running queries.
  */
-@RunWith(JUnit4.class)
 public class RunningQueriesTest extends AbstractIndexingCommonTest {
     /** Timeout in sec. */
     private static final long TIMEOUT_IN_SEC = 5;

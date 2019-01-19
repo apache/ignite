@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.Collection;
 import java.util.LinkedList;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
-import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**

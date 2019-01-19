@@ -95,8 +95,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -113,7 +111,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * TODO IGNITE-6739: test with cache groups.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

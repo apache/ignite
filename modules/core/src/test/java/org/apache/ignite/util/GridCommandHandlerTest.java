@@ -107,8 +107,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
@@ -128,7 +126,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Command line handler test.
  */
-@RunWith(JUnit4.class)
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;

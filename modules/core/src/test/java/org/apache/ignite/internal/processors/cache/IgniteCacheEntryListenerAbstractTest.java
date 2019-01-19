@@ -70,8 +70,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.cache.event.EventType.CREATED;
@@ -85,7 +83,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static volatile List<CacheEntryEvent<?, ?>> evts;

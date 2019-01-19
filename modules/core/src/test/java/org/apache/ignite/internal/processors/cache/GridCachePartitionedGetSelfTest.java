@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -43,7 +41,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;

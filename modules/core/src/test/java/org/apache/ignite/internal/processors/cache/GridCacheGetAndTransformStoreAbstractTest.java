@@ -32,8 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -42,7 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Basic get and transform store test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridCommonAbstractTest {
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();

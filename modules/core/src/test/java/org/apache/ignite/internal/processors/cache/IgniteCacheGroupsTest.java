@@ -101,8 +101,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -120,7 +118,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-@RunWith(JUnit4.class)
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP1 = "grp1";

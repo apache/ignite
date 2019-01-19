@@ -55,8 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -73,7 +71,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
  * Tests for replicated cache preloader.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private CacheRebalanceMode preloadMode = ASYNC;

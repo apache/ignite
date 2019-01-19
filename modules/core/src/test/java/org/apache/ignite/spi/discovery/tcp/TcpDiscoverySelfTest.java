@@ -94,8 +94,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -114,7 +112,6 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

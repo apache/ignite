@@ -33,13 +33,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for store session listeners.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
     /** */
     protected static final String URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";

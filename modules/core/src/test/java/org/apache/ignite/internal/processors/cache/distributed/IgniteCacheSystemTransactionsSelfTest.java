@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -45,7 +43,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests that system transactions do not interact with user transactions.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 4;

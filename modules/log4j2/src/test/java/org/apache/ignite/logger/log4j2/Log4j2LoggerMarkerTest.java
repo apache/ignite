@@ -22,8 +22,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -32,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * Testing that markers are supported by log4j2 implementation.
  */
-@RunWith(JUnit4.class)
 public class Log4j2LoggerMarkerTest {
     /** Path to log4j configuration. */
     private static final String LOG_CONFIG = "modules/log4j2/src/test/config/log4j2-markers.xml";

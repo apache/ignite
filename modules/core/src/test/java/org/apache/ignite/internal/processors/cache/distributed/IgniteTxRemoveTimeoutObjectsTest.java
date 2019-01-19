@@ -36,8 +36,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -45,7 +43,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Test correctness of rollback a transaction with timeout during the grid stop.
  */
-@RunWith(JUnit4.class)
 public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int PUT_CNT = 1000;

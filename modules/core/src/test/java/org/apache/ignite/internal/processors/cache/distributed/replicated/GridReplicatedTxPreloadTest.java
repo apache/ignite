@@ -21,15 +21,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxPreloadAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests cache transaction during preloading.
  */
-@RunWith(JUnit4.class)
 public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

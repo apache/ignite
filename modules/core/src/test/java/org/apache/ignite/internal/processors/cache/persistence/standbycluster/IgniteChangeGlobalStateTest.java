@@ -32,8 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -41,7 +39,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      * @throws Exception if fail.
