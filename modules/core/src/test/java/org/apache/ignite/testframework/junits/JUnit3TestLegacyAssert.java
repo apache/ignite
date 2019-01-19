@@ -170,4 +170,9 @@ class JUnit3TestLegacyAssert {
     protected static void assertEquals(short exp, short actual) {
         Assert.assertEquals(exp, actual);
     }
+
+    /** See class javadocs. */
+    protected static void assertNotSame(String msg, Object exp, Object actual) {
+        Assert.assertNotSame(msg, exp, actual);
+    }
 }
