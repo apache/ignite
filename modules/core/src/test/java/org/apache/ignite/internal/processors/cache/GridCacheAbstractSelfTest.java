@@ -122,7 +122,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals(0, jcache().localSize());
+        junit.framework.Assert.assertEquals(0, jcache().localSize());
     }
 
     /** {@inheritDoc} */
@@ -175,7 +175,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         ", globalPrimarySize=" + globalPrimarySize +
                         ", entrySet=" + jcache(i).localEntries() + ']');
 
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
+                    junit.framework.Assert.assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
                         0, jcache(i).localSize(CachePeekMode.ALL));
 
                     break;
@@ -193,7 +193,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
+        junit.framework.Assert.assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         if (storeStgy != null)
             storeStgy.resetStore();
