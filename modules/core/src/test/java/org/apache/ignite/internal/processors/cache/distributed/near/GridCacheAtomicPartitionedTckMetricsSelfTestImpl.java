@@ -55,16 +55,16 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
             }
         });
 
-        assertEquals(1L, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(1L, cache.localMetrics().getCachePuts());
 
-        assertEquals(20, result);
-        assertEquals(1L, cache.localMetrics().getCacheHits());
-        assertEquals(100.0f, cache.localMetrics().getCacheHitPercentage());
-        assertEquals(0L, cache.localMetrics().getCacheMisses());
-        assertEquals(0f, cache.localMetrics().getCacheMissPercentage());
-        assertEquals(1L, cache.localMetrics().getCachePuts());
-        assertEquals(1L, cache.localMetrics().getCacheRemovals());
-        assertEquals(0L, cache.localMetrics().getCacheEvictions());
+        junit.framework.Assert.assertEquals(20, result);
+        junit.framework.Assert.assertEquals(1L, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(100.0f, cache.localMetrics().getCacheHitPercentage());
+        junit.framework.Assert.assertEquals(0L, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(0f, cache.localMetrics().getCacheMissPercentage());
+        junit.framework.Assert.assertEquals(1L, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(1L, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(0L, cache.localMetrics().getCacheEvictions());
         assert cache.localMetrics().getAveragePutTime() >= 0;
         assert cache.localMetrics().getAverageGetTime() >= 0;
         assert cache.localMetrics().getAverageRemoveTime() >= 0;
@@ -79,36 +79,36 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
 
         cache.put(1, 10);
 
-        assertEquals(0, cache.localMetrics().getCacheRemovals());
-        assertEquals(1, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.localMetrics().getCacheHits());
-        assertEquals(1, cache.localMetrics().getCacheRemovals());
-        assertEquals(1, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.localMetrics().getCacheHits());
-        assertEquals(0, cache.localMetrics().getCacheMisses());
-        assertEquals(1, cache.localMetrics().getCacheRemovals());
-        assertEquals(1, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.put(1, 10);
         assertTrue(cache.remove(1, 10));
 
-        assertEquals(1, cache.localMetrics().getCacheHits());
-        assertEquals(0, cache.localMetrics().getCacheMisses());
-        assertEquals(2, cache.localMetrics().getCacheRemovals());
-        assertEquals(2, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(2, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(2, cache.localMetrics().getCachePuts());
 
         assertFalse(cache.remove(1, 10));
 
-        assertEquals(1, cache.localMetrics().getCacheHits());
-        assertEquals(1, cache.localMetrics().getCacheMisses());
-        assertEquals(2, cache.localMetrics().getCacheRemovals());
-        assertEquals(2, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(1, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(2, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(2, cache.localMetrics().getCachePuts());
     }
 
     /**
@@ -127,18 +127,18 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         ++missCount;
         assertFalse(result);
 
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         assertNull(cache.localPeek(1));
 
         cache.put(1, 10);
         ++putCount;
 
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         assertNotNull(cache.localPeek(1));
 
@@ -148,18 +148,18 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         ++hitCount;
         ++putCount;
 
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.replace(1, 40, 50);
 
         assertFalse(result);
         ++hitCount;
 
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
     }
 
     /**
@@ -180,9 +180,9 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
 
         assertTrue(result);
 
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
 
@@ -191,8 +191,8 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         cache.containsKey(123);
 
         assertFalse(result);
-        assertEquals(hitCount, cache.localMetrics().getCacheHits());
-        assertEquals(putCount, cache.localMetrics().getCachePuts());
-        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals(putCount, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(missCount, cache.localMetrics().getCacheMisses());
     }
 }
