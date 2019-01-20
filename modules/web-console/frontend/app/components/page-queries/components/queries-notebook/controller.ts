@@ -1223,18 +1223,23 @@ export class NotebookCtrl {
         const _fetchQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
             if (!_.isNil(res.rows)) {
                 _processQueryResult(paragraph, clearChart, res);
+                _tryStartRefresh(paragraph);
 
                 $scope.$apply();
+
+                return;
             }
 
             const subscription = timer(interval).pipe(exhaustMap((_) => {
                 return agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)
-                    .then((res) => {
-                        return _fetchQueryResult(paragraph, false, res, qryArg, 333);
-                    })
+                    .then((res) => _fetchQueryResult(paragraph, false, res, qryArg, 333))
                     .catch((err) => {
-                        if (paragraph.subscription)
+                        if (paragraph.subscription) {
                             paragraph.setError(err);
+
+                            _showLoading(paragraph, false);
+                            delete paragraph.subscription;
+                        }
                     });
             })).subscribe();
 
@@ -1254,7 +1259,7 @@ export class NotebookCtrl {
             const prevValCols = paragraph.chartValCols;
 
             paragraph.subscription.unsubscribe();
-            paragraph.subscription = null;
+            delete paragraph.subscription;
 
             if (!_.eq(paragraph.meta, res.columns)) {
                 paragraph.meta = [];
@@ -1362,12 +1367,14 @@ export class NotebookCtrl {
         $scope.cancelQuery = (paragraph) => {
             if (paragraph.subscription) {
                 paragraph.subscription.unsubscribe();
-                paragraph.subscription = null;
+                delete paragraph.subscription;
             }
 
             _showLoading(paragraph, false);
+            this.$scope.stopRefresh(paragraph);
 
             _closeOldQuery(paragraph)
+                .then(() => _showLoading(paragraph, false))
                 .catch((err) => {
                     _showLoading(paragraph, false);
                     paragraph.setError(err);
@@ -1445,13 +1452,9 @@ export class NotebookCtrl {
                     };
 
                     return agentMgr.querySql(qryArg)
-                        .then((res) => {
-                            return _fetchQueryResult(paragraph, false, res, qryArg);
-                        });
+                        .then((res) => _fetchQueryResult(paragraph, false, res, qryArg));
                 })
-                .catch((err) => {
-                    paragraph.setError(err);
-                });
+                .catch((err) => paragraph.setError(err));
         };
 
         const _tryStartRefresh = function(paragraph) {
@@ -1459,8 +1462,6 @@ export class NotebookCtrl {
 
             if (_.get(paragraph, 'rate.installed') && paragraph.queryExecuted()) {
                 $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
-
-                _executeRefresh(paragraph);
 
                 const delay = paragraph.rate.value * paragraph.rate.unit;
 
@@ -1563,8 +1564,8 @@ export class NotebookCtrl {
                             return agentMgr.querySql(qryArg)
                                 .then((res) => {
                                     _initQueryResult(paragraph, res);
-                                    _fetchQueryResult(paragraph, true, res, qryArg);
-                                    _tryStartRefresh(paragraph);
+
+                                    return _fetchQueryResult(paragraph, true, res, qryArg);
                                 });
                         })
                         .catch((err) => {
@@ -1840,7 +1841,15 @@ export class NotebookCtrl {
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
-                    ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
+                    ? agentMgr.queryScanGetAll({
+                        nid,
+                        cacheName: args.cacheName,
+                        filter: args.query,
+                        regEx: !!args.regEx,
+                        caseSensitive: !!args.caseSensitive,
+                        near: !!args.near,
+                        local: !!args.localNid
+                    })
                     : agentMgr.querySqlGetAll({
                         nid,
                         cacheName: args.cacheName,
@@ -1890,7 +1899,7 @@ export class NotebookCtrl {
             paragraph.rate.installed = true;
 
             if (paragraph.queryExecuted() && !paragraph.scanExplain())
-                _tryStartRefresh(paragraph);
+                _executeRefresh(paragraph);
         };
 
         $scope.stopRefresh = function(paragraph) {

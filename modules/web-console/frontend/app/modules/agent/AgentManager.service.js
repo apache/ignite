@@ -18,8 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs';
-import {first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
+import {timer, BehaviorSubject} from 'rxjs';
+import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
 
 import io from 'socket.io-client';
 
@@ -802,22 +802,29 @@ export default class AgentManager {
      * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated) {
+    querySqlGetAll({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated}) {
         // Page size for query.
         const pageSize = 1024;
 
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
+        const fetchResult = (acc, interval = 100) => {
+            if (acc.rows !== null) {
+                if (!acc.hasMore)
+                    return acc;
 
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
+                return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
+                    .then((res) => {
+                        acc.rows = acc.rows.concat(res.rows);
 
-                    acc.hasMore = res.hasMore;
+                        acc.hasMore = res.hasMore;
 
-                    return fetchResult(acc);
-                });
+                        return fetchResult(acc);
+                    });
+            }
+
+            return timer(interval).pipe(exhaustMap((_) => {
+                return this.queryFetchFistsPage(nid, acc.queryId, pageSize)
+                    .then((res) => fetchResult(res, 333));
+            })).toPromise();
         };
 
         return this.querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated})
@@ -882,22 +889,29 @@ export default class AgentManager {
      * @param {Boolean} local Flag whether to execute query locally.
      * @returns {Promise}
      */
-    queryScanGetAll(nid, cacheName, filter, regEx, caseSensitive, near, local) {
+    queryScanGetAll({nid, cacheName, filter, regEx, caseSensitive, near, local}) {
         // Page size for query.
         const pageSize = 1024;
 
-        const fetchResult = (acc) => {
-            if (!acc.hasMore)
-                return acc;
+        const fetchResult = (acc, interval = 100) => {
+            if (acc.rows !== null) {
+                if (!acc.hasMore)
+                    return acc;
 
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
+                return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
+                    .then((res) => {
+                        acc.rows = acc.rows.concat(res.rows);
 
-                    acc.hasMore = res.hasMore;
+                        acc.hasMore = res.hasMore;
 
-                    return fetchResult(acc);
-                });
+                        return fetchResult(acc);
+                    });
+            }
+
+            return timer(interval).pipe(exhaustMap((_) => {
+                return this.queryFetchFistsPage(nid, acc.queryId, pageSize)
+                    .then((res) => fetchResult(res, 333));
+            })).toPromise();
         };
 
         return this.queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize})
