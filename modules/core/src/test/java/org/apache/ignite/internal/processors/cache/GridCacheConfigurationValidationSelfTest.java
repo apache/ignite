@@ -66,6 +66,12 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
             "reservedForDsCacheGroupNameCheckFails";
 
+    /** */
+    private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_1 = "--№=+:(replicated)";
+
+    /** */
+    private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_2 = ":_&:: (partitioned)";
+
     /**
      * Constructs test.
      */
