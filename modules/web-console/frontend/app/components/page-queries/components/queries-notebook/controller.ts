@@ -1218,7 +1218,12 @@ export class NotebookCtrl {
             _rebuildColumns(paragraph);
         };
 
-        const _showLoading = (paragraph, enable) => paragraph.loading = enable;
+        const _showLoading = (paragraph, enable) => {
+            if (paragraph.qryType === 'scan')
+                paragraph.scanningInProgress = enable;
+
+            paragraph.loading = enable;
+        };
 
         const _fetchQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
             if (!_.isNil(res.rows)) {
@@ -1654,7 +1659,6 @@ export class NotebookCtrl {
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
                     paragraph.localQueryMode = local;
-                    paragraph.scanningInProgress = true;
 
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1699,8 +1703,7 @@ export class NotebookCtrl {
                             paragraph.setError(err);
 
                             _showLoading(paragraph, false);
-                        })
-                        .then(() => paragraph.scanningInProgress = false);
+                        });
                 });
         };
 
