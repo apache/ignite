@@ -277,6 +277,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param cacheParams New cache params.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder cacheParams(ConfigParameter<CacheConfiguration>[][] cacheParams) {
         this.cacheParams = cacheParams.clone();
 
@@ -311,6 +312,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param singleIgniteParam Param.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
         specificIgniteParam = singleIgniteParam.clone();
 
@@ -321,6 +323,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param singleParam Param.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unused")
     public ConfigVariationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
         specificCacheParam = singleParam.clone();
 
