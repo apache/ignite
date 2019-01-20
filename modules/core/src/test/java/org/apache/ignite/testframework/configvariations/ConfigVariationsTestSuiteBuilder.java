@@ -188,16 +188,6 @@ public class ConfigVariationsTestSuiteBuilder {
         VariationsTestsConfig testCfg = new VariationsTestsConfig(factory, clsNameSuffix, stopNodes, cacheStartMode,
             gridsCnt, !skipWaitPartMapExchange);
 
-        /*
-        TestSuite addedSuite;
-
-        if (testedNodeCnt > 1)
-            addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
-                testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
-        else
-            addedSuite = makeTestSuite(cls, testCfg);
-         */
-
         return testedNodeCnt > 1 ? createMultiNodeTestSuite(
             testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange) : Collections.singletonList(testCfg);
     }
