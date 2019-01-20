@@ -43,6 +43,8 @@ import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -136,6 +139,8 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
+        suite.addTestSuite(GridAffinityAssignmentTest.class);
+        suite.addTestSuite(GridAffinityAssignmentTestNoOptimizations.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorMemoryLeakTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
@@ -191,6 +196,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(CacheFreeListImplSelfTest.class);
         suite.addTestSuite(DataRegionMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
+        suite.addTestSuite(BitSetIntSetTest.class);
 
         suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
