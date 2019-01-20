@@ -500,7 +500,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+                        assert part != null && part.state() == GridDhtPartitionState.OWNING :
+                            part == null ?
+                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
+                                "part=" + part.toString();
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
