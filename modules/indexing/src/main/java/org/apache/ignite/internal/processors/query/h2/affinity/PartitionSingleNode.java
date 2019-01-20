@@ -30,14 +30,14 @@ import java.util.Collections;
 public abstract class PartitionSingleNode implements PartitionNode {
     /** Table descriptor. */
     @GridToStringExclude
-    protected final PartitionTableDescriptor tbl;
+    protected final PartitionTable tbl;
 
     /**
      * Constructor.
      *
      * @param tbl Table descriptor.
      */
-    protected PartitionSingleNode(PartitionTableDescriptor tbl) {
+    protected PartitionSingleNode(PartitionTable tbl) {
         this.tbl = tbl;
     }
 
@@ -59,17 +59,29 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract boolean constant();
 
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return tbl.joinGroup();
+    }
+
     /**
      * @return Partition for constant node, index for argument node.
      */
     public abstract int value();
+
+    /**
+     * @return Underlying table.
+     */
+    public PartitionTable table() {
+        return tbl;
+    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.hashCode();
+        hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }
@@ -84,6 +96,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
-        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) && F.eq(tbl, other.tbl);
+        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
+            F.eq(tbl.alias(), other.tbl.alias());
     }
 }
