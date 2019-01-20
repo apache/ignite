@@ -45,6 +45,8 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -139,6 +142,8 @@ public class IgniteBasicTestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTest(new JUnit4TestAdapter(GridProductVersionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAffinityAssignmentTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAffinityAssignmentTestNoOptimizations.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorRendezvousSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorMemoryLeakTest.class));
         suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
@@ -194,6 +199,7 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(CacheFreeListImplSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(DataRegionMetricsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(SwapPathConstructionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BitSetIntSetTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheFSRestoreTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClassNameConflictTest.class));
