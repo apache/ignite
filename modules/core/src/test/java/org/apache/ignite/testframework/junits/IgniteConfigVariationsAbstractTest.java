@@ -66,9 +66,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     private static VariationsTestsConfig testsCfgInjected;
 
     /**
+     * Invoked by reflection from {@code ConfigVariationsTestSuiteBuilder}.
+     *
      * @param testsCfgInjected Tests configuration.
      */
-    public static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
+    @SuppressWarnings("unused")
+    protected static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
         IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
     }
 

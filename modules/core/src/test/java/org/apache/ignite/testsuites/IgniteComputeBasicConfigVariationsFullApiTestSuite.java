@@ -17,9 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.compute.IgniteComputeConfigVariationsFullApiTest;
@@ -28,11 +28,7 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
-import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
-import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runner.Runner;
-import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
@@ -54,46 +50,29 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
     };
 
     /** */
-    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
-        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
+    private static List<Class<?>> suite() {
+        return Stream.concat(
 
-        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
-            .igniteParams(BASIC_COMPUTE_SET)
-            .gridsCount(1)
-            .appendTo(classes, cfgs);
+            new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
+                .igniteParams(BASIC_COMPUTE_SET)
+                .gridsCount(1)
+                .classes().stream(),
 
-        // Tests run on server (node#0) & client(node#1).
-        new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
-            .igniteParams(BASIC_COMPUTE_SET)
-            .gridsCount(4)
-            .testedNodesCount(2)
-            .withClients()
-            .appendTo(classes, cfgs);
-
-        return classes;
+            // Tests run on server (node#0) & client(node#1).
+            new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
+                .igniteParams(BASIC_COMPUTE_SET)
+                .gridsCount(4)
+                .testedNodesCount(2)
+                .withClients()
+                .classes().stream())
+            .collect(Collectors.toList());
     }
 
     /** */
     public static class DynamicSuite extends Suite {
         /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
-
-        /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
-
-        /** */
         public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
-        }
-
-        /** */
-        @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
-
-            super.runChild(runner, ntf);
+            super(cls, suite().toArray(new Class<?>[] {null}));
         }
     }
 }

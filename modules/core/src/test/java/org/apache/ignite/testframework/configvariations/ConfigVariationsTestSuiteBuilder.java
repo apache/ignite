@@ -21,6 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import javassist.ClassClassPath;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
@@ -32,6 +45,12 @@ import org.jetbrains.annotations.Nullable;
  * Configuration variations test suite builder.
  */
 public class ConfigVariationsTestSuiteBuilder {
+    /** */
+    private static final AtomicInteger cntr = new AtomicInteger(0);
+
+    /** */
+    private static final Map<String, VariationsTestsConfig> cfgs = new ConcurrentHashMap<>();
+
     /** */
     private ConfigParameter<IgniteConfiguration>[][] igniteParams =
         ConfigVariations.igniteBasicSet();
@@ -79,24 +98,25 @@ public class ConfigVariationsTestSuiteBuilder {
         this.cls = cls;
     }
 
+    /** Invoked by reflection in {@link #makeTestClass(String, VariationsTestsConfig)}. */
+    @SuppressWarnings("unused")
+    public static VariationsTestsConfig getCfg(String key) {
+        return cfgs.get(key);
+    }
+
     /**
-     * Prepares and appends lists of test classes and config variations to execute. IMPL NOTE this heavily relies on
-     * assumption that target list of classes will run in a way allowing to properly synchronise them with respective configs
+     * Returns lists of test classes to execute with config variations.
      *
-     * @param classes Target list of classes to append prepared classes to.
-     * @param cfgs Target list of configs to append prepared configs to.
+     * @return List of classes.
      */
-    public void appendTo(List<Class<? extends IgniteConfigVariationsAbstractTest>> classes,
-        List<VariationsTestsConfig> cfgs) {
-        assert classes != null;
-        assert cfgs != null;
+    public List<Class<?>> classes() {
         assert testedNodeCnt > 0;
         assert gridsCnt > 0;
 
         VariationsIterator igniteCfgIter = specificIgniteParam == null ? new VariationsIterator(igniteParams)
             : new OneElementVariationsIterator(specificIgniteParam, igniteParams);
 
-        final List<VariationsTestsConfig> suite = new ArrayList<>();
+        final List<VariationsTestsConfig> cfgsToTest = new ArrayList<>();
 
         for (; igniteCfgIter.hasNext(); ) {
             final int[] igniteCfgVariation = igniteCfgIter.next();
@@ -105,7 +125,7 @@ public class ConfigVariationsTestSuiteBuilder {
                 continue;
 
             if (cacheParams == null) {
-                suite.addAll(build(igniteCfgVariation, null, true));
+                cfgsToTest.addAll(build(igniteCfgVariation, null, true));
                 continue;
             }
 
@@ -121,12 +141,13 @@ public class ConfigVariationsTestSuiteBuilder {
                 // Stop all grids before starting new ignite configuration.
                 boolean stopNodes = !cacheCfgIter.hasNext();
 
-                suite.addAll(build(igniteCfgVariation, cacheCfgVariation, stopNodes));
+                cfgsToTest.addAll(build(igniteCfgVariation, cacheCfgVariation, stopNodes));
             }
         }
 
-        classes.addAll(Collections.nCopies(suite.size(), cls));
-        cfgs.addAll(suite);
+        String pkg = "org.apache.ignite.testframework.configvariations.generated";
+
+        return cfgsToTest.stream().map(cfg -> makeTestClass(pkg, cfg)).collect(Collectors.toList());
     }
 
     /**
@@ -357,9 +378,7 @@ public class ConfigVariationsTestSuiteBuilder {
         return this;
     }
 
-    /**
-     *
-     */
+    /** */
     private static class OneElementVariationsIterator extends VariationsIterator {
         /** */
         private int[] elem;
@@ -387,6 +406,52 @@ public class ConfigVariationsTestSuiteBuilder {
             hasNext = false;
 
             return elem.clone();
+        }
+    }
+
+    /**
+     * Creates test class for given config variation.
+     *
+     * @param pkg Package to put class in.
+     * @param cfg Config variation.
+     * @return Test class.
+     */
+    private Class<?> makeTestClass(String pkg, VariationsTestsConfig cfg) {
+        int idx = cntr.getAndIncrement();
+
+        String clsName = cls.getSimpleName() + "_" + idx;
+
+        cfgs.put(clsName, cfg);
+
+        ClassPool cp = ClassPool.getDefault();
+        cp.insertClassPath(new ClassClassPath(ConfigVariationsTestSuiteBuilder.class));
+
+        CtClass cl = cp.makeClass(pkg + "." + clsName);
+
+        try {
+            cl.setSuperclass(cp.get(cls.getName()));
+
+            CtMethod mtd = CtNewMethod.make("public static void init() { "
+                + "injectTestsConfiguration("
+                + ConfigVariationsTestSuiteBuilder.class.getName()
+                + ".getCfg(\"" + clsName + "\")); }", cl);
+
+            // Create and add annotation.
+            ClassFile ccFile = cl.getClassFile();
+            ConstPool constpool = ccFile.getConstPool();
+
+            AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
+            Annotation annot = new Annotation("org.junit.BeforeClass", constpool);
+
+            attr.addAnnotation(annot);
+            mtd.getMethodInfo().addAttribute(attr);
+
+            cl.addMethod(mtd);
+
+            return cl.toClass();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

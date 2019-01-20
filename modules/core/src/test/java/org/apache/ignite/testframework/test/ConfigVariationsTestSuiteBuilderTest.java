@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
-import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -54,13 +52,8 @@ import static org.junit.Assert.assertEquals;
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
-    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> basicBuild(
-        Class<? extends IgniteConfigVariationsAbstractTest> cls, List<VariationsTestsConfig> cfgs) {
-        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
-
-        new ConfigVariationsTestSuiteBuilder(cls).appendTo(classes, cfgs);
-
-        return classes;
+    private static List<Class<?>> basicBuild(Class<? extends IgniteConfigVariationsAbstractTest> cls) {
+        return new ConfigVariationsTestSuiteBuilder(cls).classes();
     }
 
     /** */
@@ -68,86 +61,66 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @Test
         public void testDefaults() {
-            List<VariationsTestsConfig> cfgs = new ArrayList<>();
-            List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = basicBuild(NoopTest.class, cfgs);
+            List<Class<?>> classes = basicBuild(NoopTest.class);
 
             assertEquals(4, classes.size());
-            assertEquals(4, cfgs.size());
 
-            classes = new ArrayList<>();
-            cfgs = new ArrayList<>();
-
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
-                .withBasicCacheParams().appendTo(classes, cfgs);
+            classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+                .withBasicCacheParams().classes();
 
             assertEquals(4 * 4 * 2, classes.size());
-            assertEquals(4 * 4 * 2, cfgs.size());
 
             // With clients.
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
-                .testedNodesCount(2).withClients().appendTo(classes, cfgs);
+            classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+                .testedNodesCount(2).withClients().classes();
 
-            assertEquals(4 * 4 * 2 + 4 * 2, classes.size());
-            assertEquals(4 * 4 * 2 + 4 * 2, cfgs.size());
+            assertEquals(4 * 2, classes.size());
 
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
-                .withBasicCacheParams().testedNodesCount(3).withClients().appendTo(classes, cfgs);
+            classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+                .withBasicCacheParams().testedNodesCount(3).withClients().classes();
 
-            assertEquals((4 * 4 * 2 + 4 * 2) + 4 * 4 * 2 * 3, classes.size());
-            assertEquals((4 * 4 * 2 + 4 * 2) + 4 * 4 * 2 * 3, classes.size());
+            assertEquals(4 * 4 * 2 * 3, classes.size());
         }
 
         /** */
         @SuppressWarnings("serial")
         @Test
         public void testIgniteConfigFilter() {
-            List<VariationsTestsConfig> cfgs = new ArrayList<>();
-            List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = basicBuild(NoopTest.class, cfgs);
+            List<Class<?>> classes = basicBuild(NoopTest.class);
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
-            List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
-
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+            List<Class<?>> filteredClasses = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                     @Override public boolean apply(IgniteConfiguration configuration) {
                         return cnt.getAndIncrement() % 2 == 0;
                     }
                 })
-                .appendTo(filteredClasses, filteredCfgs);
+                .classes();
 
             assertEquals(classes.size() / 2, filteredClasses.size());
-            assertEquals(filteredClasses.size(), filteredCfgs.size());
         }
 
         /** */
         @SuppressWarnings("serial")
         @Test
         public void testCacheConfigFilter() {
-            List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
-            List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+            List<Class<?>> classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams()
-                .appendTo(classes, cfgs);
+                .classes();
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            List<Class<? extends IgniteConfigVariationsAbstractTest>> filteredClasses = new ArrayList<>();
-            List<VariationsTestsConfig> filteredCfgs = new ArrayList<>();
-
-            new ConfigVariationsTestSuiteBuilder(NoopTest.class)
+            List<Class<?>> filteredClasses = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams()
                 .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
                     @Override public boolean apply(CacheConfiguration configuration) {
                         return cnt.getAndIncrement() % 2 == 0;
                     }
                 })
-                .appendTo(filteredClasses, filteredCfgs);
+                .classes();
 
             assertEquals(classes.size() / 2, filteredClasses.size());
-            assertEquals(filteredClasses.size(), filteredCfgs.size());
         }
     }
 
@@ -167,7 +140,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @AfterClass
         public static void verify() {
             assertEquals(4, SuiteBasic.cntr.get());
-            assertEquals(SuiteBasic.cntr.get(), SuiteBasic.cfgs.size());
         }
     }
 
@@ -187,7 +159,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @AfterClass
         public static void verify() {
             assertEquals(8, SuiteWithIgnored.cntr.get());
-            assertEquals(SuiteWithIgnored.cntr.get(), SuiteWithIgnored.cfgs.size());
         }
     }
 
@@ -207,18 +178,14 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @AfterClass
         public static void verify() {
             assertEquals(4, SuiteWithExtendsIgnored.cntr.get());
-            assertEquals(SuiteWithExtendsIgnored.cntr.get(), SuiteWithExtendsIgnored.cfgs.size());
         }
     }
 
     /** */
     public static class SuiteBasic extends Suite {
         /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes
-            = basicBuild(NoopTest.class, cfgs);
+        private static final List<Class<?>> classes
+            = basicBuild(NoopTest.class);
 
         /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
@@ -230,7 +197,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+            cntr.getAndIncrement();
 
             super.runChild(runner, ntf);
         }
@@ -239,11 +206,8 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithIgnored extends Suite {
         /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = Stream
-            .concat(basicBuild(NoopTest.class, cfgs).stream(), basicBuild(NoopTestIgnored.class, cfgs).stream())
+        private static final List<Class<?>> classes = Stream
+            .concat(basicBuild(NoopTest.class).stream(), basicBuild(NoopTestIgnored.class).stream())
             .collect(Collectors.toList());
 
         /** */
@@ -256,7 +220,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+            cntr.getAndIncrement();
 
             super.runChild(runner, ntf);
         }
@@ -265,11 +229,8 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithExtendsIgnored extends Suite {
         /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes
-            = basicBuild(NoopTestExtendsIgnored.class, cfgs);
+        private static final List<Class<?>> classes
+            = basicBuild(NoopTestExtendsIgnored.class);
 
         /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
@@ -281,7 +242,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
+            cntr.getAndIncrement();
 
             super.runChild(runner, ntf);
         }

@@ -17,16 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
-import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
-import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.runner.RunWith;
-import org.junit.runner.Runner;
-import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
@@ -36,39 +30,19 @@ import org.junit.runners.model.InitializationError;
 @RunWith(IgniteCacheConfigVariationQueryTestSuite.DynamicSuite.class)
 public class IgniteCacheConfigVariationQueryTestSuite {
     /** */
-    private static List<Class<? extends IgniteConfigVariationsAbstractTest>> suite(List<VariationsTestsConfig> cfgs) {
-        List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = new ArrayList<>();
-
-        new ConfigVariationsTestSuiteBuilder(IgniteCacheConfigVariationsQueryTest.class)
+    private static List<Class<?>> suite() {
+        return new ConfigVariationsTestSuiteBuilder(IgniteCacheConfigVariationsQueryTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
-            .appendTo(classes, cfgs);
-
-        return classes;
+            .classes();
     }
 
     /** */
     public static class DynamicSuite extends Suite {
         /** */
-        private static final List<VariationsTestsConfig> cfgs = new ArrayList<>();
-
-        /** */
-        private static final List<Class<? extends IgniteConfigVariationsAbstractTest>> classes = suite(cfgs);
-
-        /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
-
-        /** */
         public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
-        }
-
-        /** */
-        @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(cfgs.get(cntr.getAndIncrement()));
-
-            super.runChild(runner, ntf);
+            super(cls, suite().toArray(new Class<?>[] {null}));
         }
     }
 }
