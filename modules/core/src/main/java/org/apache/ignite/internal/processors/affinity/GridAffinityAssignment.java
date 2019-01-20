@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,9 +42,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
-
-    /** Number of backups . */
-    private final int backups;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
@@ -73,11 +69,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      *
      * @param topVer Topology version.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, int backups) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
         primary = Collections.emptyMap();
         backup = Collections.emptyMap();
-        this.backups = backups;
     }
 
     /**
@@ -87,8 +82,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     public GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment,
-        int backups
+        List<List<ClusterNode>> idealAssignment
     ) {
         assert topVer != null;
         assert assignment != null;
@@ -114,7 +108,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                 Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
 
                 /*
-                    https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet.
+                    https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet at most cases.
                     However with 65k partition and high number of nodes (700+) BitSet is loosing HashSet.
                     We need to replace it with sparse bitsets.
                  */
@@ -128,23 +122,19 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
         primary = Collections.unmodifiableMap(tmpPrimary);
         backup = Collections.unmodifiableMap(tmpBackup);
-
-        this.backups = backups;
     }
 
     /**
      * @param topVer Topology version.
      * @param aff Assignment to copy from.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff, int backups) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff) {
         this.topVer = topVer;
 
         assignment = aff.assignment;
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
-
-        this.backups = backups;
     }
 
     /**
@@ -192,17 +182,22 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
         if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            return getOrCreateAssigmentsIds(part);
-        else
-            return backups > 5 ? getOrCreateAssigmentsIds(part) : F.viewReadOnly(assignment.get(part), F.node2id());
+            return getOrCreateAssignmentsIds(part);
+        else {
+            List<ClusterNode> nodes = assignment.get(part);
+
+            return nodes.size() > GridAffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+                    ? getOrCreateAssignmentsIds(part)
+                    : F.viewReadOnly(nodes, F.node2id());
+        }
     }
 
     /**
      *
      * @param part Partition ID.
-     * @return Collection of UUIDs
+     * @return Collection of UUIDs.
      */
-    private Collection<UUID> getOrCreateAssigmentsIds(int part) {
+    private Collection<UUID> getOrCreateAssignmentsIds(int part) {
         List<Collection<UUID>> assignmentIds0 = assignmentIds;
 
         if (assignmentIds0 == null) {
@@ -279,11 +274,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         Set<Integer> set = backup.get(nodeId);
 
         return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int backups() {
-        return backups;
     }
 
     /** {@inheritDoc} */

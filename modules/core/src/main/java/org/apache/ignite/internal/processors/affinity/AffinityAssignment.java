@@ -31,6 +31,12 @@ import org.apache.ignite.cluster.ClusterNode;
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
+    /** Size threshold to use Map instead of List view. */
+    int IGNITE_AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
+        5
+    );
+
     /** Disable memory affinity optimizations. */
     boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
@@ -93,13 +99,6 @@ public interface AffinityAssignment {
      * @return Backup partitions for specified node ID.
      */
     public Set<Integer> backupPartitions(UUID nodeId);
-
-    /**
-     * Number of backups of assignment.
-     *
-     * @return Number of backups.
-     */
-    public int backups();
 
     /**
      * Converts List of Cluster Nodes to HashSet of UUIDs wrapped as unmodifiable collection.

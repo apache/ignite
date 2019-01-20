@@ -166,7 +166,7 @@ public class GridAffinityAssignmentCache {
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentSkipListMap<>();
-        head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE, backups));
+        head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
 
@@ -205,7 +205,7 @@ public class GridAffinityAssignmentCache {
 
         assert idealAssignment != null;
 
-        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment, backups);
+        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
 
@@ -275,7 +275,7 @@ public class GridAffinityAssignmentCache {
 
         fullHistSize.set(0);
 
-        head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE, backups));
+        head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
         stopErr = null;
     }
@@ -489,7 +489,7 @@ public class GridAffinityAssignmentCache {
 
         assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
 
-        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff, backups);
+        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
 
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
 

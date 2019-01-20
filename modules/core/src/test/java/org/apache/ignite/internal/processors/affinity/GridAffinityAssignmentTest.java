@@ -107,8 +107,7 @@ public class GridAffinityAssignmentTest {
                     add(clusterNode6);
                 }});
             }},
-            new ArrayList<>(),
-            4
+            new ArrayList<>()
         );
 
         List<Integer> parts = new ArrayList<Integer>() {{
@@ -191,8 +190,7 @@ public class GridAffinityAssignmentTest {
             new ArrayList<List<ClusterNode>>() {{
                 add(nodes);
             }},
-            new ArrayList<>(),
-            10
+            new ArrayList<>()
         );
 
         assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));

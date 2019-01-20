@@ -31,7 +31,7 @@ public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssig
     /** */
     @BeforeClass
     public static void beforeTests() {
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
     }
 
     @AfterClass

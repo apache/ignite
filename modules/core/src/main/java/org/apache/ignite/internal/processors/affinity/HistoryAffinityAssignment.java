@@ -42,9 +42,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final int backups;
-
     /**
      * @param assign Assignment.
      */
@@ -52,7 +49,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         topVer = assign.topologyVersion();
         assignment = assign.assignment();
         idealAssignment = assign.idealAssignment();
-        backups = assign.backups();
     }
 
     /** {@inheritDoc} */
@@ -85,10 +81,13 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
         if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
             return assignments2ids(assignment.get(part));
-        else
-            return backups > 5
-                ? assignments2ids(assignment.get(part))
-                : F.viewReadOnly(assignment.get(part), F.node2id());
+        else {
+            List<ClusterNode> nodes = assignment.get(part);
+
+            return nodes.size() > AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+                    ? assignments2ids(nodes)
+                    : F.viewReadOnly(nodes, F.node2id());
+        }
      }
 
     /** {@inheritDoc} */
@@ -152,11 +151,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         }
 
         return Collections.unmodifiableSet(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int backups() {
-        return backups;
     }
 
     /** {@inheritDoc} */

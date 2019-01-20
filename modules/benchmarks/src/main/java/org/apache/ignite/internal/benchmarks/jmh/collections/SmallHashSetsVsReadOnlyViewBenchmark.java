@@ -47,7 +47,7 @@ import static org.openjdk.jmh.annotations.Mode.Throughput;
 @BenchmarkMode(Throughput)
 public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
     /** */
-    private static final int SIZE = 5;
+    private static final int SIZE = AffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD;
 
     /** */
     private static final int PARTS = 8192;

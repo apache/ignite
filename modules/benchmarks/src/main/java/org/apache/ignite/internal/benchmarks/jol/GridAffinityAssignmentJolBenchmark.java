@@ -69,6 +69,9 @@ public class GridAffinityAssignmentJolBenchmark {
 
         int[] nodes = new int[] {1, 16, 160, 600};
 
+        // We need to implement compressed bitsets https://issues.apache.org/jira/browse/IGNITE-4554.
+        // On 65k partitions and nodes > 700 HashSet take advantage over BitSet.
+        // After implementation need to check consumption on big clusters.
         for (int part : parts)
             for (int node : nodes) {
                 measure(aff, part, node, 0);
@@ -139,8 +142,7 @@ public class GridAffinityAssignmentJolBenchmark {
         GridAffinityAssignment ga = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             assignment,
-            new ArrayList<>(),
-            backups
+            new ArrayList<>()
         );
 
         System.gc();
@@ -157,8 +159,7 @@ public class GridAffinityAssignmentJolBenchmark {
         GridAffinityAssignment ga2 = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             assignment,
-            new ArrayList<>(),
-            backups
+            new ArrayList<>()
         );
 
         System.gc();
