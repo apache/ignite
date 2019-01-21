@@ -405,6 +405,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     public void testReconnectServersRestart_2() throws Exception {
         reconnectServersRestart(3);
     }
+
     /**
      * @throws Exception If failed.
      */

@@ -964,8 +964,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void startJoin(ZkRuntimeState rtState, @Nullable ZkRuntimeState prevState, final byte[] joinDataBytes)
-        throws InterruptedException
-    {
+        throws InterruptedException {
         try {
             long startTime = System.currentTimeMillis();
 
