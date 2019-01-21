@@ -23,7 +23,7 @@ import org.apache.ignite.examples.computegrid.ComputeClosureExample;
 import org.apache.ignite.examples.computegrid.ComputeRunnableExample;
 import org.apache.ignite.examples.datastructures.IgniteExecutorServiceExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Closure examples self test.

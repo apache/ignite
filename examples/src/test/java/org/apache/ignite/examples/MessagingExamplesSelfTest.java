@@ -20,7 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.messaging.MessagingExample;
 import org.apache.ignite.examples.messaging.MessagingPingPongExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Messaging examples self test.
