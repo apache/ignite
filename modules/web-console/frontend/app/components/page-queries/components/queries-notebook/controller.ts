@@ -2049,19 +2049,19 @@ export class NotebookCtrl {
             }
         };
 
-        const _closeOpenedQueries = (paragraphs) => {
-            _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
-                if (subscription)
-                    subscription.unsubscribe();
-                else if (queryId) {
-                    this.agentMgr.queryClose(resNodeId, queryId)
-                        .catch(() => { /* No-op. */ });
-                }
-            });
-        };
-
         $window.addEventListener('beforeunload', () => {
-            _closeOpenedQueries(this.$scope.notebook.paragraphs);
+            this._closeOpenedQueries(this.$scope.notebook.paragraphs);
+        });
+    }
+
+    _closeOpenedQueries(paragraphs) {
+        _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
+            if (subscription)
+                subscription.unsubscribe();
+            else if (queryId) {
+                this.agentMgr.queryClose(resNodeId, queryId)
+                    .catch(() => { /* No-op. */ });
+            }
         });
     }
 
