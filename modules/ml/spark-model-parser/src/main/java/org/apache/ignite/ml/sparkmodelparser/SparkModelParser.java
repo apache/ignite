@@ -59,9 +59,7 @@ public class SparkModelParser {
      * @param pathToMdl Path to model.
      */
     private static Model loadLogRegModel(Path pathToMdl) {
-        // Default values
-        double[] rawCoefficients = null;
-        Vector coefficients = new DenseVector(rawCoefficients);
+        Vector coefficients = null;
         double interceptor = 0;
 
         Configuration conf = new Configuration();
