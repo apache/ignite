@@ -21,7 +21,7 @@ import org.apache.ignite.examples.spark.IgniteCatalogExample;
 import org.apache.ignite.examples.spark.IgniteDataFrameExample;
 import org.apache.ignite.examples.spark.IgniteDataFrameWriteExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  */
