@@ -1237,7 +1237,7 @@ export class NotebookCtrl {
 
             const subscription = timer(100, 500).pipe(
                 exhaustMap((_) => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
-                filter((res) => res.rows !== null),
+                filter((res) => !_.isNil(res.rows)),
                 take(1),
                 map((res) => _fetchQueryResult(paragraph, false, res, qryArg)),
                 catchError((err) => {

@@ -791,7 +791,7 @@ export default class AgentManager {
     }
 
     _fetchQueryAllResults(acc, pageSize) {
-        if (acc.rows !== null) {
+        if (!_.isNil(acc.rows)) {
             if (!acc.hasMore)
                 return acc;
 
@@ -807,7 +807,7 @@ export default class AgentManager {
 
         return timer(100, 500).pipe(
             exhaustMap((_) => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
-            filter((res) => res.rows !== null),
+            filter((res) => !_.isNil(res.rows)),
             first(),
             map((res) => this._fetchQueryAllResults(res, 1024))
         ).toPromise();
