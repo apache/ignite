@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -40,15 +41,14 @@ import org.junit.runners.model.InitializationError;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
+/** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     ConfigVariationsTestSuiteBuilderTest.BasicTest.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteBasic.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithIgnored.class,
-    ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class,
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
@@ -181,18 +181,27 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
     }
 
+    /** IMPL NOTE derived from {@code IgniteComputeBasicConfigVariationsFullApiTestSuite}. */
+    @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteDummy.class)
+    public static class TestSuiteDummy {
+        /** **/
+        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+
+        /** */
+        @BeforeClass
+        public static void init() {
+            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+        }
+    }
+
     /** */
     public static class SuiteBasic extends Suite {
-        /** */
-        private static final List<Class<?>> classes
-            = basicBuild(NoopTest.class);
-
         /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
 
         /** */
         public SuiteBasic(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
+            super(cls, basicBuild(NoopTest.class).toArray(new Class<?>[] {null}));
         }
 
         /** */
@@ -206,16 +215,15 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithIgnored extends Suite {
         /** */
-        private static final List<Class<?>> classes = Stream
-            .concat(basicBuild(NoopTest.class).stream(), basicBuild(NoopTestIgnored.class).stream())
-            .collect(Collectors.toList());
-
-        /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
 
-        /** */
+        /**
+         *
+         */
         public SuiteWithIgnored(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
+            super(cls, Stream
+                .concat(basicBuild(NoopTest.class).stream(), basicBuild(NoopTestIgnored.class).stream())
+                .collect(Collectors.toList()).toArray(new Class<?>[] {null}));
         }
 
         /** */
@@ -229,15 +237,11 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithExtendsIgnored extends Suite {
         /** */
-        private static final List<Class<?>> classes
-            = basicBuild(NoopTestExtendsIgnored.class);
-
-        /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
 
         /** */
         public SuiteWithExtendsIgnored(Class<?> cls) throws InitializationError {
-            super(cls, classes.toArray(new Class<?>[] {null}));
+            super(cls, basicBuild(NoopTestExtendsIgnored.class).toArray(new Class<?>[] {null}));
         }
 
         /** */
@@ -245,6 +249,14 @@ public class ConfigVariationsTestSuiteBuilderTest {
             cntr.getAndIncrement();
 
             super.runChild(runner, ntf);
+        }
+    }
+
+    /** */
+    public static class SuiteDummy extends Suite {
+        /** */
+        public SuiteDummy(Class<?> cls) throws InitializationError {
+            super(cls, basicBuild(DummyTest.class).toArray(new Class<?>[] {null}));
         }
     }
 
@@ -270,5 +282,34 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class NoopTestExtendsIgnored extends NoopTestIgnored {
         // No-op.
+    }
+
+    /** */
+    public static class DummyTest extends IgniteConfigVariationsAbstractTest {
+        /**
+         * @throws Exception If failed.
+         */
+        @Test
+        public void testDummyExecution() throws Exception {
+            runInAllDataModes(new TestRunnable() {
+                @Override public void run() throws Exception {
+                    info("Running dummy test.");
+
+                    beforeTest();
+
+                    afterTest();
+                }
+            });
+        }
+
+        /**
+         * Override the base method to return {@code null} value in case the valId is negative.
+         */
+        @Nullable @Override public Object value(int valId) {
+            if (valId < 0)
+                return null;
+
+            return super.value(valId);
+        }
     }
 }
