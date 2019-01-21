@@ -60,6 +60,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
@@ -155,6 +156,8 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -285,12 +288,6 @@ public class CommandHandler {
 
     /** */
     private static final String BASELINE_SET_VERSION = "version";
-
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_FIRST = "--check-first";
-
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_THROUGH = "--check-through";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -866,7 +863,7 @@ public class CommandHandler {
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
             op(or(EXCLUDE_CACHES + " " + CACHES, op(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
-        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
         nl();
@@ -1768,8 +1765,8 @@ public class CommandHandler {
 
                 break;
             case VALIDATE_INDEXES:
-                map.put(VI_CHECK_FIRST + " N", "validate only the first N keys");
-                map.put(VI_CHECK_THROUGH + " K", "validate every Kth key");
+                map.put(CHECK_FIRST + " N", "validate only the first N keys");
+                map.put(CHECK_THROUGH + " K", "validate every Kth key");
 
                 break;
         }
@@ -2204,11 +2201,13 @@ public class CommandHandler {
                 int argsCnt = 0;
 
                 while (hasNextCacheArg() && argsCnt++ < 4) {
-                    String arg = nextArg("");
+                    String nextArg = nextArg("");
 
-                    if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
+                    ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+
+                    if(arg == CHECK_FIRST || arg == CHECK_THROUGH) {
                         if (!hasNextCacheArg())
-                            throw new IllegalArgumentException("Numeric value for '" + arg + "' parameter expected.");
+                            throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
 
                         int numVal;
 
@@ -2219,17 +2218,14 @@ public class CommandHandler {
                         }
                         catch (IllegalArgumentException e) {
                             throw new IllegalArgumentException(
-                                "Not numeric value was passed for '"
-                                    + arg
-                                    + "' parameter: "
-                                    + numStr
+                                "Not numeric value was passed for '" + nextArg + "' parameter: " + numStr
                             );
                         }
 
                         if (numVal <= 0)
-                            throw new IllegalArgumentException("Value for '" + arg + "' property should be positive.");
+                            throw new IllegalArgumentException("Value for '" + nextArg + "' property should be positive.");
 
-                        if (VI_CHECK_FIRST.equals(arg))
+                        if (arg == CHECK_FIRST)
                             cacheArgs.checkFirst(numVal);
                         else
                             cacheArgs.checkThrough(numVal);
@@ -2238,7 +2234,7 @@ public class CommandHandler {
                     }
 
                     try {
-                        cacheArgs.nodeId(UUID.fromString(arg));
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
 
                         continue;
                     }
@@ -2246,7 +2242,7 @@ public class CommandHandler {
                         //No-op.
                     }
 
-                    parseCacheNames(arg, cacheArgs);
+                    parseCacheNames(nextArg, cacheArgs);
                 }
 
                 break;
