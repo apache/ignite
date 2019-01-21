@@ -208,6 +208,8 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+
+    IgnitePluginApiTestSuite.class,
 })
 public class IgniteBasicTestSuite {
 }

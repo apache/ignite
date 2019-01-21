@@ -108,14 +108,7 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
-        try {
-            plugin.validateNewNode(node);
-
-            return null;
-        }
-        catch (PluginValidationException e) {
-            return new IgniteNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
-        }
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -126,6 +119,8 @@ public class GridPluginComponent implements GridComponent {
 
             if (map != null)
                 plugin.validateNewNode(node, map.get(plugin.name()));
+            else
+                plugin.validateNewNode(node, null);
 
             return null;
         }

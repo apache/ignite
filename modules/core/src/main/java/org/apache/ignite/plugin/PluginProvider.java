@@ -158,6 +158,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @throws PluginValidationException If cluster-wide plugin validation failed.
      */
     public default void validateNewNode(ClusterNode node, Serializable data)  {
-        // No-Op
+        validateNewNode(node);
     }
 }
