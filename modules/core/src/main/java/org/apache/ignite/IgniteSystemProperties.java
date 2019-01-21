@@ -1107,6 +1107,21 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
 
     /**
+     * Size threshold to allocate and retain additional  HashMap to improve contains()
+     * which leads to extra memory consumption.
+     */
+    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUUPS_THRESHOLD";
+
+    /**
+     * Flag to disable memory optimization:
+     *  BitSets instead of HashSets to store partitions.
+     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     * which leads to extra memory consumption, otherwise we use view on the
+     * list of cluster nodes to reduce memory consumption on redundant data structures.
+     */
+    public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

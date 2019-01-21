@@ -20,68 +20,23 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import junit.framework.TestSuite;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Allows to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
+ * Utility to run regular Ignite tests with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
-    /** */
-    private static TestingCluster testingCluster;
-
+public class ZookeeperDiscoverySpiTestUtil {
     /**
-     * @throws Exception If failed.
-     */
-    public static void initSuite() throws Exception {
-        System.setProperty("zookeeper.forceSync", "false");
-
-        testingCluster = createTestingCluster(3);
-
-        testingCluster.start();
-
-        System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS, ZookeeperDiscoverySpiAbstractTestSuite.class.getName());
-    }
-
-    /**
-     * Called via reflection by {@link org.apache.ignite.testframework.junits.GridAbstractTest}.
-     *
-     * @param cfg Configuration to change.
-     */
-    public static synchronized void preprocessConfiguration(IgniteConfiguration cfg) {
-        if (testingCluster == null)
-            throw new IllegalStateException("Test Zookeeper cluster is not started.");
-
-        ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
-
-        DiscoverySpi spi = cfg.getDiscoverySpi();
-
-        if (spi instanceof TcpDiscoverySpi)
-            zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
-
-        zkSpi.setSessionTimeout(30_000);
-        zkSpi.setZkConnectionString(testingCluster.getConnectString());
-
-        cfg.setDiscoverySpi(zkSpi);
-    }
-
-    /**
-     * @param instances Number of instances in
+     * @param instances Number of instances in cluster.
      * @return Test cluster.
      */
     public static TestingCluster createTestingCluster(int instances) {
         String tmpDir;
 
-        if (System.getenv("TMPFS_ROOT") != null)
-            tmpDir = System.getenv("TMPFS_ROOT");
-        else
-            tmpDir = System.getProperty("java.io.tmpdir");
+        tmpDir = System.getenv("TMPFS_ROOT") != null
+            ? System.getenv("TMPFS_ROOT") : System.getProperty("java.io.tmpdir");
 
         List<InstanceSpec> specs = new ArrayList<>();
 

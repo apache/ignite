@@ -223,8 +223,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
-                tx.markQueryEnlisted(null);
-
                 if (!sequential)
                     batch = batches.get(node.id());
                 else if (batch != null && !batch.node().equals(node))
