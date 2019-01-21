@@ -756,6 +756,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void stopCacheGroupOnReconnect(CacheGroupContext grpCtx) {
         cachesRegistry.unregisterGroup(grpCtx.groupId());
+
+        if (grpHolders.remove(grpCtx.groupId()) != null)
+            cctx.io().removeHandler(true, grpCtx.groupId(), GridDhtAffinityAssignmentResponse.class);
     }
 
     /**
