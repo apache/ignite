@@ -17,9 +17,11 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
+import java.io.File;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -27,9 +29,8 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.simple.SimpleGroup;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
@@ -44,12 +45,18 @@ public class SparkModelParser {
      * @param parsedSparkMdl One of supported Spark models to parse it.
      * @return Instance of parsedSparkMdl model.
      */
-    public static Model parse(Path pathToMdl, SupportedSparkModels parsedSparkMdl) {
+    public static Model parse(String pathToMdl, SupportedSparkModels parsedSparkMdl) {
+        File mdlRsrc = IgniteUtils.resolveIgnitePath(pathToMdl);
+        if (mdlRsrc == null)
+            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
+
+        String ignitePathToMdl = mdlRsrc.getPath();
 
         switch (parsedSparkMdl) {
-            case LOG_REGRESSION: return loadLogRegModel(pathToMdl);
+            case LOG_REGRESSION:
+                return loadLogRegModel(ignitePathToMdl);
             default:
-                throw new UnsupportedSparkModelException(parsedSparkMdl.toString());
+                throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
     }
 
@@ -58,30 +65,27 @@ public class SparkModelParser {
      *
      * @param pathToMdl Path to model.
      */
-    private static Model loadLogRegModel(Path pathToMdl) {
+    private static Model loadLogRegModel(String pathToMdl) {
         Vector coefficients = null;
         double interceptor = 0;
 
-        Configuration conf = new Configuration();
-        try {
-            ParquetMetadata readFooter = ParquetFileReader.readFooter(conf, pathToMdl, ParquetMetadataConverter.NO_FILTER);
-            MessageType schema = readFooter.getFileMetaData().getSchema();
-
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
             PageReadStore pages;
-            try (ParquetFileReader r = new ParquetFileReader(conf, pathToMdl, readFooter)) {
-                final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+            final MessageType schema = r.getFooter().getFileMetaData().getSchema();
+            final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
 
-                while (null != (pages = r.readNextRowGroup())) {
-                    final long rows = pages.getRowCount();
-                    final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
-                    for (int i = 0; i < rows; i++) {
-                        final SimpleGroup g = (SimpleGroup) recordReader.read();
-                        interceptor = readInterceptor(g);
-                        coefficients = readCoefficients(g);
-                    }
+            while (null != (pages = r.readNextRowGroup())) {
+                final long rows = pages.getRowCount();
+                final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
+                for (int i = 0; i < rows; i++) {
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
+                    interceptor = readInterceptor(g);
+                    coefficients = readCoefficients(g);
                 }
             }
-        } catch (IOException e) {
+
+        }
+        catch (IOException e) {
             System.out.println("Error reading parquet file.");
             e.printStackTrace();
         }
@@ -97,9 +101,9 @@ public class SparkModelParser {
      */
     private static double readInterceptor(SimpleGroup g) {
         double interceptor;
-        final SimpleGroup interceptVector = (SimpleGroup) g.getGroup(2, 0);
-        final SimpleGroup interceptVectorVal = (SimpleGroup) interceptVector.getGroup(3, 0);
-        final SimpleGroup interceptVectorValElement = (SimpleGroup) interceptVectorVal.getGroup(0, 0);
+        final SimpleGroup interceptVector = (SimpleGroup)g.getGroup(2, 0);
+        final SimpleGroup interceptVectorVal = (SimpleGroup)interceptVector.getGroup(3, 0);
+        final SimpleGroup interceptVectorValElement = (SimpleGroup)interceptVectorVal.getGroup(0, 0);
         interceptor = interceptVectorValElement.getDouble(0, 0);
         return interceptor;
     }

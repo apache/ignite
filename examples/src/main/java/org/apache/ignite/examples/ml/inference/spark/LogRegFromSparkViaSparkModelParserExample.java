@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.ml.inference.spark;
 
 import java.io.FileNotFoundException;
-import org.apache.hadoop.fs.Path;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -39,6 +38,10 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogRegFromSparkViaSparkModelParserExample {
+    /** Path to Spark LogReg model. */
+    public static final String SPARK_LOG_REG_MDL_PATH = "examples/src/main/resources/models/spark/serialized/data" +
+        "/part-00000-7551081d-c0a8-4ed7-afe4-a464aabc7f80-c000.snappy.parquet";
+
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
@@ -61,8 +64,7 @@ public class LogRegFromSparkViaSparkModelParserExample {
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
             LogisticRegressionModel mdl = (LogisticRegressionModel) SparkModelParser.parse(
-                new Path("examples/src/main/resources/models/spark/serialized/data" +
-                    "/part-00000-7551081d-c0a8-4ed7-afe4-a464aabc7f80-c000.snappy.parquet"),
+                SPARK_LOG_REG_MDL_PATH,
                 SupportedSparkModels.LOG_REGRESSION
                 );
 
