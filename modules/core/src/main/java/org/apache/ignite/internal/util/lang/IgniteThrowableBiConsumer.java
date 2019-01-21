@@ -15,38 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.util.lang;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * MVCC discovery data to be shared between nodes on join.
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
+ * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
+ *
+ * @param <E> Type of closure parameter.
+ * @param <R> Type of result value.
  */
-public class MvccDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Current coordinator. */
-    private MvccCoordinator crd;
-
+public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
     /**
-     * @param crd Coordinator.
+     * Consumer body.
+     *
+     * @param e Consumer parameter.
+     * @throws IgniteCheckedException if body execution was failed.
      */
-    public MvccDiscoveryData(MvccCoordinator crd) {
-        this.crd = crd;
-    }
-
-    /**
-     * @return Current coordinator.
-     */
-    public MvccCoordinator coordinator() {
-        return crd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccDiscoveryData.class, this);
-    }
+    public void accept(E e, R r) throws IgniteCheckedException;
 }
