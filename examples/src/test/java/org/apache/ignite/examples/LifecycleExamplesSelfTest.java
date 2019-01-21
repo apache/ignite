@@ -20,7 +20,6 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.misc.lifecycle.LifecycleExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
-
 /**
  * LifecycleExample self test.
  */

@@ -21,7 +21,7 @@ import org.apache.ignite.examples.datagrid.CacheContinuousAsyncQueryExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryWithTransformerExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  */

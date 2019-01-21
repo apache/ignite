@@ -34,7 +34,7 @@ import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
 import org.apache.ignite.examples.datastructures.IgniteQueueExample;
 import org.apache.ignite.examples.datastructures.IgniteSetExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Cache examples self test.

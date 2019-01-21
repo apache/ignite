@@ -26,7 +26,7 @@ import org.apache.ignite.examples.computegrid.ComputeTaskMapExample;
 import org.apache.ignite.examples.computegrid.ComputeTaskSplitExample;
 import org.apache.ignite.examples.datastructures.IgniteExecutorServiceExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Closure examples self test.
