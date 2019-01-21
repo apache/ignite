@@ -2125,6 +2125,8 @@ export class NotebookCtrl {
             await this.Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?');
             this.$scope.stopRefresh(paragraph);
 
+            this._closeOpenedQueries([paragraph]);
+
             const paragraph_idx = _.findIndex(this.$scope.notebook.paragraphs, (item) => paragraph === item);
             const panel_idx = _.findIndex(this.$scope.expandedParagraphs, (item) => paragraph_idx === item);
 
