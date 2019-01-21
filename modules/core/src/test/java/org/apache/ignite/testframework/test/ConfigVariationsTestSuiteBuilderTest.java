@@ -319,7 +319,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
     /** IMPL NOTE derived from {@code CacheContinuousQueryVariationsTest}. */
     @RunWith(SuiteCacheParams.class)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10776")
     public static class TestSuiteCacheParams {
         /** **/
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
@@ -359,7 +358,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
             IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-            cfg.setClientMode(igniteInstanceName.endsWith("0"));
+            cfg.setClientMode(false);
 
             return cfg;
         }

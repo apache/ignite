@@ -20,8 +20,9 @@ package org.apache.ignite.testsuites;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
@@ -63,35 +64,37 @@ public class IgniteContinuousQueryConfigVariationsSuite {
     public static class MultiNodeTest {
     }
 
-    /** */
+    /** {@inheritDoc} */
     public static class SuiteSingleNode extends Suite {
         /** */
         public SuiteSingleNode(Class<?> cls) throws InitializationError {
             super(cls, suiteSingleNode().toArray(new Class<?>[] {null}));
         }
 
-        /** */
-        @BeforeClass
-        public static void init(){
+        /** {@inheritDoc} */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
 
             CacheContinuousQueryVariationsTest.singleNode = true;
+
+            super.runChild(runner, ntf);
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     public static class SuiteMultiNode extends Suite {
         /** */
         public SuiteMultiNode(Class<?> cls) throws InitializationError {
             super(cls, suiteMultiNode().toArray(new Class<?>[] {null}));
         }
 
-        /** */
-        @BeforeClass
-        public void init(){
+        /** {@inheritDoc} */
+        @Override protected void runChild(Runner runner, RunNotifier ntf) {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
 
             CacheContinuousQueryVariationsTest.singleNode = false;
+
+            super.runChild(runner, ntf);
         }
     }
 }
