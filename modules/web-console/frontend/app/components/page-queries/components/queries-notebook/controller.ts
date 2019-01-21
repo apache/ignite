@@ -2060,7 +2060,8 @@ export class NotebookCtrl {
         _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
             if (subscription)
                 subscription.unsubscribe();
-            else if (queryId) {
+
+            if (queryId) {
                 this.agentMgr.queryClose(resNodeId, queryId)
                     .catch(() => { /* No-op. */ });
             }
