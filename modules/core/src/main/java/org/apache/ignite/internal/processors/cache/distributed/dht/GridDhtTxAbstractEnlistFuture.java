@@ -47,11 +47,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -121,9 +120,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Future ID. */
     protected final int nearMiniId;
-
-    /** Partitions. */
-    protected final int[] parts;
 
     /** Transaction. */
     protected final GridDhtTxLocalAdapter tx;
@@ -198,7 +194,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
-     * @param parts Partitions.
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
@@ -210,7 +205,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
-        @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
         GridCacheContext<?, ?> cctx,
@@ -230,7 +224,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.mvccSnapshot = mvccSnapshot;
         this.timeout = timeout;
         this.tx = tx;
-        this.parts = parts;
         this.filter = filter;
 
         lockVer = tx.xidVersion();
@@ -332,7 +325,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.time().addTimeoutObject(timeoutObj);
 
         try {
-            checkPartitions(parts);
+            checkCoordinatorVersion();
 
             UpdateSourceIterator<?> it = createIterator();
 
@@ -348,6 +341,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 tx.addActiveCache(cctx, false);
             else // Nothing to do for single update.
                 assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
+
+            tx.markQueryEnlisted();
 
             this.it = it;
         }
@@ -431,8 +426,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     }
 
                     assert entryProc != null || !op.isInvoke();
-
-                    tx.markQueryEnlisted(mvccSnapshot);
 
                     boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
 
@@ -922,38 +915,18 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     }
 
     /**
-     * Checks whether all the necessary partitions are in {@link GridDhtPartitionState#OWNING} state.
+     * Checks whether new coordinator was initialized after the snapshot is acquired.
      *
-     * @param parts Partitions.
+     * Need to fit invariant that all updates are finished before a new coordinator is initialized.
+     *
      * @throws ClusterTopologyCheckedException If failed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void checkPartitions(@Nullable int[] parts) throws ClusterTopologyCheckedException {
-        if (cctx.isLocal() || !cctx.rebalanceEnabled())
-            return;
+    private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
+        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
 
-        if (parts == null)
-            parts = U.toIntArray(
-                cctx.affinity()
-                    .primaryPartitions(cctx.localNodeId(), tx.topologyVersionSnapshot()));
-
-        GridDhtPartitionTopology top = cctx.topology();
-
-        try {
-            top.readLock();
-
-            for (int i = 0; i < parts.length; i++) {
-                GridDhtLocalPartition p = top.localPartition(parts[i]);
-
-                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
-                    throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions.");
-                }
-            }
-        }
-        finally {
-            top.readUnlock();
-        }
+        if (!crd.initialized() || crd.version() != mvccSnapshot.coordinatorVersion())
+            throw new ClusterTopologyCheckedException("Cannot perform update, coordinator was changed: " +
+                "[currentCoordinator=" + crd + ", mvccSnapshot=" + mvccSnapshot + "].");
     }
 
     /**

@@ -2312,9 +2312,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
                         }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
                         finally {
                             checkpointReadUnlock();
                         }

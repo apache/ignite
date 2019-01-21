@@ -476,7 +476,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -495,8 +494,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true,
-                                mvccSnapshot);
+                                true);
                         }
 
                         entry.touch();
