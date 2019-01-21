@@ -18,8 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {timer, BehaviorSubject} from 'rxjs';
-import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
+import {timer, BehaviorSubject, of, from} from 'rxjs';
+import {exhaustMap, first, pluck, tap, distinctUntilChanged, map, filter, expand, takeWhile, last} from 'rxjs/operators';
 
 import io from 'socket.io-client';
 
@@ -795,18 +795,23 @@ export default class AgentManager {
             if (!acc.hasMore)
                 return acc;
 
-            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                .then((res) => {
-                    acc.rows = acc.rows.concat(res.rows);
+            return of(acc).pipe(
+                expand((acc) => {
+                    return from(this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
+                        .then((res) => {
+                            acc.rows = acc.rows.concat(res.rows);
+                            acc.hasMore = res.hasMore;
 
-                    acc.hasMore = res.hasMore;
-
-                    return this._fetchQueryAllResults(acc, pageSize);
-                });
+                            return acc;
+                        }));
+                }),
+                takeWhile((acc) => acc.hasMore),
+                last()
+            ).toPromise();
         }
 
         return timer(100, 500).pipe(
-            exhaustMap((_) => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
+            exhaustMap(() => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
             filter((res) => !_.isNil(res.rows)),
             first(),
             map((res) => this._fetchQueryAllResults(res, 1024))
