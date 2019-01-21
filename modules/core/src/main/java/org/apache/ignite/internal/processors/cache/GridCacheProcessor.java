@@ -1043,8 +1043,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         });
 
-        for (int i = 0, size = syncFuts.size(); i < size; i++)
+        for (int i = 0, size = syncFuts.size(); i < size; i++) {
+            System.out.println("asd123 - " + i + " - fut="+syncFuts.get(i).getClass().getSimpleName() + ", isIgnoreInterrupts=" + ((GridFutureAdapter)syncFuts.get(i)).isIgnoreInterrupts());
             syncFuts.get(i).get();
+        }
     }
 
     /**

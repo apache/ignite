@@ -38,9 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -134,6 +134,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         busyLock.writeLock().lock();
 
         try {
+            if (startFut != null)
+                startFut.cancel();
+
             if (supplier != null)
                 supplier.stop();
 
@@ -143,6 +146,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             top = null;
 
             stopped = true;
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Cough exception during node stopping [err=" + e.getMessage() + ']');
         }
         finally {
             busyLock.writeLock().unlock();

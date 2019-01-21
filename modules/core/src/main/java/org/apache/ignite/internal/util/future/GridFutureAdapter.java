@@ -593,4 +593,8 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             return "ChainFuture [orig=" + fut + ", doneCb=" + doneCb + ']';
         }
     }
+
+    public boolean isIgnoreInterrupts() {
+        return ignoreInterrupts;
+    }
 }

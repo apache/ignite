@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -166,6 +165,7 @@ public class GridDhtPartitionDemander {
 
         lastTimeoutObj.set(null);
 
+        log.info("syncFut="+S.identity(syncFut) + ", onDone()");
         syncFut.onDone();
     }
 
@@ -173,6 +173,7 @@ public class GridDhtPartitionDemander {
      * @return Future for {@link CacheRebalanceMode#SYNC} mode.
      */
     IgniteInternalFuture<?> syncFuture() {
+        log.info("syncFut="+S.identity(syncFut));
         return syncFut;
     }
 
