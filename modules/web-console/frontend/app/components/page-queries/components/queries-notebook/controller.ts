@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {timer, merge, defer, from} from 'rxjs';
+import {timer, merge, defer, from, of} from 'rxjs';
 import {mergeMap, tap, switchMap, exhaustMap, take, filter, map, catchError} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
@@ -1230,7 +1230,7 @@ export class NotebookCtrl {
                 _processQueryResult(paragraph, clearChart, res);
                 _tryStartRefresh(paragraph);
 
-                $scope.$apply();
+                $scope.$applyAsync();
 
                 return;
             }
@@ -1242,6 +1242,7 @@ export class NotebookCtrl {
                 map((res) => _fetchQueryResult(paragraph, false, res, qryArg)),
                 catchError((err) => {
                     if (paragraph.subscription) {
+                        paragraph.subscription.unsubscribe();
                         paragraph.setError(err);
 
                         _showLoading(paragraph, false);
@@ -1249,6 +1250,8 @@ export class NotebookCtrl {
 
                         $scope.$applyAsync();
                     }
+
+                    return of(err);
                 })
             ).subscribe();
 
