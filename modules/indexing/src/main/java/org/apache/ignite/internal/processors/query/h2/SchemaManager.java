@@ -231,8 +231,9 @@ public class SchemaManager {
 
         H2Schema schema = schema(schemaName);
 
+        Connection conn = null;
         try {
-            Connection conn = connMgr.connectionForThread(schema.schemaName());
+            conn = connMgr.connectionForThread().connection(schema.schemaName());
 
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
 
@@ -242,7 +243,7 @@ public class SchemaManager {
                 throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(conn);
 
             throw new IgniteCheckedException("Failed to register query type: " + tblDesc, e);
         }
@@ -461,7 +462,7 @@ public class SchemaManager {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connMgr.connectionForThread(tbl.schemaName());
+        Connection c = connMgr.connectionForThread().connection(tbl.schemaName());
 
         Statement stmt = null;
 
@@ -476,7 +477,7 @@ public class SchemaManager {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(c);
 
             throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);

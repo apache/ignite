@@ -89,7 +89,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
                     Vector val = observation.getValue();
                     double groundTruth = val.get(0);
 
-                    double prediction = mdl.apply(preprocessor.apply(key, val));
+                    double prediction = mdl.predict(preprocessor.apply(key, val));
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }

@@ -393,9 +393,12 @@ public class GridReduceQueryExecutor {
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
-        final int[] parts,
+        int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker) {
+        if (qry.isLocal() && parts != null)
+            parts = null;
+
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
@@ -476,7 +479,7 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),
+            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
                 qry.mapQueries().size(), qry.pageSize(), sfuFut);
 
             Collection<ClusterNode> nodes;
@@ -760,7 +763,7 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, false);
+                            resIter = new H2FieldsIterator(res, mvccTracker, false, null);
 
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
