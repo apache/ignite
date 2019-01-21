@@ -65,6 +65,16 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
     private static VariationsTestsConfig testsCfgInjected;
 
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName(int idx) {
+        return getTestIgniteInstanceName() + idx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return "testGrid";
+    }
+
     /**
      * Invoked by reflection from {@code ConfigVariationsTestSuiteBuilder}.
      *
