@@ -255,16 +255,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -2048,6 +2048,21 @@ export class NotebookCtrl {
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
             }
         };
+
+        const _closeOpenedQueries = (paragraphs) => {
+            _.forEach(paragraphs, ({queryId, subscription, resNodeId}) => {
+                if (subscription)
+                    subscription.unsubscribe();
+                else if (queryId) {
+                    this.agentMgr.queryClose(resNodeId, queryId)
+                        .catch(() => { /* No-op. */ });
+                }
+            });
+        };
+
+        $window.addEventListener('beforeunload', () => {
+            _closeOpenedQueries(this.$scope.notebook.paragraphs);
+        });
     }
 
     scanActions: QueryActions<Paragraph & {type: 'scan'}> = [
@@ -2139,10 +2154,7 @@ export class NotebookCtrl {
     }
 
     $onDestroy() {
-        _.forEach(this.$scope.notebook.paragraphs, ({subscription}) => {
-            if (subscription)
-                subscription.unsubscribe();
-        });
+        this._closeOpenedQueries(this.$scope.notebook.paragraphs);
 
         if (this.refresh$)
             this.refresh$.unsubscribe();
