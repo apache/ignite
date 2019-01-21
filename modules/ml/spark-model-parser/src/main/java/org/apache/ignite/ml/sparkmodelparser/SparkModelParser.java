@@ -83,8 +83,8 @@ public class SparkModelParser {
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
-                    interceptor = readInterceptor(g);
-                    coefficients = readCoefficients(g);
+                    interceptor = readLinRegInterceptor(g);
+                    coefficients = readLinRegCoefficients(g);
                 }
             }
 
@@ -136,8 +136,43 @@ public class SparkModelParser {
      *
      * @param g Interceptor group.
      */
-    private static double readInterceptor(SimpleGroup g) {
+    private static double readLinRegInterceptor(SimpleGroup g) {
         return g.getDouble(0, 0);
+    }
+
+    /**
+     * Read coefficient matrix from parquet.
+     *
+     * @param g Coefficient group.
+     * @return Vector of coefficients.
+     */
+    private static Vector readLinRegCoefficients(SimpleGroup g) {
+        Vector coefficients;
+        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
+
+        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+
+        coefficients = new DenseVector(amountOfCoefficients);
+
+        for (int j = 0; j < amountOfCoefficients; j++) {
+            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            coefficients.set(j, coefficient);
+        }
+        return coefficients;
+    }
+
+    /**
+     * Read interceptor value from parquet.
+     *
+     * @param g Interceptor group.
+     */
+    private static double readInterceptor(SimpleGroup g) {
+        double interceptor;
+        final SimpleGroup interceptVector = (SimpleGroup)g.getGroup(2, 0);
+        final SimpleGroup interceptVectorVal = (SimpleGroup)interceptVector.getGroup(3, 0);
+        final SimpleGroup interceptVectorValElement = (SimpleGroup)interceptVectorVal.getGroup(0, 0);
+        interceptor = interceptVectorValElement.getDouble(0, 0);
+        return interceptor;
     }
 
     /**
@@ -148,14 +183,12 @@ public class SparkModelParser {
      */
     private static Vector readCoefficients(SimpleGroup g) {
         Vector coefficients;
-        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
-
-        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+        final int amountOfCoefficients = g.getGroup(3, 0).getGroup(5, 0).getFieldRepetitionCount(0);
 
         coefficients = new DenseVector(amountOfCoefficients);
 
         for (int j = 0; j < amountOfCoefficients; j++) {
-            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            double coefficient = g.getGroup(3, 0).getGroup(5, 0).getGroup(0, j).getDouble(0, 0);
             coefficients.set(j, coefficient);
         }
         return coefficients;
