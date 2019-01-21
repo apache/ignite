@@ -398,9 +398,9 @@ public class CommandHandler {
     /**
      * Creates list of common utility options.
      *
-     * @return List of common utility options.
+     * @return Array of common utility options.
      */
-    private static List<String> getCommonOptions() {
+    private static String[] getCommonOptions() {
         List<String> list = new ArrayList<>(32);
 
         list.add(op(CMD_HOST, "HOST_OR_IP"));
@@ -420,7 +420,7 @@ public class CommandHandler {
         list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
-        return list;
+        return list.toArray(new String[0]);
     }
 
     /**
@@ -848,7 +848,7 @@ public class CommandHandler {
     private void printCacheHelp() {
         log(i("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + "[subcommand] <subcommand_parameters>"));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + " [subcommand] <subcommand_parameters>"));
         nl();
         log(i("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
         nl();
@@ -860,7 +860,7 @@ public class CommandHandler {
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(or(EXCLUDE_CACHES + " " + CACHES, op(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+            op(or(g(EXCLUDE_CACHES, CACHES), g(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
@@ -1758,8 +1758,10 @@ public class CommandHandler {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:
-                map.put(CONFIG.toString(), "print a all configuration parameters for each cache.");
+                map.put(CONFIG.toString(), "print all configuration parameters for each cache.");
                 map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
+                map.put(GROUP.toString(), "print information about groups.");
+                map.put(SEQUENCE.toString(), "print information about sequences.");
 
                 break;
             case VALIDATE_INDEXES:
@@ -1822,6 +1824,16 @@ public class CommandHandler {
      */
     private static String or(Object... params) {
         return j("|", params);
+    }
+
+    /**
+     * Join input parameters with space and wrap grouping braces {@code ()}.
+     *
+     * @param params Input parameter.
+     * @return Joined parameters wrapped grouped braces.
+     */
+    private static String g(Object... params) {
+        return j(new SB(), "(", " ", params).a(")").toString();
     }
 
     /**
