@@ -1248,7 +1248,7 @@ export class NotebookCtrl {
                     });
             })).subscribe();
 
-            paragraph.subscription = subscription;
+            Object.defineProperty(paragraph, 'subscription', {value: subscription, configurable: true});
 
             return subscription;
         };
@@ -1263,8 +1263,10 @@ export class NotebookCtrl {
             const prevKeyCols = paragraph.chartKeyCols;
             const prevValCols = paragraph.chartValCols;
 
-            paragraph.subscription.unsubscribe();
-            delete paragraph.subscription;
+            if (paragraph.subscription) {
+                paragraph.subscription.unsubscribe();
+                delete paragraph.subscription;
+            }
 
             if (!_.eq(paragraph.meta, res.columns)) {
                 paragraph.meta = [];
