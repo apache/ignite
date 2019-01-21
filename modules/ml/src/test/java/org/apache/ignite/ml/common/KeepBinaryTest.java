@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.common;
 
-import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -109,7 +108,7 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < NUMBER_OF_SAMPLES; i++) {
             BinaryObject value = builder.setField("label", (i < HALF)? 0.0 : 1.0)
-                .setField("feat1", new Random().nextDouble())
+                .setField("feat1", (i < HALF)? 0.0 : 1.0)
                 .build();
 
             cache.put(i, value);

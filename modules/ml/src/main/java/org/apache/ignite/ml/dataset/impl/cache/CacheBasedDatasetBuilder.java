@@ -96,7 +96,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerBuilder transformerBuilder) {
-        this(ignite, upstreamCache, filter, transformerBuilder,false);
+        this(ignite, upstreamCache, filter, transformerBuilder, false);
     }
 
     /**

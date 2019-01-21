@@ -264,10 +264,10 @@ public class ComputeUtils {
      * @param transformerBuilder Upstream transformer builder.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
+     * @param isKeepBinary Support of binary objects.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
-     * @param isKeepBinary Support of binary objects.
      */
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
