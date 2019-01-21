@@ -74,12 +74,6 @@ public class GridH2RowDescriptor {
     /** Id of user-defined value column */
     private volatile int valAliasColId;
 
-    /** Name of the key alias or {@code null} if not defined. */
-    private final @Nullable String keyAliasName;
-
-    /** Name of the key alias or {@code null} if not defined. */
-    private final @Nullable String valAliasName;
-
     /**
      * Constructor.
      *
@@ -94,9 +88,6 @@ public class GridH2RowDescriptor {
 
         keyType = DataType.getTypeFromClass(type.keyClass());
         valType = DataType.getTypeFromClass(type.valueClass());
-
-        keyAliasName = type.keyFieldName();
-        valAliasName = type.valueFieldName();
 
         refreshMetadataFromTypeDescriptor();
     }
@@ -337,17 +328,17 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * @return Name of the column that is entire cache key. In other words - alias for the _key.
+     * Index in the columns array of user defined key column or {@linkplain #COL_NOT_EXISTS} if not defined.
      */
-    public @Nullable String keyAliasName() {
-        return keyAliasName;
+    public int keyAliasColId() {
+        return keyAliasColId;
     }
 
     /**
-     * @return Name of the column that is entire cache value In other words - alias for the _val.
+     * Index in the columns array of user defined value column or {@linkplain #COL_NOT_EXISTS} if not defined.
      */
-    public @Nullable String valueAliasName() {
-        return valAliasName;
+    public int valueAliasColId() {
+        return valAliasColId;
     }
 
     /**

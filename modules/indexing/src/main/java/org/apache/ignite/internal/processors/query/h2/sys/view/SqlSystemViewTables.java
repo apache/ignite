@@ -86,8 +86,8 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
                         tab.cacheName(),
                         tab.cacheId(),
                         computeAffinityColumn(tab),
-                        tab.rowDescriptor().keyAliasName(),
-                        tab.rowDescriptor().valueAliasName(),
+                        tab.keyAliasName(),
+                        tab.valueAliasName(),
                         // We use type descriptor because there is no way to get complex type (custom class Person)
                         // from typeid.
                         tab.rowDescriptor().type().keyTypeName(),

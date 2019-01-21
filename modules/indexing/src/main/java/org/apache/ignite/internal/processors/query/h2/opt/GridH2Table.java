@@ -122,6 +122,12 @@ public class GridH2Table extends TableBase {
     /** Flag remove index or not when table will be destroyed. */
     private volatile boolean rmIndex;
 
+    /** Name of the column that is entire cache key object {@code null} if not defined. */
+    private final @Nullable String keyAliasName;
+
+    /** Name of the column that is entire cache value object or {@code null} if not defined. */
+    private final @Nullable String valAliasName;
+
     /**
      * Creates table.
      *
@@ -205,6 +211,12 @@ public class GridH2Table extends TableBase {
         pkIndexPos = hasHashIndex ? 2 : 1;
 
         sysIdxsCnt = idxs.size();
+
+        int keyId = desc.keyAliasColId();
+        int valId  = desc.valueAliasColId();
+
+        keyAliasName = keyId != COL_NOT_EXISTS ? columns[keyId].getName() : null;
+        valAliasName = valId != COL_NOT_EXISTS ? columns[valId].getName() : null;
 
         lock = new ReentrantReadWriteLock();
     }
@@ -1102,6 +1114,21 @@ public class GridH2Table extends TableBase {
         }
 
         return columns;
+    }
+
+
+    /**
+     * @return Name of the column that is entire cache key. In other words - alias for the _key.
+     */
+    public @Nullable String keyAliasName() {
+       return keyAliasName;
+    }
+
+    /**
+     * @return Name of the column that is entire cache value In other words - alias for the _val.
+     */
+    public @Nullable String valueAliasName() {
+        return valAliasName;
     }
 
     /**
