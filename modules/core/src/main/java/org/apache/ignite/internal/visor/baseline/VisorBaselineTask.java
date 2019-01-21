@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.baseline;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -172,6 +173,9 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          */
         private VisorBaselineTaskResult remove(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
+
+            if (F.isEmpty(baseline))
+                return set0(Collections.EMPTY_LIST);
 
             for (String consistentId : consistentIds) {
                 BaselineNode node = baseline.remove(consistentId);

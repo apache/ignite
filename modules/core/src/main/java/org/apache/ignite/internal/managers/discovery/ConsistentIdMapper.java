@@ -99,8 +99,6 @@ public class ConsistentIdMapper {
         if (txNodes == null)
             return null;
 
-        Map<Object, Short> constIdMap = baselineTop.consistentIdMapping();
-
         Map<UUID, Short> m = discoveryMgr.consistentId(topVer);
 
         int bltNodes = m.size();
@@ -112,15 +110,19 @@ public class ConsistentIdMapper {
         for (Map.Entry<UUID, Collection<UUID>> e : txNodes.entrySet()) {
             UUID node = e.getKey();
 
+            if (!m.containsKey(node)) // not in blt
+                continue;
+
             Collection<UUID> backupNodes = e.getValue();
 
             Collection<Short> backups = new ArrayList<>(backupNodes.size());
 
             for (UUID backup : backupNodes) {
-                if (m.containsKey(backup))
+                if (m.containsKey(backup)) {
                     nodeCnt++;
 
-                backups.add(mapToCompactId(topVer, backup));
+                    backups.add(mapToCompactId(topVer, backup));
+                }
             }
 
             // Optimization for short store full nodes set.
