@@ -21,7 +21,7 @@ import org.apache.ignite.examples.sql.SqlDdlExample;
 import org.apache.ignite.examples.sql.SqlDmlExample;
 import org.apache.ignite.examples.sql.SqlQueriesExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * SQL examples self test.

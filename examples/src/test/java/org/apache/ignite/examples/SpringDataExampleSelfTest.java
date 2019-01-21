@@ -18,7 +18,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.springdata.SpringDataExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Spring Data example test.
