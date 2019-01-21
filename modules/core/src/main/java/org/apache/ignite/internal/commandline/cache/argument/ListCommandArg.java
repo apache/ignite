@@ -15,32 +15,42 @@
  *  limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.argument;
+package org.apache.ignite.internal.commandline.cache.argument;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheCommand;
 
 /**
- * Utility class for control.sh arguments.
+ * {@link CacheCommand#LIST} command arguments.
  */
-public class CommandArgUtils {
-    /**
-     * Tries convert {@code text} to one of values {@code enumClass}.
-     * @param text Input test.
-     * @param enumClass {@link CommandArg} enum class.
-     * @param <E>
-     * @return Converted argument or {@code null} if convert failed.
-     */
-    public static <E extends Enum<E> & CommandArg> @Nullable E of(String text, Class<E> enumClass) {
-        for (E e : enumClass.getEnumConstants()) {
-            if (e.argName().equalsIgnoreCase(text))
-                return e;
-        }
+public enum ListCommandArg implements CommandArg {
+    /** Group. */
+    GROUP("--groups"),
 
-        return null;
+    /** Sequence. */
+    SEQUENCE("--seq"),
+
+    /** Output format. */
+    OUTPUT_FORMAT("--output-format"),
+
+    /** Config. */
+    CONFIG("--config");
+
+    /** Option name. */
+    private final String name;
+
+    /** */
+    ListCommandArg(String name) {
+        this.name = name;
     }
 
-    /** Private constructor. */
-    private CommandArgUtils() {
-        /* No-op. */
+    /** {@inheritDoc} */
+    @Override public String argName() {
+        return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
     }
 }

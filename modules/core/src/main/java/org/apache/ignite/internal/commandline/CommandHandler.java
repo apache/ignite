@@ -61,6 +61,7 @@ import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
@@ -158,6 +159,10 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
@@ -353,12 +358,6 @@ public class CommandHandler {
 
     /** */
     private static final String TX_KILL = "--kill";
-
-    /** */
-    private static final String OUTPUT_FORMAT = "--output-format";
-
-    /** */
-    private static final String CONFIG = "--config";
 
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
@@ -858,7 +857,7 @@ public class CommandHandler {
 
         String CACHES = "cacheName1,...,cacheNameN";
 
-        usageCache(LIST, "regexPattern", op(or("groups", "seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
             op(or(EXCLUDE_CACHES + " " + CACHES, op(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
@@ -1759,8 +1758,8 @@ public class CommandHandler {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:
-                map.put(CONFIG, "print a all configuration parameters for each cache.");
-                map.put(OUTPUT_FORMAT + " " + MULTI_LINE.text(), "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without [groups|seq].");
+                map.put(CONFIG.toString(), "print a all configuration parameters for each cache.");
+                map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
 
                 break;
             case VALIDATE_INDEXES:
@@ -2289,34 +2288,36 @@ public class CommandHandler {
                 OutputFormat outputFormat = SINGLE_LINE;
 
                 while (hasNextCacheArg()) {
-                    String tmp = nextArg("").toLowerCase();
+                    String nextArg = nextArg("").toLowerCase();
 
-                    switch (tmp) {
-                        case "groups":
-                            cacheCmd = GROUPS;
+                    ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
+                    if (arg != null) {
+                        switch (arg) {
+                            case GROUP:
+                                cacheCmd = GROUPS;
 
-                            break;
+                                break;
 
-                        case "seq":
-                            cacheCmd = SEQ;
+                            case SEQUENCE:
+                                cacheCmd = SEQ;
 
-                            break;
+                                break;
 
-                        case OUTPUT_FORMAT:
-                            String tmp2 = nextArg("output format must be defined!").toLowerCase();
+                            case OUTPUT_FORMAT:
+                                String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
-                            outputFormat = OutputFormat.fromConsoleName(tmp2);
+                                outputFormat = OutputFormat.fromConsoleName(tmp2);
 
-                            break;
+                                break;
 
-                        case CONFIG:
-                            cacheArgs.fullConfig(true);
+                            case CONFIG:
+                                cacheArgs.fullConfig(true);
 
-                            break;
-
-                        default:
-                            cacheArgs.nodeId(UUID.fromString(tmp));
+                                break;
+                        }
                     }
+                    else
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
                 }
 
                 cacheArgs.cacheCommand(cacheCmd);
