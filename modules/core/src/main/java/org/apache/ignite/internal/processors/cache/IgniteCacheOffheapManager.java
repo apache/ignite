@@ -226,23 +226,6 @@ public interface IgniteCacheOffheapManager {
      * @param val Value.
      * @param ver Version.
      * @param expireTime Expire time.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
-     */
-    default boolean mvccInitialValue(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime
-    ) throws IgniteCheckedException {
-        return mvccInitialValue(entry, val, ver, expireTime, null, null);
-    }
-
-    /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
      * @param mvccVer MVCC version.
      * @param newMvccVer New MVCC version.
      * @return {@code True} if value was inserted.
@@ -361,37 +344,6 @@ public interface IgniteCacheOffheapManager {
         MvccVersion newMvccVer,
         byte mvccTxState,
         byte newMvccTxState
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param primary {@code True} if on primary node.
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Cache version.
-     * @param expireTime Expire time.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Transactions to wait for before finishing current transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    GridLongList mvccUpdateNative(
-            boolean primary,
-            GridCacheMapEntry entry,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-    /**
-     * @param primary {@code True} if on primary node.
-     * @param entry Entry.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Transactions to wait for before finishing current transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    GridLongList mvccRemoveNative(
-            boolean primary,
-            GridCacheMapEntry entry,
-            MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException;
 
     /**
@@ -906,39 +858,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expire time.
-         * @param mvccSnapshot MVCC snapshot.
-         * @return Update result.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Nullable GridLongList mvccUpdateNative(
-                GridCacheContext cctx,
-                boolean primary,
-                KeyCacheObject key,
-                CacheObject val,
-                GridCacheVersion ver,
-                long expireTime,
-                MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param key Key.
-         * @param mvccSnapshot MVCC snapshot.
-         * @return List of transactions to wait for.
-         * @throws IgniteCheckedException If failed.
-         */
-        @Nullable GridLongList mvccRemoveNative(GridCacheContext cctx,
-                                      boolean primary,
-                                      KeyCacheObject key,
-                                      MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
