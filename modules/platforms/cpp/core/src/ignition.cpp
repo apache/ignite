@@ -99,7 +99,9 @@ namespace ignite
         {
             Deinit();
 
-            opts.reserve(cfg.jvmOpts.size() + 5);
+            const size_t REQ_OPTS_CNT = 4;
+
+            opts.reserve(cfg.jvmOpts.size() + REQ_OPTS_CNT);
 
             std::string fileEncParam = "-Dfile.encoding=";
 
