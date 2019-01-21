@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -28,16 +27,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * This test checks metrics cacheSize.
@@ -55,6 +50,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
     /** Entities cnt. */
     private static final int ENTITIES_CNT = 100;
 
+    /** Client mode. */
+    private boolean clientMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -70,6 +68,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        if (clientMode)
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
@@ -80,6 +81,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
     @Test
     public void testCacheSize() throws Exception {
+        clientMode = true;
+
+        startGrid(GRID_CNT);
 
         IgniteCache cacheNode0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -120,6 +124,8 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         IgniteCache cacheNode2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
+        IgniteCache cacheNode3 = grid(3).cache(DEFAULT_CACHE_NAME);
+
         awaitMetricsUpdate(1);
 
         assertEquals(ENTITIES_CNT, cacheNode0.metrics().getCacheSize());
@@ -135,5 +141,8 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         long sizeNode2 = cacheNode2.localMetrics().getCacheSize();
 
         assertEquals(ENTITIES_CNT, sizeNode0 + sizeNode1 + sizeNode2);
+
+        //Client metrics
+        assertEquals(ENTITIES_CNT, cacheNode3.metrics().getCacheSize());
     }
 }
