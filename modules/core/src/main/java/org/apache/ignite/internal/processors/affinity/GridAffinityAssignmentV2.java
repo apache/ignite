@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,32 +30,32 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Cached affinity calculations.
- *
- * GridAffinityASsignment doesn't support versioning.
+ * Cached affinity calculations V2.
+ * It supports adaptive usage of BitSets instead of HashSets.
  */
-@Deprecated
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class GridAffinityAssignment implements AffinityAssignment, Serializable {
+public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implements AffinityAssignment {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private final AffinityTopologyVersion topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
-    private final Map<UUID, Set<Integer>> primary;
+    private Map<UUID, Set<Integer>> primary;
 
     /** Map of backup node partitions. */
-    private final Map<UUID, Set<Integer>> backup;
+    private Map<UUID, Set<Integer>> backup;
 
     /** Assignment node IDs */
     private transient volatile List<Collection<UUID>> assignmentIds;
@@ -68,11 +70,18 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     private transient List<List<ClusterNode>> idealAssignment;
 
     /**
+     * Default constructor for deserialization.
+     */
+    public GridAffinityAssignmentV2() {
+
+    }
+
+    /**
      * Constructs cached affinity calculations item.
      *
      * @param topVer Topology version.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer) {
+    GridAffinityAssignmentV2(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
         primary = Collections.emptyMap();
         backup = Collections.emptyMap();
@@ -83,7 +92,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param assignment Assignment.
      * @param idealAssignment Ideal assignment.
      */
-    public GridAffinityAssignment(AffinityTopologyVersion topVer,
+    public GridAffinityAssignmentV2(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
         List<List<ClusterNode>> idealAssignment
     ) {
@@ -131,7 +140,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param topVer Topology version.
      * @param aff Assignment to copy from.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff) {
+    GridAffinityAssignmentV2(AffinityTopologyVersion topVer, GridAffinityAssignmentV2 aff) {
         this.topVer = topVer;
 
         assignment = aff.assignment;
@@ -189,7 +198,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         else {
             List<ClusterNode> nodes = assignment.get(part);
 
-            return nodes.size() > GridAffinityAssignment.IGNITE_AFFINITY_BACKUPS_THRESHOLD
+            return nodes.size() > GridAffinityAssignmentV2.IGNITE_AFFINITY_BACKUPS_THRESHOLD
                     ? getOrCreateAssignmentsIds(part)
                     : F.viewReadOnly(nodes, F.node2id());
         }
@@ -298,6 +307,28 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAffinityAssignment.class, this, super.toString());
+        return S.toString(GridAffinityAssignmentV2.class, this, super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeObject(topVer);
+
+        U.writeCollection(out, assignment);
+
+        U.writeMap(out, primary);
+
+        U.writeMap(out, backup);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        topVer = (AffinityTopologyVersion)in.readObject();
+
+        assignment = U.readList(in);
+
+        primary = U.readMap(in);
+
+        backup = U.readMap(in);
     }
 }
