@@ -19,7 +19,7 @@ import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import {timer, merge, defer, from} from 'rxjs';
-import {mergeMap, tap, switchMap, exhaustMap, take} from 'rxjs/operators';
+import {mergeMap, tap, switchMap, exhaustMap, take, filter, map, catchError} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -1225,7 +1225,7 @@ export class NotebookCtrl {
             paragraph.loading = enable;
         };
 
-        const _fetchQueryResult = (paragraph, clearChart, res, qryArg, interval = 100) => {
+        const _fetchQueryResult = (paragraph, clearChart, res, qryArg) => {
             if (!_.isNil(res.rows)) {
                 _processQueryResult(paragraph, clearChart, res);
                 _tryStartRefresh(paragraph);
@@ -1235,18 +1235,22 @@ export class NotebookCtrl {
                 return;
             }
 
-            const subscription = timer(interval).pipe(exhaustMap((_) => {
-                return agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)
-                    .then((res) => _fetchQueryResult(paragraph, false, res, qryArg, 333))
-                    .catch((err) => {
-                        if (paragraph.subscription) {
-                            paragraph.setError(err);
+            const subscription = timer(100, 500).pipe(
+                exhaustMap((_) => agentMgr.queryFetchFistsPage(qryArg.nid, res.queryId, qryArg.pageSize)),
+                filter((res) => res.rows !== null),
+                take(1),
+                map((res) => _fetchQueryResult(paragraph, false, res, qryArg)),
+                catchError((err) => {
+                    if (paragraph.subscription) {
+                        paragraph.setError(err);
 
-                            _showLoading(paragraph, false);
-                            delete paragraph.subscription;
-                        }
-                    });
-            })).subscribe();
+                        _showLoading(paragraph, false);
+                        delete paragraph.subscription;
+
+                        $scope.$applyAsync();
+                    }
+                })
+            ).subscribe();
 
             Object.defineProperty(paragraph, 'subscription', {value: subscription, configurable: true});
 

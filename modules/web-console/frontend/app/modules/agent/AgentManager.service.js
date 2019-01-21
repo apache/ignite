@@ -790,6 +790,29 @@ export default class AgentManager {
         return this.visorTask('queryFetch', nid, queryId, pageSize);
     }
 
+    _fetchQueryAllResults(acc, pageSize) {
+        if (acc.rows !== null) {
+            if (!acc.hasMore)
+                return acc;
+
+            return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
+                .then((res) => {
+                    acc.rows = acc.rows.concat(res.rows);
+
+                    acc.hasMore = res.hasMore;
+
+                    return this._fetchQueryAllResults(acc, pageSize);
+                });
+        }
+
+        return timer(100, 500).pipe(
+            exhaustMap((_) => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
+            filter((res) => res.rows !== null),
+            first(),
+            map((res) => this._fetchQueryAllResults(res, 1024))
+        ).toPromise();
+    }
+
     /**
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
@@ -806,29 +829,8 @@ export default class AgentManager {
         // Page size for query.
         const pageSize = 1024;
 
-        const fetchResult = (acc, interval = 100) => {
-            if (acc.rows !== null) {
-                if (!acc.hasMore)
-                    return acc;
-
-                return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                    .then((res) => {
-                        acc.rows = acc.rows.concat(res.rows);
-
-                        acc.hasMore = res.hasMore;
-
-                        return fetchResult(acc);
-                    });
-            }
-
-            return timer(interval).pipe(exhaustMap((_) => {
-                return this.queryFetchFistsPage(nid, acc.queryId, pageSize)
-                    .then((res) => fetchResult(res, 333));
-            })).toPromise();
-        };
-
         return this.querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated})
-            .then(fetchResult);
+            .then((res) => this._fetchQueryAllResults(res, pageSize));
     }
 
     /**
@@ -893,29 +895,8 @@ export default class AgentManager {
         // Page size for query.
         const pageSize = 1024;
 
-        const fetchResult = (acc, interval = 100) => {
-            if (acc.rows !== null) {
-                if (!acc.hasMore)
-                    return acc;
-
-                return this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                    .then((res) => {
-                        acc.rows = acc.rows.concat(res.rows);
-
-                        acc.hasMore = res.hasMore;
-
-                        return fetchResult(acc);
-                    });
-            }
-
-            return timer(interval).pipe(exhaustMap((_) => {
-                return this.queryFetchFistsPage(nid, acc.queryId, pageSize)
-                    .then((res) => fetchResult(res, 333));
-            })).toPromise();
-        };
-
         return this.queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize})
-            .then(fetchResult);
+            .then((res) => this._fetchQueryAllResults(res, pageSize));
     }
 
     /**
