@@ -648,7 +648,7 @@ public class GridReduceQueryExecutor {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
 
                     for (GridCacheSqlQuery mapQry : qry.mapQueries())
-                        mapQrys.add(new GridCacheSqlQuery(singlePartMode ? "" : "EXPLAIN " + mapQry.query())
+                        mapQrys.add(new GridCacheSqlQuery(singlePartMode ? mapQry.query() : "EXPLAIN " + mapQry.query())
                             .parameterIndexes(mapQry.parameterIndexes()));
                 }
 

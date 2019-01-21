@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDat
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheWasNotFoundMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetryMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.NoneOrSinglePartitionsQueryOptimizationsTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.junit.runner.RunWith;
@@ -127,6 +128,8 @@ import org.junit.runners.Suite;
     IgniteCacheQueriesLoadTest1.class,
 
     SqlLocalQueryConnectionAndStatementTest.class,
+
+    NoneOrSinglePartitionsQueryOptimizationsTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }
