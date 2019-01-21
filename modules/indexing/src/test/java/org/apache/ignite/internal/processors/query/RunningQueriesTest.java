@@ -244,6 +244,36 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Check cluster wide query id generation.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
+    public void testClusterWideQueryIdGeneration() throws Exception {
+        newBarrier(1);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        long nodeOrderId = ignite.context().cluster().get().localNode().order();
+
+        for(int i = 0; i < 100; i++) {
+            FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE 1 = 1"));
+
+            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+            assertEquals(1, runningQueries.size());
+
+            GridRunningQueryInfo r = runningQueries.iterator().next();
+
+            String expClusterWideQryId = Long.toHexString(nodeOrderId) + "X" + Long.toHexString(r.id());
+
+            assertEquals(expClusterWideQryId, r.clusterWideQueryId());
+
+            cursor.close();
+        }
+    }
+
+    /**
      * Check tracking running queries for Select.
      *
      * @throws Exception Exception in case of failure.
