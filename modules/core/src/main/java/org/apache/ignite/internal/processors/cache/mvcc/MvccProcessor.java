@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.GridLongList;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,8 +37,9 @@ public interface MvccProcessor extends GridProcessor {
      * Local join callback.
      *
      * @param evt Discovery event.
+     * @param discoCache Disco cache.
      */
-    void onLocalJoin(DiscoveryEvent evt);
+    void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache);
 
     /**
      * Exchange done callback.
@@ -51,50 +49,35 @@ public interface MvccProcessor extends GridProcessor {
     void onExchangeDone(DiscoCache discoCache);
 
     /**
-     * @param nodeId Node ID
-     * @param activeQueries Active queries.
-     */
-    void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
-
-    /**
      * @return Coordinator.
      */
-    @Nullable MvccCoordinator currentCoordinator();
-
-    /**
-     * @return Current coordinator node ID.
-     */
-    UUID currentCoordinatorId();
+    @NotNull MvccCoordinator currentCoordinator();
 
     /**
      * @param crdVer Mvcc coordinator version.
      * @param cntr Mvcc counter.
      * @return State for given mvcc version.
-     * @throws IgniteCheckedException If fails.
      */
-    byte state(long crdVer, long cntr) throws IgniteCheckedException;
+    byte state(long crdVer, long cntr);
 
     /**
      * @param ver Version to check.
      * @return State for given mvcc version.
-     * @throws IgniteCheckedException If fails.
      */
-    byte state(MvccVersion ver) throws IgniteCheckedException;
+    byte state(MvccVersion ver);
 
     /**
      * @param ver Version.
      * @param state State.
-     * @throws IgniteCheckedException If fails;
      */
-    void updateState(MvccVersion ver, byte state) throws IgniteCheckedException;
+    void updateState(MvccVersion ver, byte state);
 
     /**
      * @param ver Version.
      * @param state State.
      * @param primary Flag if this is primary node.
-     * @throws IgniteCheckedException If fails;
      */
-    void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException;
+    void updateState(MvccVersion ver, byte state, boolean primary);
 
     /**
      * @param crd Mvcc coordinator version.
@@ -113,9 +96,13 @@ public interface MvccProcessor extends GridProcessor {
      * @param cctx Cache context.
      * @param locked Version the entry is locked by.
      * @return Future, which is completed as soon as the lock is released.
-     * @throws IgniteCheckedException If failed.
      */
-    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException;
+    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked);
+
+    /**
+     * @param locked Version the entry is locked by.
+     */
+    void releaseWaiters(MvccVersion locked);
 
     /**
      * @param tracker Query tracker.
@@ -130,40 +117,44 @@ public interface MvccProcessor extends GridProcessor {
     /**
      * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
      * {@code Null} in other cases.
-     * @throws ClusterTopologyCheckedException If coordinator doesn't match locked topology or not assigned.
      */
-    MvccSnapshot tryRequestSnapshotLocal() throws ClusterTopologyCheckedException;
+    MvccSnapshot requestWriteSnapshotLocal();
 
     /**
-     * @param tx Transaction.
      * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
      * {@code Null} in other cases.
-     * @throws ClusterTopologyCheckedException If coordinator doesn't match locked topology or not assigned.
      */
-    MvccSnapshot tryRequestSnapshotLocal(@Nullable IgniteInternalTx tx) throws ClusterTopologyCheckedException;
+    MvccSnapshot requestReadSnapshotLocal();
 
     /**
      * Requests snapshot on Mvcc coordinator.
      *
-     * @param tx Transaction.
-     * @return Snapshot future.
+     * @return Result future.
      */
-    IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync(IgniteInternalTx tx);
+    IgniteInternalFuture<MvccSnapshot> requestReadSnapshotAsync();
 
     /**
      * Requests snapshot on Mvcc coordinator.
      *
+     * @return Result future.
+     */
+    IgniteInternalFuture<MvccSnapshot> requestWriteSnapshotAsync();
+
+    /**
+     * Requests snapshot on Mvcc coordinator.
+     *
+     * @param crd Expected coordinator.
      * @param lsnr Request listener.
      */
-    void requestSnapshotAsync(MvccSnapshotResponseListener lsnr);
+    void requestReadSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
 
     /**
      * Requests snapshot on Mvcc coordinator.
      *
-     * @param tx Transaction
+     * @param crd Expected coordinator.
      * @param lsnr Request listener.
      */
-    void requestSnapshotAsync(IgniteInternalTx tx, MvccSnapshotResponseListener lsnr);
+    void requestWriteSnapshotAsync(MvccCoordinator crd, MvccSnapshotResponseListener lsnr);
 
     /**
      * @param updateVer Transaction update version.
@@ -173,36 +164,14 @@ public interface MvccProcessor extends GridProcessor {
 
     /**
      * @param updateVer Transaction update version.
-     * @param readSnapshot Transaction read version.
-     * @param qryId Query tracker id.
-     * @return Acknowledge future.
-     */
-    IgniteInternalFuture<Void> ackTxCommit(MvccVersion updateVer, MvccSnapshot readSnapshot, long qryId);
-
-    /**
-     * @param updateVer Transaction update version.
      */
     void ackTxRollback(MvccVersion updateVer);
-
-    /**
-     * @param updateVer Transaction update version.
-     * @param readSnapshot Transaction read version.
-     * @param qryTrackerId Query tracker id.
-     */
-    void ackTxRollback(MvccVersion updateVer, MvccSnapshot readSnapshot, long qryTrackerId);
 
     /**
      * @param snapshot Query version.
      * @param qryId Query tracker ID.
      */
     void ackQueryDone(MvccSnapshot snapshot, long qryId);
-
-    /**
-     * @param crdId Coordinator ID.
-     * @param txs Transaction IDs.
-     * @return Future.
-     */
-    IgniteInternalFuture<Void> waitTxsFuture(UUID crdId, GridLongList txs);
 
     /**
      * @param log Logger.

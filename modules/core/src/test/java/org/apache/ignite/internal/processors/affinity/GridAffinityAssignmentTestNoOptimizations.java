@@ -15,38 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
+import org.apache.ignite.IgniteSystemProperties;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * MVCC discovery data to be shared between nodes on join.
+ * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
-public class MvccDiscoveryData implements Serializable {
+@RunWith(JUnit4.class)
+public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Current coordinator. */
-    private MvccCoordinator crd;
-
-    /**
-     * @param crd Coordinator.
-     */
-    public MvccDiscoveryData(MvccCoordinator crd) {
-        this.crd = crd;
+    @BeforeClass
+    public static void beforeTests() {
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
     }
 
-    /**
-     * @return Current coordinator.
-     */
-    public MvccCoordinator coordinator() {
-        return crd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccDiscoveryData.class, this);
+    @AfterClass
+    public static void afterTests() {
+        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
     }
 }

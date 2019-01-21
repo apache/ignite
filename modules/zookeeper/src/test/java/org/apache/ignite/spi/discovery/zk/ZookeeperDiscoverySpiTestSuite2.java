@@ -17,40 +17,33 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.util.GridCommandHandlerTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
-    /** */
-    private static TestingCluster testingCluster;
-
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCachePartitionedNodeRestartTest.class,
+    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
+    IgniteClientReconnectCacheTest.class,
+    GridCachePartitionedMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
+    GridCommandHandlerTest.class
+})
+public class ZookeeperDiscoverySpiTestSuite2  {
     /**
-     * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNodeRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheEntryListenerWithZkDiscoAtomicTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMultiNodeFullApiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCommandHandlerTest.class));
-
-        return suite;
+    @BeforeClass
+    public static void init() throws Exception {
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }
