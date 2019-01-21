@@ -51,6 +51,7 @@ import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -273,6 +274,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public int segmentsCount() {
         return segments.length;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
+
+        return super.find(filter, first, last);
     }
 
     /** {@inheritDoc} */
