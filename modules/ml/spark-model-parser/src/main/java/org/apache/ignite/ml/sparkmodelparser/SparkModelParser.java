@@ -37,19 +37,19 @@ import org.apache.parquet.schema.MessageType;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
-    /** Parquet path. */
-    private static Path parquetPath;
-
     /**
      * Load model from parquet file.
      *
-     * @return Instance of LogReg model.
+     * @param pathToMdl Hadoop path to model saved from Spark.
+     * @param parsedSparkMdl One of supported Spark models to parse it.
+     * @return Instance of parsedSparkMdl model.
      */
-    public static Model parse(Path pathToMdl, SupportedSparkModels parsedSparkModel) {
+    public static Model parse(Path pathToMdl, SupportedSparkModels parsedSparkMdl) {
 
-        switch (parsedSparkModel){
+        switch (parsedSparkMdl) {
             case LOG_REGRESSION: return loadLogRegModel(pathToMdl);
-            default: throw new UnsupportedSparkModelException(parsedSparkModel.toString());
+            default:
+                throw new UnsupportedSparkModelException(parsedSparkMdl.toString());
         }
     }
 
@@ -59,7 +59,6 @@ public class SparkModelParser {
      * @param pathToMdl Path to model.
      */
     private static Model loadLogRegModel(Path pathToMdl) {
-        parquetPath = pathToMdl;
         // Default values
         double[] rawCoefficients = null;
         Vector coefficients = new DenseVector(rawCoefficients);
@@ -67,14 +66,15 @@ public class SparkModelParser {
 
         Configuration conf = new Configuration();
         try {
-            ParquetMetadata readFooter = ParquetFileReader.readFooter(conf, parquetPath, ParquetMetadataConverter.NO_FILTER);
+            ParquetMetadata readFooter = ParquetFileReader.readFooter(conf, pathToMdl, ParquetMetadataConverter.NO_FILTER);
             MessageType schema = readFooter.getFileMetaData().getSchema();
 
             PageReadStore pages;
-            try (ParquetFileReader r = new ParquetFileReader(conf, parquetPath, readFooter)) {
+            try (ParquetFileReader r = new ParquetFileReader(conf, pathToMdl, readFooter)) {
+                final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+
                 while (null != (pages = r.readNextRowGroup())) {
                     final long rows = pages.getRowCount();
-                    final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
                     final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                     for (int i = 0; i < rows; i++) {
                         final SimpleGroup g = (SimpleGroup) recordReader.read();
