@@ -253,8 +253,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Partition extractor. */
     private PartitionExtractor partExtractor;
 
-    /** */
-    private final RunningQueryManager runningQueryMgr = new RunningQueryManager();
+    /** Running query manager. */
+    private RunningQueryManager runningQueryMgr;
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -2399,6 +2399,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ddlProc = new DdlStatementsProcessor(ctx, schemaMgr);
 
         partExtractor = new PartitionExtractor(this);
+
+        runningQueryMgr = new RunningQueryManager(ctx);
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");

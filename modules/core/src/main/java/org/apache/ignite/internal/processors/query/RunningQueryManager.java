@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,6 +38,21 @@ public class RunningQueryManager {
 
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
+
+    /** Prefix of cluster wide query id. */
+    private String prefixClusterWideQryId = null;
+
+    /** Context. */
+    private GridKernalContext ctx;
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     */
+    public RunningQueryManager(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /**
      * Register running query.
@@ -51,8 +68,11 @@ public class RunningQueryManager {
         boolean loc, @Nullable GridQueryCancel cancel) {
         long qryId = qryIdGen.incrementAndGet();
 
+        String clusterWideQryId = clusterWideQueryId(qryId);
+
         GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
+            clusterWideQryId,
             qry,
             qryType,
             schemaName,
@@ -66,6 +86,20 @@ public class RunningQueryManager {
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
         return run;
+    }
+
+    /**
+     * @param qryId Local node query id.
+     * @return Cluster wide query id.
+     */
+    @NotNull private String clusterWideQueryId(long qryId) {
+        if (prefixClusterWideQryId == null) {
+            long nodeOrder = ctx.cluster().get().localNode().order();
+
+            prefixClusterWideQryId = Long.toHexString(nodeOrder) + "X";
+        }
+
+        return prefixClusterWideQryId + Long.toHexString(qryId);
     }
 
     /**
