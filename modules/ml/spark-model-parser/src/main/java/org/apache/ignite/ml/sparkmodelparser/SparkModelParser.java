@@ -59,9 +59,43 @@ public class SparkModelParser {
                 return loadLogRegModel(ignitePathToMdl);
             case LINEAR_REGRESSION:
                 return loadLinRegModel(ignitePathToMdl);
+            case LINEAR_SVM:
+                return loadLinearSVMModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
+    }
+
+    /**
+     * Load SVM model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadLinearSVMModel(String pathToMdl) {
+        Vector coefficients = null;
+        double interceptor = 0;
+
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
+            PageReadStore pages;
+            final MessageType schema = r.getFooter().getFileMetaData().getSchema();
+            final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+
+            while (null != (pages = r.readNextRowGroup())) {
+                final long rows = pages.getRowCount();
+                final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
+                for (int i = 0; i < rows; i++) {
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
+                    interceptor = readSVMInterceptor(g);
+                    coefficients = readSVMCoefficients(g);
+                }
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error reading parquet file.");
+            e.printStackTrace();
+        }
+
+        return new LinearRegressionModel(coefficients, interceptor);
     }
 
     /**
@@ -83,8 +117,8 @@ public class SparkModelParser {
                 final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
-                    interceptor = readInterceptor(g);
-                    coefficients = readCoefficients(g);
+                    interceptor = readLinRegInterceptor(g);
+                    coefficients = readLinRegCoefficients(g);
                 }
             }
 
@@ -136,8 +170,73 @@ public class SparkModelParser {
      *
      * @param g Interceptor group.
      */
-    private static double readInterceptor(SimpleGroup g) {
+    private static double readSVMInterceptor(SimpleGroup g) {
         return g.getDouble(0, 0);
+    }
+
+    /**
+     * Read coefficient matrix from parquet.
+     *
+     * @param g Coefficient group.
+     * @return Vector of coefficients.
+     */
+    private static Vector readSVMCoefficients(SimpleGroup g) {
+        Vector coefficients;
+        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
+
+        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+
+        coefficients = new DenseVector(amountOfCoefficients);
+
+        for (int j = 0; j < amountOfCoefficients; j++) {
+            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            coefficients.set(j, coefficient);
+        }
+        return coefficients;
+    }
+
+    /**
+     * Read interceptor value from parquet.
+     *
+     * @param g Interceptor group.
+     */
+    private static double readLinRegInterceptor(SimpleGroup g) {
+        return g.getDouble(0, 0);
+    }
+
+    /**
+     * Read coefficient matrix from parquet.
+     *
+     * @param g Coefficient group.
+     * @return Vector of coefficients.
+     */
+    private static Vector readLinRegCoefficients(SimpleGroup g) {
+        Vector coefficients;
+        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
+
+        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+
+        coefficients = new DenseVector(amountOfCoefficients);
+
+        for (int j = 0; j < amountOfCoefficients; j++) {
+            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            coefficients.set(j, coefficient);
+        }
+        return coefficients;
+    }
+
+    /**
+     * Read interceptor value from parquet.
+     *
+     * @param g Interceptor group.
+     */
+    private static double readInterceptor(SimpleGroup g) {
+        double interceptor;
+        final SimpleGroup interceptVector = (SimpleGroup)g.getGroup(2, 0);
+        final SimpleGroup interceptVectorVal = (SimpleGroup)interceptVector.getGroup(3, 0);
+        final SimpleGroup interceptVectorValElement = (SimpleGroup)interceptVectorVal.getGroup(0, 0);
+        interceptor = interceptVectorValElement.getDouble(0, 0);
+        return interceptor;
     }
 
     /**
@@ -148,14 +247,12 @@ public class SparkModelParser {
      */
     private static Vector readCoefficients(SimpleGroup g) {
         Vector coefficients;
-        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
-
-        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+        final int amountOfCoefficients = g.getGroup(3, 0).getGroup(5, 0).getFieldRepetitionCount(0);
 
         coefficients = new DenseVector(amountOfCoefficients);
 
         for (int j = 0; j < amountOfCoefficients; j++) {
-            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            double coefficient = g.getGroup(3, 0).getGroup(5, 0).getGroup(0, j).getDouble(0, 0);
             coefficients.set(j, coefficient);
         }
         return coefficients;
