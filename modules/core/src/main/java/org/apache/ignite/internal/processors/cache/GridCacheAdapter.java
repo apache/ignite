@@ -3530,7 +3530,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (entry != null) {
                     boolean res = entry.lockedByAny();
 
-                    entry.touch(null);
+                    entry.touch();
 
                     return res;
                 }
