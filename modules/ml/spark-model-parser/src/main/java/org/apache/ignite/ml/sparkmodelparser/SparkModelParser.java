@@ -27,6 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroup;
@@ -95,7 +96,7 @@ public class SparkModelParser {
             e.printStackTrace();
         }
 
-        return new LinearRegressionModel(coefficients, interceptor);
+        return new SVMLinearClassificationModel(coefficients, interceptor);
     }
 
     /**
@@ -171,7 +172,7 @@ public class SparkModelParser {
      * @param g Interceptor group.
      */
     private static double readSVMInterceptor(SimpleGroup g) {
-        return g.getDouble(0, 0);
+        return g.getDouble(1, 0);
     }
 
     /**
@@ -182,7 +183,7 @@ public class SparkModelParser {
      */
     private static Vector readSVMCoefficients(SimpleGroup g) {
         Vector coefficients;
-        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
+        Group coeffGroup = g.getGroup(0, 0).getGroup(3, 0);
 
         final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
 

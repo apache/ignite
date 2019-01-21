@@ -39,7 +39,7 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
  */
 public class SVMFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_LOG_REG_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg/data" +
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm/data" +
         "/part-00000-b3d800e2-a36c-4948-8e65-29c9f5c9c5b2-c000.snappy.parquet";
 
     /** Run example. */
@@ -64,7 +64,7 @@ public class SVMFromSparkExample {
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
             SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)SparkModelParser.parse(
-                SPARK_LOG_REG_MDL_PATH,
+                SPARK_MDL_PATH,
                 SupportedSparkModels.LINEAR_SVM
             );
 
