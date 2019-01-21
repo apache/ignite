@@ -59,6 +59,7 @@ import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
@@ -151,6 +152,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VER
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.RESET_LOST_PARTITIONS;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
@@ -205,9 +207,6 @@ public class CommandHandler {
     /** One cache filter option should used message. */
     public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
         EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
-
-    /** */
-    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
     // SSL configuration section
 
@@ -864,7 +863,7 @@ public class CommandHandler {
         usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
             op(or(EXCLUDE_CACHES + " " + CACHES, op(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
         nl();
     }
@@ -2255,7 +2254,9 @@ public class CommandHandler {
                 while (hasNextCacheArg()) {
                     String nextArg = nextArg("");
 
-                    if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
+                    DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
+
+                    if (arg == USER_ATTRIBUTES) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
                         Set<String> userAttrs = new HashSet<>();
