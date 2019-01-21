@@ -33,6 +33,7 @@ export default angular
             chartTitle: '<',
             chartColors: '<',
             chartHeaderText: '<',
-            refreshRate: '<'
+            refreshRate: '<',
+            resultDataStatus: '<?'
         }
     });

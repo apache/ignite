@@ -81,6 +81,13 @@ export class IgniteChartController {
      * @param {{chartOptions: ng.IChangesObject<import('chart.js').ChartConfiguration>, chartTitle: ng.IChangesObject<string>, chartDataPoint: ng.IChangesObject<IgniteChartDataPoint>, chartHistory: ng.IChangesObject<Array<IgniteChartDataPoint>>}} changes
      */
     async $onChanges(changes) {
+        if (changes.resultDataStatus && ['WAITING', 'ERROR'].includes(changes.resultDataStatus.currentValue) && this.chart) {
+            this.chart.destroy();
+            this.config = null;
+            this.chart = null;
+            return;
+        }
+
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
