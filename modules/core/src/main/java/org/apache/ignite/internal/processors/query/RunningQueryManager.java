@@ -44,7 +44,7 @@ public class RunningQueryManager {
     private final int histSz;
 
     /** Query history tracker. */
-    private volatile QueryHistoryTracker queryHistoryTracker;
+    private volatile QueryHistoryTracker qryHistTracker;
 
     /**
      * Constructor.
@@ -54,7 +54,7 @@ public class RunningQueryManager {
     public RunningQueryManager(GridKernalContext ctx) {
         histSz = ctx.config().getSqlQueryHistorySize();
 
-        queryHistoryTracker = new QueryHistoryTracker(histSz);
+        qryHistTracker = new QueryHistoryTracker(histSz);
     }
 
     /**
@@ -65,11 +65,11 @@ public class RunningQueryManager {
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
-     * @return Registered RunningQueryInfo.
+     * @return Id of registered query.
      */
-    public GridRunningQueryInfo register(String qry, GridCacheQueryType qryType, String schemaName,
+    public Long register(String qry, GridCacheQueryType qryType, String schemaName,
         boolean loc, @Nullable GridQueryCancel cancel) {
-        long qryId = qryIdGen.incrementAndGet();
+        Long qryId = qryIdGen.incrementAndGet();
 
         GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
@@ -85,18 +85,7 @@ public class RunningQueryManager {
 
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
-        return run;
-    }
-
-    /**
-     * Unregister running query.
-     *
-     * @param runningQryInfo Running query info..
-     * @param failed {@code true} In case query was failed.
-     * @return Unregistered running query info. {@code null} in case running query is not registered.
-     */
-    @Nullable public GridRunningQueryInfo unregister(@Nullable GridRunningQueryInfo runningQryInfo, boolean failed) {
-        return (runningQryInfo != null) ? unregister(runningQryInfo.id(), failed) : null;
+        return qryId;
     }
 
     /**
@@ -104,10 +93,9 @@ public class RunningQueryManager {
      *
      * @param qryId Query id.
      * @param failed {@code true} In case query was failed.
-     * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
-    @Nullable public GridRunningQueryInfo unregister(Long qryId, boolean failed) {
-        return unregister(qryId, failed, true);
+    public void unregister(Long qryId, boolean failed) {
+        unregister(qryId, failed, true);
     }
 
     /**
@@ -116,18 +104,15 @@ public class RunningQueryManager {
      * @param qryId Query id.
      * @param failed {@code true} In case query was failed.
      * @param collectMetrics {@code true} In case metrics should be collected.
-     * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
-    @Nullable public GridRunningQueryInfo unregister(Long qryId, boolean failed, boolean collectMetrics) {
+    public void unregister(Long qryId, boolean failed, boolean collectMetrics) {
         if (qryId == null)
-            return null;
+            return;
 
         GridRunningQueryInfo unregistered = runs.remove(qryId);
 
-        if (collectMetrics)
-            queryHistoryTracker.collectMetrics(unregistered, failed);
-
-        return unregistered;
+        if (collectMetrics && unregistered != null)
+            qryHistTracker.collectMetrics(unregistered, failed);
     }
 
     /**
@@ -184,14 +169,14 @@ public class RunningQueryManager {
      * @return Queries history statistics aggregated by query text, schema and local flag.
      */
     public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
-        return queryHistoryTracker.queryHistoryMetrics();
+        return qryHistTracker.queryHistoryMetrics();
     }
 
     /**
      * Reset query history metrics.
      */
     public void resetQueryHistoryMetrics() {
-        queryHistoryTracker = new QueryHistoryTracker(histSz);
+        qryHistTracker = new QueryHistoryTracker(histSz);
     }
 
     /** {@inheritDoc} */
