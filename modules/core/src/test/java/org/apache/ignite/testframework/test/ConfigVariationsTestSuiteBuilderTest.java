@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.test;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
@@ -39,6 +41,7 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.junit.Assert.assertEquals;
 
 /** */
@@ -48,7 +51,8 @@ import static org.junit.Assert.assertEquals;
     ConfigVariationsTestSuiteBuilderTest.TestSuiteBasic.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithIgnored.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class,
-    ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class,
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteCacheParams.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
@@ -310,6 +314,65 @@ public class ConfigVariationsTestSuiteBuilderTest {
                 return null;
 
             return super.value(valId);
+        }
+    }
+
+    /** IMPL NOTE derived from {@code CacheContinuousQueryVariationsTest}. */
+    @RunWith(SuiteCacheParams.class)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10776")
+    public static class TestSuiteCacheParams {
+        /** **/
+        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+
+        /** */
+        @BeforeClass
+        public static void init() {
+            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+        }
+    }
+
+    /** */
+    public static class SuiteCacheParams extends Suite {
+        /** */
+        private static List<Class<?>> suiteSingleNode() {
+            return new ConfigVariationsTestSuiteBuilder(CacheParamsTest.class)
+                .withBasicCacheParams()
+                .gridsCount(1)
+                .classes();
+        }
+
+        /** */
+        public SuiteCacheParams(Class<?> cls) throws InitializationError {
+            super(cls, suiteSingleNode().toArray(new Class<?>[] {null}));
+        }
+
+        /** */
+        @BeforeClass
+        public static void init(){
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+        }
+    }
+
+    /**  */
+    public static class CacheParamsTest extends IgniteCacheConfigVariationsAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+            cfg.setClientMode(igniteInstanceName.endsWith("0"));
+
+            return cfg;
+        }
+
+        /** */
+        @Test(timeout = 10_000)
+        public void testRandomOperationJCacheApiKeepBinary() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long getTestTimeout() {
+            return TimeUnit.SECONDS.toMillis(20);
         }
     }
 }
