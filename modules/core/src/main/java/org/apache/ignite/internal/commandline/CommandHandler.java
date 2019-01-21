@@ -56,8 +56,10 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
@@ -148,6 +150,11 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VER
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.RESET_LOST_PARTITIONS;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -192,21 +199,9 @@ public class CommandHandler {
     /** */
     private static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
-    /** */
-    private static final String CMD_DUMP = "--dump";
-
-    /** */
-    private static final String CMD_SKIP_ZEROS = "--skip-zeros";
-
-    /** Command exclude caches. */
-    private static final String CMD_EXCLUDE_CACHES = "--exclude-caches";
-
-    /** Cache filter. */
-    private static final String CACHE_FILTER = "--cache-filter";
-
     /** One cache filter option should used message. */
     public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
-        CMD_EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
+        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
 
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
@@ -368,9 +363,6 @@ public class CommandHandler {
 
     /** */
     private static final String CONFIG = "--config";
-
-    /** */
-    private static final String IDLE_CHECK_CRC = "--check-crc";
 
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
@@ -868,15 +860,15 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
+        String CACHES = "cacheName1,...,cacheNameN";
+
         usageCache(LIST, "regexPattern", op(or("groups", "seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), op(or(CMD_EXCLUDE_CACHES + " cache1,...,cacheN",
-            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(),
-                CacheFilterEnum.PERSISTENT.toString(), CacheFilterEnum.NOT_PERSISTENT.toString())), "cache1,...," +
-                "cacheN")));
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or(NODE_ID, NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
-        usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
+            op(or(EXCLUDE_CACHES + " " + CACHES, op(CACHE_FILTER, or(CacheFilterEnum.values())), CACHES)));
+        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        usageCache(RESET_LOST_PARTITIONS, CACHES);
         nl();
     }
 
@@ -2146,33 +2138,51 @@ public class CommandHandler {
                 while (hasNextCacheArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = nextArg("");
 
-                    if (CMD_DUMP.equals(nextArg))
-                        cacheArgs.dump(true);
-                    else if (CMD_EXCLUDE_CACHES.equals(nextArg)) {
-                        if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+                    IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
 
-                        parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
-                            cacheArgs);
-                    }
-                    else if (CMD_SKIP_ZEROS.equals(nextArg))
-                        cacheArgs.skipZeros(true);
-                    else if (IDLE_CHECK_CRC.equals(nextArg))
-                        cacheArgs.idleCheckCrc(true);
-                    else if (CACHE_FILTER.equals(nextArg)) {
-                        if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
-                        String filter = nextArg("The cache filter should be specified. The following values can be " +
-                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
-
-                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
-                    }
-                    else {
+                    if(arg == null) {
                         if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
                             throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
 
                         parseCacheNames(nextArg, cacheArgs);
+                    }
+                    else {
+                        switch (arg) {
+                            case DUMP:
+                                cacheArgs.dump(true);
+
+                                break;
+
+                            case SKIP_ZEROS:
+                                cacheArgs.skipZeros(true);
+
+                                break;
+
+                            case CHECK_CRC:
+                                cacheArgs.idleCheckCrc(true);
+
+                                break;
+
+                            case CACHE_FILTER:
+                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                String filter = nextArg("The cache filter should be specified. The following " +
+                                    "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
+
+                                cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
+
+                                break;
+
+                            case EXCLUDE_CACHES:
+                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                                parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
+                                    cacheArgs);
+
+                                break;
+                        }
                     }
                 }
                 break;
@@ -2335,20 +2345,11 @@ public class CommandHandler {
     }
 
     /**
+     * @param cacheNames Cache names string.
      * @param cacheArgs Cache args.
      */
     private void parseCacheNames(String cacheNames, CacheArguments cacheArgs) {
-        String[] cacheNamesArr = cacheNames.split(",");
-        Set<String> cacheNamesSet = new HashSet<>();
-
-        for (String cacheName : cacheNamesArr) {
-            if (F.isEmpty(cacheName))
-                throw new IllegalArgumentException("Non-empty cache names expected.");
-
-            cacheNamesSet.add(cacheName.trim());
-        }
-
-        cacheArgs.caches(cacheNamesSet);
+        cacheArgs.caches(parseCacheNames(cacheNames));
     }
 
     /**
@@ -2356,7 +2357,15 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void parseExcludeCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        cacheArgs.excludeCaches(parseCacheNames(cacheNames));
+    }
+
+    /**
+     * @param cacheNames Cache names string.
+     */
+    private Set<String> parseCacheNames(String cacheNames) {
         String[] cacheNamesArr = cacheNames.split(",");
+
         Set<String> cacheNamesSet = new HashSet<>();
 
         for (String cacheName : cacheNamesArr) {
@@ -2366,7 +2375,7 @@ public class CommandHandler {
             cacheNamesSet.add(cacheName.trim());
         }
 
-        cacheArgs.excludeCaches(cacheNamesSet);
+        return cacheNamesSet;
     }
 
     /**
