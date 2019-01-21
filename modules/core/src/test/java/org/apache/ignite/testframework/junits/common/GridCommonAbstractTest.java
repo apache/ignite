@@ -2085,10 +2085,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param countUpdate Number of events.
      */
     protected void awaitMetricsUpdate(int countUpdate) throws InterruptedException {
-        if (countUpdate > 0) {
-            final List<Ignite> allGrids = G.allGrids();
+        awaitMetricsUpdate(countUpdate, G.allGrids());
+    }
 
-            final CountDownLatch latch = new CountDownLatch(allGrids.size() * countUpdate);
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved on specific nodes.
+     *
+     * @param countUpdate Number of events.
+     * @param grids Collection of Ignite instances we are listening for metrics update
+     * @throws InterruptedException
+     */
+    protected void awaitMetricsUpdate(int countUpdate, Collection<Ignite> grids) throws InterruptedException {
+        if (countUpdate > 0) {
+
+            final CountDownLatch latch = new CountDownLatch(G.allGrids().size() * grids.size() * countUpdate);
 
             final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -2100,13 +2110,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             };
 
-            for (Ignite g : allGrids)
+            for (Ignite g : grids)
                 g.events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
 
             // Wait for metrics update.
             assert latch.await(10, TimeUnit.SECONDS);
 
-            for (Ignite g : allGrids)
+            for (Ignite g : grids)
                 g.events().stopLocalListen(lsnr);
         }
     }

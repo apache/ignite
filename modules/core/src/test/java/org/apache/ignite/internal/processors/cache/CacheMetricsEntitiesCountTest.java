@@ -130,7 +130,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 fillCache(igniteIdx, cacheIdx);
 
-        awaitMetricsUpdate(2);
+        awaitMetricsUpdate(1);
 
         int cacheSize = GRID_CNT * ENTITIES_CNT;
 
