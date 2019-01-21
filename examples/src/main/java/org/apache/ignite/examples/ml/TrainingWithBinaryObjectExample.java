@@ -70,16 +70,16 @@ public class TrainingWithBinaryObjectExample {
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, BinaryObject> persons = ignite.createCache(cacheConfiguration).withKeepBinary();
+        IgniteCache<Integer, BinaryObject> cache = ignite.createCache(cacheConfiguration).withKeepBinary();
 
         BinaryObjectBuilder builder = ignite.binary().builder("testType");
 
         for (int i = 0; i < 100; i++) {
             if (i > 50)
-                persons.put(i, builder.setField("feature1", 0.0).setField("label", 0.0).build());
+                cache.put(i, builder.setField("feature1", 0.0).setField("label", 0.0).build());
             else
-                persons.put(i, builder.setField("feature1", 1.0).setField("label", 1.0).build());
+                cache.put(i, builder.setField("feature1", 1.0).setField("label", 1.0).build());
         }
-        return persons;
+        return cache;
     }
 }

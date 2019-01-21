@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -77,22 +77,19 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
         IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
 
         IgniteBiFunction<Integer, BinaryObject, Vector> featureExtractor
-            = (k, v) -> VectorUtils.of(new double[]{v.field("feat1")});
+            = (k, v) -> VectorUtils.of(new double[]{v.field("feature1")});
+
         IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
 
-        IgniteBiFunction<Integer, BinaryObject, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, BinaryObject>()
-            .withP(1)
-            .fit(
-                ignite,
-                dataCache,
-                featureExtractor
-            );
+        KMeansTrainer trainer = new KMeansTrainer().withSeed(123L);
 
-        KMeansTrainer trainer = new KMeansTrainer();
+        CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
+            new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-        KMeansModel kmdl = trainer.fit(ignite, dataCache, normalizationPreprocessor, lbExtractor);
+        KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
 
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0.0);
+        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0);
+        assertTrue(kmdl.predict(VectorUtils.num2Vec(10.0)) == 1);
     }
 
     /**
@@ -107,11 +104,10 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
         BinaryObjectBuilder builder = ignite.binary().builder("testType");
 
         for (int i = 0; i < NUMBER_OF_SAMPLES; i++) {
-            BinaryObject value = builder.setField("label", (i < HALF)? 0.0 : 1.0)
-                .setField("feat1", (i < HALF)? 0.0 : 1.0)
-                .build();
-
-            cache.put(i, value);
+            if (i < HALF)
+                cache.put(i, builder.setField("feature1", 0.0).setField("label", 0.0).build());
+            else
+                cache.put(i, builder.setField("feature1", 10.0).setField("label", 1.0).build());
         }
 
         return cache;
