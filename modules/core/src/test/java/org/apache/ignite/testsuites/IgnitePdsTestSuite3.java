@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -32,7 +31,7 @@ import org.junit.runners.model.InitializationError;
  *
  */
 @RunWith(IgnitePdsTestSuite3.DynamicSuite.class)
-public class IgnitePdsTestSuite3 extends TestSuite {
+public class IgnitePdsTestSuite3 {
     /**
      * @return IgniteCache test suite.
      */
