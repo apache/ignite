@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,56 @@ class ClusterCachesInfo {
 
         log = ctx.log(getClass());
     }
+
+    /**
+     * Filters all dynamic cache descriptors and groups that were not presented on node start
+     * and were received with grid discovery data.
+     *
+     * @param localConfigData node's local cache configurations
+     * (both from static config and stored with persistent caches).
+     *
+     */
+    public void filterDynamicCacheDescriptors(CacheJoinNodeDiscoveryData localConfigData) {
+        if (ctx.isDaemon())
+            return;
+
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = localConfigData.caches();
+
+        Iterator<Map.Entry<String, DynamicCacheDescriptor>> cachesIter = registeredCaches.entrySet().iterator();
+
+        while (cachesIter.hasNext()) {
+            Map.Entry<String, DynamicCacheDescriptor> e = cachesIter.next();
+
+            if (!caches.containsKey(e.getKey()))
+                cachesIter.remove();
+        }
+
+        Iterator<Integer> grpIdsIter = registeredCacheGrps.keySet().iterator();
+
+        while (grpIdsIter.hasNext()) {
+            Integer grpId = grpIdsIter.next();
+
+            boolean removeGrp = true;
+
+            for (DynamicCacheDescriptor cacheDescr : registeredCaches.values()) {
+                if (cacheDescr.groupId() == grpId) {
+                    removeGrp = false;
+
+                    break;
+                }
+            }
+
+            if (removeGrp)
+                grpIdsIter.remove();
+        }
+
+        locJoinCachesCtx = new LocalJoinCachesContext(
+            locJoinCachesCtx.caches(),
+            registeredCacheGrps,
+            registeredCaches);
+    }
+
+
 
     /**
      * @param joinDiscoData Information about configured caches and templates.
