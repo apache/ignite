@@ -216,6 +216,15 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
+        /** */
+        private bool? _initBaselineAutoAdjustEnabled;
+
+        /** Initial value of time which we would wait before the actual topology change since last discovery event. */
+        private long? _initBaselineAutoAdjustTimeout;
+
+        /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+        private long? _initBaselineAutoAdjustMaxTimeout;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -250,6 +259,21 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustEnabled"/> property.
+        /// </summary>
+        public const bool DefaultInitBaselineAutoAdjustEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustTimeout"/> property.
+        /// </summary>
+        public const long DefaultInitBaselineAutoAdjustTimeout = 0;
+
+        /// <summary>
+        /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
+        /// </summary>
+        public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -333,6 +357,9 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
+            writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
+            writer.WriteLongNullable(_initBaselineAutoAdjustMaxTimeout);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -722,6 +749,9 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
+            _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
+            _initBaselineAutoAdjustMaxTimeout = r.ReadLongNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1655,5 +1685,35 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
+
+        /// <summary>
+        /// Initial value of manual baseline control or auto adjusting baseline.
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustEnabled)]
+        public bool InitBaselineAutoAdjustEnabled
+        {
+            get { return _initBaselineAutoAdjustEnabled ?? DefaultInitBaselineAutoAdjustEnabled; }
+            set { _initBaselineAutoAdjustEnabled = value; }
+        }
+
+        /// <summary>
+        /// Initial value of time which we would wait before the actual topology change since last discovery event.
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustTimeout)]
+        public long InitBaselineAutoAdjustTimeout
+        {
+            get { return _initBaselineAutoAdjustTimeout ?? DefaultInitBaselineAutoAdjustTimeout; }
+            set { _initBaselineAutoAdjustTimeout = value; }
+        }
+
+        /// <summary>
+        /// Initial value of time which we would wait from the first discovery event in the chain(node join/exit).
+        /// </summary>
+        [DefaultValue(DefaultInitBaselineAutoAdjustMaxTimeout)]
+        public long InitBaselineAutoAdjustMaxTimeout
+        {
+            get { return _initBaselineAutoAdjustMaxTimeout ?? DefaultInitBaselineAutoAdjustMaxTimeout; }
+            set { _initBaselineAutoAdjustMaxTimeout = value; }
+        }
     }
 }
