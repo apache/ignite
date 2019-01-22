@@ -123,7 +123,6 @@ import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -143,6 +142,9 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
 
 /**
  * Common abstract test for Ignite tests.
+ * <p>
+ * IMPL NOTE for some reason, possibly related to {@code TestRule}, annotation {@code org.junit.Before} appears
+ * to work unreliably here.</p>
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
@@ -189,6 +191,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             runSerializer.lock();
             try {
                 assert getName() != null : "getName returned null";
+
+                helper.onBefore(GridAbstractTest.this::onFirstTest, GridAbstractTest.this::onLastTest);
 
                 runTestCase(base);
             } finally {
@@ -279,12 +283,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @BeforeClass
     public static void beforeClassGridAbstractTest() {
         helper.onBeforeClass();
-    }
-
-    /** */
-    @Before
-    public final void beforeGridAbstractTest() throws Exception {
-        helper.onBefore(this::onFirstTest, this::onLastTest);
     }
 
     /** */
