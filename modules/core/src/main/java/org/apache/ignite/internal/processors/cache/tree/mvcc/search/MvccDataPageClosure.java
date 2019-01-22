@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-
-/** */
-public class CacheMvccPartitionedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+/**
+ * Data page MVCC filter.
+ */
+public interface MvccDataPageClosure {
+    /**
+     * @param io Data page IO.
+     * @param dataPageAddr Data page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @return {@code true} If the row is visible.
+     * @throws IgniteCheckedException If failed.
+     */
+    boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize) throws IgniteCheckedException;
 }

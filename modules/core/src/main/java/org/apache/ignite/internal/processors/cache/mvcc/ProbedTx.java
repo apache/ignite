@@ -15,101 +15,103 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Request to fetch next page.
+ * Contains attributes of tx visited during deadlock detection.
  */
-public class GridQueryNextPageRequest implements Message {
+public class ProbedTx implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
     /** */
-    private long qryReqId;
+    private UUID nodeId;
+    /** */
+    private GridCacheVersion xidVer;
+    /** */
+    private GridCacheVersion nearXidVer;
+    /** */
+    private long startTime;
+    /** */
+    private int lockCntr;
 
     /** */
-    private int segmentId;
-
-    /** */
-    private int qry;
-
-    /** */
-    private int pageSize;
-
-    /** */
-    private byte flags;
-
-    /**
-     * Default constructor.
-     */
-    public GridQueryNextPageRequest() {
-        // No-op.
+    public ProbedTx() {
     }
 
     /**
-     * @param qryReqId Query request ID.
-     * @param qry Query.
-     * @param segmentId Index segment ID.
-     * @param pageSize Page size.
-     * @param flags Flags.
+     * @param nodeId Node on which probed transaction runs.
+     * @param xidVer Identifier of transaction.
+     * @param nearXidVer Identifier of near transaction.
+     * @param startTime Transaction start time.
+     * @param lockCntr Number of locks acquired by probed transaction at a time of probe handling.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize, byte flags) {
-        this.qryReqId = qryReqId;
-        this.qry = qry;
-        this.segmentId = segmentId;
-        this.pageSize = pageSize;
-        this.flags = flags;
+    public ProbedTx(UUID nodeId, GridCacheVersion xidVer, GridCacheVersion nearXidVer, long startTime,
+        int lockCntr) {
+        this.nodeId = nodeId;
+        this.xidVer = xidVer;
+        this.nearXidVer = nearXidVer;
+        this.startTime = startTime;
+        this.lockCntr = lockCntr;
     }
 
     /**
-     * @return Flags.
+     * @return Node on which probed transaction runs.
      */
-    public byte getFlags() {
-        return flags;
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
-     * @return Query request ID.
+     * @return Identifier of transaction.
      */
-    public long queryRequestId() {
-        return qryReqId;
+    public GridCacheVersion xidVersion() {
+        return xidVer;
     }
 
     /**
-     * @return Query.
+     * @return Identifier of near transaction.
      */
-    public int query() {
-        return qry;
-    }
-
-    /** @return Index segment ID */
-    public int segmentId() {
-        return segmentId;
+    public GridCacheVersion nearXidVersion() {
+        return nearXidVer;
     }
 
     /**
-     * @return Page size.
+     * @return Transaction start time.
      */
-    public int pageSize() {
-        return pageSize;
+    public long startTime() {
+        return startTime;
     }
 
-
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryNextPageRequest.class, this);
+    /**
+     * @return Number of locks acquired by probed transaction at a time of probe handling.
+     */
+    public int lockCounter() {
+        return lockCntr;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+    /**
+     * Creates a copy of this instance with modified transaction start time.
+     *
+     * @param updStartTime New start time value.
+     * @return Instance with updated start time.
+     */
+    public ProbedTx withStartTime(long updStartTime) {
+        return new ProbedTx(
+            nodeId,
+            xidVer,
+            nearXidVer,
+            updStartTime,
+            lockCntr
+        );
     }
 
     /** {@inheritDoc} */
@@ -125,31 +127,31 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeInt("lockCntr", lockCntr))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("pageSize", pageSize))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("qry", qry))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong("startTime", startTime))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeInt("segmentId", segmentId))
+                if (!writer.writeMessage("xidVer", xidVer))
                     return false;
 
                 writer.incrementState();
@@ -168,7 +170,7 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                flags = reader.readByte("flags");
+                lockCntr = reader.readInt("lockCntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,7 +178,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                pageSize = reader.readInt("pageSize");
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -184,7 +186,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                qry = reader.readInt("qry");
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,7 +194,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                qryReqId = reader.readLong("qryReqId");
+                startTime = reader.readLong("startTime");
 
                 if (!reader.isLastRead())
                     return false;
@@ -200,7 +202,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                segmentId = reader.readInt("segmentId");
+                xidVer = reader.readMessage("xidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -209,16 +211,25 @@ public class GridQueryNextPageRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryNextPageRequest.class);
+        return reader.afterMessageRead(ProbedTx.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 108;
+        return 171;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 5;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ProbedTx.class, this);
     }
 }

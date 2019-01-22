@@ -15,101 +15,80 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Request to fetch next page.
+ * Probe message travelling between transactions (from waiting to blocking) during deadlock detection.
+ * @see DeadlockDetectionManager
  */
-public class GridQueryNextPageRequest implements Message {
+public class DeadlockProbe implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
     /** */
-    private long qryReqId;
+    private GridCacheVersion initiatorVer;
+    /** */
+    @GridToStringInclude
+    @GridDirectCollection(ProbedTx.class)
+    private Collection<ProbedTx> waitChain;
+    /** */
+    private ProbedTx blocker;
+    /** */
+    private boolean nearCheck;
 
     /** */
-    private int segmentId;
-
-    /** */
-    private int qry;
-
-    /** */
-    private int pageSize;
-
-    /** */
-    private byte flags;
-
-    /**
-     * Default constructor.
-     */
-    public GridQueryNextPageRequest() {
-        // No-op.
+    public DeadlockProbe() {
     }
 
-    /**
-     * @param qryReqId Query request ID.
-     * @param qry Query.
-     * @param segmentId Index segment ID.
-     * @param pageSize Page size.
-     * @param flags Flags.
-     */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize, byte flags) {
-        this.qryReqId = qryReqId;
-        this.qry = qry;
-        this.segmentId = segmentId;
-        this.pageSize = pageSize;
-        this.flags = flags;
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public DeadlockProbe(GridCacheVersion initiatorVer, Collection<ProbedTx> waitChain,
+        ProbedTx blocker, boolean nearCheck) {
+        this.initiatorVer = initiatorVer;
+        this.waitChain = waitChain;
+        this.blocker = blocker;
+        this.nearCheck = nearCheck;
     }
 
     /**
-     * @return Flags.
+     * @return Identifier of a transaction started a deadlock detection process. Can be used for diagnostics.
      */
-    public byte getFlags() {
-        return flags;
+    public GridCacheVersion initiatorVersion() {
+        return initiatorVer;
     }
 
     /**
-     * @return Query request ID.
+     * @return Chain of transactions identified as waiting during deadlock detection.
      */
-    public long queryRequestId() {
-        return qryReqId;
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public Collection<ProbedTx> waitChain() {
+        return waitChain;
     }
 
     /**
-     * @return Query.
+     * @return Identifier of a transaction identified as blocking last transaction in the wait chain
+     * during deadlock deteciton.
      */
-    public int query() {
-        return qry;
-    }
-
-    /** @return Index segment ID */
-    public int segmentId() {
-        return segmentId;
+    public ProbedTx blocker() {
+        return blocker;
     }
 
     /**
-     * @return Page size.
+     * @return {@code True} if checks if near transaction is waiting. {@code False} if checks dht transaction.
      */
-    public int pageSize() {
-        return pageSize;
-    }
-
-
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryNextPageRequest.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+    public boolean nearCheck() {
+        return nearCheck;
     }
 
     /** {@inheritDoc} */
@@ -125,31 +104,25 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeMessage("blocker", blocker))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("pageSize", pageSize))
+                if (!writer.writeMessage("initiatorVer", initiatorVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("qry", qry))
+                if (!writer.writeBoolean("nearCheck", nearCheck))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("qryReqId", qryReqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeInt("segmentId", segmentId))
+                if (!writer.writeCollection("waitChain", waitChain, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -168,7 +141,7 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                flags = reader.readByte("flags");
+                blocker = reader.readMessage("blocker");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,7 +149,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                pageSize = reader.readInt("pageSize");
+                initiatorVer = reader.readMessage("initiatorVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -184,7 +157,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                qry = reader.readInt("qry");
+                nearCheck = reader.readBoolean("nearCheck");
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,15 +165,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                qryReqId = reader.readLong("qryReqId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                segmentId = reader.readInt("segmentId");
+                waitChain = reader.readCollection("waitChain", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -209,16 +174,25 @@ public class GridQueryNextPageRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryNextPageRequest.class);
+        return reader.afterMessageRead(DeadlockProbe.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 108;
+        return 170;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DeadlockProbe.class, this);
     }
 }
