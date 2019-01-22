@@ -2490,6 +2490,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
 
         try {
+            if (record.state() == PREPARED)
+                tx.flushEnlistBuffer();
+
             return cctx.wal().log(record);
         }
         catch (IgniteCheckedException e) {
