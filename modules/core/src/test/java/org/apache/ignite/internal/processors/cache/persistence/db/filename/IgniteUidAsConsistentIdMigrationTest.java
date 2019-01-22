@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
@@ -100,6 +101,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (clearPropsAfterTest) {
             System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
             System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
+            System.clearProperty(IGNITE_CONSISTENT_ID);
         }
     }
 
@@ -585,6 +587,47 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertNodeIndexesInFolder(); //new style nodes should not be found
         stopGrid(0);
         System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
+    }
+
+    /**
+     * Test start node with defined consistent id through system property.
+     * Expected to be 1 folder with specified name.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testStartNodeWithDefinedConsistentIdBySystemProperty() throws Exception {
+        String specificConsistentId = "my node consistent id";
+
+        clearPropsAfterTest = true;
+
+        System.setProperty(IGNITE_CONSISTENT_ID, specificConsistentId);
+
+        final Ignite ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        ignite.getOrCreateCache(CACHE_NAME).put("hi", "I am entry value");
+
+        final String specificConsistentIdFolder = U.maskForFileName(specificConsistentId);
+
+        assertPdsDirsDefaultExist(specificConsistentIdFolder);
+
+        assertNodeIndexesInFolder(); // expected to have no new style folders
+
+        assertEquals(ignite.cluster().localNode().consistentId(), specificConsistentId);
+
+        System.clearProperty(IGNITE_CONSISTENT_ID);
+
+        stopAllGrids();
+
+        final Ignite igniteRestart = startGrid(0);
+
+        assertFalse(specificConsistentId.equals(igniteRestart.cluster().localNode().consistentId()));
+
+        assertNodeIndexesInFolder(0); //new style node folder should by created
+
+        stopAllGrids();
     }
 
     /**

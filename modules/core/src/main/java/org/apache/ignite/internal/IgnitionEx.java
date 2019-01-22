@@ -130,15 +130,7 @@ import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -2188,6 +2180,11 @@ public class IgnitionEx {
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
             myCfg.setNodeId(nodeId);
+
+            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_CONSISTENT_ID);
+
+            if (!F.isEmpty(predefineConsistentId))
+                myCfg.setConsistentId(predefineConsistentId);
 
             IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
