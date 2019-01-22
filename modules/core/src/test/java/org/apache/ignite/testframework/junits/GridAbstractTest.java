@@ -171,7 +171,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final transient Map<Class<?>, TestResourcesHolder> tests = new ConcurrentHashMap<>();
+    private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -255,7 +255,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected GridAbstractTest() throws IgniteCheckedException {
         this(false);
 
-        log = getTestResourcesHolder().getTestResources().getLogger().getLogger(getClass());
+        log = getIgniteTestResources().getLogger().getLogger(getClass());
     }
 
     /**
@@ -283,7 +283,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     @Before
     public void beforeGridAbstractTest() throws Exception {
-        helper.onBefore(this::onFirstTest, this::onLastTest); // todo write code
+        helper.onBefore(this::onFirstTest, this::onLastTest);
     }
 
     /** */
@@ -327,14 +327,14 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources() throws IgniteCheckedException {
-        return getTestResourcesHolder().getTestResources();
+        return getIgniteTestResources();
     }
 
     /**
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return getTestResourcesHolder(cfg).getTestResources();
+        return getIgniteTestResources(cfg);
     }
 
     /**
@@ -2028,13 +2028,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**
      * @return Test counters.
      */
-    private synchronized TestResourcesHolder getTestResourcesHolder() throws IgniteCheckedException {
-        TestResourcesHolder tc = tests.get(getClass());
+    private synchronized IgniteTestResources getIgniteTestResources() throws IgniteCheckedException {
+        IgniteTestResources rsrcs = tests.get(getClass());
 
-        if (tc == null)
-            tests.put(getClass(), tc = new TestResourcesHolder());
+        if (rsrcs == null)
+            tests.put(getClass(), rsrcs = new IgniteTestResources());
 
-        return tc;
+        return rsrcs;
     }
 
     /**
@@ -2042,8 +2042,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Test counters
      * @throws IgniteCheckedException In case of error
      */
-    private synchronized TestResourcesHolder getTestResourcesHolder(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return new TestResourcesHolder(cfg);
+    private synchronized IgniteTestResources getIgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new IgniteTestResources(cfg);
     }
 
     /** {@inheritDoc} */
@@ -2435,36 +2435,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             job.setIgnite(ignite);
 
             return job.call(idx);
-        }
-    }
-
-    /**
-     * Test resources container. Todo consider replacing this holder with instances of IgniteTestResources.
-     */
-    private static class TestResourcesHolder {
-        /** */
-        private IgniteTestResources rsrcs;
-
-        /**
-         * @throws IgniteCheckedException In case of error.
-         */
-        TestResourcesHolder() throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources();
-        }
-
-        /**
-         * @param cfg Ignite configuration
-         * @throws IgniteCheckedException In case of error
-         */
-        TestResourcesHolder(IgniteConfiguration cfg) throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources(cfg);
-        }
-
-        /**
-         * @return Test resources.
-         */
-        IgniteTestResources getTestResources() {
-            return rsrcs;
         }
     }
 
