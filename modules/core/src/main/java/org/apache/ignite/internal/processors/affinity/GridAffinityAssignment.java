@@ -32,7 +32,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cached affinity calculations.
  *
- * GridAffinityASsignment doesn't support versioning.
+ * Deprecated GridAffinityAssignment doesn't support versioning.
+ * Use GridAffinityAssignmentV2 instead.
  */
 @Deprecated
 @SuppressWarnings("ForLoopReplaceableByForEach")
