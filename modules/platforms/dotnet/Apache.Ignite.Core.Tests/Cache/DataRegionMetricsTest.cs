@@ -165,7 +165,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                     CheckpointFrequency = CheckpointFrequency,
                     MetricsEnabled = true,
                     WalMode = WalMode.LogOnly,
-                    
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = RegionWithMetrics,
