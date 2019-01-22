@@ -83,18 +83,43 @@ namespace Apache.Ignite.Core
         long PhysicalMemorySize { get; }
 
         /// <summary>
-        /// Gets checkpointing buffer size in pages.
+        /// Gets used checkpoint buffer size in pages.
         /// </summary>
-        long CheckpointBufferPages { get; }
-
+        long UsedCheckpointBufferPages { get; }
+        
         /// <summary>
-        /// Gets checkpointing buffer size in bytes.
+        /// Gets used checkpoint buffer size in bytes.
         /// </summary>
-        long CheckpointBufferSize { get; }
+        long UsedCheckpointBufferSize { get; }
 
         /// <summary>
         /// Gets memory page size in bytes.
         /// </summary>
         int PageSize { get; }
+        
+        /// <summary>
+        /// Gets the number of read pages from last restart.
+        /// </summary>
+        long PagesRead { get; }
+        
+        /// <summary>
+        ///  Gets the number of written pages from last restart.
+        /// </summary>
+        long PagesWritten  { get; }
+        
+        /// <summary>
+        /// Gets the number of replaced pages from last restart.
+        /// </summary>
+        long PagesReplaced  { get; }
+        
+        /// <summary>
+        /// Gets total offheap size in bytes.
+        /// </summary>
+        long OffHeapSize { get; }
+        
+        /// <summary>
+        /// Gets total used offheap size in bytes.
+        /// </summary>
+        long OffheapUsedSize  { get; }
     }
 }
