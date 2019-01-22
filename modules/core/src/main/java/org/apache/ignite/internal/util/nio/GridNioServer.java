@@ -1477,16 +1477,19 @@ public class GridNioServer<T> {
 
                     assert buf.hasRemaining();
 
+                    int totalWritten = 0;
+
                     if (!skipWrite) {
-                        int cnt = sockCh.write(buf);
+                        while (totalWritten < buf.limit())
+                            totalWritten += sockCh.write(buf);
 
                         if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + totalWritten + ']');
 
                         if (metricsLsnr != null)
-                            metricsLsnr.onBytesSent(cnt);
+                            metricsLsnr.onBytesSent(totalWritten);
 
-                        ses.bytesSent(cnt);
+                        ses.bytesSent(totalWritten);
                     }
                     else {
                         // For test purposes only (skipWrite is set to true in tests only).
@@ -1498,22 +1501,18 @@ public class GridNioServer<T> {
                         }
                     }
 
+                    assert buf.limit() == totalWritten
+                        : "Buffer is not completely written [totalWritten = " + totalWritten +", buf = " + buf +"]";
+
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
 
-                    for(Message writtenMessage : writtenMessages)
+                    for (Message writtenMessage : writtenMessages)
                         onMessageWritten(ses, writtenMessage);
 
-                    if (buf.hasRemaining()) {
-                        ses.addMeta(BUF_META_KEY, buf);
+                    buf = ses.writeBuffer();
 
-                        break;
-                    }
-                    else {
-                        buf = ses.writeBuffer();
-
-                        if (ses.meta(WRITE_BUF_LIMIT) != null)
-                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
-                    }
+                    if (ses.meta(WRITE_BUF_LIMIT) != null)
+                        buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
                 }
             }
             finally {
