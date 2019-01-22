@@ -792,21 +792,21 @@ struct CacheQueryTestSuiteFixture
             int expected_age = i * 10;
 
             BOOST_REQUIRE(cursor.HasNext(error));
-            BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
             QueryFieldsRow row = cursor.GetNext(error);
-            BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
             BOOST_REQUIRE(row.HasNext(error));
-            BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
             std::string name = row.GetNext<std::string>(error);
-            BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
             BOOST_REQUIRE_EQUAL(name, expected_name);
 
             int age = row.GetNext<int>(error);
-            BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
             BOOST_REQUIRE_EQUAL(age, expected_age);
 
@@ -1485,21 +1485,21 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
         int expected_age = i * 10;
 
         BOOST_REQUIRE(cursor.HasNext(error));
-        BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
         QueryFieldsRow row = cursor.GetNext(error);
-        BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
         BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
         std::string name = row.GetNext<std::string>(error);
-        BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
         BOOST_REQUIRE_EQUAL(name, expected_name);
 
         int age = row.GetNext<int>(error);
-        BOOST_REQUIRE_EQUAL(error.GetCode(), IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
         BOOST_REQUIRE_EQUAL(age, expected_age);
 
