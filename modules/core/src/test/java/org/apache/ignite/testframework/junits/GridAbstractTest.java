@@ -283,7 +283,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     @Before
-    public void beforeGridAbstractTest() throws Exception {
+    public final void beforeGridAbstractTest() throws Exception {
         helper.onBefore(this::onFirstTest, this::onLastTest);
     }
 

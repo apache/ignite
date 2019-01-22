@@ -106,7 +106,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** */
     @Before
-    public void beforeGridSpiAbstractTest() throws Exception {
+    public final void beforeGridSpiAbstractTest() throws Exception {
         helper.onBefore(
             () -> {
                 if (autoStart) {
