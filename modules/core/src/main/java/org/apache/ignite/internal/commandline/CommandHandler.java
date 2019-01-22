@@ -1769,6 +1769,11 @@ public class CommandHandler {
                 map.put(CHECK_THROUGH + " K", "validate every Kth key");
 
                 break;
+
+            case IDLE_VERIFY:
+                map.put(CHECK_CRC.toString(), "check crc sum of pages on disk before idle_verify.");
+
+                break;
         }
         return map;
     }
