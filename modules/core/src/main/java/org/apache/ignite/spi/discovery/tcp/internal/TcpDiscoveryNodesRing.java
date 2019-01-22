@@ -672,4 +672,29 @@ public class TcpDiscoveryNodesRing {
             rwLock.readLock().unlock();
         }
     }
+
+    /**
+     * Prints ring in human-readable form.
+     */
+    public void print(StringBuilder b) {
+        int pos = 0;
+
+        Iterator<TcpDiscoveryNode> it = nodes.iterator();
+
+        while (it.hasNext()) {
+            TcpDiscoveryNode node = it.next();
+
+            b.append("[nodeId=").append(U.id8(node.id())).append(", pos=").append(pos);
+
+            if (node.isLocal())
+                b.append(", local");
+
+            b.append(']');
+
+            if (it.hasNext())
+                b.append(", ");
+
+            pos++;
+        }
+    }
 }

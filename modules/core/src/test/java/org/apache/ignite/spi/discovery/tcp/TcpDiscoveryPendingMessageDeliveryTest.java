@@ -21,18 +21,26 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -51,9 +59,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** */
     private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
 
+    /** */
+    private T2<IgniteBiPredicate<Socket, TcpDiscoveryAbstractMessage>, CountDownLatch> delayCond;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         blockMsgs = false;
+        delayCond = null;
         receivedEnsuredMsgs = new GridConcurrentHashSet<>();
     }
 
@@ -66,14 +78,20 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         TcpDiscoverySpi disco;
 
         if (igniteInstanceName.startsWith("victim"))
-            disco = new DyingDiscoverySpi();
+            disco = new TestDiscoverySpi();
         else if (igniteInstanceName.startsWith("listener"))
             disco = new ListeningDiscoverySpi();
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
+        else if (igniteInstanceName.startsWith("joining"))
+            disco = new TestDiscoverySpi();
+        else if (igniteInstanceName.startsWith("dummy"))
+            disco = new TestDiscoverySpi();
         else
             disco = new TcpDiscoverySpi();
 
@@ -231,6 +249,74 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeliveryAllFailedMessagesInCorrectOrderJoining() throws Exception {
+        IgniteEx coord = startGrid("coordinator");
+        TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
+
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new GridConcurrentHashSet<>();
+        coordDisco.addSendMessageListener(msg -> {
+            if (coordDisco.ensured(msg))
+                sentEnsuredMsgs.add(msg);
+        });
+
+        //Node which receive NodeFail message but will not send it further around the ring.
+        IgniteEx receiver = startGrid("receiver");
+
+        // Node which should be failed.
+        IgniteEx dummy = startGrid("dummy");
+
+        sentEnsuredMsgs.clear();
+        receivedEnsuredMsgs.clear();
+
+        delayCond = new T2<>((sock, msg) -> {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
+
+                if (addedMsg.node().consistentId().equals("joining") && sock.getPort() == 47503) {
+                    GridTestUtils.runAsync(new Runnable() {
+                        @Override public void run() {
+                            blockMsgs = true;
+
+                            log.info("Sending fail node messages");
+
+                            coord.context().discovery().failNode(dummy.localNode().id(), "Dummy node failed");
+
+                            delayCond.get2().countDown();
+                        }
+                    });
+
+                    return true;
+                }
+            }
+
+            return false;
+        }, new CountDownLatch(1));
+
+        // Node which should be started.
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try {
+                startGrid("joining");
+            }
+            catch (Exception e) {
+                fail(e.getMessage());
+            }
+        }, 1);
+
+        fut.get();
+
+        boolean delivered = GridTestUtils.waitForCondition(() -> {
+            log.info("Waiting for messages delivery");
+
+            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
+        }, 5000);
+
+        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs, delivered);
+    }
+
+    /**
      * @param disco Discovery SPI.
      * @param id Message id.
      */
@@ -250,12 +336,15 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     }
 
     /**
-     * Discovery SPI, that makes a node stop sending messages when {@code blockMsgs} is set to {@code true}.
+     * Discovery SPI with testing capabilitues that makes a node stop sending messages when {@code blockMsgs} is set to {@code true}
+     * or can delay specific message type.
      */
-    private class DyingDiscoverySpi extends TcpDiscoverySpi {
+    private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
+            delayIfNeeded(sock, msg);
+
             if (!blockMsgs)
                 super.writeToSocket(sock, msg, data, timeout);
         }
@@ -263,6 +352,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
+            delayIfNeeded(sock, msg);
+
             if (!blockMsgs)
                 super.writeToSocket(sock, msg, timeout);
         }
@@ -270,6 +361,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
+            delayIfNeeded(sock, msg);
+
             if (!blockMsgs)
                 super.writeToSocket(sock, out, msg, timeout);
         }
@@ -279,6 +372,19 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             long timeout) throws IOException {
             if (!blockMsgs)
                 super.writeToSocket(msg, sock, res, timeout);
+        }
+
+        private void delayIfNeeded(Socket sock, TcpDiscoveryAbstractMessage msg) {
+            if (delayCond != null) {
+                if (delayCond.get1().apply(sock, msg)) {
+                    try {
+                        assertTrue(U.await(delayCond.get2(), 10, TimeUnit.SECONDS));
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        fail(e.getMessage());
+                    }
+                }
+            }
         }
     }
 
