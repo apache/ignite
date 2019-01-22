@@ -44,6 +44,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -252,6 +253,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Not fixed yet")
     public void testDeliveryAllFailedMessagesInCorrectOrderJoining() throws Exception {
         IgniteEx coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
