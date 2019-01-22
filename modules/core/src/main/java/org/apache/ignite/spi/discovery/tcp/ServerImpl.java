@@ -69,6 +69,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -90,7 +91,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -317,6 +317,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return upcast(ring.visibleRemoteNodes());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        // It is ok to see visible node without order here because attributes are available when node is created.
+        return IgniteFeatures.allNodesSupports(upcast(ring.allNodes()), feature);
     }
 
     /** {@inheritDoc} */
@@ -1473,18 +1479,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Upcasts collection type.
-     *
-     * @param c Initial collection.
-     * @return Resulting collection.
-     */
-    private static <T extends R, R> Collection<R> upcast(Collection<T> c) {
-        A.notNull(c, "c");
-
-        return (Collection<R>)c;
-    }
-
-    /**
      * Update topology history with new topology snapshots.
      *
      * @param topVer Topology version.
@@ -2404,7 +2398,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PendingMessage.class, this);
+            return S.toString(PendingMessage.class, this, "msg", msg, "customMsg", customMsg, "id", id);
         }
     }
 
@@ -2486,12 +2480,25 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param custom {@code True} if discard for {@link TcpDiscoveryCustomEventMessage}.
          */
         void discard(IgniteUuid id, boolean custom) {
+            if (!hasPendingMessage(custom, id))
+                return;
+
             if (custom)
                 customDiscardId = id;
             else
                 discardId = id;
 
             cleanup();
+        }
+
+        // TODO this should be an O(1) method
+        private boolean hasPendingMessage(boolean custom, IgniteUuid id) {
+            for (PendingMessage msg : msgs) {
+                if (msg.customMsg == custom && msg.id.equals(id))
+                    return true;
+            }
+
+            return false;
         }
 
         /**
@@ -3602,6 +3609,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final UUID locNodeId = getLocalNodeId();
 
+            if (locNodeId.equals(node.id())) {
+                if (log.isDebugEnabled())
+                    log.debug("Received join request for local node, dropping: " + msg);
+
+                return;
+            }
+
             if (!msg.client()) {
                 boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
                     node.socketAddresses().iterator().next().getAddress().isLoopbackAddress();
@@ -4126,8 +4140,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 processNodeAddedMessage(nodeAddedMsg);
             }
-            else if (sendMessageToRemotes(msg))
-                sendMessageAcrossRing(msg);
+            else {
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+            }
         }
 
         /**

@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -334,6 +335,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return impl.remoteNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        return impl.allNodesSupport(feature);
     }
 
     /** {@inheritDoc} */

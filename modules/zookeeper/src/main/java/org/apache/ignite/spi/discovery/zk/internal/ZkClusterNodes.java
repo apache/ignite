@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Zk Cluster Nodes.
@@ -50,6 +51,22 @@ public class ZkClusterNodes {
         }
 
         return nodes;
+    }
+
+    /**
+     * Checks if all nodes pass the given predicate.
+     *
+     * @param p Predicate to check.
+     * @return {@code} True if all nodes pass the given filter, {@code false} if there is at least one node failing
+     *      the predicate.
+     */
+    public boolean isAllNodes(IgnitePredicate<ClusterNode> p) {
+        for (ZookeeperClusterNode node : nodesById.values()) {
+            if (!p.apply(node))
+                return false;
+        }
+
+        return true;
     }
 
     /**
