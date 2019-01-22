@@ -382,7 +382,7 @@ public class VisorQueryUtils {
                 List<FieldsQueryCursor<List<?>>> qryCursors = ignite
                     .context()
                     .query()
-                    .querySqlFields(null, qry, null, true, false, cancel);
+                    .querySqlFields(null, qry, null, true, false); // TODO GG-14659 , cancel);
 
                 // In case of multiple statements leave opened only last cursor.
                 for (int i = 0; i < qryCursors.size() - 1; i++)
