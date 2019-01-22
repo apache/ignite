@@ -47,6 +47,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -132,11 +133,12 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testQueryWithMultiplePartitions() throws Exception {
         // This query considered to be simple, so merge table won't be created
         // @see org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.simpleQuery
-        runQuery("select * from Organization org where org._KEY = 1 or org._KEY = 2 ",
+        runQuery("select * from Organization org where org._KEY = 1 or org._KEY = 2",
             2, false, false);
     }
 
@@ -279,6 +281,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testQueryWithMultiplePartitionsAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? ",
