@@ -1409,6 +1409,8 @@ public class GridNioServer<T> {
                     Message msg;
                     boolean finished = false;
 
+                    List<Message> writtenMessages = new ArrayList<>(2);
+
                     if (req != null) {
                         msg = (Message)req.message();
 
@@ -1420,7 +1422,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            onMessageWritten(ses, msg);
+                            writtenMessages.add(msg);
 
                             if (writer != null)
                                 writer.reset();
@@ -1429,8 +1431,6 @@ public class GridNioServer<T> {
 
                     // Fill up as many messages as possible to write buffer.
                     while (finished) {
-                        req.onMessageWritten();
-
                         req = systemMessage(ses);
 
                         if (req == null)
@@ -1449,7 +1449,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            onMessageWritten(ses, msg);
+                            writtenMessages.add(msg);
 
                             if (writer != null)
                                 writer.reset();
@@ -1499,6 +1499,9 @@ public class GridNioServer<T> {
                     }
 
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
+
+                    for(Message writtenMessage : writtenMessages)
+                        onMessageWritten(ses, writtenMessage);
 
                     if (buf.hasRemaining()) {
                         ses.addMeta(BUF_META_KEY, buf);
