@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
  */
 public class IgniteTxDuplicateKeyCheckedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new duplicate ket exception with given error message.
      *

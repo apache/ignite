@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * Exception thrown whenever transaction can't be serialized due to write conflict.
  */
 public class IgniteTxSerializationCheckedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new transaction serialization exception with given error message.
      *
