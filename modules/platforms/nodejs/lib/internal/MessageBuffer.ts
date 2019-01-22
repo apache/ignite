@@ -17,7 +17,7 @@
 
 'use strict';
 
-import Long from 'long';
+import * as Long from 'long';
 import { BinaryUtils, Errors } from '../internal';
 
 const BUFFER_CAPACITY_DEFAULT = 256;

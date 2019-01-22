@@ -18,7 +18,7 @@
 'use strict';
 
 import * as Util from 'util';
-import Long from 'long';
+import * as Long from 'long';
 
 /*
 import { ComplexObjectType } from '../ObjectType';

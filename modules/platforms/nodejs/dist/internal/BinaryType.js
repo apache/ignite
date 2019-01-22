@@ -25,7 +25,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Util = require("util");
-const long_1 = require("long");
+const Long = require("long");
 /*
 import { ComplexObjectType } from '../ObjectType';
 import { BinaryTypeStorage } from './BinaryTypeStorage';
@@ -250,7 +250,7 @@ class BinarySchema {
     }
     static _updateSchemaIdPart(schemaId, fieldIdPart) {
         schemaId = schemaId ^ fieldIdPart;
-        schemaId = long_1.default.fromValue(schemaId).multiply(FNV1_PRIME).getLowBits();
+        schemaId = Long.fromValue(schemaId).multiply(FNV1_PRIME).getLowBits();
         return schemaId;
     }
     _write(buffer) {

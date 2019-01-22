@@ -16,7 +16,7 @@
  */
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
-const long_1 = require("long");
+const Long = require("long");
 const internal_1 = require("../internal");
 const BUFFER_CAPACITY_DEFAULT = 256;
 const BYTE_ZERO = 0;
@@ -70,8 +70,8 @@ class MessageBuffer {
     }
     writeLong(value) {
         try {
-            if (!long_1.default.isLong(value)) {
-                value = long_1.default.fromValue(value);
+            if (!Long.isLong(value)) {
+                value = Long.fromValue(value);
             }
         }
         catch (err) {
@@ -159,7 +159,7 @@ class MessageBuffer {
     readLong() {
         const size = internal_1.BinaryUtils.getSize(internal_1.BinaryUtils.TYPE_CODE.LONG);
         this._ensureSize(size);
-        const value = long_1.default.fromBytesLE([...this._buffer.slice(this._position, this._position + size)]);
+        const value = Long.fromBytesLE([...this._buffer.slice(this._position, this._position + size)]);
         this._position += size;
         return value;
     }

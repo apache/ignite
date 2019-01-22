@@ -26,7 +26,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const net = require("net");
 const tls = require("tls");
-const long_1 = require("long");
+const Long = require("long");
 const Util = require("util");
 const internal_1 = require("../internal");
 const HANDSHAKE_SUCCESS_STATUS_CODE = 1;
@@ -89,7 +89,7 @@ class ClientSocket {
         this._config = config;
         this._state = STATE.INITIAL;
         this._socket = null;
-        this._requestId = long_1.default.ZERO;
+        this._requestId = Long.ZERO;
         this._handshakeRequestId = null;
         this._protocolVersion = null;
         this._requests = new Map();

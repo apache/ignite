@@ -20,7 +20,7 @@
 import * as net from 'net';
 import * as tls from 'tls';
 import * as URL from 'url';
-import Long from 'long';
+import * as Long from 'long';
 import * as Util from "util";
 import {
     MessageBuffer,
