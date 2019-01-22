@@ -2124,8 +2124,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                 @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
-
                     List<FieldsQueryCursor<List<?>>> res =
                         idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null,
                             cancel != null ? cancel : new GridQueryCancel());
