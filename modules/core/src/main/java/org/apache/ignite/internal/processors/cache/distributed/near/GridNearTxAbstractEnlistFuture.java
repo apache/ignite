@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCacheRestartingException;
@@ -483,6 +485,11 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      * @param topLocked Whether topology was already locked.
      */
     protected abstract void map(boolean topLocked);
+
+    /**
+     * @return Nodes from which current future waits responses.
+     */
+    public abstract Set<UUID> pendingResponseNodes();
 
     /**
      * Lock request timeout object.
