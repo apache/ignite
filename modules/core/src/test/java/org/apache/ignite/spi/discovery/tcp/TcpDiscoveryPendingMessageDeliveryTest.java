@@ -339,7 +339,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (dieOnNextMsgProc)
-                throw new RuntimeException("Thread is dying before message is processed, node will be abnormally stopped: msg=" + msg);
+                throw new RuntimeException("Thread is dying before message is processed: msg=" + msg);
         }
     }
 
