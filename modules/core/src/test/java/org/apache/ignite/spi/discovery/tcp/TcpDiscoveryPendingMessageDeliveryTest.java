@@ -80,6 +80,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
+        cfg.setFailureDetectionTimeout(10000000000L);
 
         TcpDiscoverySpi disco;
 
@@ -253,7 +254,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("Not fixed yet")
+    //@Ignore("Not fixed yet")
     public void testDeliveryAllFailedMessagesInCorrectOrderJoining() throws Exception {
         IgniteEx coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
@@ -272,6 +273,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
+
+        awaitPartitionMapExchange();
+
+        log.info("Before join");
 
         delayCond = new T2<>((sock, msg) -> {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
