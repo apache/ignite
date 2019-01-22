@@ -51,14 +51,28 @@ public class IoStatisticsManager {
     }
 
     /**
-     * Create and register statistics holder.
+     * Create and register statistics holder for cache group.
      *
-     * @param type Type of statistics.
-     * @param name Name of element of statistics.
+     * @param name Name of cache or cache group.
+     * @param grpId Cache group id.
      * @return created statistics holder.
      */
-    public IoStatisticsHolder register(IoStatisticsType type, String name) {
-        return register(type, name, null);
+    public IoStatisticsHolder registerCacheGroup(String name, int grpId) {
+        return register(IoStatisticsType.CACHE_GROUP, name, grpId);
+    }
+
+    /**
+     * Create and register statistics holder for index.
+     *
+     * @param type Type of index statistics.
+     * @param name Name of cache or cache group.
+     * @param idxName Name of index.
+     * @return created statistics holder.
+     */
+    public IoStatisticsHolder registerIndex(IoStatisticsType type, String name, String idxName) {
+        assert type == IoStatisticsType.HASH_INDEX || type == IoStatisticsType.SORTED_INDEX : type;
+
+        return register(type, name, idxName);
     }
 
     /**
@@ -66,10 +80,10 @@ public class IoStatisticsManager {
      *
      * @param type Type of statistics.
      * @param name Name of element of statistics.
-     * @param subName Subname of element of statistics.
+     * @param param second parameter of statistic's element.
      * @return created statistics holder.
      */
-    public IoStatisticsHolder register(IoStatisticsType type, String name, String subName) {
+    private IoStatisticsHolder register(IoStatisticsType type, String name, Object param) {
         if (statByType.isEmpty())
             throw new IgniteIllegalStateException("IO Statistics manager has been stopped and can'be used");
 
@@ -78,15 +92,15 @@ public class IoStatisticsManager {
 
         switch (type) {
             case CACHE_GROUP:
-                stat = new IoStatisticsHolderCache(name);
+                stat = new IoStatisticsHolderCache(name, (Integer)param);
                 statKey = new IoStatisticsHolderKey(name);
 
                 break;
 
             case HASH_INDEX:
             case SORTED_INDEX:
-                stat = new IoStatisticsHolderIndex(name, subName);
-                statKey = new IoStatisticsHolderKey(name, subName);
+                stat = new IoStatisticsHolderIndex(name, (String)param);
+                statKey = new IoStatisticsHolderKey(name, (String)param);
 
                 break;
 

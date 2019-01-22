@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -529,7 +528,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test IO statistics system views for cache groups and SQL indexes.
+     * Test IO statistics SQL system views for cache groups.
      *
      * @throws Exception
      */
@@ -541,19 +540,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
-        execSql("CREATE INDEX TST_IDX ON DEFAULT.TST(name, age)");
-
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 500; i++)
             execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
 
-        String sql1 = "SELECT CACHE_GRP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.STATIO_CACHE_GRP";
-        String sql2 = "SELECT * FROM IGNITE.STATIO_IDX";
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.CACHE_GROUPS_IO";
 
         List<List<?>> res1 = execSql(sql1);
 
-        List<List<?>> res2 = execSql(sql2);
-
-        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(0), v -> v.get(2)));
+        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(1), v -> v.get(3)));
 
         assertEquals(2, map.size());
 
@@ -563,32 +557,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
 
-        map = res2.stream().collect(Collectors.toMap(k -> k.get(0) + "," + k.get(1), v -> v.get(3)));
-
-        List<String> exp = Arrays.asList("SQL_default_TST,HASH_PK", "SQL_default_TST,_key_PK", "SQL_default_TST,TST_IDX", "default,HASH_PK");
-
-        assertEquals(exp.size(), map.size());
-
-        for (String val : exp) {
-            assertTrue("expected value " + val, map.containsKey(val));
-        }
-
-        sql1 = "SELECT CACHE_GRP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.STATIO_CACHE_GRP WHERE CACHE_GRP_NAME='SQL_default_TST'";
-        sql2 = "SELECT * FROM IGNITE.STATIO_IDX WHERE IDX_NAME='_key_PK'";
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READ, LOGICAL_READ FROM IGNITE.CACHE_GROUPS_IO WHERE " +
+            "GROUP_NAME='SQL_default_TST'";
 
         assertEquals(1, execSql(sql1).size());
-
-        assertEquals(1, execSql(sql2).size());
-
-        sql2 = "SELECT * FROM IGNITE.STATIO_IDX WHERE IDX_NAME='HASH_PK' AND CACHE_GRP_NAME='default'";
-
-        res2 = execSql(sql2);
-
-        assertEquals(1, res2.size());
-
-        assertEquals(DEFAULT_CACHE_NAME, res2.get(0).get(0));
-
-        assertEquals("HASH_PK", res2.get(0).get(1));
     }
 
     /**

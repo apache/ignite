@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderCache;
 import org.apache.ignite.internal.stat.IoStatisticsHolderKey;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.h2.engine.Session;
@@ -34,13 +35,14 @@ import org.h2.value.Value;
 /**
  * System view of cache group IO statistics.
  */
-public class SqlSystemViewIOStatisticsCacheGroup extends SqlAbstractLocalSystemView {
+public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystemView {
     /**
      * @param ctx Grid context.
      */
-    public SqlSystemViewIOStatisticsCacheGroup(GridKernalContext ctx) {
-        super("STATIO_CACHE_GRP", "IO statistics for cache groups", ctx, "CACHE_GRP_NAME",
-            newColumn("CACHE_GRP_NAME"),
+    public SqlSystemViewCacheGroupsIOStatistics(GridKernalContext ctx) {
+        super("CACHE_GROUPS_IO", "IO statistics for cache groups", ctx, "GROUP_NAME",
+            newColumn("GROUP_ID", Value.INT),
+            newColumn("GROUP_NAME"),
             newColumn("PHYSICAL_READ", Value.LONG),
             newColumn("LOGICAL_READ", Value.LONG)
         );
@@ -48,7 +50,7 @@ public class SqlSystemViewIOStatisticsCacheGroup extends SqlAbstractLocalSystemV
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GRP_NAME", first, last);
+        SqlSystemViewColumnCondition nameCond = conditionForColumn("GROUP_NAME", first, last);
 
         Map<IoStatisticsHolderKey, IoStatisticsHolder> stats = ctx.ioStats().statistics(IoStatisticsType.CACHE_GROUP);
 
@@ -57,11 +59,13 @@ public class SqlSystemViewIOStatisticsCacheGroup extends SqlAbstractLocalSystemV
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            IoStatisticsHolder statHolder = stats.get(new IoStatisticsHolderKey(cacheGrpName, null));
+            IoStatisticsHolderCache statHolder = (IoStatisticsHolderCache)stats
+                .get(new IoStatisticsHolderKey(cacheGrpName));
 
             if (statHolder != null) {
                 rows.add(
                     createRow(ses, 0,
+                        statHolder.cacheGroupId(),
                         cacheGrpName,
                         statHolder.physicalReads(),
                         statHolder.logicalReads()
@@ -71,11 +75,14 @@ public class SqlSystemViewIOStatisticsCacheGroup extends SqlAbstractLocalSystemV
         }
         else {
             for (Map.Entry<IoStatisticsHolderKey, IoStatisticsHolder> entry : stats.entrySet()) {
+                IoStatisticsHolderCache statHolder = (IoStatisticsHolderCache)entry.getValue();
+
                 rows.add(
                     createRow(ses, rows.size(),
+                        statHolder.cacheGroupId(),
                         entry.getKey().name(),
-                        entry.getValue().physicalReads(),
-                        entry.getValue().logicalReads()
+                        statHolder.physicalReads(),
+                        statHolder.logicalReads()
                     )
                 );
             }
