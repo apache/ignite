@@ -273,7 +273,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject innerGet(@Nullable GridCacheVersion ver,
+    public CacheObject innerGet(@Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
         boolean readThrough,
         boolean updateMetrics,
@@ -282,8 +282,7 @@ public interface GridCacheEntryEx {
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary,
-        @Nullable MvccSnapshot mvccVer)
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -311,7 +310,6 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        @Nullable MvccSnapshot mvccVer,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -333,7 +331,6 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary,
-        @Nullable MvccSnapshot mvccVer,
         @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -468,8 +465,7 @@ public interface GridCacheEntryEx {
         @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr,
-        @Nullable MvccSnapshot mvccVer
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -511,8 +507,7 @@ public interface GridCacheEntryEx {
         @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr,
-        MvccSnapshot mvccVer
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
