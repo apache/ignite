@@ -99,7 +99,6 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
@@ -537,7 +536,7 @@ public class DmlStatementsProcessor {
             if (implicit)
                 tx = txStart(cctx, fieldsQry.getTimeout());
 
-            requestSnapshot(cctx, checkActive(tx));
+            requestSnapshot(cctx, tx);
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
                 long timeout = implicit
