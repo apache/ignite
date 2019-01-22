@@ -148,7 +148,29 @@ class VisorCacheScanCommand {
                         error(x.getError)
 
                         return
-                    case x => x.getResult
+                    case x if x.getResult.getRows != null =>
+                        x.getResult
+
+                    case x =>
+                        var res = x.getResult
+
+                        Thread.sleep(100)
+
+                        while (res.getRows == null) {
+                            res = executeOne(res.getResponseNodeId, classOf[VisorQueryFetchFirstPageTask],
+                                new VisorQueryNextPageTaskArg(res.getQueryId, pageSize)) match {
+                                case x if x.getError != null =>
+                                    error(x.getError)
+
+                                    return
+                                case x => x.getResult
+                            }
+
+                            if (res.getRows == null)
+                                Thread.sleep(500)
+                        }
+
+                        res
                 }
             catch {
                 case e: ClusterGroupEmptyException =>
