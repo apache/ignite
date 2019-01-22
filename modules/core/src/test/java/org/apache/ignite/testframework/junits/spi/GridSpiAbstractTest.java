@@ -50,10 +50,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.BeforeAfterClassHelper;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -68,6 +72,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
+
+    /** */
+    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
 
     /** */
     private final boolean autoStart;
@@ -89,6 +96,53 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         super(false);
 
         this.autoStart = autoStart;
+    }
+
+    /** */
+    @BeforeClass
+    public static void beforeClassGridSpiAbstractTest() {
+        helper.onBeforeClass();
+    }
+
+    /** */
+    @Before
+    public void beforeGridSpiAbstractTest() throws Exception {
+        helper.onBefore(
+            () -> {
+                if (autoStart) {
+                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+                    assert spiTest != null;
+
+                    beforeSpiStarted();
+
+                    if (spiTest.trigger())
+                        spiStart();
+
+                    info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
+                }
+            },
+            () -> {
+                if (autoStart) {
+                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+                    assert spiTest != null;
+
+                    if (spiTest.trigger()) {
+                        spiStop();
+
+                        afterSpiStopped();
+                    }
+
+                    info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
+                }
+            });
+    }
+
+    /** */
+    @AfterClass
+    public static void afterClassGridSpiAbstractTest() throws Exception {
+        helper.onAfterClass();
     }
 
     /** {@inheritDoc} */
@@ -131,26 +185,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         cl = Thread.currentThread().getContextClassLoader();
 
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-
-        TestCounters cntrs = getTestCounters();
-
-        if (cntrs.isReset())
-            cntrs.reset();
-
-        cntrs.incrementStarted();
-
-        if (autoStart && isFirstTest()) {
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            beforeSpiStarted();
-
-            if (spiTest.trigger())
-                spiStart();
-
-            info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
 
         super.setUp();
     }
@@ -488,25 +522,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     @Override public final void tearDown() throws Exception {
-        getTestCounters().incrementStopped();
-
-        boolean wasLast = isLastTest();
-
         super.tearDown();
-
-        if (autoStart && wasLast) {
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            if (spiTest.trigger()) {
-                spiStop();
-
-                afterSpiStopped();
-            }
-
-            info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
 
         Thread.currentThread().setContextClassLoader(cl);
     }
