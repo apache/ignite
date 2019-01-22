@@ -10374,29 +10374,30 @@ public abstract class IgniteUtils {
     public static String fold(List<List<ClusterNode>> affAssignment) {
         SB sb = new SB();
 
-        for (int p = 0; p < affAssignment.size(); p++) {
-            sb.a("Part [");
-            sb.a("id=" + p + ", ");
+        if (affAssignment != null)
+            for (int p = 0; p < affAssignment.size(); p++) {
+                sb.a("Part [");
+                sb.a("id=" + p + ", ");
 
-            SB partOwners = new SB();
+                SB partOwners = new SB();
 
-            List<ClusterNode> affOwners = affAssignment.get(p);
+                List<ClusterNode> affOwners = affAssignment.get(p);
 
-            for (ClusterNode node : affOwners) {
-                if (node != null)
-                    partOwners.a(node.consistentId());
-                else
-                    partOwners.a("null");
+                for (ClusterNode node : affOwners) {
+                    if (node != null)
+                        partOwners.a(node.consistentId());
+                    else
+                        partOwners.a("null");
 
-                partOwners.a(' ');
+                    partOwners.a(' ');
+                }
+
+                sb.a("owners=[");
+                sb.a(partOwners);
+                sb.a(']');
+
+                sb.a("] ");
             }
-
-            sb.a("owners=[");
-            sb.a(partOwners);
-            sb.a(']');
-
-            sb.a("] ");
-        }
 
         return sb.toString();
     }
