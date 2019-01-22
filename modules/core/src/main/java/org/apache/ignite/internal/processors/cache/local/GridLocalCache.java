@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -254,5 +256,34 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         ctx.offheap().preloadPartition(part);
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isLockedByThread(K key) {
+        A.notNull(key, "key");
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+
+        while (true) {
+            try {
+                GridCacheEntryEx entry = peekEx(cacheKey);
+
+                if (entry != null) {
+                    boolean res = entry.lockedByThread();
+
+                    entry.touch();
+
+                    return res;
+                }
+
+                return false;
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                // No-op.
+            }
+        }
     }
 }
