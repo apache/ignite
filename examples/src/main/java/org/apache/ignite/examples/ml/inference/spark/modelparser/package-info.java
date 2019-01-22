@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.sparkmodelparser;
-
 /**
- * List of supported Spark models.
- *
- * NOTE: Valid for Spark 2.4.
+ * <!-- Package description. -->
+ * Model inference examples for Spark ML via Spark Model Parser.
  */
-public enum SupportedSparkModels {
-    /** Logistic regression. */
-    LOG_REGRESSION,
-
-    /** Linear regression. */
-    LINEAR_REGRESSION
-}
+package org.apache.ignite.examples.ml.inference.spark.modelparser;

@@ -1612,9 +1612,22 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
+            waitMvccQueriesDone();
+
             runVacuumSync();
 
             checkOldVersions(true);
+        }
+    }
+
+    /**
+     * Waits until all active queries are terminated on the Mvcc coordinator.
+     *
+     * @throws Exception If failed.
+     */
+    private void waitMvccQueriesDone() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            checkActiveQueriesCleanup(node);
         }
     }
 
