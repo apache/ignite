@@ -374,6 +374,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
                 super.writeToSocket(msg, sock, res, timeout);
         }
 
+        /**
+         * @param sock Socket.
+         * @param msg Message.
+         */
         private void delayIfNeeded(Socket sock, TcpDiscoveryAbstractMessage msg) {
             if (delayCond != null) {
                 if (delayCond.get1().apply(sock, msg)) {
