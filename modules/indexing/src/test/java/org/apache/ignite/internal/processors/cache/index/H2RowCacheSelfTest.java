@@ -173,12 +173,14 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
         assertEquals(0, rowCache.size());
 
         // Warmup cache.
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
         // Query again - are there any leaks?
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
@@ -188,7 +190,8 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(maxSize / 2, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
@@ -198,16 +201,16 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(maxSize, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
         // Delete all.
-        cache.query(new SqlFieldsQuery("DELETE FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
     }

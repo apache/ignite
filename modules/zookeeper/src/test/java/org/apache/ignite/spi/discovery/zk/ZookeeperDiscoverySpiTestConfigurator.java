@@ -38,7 +38,7 @@ public class ZookeeperDiscoverySpiTestConfigurator {
     /**
      * @throws Exception If failed.
      */
-    static void initTestSuite() throws Exception {
+    public static void initTestSuite() throws Exception {
         System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
 
         System.setProperty("zookeeper.forceSync", "false");

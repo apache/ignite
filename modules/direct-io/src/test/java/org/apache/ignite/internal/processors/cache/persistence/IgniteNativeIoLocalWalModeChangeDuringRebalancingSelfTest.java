@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
 
 /**
@@ -32,8 +31,7 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     /** {@inheritDoc} */
     @Test
     @Override public void testWithExchangesMerge() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
 
         super.testWithExchangesMerge();
     }

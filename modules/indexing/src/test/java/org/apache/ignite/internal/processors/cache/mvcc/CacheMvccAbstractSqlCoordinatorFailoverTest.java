@@ -113,7 +113,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups0_Sql_Persistence() throws Exception {
         persistence = true;
@@ -125,7 +124,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_SingleNode_Sql_Persistence() throws Exception {
         updateNObjectsTest(3, 1, 0, 0, 1, DFLT_TEST_TIME,
