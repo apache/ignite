@@ -58,6 +58,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse ex
         super.testDeactivateInactiveCluster();
     }
 
+    /** {@inheritDoc} */
+    @Test
     @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10750");
