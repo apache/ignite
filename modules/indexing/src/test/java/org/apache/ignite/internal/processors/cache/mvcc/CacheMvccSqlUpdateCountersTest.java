@@ -502,7 +502,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
             parts,
             writers,
             readers,
-            30_000,
+            DFLT_TEST_TIME,
             new InitIndexing(Integer.class, MvccTestAccount.class),
             init,
             writer,

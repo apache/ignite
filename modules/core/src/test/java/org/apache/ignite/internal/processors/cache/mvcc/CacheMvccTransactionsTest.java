@@ -114,6 +114,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
+    /** */
+    public static final int TEST_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
@@ -648,7 +651,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final IgniteCache<Object, Object> cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
 
-        final int KEYS = 10_000;
+        final int KEYS = GridTestUtils.SF.apply(10_000);
 
         Set<Integer> keys = new HashSet<>();
 
@@ -2038,7 +2041,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final int readers = 4;
 
-        final long time = 10_000;
+        final long time = TEST_TIME;
 
         final AtomicInteger keyCntr = new AtomicInteger();
 
@@ -2814,7 +2817,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, null, GET, PUT, null);
+            updateNObjectsTest(n, 1, 0, 0, 1, TEST_TIME, null, GET, PUT, null);
 
             afterTest();
         }
@@ -2828,7 +2831,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, null, GET, PUT, null);
+            updateNObjectsTest(n, 1, 0, 0, 64, TEST_TIME, null, GET, PUT, null);
 
             afterTest();
         }
@@ -2842,7 +2845,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, null, SCAN, PUT, null);
+            updateNObjectsTest(n, 1, 0, 0, 1, TEST_TIME, null, SCAN, PUT, null);
 
             afterTest();
         }
@@ -2856,7 +2859,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, null, SCAN, PUT, null);
+            updateNObjectsTest(n, 1, 0, 0, 64, TEST_TIME, null, SCAN, PUT, null);
 
             afterTest();
         }
@@ -2871,7 +2874,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 4, 2, 2, DFLT_PARTITION_COUNT, 10_000, null, GET, PUT, null);
+            updateNObjectsTest(n, 4, 2, 2, DFLT_PARTITION_COUNT, TEST_TIME, null, GET, PUT, null);
 
             afterTest();
         }
@@ -2885,7 +2888,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 2, 1, 1, DFLT_PARTITION_COUNT, 10_000, null, SCAN, PUT, null);
+            updateNObjectsTest(n, 2, 1, 1, DFLT_PARTITION_COUNT, TEST_TIME, null, SCAN, PUT, null);
 
             afterTest();
         }
@@ -2896,7 +2899,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testImplicitPartsScan_SingleNode_SinglePartition() throws Exception {
-        doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
+        doImplicitPartsScanTest(1, 0, 0, 1, TEST_TIME);
     }
 
     /**
@@ -2904,7 +2907,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testImplicitPartsScan_SingleNode() throws Exception {
-        doImplicitPartsScanTest(1, 0, 0, 64, 10_000);
+        doImplicitPartsScanTest(1, 0, 0, 64, TEST_TIME);
     }
 
     /**
@@ -2912,7 +2915,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testImplicitPartsScan_ClientServer_Backups0() throws Exception {
-        doImplicitPartsScanTest(4, 2, 0, 64, 10_000);
+        doImplicitPartsScanTest(4, 2, 0, 64, TEST_TIME);
     }
 
     /**
@@ -2920,7 +2923,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testImplicitPartsScan_ClientServer_Backups1() throws Exception {
-        doImplicitPartsScanTest(4, 2, 1, 64, 10_000);
+        doImplicitPartsScanTest(4, 2, 1, 64, TEST_TIME);
     }
 
     /**
@@ -2928,7 +2931,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testImplicitPartsScan_ClientServer_Backups2() throws Exception {
-        doImplicitPartsScanTest(4, 2, 2, 64, 10_000);
+        doImplicitPartsScanTest(4, 2, 2, 64, TEST_TIME);
     }
 
     /**

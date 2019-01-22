@@ -64,6 +64,9 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     private static final int GRID_COUNT = 2;
 
     /** */
+    public static final int ENTRY_SIZE = 1024 * GridTestUtils.SF.apply(50);
+
+    /** */
     private static boolean client = false;
 
     /** */
@@ -140,7 +143,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
                 log.info("Put key: " + i);
 
                 for (int j = 0; j < 100; j++)
-                    grid(j % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[1024 * 50]);
+                    grid(j % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[ENTRY_SIZE]);
             }
 
             log.info("Finish.");
@@ -167,7 +170,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             log.info("Put key: " + i);
 
             for (int j = 0; j < 150; j++)
-                grid(ThreadLocalRandom.current().nextInt(GRID_COUNT)).cache(CACHE_NAME).put(i, new byte[1024 * 50]);
+                grid(ThreadLocalRandom.current().nextInt(GRID_COUNT)).cache(CACHE_NAME).put(i, new byte[ENTRY_SIZE]);
         }
 
         int size = backupQueueSize();
@@ -207,7 +210,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             for (int i = 0; i < KEYS_COUNT; i++) {
                 log.info("Put key: " + i);
 
-                grid(i % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[1024 * 50]);
+                grid(i % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[ENTRY_SIZE]);
             }
 
             int size = backupQueueSize();
@@ -222,7 +225,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             for (int i = 0; i < KEYS_COUNT; i++) {
                 log.info("Put key: " + i);
 
-                grid(i % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[1024 * 50]);
+                grid(i % GRID_COUNT).cache(CACHE_NAME).put(i, new byte[ENTRY_SIZE]);
             }
 
             size = backupQueueSize();

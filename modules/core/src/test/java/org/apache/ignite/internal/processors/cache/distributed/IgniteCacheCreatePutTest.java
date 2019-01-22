@@ -52,6 +52,9 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** */
+    private static final int TEST_TIME = GridTestUtils.SF.applyLB(60_000);
+
+    /** */
     private boolean client;
 
     /** {@inheritDoc} */
@@ -79,11 +82,6 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000L;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -95,7 +93,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStartNodes() throws Exception {
-        long stopTime = System.currentTimeMillis() + 2 * 60_000;
+        long stopTime = System.currentTimeMillis() + 2 * TEST_TIME;
 
         try {
             int iter = 0;
@@ -148,7 +146,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ignite0.createCache(cacheConfiguration("tx-cache", TRANSACTIONAL));
         ignite0.createCache(cacheConfiguration("mvcc-tx-cache", TRANSACTIONAL_SNAPSHOT));
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + TEST_TIME;
 
         final AtomicInteger updateThreadIdx = new AtomicInteger();
 
