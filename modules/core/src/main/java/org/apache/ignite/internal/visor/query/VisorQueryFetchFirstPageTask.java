@@ -22,29 +22,33 @@ import java.util.List;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorEither;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchQueryRows;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.getQueryHolder;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.removeQueryHolder;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 
 /**
- * Task for collecting next page previously executed SQL or SCAN query.
+ * Task for check a query execution and receiving first page of query result.
  */
 @GridInternal
-public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorQueryResult> {
+public class VisorQueryFetchFirstPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryNextPageJob job(VisorQueryNextPageTaskArg arg) {
-        return new VisorQueryNextPageJob(arg, debug);
+    @Override protected VisorQueryFetchFirstPageJob job(VisorQueryNextPageTaskArg arg) {
+        return new VisorQueryFetchFirstPageJob(arg, debug);
     }
 
     /**
-     * Job for collecting next page previously executed SQL or SCAN query.
+     * Job for collecting first page previously executed SQL or SCAN query.
      */
-    private static class VisorQueryNextPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorQueryResult> {
+    private static class VisorQueryFetchFirstPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,38 +58,50 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageT
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryNextPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
+        private VisorQueryFetchFirstPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(VisorQueryNextPageTaskArg arg) {
+        @Override protected VisorEither<VisorQueryResult> run(VisorQueryNextPageTaskArg arg) {
+            String qryId = arg.getQueryId();
+
             long start = U.currentTimeMillis();
 
-            String qryId = arg.getQueryId();
+            if (debug)
+                start = log(ignite.log(), "Fetch query first page started: " + qryId, getClass(), start);
 
             VisorQueryHolder holder = getQueryHolder(ignite, qryId);
 
-            Iterator itr = holder.getIterator();
+            if (holder.getErr() != null)
+                return new VisorEither<>(new VisorExceptionWrapper(holder.getErr()));
 
-            List<Object[]> nextRows = VisorQueryHolder.isSqlQuery(qryId)
-                ? VisorQueryUtils.fetchSqlQueryRows(itr, arg.getPageSize())
-                : VisorQueryUtils.fetchScanQueryRows(itr, arg.getPageSize());
+            List<Object[]> rows = null;
+            List<VisorQueryField> cols = holder.getColumns();
 
-            boolean hasMore = itr.hasNext();
+            boolean hasMore = cols == null;
+
+            if (cols != null) {
+                Iterator itr = holder.getIterator();
+                rows = fetchQueryRows(itr, qryId, arg.getPageSize());
+                hasMore = itr.hasNext();
+            }
 
             if (hasMore)
                 holder.setAccessed(true);
             else
                 removeQueryHolder(ignite, qryId);
 
-            return new VisorQueryResult(ignite.localNode().id(), qryId, null, nextRows, hasMore,
-                U.currentTimeMillis() - start);
+            if (debug)
+                log(ignite.log(), "Fetch query first page finished: " + qryId, getClass(), start);
+
+            return new VisorEither<>(
+                new VisorQueryResult(ignite.localNode().id(), qryId, cols, rows, hasMore, holder.duration()));
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorQueryNextPageJob.class, this);
+            return S.toString(VisorQueryFetchFirstPageJob.class, this);
         }
     }
 }

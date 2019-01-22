@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 
 /**
  * Tests an ability to rollback near transactions.
  */
+@RunWith(JUnit4.class)
 public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
@@ -56,14 +56,6 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
         super.afterTest();
 
         cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testSynchronousRollback() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10785", MvccFeatureChecker.forcedMvcc());
-
-        super.testSynchronousRollback();
     }
 }
 
