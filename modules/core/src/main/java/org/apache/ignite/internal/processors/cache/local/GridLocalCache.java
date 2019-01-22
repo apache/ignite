@@ -265,25 +265,6 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKey(key);
 
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-        while (true) {
-            try {
-                GridCacheEntryEx entry = peekEx(cacheKey);
-
-                if (entry != null) {
-                    boolean res = entry.lockedByThread();
-
-                    entry.touch();
-
-                    return res;
-                }
-
-                return false;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                // No-op.
-            }
-        }
+        return cacheEntryLocked(ctx.toCacheKeyObject(key), true);
     }
 }

@@ -3525,12 +3525,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1))
             return true;
 
+        return cacheEntryLocked(cacheKey, false);
+    }
+
+    /**
+     *
+     * @param cacheKey Key.
+     * @param byThread {@code True} if need check lock for current thread only.
+     * @return {@code True} if entry is locked.
+     */
+    protected boolean cacheEntryLocked(KeyCacheObject cacheKey, boolean byThread) {
         while (true) {
             try {
                 GridCacheEntryEx entry = peekEx(cacheKey);
 
                 if (entry != null) {
-                    boolean res = entry.lockedByAny();
+                    boolean res = byThread ? entry.lockedByThread() : entry.lockedByAny();
 
                     entry.touch();
 
