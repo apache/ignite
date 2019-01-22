@@ -20,11 +20,13 @@
 require('jasmine-expect');
 
 const TestingHelper = require('../TestingHelper');
-const IgniteClient = require('apache-ignite-client');
-const ObjectType = IgniteClient.ObjectType;
-const CacheClient = IgniteClient.CacheClient;
-const CacheEntry = IgniteClient.CacheEntry;
-const CacheConfiguration = IgniteClient.CacheConfiguration;
+const {
+    IgniteClient,
+    ObjectType,
+    CacheClient,
+    CacheEntry,
+    CacheConfiguration
+} = require('apache-ignite-client');
 
 const CACHE_NAME = '__test_cache';
 

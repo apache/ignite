@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "esModuleInterop": false,
+        "target": "es6",
+        "noImplicitAny": false,
+        "moduleResolution": "node",
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "outDir": "dist",
+        "baseUrl": ".",
+        "declaration": true,
+        "lib": [
+            "es6",
+            "es2017"
+        ]
+    },
+    "include": [
+        "./lib/**/*"
+    ],
+    "exclude": [
+        "./dist/**/*",
+        "node_modules"
+    ]
+}

@@ -23,14 +23,16 @@ const JasmineReporters = require('jasmine-reporters');
 const Util = require('util');
 const exec = require('child_process').exec;
 const config = require('./config');
-const IgniteClient = require('apache-ignite-client');
-const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
-const Errors = IgniteClient.Errors;
-const EnumItem = IgniteClient.EnumItem;
-const Timestamp = IgniteClient.Timestamp;
-const Decimal = IgniteClient.Decimal;
-const BinaryObject = IgniteClient.BinaryObject;
-const ObjectType = IgniteClient.ObjectType;
+const Decimal = require('decimal.js');
+const {
+    IgniteClient,
+    IgniteClientConfiguration,
+    Errors,
+    EnumItem,
+    Timestamp,
+    BinaryObject,
+    ObjectType
+} = require('apache-ignite-client');
 
 const TIMEOUT_MS = 60000;
 
@@ -41,7 +43,8 @@ const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.0
 const defaultComparator = (value1, value2) => { return value1 === value2; };
 const enumComparator = (value1, value2) => {
     return value1.getTypeId() === value2.getTypeId() &&
-        value1.getOrdinal() === value2.getOrdinal(); };
+        value1.getOrdinal() === value2.getOrdinal();
+};
 const decimalComparator = (value1, value2) => {
     return value1 === null && value2 === null ||
         value1.equals(value2);
@@ -49,7 +52,8 @@ const decimalComparator = (value1, value2) => {
 const timestampComparator = (value1, value2) => {
     return value1 === null && value2 === null ||
         dateComparator(value1.getTime(), value2.getTime()) &&
-        value1.getNanos() === value2.getNanos(); };
+        value1.getNanos() === value2.getNanos();
+};
 
 const numericValueModificator = (data) => { return data > 0 ? data - 10 : data + 10; };
 const charValueModificator = (data) => { return String.fromCharCode(data.charCodeAt(0) + 5); };
@@ -62,67 +66,67 @@ const decimalValueModificator = (data) => { return data.add(12345); };
 const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getTime() + 12345), data.getNanos() + 123); };
 
 const primitiveValues = {
-    [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
-        values : [-128, 0, 127],
-        isMapKey : true,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.BYTE]: {
+        values: [-128, 0, 127],
+        isMapKey: true,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.SHORT] : {
-        values : [-32768, 0, 32767],
-        isMapKey : true,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.SHORT]: {
+        values: [-32768, 0, 32767],
+        isMapKey: true,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.INTEGER] : {
-        values : [12345, 0, -54321],
-        isMapKey : true,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.INTEGER]: {
+        values: [12345, 0, -54321],
+        isMapKey: true,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.LONG] : {
-        values : [12345678912345, 0, -98765432112345],
-        isMapKey : true,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.LONG]: {
+        values: [12345678912345, 0, -98765432112345],
+        isMapKey: true,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.FLOAT] : {
-        values : [-1.155, 0, 123e-5],
-        isMapKey : false,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.FLOAT]: {
+        values: [-1.155, 0, 123e-5],
+        isMapKey: false,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.DOUBLE] : {
-        values : [-123e5, 0, 0.0001],
-        typeOptional : true,
-        isMapKey : false,
-        modificator : numericValueModificator
+    [ObjectType.PRIMITIVE_TYPE.DOUBLE]: {
+        values: [-123e5, 0, 0.0001],
+        typeOptional: true,
+        isMapKey: false,
+        modificator: numericValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.CHAR] : {
-        values : ['a', String.fromCharCode(0x1234)],
-        isMapKey : true,
-        modificator : charValueModificator
+    [ObjectType.PRIMITIVE_TYPE.CHAR]: {
+        values: ['a', String.fromCharCode(0x1234)],
+        isMapKey: true,
+        modificator: charValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.BOOLEAN] : {
-        values : [true, false],
-        isMapKey : true,
-        typeOptional : true,
-        modificator : booleanValueModificator
+    [ObjectType.PRIMITIVE_TYPE.BOOLEAN]: {
+        values: [true, false],
+        isMapKey: true,
+        typeOptional: true,
+        modificator: booleanValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.STRING] : {
-        values : ['abc', ''],
-        isMapKey : true,
-        typeOptional : true,
-        modificator : stringValueModificator
+    [ObjectType.PRIMITIVE_TYPE.STRING]: {
+        values: ['abc', ''],
+        isMapKey: true,
+        typeOptional: true,
+        modificator: stringValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.UUID] : {
-        values : [
-            [ 18, 70, 2, 119, 154, 254, 198, 254, 195, 146, 33, 60, 116, 230, 0, 146 ],
-            [ 141, 77, 31, 194, 127, 36, 184, 255, 192, 4, 118, 57, 253, 209, 111, 147 ]
+    [ObjectType.PRIMITIVE_TYPE.UUID]: {
+        values: [
+            [18, 70, 2, 119, 154, 254, 198, 254, 195, 146, 33, 60, 116, 230, 0, 146],
+            [141, 77, 31, 194, 127, 36, 184, 255, 192, 4, 118, 57, 253, 209, 111, 147]
         ],
-        isMapKey : false,
-        modificator : UUIDValueModificator
+        isMapKey: false,
+        modificator: UUIDValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.DATE] : {
-        values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
-        typeOptional : true,
-        isMapKey : false,
-        modificator : dateValueModificator
+    [ObjectType.PRIMITIVE_TYPE.DATE]: {
+        values: [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
+        typeOptional: true,
+        isMapKey: false,
+        modificator: dateValueModificator
     },
     // [ObjectType.PRIMITIVE_TYPE.ENUM] : {
     //     values : [new EnumItem(12345, 7), new EnumItem(0, 0)],
@@ -130,41 +134,41 @@ const primitiveValues = {
     //     isMapKey : false,
     //     modificator : enumValueModificator
     // },
-    [ObjectType.PRIMITIVE_TYPE.DECIMAL] : {
-        values : [new Decimal('123456789.6789345'), new Decimal(0), new Decimal('-98765.4321e15')],
-        typeOptional : true,
-        isMapKey : false,
-        modificator : decimalValueModificator
+    [ObjectType.PRIMITIVE_TYPE.DECIMAL]: {
+        values: [new Decimal('123456789.6789345'), new Decimal(0), new Decimal('-98765.4321e15')],
+        typeOptional: true,
+        isMapKey: false,
+        modificator: decimalValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.TIMESTAMP] : {
-        values : [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17T03:24:00').getTime(), 543), new Timestamp(0, 0)],
-        typeOptional : true,
-        isMapKey : false,
-        modificator : timestampValueModificator
+    [ObjectType.PRIMITIVE_TYPE.TIMESTAMP]: {
+        values: [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17T03:24:00').getTime(), 543), new Timestamp(0, 0)],
+        typeOptional: true,
+        isMapKey: false,
+        modificator: timestampValueModificator
     },
-    [ObjectType.PRIMITIVE_TYPE.TIME] : {
-        values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(123)],
-        isMapKey : false,
-        modificator : dateValueModificator
+    [ObjectType.PRIMITIVE_TYPE.TIME]: {
+        values: [new Date(), new Date('1995-12-17T03:24:00'), new Date(123)],
+        isMapKey: false,
+        modificator: dateValueModificator
     }
 };
 
 const arrayValues = {
-    [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BYTE },
-    [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.SHORT },
-    [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.INTEGER },
-    [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.LONG },
-    [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.FLOAT },
-    [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
-    [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.UUID_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.UUID },
-    [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true },
+    [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.BYTE },
+    [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.SHORT },
+    [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.INTEGER },
+    [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.LONG },
+    [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.FLOAT },
+    [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional: true },
+    [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.CHAR },
+    [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional: true },
+    [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.STRING, typeOptional: true },
+    [ObjectType.PRIMITIVE_TYPE.UUID_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.UUID },
+    [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.DATE, typeOptional: true },
     //[ObjectType.PRIMITIVE_TYPE.ENUM_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.ENUM, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DECIMAL, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIMESTAMP, typeOptional : true },
-    [ObjectType.PRIMITIVE_TYPE.TIME_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIME }
+    [ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.DECIMAL, typeOptional: true },
+    [ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.TIMESTAMP, typeOptional: true },
+    [ObjectType.PRIMITIVE_TYPE.TIME_ARRAY]: { elemType: ObjectType.PRIMITIVE_TYPE.TIME }
 };
 
 // Helper class for testing apache-ignite-client library.
@@ -213,11 +217,11 @@ class TestingHelper {
 
     static executeExample(name, outputChecker) {
         return new Promise((resolve, reject) => {
-                exec('node ' + name, (error, stdout, stderr) => {
-                    TestingHelper.logDebug(stdout);
-                    resolve(stdout);
-                })
-            }).
+            exec('node ' + name, (error, stdout, stderr) => {
+                TestingHelper.logDebug(stdout);
+                resolve(stdout);
+            })
+        }).
             then(output => {
                 expect(output).not.toMatch('ERROR:');
                 expect(output).toMatch('Client is started');
@@ -385,7 +389,7 @@ class TestingHelper {
             }
             return true;
         }
-    }    
+    }
 }
 
 module.exports = TestingHelper;

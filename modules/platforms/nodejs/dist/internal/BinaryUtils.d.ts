@@ -1,0 +1,134 @@
+import { ObjectArrayType } from '../internal';
+export declare class BinaryUtils {
+    static readonly OPERATION: Readonly<{
+        CACHE_GET: number;
+        CACHE_PUT: number;
+        CACHE_PUT_IF_ABSENT: number;
+        CACHE_GET_ALL: number;
+        CACHE_PUT_ALL: number;
+        CACHE_GET_AND_PUT: number;
+        CACHE_GET_AND_REPLACE: number;
+        CACHE_GET_AND_REMOVE: number;
+        CACHE_GET_AND_PUT_IF_ABSENT: number;
+        CACHE_REPLACE: number;
+        CACHE_REPLACE_IF_EQUALS: number;
+        CACHE_CONTAINS_KEY: number;
+        CACHE_CONTAINS_KEYS: number;
+        CACHE_CLEAR: number;
+        CACHE_CLEAR_KEY: number;
+        CACHE_CLEAR_KEYS: number;
+        CACHE_REMOVE_KEY: number;
+        CACHE_REMOVE_IF_EQUALS: number;
+        CACHE_REMOVE_KEYS: number;
+        CACHE_REMOVE_ALL: number;
+        CACHE_GET_SIZE: number;
+        CACHE_GET_NAMES: number;
+        CACHE_CREATE_WITH_NAME: number;
+        CACHE_GET_OR_CREATE_WITH_NAME: number;
+        CACHE_CREATE_WITH_CONFIGURATION: number;
+        CACHE_GET_OR_CREATE_WITH_CONFIGURATION: number;
+        CACHE_GET_CONFIGURATION: number;
+        CACHE_DESTROY: number;
+        QUERY_SCAN: number;
+        QUERY_SCAN_CURSOR_GET_PAGE: number;
+        QUERY_SQL: number;
+        QUERY_SQL_CURSOR_GET_PAGE: number;
+        QUERY_SQL_FIELDS: number;
+        QUERY_SQL_FIELDS_CURSOR_GET_PAGE: number;
+        RESOURCE_CLOSE: number;
+        GET_BINARY_TYPE: number;
+        PUT_BINARY_TYPE: number;
+    }>;
+    static readonly TYPE_CODE: {
+        BINARY_OBJECT: number;
+        BINARY_ENUM: number;
+    } & Readonly<{
+        BYTE: number;
+        SHORT: number;
+        INTEGER: number;
+        LONG: number;
+        FLOAT: number;
+        DOUBLE: number;
+        CHAR: number;
+        BOOLEAN: number;
+        STRING: number;
+        UUID: number;
+        DATE: number;
+        BYTE_ARRAY: number;
+        SHORT_ARRAY: number;
+        INTEGER_ARRAY: number;
+        LONG_ARRAY: number;
+        FLOAT_ARRAY: number;
+        DOUBLE_ARRAY: number;
+        CHAR_ARRAY: number;
+        BOOLEAN_ARRAY: number;
+        STRING_ARRAY: number;
+        UUID_ARRAY: number;
+        DATE_ARRAY: number;
+        ENUM: number;
+        ENUM_ARRAY: number;
+        DECIMAL: number;
+        DECIMAL_ARRAY: number;
+        TIMESTAMP: number;
+        TIMESTAMP_ARRAY: number;
+        TIME: number;
+        TIME_ARRAY: number;
+    }> & Readonly<{
+        OBJECT_ARRAY: number;
+        COLLECTION: number;
+        MAP: number;
+        NULL: number;
+        COMPLEX_OBJECT: number;
+    }>;
+    static readonly TYPE_INFO: Readonly<{
+        [x: number]: {
+            NAME: string;
+            SIZE: number;
+            NULLABLE?: undefined;
+            ELEMENT_TYPE?: undefined;
+            KEEP_ELEMENT_TYPE?: undefined;
+        } | {
+            NAME: string;
+            NULLABLE: boolean;
+            SIZE?: undefined;
+            ELEMENT_TYPE?: undefined;
+            KEEP_ELEMENT_TYPE?: undefined;
+        } | {
+            NAME: string;
+            SIZE: number;
+            NULLABLE: boolean;
+            ELEMENT_TYPE?: undefined;
+            KEEP_ELEMENT_TYPE?: undefined;
+        } | {
+            NAME: string;
+            ELEMENT_TYPE: number;
+            NULLABLE: boolean;
+            SIZE?: undefined;
+            KEEP_ELEMENT_TYPE?: undefined;
+        } | {
+            NAME: string;
+            ELEMENT_TYPE: number;
+            KEEP_ELEMENT_TYPE: boolean;
+            NULLABLE: boolean;
+            SIZE?: undefined;
+        };
+    }>;
+    static getSize(typeCode: any): number;
+    static readonly ENCODING: string;
+    static getTypeName(type: any): string;
+    static isNullable(type: any): boolean;
+    static getTypeCode(type: any): any;
+    static checkObjectType(type: any, argName: any): void;
+    static calcObjectType(object: any): any;
+    static checkCompatibility(value: any, type: any): void;
+    static isStandardType(typeCode: any): boolean;
+    static checkStandardTypeCompatibility(value: any, typeCode: any, type?: any): void;
+    static checkTypesComatibility(expectedType: any, actualTypeCode: any): void;
+    static getArrayElementType(arrayType: any): any;
+    static getArrayType(elementType: any): number | ObjectArrayType;
+    static keepArrayElementType(arrayTypeCode: any): boolean;
+    static getJsObjectFieldNames(jsObject: any): any[];
+    static hashCode(str: any): number;
+    static hashCodeLowerCase(str: any): number;
+    static contentHashCode(buffer: any, startPos: any, endPos: any): number;
+}
