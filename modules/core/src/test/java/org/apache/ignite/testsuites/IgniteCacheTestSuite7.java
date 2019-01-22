@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLoc
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
@@ -69,6 +70,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
 
         suite.addTestSuite(CheckpointBufferDeadlockTest.class);
         suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
+        suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
 
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
         suite.addTestSuite(AuthenticationProcessorSelfTest.class);
