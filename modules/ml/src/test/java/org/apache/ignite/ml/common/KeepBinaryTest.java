@@ -88,8 +88,9 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
 
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0);
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(10.0)) == 1);
+        Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
+
+        assertTrue(kmdl.getCenters()[zeroCentre].get(0) == 0);
     }
 
     /**
