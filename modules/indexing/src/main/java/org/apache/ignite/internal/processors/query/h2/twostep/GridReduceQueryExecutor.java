@@ -616,15 +616,8 @@ public class GridReduceQueryExecutor {
 
                     idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
                 }
-                else {
-                    if (singlePartMode) {
-                        assert nodes.size() == 1;
-
-                        mapQry.node(nodes.iterator().next().id());
-                    }
-
+                else
                     idx.setSources(nodes, segmentsPerIndex);
-                }
 
                 idx.setPageSize(r.pageSize());
 
