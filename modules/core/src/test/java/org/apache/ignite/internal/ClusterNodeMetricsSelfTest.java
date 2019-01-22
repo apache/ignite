@@ -159,20 +159,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             cache.put(i, val);
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        grid().events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        // Wait for metrics update.
-        latch.await();
+        awaitMetricsUpdate(2);
     }
 
     /**
@@ -182,25 +169,15 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
-        final CountDownLatch taskLatch = new CountDownLatch(2);
+        final CountDownLatch taskLatch = new CountDownLatch(1);
         ignite.compute().executeAsync(new GridTestTask(taskLatch), "testArg");
 
         // Let metrics update twice.
+        awaitMetricsUpdate(2);
 
-        final CountDownLatch latch = new CountDownLatch(3);
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
+        taskLatch.countDown();
 
-                latch.countDown();
-                taskLatch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        // Wait for metrics update.
-        latch.await();
+        awaitMetricsUpdate(1);
 
         ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
@@ -245,20 +222,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         ignite.compute().withName("visor-test-task").execute(new TestInternalTask(), "testArg");
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        // Wait for metrics update.
-        latch.await();
+        awaitMetricsUpdate(2);
 
         ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
