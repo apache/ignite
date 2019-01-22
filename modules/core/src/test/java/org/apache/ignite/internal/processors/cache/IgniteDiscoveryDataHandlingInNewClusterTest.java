@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,6 +47,24 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
 
     /** */
     private static final String NODE_2_CONS_ID = "node02";
+
+    /** */
+    private static final String NODE_3_CONS_ID = "node03";
+
+    /** */
+    private static final String STATIC_CACHE_NAME = "staticCache";
+
+    /** */
+    private static final String DYNAMIC_CACHE_NAME_1 = "dynamicCache1";
+
+    /** */
+    private static final String DYNAMIC_CACHE_NAME_2 = "dynamicCache2";
+
+    /** Group where static and dynamic caches reside. */
+    private static final String GROUP_WITH_STATIC_CACHES = "group1";
+
+    /** Group where only dynamic caches reside. */
+    private static final String GROUP_WITH_DYNAMIC_CACHES = "group2";
 
     /** Node filter to pin dynamic caches to a specific node. */
     private static final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
@@ -80,18 +99,22 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setInitialSize(10500000)
-                        .setMaxSize(6659883008L)
-                        .setPersistenceEnabled(false)
-                )
-        );
+        if (igniteInstanceName.contains("client"))
+            cfg.setClientMode(true);
+        else {
+            cfg.setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setInitialSize(10500000)
+                            .setMaxSize(6659883008L)
+                            .setPersistenceEnabled(false)
+                    )
+            );
+        }
 
-        CacheConfiguration staticCacheCfg = new CacheConfiguration("cache1")
-            .setGroupName("group1")
+        CacheConfiguration staticCacheCfg = new CacheConfiguration(STATIC_CACHE_NAME)
+            .setGroupName(GROUP_WITH_STATIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setNodeFilter(nodeFilter);
 
@@ -100,23 +123,74 @@ public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstr
         return cfg;
     }
 
+    /**
+     * Verifies that new node received discovery data from stopped grid filters it out
+     * from GridCacheProcessor and GridDiscoveryManager internal structures.
+     *
+     * All subsequent servers and clients join topology successfully.
+     *
+     * See related ticket <a href="https://issues.apache.org/jira/browse/IGNITE-10878">IGNITE-10878</a>.
+     */
     @Test
     public void testNewClusterFiltersDiscoveryDataReceivedFromStoppedCluster() throws Exception {
         IgniteEx ig0 = startGrid(NODE_1_CONS_ID);
 
-        ig0.getOrCreateCache(new CacheConfiguration<>("cache2")
-            .setGroupName("group1")
+        prepareDynamicCaches(ig0);
+
+        IgniteEx ig1 = startGrid(NODE_2_CONS_ID);
+
+        verifyCachesAndGroups(ig1);
+
+        IgniteEx ig2 = startGrid(NODE_3_CONS_ID);
+
+        verifyCachesAndGroups(ig2);
+
+        IgniteEx client = startGrid("client01");
+
+        verifyCachesAndGroups(client);
+    }
+
+    /** */
+    private void verifyCachesAndGroups(IgniteEx ignite) {
+        Map<String, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
+
+        assertEquals(2, caches.size());
+        caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME);
+        caches.keySet().contains(STATIC_CACHE_NAME);
+
+        Map<Integer, CacheGroupDescriptor> groups = ignite.context().cache().cacheGroupDescriptors();
+
+        assertEquals(2, groups.size());
+
+        boolean defaultGroupFound = false;
+        boolean staticCachesGroupFound = false;
+
+        for (CacheGroupDescriptor grpDesc : groups.values()) {
+            if (grpDesc.cacheOrGroupName().equals(GridCacheUtils.UTILITY_CACHE_NAME))
+                defaultGroupFound = true;
+            else if (grpDesc.cacheOrGroupName().equals(GROUP_WITH_STATIC_CACHES))
+                staticCachesGroupFound = true;
+        }
+
+        assertTrue(String.format("Default group found: %b, static group found: %b",
+            defaultGroupFound,
+            staticCachesGroupFound),
+            defaultGroupFound && staticCachesGroupFound);
+    }
+
+    /** */
+    private void prepareDynamicCaches(IgniteEx ig) {
+        ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_1)
+            .setGroupName(GROUP_WITH_STATIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setNodeFilter(nodeFilter)
         );
 
-        ig0.getOrCreateCache(new CacheConfiguration<>("cache3")
-            .setGroupName("group2")
+        ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_2)
+            .setGroupName(GROUP_WITH_DYNAMIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 16))
             .setNodeFilter((IgnitePredicate<ClusterNode>)node -> node.consistentId().toString().contains(NODE_1_CONS_ID))
         );
-
-        startGrid(NODE_2_CONS_ID);
     }
 
     /**
