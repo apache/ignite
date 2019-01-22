@@ -88,15 +88,15 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         TcpDiscoverySpi disco;
 
         if (igniteInstanceName.startsWith("victim"))
-            disco = new TestDiscoverySpi();
+            disco = new TestDiscoverySpi(false);
         else if (igniteInstanceName.startsWith("listener"))
             disco = new ListeningDiscoverySpi();
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
         else if (igniteInstanceName.startsWith("joining"))
-            disco = new TestDiscoverySpi();
+            disco = new TestDiscoverySpi(true);
         else if (igniteInstanceName.startsWith("dummy"))
-            disco = new TestDiscoverySpi();
+            disco = new TestDiscoverySpi(false);
         else
             disco = new TcpDiscoverySpi();
 
@@ -348,6 +348,18 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      * or can delay specific message type.
      */
     private class TestDiscoverySpi extends TcpDiscoverySpi {
+        private final boolean record;
+
+        public TestDiscoverySpi(boolean record) {
+            this.record = record;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (ensured(msg) && record)
+                receivedEnsuredMsgs.add(msg);
+        }
+
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
