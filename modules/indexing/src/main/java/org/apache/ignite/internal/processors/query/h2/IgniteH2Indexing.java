@@ -470,7 +470,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                runningQueryManager().unregister(qryId, false, false);
+                runningQueryManager().unregister(qryId, false);
             }
         }
 

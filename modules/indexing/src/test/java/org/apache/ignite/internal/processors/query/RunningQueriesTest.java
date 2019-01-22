@@ -197,12 +197,10 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check clenup running queries on node stop.
-     *
-     * @throws Exception Exception in case of failure.
+     * Check cleanup running queries on node stop.
      */
     @Test
-    public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
+    public void testCloseRunningQueriesOnNodeStop() {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10000; i++)
