@@ -46,6 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** Persistent page size overhead, see PageMemoryImpl.PAGE_OVERHEAD. */
         private const int PersistentPageOverhead = 48;
 
+        /** */
         private static readonly TimeSpan CheckpointFrequency = TimeSpan.FromSeconds(5);
 
         /** Temp dir for PDS. */
