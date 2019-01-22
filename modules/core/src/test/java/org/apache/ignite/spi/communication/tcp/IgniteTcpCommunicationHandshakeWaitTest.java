@@ -31,6 +31,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,6 +50,9 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
     private static final long DISCOVERY_MESSAGE_DELAY = 500;
 
     /** */
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private final AtomicBoolean slowNet = new AtomicBoolean();
 
     /** */
@@ -60,6 +65,8 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         cfg.setPeerClassLoadingEnabled(false);
 
         TcpDiscoverySpi discoSpi = new SlowTcpDiscoverySpi();
+
+        discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
 
