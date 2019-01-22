@@ -122,6 +122,7 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -287,7 +288,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** */
-    @Before
+    @AfterClass
     public static void afterClassGridAbstractTest() throws Exception {
         helper.onAfterClass();
     }
