@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -95,6 +96,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -1503,6 +1505,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
             return;
 
+        if (X.hasCause(e, TransactionSerializationException.class))
+            return;
+
         if (X.hasCause(e, CacheException.class)) {
             CacheException cacheEx = X.cause(e, CacheException.class);
 
@@ -1532,9 +1537,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             if (sqlEx != null && sqlEx.getMessage() != null) {
                 if (sqlEx.getMessage().contains("Transaction is already completed."))
-                    return;
-
-                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
                     return;
             }
         }

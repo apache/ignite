@@ -17,15 +17,15 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.junit.Assert.fail;
 
 /**
@@ -116,9 +116,15 @@ public class MvccFeatureChecker {
      * @param e Exception.
      */
     public static void assertMvccWriteConflict(Exception e) {
-        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+        if (e instanceof TransactionSerializationException)
+            return;
 
-        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
+        if (e instanceof CacheException && e.getCause() instanceof TransactionSerializationException)
+            return;
+
+//        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+//        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
             fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
