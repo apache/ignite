@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPage
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -106,7 +106,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         try {
             return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
         }
-        catch (IgniteTxMvccVersionCheckedException e) {
+        catch (IgniteTxUnexpectedStateCheckedException e) {
             // TODO this catch must not be needed if we switch Vacuum to data page scan
             // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
             // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
@@ -123,7 +123,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         try {
             return isVisible(cctx, mvccSnapshot, io, dataPageAddr, itemId, pageSize);
         }
-        catch (IgniteTxMvccVersionCheckedException e) {
+        catch (IgniteTxUnexpectedStateCheckedException e) {
             // TODO this catch must not be needed if we switch Vacuum to data page scan
             // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
             // asynchronously and node hasn't received finish message yet but coordinator has already removed it from

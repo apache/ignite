@@ -20,28 +20,15 @@ package org.apache.ignite.internal.transactions;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Exception thrown whenever transaction enters an unknown state.
+ * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
  */
-public class IgniteTxMvccVersionCheckedException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IgniteTxDuplicateKeyCheckedException extends IgniteCheckedException {
     /**
-     * Creates new exception with given error message.
+     * Creates new duplicate ket exception with given error message.
      *
      * @param msg Error message.
      */
-    public IgniteTxMvccVersionCheckedException(String msg) {
+    public IgniteTxDuplicateKeyCheckedException(String msg) {
         super(msg);
-    }
-
-    /**
-     * Creates new exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public IgniteTxMvccVersionCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
     }
 }
