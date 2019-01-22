@@ -39,11 +39,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
@@ -55,6 +55,20 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends CacheMvccAbstractTest  {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "-1");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
+
+        super.afterTestsStopped();
+    }
+
     /** */
     private static final int TIMEOUT = 3000;
 
@@ -520,7 +534,6 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10763")
     @Test
     public void testQueryReducerDeadlockInsertWithTxTimeout() throws Exception {
         checkQueryReducerDeadlockInsert(TimeoutMode.TX);
