@@ -252,7 +252,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
                 return null;
             }
-        },  CacheException.class, "Failed to run update. Transaction is too large. Consider reducing transaction size");
+        },  CacheException.class, "Transaction is too large. Consider reducing transaction size");
     }
 
     /**

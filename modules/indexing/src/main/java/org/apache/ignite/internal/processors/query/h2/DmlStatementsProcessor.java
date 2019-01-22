@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
@@ -104,6 +105,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -621,7 +623,7 @@ public class DmlStatementsProcessor {
                 return res;
             }
             catch (IgniteCheckedException e) {
-                checkSqlException(e);
+                checkKnownException(e);
 
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
@@ -692,7 +694,10 @@ public class DmlStatementsProcessor {
     /**
      * @param e Exception.
      */
-    private void checkSqlException(IgniteCheckedException e) {
+    private void checkKnownException(IgniteCheckedException e) {
+        if (e instanceof IgniteTxSerializationCheckedException)
+            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR, e);
+
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
         if(sqlEx != null)
