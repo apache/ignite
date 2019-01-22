@@ -44,7 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -58,6 +57,9 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     private volatile boolean blockMsgs;
 
     /** */
+    private volatile boolean dieOnNextMsgProc;
+
+    /** */
     private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
 
     /** */
@@ -66,6 +68,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         blockMsgs = false;
+        dieOnNextMsgProc = false;
         delayCond = null;
         receivedEnsuredMsgs = new GridConcurrentHashSet<>();
     }
@@ -234,7 +237,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
-        blockMsgs = true;
+        dieOnNextMsgProc = true; // Next message received by node with DyingThreadDiscoverySpi will trigger node failure.
 
         log.info("Sending fail node messages");
 
@@ -283,16 +286,14 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                 if (addedMsg.node().consistentId().equals("joining") && sock.getPort() == 47503) {
-                    GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            blockMsgs = true;
+                    GridTestUtils.runAsync(() -> {
+                        dieOnNextMsgProc = true;
 
-                            log.info("Sending fail node messages");
+                        log.info("Sending fail node messages");
 
-                            coord.context().discovery().failNode(dummy.localNode().id(), "Dummy node failed");
+                        coord.context().discovery().failNode(dummy.localNode().id(), "Dummy node failed");
 
-                            delayCond.get2().countDown();
-                        }
+                        delayCond.get2().countDown();
                     });
 
                     return true;
@@ -337,8 +338,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     private class DyingThreadDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (blockMsgs)
-                throw new RuntimeException("Thread is dying");
+            if (dieOnNextMsgProc)
+                throw new RuntimeException("Thread is dying before message is processed, node will be abnormally stopped: msg=" + msg);
         }
     }
 
@@ -388,6 +389,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         private void delayIfNeeded(Socket sock, TcpDiscoveryAbstractMessage msg) {
             if (delayCond != null) {
                 if (delayCond.get1().apply(sock, msg)) {
+                    log.info("Message has been delayed [sock=" + sock + ", msg=" + msg + ']');
+
                     try {
                         assertTrue(U.await(delayCond.get2(), 10, TimeUnit.SECONDS));
                     }
