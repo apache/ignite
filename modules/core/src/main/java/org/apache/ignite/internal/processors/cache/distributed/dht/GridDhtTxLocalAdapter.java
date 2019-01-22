@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -945,5 +946,21 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
             "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
+    }
+
+    /**
+     * Increments lock counter.
+     */
+    public void incrementLockCounter() {
+        txCounters(true).incrementLockCounter();
+    }
+
+    /**
+     * @return Current value of lock counter.
+     */
+    public int lockCounter() {
+        TxCounters txCntrs = txCounters(false);
+
+        return txCntrs != null ? txCntrs.lockCounter() : 0;
     }
 }

@@ -83,6 +83,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new PartitionsEvictManager(),
                 new CacheNoopJtaManager(),
                 null,
+                null,
                 null
             ),
             defaultCacheConfiguration(),
