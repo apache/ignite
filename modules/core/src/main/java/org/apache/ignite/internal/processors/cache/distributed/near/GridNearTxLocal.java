@@ -2086,32 +2086,37 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param fut Enlist future.
      * @return Operation future.
      */
-    public IgniteInternalFuture<Long> updateAsync(GridNearTxQueryAbstractEnlistFuture fut) {
-        fut.init();
+    private IgniteInternalFuture<Long> updateAsync(GridNearTxQueryAbstractEnlistFuture fut) {
+        try {
+            fut.init();
 
-        return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
-            @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
-                return fut0.get() != null;
-            }
-        }), new PLC1<Long>(null) {
-            @Override protected Long postLock(Long val) throws IgniteCheckedException {
-                Long res = fut.get();
+            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
+                    return fut0.get() != null;
+                }
+            }), new PLC1<Long>(null) {
+                @Override protected Long postLock(Long val) throws IgniteCheckedException {
+                    Long res = fut.get();
 
-                assert mvccSnapshot != null;
-                assert res != null;
+                    assert mvccSnapshot != null;
+                    assert res != null;
 
-                if (res > 0) {
-                    if (mvccSnapshot.operationCounter() == ~MvccUtils.MVCC_OP_COUNTER_MASK) {
-                        throw new IgniteCheckedException("The maximum limit of the number of statements allowed in" +
-                            " one transaction is reached. [max=" + mvccSnapshot.operationCounter() + ']');
+                    if (res > 0) {
+                        if (mvccSnapshot.operationCounter() == ~MvccUtils.MVCC_OP_COUNTER_MASK) {
+                            throw new IgniteCheckedException("The maximum limit of the number of statements allowed in" +
+                                " one transaction is reached. [max=" + mvccSnapshot.operationCounter() + ']');
+                        }
+
+                        mvccSnapshot.incrementOperationCounter();
                     }
 
-                    mvccSnapshot.incrementOperationCounter();
+                    return res;
                 }
-
-                return res;
-            }
-        }));
+            }));
+        }
+        finally {
+            cctx.tm().resetContext();
+        }
     }
 
     /**
