@@ -37,7 +37,7 @@ public interface NamedVector extends Vector {
      *
      * @param idx Element string index.
      * @param val Element value.
-     * @return
+     * @return This vector.
      */
     public NamedVector set(String idx, double val);
 
