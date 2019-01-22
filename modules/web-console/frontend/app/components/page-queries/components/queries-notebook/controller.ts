@@ -1448,11 +1448,6 @@ export class NotebookCtrl {
             const lazy = !!paragraph.lazy;
             const collocated = !!paragraph.collocated;
 
-            if (!this.clusterIsAvailable) {
-                Messages.showError('Failed to execute. Cluster is not available');
-                return;
-            }
-
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     // If we are executing only selected part of query then Notebook shouldn't be saved.
