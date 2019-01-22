@@ -46,7 +46,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxGet_ClientServer_Backups2_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -58,7 +57,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxGet_Server_Backups1_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 0, 1, DFLT_PARTITION_COUNT,
@@ -68,7 +66,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxScan_ClientServer_Backups2_CoordinatorFails() throws Exception {
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
@@ -78,7 +75,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testAccountsTxScan_Server_Backups1_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -110,7 +106,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups1_PutGet_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -133,7 +128,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testGetReadInProgressCoordinatorFails() throws Exception {
         readInProgressCoordinatorFails(false, false, PESSIMISTIC, REPEATABLE_READ, GET, PUT, null);
@@ -158,7 +152,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testGetReadInsideTxInProgressCoordinatorFails_ReadDelay() throws Exception {
         readInProgressCoordinatorFails(true, true, PESSIMISTIC, REPEATABLE_READ, GET, PUT, null);
