@@ -15,38 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 
 /**
- * MVCC discovery data to be shared between nodes on join.
+ * Data page MVCC filter.
  */
-public class MvccDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Current coordinator. */
-    private MvccCoordinator crd;
-
+public interface MvccDataPageClosure {
     /**
-     * @param crd Coordinator.
+     * @param io Data page IO.
+     * @param dataPageAddr Data page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @return {@code true} If the row is visible.
+     * @throws IgniteCheckedException If failed.
      */
-    public MvccDiscoveryData(MvccCoordinator crd) {
-        this.crd = crd;
-    }
-
-    /**
-     * @return Current coordinator.
-     */
-    public MvccCoordinator coordinator() {
-        return crd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccDiscoveryData.class, this);
-    }
+    boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize) throws IgniteCheckedException;
 }
