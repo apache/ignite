@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
+
 /**
  * Row link IO.
  */
@@ -60,5 +66,31 @@ public interface H2RowLinkIO {
      */
     public default boolean storeMvccInfo() {
         return false;
+    }
+
+    /**
+     * Get lookup row.
+     *
+     * @param tree Tree.
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param usedColInfo column info to gather only specified columns.
+     * @return Lookup row.
+     * @throws IgniteCheckedException If failed.
+     */
+    default GridH2SearchRow getLookupRow(BPlusTree<GridH2SearchRow,?> tree, long pageAddr, int idx,
+        GridH2UsedColumnInfo usedColInfo)
+        throws IgniteCheckedException {
+        long link = getLink(pageAddr, idx);
+
+        if (storeMvccInfo()) {
+            long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
+
+            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
+        }
+
+        return ((H2Tree)tree).createRowFromLink(link, usedColInfo);
     }
 }

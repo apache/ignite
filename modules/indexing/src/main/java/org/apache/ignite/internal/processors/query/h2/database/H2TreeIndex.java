@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,6 +53,7 @@ import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -278,12 +282,32 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
+        Set<Integer> colsToExtract = new HashSet<Integer>(filter.getTable().getColumns().length);
 
-        return super.find(filter, first, last);
+//        for (int i = 0; i < filter.getTable().getColumns().length; ++i)
+//            colsToExtract.add(filter.getTable().getColumns()[i].getColumnId());
+        colsToExtract.add(1);
+
+        return find(filter.getSession(), first, last,
+            new GridH2UsedColumnInfo(colsToExtract, filter.getTable().getColumns().length));
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
+        return find(ses, lower, upper, null);
+    }
+
+    /**
+     * Find a row or a list of rows and create a cursor to iterate over the
+     * result.
+     *
+     * @param ses the session
+     * @param colInfo Columns info to extract to simple row.
+     * @param lower the first row, or null for no limit
+     * @param upper the last row, or null for no limit
+     * @return the cursor to iterate over the results
+     */
+    private Cursor find(Session ses, SearchRow lower, SearchRow upper, GridH2UsedColumnInfo colInfo) {
         assert lower == null || lower instanceof GridH2SearchRow : lower;
         assert upper == null || upper instanceof GridH2SearchRow : upper;
 
@@ -294,7 +318,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
                 tree.compareRows((GridH2SearchRow)lower, (GridH2SearchRow)upper) == 0) {
-                GridH2Row row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()), null);
+                GridH2Row row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()), colInfo);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
             }

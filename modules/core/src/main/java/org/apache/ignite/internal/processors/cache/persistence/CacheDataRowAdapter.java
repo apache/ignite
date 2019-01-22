@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryKeyObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -30,13 +33,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -150,6 +154,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
+            boolean unlock = true;
+
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
@@ -168,6 +174,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     if (first) {
                         if (nextLink == 0) {
+                            if (rowData == RowData.FULL_TRY_OFFHEAP)
+                                unlock = false;
+
                             // Fast path for a single page row.
                             readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
 
@@ -199,11 +208,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         return;
                 }
                 finally {
-                    pageMem.readUnlock(grpId, pageId, page);
+                    if (unlock)
+                        pageMem.readUnlock(grpId, pageId, page);
                 }
             }
             finally {
-                pageMem.releasePage(grpId, pageId, page);
+                if (unlock)
+                    pageMem.releasePage(grpId, pageId, page);
             }
         }
         while(nextLink != 0);
@@ -332,13 +343,21 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
-            byte[] bytes = PageUtils.getBytes(addr, off, len);
+            if (rowData == RowData.FULL_TRY_OFFHEAP && type == BinaryObjectImpl.TYPE_BINARY) {
+                key = new BinaryKeyObjectOffheapImpl(
+                    ((CacheObjectBinaryProcessorImpl)coctx.kernalContext().cacheObjects()).binaryContext(),
+                    addr, off, len);
+            }
+            else {
+                byte[] bytes = PageUtils.getBytes(addr, off, len);
+
+                key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
+
+                if (rowData == RowData.KEY_ONLY)
+                    return;
+            }
+
             off += len;
-
-            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
-
-            if (rowData == RowData.KEY_ONLY)
-                return;
         }
         else
             off += len + 1;
@@ -349,16 +368,23 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte type = PageUtils.getByte(addr, off);
         off++;
 
-        byte[] bytes = PageUtils.getBytes(addr, off, len);
-        off += len;
+        if (rowData == RowData.FULL_TRY_OFFHEAP && type == BinaryObjectImpl.TYPE_BINARY) {
+            val = new BinaryObjectOffheapImpl(
+                ((CacheObjectBinaryProcessorImpl)coctx.kernalContext().cacheObjects()).binaryContext(),
+                addr, off, len);
+        }
+        else {
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
+            off += len;
 
-        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+            val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-        ver = CacheVersionIO.read(addr + off, false);
+            ver = CacheVersionIO.read(addr + off, false);
 
-        off += CacheVersionIO.size(ver, false);
+            off += CacheVersionIO.size(ver, false);
 
-        expireTime = PageUtils.getLong(addr, off);
+            expireTime = PageUtils.getLong(addr, off);
+        }
     }
 
     /**
@@ -683,7 +709,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         LINK_ONLY,
 
         /** */
-        LINK_WITH_HEADER
+        LINK_WITH_HEADER,
+
+        /** */
+        FULL_TRY_OFFHEAP
     }
 
     /** {@inheritDoc} */

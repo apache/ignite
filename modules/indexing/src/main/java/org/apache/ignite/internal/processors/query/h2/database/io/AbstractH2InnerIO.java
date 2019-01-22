@@ -22,7 +22,6 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
@@ -49,17 +48,7 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
     /** {@inheritDoc} */
     @Override public GridH2SearchRow getLookupRow(BPlusTree<GridH2SearchRow, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
-        long link = getLink(pageAddr, idx);
-
-        if (storeMvccInfo()) {
-            long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = getMvccCounter(pageAddr, idx);
-            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
-
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
-        }
-
-        return ((H2Tree)tree).createRowFromLink(link);
+        return getLookupRow(tree, pageAddr, idx, null);
     }
 
     /** {@inheritDoc} */

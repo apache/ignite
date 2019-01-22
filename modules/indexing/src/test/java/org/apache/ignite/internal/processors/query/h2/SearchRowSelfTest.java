@@ -104,13 +104,15 @@ public class SearchRowSelfTest extends AbstractIndexingCommonTest {
             sql("INSERT INTO company VALUES (?, ?)", compId, "company_" + compId);
 
             for (long persCnt = 0; persCnt < 10; ++persCnt, ++persId)
-                sql("INSERT INTO person VALUES (?, ?, ?)", persId, compId, "person_" + compId + "_" + compId);
+                sql("INSERT INTO person VALUES (?, ?, ?)", persId, compId, "person_" + compId + "_" + persId);
         }
 
         res = sql(
             "SELECT comp.name AS compName, pers.name AS persName FROM company AS comp " +
                 "JOIN person AS pers ON comp.id = pers.compId " +
                 "WHERE comp.id = 1");
+
+        assertEquals(res.size(), 10);
     }
 
     /**

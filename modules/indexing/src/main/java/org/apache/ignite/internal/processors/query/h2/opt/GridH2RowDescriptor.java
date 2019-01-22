@@ -34,6 +34,7 @@ import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -174,19 +175,55 @@ public class GridH2RowDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        GridH2Row row;
+        return (GridH2Row)createRow(dataRow, null);
+    }
+
+    /**
+     * Creates new row.
+     *
+     * @param dataRow Data row.
+     * @param colInfo column info to extract only specified columns.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridH2SearchRow createRow(CacheDataRow dataRow, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
+        GridH2SearchRow row;
 
         try {
-            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
+            if (colInfo == null) {
+                if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
+                    row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
+                }
+                else
+                    row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
             }
-            else
-                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
+            else {
+                row = new GridH2SimpleRow(colInfo.columnsCount());
+
+                for (int colIdx : colInfo.columns()) {
+                    Object res = columnValue(dataRow.key(), dataRow.value(), colIdx);
+
+                    if (res == null)
+                        row.setValue(colIdx, ValueNull.INSTANCE);
+                    else {
+                        try {
+                            row.setValue(colIdx, H2Utils.wrap(indexing().objectContext(), res, fieldType(colIdx)));
+                        }
+                        catch (IgniteCheckedException e) {
+                            e.printStackTrace();
+                            throw DbException.convert(e);
+                        }
+                    }
+                }
+            }
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
                 "Please make sure that you always store each value type with the same key type " +
                 "or configure key type as common super class for all actual keys for this value type.", e);
+        }
+        finally {
+            // TODO: unlock special CacheDataRow
         }
 
         return row;

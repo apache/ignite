@@ -139,6 +139,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                 v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
+                e.printStackTrace();
                 throw DbException.convert(e);
             }
         }

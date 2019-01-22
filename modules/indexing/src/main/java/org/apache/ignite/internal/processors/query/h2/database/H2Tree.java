@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -220,15 +221,16 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * Create row from link.
      *
      * @param link Link.
+     * @param usedColInfo column info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link) throws IgniteCheckedException {
+    public GridH2SearchRow createRowFromLink(long link, GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
         if (rowCache != null) {
-            GridH2Row row = rowCache.get(link);
+            GridH2SearchRow row = rowCache.get(link);
 
             if (row == null) {
-                row = rowStore.getRow(link);
+                row = rowStore.getRow(link, null);
 
                 if (row instanceof GridH2KeyValueRowOnheap)
                     rowCache.put((GridH2KeyValueRowOnheap)row);
@@ -237,7 +239,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             return row;
         }
         else
-            return rowStore.getRow(link);
+            return rowStore.getRow(link, usedColInfo);
     }
 
     /**
@@ -245,10 +247,16 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      *
      * @param link Link.
      * @param mvccOpCntr MVCC operation counter.
+     * @param usedColInfo column info to gather only specified columns (returns GridH2SimpleRow when columns specified).
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public GridH2Row createRowFromLink(
+        long link,
+        long mvccCrdVer,
+        long mvccCntr,
+        int mvccOpCntr,
+        GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
         if (rowCache != null) {
             GridH2Row row = rowCache.get(link);
 
@@ -266,9 +274,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
+    @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object colsToExtract)
         throws IgniteCheckedException {
-        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+        return (GridH2Row)((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridH2UsedColumnInfo)colsToExtract);
     }
 
     /**
