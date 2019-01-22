@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
@@ -124,6 +125,7 @@ import org.junit.runners.Suite;
     GridReleaseTypeSelfTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentTest.class,
+    GridHistoryAffinityAssignmentTest.class,
     GridAffinityAssignmentTestNoOptimizations.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,

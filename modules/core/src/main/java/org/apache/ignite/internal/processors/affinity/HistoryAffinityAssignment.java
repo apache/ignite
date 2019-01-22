@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,25 +43,41 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     private final List<List<ClusterNode>> assignment;
 
     /** */
-    private final List<List<ClusterNode>> idealAssignment;
+    private final Map<Integer, List<ClusterNode>> idealAssignmentDiff;
 
     /**
      * @param assign Assignment.
      */
     HistoryAffinityAssignment(GridAffinityAssignment assign) {
         topVer = assign.topologyVersion();
-        assignment = assign.assignment();
-        idealAssignment = assign.idealAssignment();
+        assignment = Collections.unmodifiableList(assign.assignment());
+
+        List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
+
+        idealAssignmentDiff = new HashMap<>();
+
+        for (int p = 0; p < assignment.size(); p++) {
+            List<ClusterNode> nodes = assignment.get(p);
+            List<ClusterNode> idealNodes = idealAssignment.get(p);
+
+            if (!nodes.equals(idealNodes))
+                idealAssignmentDiff.put(p, idealNodes);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        return Collections.unmodifiableList(idealAssignment);
+        List<List<ClusterNode>> idealAssignment = new ArrayList<>(assignment);
+
+        for (Map.Entry<Integer, List<ClusterNode>> entry : idealAssignmentDiff.entrySet())
+            idealAssignment.set(entry.getKey(), entry.getValue());
+
+        return idealAssignment;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignment() {
-        return Collections.unmodifiableList(assignment);
+        return assignment;
     }
 
     /** {@inheritDoc} */
