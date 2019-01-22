@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var key = GetPrimaryKeyForCache(cache);
+            const int key = 7;
 
             Action<ICacheLock> checkLock = lck =>
             {

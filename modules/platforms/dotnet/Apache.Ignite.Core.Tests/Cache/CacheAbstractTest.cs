@@ -2375,7 +2375,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(expAge, person.Age);
         }
 
-        protected static int GetPrimaryKeyForCache(ICache<int, int> cache)
+        private static int GetPrimaryKeyForCache(ICache<int, int> cache)
         {
             return GetPrimaryKeysForCacheFrom(cache, 0).First();
         }
