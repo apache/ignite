@@ -109,7 +109,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGet() throws Exception {
-        Assume.assumeFalse("Should not be run in forced MVCC mode.", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeFalse("Should not run in forced MVCC mode.", MvccFeatureChecker.forcedMvcc());
 
         Ignite ignite = ignite(SRVS);
 
