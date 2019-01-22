@@ -3806,10 +3806,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
             }
             else
-                writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
+                U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
             ClusterNode locNode = getLocalNode();
 
@@ -3853,19 +3853,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    writeFully(ch, sslHnd.encrypt(buf));
+                    U.writeFully(ch, sslHnd.encrypt(buf));
                 }
                 else
-                    writeFully(ch, buf);
+                    U.writeFully(ch, buf);
             }
             else {
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
+                    U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
                 }
                 else
-                    writeFully(ch, ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
+                    U.writeFully(ch, ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
             }
 
             if (recovery != null) {
@@ -3963,19 +3963,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return rcvCnt;
     }
 
-    /**
-     * Safely write buffer fully to socket.
-     *
-     * @param ch SocketChannel.
-     * @param buf Buffer.
-     * @throws IOException In case of error.
-     */
-    private void writeFully(SocketChannel ch, ByteBuffer buf) throws IOException {
-        int totalWritten = 0;
 
-        while (totalWritten < buf.limit())
-            totalWritten += ch.write(buf);
-    }
 
     /**
      * @param sndId Sender ID.

@@ -75,6 +75,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -11164,5 +11165,30 @@ public abstract class IgniteUtils {
         catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     *  Safely write buffer fully to socket.
+     *
+     * @param ch WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static int writeFully(WritableByteChannel ch, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        while (buf.hasRemaining()) {
+            int written = ch.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel [ written = " + written + " buf " + buf);
+
+            totalWritten += written;
+        }
+
+        assert !buf.hasRemaining()
+            : "Buffer is not completely written [totalWritten = " + totalWritten +", buf = " + buf +"]";
+
+        return totalWritten;
     }
 }

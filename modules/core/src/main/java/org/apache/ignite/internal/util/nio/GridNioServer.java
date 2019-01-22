@@ -1477,11 +1477,9 @@ public class GridNioServer<T> {
 
                     assert buf.hasRemaining();
 
-                    int totalWritten = 0;
 
                     if (!skipWrite) {
-                        while (totalWritten < buf.limit())
-                            totalWritten += sockCh.write(buf);
+                        int totalWritten = U.writeFully(sockCh, buf);
 
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + totalWritten + ']');
@@ -1500,9 +1498,6 @@ public class GridNioServer<T> {
                             throw new IOException("Thread has been interrupted.", e);
                         }
                     }
-
-                    assert buf.limit() == totalWritten
-                        : "Buffer is not completely written [totalWritten = " + totalWritten +", buf = " + buf +"]";
 
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
 
@@ -1534,7 +1529,7 @@ public class GridNioServer<T> {
             ByteBuffer buf;
 
             while ((buf = queue.peek()) != null) {
-                int cnt = sockCh.write(buf);
+                int cnt = U.writeFully(sockCh, buf);
 
                 if (metricsLsnr != null)
                     metricsLsnr.onBytesSent(cnt);
