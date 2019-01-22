@@ -19,12 +19,9 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.h2.engine.Session;
@@ -36,89 +33,51 @@ import org.h2.value.Value;
  * System view: running queries
  */
 public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
-
-    /** Query id separator. */
-    private static final String QRY_ID_SEPARATOR = "X";
-
     /**
      * @param ctx Grid context.
      */
     public SqlSystemViewRunningQueries(GridKernalContext ctx) {
-        super("RUNNING_QUERIES", "Running queries", ctx, new String[] {"QUERY_ID", "DURATION"},
+        super("LOCAL_SQL_RUNNING_QUERIES", "Running queries", ctx, new String[] {"QUERY_ID"},
             newColumn("QUERY_ID"),
-            newColumn("NODE_ID", Value.UUID),
             newColumn("SQL"),
             newColumn("SCHEMA_NAME"),
+            newColumn("CANCELABLE", Value.BOOLEAN),
             newColumn("DURATION", Value.LONG)
         );
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        SqlSystemViewColumnCondition durationCond = conditionForColumn("DURATION", first, last);
-
         SqlSystemViewColumnCondition qryIdCond = conditionForColumn("QUERY_ID", first, last);
 
-        long durationRange = -1;
-
-        if (durationCond.isRange() && durationCond.valueForStartRange() != null)
-            durationRange = durationCond.valueForStartRange().getLong();
-
-        Long qryId0 = null;
+        List<GridRunningQueryInfo> runningSqlQueries = ctx.query().runningSqlQueries();
 
         if (qryIdCond.isEquality()) {
-            String fullQryId = qryIdCond.valueForEquality().getString();
+            String qryId = qryIdCond.valueForEquality().getString();
 
-            String[] split = fullQryId.split(QRY_ID_SEPARATOR);
-
-            if (split.length == 2) {
-                try {
-                    qryId0 = Long.valueOf(split[1], 16);
-                }
-                catch (NumberFormatException ex) {
-                    return Collections.emptyIterator();
-                }
-            }
-            else
-                return Collections.emptyIterator();
-        }
-
-        Collection<GridRunningQueryInfo> runningQueries = ctx.query().runningQueries(durationRange);
-
-        if (qryId0 != null) {
-            final Long qryId = qryId0;
-
-            runningQueries = runningQueries.stream()
-                .filter((r) -> r.id().equals(qryId))
+            runningSqlQueries = runningSqlQueries.stream()
+                .filter((r) -> r.clusterWideQueryId().equals(qryId))
                 .findFirst()
-                .map(Arrays::asList)
+                .map(Collections::singletonList)
                 .orElse(Collections.emptyList());
         }
 
-        if (runningQueries.isEmpty())
+        if (runningSqlQueries.isEmpty())
             return Collections.emptyIterator();
-
-        UUID nodeId = ctx.localNodeId();
-
-        long nodeOrder = ctx.cluster().get().localNode().order();
-
-        String clusterPartOfQryId = Long.toHexString(nodeOrder) + QRY_ID_SEPARATOR;
 
         long now = System.currentTimeMillis();
 
-        List<Row> rows = new ArrayList<>(runningQueries.size());
+        List<Row> rows = new ArrayList<>(runningSqlQueries.size());
 
-        for (GridRunningQueryInfo info : runningQueries) {
-            String qryId = clusterPartOfQryId + Long.toHexString(info.id());
-
+        for (GridRunningQueryInfo info : runningSqlQueries) {
             long duration = now - info.startTime();
 
             rows.add(
                 createRow(ses, rows.size(),
-                    qryId,
-                    nodeId,
+                    info.clusterWideQueryId(),
                     info.query(),
                     info.schemaName(),
+                    info.cancelable(),
                     duration
                 )
             );
@@ -134,6 +93,6 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.query().runningQueries(-1).size();
+        return ctx.query().runningSqlQueries().size();
     }
 }

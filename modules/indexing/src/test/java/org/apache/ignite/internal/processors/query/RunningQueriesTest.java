@@ -112,6 +112,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
+            .setIndexedTypes(Integer.class,Integer.class)
         );
 
         cache.put(100000, 0);
@@ -197,12 +198,10 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check clenup running queries on node stop.
-     *
-     * @throws Exception Exception in case of failure.
+     * Check cleanup running queries on node stop.
      */
     @Test
-    public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
+    public void tesctCloseRunningQueriesOnNodeStop() {
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10000; i++)
@@ -240,16 +239,13 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         });
 
         assertNoRunningQueries();
-
     }
 
     /**
      * Check cluster wide query id generation.
-     *
-     * @throws Exception Exception in case of failure.
      */
     @Test
-    public void testClusterWideQueryIdGeneration() throws Exception {
+    public void testClusterWideQueryIdGeneration() {
         newBarrier(1);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);

@@ -37,7 +37,9 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -194,11 +196,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testRunningQueriesView() throws Exception {
         Ignite ignite = startGrid(0);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.createCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        );
 
-        String sql = "SELECT SQL, QUERY_ID FROM IGNITE.RUNNING_QUERIES";
+        cache.put(100,"200");
 
-        FieldsQueryCursor notClosedCursor = cache.query(new SqlFieldsQuery(sql));
+        String sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES";
+
+        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql));
 
         List<?> cur = cache.query(new SqlFieldsQuery(sql)).getAll();
 
@@ -208,6 +214,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         List<?> res1 = (List<?>)cur.get(1);
 
         assertEquals(sql, res0.get(0));
+
         assertEquals(sql, res1.get(0));
 
         String id0 = (String)res0.get(1);
@@ -221,34 +228,39 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(2, cache.query(new SqlFieldsQuery(sql)).getAll().size());
 
-        notClosedCursor.getAll();
+        notClosedFieldQryCursor.close();
 
         assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
 
-        sql = "SELECT SQL FROM IGNITE.RUNNING_QUERIES WHERE DURATION > 100000";
+        cache.put(100,"200");
+
+        QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
+
+        String expSqlQry = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
+            "\"default\".\"STRING\" WHERE _key=100";
+
+        cur = cache.query(new SqlFieldsQuery(sql)).getAll();
+
+        assertEquals(2, cur.size());
+
+        res0 = (List<?>)cur.get(0);
+        res1 = (List<?>)cur.get(1);
+
+        assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+
+        notClosedQryCursor.close();
+
+        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='1X7'";
+
+        assertEquals("1X7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
 
-        sql = "SELECT SQL FROM IGNITE.RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
+        sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
-
-        sql = "SELECT SQL FROM IGNITE.RUNNING_QUERIES WHERE QUERY_ID='1Xa'";
-
-        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
-
-        sql = "SELECT SQL FROM IGNITE.RUNNING_QUERIES WHERE QUERY_ID='aX1'";
-
-        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
-
-
-        sql = "SELECT SQL FROM IGNITE.RUNNING_QUERIES WHERE QUERY_ID='aXa'";
-
-        assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
-
-        sql = "SELECT SQL, QUERY_ID FROM IGNITE.RUNNING_QUERIES WHERE QUERY_ID='1Xa'";
-
-        assertEquals("1Xa", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
     }
 
     /**

@@ -2663,6 +2663,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public List<GridRunningQueryInfo> runningSqlQueries() {
+        return runningQueryMgr.runningSqlQueries();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQueryMgr.longRunningQueries(duration);
     }

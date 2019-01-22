@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +29,9 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
  * Keep information about all running queries.
@@ -126,10 +130,36 @@ public class RunningQueryManager {
     }
 
     /**
+     * Return SQL queries which executing right now.
+     *
+     * @return List of SQL running queries.
+     */
+    public List<GridRunningQueryInfo> runningSqlQueries() {
+        List<GridRunningQueryInfo> res = new ArrayList<>();
+
+        for (GridRunningQueryInfo runningQryInfo : runs.values()) {
+            if (isSqlQuery(runningQryInfo))
+                res.add(runningQryInfo);
+        }
+
+        return res;
+    }
+
+    /**
+     * Check belongs running query to an SQL type.
+     *
+     * @param runningQryInfo
+     * @return {@code true} For SQL or SQL_FIELDS query type.
+     */
+    private boolean isSqlQuery(GridRunningQueryInfo runningQryInfo){
+        return runningQryInfo.queryType() == SQL_FIELDS || runningQryInfo.queryType() == SQL;
+    }
+
+    /**
      * Return long running user queries.
      *
      * @param duration Duration of long query.
-     * @return List of queries which running longer than given duration.
+     * @return Collection of queries which running longer than given duration.
      */
     public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
