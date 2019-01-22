@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryC
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -897,10 +896,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testWaitPreviousTxAck() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         testSpi = true;
 
         startGrid(0);
@@ -1093,6 +1091,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet1() throws Exception {
         boolean vals[] = {true, false};
@@ -1215,9 +1214,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testCleanupWaitsForGet2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
         /*
         Simulate case when there are two active transactions modifying the same key
         (it is possible if key lock is released but ack message is delayed), and at this moment
@@ -1324,6 +1323,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
         for (int i = 0; i < 4; i++) {
@@ -2865,6 +2865,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups2_Get() throws Exception {
         int[] nValues = {3, 5, 10};
@@ -3300,7 +3301,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessorImpl crd = mvccProcessor(node);
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync((IgniteInternalTx)null);
+        MvccSnapshotFuture fut = new MvccSnapshotFuture();
+
+        crd.requestReadSnapshotAsync(crd.currentCoordinator(), fut);
 
         fut.get();
 
@@ -3389,10 +3392,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     public void testExpiration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));
@@ -3445,10 +3447,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     public void testChangeExpireTime() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-
         final IgniteEx node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));

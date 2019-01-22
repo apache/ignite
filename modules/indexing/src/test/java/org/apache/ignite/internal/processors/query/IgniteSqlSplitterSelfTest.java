@@ -46,17 +46,14 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -67,12 +64,9 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("unchecked")
 @RunWith(JUnit4.class)
-public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CLIENT = 7;
-
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -83,12 +77,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         cfg.setCacheKeyConfiguration(keyCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -165,10 +153,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10199")
     @Test
     public void testMergeJoin() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10199");
-
         IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,
             Integer.class, Org.class));
 
@@ -195,6 +182,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testPushDownSubquery() {
         IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,
@@ -1808,7 +1796,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(

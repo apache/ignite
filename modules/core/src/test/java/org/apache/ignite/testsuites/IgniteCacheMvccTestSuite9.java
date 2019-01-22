@@ -17,29 +17,38 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite9 extends TestSuite {
+@RunWith(IgniteCacheMvccTestSuite9.DynamicSuite.class)
+public class IgniteCacheMvccTestSuite9 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         Collection<Class> ignoredTests = new HashSet<>();
 
         // Skip classes that already contains Mvcc tests
         ignoredTests.add(IgniteTxConcurrentRemoveObjectsTest.class);
+
+        // Non supported modes.
+        ignoredTests.add(IgniteTxCachePrimarySyncTest.class);
 
         // Atomic caches.
         ignoredTests.add(CacheAtomicPrimarySyncBackPressureTest.class);
@@ -48,10 +57,14 @@ public class IgniteCacheMvccTestSuite9 extends TestSuite {
         ignoredTests.add(IgniteCacheGetCustomCollectionsSelfTest.class);
         ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 9");
+        return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
+    }
 
-        suite.addTest(IgniteCacheTestSuite9.suite(ignoredTests));
-
-        return suite;
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

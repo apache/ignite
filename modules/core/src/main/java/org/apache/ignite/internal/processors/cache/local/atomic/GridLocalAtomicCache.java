@@ -457,7 +457,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     taskName,
                                     expiry,
                                     !deserializeBinary,
-                                    null,
                                     null);
 
                                 if (res != null) {
@@ -485,8 +484,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary,
-                                    null);
+                                    !deserializeBinary);
 
                                 if (v != null) {
                                     ctx.addResult(vals,
@@ -512,7 +510,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(ctx.affinity().affinityTopologyVersion());
+                            entry.touch();
                     }
 
                     if (!success && storeEnabled)
@@ -977,7 +975,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(ctx.affinity().affinityTopologyVersion());
+                            entry.touch();
                     }
                 }
             }
@@ -1093,8 +1091,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             entryProcessor,
                             taskName,
                             null,
-                            keepBinary,
-                            null);
+                            keepBinary);
 
                         Object oldVal = null;
 
@@ -1236,8 +1233,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary,
-                                null);
+                                keepBinary);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
                                 ctx, entry.key(), old, keepBinary), val);
@@ -1272,8 +1268,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary,
-                                null);
+                                keepBinary);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                                 .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, keepBinary));
@@ -1508,7 +1503,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridCacheEntryEx entry : locked)
-            entry.touch(topVer);
+            entry.touch();
 
         throw new NullPointerException("Null key.");
     }
@@ -1525,7 +1520,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridCacheEntryEx entry : locked)
-            entry.touch(topVer);
+            entry.touch();
     }
 
     /**

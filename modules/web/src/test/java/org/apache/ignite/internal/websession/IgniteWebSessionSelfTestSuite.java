@@ -17,35 +17,32 @@
 
 package org.apache.ignite.internal.websession;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for web sessions caching functionality.
  */
-public class IgniteWebSessionSelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new IgniteTestSuite("Ignite Web Sessions Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    WebSessionSelfTest.class,
+    WebSessionTransactionalSelfTest.class,
+    WebSessionReplicatedSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(WebSessionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(WebSessionTransactionalSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(WebSessionReplicatedSelfTest.class));
-
-        // Old implementation tests.
-        suite.addTest(new JUnit4TestAdapter(WebSessionV1SelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(WebSessionTransactionalV1SelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(WebSessionReplicatedV1SelfTest.class));
-
+    // Old implementation tests.
+    WebSessionV1SelfTest.class,
+    WebSessionTransactionalV1SelfTest.class,
+    WebSessionReplicatedV1SelfTest.class,
+})
+public class IgniteWebSessionSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));
-
-        return suite;
     }
 }

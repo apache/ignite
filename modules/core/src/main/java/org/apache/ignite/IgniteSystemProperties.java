@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.stream.StreamTransformer;
@@ -1042,6 +1043,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
     /**
+     * Disables cache interceptor triggering in case of conflicts.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+
+    /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
      */
     public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
@@ -1052,6 +1060,19 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
     /**
+     * Manages the type of the implementation of the service processor (implementation of the {@link IgniteServices}).
+     * All nodes in the cluster must have the same value of this property.
+     * <p/>
+     * If the property is {@code true} then event-driven implementation of the service processor will be used.
+     * <p/>
+     * If the property is {@code false} then internal cache based implementation of service processor will be used.
+     * <p/>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
+        = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
+
+    /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
      * case message contains only cluster metrics). By default cache metrics are included into the message and
      * calculated each time the message is sent.
@@ -1060,6 +1081,33 @@ public final class IgniteSystemProperties {
      * metrics will be unavailable via JMX too.
      */
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
+
+    /**
+     * Maximum number of different partitions to be extracted from between expression within sql query.
+     * In case of limit exceeding all partitions will be used.
+     */
+    public static final String IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN =
+        "IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN";
+
+    /**
+     * Maximum amount of bytes that can be stored in history of {@link DistributedMetaStorage} updates.
+     */
+    public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
+
+    /**
+     * Size threshold to allocate and retain additional  HashMap to improve contains()
+     * which leads to extra memory consumption.
+     */
+    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUUPS_THRESHOLD";
+
+    /**
+     * Flag to disable memory optimization:
+     *  BitSets instead of HashSets to store partitions.
+     *  When number of backups per partion is > IGNITE_AFFINITY_BACKUPS_THRESHOLD we use HashMap to improve contains()
+     * which leads to extra memory consumption, otherwise we use view on the
+     * list of cluster nodes to reduce memory consumption on redundant data structures.
+     */
+    public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
 
     /**
      * Enforces singleton.

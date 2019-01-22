@@ -17,30 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridContinuousJobAnnotationSelfTest;
 import org.apache.ignite.internal.GridContinuousJobSiblingsSelfTest;
 import org.apache.ignite.internal.GridContinuousTaskSelfTest;
 import org.apache.ignite.internal.GridTaskContinuousMapperSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Continuous task self-test suite.
  */
-public class IgniteContinuousTaskSelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridContinuousJobAnnotationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridContinuousJobSiblingsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridContinuousTaskSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridTaskContinuousMapperSelfTest.class));
-
-        return suite;
-    }
-
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridContinuousJobAnnotationSelfTest.class,
+    GridContinuousJobSiblingsSelfTest.class,
+    GridContinuousTaskSelfTest.class,
+    GridTaskContinuousMapperSelfTest.class
+})
+public class IgniteContinuousTaskSelfTestSuite {
 }

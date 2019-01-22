@@ -59,7 +59,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(DiscreteNaiveBayesModel mdl) {
+    @Override public boolean isUpdateable(DiscreteNaiveBayesModel mdl) {
         if (mdl.getBucketThresholds().length != bucketThresholds.length)
             return false;
 
@@ -124,7 +124,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     return a.merge(b);
                 });
 
-                if (mdl != null && checkState(mdl)) {
+                if (mdl != null && isUpdateable(mdl)) {
                     if (checkSumsHolder(sumsHolder, mdl.getSumsHolder()))
                         sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
                 }

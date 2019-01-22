@@ -35,9 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,9 +47,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
  */
 @RunWith(JUnit4.class)
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
 
@@ -68,8 +62,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setCacheConfiguration(cacheCfg(TMPL_NAME));
 
@@ -262,8 +254,12 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context ctx) {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                /* No-op. */
             }
         });
 

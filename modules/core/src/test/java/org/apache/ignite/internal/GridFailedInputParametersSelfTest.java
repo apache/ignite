@@ -48,6 +48,13 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
         ignite = G.ignite(getTestIgniteInstanceName());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
     /**
      * @throws Exception Thrown in case of any errors.
      */

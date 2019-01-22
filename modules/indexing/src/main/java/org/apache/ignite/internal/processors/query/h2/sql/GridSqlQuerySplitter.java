@@ -53,7 +53,7 @@ import org.h2.command.dml.SelectUnion;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
@@ -129,6 +129,9 @@ public class GridSqlQuerySplitter {
     private boolean collocatedGrpBy;
 
     /** */
+    private boolean distributedJoins;
+
+    /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
     /** Partition extractor. */
@@ -137,13 +140,15 @@ public class GridSqlQuerySplitter {
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
-     * @param idx Indexing.
+     * @param distributedJoins Distributed joins flag.
+     * @param extractor Partition extractor.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, IgniteH2Indexing idx) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, boolean distributedJoins,
+        PartitionExtractor extractor) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
-
-        extractor = new PartitionExtractor(idx);
+        this.distributedJoins = distributedJoins;
+        this.extractor = extractor;
     }
 
     /**
@@ -207,7 +212,8 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, distributedJoins,
+            h2.partitionExtractor());
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -262,7 +268,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.distributedJoins(distributedJoins);
 
         // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(splitter.extractor.merge(twoStepQry.mapQueries()));
+        twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
 
         twoStepQry.forUpdate(forUpdate);
 
@@ -1549,7 +1555,7 @@ public class GridSqlQuerySplitter {
         map.partitioned(hasPartitionedTables(mapQry));
         map.hasSubQueries(hasSubQueries);
 
-        if (map.isPartitioned())
+        if (map.isPartitioned() && !distributedJoins)
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);

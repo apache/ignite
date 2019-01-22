@@ -17,27 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Cache interceptor suite.
  */
-public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
+@RunWith(IgniteCacheInterceptorSelfTestSuite.DynamicSuite.class)
+public class IgniteCacheInterceptorSelfTestSuite {
     /**
      * @return Cache API test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("CacheInterceptor Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
@@ -71,5 +76,13 @@ public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite,GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

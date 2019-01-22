@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionSwitchOnTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverTypesTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
@@ -44,18 +45,20 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  *
  */
-public class IgnitePdsMvccTestSuite2 extends TestSuite {
+@RunWith(IgnitePdsMvccTestSuite2.DynamicSuite.class)
+public class IgnitePdsMvccTestSuite2 {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("Ignite persistent Store Mvcc Test Suite 2");
 
         Collection<Class> ignoredTests = new HashSet<>();
 
@@ -83,6 +86,7 @@ public class IgnitePdsMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteUidAsConsistentIdMigrationTest.class);
         ignoredTests.add(IgniteWalSerializerVersionTest.class);
         ignoredTests.add(WalCompactionTest.class);
+        ignoredTests.add(WalCompactionSwitchOnTest.class);
         ignoredTests.add(IgniteWalIteratorSwitchSegmentTest.class);
         ignoredTests.add(IgniteWalIteratorExceptionDuringReadTest.class);
         ignoredTests.add(StandaloneWalRecordsIteratorTest.class);
@@ -90,8 +94,14 @@ public class IgnitePdsMvccTestSuite2 extends TestSuite {
         ignoredTests.add(WalRolloverTypesTest.class);
         ignoredTests.add(FsyncWalRolloverDoesNotBlockTest.class);
 
-        suite.addTest(IgnitePdsTestSuite2.suite(ignoredTests));
+        return IgnitePdsTestSuite2.suite(ignoredTests);
+    }
 
-        return suite;
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

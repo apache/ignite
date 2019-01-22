@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
@@ -145,26 +146,31 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiTh
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite2 extends TestSuite {
+@RunWith(IgniteCacheTestSuite2.DynamicSuite.class)
+public class IgniteCacheTestSuite2 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @param ignoredTests Ignored tests.
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 2");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         // Local cache.
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalBasicApiSelfTest.class, ignoredTests);
@@ -286,6 +292,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, IgniteNoCustomEventsOnNodeStart.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMessageDuplicatedStateTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteContinuousQueryMetadataUpdateTest.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite,NearCacheMultithreadedUpdateTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,NearCachePutAllMultinodeTest.class, ignoredTests);
@@ -347,5 +354,13 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteReflectionFactorySelfTest.class, ignoredTests);
 
         return suite;
+    }
+
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
     }
 }

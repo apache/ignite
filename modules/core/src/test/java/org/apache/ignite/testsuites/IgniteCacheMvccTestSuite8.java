@@ -16,8 +16,9 @@
  */
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
@@ -57,15 +58,19 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite8  extends TestSuite {
+@RunWith(IgniteCacheMvccTestSuite8.DynamicSuite.class)
+public class IgniteCacheMvccTestSuite8 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
@@ -118,14 +123,19 @@ public class IgniteCacheMvccTestSuite8  extends TestSuite {
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
         ignoredTests.add(GridCacheNearEvictionSelfTest.class); // See GridCacheMvccNearEvictionSelfTest
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 8");
-
-        suite.addTest(IgniteCacheTestSuite8.suite(ignoredTests));
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite8.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheMvccNearEvictionSelfTest.class);
+        suite.add(GridCacheMvccNearEvictionSelfTest.class);
 
         return suite;
     }
 
+    /** */
+    public static class DynamicSuite extends Suite {
+        /** */
+        public DynamicSuite(Class<?> cls) throws InitializationError {
+            super(cls, suite().toArray(new Class<?>[] {null}));
+        }
+    }
 }

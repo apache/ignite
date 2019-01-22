@@ -780,7 +780,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(topVer);
+                        entry.touch();
                 }
             }
         }
