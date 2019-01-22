@@ -92,7 +92,7 @@ public class DataRow extends CacheDataRowAdapter {
     /**
      *
      */
-    DataRow() {
+    public DataRow() {
         super(0);
     }
 
