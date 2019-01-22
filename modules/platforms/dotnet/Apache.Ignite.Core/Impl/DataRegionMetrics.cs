@@ -47,6 +47,7 @@ namespace Apache.Ignite.Core.Impl
             UsedCheckpointBufferPages = reader.ReadLong();
             UsedCheckpointBufferSize = reader.ReadLong();
             PageSize = reader.ReadInt();
+            CheckpointBufferSize = reader.ReadLong();
             PagesRead = reader.ReadLong();
             PagesWritten = reader.ReadLong();
             PagesReplaced = reader.ReadLong();
@@ -89,6 +90,9 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public long PhysicalMemorySize { get; private set; }
+        
+        /** <inheritdoc /> */
+        public long CheckpointBufferSize { get; private set; }
 
         /** <inheritdoc /> */
         public long UsedCheckpointBufferPages { get; private set; }

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
@@ -44,7 +45,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         /** Persistent page size overhead, see PageMemoryImpl.PAGE_OVERHEAD. */
         private const int PersistentPageOverhead = 48;
-        
+
+        private static readonly TimeSpan CheckpointFrequency = TimeSpan.FromSeconds(5);
+
         /** Temp dir for PDS. */
         private static readonly string TempDir = IgniteUtils.GetTempDirectoryName();
 
@@ -120,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(metrics.TotalAllocatedPages, isPersistent ? 0 : 1000);
             Assert.Greater(metrics.PhysicalMemoryPages, isPersistent ? 0 : 1000);
             Assert.AreEqual(metrics.TotalAllocatedSize,
-                metrics.TotalAllocatedPages * (metrics.PageSize + (isPersistent ? 0: PageOverhead)));
+                metrics.TotalAllocatedPages * (metrics.PageSize + (isPersistent ? 0 : PageOverhead)));
             Assert.AreEqual(metrics.PhysicalMemorySize,
                 metrics.PhysicalMemoryPages * (metrics.PageSize + (isPersistent ? PersistentPageOverhead : PageOverhead)));
             Assert.Greater(metrics.OffHeapSize, metrics.PhysicalMemoryPages);
@@ -133,6 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(0, metrics.PagesReplaced);
                 Assert.AreEqual(0, metrics.UsedCheckpointBufferPages);
                 Assert.AreEqual(0, metrics.UsedCheckpointBufferSize);
+                Assert.Greater(metrics.CheckpointBufferSize, 0);
             }
         }
         
@@ -157,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 DataStorageConfiguration = new DataStorageConfiguration()
                 {
-                    CheckpointFrequency = TimeSpan.FromSeconds(5),
+                    CheckpointFrequency = CheckpointFrequency,
                     MetricsEnabled = true,
                     WalMode = WalMode.LogOnly,
                     
@@ -214,6 +218,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cacheWithMetricsAndPersistence.Put(1, 1);
             cacheWithMetricsAndPersistence.Get(1);
+
+            // Wait for checkpoint.
+            Thread.Sleep(CheckpointFrequency);
             
             return ignite;
         }
