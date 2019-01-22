@@ -25,7 +25,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleScanStart;
 
 /**
