@@ -17,23 +17,32 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 
 /**
  * Simple implementation of {@link NamedVector}.
  */
 public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> implements NamedVector {
+    /** */
+    private static final long serialVersionUID = -4680561995845665656L;
+
     /** Map that maps field names on field indexes. */
-    private final Map<String, Integer> map;
+    private Map<String, Integer> map = new HashMap<>();
 
     /**
      * Constructs a new simple named vector.
@@ -44,6 +53,13 @@ public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> impleme
         this.map = map;
 
         setStorage(new DenseVectorStorage(map.size()));
+    }
+
+    /**
+     * Constructs a new simple named vector.
+     */
+    public SimpleNamedVector() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -89,5 +105,20 @@ public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> impleme
             throw new MathIllegalArgumentException("Named vector mappings are not equal");
 
         super.checkCardinality(vec);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeObject(map);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        map = (Map<String, Integer>)in.readObject();
     }
 }
