@@ -81,15 +81,16 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
 
-        KMeansTrainer trainer = new KMeansTrainer().withSeed(123L);
+        KMeansTrainer trainer = new KMeansTrainer();
 
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
         KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
 
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(0.0)) == 0);
-        assertTrue(kmdl.predict(VectorUtils.num2Vec(10.0)) == 1);
+        Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
+
+        assertTrue(kmdl.getCenters()[zeroCentre].get(0) == 0);
     }
 
     /**

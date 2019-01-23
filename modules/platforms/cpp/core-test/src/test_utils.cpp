@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <boost/test/unit_test.hpp>
+
 #include <cassert>
 
 #include "ignite/test_utils.h"

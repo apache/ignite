@@ -102,7 +102,7 @@ public class GridAffinityAssignmentCache {
     private List<List<ClusterNode>> baselineAssignment;
 
     /** Cache item corresponding to the head topology version. */
-    private final AtomicReference<GridAffinityAssignment> head;
+    private final AtomicReference<GridAffinityAssignmentV2> head;
 
     /** Ready futures. */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentSkipListMap<>();
@@ -166,7 +166,7 @@ public class GridAffinityAssignmentCache {
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentSkipListMap<>();
-        head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+        head = new AtomicReference<>(new GridAffinityAssignmentV2(AffinityTopologyVersion.NONE));
 
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
 
@@ -205,7 +205,7 @@ public class GridAffinityAssignmentCache {
 
         assert idealAssignment != null;
 
-        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
+        GridAffinityAssignmentV2 assignment = new GridAffinityAssignmentV2(topVer, affAssignment, idealAssignment);
 
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
 
@@ -275,7 +275,7 @@ public class GridAffinityAssignmentCache {
 
         fullHistSize.set(0);
 
-        head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+        head.set(new GridAffinityAssignmentV2(AffinityTopologyVersion.NONE));
 
         stopErr = null;
     }
@@ -483,13 +483,13 @@ public class GridAffinityAssignmentCache {
     public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
 
-        GridAffinityAssignment aff = head.get();
+        GridAffinityAssignmentV2 aff = head.get();
 
         assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
 
         assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
 
-        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
+        GridAffinityAssignmentV2 assignmentCpy = new GridAffinityAssignmentV2(topVer, aff);
 
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
 
@@ -545,7 +545,7 @@ public class GridAffinityAssignmentCache {
      * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
      */
     @Nullable public IgniteInternalFuture<AffinityTopologyVersion> readyFuture(AffinityTopologyVersion topVer) {
-        GridAffinityAssignment aff = head.get();
+        GridAffinityAssignmentV2 aff = head.get();
 
         if (aff.topologyVersion().compareTo(topVer) >= 0) {
             if (log.isDebugEnabled())
@@ -775,7 +775,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to wait.
      */
     private void awaitTopologyVersion(AffinityTopologyVersion topVer) {
-        GridAffinityAssignment aff = head.get();
+        GridAffinityAssignmentV2 aff = head.get();
 
         if (aff.topologyVersion().compareTo(topVer) >= 0)
             return;

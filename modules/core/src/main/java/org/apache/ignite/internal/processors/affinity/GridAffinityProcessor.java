@@ -428,15 +428,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
 
             try {
-                GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
-                    (GridAffinityAssignment)assign0 :
-                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
-
+                // using legacy GridAffinityAssignment for compatibility.
                 AffinityInfo info = new AffinityInfo(
                     cctx.config().getAffinity(),
                     cctx.config().getAffinityMapper(),
-                    assign,
-                    cctx.cacheObjectContext());
+                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment()),
+                    cctx.cacheObjectContext()
+                );
 
                 GridFinishedFuture<AffinityInfo> fut0 = new GridFinishedFuture<>(info);
 

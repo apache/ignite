@@ -1110,7 +1110,7 @@ public final class IgniteSystemProperties {
      * Size threshold to allocate and retain additional  HashMap to improve contains()
      * which leads to extra memory consumption.
      */
-    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUUPS_THRESHOLD";
+    public static final String IGNITE_AFFINITY_BACKUPS_THRESHOLD = "IGNITE_AFFINITY_BACKUPS_THRESHOLD";
 
     /**
      * Flag to disable memory optimization:

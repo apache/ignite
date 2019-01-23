@@ -27,7 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Metrics snapshot.
+ * @deprecated Replaced by CacheMetricsSnapshotV2 with versioning support.
  */
+@Deprecated
 public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -161,7 +163,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of non-{@code null} values in the cache. */
     private int size;
 
-    /** Number of non-{@code null} values in the cache as long value as a long value. */
+    /** Cache size. */
     private long cacheSize;
 
     /** Number of keys in the cache, possibly with {@code null} values. */
@@ -357,9 +359,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        size = entriesStat.size();
         cacheSize = entriesStat.cacheSize();
         keySize = entriesStat.keySize();
+        size = entriesStat.size();
         isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();

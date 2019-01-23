@@ -23,5 +23,12 @@ package org.apache.ignite.ml.sparkmodelparser;
  * NOTE: Valid for Spark 2.4.
  */
 public enum SupportedSparkModels {
-    /** Logistic regression. */LOG_REGRESSION
+    /** Logistic regression. */
+    LOG_REGRESSION,
+
+    /** Linear regression. */
+    LINEAR_REGRESSION,
+
+    /** Support Vector Machine . */
+    LINEAR_SVM
 }

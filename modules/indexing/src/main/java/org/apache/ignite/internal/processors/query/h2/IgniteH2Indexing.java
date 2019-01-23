@@ -89,6 +89,8 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
+import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -257,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private PartitionExtractor partExtractor;
 
     /** */
-    private final RunningQueryManager runningQueryMgr = new RunningQueryManager();
+    private RunningQueryManager runningQueryMgr;
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -465,14 +467,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo runningQryInfo = runningQueryManager().register(qry,
-                TEXT, schemaName, true, null);
+            Long qryId = runningQueryManager().register(qry, TEXT, schemaName, true, null);
 
             try {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                runningQueryManager().unregister(runningQryInfo);
+                runningQueryManager().unregister(qryId, false);
             }
         }
 
@@ -1192,8 +1193,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridNearTxLocal tx = tracker != null ? tx(ctx) : null;
 
-            if (qry.forUpdate())
+            if (qry.forUpdate()) {
+                // Locking has no meaning if SELECT FOR UPDATE is not executed in explicit transaction.
+                // So, we can can reset forUpdate flag if there is no explicit transaction.
                 qry.forUpdate(checkActive(tx) != null);
+            }
 
             int opTimeout = operationTimeout(qryTimeout, tx);
 
@@ -1350,16 +1354,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         SqlCommand cmd, @Nullable SqlClientContext cliCtx) {
-        Long qryId = null;
+        boolean fail = false;
 
         // Execute.
+        if (cmd instanceof SqlBulkLoadCommand)
+            return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
+
+        //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
+        Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
+
         try {
-            if (cmd instanceof SqlBulkLoadCommand)
-                return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
-
-            //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
-            qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
-
             if (cmd instanceof SqlCreateIndexCommand
                 || cmd instanceof SqlDropIndexCommand
                 || cmd instanceof SqlAlterTableCommand
@@ -1385,11 +1389,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         catch (IgniteCheckedException e) {
+            fail = true;
+
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() +
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
-            runningQueryMgr.unregister(qryId);
+            runningQueryMgr.unregister(qryId, fail);
         }
     }
 
@@ -1655,6 +1661,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!prepared.isQuery()) {
             Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
+            boolean fail = false;
+
             try {
                 if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                     try {
@@ -1681,15 +1689,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
                     catch (IgniteCheckedException e) {
+                        fail = true;
+
                         throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
                             ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
 
                 if (DdlStatementsProcessor.isDdlStatement(prepared)) {
-                    if (loc)
+                    if (loc) {
+                        fail = true;
+
                         throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    }
 
                     return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
                 }
@@ -1697,11 +1710,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (prepared instanceof NoOperation)
                     return Collections.singletonList(H2Utils.zeroCursor());
 
+                fail = true;
+
                 throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName(),
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
             finally {
-                runningQueryMgr.unregister(qryId);
+                runningQueryMgr.unregister(qryId, fail);
             }
         }
 
@@ -1726,7 +1741,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
-            runningQueryMgr.unregister(qryId);
+            runningQueryMgr.unregister(qryId, true);
 
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
                 ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
@@ -1743,12 +1758,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private Long registerRunningQuery(String schemaName, GridQueryCancel cancel, String qry, boolean loc,
         boolean registerAsNewQry) {
-        if (registerAsNewQry) {
-            GridRunningQueryInfo runningQryInfo = runningQueryMgr.register(qry,
-                GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
-
-            return runningQryInfo.id();
-        }
+        if (registerAsNewQry)
+            return runningQueryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
 
         return null;
     }
@@ -2061,6 +2072,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, qry.getSql(), qry.isLocal(), registerAsNewQry);
 
         boolean cursorCreated = false;
+        boolean failed = true;
 
         try {
             // When explicit partitions are set, there must be an owning cache they should be applied to.
@@ -2070,6 +2082,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int parts[] = calculatePartitions(explicitParts, derivedParts, qry.getArgs());
 
             if (parts != null && parts.length == 0) {
+                failed = false;
+
                 return new QueryCursorImpl<>(new Iterable<List<?>>() {
                     @Override public Iterator<List<?>> iterator() {
                         return new Iterator<List<?>>() {
@@ -2113,7 +2127,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             if (!cursorCreated)
-                runningQueryMgr.unregister(qryId);
+                runningQueryMgr.unregister(qryId, failed);
         }
     }
 
@@ -2452,6 +2466,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ddlProc = new DdlStatementsProcessor(ctx, schemaMgr);
 
         partExtractor = new PartitionExtractor(this);
+        runningQueryMgr = new RunningQueryManager(ctx);
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2716,6 +2731,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         return runningQueryMgr.longRunningQueries(duration);
+    }
+
+    /**
+     * Gets query history metrics.
+     *
+     * @return Queries history metrics.
+     */
+    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
+        return runningQueryMgr.queryHistoryMetrics();
+    }
+
+    /**
+     * Reset query history metrics.
+     */
+    public void resetQueryHistoryMetrics() {
+        runningQueryMgr.resetQueryHistoryMetrics();
     }
 
     /** {@inheritDoc} */
