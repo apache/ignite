@@ -91,7 +91,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;IGNITE_IMPL;IGNITE_FRIEND;IGNITE_TESTS_32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -107,7 +107,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;IGNITE_IMPL;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
@@ -124,7 +124,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;IGNITE_IMPL;IGNITE_FRIEND;IGNITE_TESTS_32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
@@ -143,7 +143,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\odbc\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\src;$(BOOST_HOME);$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;IGNITE_IMPL;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
@@ -170,7 +170,7 @@
     <ClCompile Include="..\..\..\odbc\src\protocol_version.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
-    <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp" />
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
     <ClCompile Include="..\..\src\api_robustness_test.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />

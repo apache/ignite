@@ -24,7 +24,7 @@
 
 #include "ignite/odbc/protocol_version.h"
 #include "ignite/odbc/config/settable_value.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/end_point.h"
 
 namespace ignite

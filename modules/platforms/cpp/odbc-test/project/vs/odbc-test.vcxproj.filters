@@ -151,9 +151,6 @@
     <ClCompile Include="..\..\..\odbc\src\config\config_tools.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
@@ -165,6 +162,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\authentication_test.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp">
+      <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -19,7 +19,7 @@
 #include <Shlwapi.h>
 
 #include "ignite/odbc/log.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/ssl_mode.h"
 
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 #include "ignite/odbc/config/config_tools.h"

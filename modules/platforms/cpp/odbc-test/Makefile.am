@@ -27,6 +27,8 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
+    -I@top_srcdir@/network/include \
+    -I@top_srcdir@/network/os/linux/include \
     -I@top_srcdir@/odbc/include \
     -I@top_srcdir@/jni/include \
     -I@top_srcdir@/jni/os/linux/include \
@@ -100,7 +102,7 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/config/connection_string_parser.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
-    ../odbc/src/ssl/ssl_mode.cpp \
+    ../odbc/src/ssl_mode.cpp \
     ../odbc/src/row.cpp \
     ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
