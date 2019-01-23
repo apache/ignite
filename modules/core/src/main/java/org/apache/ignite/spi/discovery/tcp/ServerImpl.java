@@ -3245,12 +3245,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", failedNodes=" + failedNodes + ']');
 
                                 if (debugMode)
                                     debugLog(msg, "Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", failedNodes=" + failedNodes + ']');
 
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
@@ -6358,6 +6360,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 continue;
                             }
                             else {
+                                TcpDiscoveryClientReconnectMessage msg0 = (TcpDiscoveryClientReconnectMessage)msg;
+
+                                // If message is received from previous node and node is connecting forward to next node.
+                                if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
+                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                                    msgWorker.addMessage(msg);
+
+                                    continue;
+                                }
+
                                 spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
 
                                 break;
