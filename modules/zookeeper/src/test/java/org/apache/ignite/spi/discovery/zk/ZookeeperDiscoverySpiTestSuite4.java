@@ -40,12 +40,10 @@ import org.junit.runners.Suite;
     GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
     IgniteCacheReplicatedQuerySelfTest.class
 })
-public class ZookeeperDiscoverySpiTestSuite4 extends ZookeeperDiscoverySpiAbstractTestSuite {
+public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
     @BeforeClass
     public static void init() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

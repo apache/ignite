@@ -199,7 +199,7 @@ public class ConfigVariationsTestSuiteBuilder {
         if (testedNodeCnt > 1)
             addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
                 testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
-       else
+        else
             addedSuite = makeTestSuite(cls, testCfg);
 
         return addedSuite;

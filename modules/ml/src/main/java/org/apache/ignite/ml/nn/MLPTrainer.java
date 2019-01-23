@@ -108,7 +108,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);

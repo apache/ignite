@@ -142,6 +142,9 @@ public enum GridTopic {
     TOPIC_SERVICES,
 
     /** */
+    TOPIC_DEADLOCK_DETECTION,
+
+    /** */
     TOPIC_TXDR;
 
     /** Enum values. */
