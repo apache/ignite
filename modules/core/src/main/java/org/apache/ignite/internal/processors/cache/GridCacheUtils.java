@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -106,6 +107,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1300,6 +1302,8 @@ public class GridCacheUtils {
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e.hasCause(ClusterTopologyServerNotFoundException.class))
             return new CacheServerNotFoundException(e.getMessage(), e);
+        else if (e.hasCause(IgniteTxSerializationCheckedException.class))
+            return new TransactionSerializationException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
 
