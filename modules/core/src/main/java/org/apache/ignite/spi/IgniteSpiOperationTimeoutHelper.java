@@ -20,8 +20,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.HandshakeException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Object that incorporates logic that determines a timeout value for the next network related operation and checks
@@ -29,7 +27,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * A new instance of the class should be created for every complex network based operations that usually consists of
  * request and response parts.
+ *
+ * Please use {@link ExponentialBackoffSpiTimeout}.
+ *
  */
+@Deprecated
 public class IgniteSpiOperationTimeoutHelper {
     /** */
     private long lastOperStartTs;
@@ -77,7 +79,7 @@ public class IgniteSpiOperationTimeoutHelper {
         else {
             long curTs = U.currentTimeMillis();
 
-            timeout = remainingTime(curTs);
+            timeout = timeout - (curTs - lastOperStartTs);
 
             lastOperStartTs = curTs;
 
@@ -86,33 +88,23 @@ public class IgniteSpiOperationTimeoutHelper {
                     "'failureDetectionTimeout' configuration property [failureDetectionTimeout="
                     + failureDetectionTimeout + ']');
         }
-
+        
         return timeout;
     }
 
     /**
      * Checks whether the given {@link Exception} is generated because failure detection timeout has been reached.
-     * Skip exception check if null, and ckeck timeout only.
+     *
      * @param e Exception.
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
-    public boolean checkFailureTimeoutReached(@Nullable Exception e) {
+    public boolean checkFailureTimeoutReached(Exception e) {
         if (!failureDetectionTimeoutEnabled)
             return false;
 
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return remainingTime(U.currentTimeMillis()) <= 0;
-    }
-
-    /**
-     * Returns remaining time for current timeout chunk.
-     *
-     * @param curTs Current time stamp.
-     * @return Time to wait in millis.
-     */
-    public long remainingTime(long curTs) {
-        return timeout - (curTs - lastOperStartTs);
+        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
     }
 }

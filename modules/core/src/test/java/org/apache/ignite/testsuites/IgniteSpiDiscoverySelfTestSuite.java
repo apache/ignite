@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
+import org.apache.ignite.spi.ExponentialBackoffSpiTimeoutTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
@@ -94,6 +95,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoverySnapshotHistoryTest.class,
 
     GridTcpSpiForwardingSelfTest.class,
+
+    ExponentialBackoffSpiTimeoutTest.class,
 
     TcpClientDiscoverySpiSelfTest.class,
     LongClientConnectToClusterTest.class,

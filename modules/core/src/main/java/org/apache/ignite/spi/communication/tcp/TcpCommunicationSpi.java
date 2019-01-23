@@ -138,6 +138,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.ignite.spi.ExponentialBackoffSpiTimeout;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
@@ -2988,6 +2989,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         // then we are likely to run on the same host and shared memory communication could be tried.
         if (shmemPort != null && U.sameMacs(locNode, node)) {
             try {
+                // https://issues.apache.org/jira/browse/IGNITE-11126 Rework failure detection logic.
                 GridCommunicationClient client = createShmemClient(
                     node,
                     connIdx,
@@ -3084,7 +3086,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             catch (IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
 
-                if (timeoutHelper.checkFailureTimeoutReached(e)) {
+                if (failureDetectionTimeoutEnabled() && (timeoutHelper.checkFailureTimeoutReached(e))) {
                     if (log.isDebugEnabled())
                         log.debug("Handshake timed out (failure threshold reached) [failureDetectionTimeout=" +
                             failureDetectionTimeout() + ", err=" + e.getMessage() + ", client=" + client + ']');
@@ -3261,13 +3263,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         IgniteCheckedException errs = null;
 
         for (InetSocketAddress addr : addrs) {
-            long connTimeout0 = connTimeout;
-
-            int connectAttempts = 1;
-
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this, !node.isClient());
-
-            long needWaitDelay0 = 200;
+            ExponentialBackoffSpiTimeout timeoutHelper = new ExponentialBackoffSpiTimeout(
+                failureDetectionTimeoutEnabled(),
+                node.isClient()? clientFailureDetectionTimeout() : failureDetectionTimeout(),
+                connTimeout,
+                maxConnTimeout,
+                reconCnt
+            );
 
             while (client == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3280,8 +3282,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", node=" + node + ']');
                     break;
                 }
-
-                boolean needWait = false;
 
                 try {
                     SocketChannel ch = SocketChannel.open();
@@ -3329,7 +3329,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout0));
+                        ch.socket().connect(addr, timeoutHelper.connTimeout());
 
                         if (isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
@@ -3346,7 +3346,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         rcvCnt = safeTcpHandshake(ch,
                             recoveryDesc,
                             node.id(),
-                            timeoutHelper.nextTimeoutChunk(connTimeout0),
+                            timeoutHelper.handshakeTimeout(),
                             sslMeta,
                             handshakeConnIdx);
 
@@ -3355,9 +3355,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
-                            needWait = true;
+                            if (timeoutHelper.checkTimeout()) {
+                                U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
+                                    "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
+                                    ", addr=" + addr + ']');
 
-                            continue;
+                                throw new ClusterTopologyCheckedException("Failed to connect to node " +
+                                    "(current or target node is out of topology on target node within timeout). " +
+                                        "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                                        "in order to prevent parties from waiting forever in case of network issues " +
+                                        "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
+                            }
+                            else {
+                                long outOfTopDelay = timeoutHelper.getAndBackOffOutOfTopDelay();
+
+                                if (log.isDebugEnabled())
+                                    log.debug("NEED_WAIT received, handshake after delay [node = "
+                                        + node + ", outOfTopologyDelay = " + outOfTopDelay + "ms]");
+
+                                U.sleep(outOfTopDelay);
+
+                                continue;
+                            }
                         }
 
                         meta.put(CONN_IDX_META, connKey);
@@ -3378,21 +3397,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                             if (recoveryDesc != null)
                                 recoveryDesc.release();
-
-                            if (needWait) {
-                                /*
-                                    https://issues.apache.org/jira/browse/IGNITE-7648
-                                    We should add failure detection check here like exception case.
-                                */
-                                if (needWaitDelay0 < 60_000)
-                                    needWaitDelay0 *= 2;
-
-                                if (log.isDebugEnabled())
-                                    log.debug("NEED_WAIT received, reconnect after delay [node = "
-                                        + node + ", delay = " + needWaitDelay0 + "ms]");
-
-                                U.sleep(needWaitDelay0);
-                            }
                         }
                     }
                 }
@@ -3403,65 +3407,39 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         client = null;
                     }
 
-                    if (timeoutHelper.checkFailureTimeoutReached(null)) {
-                        String msg = "Handshake timed out (failure detection timeout is reached) " +
-                            "[failureDetectionTimeout=" + failureDetectionTimeout() + ", addr=" + addr + ']';
-
-                        onException(msg, e);
-
-                        if (log.isDebugEnabled())
-                            log.debug(msg);
-
-                        if (errs == null)
-                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                                "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
-
-                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
-
-                        break;
-                    }
-
-                    assert !failureDetectionTimeoutEnabled();
-
-                    onException("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
+                    onException("Handshake timed out (will retry with increased timeout) [timeoutHelper=" + timeoutHelper +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
-                        log.debug(
-                            "Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
-                                ", addr=" + addr + ", err=" + e + ']');
+                        log.debug("Handshake timed out (will retry with increased timeout) [timeoutHelper=" + timeoutHelper +
+                                ", addr=" + addr + ", err=" + e + ']'
+                        );
 
-                    if (connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
-                        U.warn(log, "Handshake timedout (will stop attempts to perform the handshake) " +
-                            "[node=" + node.id() + ", timeout=" + connTimeout0 +
-                            ", maxConnTimeout=" + maxConnTimeout +
-                            ", attempt=" + connectAttempts + ", reconCnt=" + reconCnt +
+                    if (timeoutHelper.checkTimeout()) {
+                        U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
+                            "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
                             ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
-                        if (errs == null)
-                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                                "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
+                        String msg = "Failed to connect to node (is node still alive?). " +
+                            "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                            "in order to prevent parties from waiting forever in case of network issues " +
+                            "[nodeId=" + node.id() + ", addrs=" + addrs + ']';
 
-                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
+                        if (errs == null)
+                            errs = new IgniteCheckedException(msg, new IgniteSpiOperationTimeoutException(""));
+                        else
+                            errs.addSuppressed(new IgniteCheckedException(msg, e));
 
                         break;
                     }
-                    else {
-                        connectAttempts++;
-
-                        connTimeout0 *= 2;
-
-                        // Continue loop.
-                    }
+                    else
+                        timeoutHelper.backoffHandshakeTimeout();
                 }
                 catch (ClusterTopologyCheckedException e) {
                     throw e;
                 }
-                catch (Exception e) { // Most probably IO error on socket connect or handshake.
+                catch (Exception e) {
+                    // Most probably IO error on socket connect or handshake.
                     if (client != null) {
                         client.forceClose();
 
@@ -3473,54 +3451,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
-                    boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(null);
+                    if (timeoutHelper.checkTimeout()) {
+                        U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
+                            "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
+                            ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
-                    if (enableTroubleshootingLog)
-                        U.error(log, "Failed to establish connection to a remote node [node=" + node +
-                            ", addr=" + addr + ", connectAttempts=" + connectAttempts +
-                            ", failureDetThrReached=" + failureDetThrReached + ']', e);
-
-                    if (failureDetThrReached) {
-                        LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
-                            "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
-                            failureDetectionTimeout() + ']');
+                        String msg = "Failed to connect to node (is node still alive?). " +
+                            "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                            "in order to prevent parties from waiting forever in case of network issues " +
+                            "[nodeId=" + node.id() + ", addrs=" + addrs + ']';
 
                         if (errs == null)
-                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                                "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
-
-                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
-                            "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
-
-                        break;
-                    } else if (connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
-                        LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
-                            "configuration property) [addr=" + addr + ", connTimeout=" +
-                            connTimeout + ", maxConnTimeout=" + maxConnTimeout +", reconCnt=" + reconCnt + ']');
-
-                        if (errs == null)
-                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                                "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
-
-                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
-                            "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
+                            errs = new IgniteCheckedException(msg, e);
+                        else
+                            errs.addSuppressed(new IgniteCheckedException(msg, e));
 
                         break;
                     }
                     else if (isRecoverableException(e)) {
-                        connTimeout0 *= 2;
+                        long reconnectDelay = timeoutHelper.getAndBackoffReconnectDelay();
 
-                        LT.warn(log, "Connect timed out (will retry with increased connTimeout " +
-                            "[addr=" + addr + ", connTimeout=" + connTimeout0 +
-                            ", maxConnTimeout=" + maxConnTimeout + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Connection recoverable exception delay [node = "
+                                + node + ", delay = " + reconnectDelay + "ms]");
+
+                        U.sleep(reconnectDelay);
                     }
-
-                    // Reconnect again if connection was not established within current timeout chunk.
-                    connectAttempts++;
+                    else
+                        break;
                 }
             }
 
@@ -3563,12 +3521,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     ) throws IgniteCheckedException {
         assert errs != null;
 
-        if (X.hasCause(errs, ConnectException.class))
-            LT.warn(log, "Failed to connect to a remote node " +
-                "(make sure that destination node is alive and " +
-                "operating system firewall is disabled on local and remote hosts) " +
-                "[addrs=" + addrs + ']');
-
         boolean commErrResolve = false;
 
         IgniteSpiContext ctx = getSpiContext();
@@ -3580,9 +3532,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (!commErrResolve && enableForcibleNodeKill) {
-            if (ctx.node(node.id()) != null
-                && (node.isClient() || !getLocalNode().isClient()) &&
-                isRecoverableException(errs)) {
+            if (ctx.node(node.id()) != null && (node.isClient() || !getLocalNode().isClient())
+                && isRecoverableException(errs)) {
                 String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" + "rmtNode=" + node + ']';
 
@@ -3603,13 +3554,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /**
      * @param errs Error.
-     * @return {@code True} if error was caused by some connection IO error.
+     * @return {@code True} if error was caused by some connection IO error or IgniteCheckedException due to timeout.
      */
     private boolean isRecoverableException(Exception errs) {
-        return X.hasCause(errs,
-            ConnectException.class,
+        return X.hasCause(
+            errs,
+            IOException.class,
             HandshakeException.class,
-            SocketTimeoutException.class,
             IgniteSpiOperationTimeoutException.class
         );
     }
@@ -4103,6 +4054,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
+    }
+
+    /** Internal exception class for proper timeout handling. */
+    private static class HandshakeException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param msg Error message.
+         */
+        HandshakeException(String msg) {
+            super(msg);
+        }
     }
 
     /**

@@ -168,7 +168,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
 
         // Override default settings to speed up reconnection.
-        cfg.setCommunicationSpi(new TcpCommunicationSpi().setConnectTimeout(500).setMaxConnectTimeout(1000).setReconnectCount(2));
+        cfg.setCommunicationSpi(
+            new TcpCommunicationSpi()
+                .setConnectTimeout(500)
+                .setMaxConnectTimeout(1000)
+                .setReconnectCount(2)
+        );
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 

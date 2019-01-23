@@ -14,19 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/** Internal exception class for proper timeout handling. */
-public class HandshakeException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+/**
+ * Tests that faulty client will be failed if connection can't be established.
+ */
+@RunWith(JUnit4.class)
+public class TcpCommunicationSpiFaultyClientSslTest extends TcpCommunicationSpiFaultyClientTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /**
-     * @param msg Error message.
-     */
-    HandshakeException(String msg) {
-        super(msg);
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        return cfg;
     }
 }

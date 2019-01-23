@@ -142,7 +142,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         long expDelay = 0;
 
         for (int i = 1; i < reconnectCnt && expDelay < maxConnectTimeout; i++)
-            expDelay += (connectTimeout << i);
+            expDelay += Math.min(connectTimeout * 2, maxConnectTimeout);
 
         return expDelay;
     }
@@ -152,7 +152,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
      */
     @Test
     public void testNoServerOnHost() throws Exception {
-        testFailClient(null, 0);
+        testFailClient(null, computeExpectedDelay());
     }
 
     /**
@@ -164,7 +164,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         maxConnectTimeout = 6000;
         reconnectCnt = 3;
 
-        testFailClient(null, 0);
+        testFailClient(null, computeExpectedDelay());
     }
 
     /**
