@@ -54,8 +54,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcUtils;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -1231,7 +1231,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (sqlPtrn == null)
             return true;
 
-        String regex = OdbcUtils.translateSqlWildcardsToRegex(sqlPtrn);
+        String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
 
         return str.matches(regex);
     }

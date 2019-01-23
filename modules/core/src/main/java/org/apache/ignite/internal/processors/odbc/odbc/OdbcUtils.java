@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -71,27 +72,7 @@ public class OdbcUtils {
 
         ptrn0 = removeQuotationMarksIfNeeded(ptrn0);
 
-        return translateSqlWildcardsToRegex(ptrn0);
-    }
-
-
-    /**
-     * Converts sql pattern wildcards into java regex wildcards.
-     * Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").
-     */
-    public static String translateSqlWildcardsToRegex(String sqlPtrn) {
-        if (F.isEmpty(sqlPtrn))
-            return sqlPtrn;
-        
-        String toRegex = ' ' + sqlPtrn;
-
-        toRegex = toRegex.replaceAll("([^\\\\])%", "$1.*");
-
-        toRegex = toRegex.replaceAll("([^\\\\])_", "$1.");
-
-        toRegex = toRegex.replaceAll("\\\\(.)", "$1");
-
-        return toRegex.substring(1);
+        return SqlListenerUtils.translateSqlWildcardsToRegex(ptrn0);
     }
 
     /**
