@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteSystemProperties;
 /**
  * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
-public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
+public class GridAffinityAssignmentV2TestNoOptimizations extends GridAffinityAssignmentV2Test {
     /** */
     @Override protected void setUp() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");

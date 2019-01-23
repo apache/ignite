@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -65,6 +66,20 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
     /** */
     private void testIterator(int initCap) {
         BitSetIntSet bitSet = initCap != 0 ? new BitSetIntSet(initCap) : new BitSetIntSet();
+
+        for (Integer ignored : bitSet)
+            fail("BitSet is empty, shouldn't be invoked.");
+
+        assertFalse(bitSet.iterator().hasNext());
+
+        try {
+            bitSet.iterator().next();
+
+            fail("NoSuchElement expected.");
+        }
+        catch (NoSuchElementException ignored) {
+
+        }
 
         assertTrue(bitSet.add(0));
         assertTrue(bitSet.add(1));

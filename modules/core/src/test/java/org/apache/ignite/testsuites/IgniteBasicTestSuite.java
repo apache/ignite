@@ -43,8 +43,8 @@ import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
@@ -139,8 +139,8 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
-        suite.addTestSuite(GridAffinityAssignmentTest.class);
-        suite.addTestSuite(GridAffinityAssignmentTestNoOptimizations.class);
+        suite.addTestSuite(GridAffinityAssignmentV2Test.class);
+        suite.addTestSuite(GridAffinityAssignmentV2TestNoOptimizations.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorMemoryLeakTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
