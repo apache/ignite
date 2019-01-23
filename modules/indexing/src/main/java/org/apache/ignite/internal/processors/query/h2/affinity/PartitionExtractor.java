@@ -21,8 +21,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -30,6 +34,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
@@ -40,6 +45,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Partition tree extractor.
@@ -84,14 +92,11 @@ public class PartitionExtractor {
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        // Currently we can extract data only from a single table.
-        GridSqlTable tbl = unwrapTable(select.from());
-
-        if (tbl == null)
-            return null;
+        // Prepare table model.
+        PartitionTableModel tblModel = prepareTableModel(select.from());
 
         // Do extract.
-        PartitionNode tree = extractFromExpression(select.where());
+        PartitionNode tree = extractFromExpression(select.where(), tblModel, false);
 
         assert tree != null;
 
@@ -101,10 +106,8 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        // Return.
-        PartitionTableDescriptor desc = descriptor(tbl.dataTable());
-
-        return new PartitionResult(desc, tree);
+        // Done.
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
     }
 
     /**
@@ -114,21 +117,25 @@ public class PartitionExtractor {
      * @return Partition result or {@code null} if nothing is resolved.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
+    public PartitionResult mergeMapQueries(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
-        PartitionTableDescriptor desc = null;
+        PartitionTableAffinityDescriptor aff = null;
 
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
+            // Failed to get results for one query -> broadcast.
             if (qryRes == null)
-                // Failed to get results for one query -> broadcast.
                 return null;
 
-            if (desc == null)
-                desc = qryRes.descriptor();
-            else if (!F.eq(desc, qryRes.descriptor()))
-                // Queries refer to different tables, cannot merge -> broadcast.
+            // This only possible if query is resolved to "NONE". Will be skipped later during map request prepare.
+            if (qryRes.affinity() == null)
+                continue;
+
+            if (aff == null)
+                aff = qryRes.affinity();
+            else if (!aff.isCompatible(qryRes.affinity()))
+                // Queries refer to incompatible affinity groups, cannot merge -> broadcast.
                 return null;
         }
 
@@ -152,33 +159,232 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        return new PartitionResult(desc, tree);
+        // If there is no affinity, then we assume "NONE" result.
+        assert aff != null || tree == PartitionNoneNode.INSTANCE;
+
+        return new PartitionResult(tree, aff);
     }
 
     /**
-     * Try unwrapping the table.
+     * Prepare table model.
      *
-     * @param from From.
-     * @return Table or {@code null} if not a table.
+     * @param from FROM clause.
+     * @return Join model.
      */
-    @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
-        if (from instanceof GridSqlAlias)
-            from = from.child();
+    private PartitionTableModel prepareTableModel(GridSqlAst from) {
+        PartitionTableModel res = new PartitionTableModel();
 
-        if (from instanceof GridSqlTable)
-            return (GridSqlTable)from;
+        prepareTableModel0(from, res);
+
+        return res;
+    }
+
+    /**
+     * Prepare tables which will be used in join model.
+     *
+     * @param from From flag.
+     * @param model Table model.
+     * @return {@code True} if extracted tables successfully, {@code false} if failed to extract.
+     */
+    private List<PartitionTable> prepareTableModel0(GridSqlAst from, PartitionTableModel model) {
+        if (from instanceof GridSqlJoin) {
+            // Process JOIN recursively.
+            GridSqlJoin join = (GridSqlJoin)from;
+
+            List<PartitionTable> leftTbls = prepareTableModel0(join.leftTable(), model);
+            List<PartitionTable> rightTbls = prepareTableModel0(join.rightTable(), model);
+
+            if (join.isLeftOuter()) {
+                // "a LEFT JOIN b" is transformed into "a", and "b" is put into special stop-list.
+                // If a condition is met on "b" afterwards, we will ignore it.
+                for (PartitionTable rightTbl : rightTbls)
+                    model.addExcludedTable(rightTbl.alias());
+
+                return leftTbls;
+            }
+
+            // Extract equi-join or cross-join from condition. For normal INNER JOINs most likely we will have "1=1"
+            // cross join here, real join condition will be found in WHERE clause later.
+            PartitionJoinCondition cond = parseJoinCondition(join.on());
+
+            if (cond != null && !cond.cross())
+                model.addJoin(cond);
+
+            ArrayList<PartitionTable> res = new ArrayList<>(leftTbls.size() + rightTbls.size());
+
+            res.addAll(leftTbls);
+            res.addAll(rightTbls);
+
+            return res;
+        }
+
+        PartitionTable tbl = prepareTable(from, model);
+
+        return tbl != null ? Collections.singletonList(tbl) : Collections.emptyList();
+    }
+
+    /**
+     * Try parsing condition as simple JOIN codition. Only equijoins are supported for now, so anything more complex
+     * than "A.a = B.b" are not processed.
+     *
+     * @param on Initial AST.
+     * @return Join condition or {@code null} if not simple equijoin.
+     */
+    private static PartitionJoinCondition parseJoinCondition(GridSqlElement on) {
+        if (on instanceof GridSqlOperation) {
+            GridSqlOperation on0 = (GridSqlOperation)on;
+
+            if (on0.operationType() == GridSqlOperationType.EQUAL) {
+                // Check for cross-join first.
+                GridSqlConst leftConst = unwrapConst(on0.child(0));
+                GridSqlConst rightConst = unwrapConst(on0.child(1));
+
+                if (leftConst != null && rightConst != null) {
+                    try {
+                        int leftConstval = leftConst.value().getInt();
+                        int rightConstVal = rightConst.value().getInt();
+
+                        if (leftConstval == rightConstVal)
+                            return PartitionJoinCondition.CROSS;
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+
+                // This is not cross-join, neither normal join between columns.
+                if (leftConst != null || rightConst != null)
+                    return null;
+
+                // Check for normal equi-join.
+                GridSqlColumn left = unwrapColumn(on0.child(0));
+                GridSqlColumn right = unwrapColumn(on0.child(1));
+
+                if (left != null && right != null) {
+                    String leftAlias = left.tableAlias();
+                    String rightAlias = right.tableAlias();
+
+                    String leftCol = left.columnName();
+                    String rightCol = right.columnName();
+
+                    return new PartitionJoinCondition(leftAlias, rightAlias, leftCol, rightCol);
+                }
+            }
+        }
 
         return null;
+    }
+
+    /**
+     * Prepare single table.
+     *
+     * @param from Expression.
+     * @param tblModel Table model.
+     * @return Added table or {@code null} if table is exlcuded from the model.
+     */
+    private static PartitionTable prepareTable(GridSqlAst from, PartitionTableModel tblModel) {
+        // Unwrap alias. We assume that every table must be aliased.
+        assert from instanceof GridSqlAlias;
+
+        String alias = ((GridSqlAlias)from).alias();
+
+        from = from.child();
+
+        if (from instanceof GridSqlTable) {
+            // Normal table.
+            GridSqlTable from0 = (GridSqlTable)from;
+
+            GridH2Table tbl0 = from0.dataTable();
+
+            // Unknown table type, e.g. temp table.
+            if (tbl0 == null) {
+                tblModel.addExcludedTable(alias);
+
+                return null;
+            }
+
+            String cacheName = tbl0.cacheName();
+
+            String affColName = null;
+            String secondAffColName = null;
+
+            for (Column col : tbl0.getColumns()) {
+                if (tbl0.isColumnForPartitionPruningStrict(col)) {
+                    if (affColName == null)
+                        affColName = col.getName();
+                    else {
+                        secondAffColName = col.getName();
+
+                        // Break as we cannot have more than two affinity key columns.
+                        break;
+                    }
+                }
+            }
+
+            PartitionTable tbl = new PartitionTable(alias, cacheName, affColName, secondAffColName);
+
+            PartitionTableAffinityDescriptor aff = affinityForCache(tbl0.cacheInfo().config());
+
+            if (aff == null) {
+                // Non-standard affinity, exclude table.
+                tblModel.addExcludedTable(alias);
+
+                return null;
+            }
+
+            tblModel.addTable(tbl, aff);
+
+            return tbl;
+        }
+        else {
+            // Subquery/union/view, etc.
+            assert alias != null;
+
+            tblModel.addExcludedTable(alias);
+
+            return null;
+        }
+    }
+
+    /**
+     * Prepare affinity identifier for cache.
+     *
+     * @param ccfg Cache configuration.
+     * @return Affinity identifier.
+     */
+    private static PartitionTableAffinityDescriptor affinityForCache(CacheConfiguration ccfg) {
+        // Partition could be extracted only from PARTITIONED caches.
+        if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
+            return null;
+
+        PartitionAffinityFunctionType aff = ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class) ?
+            PartitionAffinityFunctionType.RENDEZVOUS : PartitionAffinityFunctionType.CUSTOM;
+
+        boolean hasNodeFilter = ccfg.getNodeFilter() != null &&
+            !(ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate);
+
+        return new PartitionTableAffinityDescriptor(
+            aff,
+            ccfg.getAffinity().partitions(),
+            hasNodeFilter,
+            ccfg.getDataRegionName()
+        );
     }
 
     /**
      * Extract partitions from expression.
      *
      * @param expr Expression.
+     * @param tblModel Table model.
+     * @param disjunct Whether current processing frame is located under disjunction ("OR"). In this case we cannot
+     *                 rely on join expressions like (A.a = B.b) to build co-location model because another conflicting
+     *                 join expression on the same tables migth be located on the other side of the "OR".
+     *                 Example: "JOIN ON A.a = B.b OR A.a > B.b".
      * @return Partition tree.
      */
     @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
-    private PartitionNode extractFromExpression(GridSqlAst expr) throws IgniteCheckedException {
+    private PartitionNode extractFromExpression(GridSqlAst expr, PartitionTableModel tblModel, boolean disjunct)
+        throws IgniteCheckedException {
         PartitionNode res = PartitionAllNode.INSTANCE;
 
         if (expr instanceof GridSqlOperation) {
@@ -186,22 +392,22 @@ public class PartitionExtractor {
 
             switch (op.operationType()) {
                 case AND:
-                    res = extractFromAnd(op);
+                    res = extractFromAnd(op, tblModel, disjunct);
 
                     break;
 
                 case OR:
-                    res = extractFromOr(op);
+                    res = extractFromOr(op, tblModel);
 
                     break;
 
                 case IN:
-                    res = extractFromIn(op);
+                    res = extractFromIn(op, tblModel);
 
                     break;
 
                 case EQUAL:
-                    res = extractFromEqual(op);
+                    res = extractFromEqual(op, tblModel, disjunct);
             }
         }
 
@@ -213,18 +419,21 @@ public class PartitionExtractor {
      * Extract partition information from AND.
      *
      * @param op Operation.
+     * @param tblModel Table model.
+     * @param disjunct Disjunction marker.
      * @return Partition.
      */
-    private PartitionNode extractFromAnd(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromAnd(GridSqlOperation op, PartitionTableModel tblModel, boolean disjunct)
+        throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode betweenNodes = tryExtractBetween(op);
+        PartitionNode betweenNodes = tryExtractBetween(op, tblModel);
 
         if (betweenNodes != null)
             return betweenNodes;
 
-        PartitionNode part1 = extractFromExpression(op.child(0));
-        PartitionNode part2 = extractFromExpression(op.child(1));
+        PartitionNode part1 = extractFromExpression(op.child(0), tblModel, disjunct);
+        PartitionNode part2 = extractFromExpression(op.child(1), tblModel, disjunct);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.AND);
     }
@@ -233,13 +442,16 @@ public class PartitionExtractor {
      * Extract partition information from OR.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @return Partition.
      */
-    private PartitionNode extractFromOr(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromOr(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode part1 = extractFromExpression(op.child(0));
-        PartitionNode part2 = extractFromExpression(op.child(1));
+        // Parse inner expressions recursively with disjuncion flag set.
+        PartitionNode part1 = extractFromExpression(op.child(0), tblModel, true);
+        PartitionNode part2 = extractFromExpression(op.child(1), tblModel, true);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.OR);
     }
@@ -248,9 +460,11 @@ public class PartitionExtractor {
      * Extract partition information from IN.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @return Partition.
      */
-    private PartitionNode extractFromIn(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromIn(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         // Operation should contain at least two children: left (column) and right (const or column).
         if (op.size() < 2)
             return PartitionAllNode.INSTANCE;
@@ -258,11 +472,9 @@ public class PartitionExtractor {
         // Left operand should be column.
         GridSqlAst left = op.child();
 
-        GridSqlColumn leftCol;
+        GridSqlColumn leftCol = unwrapColumn(left);
 
-        if (left instanceof GridSqlColumn)
-            leftCol = (GridSqlColumn)left;
-        else
+        if (leftCol == null)
             return PartitionAllNode.INSTANCE;
 
         // Can work only with Ignite tables.
@@ -291,8 +503,8 @@ public class PartitionExtractor {
                 // set globally. Hence, returning null.
                 return PartitionAllNode.INSTANCE;
 
-            // Do extract.
-            PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
+            // Extract.
+            PartitionSingleNode part = extractSingle(leftCol, rightConst, rightParam, tblModel);
 
             // Same thing as above: single unknown partition in disjunction defeats optimization.
             if (part == null)
@@ -308,19 +520,20 @@ public class PartitionExtractor {
      * Extract partition information from equality.
      *
      * @param op Operation.
+     * @param tblModel Table model.
+     * @param disjunct Disjunction flag. When set possible join expression will not be processed.
      * @return Partition.
      */
-    private PartitionNode extractFromEqual(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromEqual(GridSqlOperation op, PartitionTableModel tblModel, boolean disjunct)
+        throws IgniteCheckedException {
         assert op.operationType() == GridSqlOperationType.EQUAL;
 
         GridSqlElement left = op.child(0);
         GridSqlElement right = op.child(1);
 
-        GridSqlColumn leftCol;
+        GridSqlColumn leftCol = unwrapColumn(left);
 
-        if (left instanceof GridSqlColumn)
-            leftCol = (GridSqlColumn)left;
-        else
+        if (leftCol == null)
             return PartitionAllNode.INSTANCE;
 
         if (!(leftCol.column().getTable() instanceof GridH2Table))
@@ -337,10 +550,20 @@ public class PartitionExtractor {
             rightConst = null;
             rightParam = (GridSqlParameter)right;
         }
-        else
-            return PartitionAllNode.INSTANCE;
+        else {
+            if (right instanceof GridSqlColumn) {
+                if (!disjunct) {
+                    PartitionJoinCondition cond = parseJoinCondition(op);
 
-        PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
+                    if (cond != null && !cond.cross())
+                        tblModel.addJoin(cond);
+                }
+
+            }
+            return PartitionAllNode.INSTANCE;
+        }
+
+        PartitionSingleNode part = extractSingle(leftCol, rightConst, rightParam, tblModel);
 
         return part != null ? part : PartitionAllNode.INSTANCE;
     }
@@ -351,52 +574,81 @@ public class PartitionExtractor {
      * @param leftCol Left column.
      * @param rightConst Right constant.
      * @param rightParam Right parameter.
+     * @param tblModel Table model.
      * @return Partition or {@code null} if failed to extract.
      */
-    @Nullable private PartitionSingleNode extractSingle(Column leftCol, GridSqlConst rightConst,
-        GridSqlParameter rightParam) throws IgniteCheckedException {
+    @Nullable private PartitionSingleNode extractSingle(
+        GridSqlColumn leftCol,
+        GridSqlConst rightConst,
+        GridSqlParameter rightParam,
+        PartitionTableModel tblModel
+    ) throws IgniteCheckedException {
         assert leftCol != null;
-        assert leftCol.getTable() != null;
-        assert leftCol.getTable() instanceof GridH2Table;
 
-        GridH2Table tbl = (GridH2Table)leftCol.getTable();
+        Column leftCol0 = leftCol.column();
 
-        if (!tbl.isColumnForPartitionPruning(leftCol))
+        assert leftCol0.getTable() != null;
+        assert leftCol0.getTable() instanceof GridH2Table;
+
+        GridH2Table tbl = (GridH2Table)leftCol0.getTable();
+
+        if (!tbl.isColumnForPartitionPruning(leftCol0))
             return null;
 
-        PartitionTableDescriptor tblDesc = descriptor(tbl);
+        PartitionTable tbl0 = tblModel.table(leftCol.tableAlias());
+
+        // If table is in ignored set, then we cannot use it for partition extraction.
+        if (tbl0 == null)
+            return null;
 
         if (rightConst != null) {
-            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), rightConst.value().getObject());
+            Object constVal = H2Utils.convert(rightConst.value().getObject(), idx, leftCol0.getType());
 
-            return new PartitionConstantNode(tblDesc, part);
+            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), constVal);
+
+            return new PartitionConstantNode(tbl0, part);
         }
         else if (rightParam != null)
-            return new PartitionParameterNode(tblDesc, idx, rightParam.index(), leftCol.getType());
+            return new PartitionParameterNode(tbl0, idx, rightParam.index(), leftCol0.getType());
         else
             return null;
     }
 
     /**
-     * Get descriptor from table.
+     * Unwrap constant if possible.
      *
-     * @param tbl Table.
-     * @return Descriptor.
+     * @param ast AST.
+     * @return Constant or {@code null} if not a constant.
      */
-    private static PartitionTableDescriptor descriptor(GridH2Table tbl) {
-        return new PartitionTableDescriptor(tbl.cacheName(), tbl.getName());
+    @Nullable public static GridSqlConst unwrapConst(GridSqlAst ast) {
+        return ast instanceof GridSqlConst ? (GridSqlConst)ast : null;
+    }
+
+    /**
+     * Unwrap column if possible.
+     *
+     * @param ast AST.
+     * @return Column or {@code null} if not a column.
+     */
+    @Nullable public static GridSqlColumn unwrapColumn(GridSqlAst ast) {
+        if (ast instanceof GridSqlAlias)
+            ast = ast.child();
+
+        return ast instanceof GridSqlColumn ? (GridSqlColumn)ast : null;
     }
 
     /**
      * Try to extract partitions from {@code op} assuming that it's between operation or simple range.
      *
      * @param op Sql operation.
+     * @param tblModel Table model.
      * @return {@code PartitionSingleNode} if operation reduced to one partition,
      *   {@code PartitionGroupNode} if operation reduced to multiple partitions or null if operation is neither
      *   between nor simple range. Null also returns if it's not possible to extract partitions from given operation.
      * @throws IgniteCheckedException If failed.
      */
-    private PartitionNode tryExtractBetween(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode tryExtractBetween(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         // Between operation (or similar range) should contain exact two children.
         assert op.size() == 2;
 
@@ -487,11 +739,18 @@ public class PartitionExtractor {
 
         Set<PartitionSingleNode> parts = new HashSet<>();
 
-        PartitionTableDescriptor desc = descriptor(tbl);
+        PartitionTable tbl0 = tblModel.table(leftCol.tableAlias());
+
+        // If table is in ignored set, then we cannot use it for partition extraction.
+        if (tbl0 == null)
+            return null;
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            parts.add(new PartitionConstantNode(desc,
-                idx.kernalContext().affinity().partition((tbl).cacheName(), i)));
+            Object constVal = H2Utils.convert(i, idx, leftCol.column().getType());
+
+            int part = idx.kernalContext().affinity().partition(tbl0.cacheName(), constVal);
+
+            parts.add(new PartitionConstantNode(tbl0, part));
 
             if (parts.size() > maxPartsCntBetween)
                 return null;

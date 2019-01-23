@@ -42,7 +42,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         Comparator.comparing(item -> item.key);
 
     /** */
-    private DistributedMetaStorageHistoryItem[] locFullData;
+    private DistributedMetaStorageHistoryItem[] locFullData = EMPTY_ARRAY;
 
     /** */
     private DistributedMetaStorageVersion ver;

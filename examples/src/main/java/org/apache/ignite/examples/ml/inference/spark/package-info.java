@@ -15,38 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
-
 /**
- * MVCC discovery data to be shared between nodes on join.
+ * <!-- Package description. -->
+ * Model inference examples for Spark ML models.
  */
-public class MvccDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Current coordinator. */
-    private MvccCoordinator crd;
-
-    /**
-     * @param crd Coordinator.
-     */
-    public MvccDiscoveryData(MvccCoordinator crd) {
-        this.crd = crd;
-    }
-
-    /**
-     * @return Current coordinator.
-     */
-    public MvccCoordinator coordinator() {
-        return crd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccDiscoveryData.class, this);
-    }
-}
+package org.apache.ignite.examples.ml.inference.spark;

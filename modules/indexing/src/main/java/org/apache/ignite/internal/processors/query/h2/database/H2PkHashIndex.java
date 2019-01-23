@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -58,18 +59,26 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** */
     private final GridCacheContext cctx;
 
+    /** */
+    private final int segments;
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
      * @param name Index name.
      * @param colsList Index columns.
+     * @param segments Segments.
      */
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
         String name,
-        List<IndexColumn> colsList
+        List<IndexColumn> colsList,
+        int segments
     ) {
+        assert segments > 0: segments;
+
+        this.segments = segments;
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
@@ -83,7 +92,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public int segmentsCount() {
-        return 1;
+        return segments;
     }
 
     /** {@inheritDoc} */
@@ -93,10 +102,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
+        int seg = 0;
+
         if (qctx != null) {
             IndexingQueryFilter f = qctx.filter();
             filter = f != null ? f.forCache(getTable().cacheName()) : null;
             mvccSnapshot = qctx.mvccSnapshot();
+            seg = qctx.segment();
         }
 
         assert !cctx.mvccEnabled() || mvccSnapshot != null;
@@ -107,11 +119,17 @@ public class H2PkHashIndex extends GridH2IndexBase {
         try {
             Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                if (filter == null || filter.applyPartition(store.partId()))
-                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
 
-            return new H2Cursor(cursors.iterator());
+                if (segmentForPartition(part) != seg)
+                    continue;
+
+                if (filter == null || filter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+            }
+
+            return new H2PkHashIndexCursor(cursors.iterator());
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -191,7 +209,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /**
      * Cursor.
      */
-    private class H2Cursor implements Cursor {
+    private class H2PkHashIndexCursor implements Cursor {
         /** */
         private final GridH2RowDescriptor desc;
 
@@ -204,7 +222,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /**
          * @param iter Cursors iterator.
          */
-        private H2Cursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
+        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
             assert iter != null;
 
             this.iter = iter;
@@ -230,17 +248,23 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public boolean next() {
             try {
-                if (curr != null && curr.next())
-                    return true;
+                GridQueryTypeDescriptor type = desc.type();
 
-                while (iter.hasNext()) {
+                for (;;) {
+                    if (curr != null) {
+                        while (curr.next()) {
+                            // Need to filter rows by value type because in a single cache
+                            // we can have multiple indexed types.
+                            if (type.matchType(curr.get().value()))
+                                return true;
+                        }
+                    }
+
+                    if (!iter.hasNext())
+                        return false;
+
                     curr = iter.next();
-
-                    if (curr.next())
-                        return true;
                 }
-
-                return false;
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

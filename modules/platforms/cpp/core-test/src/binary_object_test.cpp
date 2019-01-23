@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/utils.h>
@@ -325,22 +321,22 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
 {
     try
     {
-        BOOST_CHECKPOINT("Node1 startup");
+        BOOST_TEST_CHECKPOINT("Node1 startup");
 #ifdef IGNITE_TESTS_32
         Ignite node1 = ignite_test::StartNode("cache-test-32.xml", "node1");
 #else
         Ignite node1 = ignite_test::StartNode("cache-test.xml", "node1");
 #endif
 
-        BOOST_CHECKPOINT("Creating cache");
+        BOOST_TEST_CHECKPOINT("Creating cache");
         cache::Cache<int32_t, BinaryFields> cache = node1.GetOrCreateCache<int32_t, BinaryFields>("cache");
 
         BinaryFields some(25675472, 67461, 457542, 87073456);
 
-        BOOST_CHECKPOINT("Putting value");
+        BOOST_TEST_CHECKPOINT("Putting value");
         cache.Put(42, some);
 
-        BOOST_CHECKPOINT("Node2 startup");
+        BOOST_TEST_CHECKPOINT("Node2 startup");
 #ifdef IGNITE_TESTS_32
         Ignite node2 = ignite_test::StartNode("cache-test-32.xml", "node2");
 #else
@@ -353,7 +349,7 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         InteropUnpooledMemory mem(1024);
         FillMem<BinaryFields>(mem, some);
 
-        BOOST_CHECKPOINT("Creating BinaryObject");
+        BOOST_TEST_CHECKPOINT("Creating BinaryObject");
         BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
 
         BOOST_CHECK(binObj.HasField("val1"));
