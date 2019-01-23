@@ -4505,13 +4505,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                                 try {
                                                     onBecomeCoordinator((InitNewCoordinatorFuture) fut);
                                                 }
-                                                catch (Throwable t) {
-                                                    U.error(log, "Failed to call onBecomeCoordinator [topVer=" + initialVersion() + "]", t);
-
-                                                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
-
-                                                    throw new IgniteException(t);
-                                                }
                                                 finally {
                                                     lock.unlock();
                                                 }
@@ -4590,7 +4583,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param newCrdFut Coordinator initialization future.
      */
-    private void onBecomeCoordinator(InitNewCoordinatorFuture newCrdFut) throws IgniteCheckedException {
+    private void onBecomeCoordinator(InitNewCoordinatorFuture newCrdFut) {
         boolean allRcvd = false;
 
         cctx.exchange().onCoordinatorInitialized();
@@ -4624,29 +4617,34 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // Reserve at least 2 threads for system operations.
                     int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
-                    U.doInParallel(
-                        parallelismLvl,
-                        cctx.kernalContext().getSystemExecutorService(),
-                        msgs.entrySet(),
-                        entry -> {
-                            this.msgs.put(entry.getKey().id(), entry.getValue());
+                    try {
+                        U.doInParallel(
+                            parallelismLvl,
+                            cctx.kernalContext().getSystemExecutorService(),
+                            msgs.entrySet(),
+                            entry -> {
+                                this.msgs.put(entry.getKey().id(), entry.getValue());
 
-                            GridDhtPartitionsSingleMessage msg = entry.getValue();
+                                GridDhtPartitionsSingleMessage msg = entry.getValue();
 
-                            Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
+                                Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
 
-                            if (!F.isEmpty(affReq)) {
-                                CacheGroupAffinityMessage.createAffinityMessages(
-                                    cctx,
-                                    fullMsg.resultTopologyVersion(),
-                                    affReq,
-                                    joinedNodeAff
-                                );
+                                if (!F.isEmpty(affReq)) {
+                                    CacheGroupAffinityMessage.createAffinityMessages(
+                                        cctx,
+                                        fullMsg.resultTopologyVersion(),
+                                        affReq,
+                                        joinedNodeAff
+                                    );
+                                }
+
+                                return null;
                             }
-
-                            return null;
-                        }
-                    );
+                        );
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
 
                     Map<UUID, GridDhtPartitionsSingleMessage> mergedJoins = newCrdFut.mergedJoinExchangeMessages();
 

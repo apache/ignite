@@ -137,7 +137,6 @@ public class CacheGroupAffinityMessage implements Message {
 
     /**
      * Fill Map of CacheGroupAffinityMessages.
-     * The input Map expected to be thread safe.
      *
      * @param cctx Context.
      * @param topVer Topology version.
@@ -153,27 +152,27 @@ public class CacheGroupAffinityMessage implements Message {
         assert !F.isEmpty(affReq) : affReq;
 
         for (Integer grpId : affReq) {
-            cachesAff.computeIfAbsent(grpId, new Function<Integer, CacheGroupAffinityMessage>() {
-                @Override public CacheGroupAffinityMessage apply(Integer integer) {
-                    GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
+            cachesAff.computeIfAbsent(grpId, (integer) -> {
+                GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
 
-                    // If no coordinator group holder on the node, try fetch affinity from existing cache group.
-                    if (aff == null) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                // If no coordinator group holder on the node, try fetch affinity from existing cache group.
+                if (aff == null) {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                        assert grp != null : "No cache group holder or cache group to create AffinityMessage"
-                            + ". Requested group id: " + grpId
-                            + ". Topology version: " + topVer;
+                    assert grp != null : "No cache group holder or cache group to create AffinityMessage"
+                        + ". Requested group id: " + grpId
+                        + ". Topology version: " + topVer;
 
-                        aff = grp.affinity();
-                    }
-
-                    List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
-
-                    return new CacheGroupAffinityMessage(assign,
-                        aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
-                        null);
+                    aff = grp.affinity();
                 }
+
+                List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
+
+                return new CacheGroupAffinityMessage(
+                    assign,
+                    aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
+                    null
+                );
             });
         }
     }
