@@ -51,7 +51,7 @@ public class DhtResultSetEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture
     public DhtResultSetEnlistFuture(UUID nearNodeId, GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot, long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts,
         GridDhtTxLocalAdapter tx, long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
-        super(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx);
+        super(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, tx, timeout, cctx);
 
         this.rs = rs;
     }
