@@ -580,6 +580,14 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             finally {
                 lock.unlock();
             }
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    assertTrue(lock.tryLock());
+
+                    lock.unlock();
+                }
+            }, "lock-thread");
         }
     }
 }
