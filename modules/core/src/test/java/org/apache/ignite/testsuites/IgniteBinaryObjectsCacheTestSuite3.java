@@ -61,7 +61,7 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
         GridTestProperties.setProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME,
             "org.apache.ignite.tests.p2p.CacheDeploymentBinaryEntryProcessor");
 
-        List<Class<?>> suite = new ArrayList<>();
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite3.suite(ignoredTests));
 
         GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
