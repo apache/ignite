@@ -501,15 +501,32 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
                     }
-                    else if (!crd && grp.affinity().lastVersion().compareTo(topVer) < 0 && !fetchFuts.containsKey(grp.groupId())) {
-                        GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                            grp.groupId(),
-                            topVer,
-                            discoCache);
+                    else if (!crd && !fetchFuts.containsKey(grp.groupId())) {
+                        if (grp.affinity().lastVersion().compareTo(topVer) < 0) {
+                            GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
+                                grp.groupId(),
+                                topVer,
+                                discoCache);
 
-                        fetchFut.init(true);
+                            fetchFut.init(true);
 
-                        fetchFuts.put(grp.groupId(), fetchFut);
+                            fetchFuts.put(grp.groupId(), fetchFut);
+                        }
+                        else {
+                            GridDhtPartitionFullMap partMap = new GridDhtPartitionFullMap(cctx.localNodeId(), cctx.localNode().order(), 1);
+
+                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer,
+                                new ClusterTopologyServerNotFoundException("All server nodes left grid."));
+
+                            grp.topology().updateTopologyVersion(topFut,
+                                discoCache,
+                                -1,
+                                false);
+
+                            grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet(), null, null);
+
+                            topFut.validate(grp, discoCache.allNodes());
+                        }
                     }
                 }
             }
