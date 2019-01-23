@@ -31,7 +31,10 @@ public enum IgniteFeatures {
     /**
      * Support of {@link HandshakeWaitMessage} by {@link TcpCommunicationSpi}.
      */
-    TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0);
+    TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE(0),
+
+    /** Cache metrics v2 support. */
+    CACHE_METRICS_V2(1);
 
     /**
      * Unique feature identifier.

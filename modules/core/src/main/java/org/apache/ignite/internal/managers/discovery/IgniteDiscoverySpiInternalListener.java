@@ -33,6 +33,14 @@ public interface IgniteDiscoverySpiInternalListener {
     public void beforeJoin(ClusterNode locNode, IgniteLogger log);
 
     /**
+     * @param locNode Local node.
+     * @param log Logger.
+     */
+    default public void beforeReconnect(ClusterNode locNode, IgniteLogger log) {
+        // No-op.
+    }
+
+    /**
      * @param spi SPI instance.
      * @param log Logger.
      * @param msg Custom message.

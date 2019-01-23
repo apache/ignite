@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +46,12 @@ public class RunningQueryManager {
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
 
+    /** History size. */
+    private final int histSz;
+
+    /** Query history tracker. */
+    private volatile QueryHistoryTracker qryHistTracker;
+
     /** Prefix of cluster wide query id. */
     private String prefixClusterWideQryId = null;
 
@@ -56,6 +65,10 @@ public class RunningQueryManager {
      */
     public RunningQueryManager(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        histSz = ctx.config().getSqlQueryHistorySize();
+
+        qryHistTracker = new QueryHistoryTracker(histSz);
     }
 
     /**
@@ -66,11 +79,11 @@ public class RunningQueryManager {
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
-     * @return Registered RunningQueryInfo.
+     * @return Id of registered query.
      */
-    public GridRunningQueryInfo register(String qry, GridCacheQueryType qryType, String schemaName,
-        boolean loc, @Nullable GridQueryCancel cancel) {
-        long qryId = qryIdGen.incrementAndGet();
+    public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
+        @Nullable GridQueryCancel cancel) {
+        Long qryId = qryIdGen.incrementAndGet();
 
         String clusterWideQryId = clusterWideQueryId(qryId);
 
@@ -89,7 +102,7 @@ public class RunningQueryManager {
 
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
-        return run;
+        return qryId;
     }
 
     /**
@@ -109,24 +122,18 @@ public class RunningQueryManager {
     /**
      * Unregister running query.
      *
-     * @param runningQryInfo Running query info..
-     * @return Unregistered running query info. {@code null} in case running query is not registered.
-     */
-    @Nullable public GridRunningQueryInfo unregister(@Nullable GridRunningQueryInfo runningQryInfo) {
-        return (runningQryInfo != null) ? unregister(runningQryInfo.id()) : null;
-    }
-
-    /**
-     * Unregister running query.
-     *
      * @param qryId Query id.
-     * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
+     * @param failed {@code true} In case query was failed.
      */
-    @Nullable public GridRunningQueryInfo unregister(Long qryId) {
+    public void unregister(Long qryId, boolean failed) {
         if (qryId == null)
-            return null;
+            return;
 
-        return runs.remove(qryId);
+        GridRunningQueryInfo unregRunninigQry = runs.remove(qryId);
+
+        //We need to collect query history only for SQL queries.
+        if (unregRunninigQry != null && isSqlQuery(unregRunninigQry))
+            qryHistTracker.collectMetrics(unregRunninigQry, failed);
     }
 
     /**
@@ -148,7 +155,7 @@ public class RunningQueryManager {
     /**
      * Check belongs running query to an SQL type.
      *
-     * @param runningQryInfo
+     * @param runningQryInfo Running query info object.
      * @return {@code true} For SQL or SQL_FIELDS query type.
      */
     private boolean isSqlQuery(GridRunningQueryInfo runningQryInfo){
@@ -190,9 +197,13 @@ public class RunningQueryManager {
      * Cancel all executing queries and deregistering all of them.
      */
     public void stop() {
-        for (GridRunningQueryInfo r : runs.values()) {
+        Iterator<GridRunningQueryInfo> iter = runs.values().iterator();
+
+        while (iter.hasNext()) {
             try {
-                unregister(r.id());
+                GridRunningQueryInfo r = iter.next();
+
+                iter.remove();
 
                 r.cancel();
             }
@@ -200,6 +211,23 @@ public class RunningQueryManager {
                 // No-op.
             }
         }
+    }
+
+    /**
+     * Gets query history statistics. Size of history could be configured via {@link
+     * IgniteConfiguration#setSqlQueryHistorySize(int)}
+     *
+     * @return Queries history statistics aggregated by query text, schema and local flag.
+     */
+    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
+        return qryHistTracker.queryHistoryMetrics();
+    }
+
+    /**
+     * Reset query history metrics.
+     */
+    public void resetQueryHistoryMetrics() {
+        qryHistTracker = new QueryHistoryTracker(histSz);
     }
 
     /** {@inheritDoc} */

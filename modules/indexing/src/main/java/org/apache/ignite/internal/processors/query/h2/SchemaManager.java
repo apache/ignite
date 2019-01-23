@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCach
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -167,6 +168,7 @@ public class SchemaManager {
         views.add(new SqlSystemViewCaches(ctx));
         views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewRunningQueries(ctx));
+        views.add(new SqlSystemViewTables(ctx, this));
 
         return views;
     }
@@ -694,6 +696,13 @@ public class SchemaManager {
      */
     public GridH2Table dataTable(String schemaName, String tblName) {
         return dataTables.get(new QueryTable(schemaName, tblName));
+    }
+
+    /**
+     * @return all known tables.
+     */
+    public Collection<GridH2Table> dataTables() {
+        return dataTables.values();
     }
 
     /**
