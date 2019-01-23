@@ -93,7 +93,7 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
     }
 
     /**
-     * Consistent id not configurent, neither in {@link IgniteConfiguration} nor in JVM propery.
+     * Consistent ID is not configured neither in the {@link IgniteConfiguration} nor via the JVM property.
      *
      * @throws Exception if failed.
      */
@@ -105,11 +105,11 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         assertTrue(ADDR_WITH_PORT_PATTERN.matcher(ignite.cluster().localNode().consistentId().toString()).find());
 
-        info("Consistent id in that case: " + ignite.cluster().localNode().consistentId());
+        info("Consistent ID: " + ignite.cluster().localNode().consistentId());
     }
 
     /**
-     * Consistent id not configurent, neither in {@link IgniteConfiguration} nor in JVM propery, and persistent
+     * Consistent ID is not configurent neither in the {@link IgniteConfiguration} nor in the JVM property, and persistent
      * enabled.
      *
      * @throws Exception if failed.
@@ -124,11 +124,11 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         assertTrue(UUID_PATTERN.matcher(ignite.cluster().localNode().consistentId().toString()).find());
 
-        info("Consistent id in that case: " + ignite.cluster().localNode().consistentId());
+        info("Consistent ID: " + ignite.cluster().localNode().consistentId());
     }
 
     /**
-     * Consistent id not configured in {@link IgniteConfiguration}, but assign in JVM propery.
+     * Consistent ID is not configured in the {@link IgniteConfiguration}, but set in the JVM property.
      *
      * @throws Exception if failed.
      */
@@ -144,11 +144,11 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         assertEquals(specificConsistentId, ignite.cluster().localNode().consistentId());
 
-        info("Consistent id in that case: " + ignite.cluster().localNode().consistentId());
+        info("Consistent ID: " + ignite.cluster().localNode().consistentId());
     }
 
     /**
-     * Consistent id configured in {@link IgniteConfiguration}, but not in JVM propery.
+     * Consistent ID is configured in the {@link IgniteConfiguration}, but not in the JVM property.
      *
      * @throws Exception if failed.
      */
@@ -162,11 +162,11 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         assertEquals(defConsistentId, ignite.cluster().localNode().consistentId());
 
-        info("Consistent id in that case: " + ignite.cluster().localNode().consistentId());
+        info("Consistent ID: " + ignite.cluster().localNode().consistentId());
     }
 
     /**
-     * Consistent id configured in {@link IgniteConfiguration} and in JVM propery.
+     * Consistent ID is configured in the {@link IgniteConfiguration} and in the JVM property.
      *
      * @throws Exception if failed.
      */
@@ -184,6 +184,6 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         assertEquals(specificConsistentId, ignite.cluster().localNode().consistentId());
 
-        info("Consistent id in that case: " + ignite.cluster().localNode().consistentId());
+        info("Consistent ID: " + ignite.cluster().localNode().consistentId());
     }
 }
