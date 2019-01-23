@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.sparkmodelparser;
+package org.apache.ignite.internal.processors.affinity;
+
+import java.io.Serializable;
+import java.util.Map;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 
 /**
- * List of supported Spark models.
  *
- * NOTE: Valid for Spark 2.4.
  */
-public enum SupportedSparkModels {
-    /** Logistic regression. */
-    LOG_REGRESSION,
+public class SerializableMetricsProvider implements DiscoveryMetricsProvider, Serializable {
+    /** {@inheritDoc} */
+    @Override public ClusterMetrics metrics() {
+        return null;
+    }
 
-    /** Linear regression. */
-    LINEAR_REGRESSION,
-
-    /** Support Vector Machine . */
-    LINEAR_SVM
+    /** {@inheritDoc} */
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+        return null;
+    }
 }
