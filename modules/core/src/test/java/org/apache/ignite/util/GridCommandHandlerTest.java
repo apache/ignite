@@ -66,7 +66,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -945,9 +947,29 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
 
+        String output = testOut.toString();
+
         for (CacheCommand cmd : CacheCommand.values()) {
-            if (cmd != HELP)
-                assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
+            if (cmd != HELP) {
+                assertTrue(cmd.text(), output.contains(cmd.toString()));
+
+                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectCacheOptionsNaming() throws Exception {
+        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
+
+        for(CacheCommand cmd : CacheCommand.values()) {
+            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
+                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1699,7 +1721,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "--seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
@@ -1725,7 +1747,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }
