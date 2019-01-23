@@ -3109,9 +3109,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param resTopVer Result topology version.
      */
     private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
-        if (cctx.exchange().isExchangeWorkerCancelled())
-            return;
-
         AtomicInteger detected = new AtomicInteger();
 
         try {
@@ -3152,9 +3149,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void resetLostPartitions(Collection<String> cacheNames) {
         assert !exchCtx.mergeExchanges();
-
-        if (cctx.exchange().isExchangeWorkerCancelled())
-            return;
 
         try {
             // Reserve at least 2 threads for system operations.

@@ -2027,11 +2027,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
-    /** Check whether exchange worker is cancelled. */
-    public boolean isExchangeWorkerCancelled() {
-        return exchWorker.isCancelled();
-    }
-
     /**
      * @param time Time.
      * @return Time string.
