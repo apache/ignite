@@ -377,7 +377,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     }
 
     static _isBean(clsName) {
-        return this.javaTypes.nonBuiltInClass(clsName) && this.javaTypes.nonEnum(clsName) && _.includes(clsName, '.');
+        return this.javaTypes.nonBuiltInClass(clsName) && this.javaTypesNonEnum.nonEnum(clsName) && _.includes(clsName, '.');
     }
 
     static _toObject(clsName, val) {
@@ -419,7 +419,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                         return this._newBean(item);
                     }
 
-                    if (this.javaTypes.nonEnum(clsName))
+                    if (this.javaTypesNonEnum.nonEnum(clsName))
                         return item;
 
                     return `${this.javaTypes.shortClassName(clsName)}.${item}`;
@@ -811,7 +811,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     break;
                 default:
-                    if (!this.javaTypes.nonEnum(prop.clsName))
+                    if (!this.javaTypesNonEnum.nonEnum(prop.clsName))
                         imports.push(prop.clsName);
             }
         });

@@ -24,6 +24,7 @@ import IgniteCacheDefaults from './defaults/Cache.service';
 import IgniteIGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
+import {JavaTypesNonEnum} from '../JavaTypesNonEnum.service';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
@@ -31,7 +32,8 @@ const igfsDflts = new IgniteIGFSDefaults();
 
 export default class AbstractTransformer {
     static generator = IgniteConfigurationGenerator;
-    static javaTypes = new JavaTypes(clusterDflts, cacheDflts, igfsDflts);
+    static javaTypes = new JavaTypes();
+    static javaTypesNonEnum = new JavaTypesNonEnum(clusterDflts, cacheDflts, igfsDflts, new JavaTypes());
 
     // Append comment with time stamp.
     static mainComment(sb, ...lines) {

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import {JavaTypesNonEnum} from './JavaTypesNonEnum.service';
 import IgniteClusterDefaults from './generator/defaults/Cluster.service';
 import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
 import IgniteCacheDefaults from './generator/defaults/Cache.service';
@@ -40,6 +41,7 @@ export default angular
 .module('ignite-console.configuration.generator', [
 
 ])
+.service('JavaTypesNonEnum', JavaTypesNonEnum)
 .service('IgniteConfigurationGenerator', function() { return IgniteConfigurationGenerator;})
 .service('IgnitePlatformGenerator', IgnitePlatformGenerator)
 .service('SpringTransformer', function() { return IgniteSpringTransformer;})

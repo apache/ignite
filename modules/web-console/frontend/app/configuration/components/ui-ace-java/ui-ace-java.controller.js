@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import IgniteUiAceGeneratorFactory from '../ui-ace.controller';
+import IgniteUiAceGeneratorFactory from 'app/directives/ui-ace.controller';
 
-export default class IgniteUiAceSpring extends IgniteUiAceGeneratorFactory {
-    static $inject = ['$scope', '$attrs', 'IgniteVersion', 'SpringTransformer'];
+export default class IgniteUiAceJava extends IgniteUiAceGeneratorFactory {
+    static $inject = ['$scope', '$attrs', 'IgniteVersion', 'JavaTransformer'];
 }

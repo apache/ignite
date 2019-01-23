@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-import JavaTypes from '../../app/services/JavaTypes.service';
+import JavaTypes from './JavaTypes.service';
 
-import ClusterDflts from '../../app/modules/configuration/generator/defaults/Cluster.service';
-import CacheDflts from '../../app/modules/configuration/generator/defaults/Cache.service';
-import IgfsDflts from '../../app/modules/configuration/generator/defaults/IGFS.service';
+const instance = new JavaTypes();
 
-const instance = new JavaTypes(new ClusterDflts(), new CacheDflts(), new IgfsDflts());
-
-import { suite, test } from 'mocha';
 import { assert } from 'chai';
 
 suite('JavaTypesTestsSuite', () => {
@@ -46,15 +41,6 @@ suite('JavaTypesTestsSuite', () => {
         assert.equal(instance.nonBuiltInClass('CustomClass'), true);
         assert.equal(instance.nonBuiltInClass('java.util.CustomClass'), true);
         assert.equal(instance.nonBuiltInClass('my.package.CustomClass'), true);
-    });
-
-    test('nonEnum', () => {
-        assert.equal(instance.nonEnum('org.apache.ignite.cache.CacheMode'), false);
-        assert.equal(instance.nonEnum('org.apache.ignite.transactions.TransactionConcurrency'), false);
-        assert.equal(instance.nonEnum('org.apache.ignite.cache.CacheWriteSynchronizationMode'), false);
-        assert.equal(instance.nonEnum('org.apache.ignite.igfs.IgfsIpcEndpointType'), false);
-        assert.equal(instance.nonEnum('java.io.Serializable'), true);
-        assert.equal(instance.nonEnum('BigDecimal'), true);
     });
 
     test('shortClassName', () => {

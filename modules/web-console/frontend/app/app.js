@@ -160,8 +160,7 @@ import signupConfirmation from './components/page-signup-confirmation';
 
 import igniteServices from './services';
 
-import uiAceJava from './directives/ui-ace-java';
-import uiAceSpring from './directives/ui-ace-spring';
+
 
 import baseTemplate from 'views/base.pug';
 import * as icons from '../public/images/icons';
@@ -247,8 +246,8 @@ export default angular.module('ignite-console', [
     pageSignup.name,
     pageSignin.name,
     pageForgotPassword.name,
-    uiAceJava.name,
-    uiAceSpring.name,
+
+
     breadcrumbs.name,
     passwordVisibility.name,
     igniteChart.name,

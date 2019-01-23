@@ -108,7 +108,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
     }
 
     static _isBean(clsName) {
-        return this.javaTypes.nonBuiltInClass(clsName) && this.javaTypes.nonEnum(clsName) && _.includes(clsName, '.');
+        return this.javaTypes.nonBuiltInClass(clsName) && this.javaTypesNonEnum.nonEnum(clsName) && _.includes(clsName, '.');
     }
 
     static _setCollection(sb, prop) {

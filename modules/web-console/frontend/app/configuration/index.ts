@@ -52,6 +52,9 @@ import buttonPreviewProject from './components/button-preview-project';
 import previewPanel from './components/preview-panel';
 import pcSplitButton from './components/pc-split-button';
 
+import uiAceJava from './components/ui-ace-java';
+import uiAceSpring from './components/ui-ace-spring';
+
 import {registerStates} from './states';
 
 import {
@@ -111,7 +114,9 @@ export default angular.module('ignite-console.configuration', [
     buttonDownloadProject.name,
     buttonPreviewProject.name,
     previewPanel.name,
-    pcSplitButton.name
+    pcSplitButton.name,
+    uiAceJava.name,
+    uiAceSpring.name
 ])
     .config(['DefaultStateProvider', (DefaultState) => {
         DefaultState.setRedirectTo(() => 'base.configuration.overview');

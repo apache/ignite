@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-import JavaTypes from '../../app/services/JavaTypes.service';
+import JavaTypes from 'app/services/JavaTypes.service';
 
-import generator from '../../app/modules/configuration/generator/ConfigurationGenerator';
-import transformer from '../../app/modules/configuration/generator/SpringTransformer.service';
-
-import { suite, test } from 'mocha';
+import generator from './ConfigurationGenerator';
+import transformer from './SpringTransformer.service';
 
 suite.skip('SpringTransformerTestsSuite', () => {
     test('AtomicConfiguration', () => {

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-import generator from '../../app/modules/configuration/generator/PlatformGenerator';
-import transformer from '../../app/modules/configuration/generator/SharpTransformer.service';
+import JavaTypes from 'app/services/JavaTypes.service';
 
-import { suite, test } from 'mocha';
+import generator from './ConfigurationGenerator';
+import transformer from './JavaTransformer.service';
 
-suite.skip('SharpTransformerTestsSuite', () => {
+suite.skip('JavaTransformerTestsSuite', () => {
     test('AtomicConfiguration', () => {
-        const PlatformGenerator = generator[1]();
-        const SharpTransformer = transformer[1](PlatformGenerator);
+        const ConfigurationGenerator = generator[1]();
+        const JavaTransformer = transformer[1][2](JavaTypes[1](), ConfigurationGenerator);
 
         const acfg = {
             atomicSequenceReserveSize: 1001,
@@ -31,14 +31,14 @@ suite.skip('SharpTransformerTestsSuite', () => {
             cacheMode: 'LOCAL'
         };
 
-        const bean = PlatformGenerator.clusterAtomics(acfg);
+        const bean = ConfigurationGenerator.clusterAtomics(acfg);
 
-        console.log(SharpTransformer.generateSection(bean));
+        console.log(JavaTransformer.generateSection(bean));
     });
 
     test('IgniteConfiguration', () => {
-        const PlatformGenerator = generator[1]();
-        const SharpTransformer = transformer[1](PlatformGenerator);
+        const ConfigurationGenerator = generator[1]();
+        const JavaTransformer = transformer[1][2](JavaTypes[1](), ConfigurationGenerator);
 
         const clusterCfg = {
             atomics: {
@@ -48,8 +48,8 @@ suite.skip('SharpTransformerTestsSuite', () => {
             }
         };
 
-        const bean = PlatformGenerator.igniteConfiguration(clusterCfg);
+        const bean = ConfigurationGenerator.igniteConfiguration(clusterCfg);
 
-        console.log(SharpTransformer.toClassFile(bean, 'config', 'ServerConfigurationFactory', null));
+        console.log(JavaTransformer.toClassFile(bean, 'config', 'ServerConfigurationFactory', null));
     });
 });
