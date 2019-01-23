@@ -584,23 +584,26 @@ public class QueryUtils {
         // setValue() will never get called, because there is no value to extract, key/val object itself is a
         // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
+            String fldName = entry.getKey();
+            String fldTypeName = entry.getValue();
+
             boolean isKeyField;
 
             if (isKeyClsSqlType)
                 // Entire key is not field of itself, even if it ocassionally set in the keyFields.
                 isKeyField = false;
             else
-                isKeyField = hasKeyFields && keyFields.contains(entry.getKey());
+                isKeyField = hasKeyFields && keyFields.contains(fldName);
 
-            boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
+            boolean notNull = notNulls != null && notNulls.contains(fldName);
 
-            Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
+            Object dfltVal = dlftVals != null ? dlftVals.get(fldName) : null;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true),
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, fldName,
+                U.classForName(fldTypeName, Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
-                precision == null ? -1 : precision.getOrDefault(entry.getKey(), -1),
-                scale == null ? -1 : scale.getOrDefault(entry.getKey(), -1));
+                precision == null ? -1 : precision.getOrDefault(fldName, -1),
+                scale == null ? -1 : scale.getOrDefault(fldName, -1));
 
             d.addProperty(prop, false);
         }
