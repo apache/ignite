@@ -15,27 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.affinity;
-
-import org.apache.ignite.IgniteSystemProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 /**
- * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
+ * <!-- Package description. -->
+ * Model inference examples for Spark ML models.
  */
-@RunWith(JUnit4.class)
-public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
-    /** */
-    @BeforeClass
-    public static void beforeTests() {
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
-    }
-
-    @AfterClass
-    public static void afterTests() {
-        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
-    }
-}
+package org.apache.ignite.examples.ml.inference.spark;

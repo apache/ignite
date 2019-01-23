@@ -158,7 +158,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
+                false, false, null);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -427,7 +428,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
         CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
+            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
+            false, false, null);
 
         Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
