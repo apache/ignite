@@ -32,7 +32,7 @@ mixin td-ellipses-lbl(w, lbl)
                 h4.modal-title()
                     span(ng-if='!importDomain.demo') Import domain models from database
                     span(ng-if='importDomain.demo') Import domain models from demo database
-            .modal-body
+            .modal-body(ng-if='$ctrl.agentIsAvailable$ | async: this')
                 modal-import-models-step-indicator(
                     steps='$ctrl.actions'
                     current-step='importDomain.action'
@@ -225,7 +225,11 @@ mixin td-ellipses-lbl(w, lbl)
                                 tipOpts
                             })
 
-            .modal-footer
+
+            .modal-body(ng-if='!($ctrl.agentIsAvailable$ | async: this)')
+                no-data
+
+            .modal-footer(ng-if='$ctrl.agentIsAvailable$ | async: this')
                 button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
                     type='button'
                     ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
@@ -254,3 +258,8 @@ mixin td-ellipses-lbl(w, lbl)
                 )
                     svg.icon-left(ignite-icon='checkmark' ng-show='importDomain.button === "Save"')
                     | {{importDomain.button}}
+
+            .modal-footer(ng-if='!($ctrl.agentIsAvailable$ | async: this)')
+                button.btn-ignite.btn-ignite--success.modal-import-models__next-button(ng-click='$ctrl.onHide()') Cancel
+
+

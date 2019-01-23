@@ -50,4 +50,12 @@ modal-import-models {
     .#{&}__next-button {
         margin-left: auto !important;
     }
+
+    no-data {
+        margin: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+    }
 }
