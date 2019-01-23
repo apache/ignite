@@ -27,7 +27,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test cases for multi-threaded tests.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-601")
 public class GridCacheReplicatedMultiNodeSelfTest extends GridCacheMultiNodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
