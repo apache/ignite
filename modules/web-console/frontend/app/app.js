@@ -40,7 +40,6 @@ import './core';
 import './modules/user/user.module';
 import './modules/branding/branding.module';
 import './modules/navbar/navbar.module';
-import './modules/configuration/configuration.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
 import './modules/ace.module';
@@ -121,11 +120,7 @@ import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
 import pageAdmin from './components/page-admin';
-import pageConfigure from './components/page-configure';
-import pageConfigureBasic from './components/page-configure-basic';
-import pageConfigureAdvanced from './components/page-configure-advanced';
 import pageQueries from './components/page-queries';
-import pageConfigureOverview from './components/page-configure-overview';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import gridNoData from './components/grid-no-data';
@@ -211,7 +206,6 @@ export default angular.module('ignite-console', [
     // Common modules.
     'ignite-console.dialog',
     'ignite-console.navbar',
-    'ignite-console.configuration',
     'ignite-console.getting-started',
     'ignite-console.loading',
     // Ignite configuration module.
@@ -224,11 +218,7 @@ export default angular.module('ignite-console', [
     versionPicker.name,
     userNotifications.name,
     pageAdmin.name,
-    pageConfigure.name,
-    pageConfigureBasic.name,
-    pageConfigureAdvanced.name,
     pageQueries.name,
-    pageConfigureOverview.name,
     gridColumnSelector.name,
     gridItemSelected.name,
     gridNoData.name,

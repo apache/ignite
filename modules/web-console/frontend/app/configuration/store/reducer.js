@@ -31,7 +31,7 @@ export const REMOVE_CACHE = Symbol('REMOVE_CACHE');
 
 import {
     REMOVE_CLUSTER_ITEMS_CONFIRMED
-} from './store/actionTypes';
+} from './actionTypes';
 
 const defaults = {clusters: new Map(), caches: new Map(), spaces: new Map()};
 

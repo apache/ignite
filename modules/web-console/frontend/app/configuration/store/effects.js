@@ -30,7 +30,7 @@ import {
     shortClustersActionTypes,
     shortIGFSsActionTypes,
     shortModelsActionTypes
-} from '../reducer';
+} from './reducer';
 
 import {
     ADVANCED_SAVE_CACHE,
@@ -57,9 +57,9 @@ import {
     removeClusterItemsConfirmed
 } from './actionCreators';
 
-import ConfigureState from 'app/components/page-configure/services/ConfigureState';
-import ConfigurationDownload from 'app/components/page-configure/services/ConfigurationDownload';
-import ConfigSelectors from 'app/components/page-configure/store/selectors';
+import ConfigureState from '../services/ConfigureState';
+import ConfigurationDownload from '../services/ConfigurationDownload';
+import ConfigSelectors from './selectors';
 import Clusters from 'app/services/Clusters';
 import Caches from 'app/services/Caches';
 import Models from 'app/services/Models';

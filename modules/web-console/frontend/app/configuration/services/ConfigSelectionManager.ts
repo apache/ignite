@@ -17,13 +17,11 @@
 
 import {Observable, merge} from 'rxjs';
 import {share, distinctUntilChanged, startWith, filter, map, pluck, withLatestFrom, mapTo} from 'rxjs/operators';
-import {RejectType} from '@uirouter/angularjs';
+import {RejectType, TransitionService} from '@uirouter/angularjs';
 import isEqual from 'lodash/isEqual';
 
-/**
- * @param {uirouter.TransitionService} $transitions
- */
-export default function configSelectionManager($transitions) {
+configSelectionManager.$inject = ['$transitions'];
+export default function configSelectionManager($transitions: TransitionService) {
     /**
      * Determines what items should be marked as selected and if something is being edited at the moment.
      */
@@ -93,4 +91,3 @@ export default function configSelectionManager($transitions) {
         return {selectedItemIDs$, editGoes$, editLeaves$};
     };
 }
-configSelectionManager.$inject = ['$transitions'];

@@ -19,9 +19,9 @@ import {Observable, Subject, combineLatest, merge} from 'rxjs';
 import {tap, map, distinctUntilChanged, pluck, publishReplay, refCount, switchMap} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 import get from 'lodash/get';
-import {removeClusterItems, advancedSaveIGFS} from 'app/components/page-configure/store/actionCreators';
-import ConfigureState from 'app/components/page-configure/services/ConfigureState';
-import ConfigSelectors from 'app/components/page-configure/store/selectors';
+import {removeClusterItems, advancedSaveIGFS} from '../../../../store/actionCreators';
+import ConfigureState from '../../../../services/ConfigureState';
+import ConfigSelectors from '../../../../store/selectors';
 import IGFSs from 'app/services/IGFSs';
 
 export default class PageConfigureAdvancedIGFS {

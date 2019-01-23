@@ -29,13 +29,13 @@ const cellTemplate = (state) => `
     </div>
 `;
 
-import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
-import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
+import {default as ConfigureState} from '../../services/ConfigureState';
+import {default as ConfigSelectors} from '../../store/selectors';
 import {default as Clusters} from 'app/services/Clusters';
-import {default as ModalPreviewProject} from 'app/components/page-configure/components/modal-preview-project/service';
-import {default as ConfigurationDownload} from 'app/components/page-configure/services/ConfigurationDownload';
+import {default as ModalPreviewProject} from '../../components/modal-preview-project/service';
+import {default as ConfigurationDownload} from '../../services/ConfigurationDownload';
 
-import {confirmClustersRemoval} from '../page-configure/store/actionCreators';
+import {confirmClustersRemoval} from '../../store/actionCreators';
 
 export default class PageConfigureOverviewController {
     static $inject = [

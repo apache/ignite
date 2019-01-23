@@ -18,5 +18,6 @@
 import angular from 'angular';
 
 import igniteConsole from './app/app';
+import configurationLazyModule from './app/configuration/index';
 
-angular.bootstrap(document, [igniteConsole.name], {strictDi: true});
+angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name], {strictDi: true});

@@ -18,9 +18,9 @@
 import {Subject, merge, combineLatest} from 'rxjs';
 import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
-import {removeClusterItems, advancedSaveCache} from 'app/components/page-configure/store/actionCreators';
-import ConfigureState from 'app/components/page-configure/services/ConfigureState';
-import ConfigSelectors from 'app/components/page-configure/store/selectors';
+import {removeClusterItems, advancedSaveCache} from '../../../../store/actionCreators';
+import ConfigureState from '../../../../services/ConfigureState';
+import ConfigSelectors from '../../../../store/selectors';
 import Caches from 'app/services/Caches';
 
 // Controller for Caches screen.

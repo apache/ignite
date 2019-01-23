@@ -17,14 +17,14 @@
 
 import JSZip from 'jszip';
 
-import IgniteMavenGenerator from 'app/modules/configuration/generator/Maven.service';
-import IgniteDockerGenerator from 'app/modules/configuration/generator/Docker.service';
-import IgniteReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
-import IgnitePropertiesGenerator from 'app/modules/configuration/generator/Properties.service';
-import IgniteConfigurationGenerator from 'app/modules/configuration/generator/ConfigurationGenerator';
+import IgniteMavenGenerator from '../generator/generator/Maven.service';
+import IgniteDockerGenerator from '../generator/generator/Docker.service';
+import IgniteReadmeGenerator from '../generator/generator/Readme.service';
+import IgnitePropertiesGenerator from '../generator/generator/Properties.service';
+import IgniteConfigurationGenerator from '../generator/generator/ConfigurationGenerator';
 
-import IgniteJavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
-import IgniteSpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
+import IgniteJavaTransformer from '../generator/generator/JavaTransformer.service';
+import IgniteSpringTransformer from '../generator/generator/SpringTransformer.service';
 
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import get from 'lodash/get';

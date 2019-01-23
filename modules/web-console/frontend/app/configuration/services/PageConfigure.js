@@ -24,8 +24,8 @@ import {
     ofType
 } from '../store/effects';
 
-import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
-import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
+import {default as ConfigureState} from './ConfigureState';
+import {default as ConfigSelectors} from '../store/selectors';
 
 export default class PageConfigure {
     static $inject = ['ConfigureState', 'ConfigSelectors'];

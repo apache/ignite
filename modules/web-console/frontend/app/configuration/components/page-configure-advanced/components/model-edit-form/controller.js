@@ -20,7 +20,7 @@ import _ from 'lodash';
 import get from 'lodash/get';
 
 import {default as Models} from 'app/services/Models';
-import {default as ModalImportModels} from 'app/components/page-configure/components/modal-import-models/service';
+import {default as ModalImportModels} from '../../../../components/modal-import-models/service';
 import {default as IgniteVersion} from 'app/services/Version.service';
 import {Confirm} from 'app/services/Confirm.service';
 

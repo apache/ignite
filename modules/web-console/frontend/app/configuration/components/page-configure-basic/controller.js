@@ -25,15 +25,15 @@ import {
     removeClusterItems,
     basicSave,
     basicSaveAndDownload
-} from 'app/components/page-configure/store/actionCreators';
+} from '../../store/actionCreators';
 
 import {Confirm} from 'app/services/Confirm.service';
-import ConfigureState from 'app/components/page-configure/services/ConfigureState';
-import ConfigSelectors from 'app/components/page-configure/store/selectors';
+import ConfigureState from '../../services/ConfigureState';
+import ConfigSelectors from '../../store/selectors';
 import Caches from 'app/services/Caches';
 import Clusters from 'app/services/Clusters';
 import IgniteVersion from 'app/services/Version.service';
-import {default as ConfigChangesGuard} from 'app/components/page-configure/services/ConfigChangesGuard';
+import {default as ConfigChangesGuard} from '../../services/ConfigChangesGuard';
 
 export default class PageConfigureBasicController {
     /** @type {ng.IFormController} */

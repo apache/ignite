@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
-import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
-import {advancedSaveCluster} from 'app/components/page-configure/store/actionCreators';
+import {default as ConfigSelectors} from '../../../../store/selectors';
+import {default as ConfigureState} from '../../../../services/ConfigureState';
+import {advancedSaveCluster} from '../../../../store/actionCreators';
 import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
 
 // Controller for Clusters screen.

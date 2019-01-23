@@ -21,7 +21,7 @@ modal-preview-project {
 }
 
 .modal-preview-project-structure {
-    @import '../../../../../public/stylesheets/variables.scss';
+    @import "public/stylesheets/variables.scss";
 
     .modal-dialog {
         width: 900px;

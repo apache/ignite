@@ -30,9 +30,9 @@ import {defaultNames} from '../../defaultNames';
 // eslint-disable-next-line
 import {UIRouter} from '@uirouter/angularjs'
 import {default as IgniteConfirmBatch} from 'app/services/ConfirmBatch.service';
-import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
-import {default as ConfigEffects} from 'app/components/page-configure/store/effects';
-import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
+import {default as ConfigSelectors} from '../../store/selectors';
+import {default as ConfigEffects} from '../../store/effects';
+import {default as ConfigureState} from '../../services/ConfigureState';
 // eslint-disable-next-line
 import {default as AgentManager} from 'app/modules/agent/AgentModal.service'
 import {default as SqlTypes} from 'app/services/SqlTypes.service';

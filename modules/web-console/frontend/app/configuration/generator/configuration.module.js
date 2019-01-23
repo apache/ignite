@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
 import IgniteClusterDefaults from './generator/defaults/Cluster.service';
 import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
 import IgniteCacheDefaults from './generator/defaults/Cache.service';
@@ -38,8 +36,8 @@ import IgniteCustomGenerator from './generator/Custom.service';
 
 
 // Ignite events groups.
-angular
-.module('ignite-console.configuration', [
+export default angular
+.module('ignite-console.configuration.generator', [
 
 ])
 .service('IgniteConfigurationGenerator', function() { return IgniteConfigurationGenerator;})

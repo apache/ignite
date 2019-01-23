@@ -24,10 +24,10 @@ import hasIndexTemplate from './hasIndex.template.pug';
 import keyCellTemplate from './keyCell.template.pug';
 import valueCellTemplate from './valueCell.template.pug';
 
-import {removeClusterItems, advancedSaveModel} from 'app/components/page-configure/store/actionCreators';
+import {removeClusterItems, advancedSaveModel} from '../../../../store/actionCreators';
 
-import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
-import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
+import {default as ConfigSelectors} from '../../../../store/selectors';
+import {default as ConfigureState} from '../../../../services/ConfigureState';
 import {default as Models} from 'app/services/Models';
 
 export default class PageConfigureAdvancedModels {
