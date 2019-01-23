@@ -375,7 +375,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         if (grp.isLocal())
-            return cacheEntriesCount(cacheId, 0);
+            if (primary)
+                return cacheEntriesCount(cacheId, 0);
+            else
+                return 0L;
         else {
             long cnt = 0;
 
