@@ -28,14 +28,13 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test sute for Messaging process.
  */
-@RunWith(IgniteMessagingConfigVariationFullApiTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteMessagingConfigVariationFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -49,7 +48,7 @@ public class IgniteMessagingConfigVariationFullApiTestSuite {
     };
 
     /** */
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return Stream.concat(
             new ConfigVariationsTestSuiteBuilder(IgniteMessagingConfigVariationFullApiTest.class)
                 .gridsCount(1)
@@ -62,13 +61,5 @@ public class IgniteMessagingConfigVariationFullApiTestSuite {
                 .igniteParams(GRID_PARAMETER_VARIATION)
                 .classes().stream())
             .collect(Collectors.toList());
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }
