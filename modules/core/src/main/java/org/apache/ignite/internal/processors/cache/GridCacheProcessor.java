@@ -249,6 +249,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
+    /** Node's local cache configurations (both from static configuration and from persistent caches). */
+    private CacheJoinNodeDiscoveryData localConfigs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -704,6 +707,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 templates,
                 startAllCachesOnClientStart()
             );
+
+            localConfigs = discoData;
 
             cachesInfo.onStart(discoData);
 
@@ -1862,6 +1867,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Caches to be started when this node starts.
      */
     @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+        if (ctx.discovery().localNode().order() == 1 && localConfigs != null)
+            cachesInfo.filterDynamicCacheDescriptors(localConfigs);
+
+        localConfigs = null;
+
         return cachesInfo.localJoinCachesContext();
     }
 
