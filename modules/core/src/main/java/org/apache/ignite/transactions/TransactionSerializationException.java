@@ -17,13 +17,10 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-
 /**
  * Exception thrown whenever transaction can't be serialized due to write conflict.
  */
-public class TransactionSerializationException extends IgniteException {
+public class TransactionSerializationException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,6 +29,7 @@ public class TransactionSerializationException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public TransactionSerializationException(String msg, IgniteCheckedException e) {
+    public TransactionSerializationException(String msg, Exception e) {
+        super(msg, e);
     }
 }

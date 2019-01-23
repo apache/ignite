@@ -116,16 +116,12 @@ public class MvccFeatureChecker {
      * @param e Exception.
      */
     public static void assertMvccWriteConflict(Exception e) {
-        if (e instanceof TransactionSerializationException)
-            return;
+        assert e != null;
 
         if (e instanceof CacheException && e.getCause() instanceof TransactionSerializationException)
             return;
 
-//        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
-
-//        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
-            fail("Unexpected exception: " + X.getFullStackTrace(e));
+        fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
     /**
