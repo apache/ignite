@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -50,7 +49,7 @@ public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> impleme
     /** {@inheritDoc} */
     @Override public SimpleNamedVector like(int crd) {
         if (crd != size())
-            throw new IllegalArgumentException("...");
+            throw new IllegalArgumentException("Wrong cardinality [crd=" + crd + "]");
 
         return new SimpleNamedVector(map);
     }
