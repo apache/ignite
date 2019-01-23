@@ -929,7 +929,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 state(ROLLED_BACK);
 
                 cctx.mvccCaching().onTxFinished(this, false);
-
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {

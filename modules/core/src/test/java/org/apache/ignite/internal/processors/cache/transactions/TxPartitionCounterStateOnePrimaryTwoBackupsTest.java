@@ -40,6 +40,7 @@ import org.junit.runners.JUnit4;
 
 /**
  * TODO add flag for stoppping primary w/o checkpoint.
+ * TODO add txs with removes.
  */
 @RunWith(JUnit4.class)
 public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {

@@ -800,19 +800,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         dhtVer,
                                         null);
 
-                                    if (updRes.success()) {
-                                        if (txState.mvccEnabled())
-                                            txEntry.updateCounter(updRes.updateCounter());
-                                        else if (txCounters != null && txEntry.op() != NOOP && !txEntry.cached().isNear()) {
-                                            // TODO move gen logic inside txcounters.
-                                            Map<Integer, AtomicLong> map =
-                                                txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
-
-                                            AtomicLong partCtr = map.get(txEntry.cached().partition());
-
-                                            txEntry.updateCounter(partCtr.getAndDecrement());
-                                        }
-                                    }
+                                    if (updRes.success())
+                                        txEntry.updateCounter(updRes.updateCounter());
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();

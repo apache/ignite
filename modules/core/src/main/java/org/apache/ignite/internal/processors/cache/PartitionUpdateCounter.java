@@ -39,6 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * TODO FIXME consider rolling bit set implementation.
  * TODO describe ITEM structure
  * TODO add debugging info
+ * TODO add update order tracking capabilities ?
+ * TODO non-blocking version ? BitSets instead of TreeSet ?
  */
 public class PartitionUpdateCounter {
     /** */
@@ -72,7 +74,6 @@ public class PartitionUpdateCounter {
         this.log = log;
         this.partId = partId;
     }
-
 
     /**
      * @param initUpdCntr Initial update counter.
@@ -162,6 +163,7 @@ public class PartitionUpdateCounter {
 
             if (!set.isEmpty()) {
                 Item last = set.last();
+
                 if (last.start + last.delta == start)
                     last.delta += delta;
                 else
@@ -169,6 +171,7 @@ public class PartitionUpdateCounter {
             }
             else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
                 Item first = set.first();
+
                 if (start + delta == first.start) {
                     first.start = start;
                     first.delta += delta;

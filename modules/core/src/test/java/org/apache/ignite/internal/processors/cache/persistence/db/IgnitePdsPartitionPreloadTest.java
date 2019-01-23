@@ -673,7 +673,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         // After partition preloading no pages should be read from store.
         GridIterator<CacheDataRow> cursor = ((IgniteEx)testNode).cachex(DEFAULT_CACHE_NAME).context().offheap().
-            cachePartitionIterator(CU.UNDEFINED_CACHE_ID, preloadPart);
+            cachePartitionIterator(CU.UNDEFINED_CACHE_ID, preloadPart, null, false);
 
         int realSize = 0;
 

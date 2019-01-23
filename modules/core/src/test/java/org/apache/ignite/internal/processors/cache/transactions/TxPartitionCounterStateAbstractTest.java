@@ -107,7 +107,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     private static final int MB = 1024 * 1024;
 
     /** */
-    private int backups;
+    protected int backups;
 
     /** */
     public static final int TEST_TIMEOUT = 30_000;

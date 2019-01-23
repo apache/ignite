@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 
 /**
+ * Tests if updates using new counter implementation is applied in expected order.
  */
 public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterStateAbstractTest {
     /** */
