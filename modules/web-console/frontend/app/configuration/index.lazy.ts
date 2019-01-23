@@ -15,4 +15,20 @@
  * limitations under the License.
  */
 
-export default angular.module('ignite-console.configuration-lazy', []);
+import {UIRouter, LazyLoadResult} from '@uirouter/angularjs';
+
+export default angular.module('ignite-console.configuration-lazy', [])
+    .run(['$uiRouter', '$injector', function($uiRouter: UIRouter, $injector: ng.auto.IInjectorService) {
+        $uiRouter.stateRegistry.register({
+            name: 'base.configuration.**',
+            url: '/configuration',
+            async lazyLoad($transition$) {
+                const module = await import(/* webpackChunkName: "configuration" */'./index');
+                $injector.loadNewModules([module.default.name]);
+                return [] as LazyLoadResult;
+            }
+        });
+    }])
+    .config(['DefaultStateProvider', (DefaultState) => {
+        DefaultState.setRedirectTo(() => 'base.configuration.overview');
+    }]);

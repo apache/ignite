@@ -118,9 +118,6 @@ export default angular.module('ignite-console.configuration', [
     uiAceJava.name,
     uiAceSpring.name
 ])
-    .config(['DefaultStateProvider', (DefaultState) => {
-        DefaultState.setRedirectTo(() => 'base.configuration.overview');
-    }])
     .config(registerStates)
     .run(registerActivitiesHook)
     .run(errorState)
