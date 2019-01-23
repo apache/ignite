@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.Console;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.LocalDateTime;
@@ -394,6 +393,9 @@ public class CommandHandler {
 
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
+
+    /** Console instance. Public access needs for tests. */
+    public GridConsole console = GridConsoleAdapter.getInstance();
 
     /**
      * Creates list of common utility options.
@@ -2554,8 +2556,6 @@ public class CommandHandler {
      * @return Password.
      */
     private char[] requestPasswordFromConsole(String msg) {
-        Console console = System.console();
-
         if (console == null)
             throw new UnsupportedOperationException("Failed to securely read password (console is unavailable): " + msg);
         else
@@ -2569,8 +2569,6 @@ public class CommandHandler {
      * @return Input user data.
      */
     private String requestDataFromConsole(String msg) {
-        Console console = System.console();
-
         if (console != null)
             return console.readLine(msg);
         else {
