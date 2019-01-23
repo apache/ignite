@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -427,8 +426,9 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked"})
     long streamUpdateQuery(String qry, String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt,
         final Object[] args) throws IgniteCheckedException {
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().register(qry,
-            GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = idx.runningQueryManager().register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+
+        boolean fail = false;
 
         try {
             idx.checkStatementStreamable(stmt);
@@ -498,8 +498,13 @@ public class DmlStatementsProcessor {
 
             return rows.size();
         }
+        catch (IgniteCheckedException e) {
+            fail = true;
+
+            throw e;
+        }
         finally {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, fail);
         }
     }
 
@@ -1216,24 +1221,23 @@ public class DmlStatementsProcessor {
      * @throws IgniteSQLException If failed.
      */
     public FieldsQueryCursor<List<?>> runNativeDmlStatement(String schemaName, String sql, SqlCommand cmd) {
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().register(sql,
-            GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
+        Long qryId = idx.runningQueryManager().register(sql, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
         try {
             if (cmd instanceof SqlBulkLoadCommand)
-                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, runningQryInfo.id());
+                return processBulkLoadCommand((SqlBulkLoadCommand)cmd, qryId);
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         }
         catch (IgniteSQLException e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, true);
 
             throw e;
         }
         catch (Exception e) {
-            idx.runningQueryManager().unregister(runningQryInfo);
+            idx.runningQueryManager().unregister(qryId, true);
 
             throw new IgniteSQLException("Unexpected DML operation failure: " + e.getMessage(), e);
         }
