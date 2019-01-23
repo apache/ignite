@@ -227,7 +227,7 @@ public class VectorUtils {
      * @param values Values.
      * @return Named vector.
      */
-    public static NamedVector of(Map<String, Double> values) {
+    public static SimpleNamedVector of(Map<String, Double> values) {
         Map<String, Integer> dict = new HashMap<>();
         int idx = 0;
         for (Map.Entry<String, Double> e : values.entrySet()) {
