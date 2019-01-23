@@ -1192,8 +1192,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridNearTxLocal tx = tracker != null ? tx(ctx) : null;
 
-            if (qry.forUpdate())
+            if (qry.forUpdate()) {
+                // Locking has no meaning if SELECT FOR UPDATE is not executed in explicit transaction.
+                // So, we can can reset forUpdate flag if there is no explicit transaction.
                 qry.forUpdate(checkActive(tx) != null);
+            }
 
             int opTimeout = operationTimeout(qryTimeout, tx);
 

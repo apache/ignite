@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -93,11 +94,15 @@ public interface MvccProcessor extends GridProcessor {
     boolean hasLocalTransaction(long crd, long cntr);
 
     /**
+     * Stands in the lock wait queue for the current lock holder.
+     *
      * @param cctx Cache context.
-     * @param locked Version the entry is locked by.
+     * @param waiterVer Version of the waiting tx.
+     * @param blockerVer Version the entry is locked by.
      * @return Future, which is completed as soon as the lock is released.
      */
-    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked);
+    IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer,
+        MvccVersion blockerVer);
 
     /**
      * @param locked Version the entry is locked by.
@@ -206,4 +211,21 @@ public interface MvccProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed to initialize.
      */
     void ensureStarted() throws IgniteCheckedException;
+
+    /**
+     * Checks whether one tx is waiting for another tx.
+     * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
+     *
+     * @param mvccVer Version of transaction which is checked for being waiting.
+     * @return Version of tx which blocks checked tx.
+     */
+    Optional<? extends MvccVersion> checkWaiting(MvccVersion mvccVer);
+
+    /**
+     * Unfreezes waiter for specific version failing it with passed exception.
+     *
+     * @param mvccVer Version of a waiter to fail.
+     * @param e Exception reflecting failure reason.
+     */
+    void failWaiter(MvccVersion mvccVer, Exception e);
 }
