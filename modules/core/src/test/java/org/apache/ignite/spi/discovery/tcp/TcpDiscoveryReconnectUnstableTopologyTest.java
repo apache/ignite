@@ -97,7 +97,7 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
 
             nodes.add(startGrid(1));
 
-            nodes.add(startGrid("client"));
+            nodes.add((IgniteEx)startGrid("client"));
 
             nodes.add(startGrid(2));
 
