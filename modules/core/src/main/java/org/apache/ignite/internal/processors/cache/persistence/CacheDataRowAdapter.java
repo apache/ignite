@@ -243,12 +243,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     nextLink = incomplete.getNextLink();
                 }
                 finally {
-                    if (unlockRun != null)
+                    if (unlockRun == null)
                         pageMem.readUnlock(grpId, pageId, page);
                 }
             }
             finally {
-                if (unlockRun != null)
+                if (unlockRun == null)
                     pageMem.releasePage(grpId, pageId, page);
             }
         }
