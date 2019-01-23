@@ -38,7 +38,7 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class SVMFromSparkExample {
-    /** Path to Spark LogReg model. */
+    /** Path to Spark SVM model. */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/svm/data" +
         "/part-00000-b3d800e2-a36c-4948-8e65-29c9f5c9c5b2-c000.snappy.parquet";
 
