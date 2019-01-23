@@ -77,19 +77,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
         ignite.compute().execute(new TestTask(), "testArg");
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
-
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                assert evt.type() == EVT_NODE_METRICS_UPDATED;
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_METRICS_UPDATED);
-
-        latch.await();
+        awaitMetricsUpdate(2);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

@@ -798,25 +798,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         final AtomicBoolean stopping = new AtomicBoolean();
 
         try {
-            final CountDownLatch latch1 = new CountDownLatch(1);
-
             final Ignite g1 = startGrid(1);
 
-            IgnitePredicate<Event> lsnr1 = new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    info(evt.message());
-
-                    latch1.countDown();
-
-                    return true;
-                }
-            };
-
-            g1.events().localListen(lsnr1, EVT_NODE_METRICS_UPDATED);
-
-            assert latch1.await(10, SECONDS);
-
-            g1.events().stopLocalListen(lsnr1);
+            awaitMetricsUpdate(1);
 
             final CountDownLatch latch1_1 = new CountDownLatch(1);
             final CountDownLatch latch1_2 = new CountDownLatch(1);
