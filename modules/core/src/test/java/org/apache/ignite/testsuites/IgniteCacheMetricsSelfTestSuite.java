@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsCacheSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
@@ -72,6 +73,7 @@ public class IgniteCacheMetricsSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, CacheGroupsMetricsRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheValidatorMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsEntitiesCountTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsCacheSizeTest.class, ignoredTests);
 
         // Cluster wide metrics.
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsForClusterGroupSelfTest.class, ignoredTests);
