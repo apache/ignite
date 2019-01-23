@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core
 {
+    using System;
+
     /// <summary>
     /// Memory usage metrics.
     /// </summary>
@@ -81,6 +83,12 @@ namespace Apache.Ignite.Core
         /// Gets the size of pages loaded to RAM in bytes.
         /// </summary>
         long PhysicalMemorySize { get; }
+        
+        /// <summary>
+        /// Gets checkpoint buffer size in pages.
+        /// </summary>
+        [Obsolete("Deprecated, return 0")]
+        long CheckpointBufferPages { get; }
         
         /// <summary>
         /// Gets checkpoint buffer size in bytes.

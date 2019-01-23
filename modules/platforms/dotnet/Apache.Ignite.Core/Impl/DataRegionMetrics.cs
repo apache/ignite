@@ -91,6 +91,15 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public long PhysicalMemorySize { get; private set; }
         
+        /** <inheritdoc /> */ 
+        public long CheckpointBufferPages
+        {
+            get
+            {
+                return 0L;
+            }
+        }
+
         /** <inheritdoc /> */
         public long CheckpointBufferSize { get; private set; }
 
