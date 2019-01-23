@@ -20,29 +20,20 @@ package org.apache.ignite.testsuites;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.InterceptorCacheConfigVariationsFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for cache API.
  */
-@RunWith(InterceptorCacheConfigVariationsFullApiTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class InterceptorCacheConfigVariationsFullApiTestSuite {
     /** */
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return new ConfigVariationsTestSuiteBuilder(InterceptorCacheConfigVariationsFullApiTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
             .classes();
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

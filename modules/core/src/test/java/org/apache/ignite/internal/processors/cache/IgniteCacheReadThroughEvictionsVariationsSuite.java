@@ -22,15 +22,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /** */
-@RunWith(IgniteCacheReadThroughEvictionsVariationsSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheReadThroughEvictionsVariationsSuite {
     /** */
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return new ConfigVariationsTestSuiteBuilder(IgniteCacheReadThroughEvictionSelfTest.class)
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
@@ -50,14 +49,5 @@ public class IgniteCacheReadThroughEvictionsVariationsSuite {
             .gridsCount(4).backups(1)
             .testedNodesCount(2).withClients()
             .classes();
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

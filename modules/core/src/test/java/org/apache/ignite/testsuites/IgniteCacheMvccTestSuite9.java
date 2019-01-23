@@ -27,14 +27,13 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvict
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite.
  */
-@RunWith(IgniteCacheMvccTestSuite9.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite9 {
     /**
      * @return IgniteCache test suite.
@@ -58,13 +57,5 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
         return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

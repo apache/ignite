@@ -25,18 +25,17 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.WithKeepBinaryCacheFullApiTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for cache API.
  */
-@RunWith(WithKeepBinaryCacheConfigVariationsFullApiTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("serial")
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return Stream.concat(
             new ConfigVariationsTestSuiteBuilder(WithKeepBinaryCacheFullApiTest.class)
                 .withBasicCacheParams()
@@ -62,13 +61,5 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
                 .testedNodesCount(3).withClients()
                 .classes().stream())
             .collect(Collectors.toList());
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

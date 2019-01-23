@@ -26,14 +26,13 @@ import org.apache.ignite.internal.processors.service.IgniteServiceConfigVariatio
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Full API service test suit.
  */
-@RunWith(IgniteServiceConfigVariationsFullApiTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -42,7 +41,7 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     };
 
     /** */
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return Stream.of(
             new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
                 .igniteParams(PARAMS)
@@ -74,13 +73,5 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
                 .classes())
 
             .flatMap(Collection::stream).collect(Collectors.toList());
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

@@ -20,29 +20,20 @@ package org.apache.ignite.testsuites;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(IgniteCacheConfigVariationQueryTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheConfigVariationQueryTestSuite {
     /** */
-    private static List<Class<?>> suite() {
+    public static List<Class<?>> suite() {
         return new ConfigVariationsTestSuiteBuilder(IgniteCacheConfigVariationsQueryTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
             .classes();
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

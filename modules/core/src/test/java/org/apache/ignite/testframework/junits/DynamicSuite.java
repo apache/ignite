@@ -23,7 +23,16 @@ import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 
 /**
- *
+ * Runner for use with test suite classes that implement a static {@code suite()} method for providing list of classes
+ * to execute in a way resembling how it was done in {@code org.junit.runners.AllTests}. For example:
+ * <pre>
+ * &#064;RunWith(DynamicSuite.class)
+ * public class SomeTestSuite {
+ *    public public static List&lt;Class&lt;?&gt;&gt; suite() {
+ *       ...
+ *    }
+ * }
+ * </pre>
  */
 public class DynamicSuite extends Suite {
     /** */
@@ -50,6 +59,6 @@ public class DynamicSuite extends Suite {
 
         assert testClasses != null : "Null list of test classes was obtained from suite class: " + cls.getSimpleName();
 
-        return testClasses.toArray(new Class[] { null });
+        return testClasses.toArray(new Class[] {null});
     }
 }
