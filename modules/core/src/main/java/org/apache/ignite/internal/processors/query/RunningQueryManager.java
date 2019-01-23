@@ -112,7 +112,7 @@ public class RunningQueryManager {
     /**
      * Check belongs running query to an SQL type.
      *
-     * @param runningQryInfo
+     * @param runningQryInfo Running query info object.
      * @return {@code true} For SQL or SQL_FIELDS query type.
      */
     private boolean isSqlQuery(GridRunningQueryInfo runningQryInfo){
