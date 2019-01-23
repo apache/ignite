@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -36,8 +37,8 @@ public class IgniteTcBotSandboxTest extends GridCommonAbstractTest {
 
     @Test
     public void readTcBotDb() throws Exception {
-        //IgniteConfiguration cfg = new IgniteConfiguration();
-       // Ignite start = Ignition.start(cfg);
+        System.out.println("Cache name hash code: " + U.safeAbs(TEST_HIST_CACHE_NAME.hashCode()));
+
         IgniteEx ignite = startGrid(0);
         ignite.cluster().active(true);
 

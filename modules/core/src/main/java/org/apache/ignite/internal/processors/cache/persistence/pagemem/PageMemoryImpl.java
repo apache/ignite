@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.xml.bind.DatatypeConverter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1548,7 +1549,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
             assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
-            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
+            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, page,
+                fullId.groupId());
             assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
 
             try {
@@ -1564,6 +1566,22 @@ public class PageMemoryImpl implements PageMemoryEx {
                 throw ex;
             }
         }
+    }
+
+    @NotNull private String dumpPage(long pageId, long page, int grpId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+        int partId = PageIdUtils.partId(pageId);
+
+        int pageSize = pageSize();
+        byte[] data = new byte[pageSize];
+
+        for (int i = 0; i < pageSize; i++)
+            data[i] = GridUnsafe.getByte(page + PAGE_OVERHEAD + i);
+
+        long off = (long)pageIdx * pageSize;
+        return U.hexLong(pageId) + "(grpId=" + grpId + ", pageIdx=" + pageIdx + ", partId=" + partId + ",offH=" +
+            Long.toHexString(off) + ")"
+            + ": " + DatatypeConverter.printHexBinary(data);
     }
 
     /**
