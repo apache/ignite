@@ -48,6 +48,9 @@ class ReduceQueryRun {
     private final int pageSize;
 
     /** */
+    private final Boolean dataPageScanEnabled;
+
+    /** */
     private final AtomicReference<State> state = new AtomicReference<>();
 
     /** Future controlling {@code SELECT FOR UPDATE} query execution. */
@@ -59,17 +62,27 @@ class ReduceQueryRun {
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param selectForUpdateFut Future controlling {@code SELECT FOR UPDATE} query execution.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
-    ReduceQueryRun(Connection conn, int idxsCnt, int pageSize,
-        GridNearTxSelectForUpdateFuture selectForUpdateFut) {
-
+    ReduceQueryRun(
+        Connection conn,
+        int idxsCnt,
+        int pageSize,
+        GridNearTxSelectForUpdateFuture selectForUpdateFut,
+        Boolean dataPageScanEnabled
+    ) {
         this.conn = (JdbcConnection)conn;
-
         this.idxs = new ArrayList<>(idxsCnt);
-
         this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
-
         this.selectForUpdateFut = selectForUpdateFut;
+        this.dataPageScanEnabled  = dataPageScanEnabled;
+    }
+
+    /**
+     * @return {@code true} If data page scan is enabled.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**

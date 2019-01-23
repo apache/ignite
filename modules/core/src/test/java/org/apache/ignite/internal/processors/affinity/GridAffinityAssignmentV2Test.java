@@ -17,20 +17,18 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.util.BitSetIntSet;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -51,42 +49,34 @@ import static org.junit.Assert.fail;
  * Tests for {@link GridAffinityAssignment}.
  */
 @RunWith(JUnit4.class)
-public class GridAffinityAssignmentTest {
+public class GridAffinityAssignmentV2Test {
     /**  */
-    protected DiscoveryMetricsProvider metrics = new DiscoveryMetricsProvider() {
-        @Override public ClusterMetrics metrics() {
-            return null;
-        }
-
-        @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-            return null;
-        }
-    };
+    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider();
 
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
+
+    private ClusterNode clusterNode1 = node(metrics, ver, "1");
+    private ClusterNode clusterNode2 = node(metrics, ver, "2");
+    private ClusterNode clusterNode3 = node(metrics, ver, "3");
+    private ClusterNode clusterNode4 = node(metrics, ver, "4");
+    private ClusterNode clusterNode5 = node(metrics, ver, "5");
+    private ClusterNode clusterNode6 = node(metrics, ver, "6");
+
+    private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
+        add(clusterNode1);
+        add(clusterNode2);
+        add(clusterNode3);
+        add(clusterNode4);
+        add(clusterNode5);
+        add(clusterNode6);
+    }};
 
     /**
      * Test GridAffinityAssignment logic when backup threshold is not reached.
      */
     @Test
     public void testPrimaryBackupPartitions() {
-        ClusterNode clusterNode1 = node(metrics, ver, "1");
-        ClusterNode clusterNode2 = node(metrics, ver, "2");
-        ClusterNode clusterNode3 = node(metrics, ver, "3");
-        ClusterNode clusterNode4 = node(metrics, ver, "4");
-        ClusterNode clusterNode5 = node(metrics, ver, "5");
-        ClusterNode clusterNode6 = node(metrics, ver, "6");
-
-        List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
-            add(clusterNode1);
-            add(clusterNode2);
-            add(clusterNode3);
-            add(clusterNode4);
-            add(clusterNode5);
-            add(clusterNode6);
-        }};
-
         GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             new ArrayList<List<ClusterNode>>() {{
@@ -110,6 +100,68 @@ public class GridAffinityAssignmentTest {
             new ArrayList<>()
         );
 
+        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+            new AffinityTopologyVersion(1, 0),
+            new ArrayList<List<ClusterNode>>() {{
+                add(new ArrayList<ClusterNode>() {{
+                    add(clusterNode1);
+                    add(clusterNode2);
+                    add(clusterNode3);
+                    add(clusterNode4);
+                }});
+                add(new ArrayList<ClusterNode>() {{
+                    add(clusterNode1);
+                    add(clusterNode2);
+                    add(clusterNode3);
+                    add(clusterNode4);
+                }});
+                add(new ArrayList<ClusterNode>() {{
+                    add(clusterNode5);
+                    add(clusterNode6);
+                }});
+            }},
+            new ArrayList<>()
+        );
+
+        assertPartitions(gridAffinityAssignment);
+
+        assertPartitions(gridAffinityAssignment2);
+
+        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+        else
+            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+
+        try {
+            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()).add(1000);
+
+            fail("Unmodifiable exception expected");
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
+        }
+
+        try {
+            gridAffinityAssignment2.backupPartitions(clusterNode1.id()).add(1000);
+
+            fail("Unmodifiable exception expected");
+        }
+        catch (UnsupportedOperationException ignored) {
+            // Ignored.
+        }
+
+        Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
+            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+            "c"
+        );
+
+        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
+            assertTrue(unwrapped instanceof HashSet);
+        else
+            assertTrue(unwrapped instanceof BitSetIntSet);
+    }
+
+    private void assertPartitions(AffinityAssignment gridAffinityAssignment) {
         List<Integer> parts = new ArrayList<Integer>() {{
             add(0);
             add(1);
@@ -140,39 +192,6 @@ public class GridAffinityAssignmentTest {
 
         for (int i = 0; i < 4; i++)
             assertTrue(gridAffinityAssignment.getIds(0).contains(clusterNodes.get(i).id()));
-
-        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-        else
-            assertNotSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
-
-        try {
-            gridAffinityAssignment.primaryPartitions(clusterNode1.id()).add(1000);
-
-            fail("Unmodifiable exception expected");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        try {
-            gridAffinityAssignment.backupPartitions(clusterNode1.id()).add(1000);
-
-            fail("Unmodifiable exception expected");
-        }
-        catch (UnsupportedOperationException ignored) {
-            // Ignored.
-        }
-
-        Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
-            gridAffinityAssignment.primaryPartitions(clusterNode1.id()),
-            "c"
-        );
-
-        if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertTrue(unwrapped instanceof HashSet);
-        else
-            assertTrue(unwrapped instanceof BitSetIntSet);
     }
 
     /**
@@ -198,13 +217,46 @@ public class GridAffinityAssignmentTest {
 
     /**
      *
+     * @throws IOException If error.
+     */
+    @Test
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        List<ClusterNode> nodes = new ArrayList<>();
+
+        for(int i = 0; i < 10; i++)
+            nodes.add(node(metrics, ver, "1" + i));
+
+        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+            new AffinityTopologyVersion(1, 0),
+            new ArrayList<List<ClusterNode>>() {{
+                add(nodes);
+            }},
+            new ArrayList<>()
+        );
+
+        ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
+
+        ObjectOutputStream outputStream = new ObjectOutputStream(byteArrOutputStream);
+
+        outputStream.writeObject(gridAffinityAssignment2);
+
+        ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(byteArrOutputStream.toByteArray()));
+
+        GridAffinityAssignmentV2 deserialized = (GridAffinityAssignmentV2)inputStream.readObject();
+
+        assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
+    }
+
+
+    /**
+     *
      * @param metrics Metrics.
      * @param v Version.
      * @param consistentId ConsistentId.
      * @return TcpDiscoveryNode.
      */
     protected TcpDiscoveryNode node(DiscoveryMetricsProvider metrics, IgniteProductVersion v, String consistentId) {
-        return new TcpDiscoveryNode(
+        TcpDiscoveryNode node = new TcpDiscoveryNode(
             UUID.randomUUID(),
             Collections.singletonList("127.0.0.1"),
             Collections.singletonList("127.0.0.1"),
@@ -213,5 +265,9 @@ public class GridAffinityAssignmentTest {
             v,
             consistentId
         );
+
+        node.setAttributes(Collections.emptyMap());
+
+        return node;
     }
 }
