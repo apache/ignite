@@ -67,15 +67,31 @@ public class OdbcUtils {
         if (F.isEmpty(ptrn))
             return ptrn;
 
-        String ptrn0 = ' ' + removeQuotationMarksIfNeeded(ptrn.toUpperCase());
+        String ptrn0 = ptrn.toUpperCase();
 
-        ptrn0 = ptrn0.replaceAll("([^\\\\])%", "$1.*");
+        ptrn0 = removeQuotationMarksIfNeeded(ptrn0);
 
-        ptrn0 = ptrn0.replaceAll("([^\\\\])_", "$1.");
+        return translateSqlWildcardsToRegex(ptrn0);
+    }
 
-        ptrn0 = ptrn0.replaceAll("\\\\(.)", "$1");
 
-        return ptrn0.substring(1);
+    /**
+     * Converts sql pattern wildcards into java regex wildcards.
+     * Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").
+     */
+    public static String translateSqlWildcardsToRegex(String sqlPtrn) {
+        if (F.isEmpty(sqlPtrn))
+            return sqlPtrn;
+        
+        String toRegex = ' ' + sqlPtrn;
+
+        toRegex = toRegex.replaceAll("([^\\\\])%", "$1.*");
+
+        toRegex = toRegex.replaceAll("([^\\\\])_", "$1.");
+
+        toRegex = toRegex.replaceAll("\\\\(.)", "$1");
+
+        return toRegex.substring(1);
     }
 
     /**
