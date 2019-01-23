@@ -282,6 +282,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Tmp storage for meta migration. */
     private MetaStorage.TmpStorage tmpStorage;
 
+    /** Node's local cache configurations (both from static configuration and from persistent caches). */
+    private CacheJoinNodeDiscoveryData localConfigs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -767,6 +770,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 templates,
                 startAllCachesOnClientStart()
         );
+
+        localConfigs = discoData;
 
         cachesInfo.onStart(discoData);
     }
@@ -1951,6 +1956,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Caches to be started when this node starts.
      */
     @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+        if (ctx.discovery().localNode().order() == 1 && localConfigs != null)
+            cachesInfo.filterDynamicCacheDescriptors(localConfigs);
+
+        localConfigs = null;
+
         return cachesInfo.localJoinCachesContext();
     }
 
