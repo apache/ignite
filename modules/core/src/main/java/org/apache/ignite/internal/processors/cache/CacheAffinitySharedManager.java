@@ -466,8 +466,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grp != null : desc.groupId();
                 assert !grp.affinityNode() || grp.isLocal() : grp.cacheOrGroupName();
 
-                if (!grp.isLocal() && (grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) || cctx.localNode().isClient())) {
-                    assert grp.localStartVersion().equals(topVer) : grp.localStartVersion();
+                if (!grp.isLocal()) {
+//                    assert grp.localStartVersion().equals(topVer) : grp.localStartVersion();
 
                     CacheGroupHolder grpHolder = grpHolders.get(grp.groupId());
 
@@ -501,8 +501,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
                     }
-
-                    if (!crd && !fetchFuts.containsKey(grp.groupId())) {
+                    else if (!crd && grp.affinity().lastVersion().compareTo(topVer) < 0 && !fetchFuts.containsKey(grp.groupId())) {
                         GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                             grp.groupId(),
                             topVer,
