@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -229,8 +230,11 @@ public class QueryEntity implements Serializable {
         Map<String, QueryIndex> currentIndexes = new HashMap<>();
 
         for (QueryIndex index : getIndexes()) {
-            if (currentIndexes.put(index.getName(), index) != null)
-                throw new IllegalStateException("Duplicate key");
+            QueryIndex existingIndex = currentIndexes.put(index.getName(), index);
+            if (existingIndex != null) {
+                throw new IgniteException("Found duplicate indexes [indexName=" + index.getName()
+                    + ", queryEntity=" + this + "]");
+            }
         }
 
         for (QueryIndex queryIndex : target.getIndexes()) {

@@ -173,6 +173,9 @@ public class DdlStatementsProcessor {
                 newIdx.setFields(flds);
                 newIdx.setInlineSize(cmd0.inlineSize());
 
+                // Generate name if it isn't set.
+                newIdx.setName(QueryUtils.indexName(cmd0.tableName(), newIdx));
+
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd0.ifNotExists(), cmd0.parallel());
             }
@@ -312,6 +315,9 @@ public class DdlStatementsProcessor {
                 }
 
                 newIdx.setFields(flds);
+
+                // Generate name if it isn't set.
+                newIdx.setName(QueryUtils.indexName(cmd.tableName(), newIdx));
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd.ifNotExists(), 0);

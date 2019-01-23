@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
@@ -98,8 +99,11 @@ public class QuerySchema implements Serializable {
             Map<String, QueryEntity> localEntities = new HashMap<>();
 
             for (QueryEntity entity : entities) {
-                if (localEntities.put(entity.getTableName(), entity) != null)
-                    throw new IllegalStateException("Duplicate key");
+                QueryEntity entity1 = localEntities.put(entity.getTableName(), entity);
+                if (entity1 != null) {
+                    throw new IgniteException("Found duplicate entity [tableName=" + entity.getTableName()
+                        + ", querySchema=" + this + "]");
+                }
             }
 
             Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
