@@ -32,8 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -660,9 +658,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5440")
-    @Test
+    @org.junit.Test
     public void testSetEscapeProcessing() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
+
         stmt.setEscapeProcessing(false);
 
         final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";
@@ -1072,22 +1071,22 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         cachePerson.put("p2", new Person(2, "Joe", "Black", 35));
         cachePerson.put("p3", new Person(3, "Mike", "Green", 40));
 
-        IgniteCache<Integer, TestValue> cacheTest = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Test> cacheTest = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 1; i <= 10; i++)
-            cacheTest.put(i, new TestValue(i));
+            cacheTest.put(i, new Test(i));
     }
 
     /** */
     @SuppressWarnings("unused")
-    public static class TestValue {
+    public static class Test {
         @QuerySqlField
         private int val;
 
         /**
          * @param val Value.
          */
-        public TestValue(int val) {
+        public Test(int val) {
             this.val = val;
         }
     }
