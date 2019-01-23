@@ -502,6 +502,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         boolean affReady,
         boolean updateMoving
     ) throws IgniteCheckedException {
+        if (ctx.exchange().isExchangeWorkerCancelled())
+            throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
+
         ctx.database().checkpointReadLock();
 
         try {
