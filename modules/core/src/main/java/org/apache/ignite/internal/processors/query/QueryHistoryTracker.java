@@ -18,9 +18,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -141,10 +141,10 @@ class QueryHistoryTracker {
      *
      * @return SQL queries history aggregated by query text, schema and local flag.
      */
-    Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+    Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
         if (histSz <= 0)
-            return Collections.emptyList();
+            return Collections.emptyMap();
 
-        return new HashSet<>(qryMetrics.values());
+        return new HashMap<>(qryMetrics);
     }
 }

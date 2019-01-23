@@ -202,7 +202,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         // Check that collected metrics contains correct items: metrics for last N queries.
 
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics();
+        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
@@ -292,7 +292,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics();
+        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
@@ -423,7 +423,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     private void checkMetrics(int sz, int idx, int execs, int failures,
         boolean first) {
 
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics();
+        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics().values();
 
         assertNotNull(metrics);
         assertEquals(sz, metrics.size());
@@ -563,7 +563,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     private void waitingFor(final String cond, final int exp) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(() -> {
-            Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics();
+            Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing()).queryHistoryMetrics().values();
 
             switch (cond) {
                 case "size":

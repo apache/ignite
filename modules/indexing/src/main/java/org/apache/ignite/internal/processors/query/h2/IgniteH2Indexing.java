@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
+import org.apache.ignite.internal.processors.query.QueryHistoryMetricsKey;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -466,14 +467,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo runningQryInfo = runningQueryManager().register(qry,
-                TEXT, schemaName, true, null);
+            Long qryId = runningQueryManager().register(qry, TEXT, schemaName, true, null);
 
             try {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters);
             }
             finally {
-                runningQueryManager().unregister(runningQryInfo.id(), false, false);
+                runningQueryManager().unregister(qryId, false);
             }
         }
 
@@ -1758,12 +1758,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private Long registerRunningQuery(String schemaName, GridQueryCancel cancel, String qry, boolean loc,
         boolean registerAsNewQry) {
-        if (registerAsNewQry) {
-            GridRunningQueryInfo runningQryInfo = runningQueryMgr.register(qry,
-                GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
-
-            return runningQryInfo.id();
-        }
+        if (registerAsNewQry)
+            return runningQueryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, loc, cancel);
 
         return null;
     }
@@ -2742,7 +2738,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @return Queries history metrics.
      */
-    public Collection<QueryHistoryMetrics> queryHistoryMetrics() {
+    public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
         return runningQueryMgr.queryHistoryMetrics();
     }
 
