@@ -146,9 +146,6 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
 
 /**
  * Common abstract test for Ignite tests.
- * <p>
- * IMPL NOTE for some reason, possibly related to {@code TestRule}, annotation {@code org.junit.Before} appears
- * to work unreliably here.</p>
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
