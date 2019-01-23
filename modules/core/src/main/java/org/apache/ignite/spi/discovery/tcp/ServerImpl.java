@@ -2491,7 +2491,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             cleanup();
         }
 
-        // TODO this should be an O(1) method
+        /**
+         * @param custom {@code true} if need to check for a custom message with the given ID.
+         * @param id Message ID.
+         * @return {@code true} if pending messages contain such a message.
+         */
         private boolean hasPendingMessage(boolean custom, IgniteUuid id) {
             for (PendingMessage msg : msgs) {
                 if (msg.customMsg == custom && msg.id.equals(id))
