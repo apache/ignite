@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -208,6 +209,7 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+    ConsistentIdImplicitlyExplicitlyTest.class
 })
 public class IgniteBasicTestSuite {
 }
