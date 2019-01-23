@@ -200,13 +200,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(0);
-
-        startGrid(1);
-
-        startGrid(2);
-
-        startGrid(3);
+        startGridsMultiThreaded(4);
     }
 
     /** {@inheritDoc} */
