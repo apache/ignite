@@ -1771,7 +1771,7 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                map.put(CHECK_CRC.toString(), "check crc sum of pages on disk before idle_verify.");
+                map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.");
 
                 break;
         }
