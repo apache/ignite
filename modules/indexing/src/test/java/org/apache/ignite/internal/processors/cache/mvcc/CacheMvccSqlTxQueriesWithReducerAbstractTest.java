@@ -33,13 +33,12 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -178,7 +177,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
                 @Override public Object call() {
                     return cache0.query(qry);
                 }
-            }, IgniteSQLException.class, "Duplicate key");
+            }, TransactionException.class, "Duplicate key during INSERT");
 
             tx.rollback();
         }
