@@ -257,24 +257,24 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
-            assertEquals(m.getCacheGets(), 0);
-            assertEquals(m.getCachePuts(), 0);
-            assertEquals(m.getCacheRemovals(), 0);
-            assertEquals(m.getCacheHits(), 0);
-            assertEquals(m.getCacheMisses(), 0);
-            assertEquals(m.getAverageGetTime(), 0f);
-            assertEquals(m.getAverageRemoveTime(), 0f);
-            assertEquals(m.getAveragePutTime(), 0f);
-            assertEquals(m.getAverageTxCommitTime(), 0f);
-            assertEquals(m.getAverageTxRollbackTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getCacheGets(), 0);
+            junit.framework.Assert.assertEquals(m.getCachePuts(), 0);
+            junit.framework.Assert.assertEquals(m.getCacheRemovals(), 0);
+            junit.framework.Assert.assertEquals(m.getCacheHits(), 0);
+            junit.framework.Assert.assertEquals(m.getCacheMisses(), 0);
+            junit.framework.Assert.assertEquals(m.getAverageGetTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getAverageRemoveTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getAveragePutTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getAverageTxCommitTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getAverageTxRollbackTime(), 0f);
 
-            assertEquals(m.getEntryProcessorPuts(), 0);
-            assertEquals(m.getEntryProcessorRemovals(), 0);
-            assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
-            assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
-            assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
-            assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
-            assertEquals(m.getEntryProcessorInvocations(), 0);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorPuts(), 0);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorRemovals(), 0);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
+            junit.framework.Assert.assertEquals(m.getEntryProcessorInvocations(), 0);
         }
     }
 
@@ -298,7 +298,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.getAndRemoveAsync(i).get();
@@ -323,7 +323,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        junit.framework.Assert.assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
 
         cache.put(key, key);
 
@@ -344,7 +344,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.remove(i);
@@ -363,7 +363,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.put(2, 2);
         cache.put(3, 3);
 
-        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         Set<Integer> keys = new HashSet<>(4, 1);
         keys.add(1);
@@ -397,7 +397,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         IgniteFuture<?> fut = cache.removeAllAsync(keys);
 
@@ -416,7 +416,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(1, 1);
 
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         cache.get(1);
 
@@ -436,13 +436,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         cache.put(1, 1);
         cache.put(2, 2);
         cache.put(3, 3);
 
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         Set<Integer> keys = new TreeSet<>();
         keys.add(1);
@@ -461,13 +461,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetAllAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         cache.put(1, 1);
         cache.put(2, 2);
         cache.put(3, 3);
 
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         Set<Integer> keys = new TreeSet<>();
         keys.add(1);
@@ -490,15 +490,15 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutAvgTime() throws Exception {
         final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
-        assertEquals(0, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCachePuts());
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
         assert cache.localMetrics().getAveragePutTime() > 0;
 
-        assertEquals(KEY_CNT, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(KEY_CNT, cache.localMetrics().getCachePuts());
     }
 
     /**
@@ -508,8 +508,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
-        assertEquals(0, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCachePuts());
 
         cache.putAsync(1, 1).get();
 
@@ -535,8 +535,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
-        assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
         cache.getAndPutAsync(key, key).get();
 
@@ -563,7 +563,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
+        junit.framework.Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
         cache.putIfAbsentAsync(key, key).get();
 
@@ -589,7 +589,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
+        junit.framework.Assert.assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
         cache.getAndPutIfAbsentAsync(key, key).get();
 
@@ -605,8 +605,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
-        assertEquals(0, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCachePuts());
 
         Map<Integer, Integer> values = new HashMap<>();
 
@@ -619,7 +619,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         float averagePutTime = cache.localMetrics().getAveragePutTime();
 
         assert averagePutTime >= 0;
-        assertEquals(values.size(), cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals(values.size(), cache.localMetrics().getCachePuts());
     }
 
     /**
@@ -650,10 +650,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 int cacheWrites = (int)cache.localMetrics().getCachePuts();
 
-                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+                junit.framework.Assert.assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
             }
 
-            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+            junit.framework.Assert.assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
 
             expReads++;
         }
@@ -675,10 +675,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         info("Stats [reads=" + reads + ", hits=" + hits + ", misses=" + misses + ']');
 
-        assertEquals(keyCnt * gridCount(), puts);
-        assertEquals(expReads, reads);
-        assertEquals(keyCnt, hits);
-        assertEquals(expMisses, misses);
+        junit.framework.Assert.assertEquals(keyCnt * gridCount(), puts);
+        junit.framework.Assert.assertEquals(expReads, reads);
+        junit.framework.Assert.assertEquals(keyCnt, hits);
+        junit.framework.Assert.assertEquals(expMisses, misses);
     }
 
     /**
@@ -701,18 +701,18 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 long cacheWrites = cache.localMetrics().getCachePuts();
 
-                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+                junit.framework.Assert.assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
             }
 
-            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+            junit.framework.Assert.assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
         }
 
         // Check metrics for the whole cache.
         for (int i = 0; i < gridCount(); i++) {
             CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
-            assertEquals(m.getCacheHits() * 100f / m.getCacheGets(), m.getCacheHitPercentage(), 0.1f);
-            assertEquals(m.getCacheMisses() * 100f / m.getCacheGets(), m.getCacheMissPercentage(), 0.1f);
+            junit.framework.Assert.assertEquals(m.getCacheHits() * 100f / m.getCacheGets(), m.getCacheHitPercentage(), 0.1f);
+            junit.framework.Assert.assertEquals(m.getCacheMisses() * 100f / m.getCacheGets(), m.getCacheMissPercentage(), 0.1f);
         }
     }
 
@@ -753,10 +753,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             misses += m.getCacheMisses();
         }
 
-        assertEquals(0, puts);
-        assertEquals(expReads, reads);
-        assertEquals(0, hits);
-        assertEquals(expReads, misses);
+        junit.framework.Assert.assertEquals(0, puts);
+        junit.framework.Assert.assertEquals(expReads, reads);
+        junit.framework.Assert.assertEquals(0, hits);
+        junit.framework.Assert.assertEquals(expReads, misses);
     }
 
     /**
@@ -766,8 +766,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testMissesOnEmptyCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
+        junit.framework.Assert.assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
 
         Integer key = null;
 
@@ -783,19 +783,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.get(key);
 
-        assertEquals("Expected 1 read", 1, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 1 miss", 1, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals("Expected 1 read", 1, cache.localMetrics().getCacheGets());
+        junit.framework.Assert.assertEquals("Expected 1 miss", 1, cache.localMetrics().getCacheMisses());
 
         cache.getAndPut(key, key); // +1 read, +1 miss.
 
-        assertEquals("Expected 2 reads", 2, cache.localMetrics().getCacheGets());
+        junit.framework.Assert.assertEquals("Expected 2 reads", 2, cache.localMetrics().getCacheGets());
 
         cache.get(key);
 
-        assertEquals("Expected 1 write", 1, cache.localMetrics().getCachePuts());
-        assertEquals("Expected 3 reads", 3, cache.localMetrics().getCacheGets());
-        assertEquals("Expected 2 misses", 2, cache.localMetrics().getCacheMisses());
-        assertEquals("Expected 1 hit", 1, cache.localMetrics().getCacheHits());
+        junit.framework.Assert.assertEquals("Expected 1 write", 1, cache.localMetrics().getCachePuts());
+        junit.framework.Assert.assertEquals("Expected 3 reads", 3, cache.localMetrics().getCacheGets());
+        junit.framework.Assert.assertEquals("Expected 2 misses", 2, cache.localMetrics().getCacheMisses());
+        junit.framework.Assert.assertEquals("Expected 1 hit", 1, cache.localMetrics().getCacheHits());
     }
 
     /**
@@ -810,7 +810,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // +1 remove
         cache.remove(1);
 
-        assertEquals(1L, cache.localMetrics().getCacheRemovals());
+        junit.framework.Assert.assertEquals(1L, cache.localMetrics().getCacheRemovals());
     }
 
     /**
@@ -826,33 +826,33 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         awaitMetricsUpdate(1);
 
-        assertEquals(0, cache.metrics().getCacheSize());
+        junit.framework.Assert.assertEquals(0, cache.metrics().getCacheSize());
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
         awaitMetricsUpdate(1);
 
-        assertEquals(KEY_CNT, cache.metrics().getCacheSize());
+        junit.framework.Assert.assertEquals(KEY_CNT, cache.metrics().getCacheSize());
 
-        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
+        junit.framework.Assert.assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
         for (int i = 0; i < KEY_CNT / 2; i++)
             cache.remove(i, i);
 
         awaitMetricsUpdate(1);
 
-        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
+        junit.framework.Assert.assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
 
-        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
+        junit.framework.Assert.assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
         cache.removeAll();
 
         awaitMetricsUpdate(1);
 
-        assertEquals(0, cache.metrics().getCacheSize());
+        junit.framework.Assert.assertEquals(0, cache.metrics().getCacheSize());
 
-        assertEquals(0, cache.localMetrics().getCacheSize());
+        junit.framework.Assert.assertEquals(0, cache.localMetrics().getCacheSize());
     }
 
     /**
@@ -897,8 +897,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assert entry != null;
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        junit.framework.Assert.assertEquals(0, entry.ttl());
+        junit.framework.Assert.assertEquals(0, entry.expireTime());
 
         long startTime = U.currentTimeMillis();
 
@@ -915,8 +915,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             entry = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).entryEx(key);
 
-            assertEquals(0, entry.ttl());
-            assertEquals(0, entry.expireTime());
+            junit.framework.Assert.assertEquals(0, entry.ttl());
+            junit.framework.Assert.assertEquals(0, entry.expireTime());
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
@@ -1037,7 +1037,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 curEntry.unswap();
 
-                assertEquals(expireTimes[i], curEntry.expireTime());
+                junit.framework.Assert.assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
 
@@ -1075,7 +1075,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Ensure that old TTL and expire time are not longer "visible".
         entry = c0.entryEx(key);
 
-        assertEquals(0, entry.expireTime());
+        junit.framework.Assert.assertEquals(0, entry.expireTime());
     }
 
     /**
@@ -1109,19 +1109,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache0.invoke(key, removingProcessor);
 
-        assertEquals(1, cache0.localMetrics().getEntryProcessorRemovals());
+        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorRemovals());
 
 //        if (emptyCache) {
-//            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+//            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
 //
-//            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
-//            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+//            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+//            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
 //        }
 //        else {
-//            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+//            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
 //
-//            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
-//            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+//            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+//            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
 //        }
 //
 //        for (int i = 1; i < gridCount(); i++) {
@@ -1130,10 +1130,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 //            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 //
 //            if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
-//                assertEquals(1, cache.localMetrics().getEntryProcessorRemovals());
+//                junit.framework.Assert.assertEquals(1, cache.localMetrics().getEntryProcessorRemovals());
 //        }
 //
-//        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+//        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
     }
 
     /**
@@ -1167,19 +1167,19 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache0.invoke(key, updatingProcessor);
 
-        assertEquals(1, cache0.localMetrics().getEntryProcessorPuts());
+        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorPuts());
 
         if (emptyCache) {
-            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
 
-            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
         else {
-            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
 
-            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
 
         for (int i = 1; i < gridCount(); i++) {
@@ -1188,10 +1188,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
-                assertEquals(1, cache.localMetrics().getEntryProcessorPuts());
+                junit.framework.Assert.assertEquals(1, cache.localMetrics().getEntryProcessorPuts());
         }
 
-        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
     }
 
     /**
@@ -1226,25 +1226,25 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache0.invoke(key, readingProcessor);
 
-        assertEquals(1, cache0.localMetrics().getEntryProcessorReadOnlyInvocations());
+        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorReadOnlyInvocations());
 
         if (emptyCache) {
-            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
 
-            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
         else {
-            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+            junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
 
-            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
-            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+            junit.framework.Assert.assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            junit.framework.Assert.assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
 
         for (int i = 1; i < gridCount(); i++)
-            assertEquals(0, jcache(i).localMetrics().getEntryProcessorReadOnlyInvocations());
+            junit.framework.Assert.assertEquals(0, jcache(i).localMetrics().getEntryProcessorReadOnlyInvocations());
 
-        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+        junit.framework.Assert.assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
     }
 
     /**
@@ -1256,7 +1256,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         float averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
 
-        assertEquals(0.0, averageTime, 0.001f);
+        junit.framework.Assert.assertEquals(0.0, averageTime, 0.001f);
 
         final Integer key = primaryKey(cache0);
 
@@ -1285,7 +1285,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         float minTime = cache0.localMetrics().getEntryProcessorMinInvocationTime();
 
         assertTrue(maxTime > 0.0);
-        assertEquals(maxTime, minTime, 0.001f);
+        junit.framework.Assert.assertEquals(maxTime, minTime, 0.001f);
 
         cache0.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override
@@ -1309,7 +1309,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
 
         assertTrue(maxTime > averageTime && averageTime > minTime);
-        assertEquals(2, cache0.localMetrics().getEntryProcessorInvocations());
+        junit.framework.Assert.assertEquals(2, cache0.localMetrics().getEntryProcessorInvocations());
     }
 
     /**
@@ -1319,7 +1319,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAsyncAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
 
         final Integer key = primaryKey(cache);
 
@@ -1337,7 +1337,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
 
         cache.invokeAll(ImmutableMap.of(0, updatingProcessor,
             1, readingProcessor,
@@ -1355,7 +1355,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllAsyncAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
 
         Map<Integer, EntryProcessorResult<Object>> invokeFut = cache.invokeAllAsync(
                 ImmutableMap.of(0, updatingProcessor,
@@ -1378,7 +1378,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         keys.add(1);
         keys.add(2);
 
-        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
 
         cache.invokeAll(keys, updatingProcessor);
 
@@ -1398,7 +1398,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         keys.add(1);
         keys.add(2);
 
-        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        junit.framework.Assert.assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
 
         cache.invokeAllAsync(keys, updatingProcessor).get();
 
