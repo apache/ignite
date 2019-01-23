@@ -116,6 +116,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
         startGrids(GRID_CNT);
     }
 
