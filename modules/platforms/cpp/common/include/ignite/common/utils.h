@@ -596,6 +596,62 @@ namespace ignite
         };
 
         /**
+         * Deinit guard class template.
+         *
+         * Upon destruction calls provided deinit function on provided instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class DeinitGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Deinit function type. */
+            typedef void (*FuncType)(ValueType*);
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            DeinitGuard(ValueType* val, FuncType method) :
+                val(val),
+                func(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~DeinitGuard()
+            {
+                if (val && func)
+                    (func)(val);
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                func = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            FuncType func;
+        };
+
+        /**
          * Get dynamic library full name.
          * @param name Name without extension.
          * @return Full name.
