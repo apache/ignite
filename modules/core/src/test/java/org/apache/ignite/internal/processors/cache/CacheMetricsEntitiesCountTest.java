@@ -300,6 +300,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
             assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
+
         assertEquals(cacheInfo + " isEmpty", cacheSize == 0, isEmptySum);
     }
 }
