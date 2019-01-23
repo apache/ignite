@@ -484,6 +484,7 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
+            // TODO: qry.mapQueries() will report a value which may be changed below
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
                 qry.mapQueries().size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
 
@@ -559,6 +560,10 @@ public class GridReduceQueryExecutor {
                 for (GridCacheSqlQuery mapQry : qry.mapQueries())
                     hasSubQries |= mapQry.hasSubQueries();
 
+                // TODO: Add test for the following case: complex qry with many map queries, has 2+ parameter placeholders,
+                // TODO: execute with 1 partition, then with many partitions.
+
+                // TODO: General rule: qry cannot be modified. Need to ocpy it instead.
                 qry.mapQueries().clear();
 
                 GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
