@@ -39,7 +39,6 @@ import org.junit.runners.JUnit4;
 public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
     private volatile String token;
-    public static volatile boolean enabled;
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -83,126 +82,6 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
         startGrid(1);
     }
 
-    public static class NodeValidationPluginProvider implements PluginProvider, IgnitePlugin {
-
-        private NodeValidationPluginConfiguration pluginConfiguration;
-
-        @Override public String name() {
-            return "NodeValidationPluginProvider";
-        }
-
-        @Override public String version() {
-            return "1.0";
-        }
-
-        @Override public String copyright() {
-            return "";
-        }
-
-        @Override public IgnitePlugin plugin() {
-            return this;
-        }
-
-        @Override
-        public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-            if(!enabled) return;
-
-            IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
-
-            if (igniteCfg.getPluginConfigurations() != null) {
-                for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
-                    if (pluginCfg instanceof NodeValidationPluginConfiguration) {
-                        pluginConfiguration = (NodeValidationPluginConfiguration)pluginCfg;
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-            return null;
-        }
-
-        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-            return null;
-        }
-
-        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-            //no-op
-        }
-
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-            //no-op
-        }
-
-        @Override public void onIgniteStart() throws IgniteCheckedException {
-            //no-op
-        }
-
-        @Override public void onIgniteStop(boolean cancel) {
-            //no-op
-        }
-
-        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-            if(!enabled) return null;
-
-            MyDiscoData data = new MyDiscoData(pluginConfiguration.getToken());
-
-            return data;
-        }
-
-        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-            if(!enabled) return;
-        }
-
-        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-            // no-op
-        }
-
-        @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
-            if(!enabled) return;
-
-            MyDiscoData newNodeDiscoData = serializable instanceof MyDiscoData ? (MyDiscoData)serializable : null;
-
-            if (newNodeDiscoData == null || !newNodeDiscoData.getToken().equals(pluginConfiguration.getToken())) {
-                String msg = newNodeDiscoData == null ? "no token provided" : "bad token provided: " + newNodeDiscoData.getToken();
-
-                throw new PluginValidationException(msg, msg, node.id());
-            }
-        }
-    }
-
-    public static class NodeValidationPluginConfiguration implements PluginConfiguration {
-        private final String token;
-
-        public NodeValidationPluginConfiguration(String token) {
-            this.token = token;
-        }
-
-        public String getToken() {
-            return token;
-        }
-    }
-
-    private static class MyDiscoData implements Serializable {
-        String token;
-
-        public MyDiscoData(String token) {
-            this.token = token;
-        }
-
-        public String getToken() {
-            return token;
-        }
-
-        @Override public String toString() {
-            return "MyDiscoData{" +
-                "token='" + token + '\'' +
-                '}';
-        }
-    }
-
     @After
     public void after() throws Exception {
         stopAllGrids();
@@ -210,11 +89,11 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
     @BeforeClass
     public static void enablePlugin() {
-        enabled = true;
+        NodeValidationPluginProvider.enabled = true;
     }
 
     @AfterClass
     public static void disablePlugin() {
-        enabled = false;
+        NodeValidationPluginProvider.enabled = false;
     }
 }
