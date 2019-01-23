@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnRec
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySegmentationPolicyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
@@ -142,6 +143,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(FilterDataForClientNodeDiscoveryTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryPendingMessageDeliveryTest.class));
+        
+        suite.addTest(new TestSuite(TcpDiscoveryReconnectUnstableTopologyTest.class));
 
         return suite;
     }
