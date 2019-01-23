@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -34,10 +33,11 @@ import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -73,12 +73,12 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     "cache1, cache2",
                     nodeId.toString(),
-                    VI_CHECK_FIRST,
+                    CHECK_FIRST.toString(),
                     Integer.toString(expectedCheckFirst),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedCheckThrough)
                 )
             ).cacheArgs();
@@ -98,9 +98,9 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     nodeId.toString(),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedParam)
                 )
             ).cacheArgs();
@@ -118,8 +118,8 @@ public class CommandHandlerParsingTest extends TestCase {
             hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
-                    VI_CHECK_FIRST,
+                    VALIDATE_INDEXES.text(),
+                    CHECK_FIRST.toString(),
                     "0"
                 )
             );
@@ -131,7 +131,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
 
             fail("Expected exception hasn't been thrown");
         }
