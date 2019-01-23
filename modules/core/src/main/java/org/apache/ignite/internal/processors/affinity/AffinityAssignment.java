@@ -21,11 +21,11 @@ import org.apache.ignite.cluster.ClusterNode;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cached affinity calculations.
@@ -112,7 +112,7 @@ public interface AffinityAssignment {
      * @return List of deduplicated collections if ClusterNode's ids.
      */
     public default Collection<UUID> assignments2ids(List<ClusterNode> assignmentPart) {
-        Collection<UUID> partIds = new HashSet<>(assignmentPart.size());
+        Collection<UUID> partIds = U.newHashSet(assignmentPart.size());
 
         for (ClusterNode node : assignmentPart)
             partIds.add(node.id());
