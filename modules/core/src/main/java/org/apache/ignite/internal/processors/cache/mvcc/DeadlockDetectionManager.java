@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAb
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 
@@ -315,24 +314,30 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /**
      * Delayed deadlock probe computation which can be cancelled.
      */
-    public class DelayedDeadlockComputation {
+    public class DelayedDeadlockComputation extends GridTimeoutObjectAdapter {
         /** */
-        private final GridTimeoutObject computationTimeoutObj;
+        private final MvccVersion waiterVer;
+
+        /** */
+        private final MvccVersion blockerVer;
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            startComputation(waiterVer, blockerVer);
+        }
 
         /** */
         private DelayedDeadlockComputation(MvccVersion waiterVer, MvccVersion blockerVer, long timeout) {
-            computationTimeoutObj = new GridTimeoutObjectAdapter(timeout) {
-                @Override public void onTimeout() {
-                    startComputation(waiterVer, blockerVer);
-                }
-            };
+            super(timeout);
+            this.waiterVer = waiterVer;
+            this.blockerVer = blockerVer;
 
-            cctx.kernalContext().timeout().addTimeoutObject(computationTimeoutObj);
+            cctx.kernalContext().timeout().addTimeoutObject(this);
         }
 
         /** */
         public void cancel() {
-            cctx.kernalContext().timeout().removeTimeoutObject(computationTimeoutObj);
+            cctx.kernalContext().timeout().removeTimeoutObject(this);
         }
     }
 }

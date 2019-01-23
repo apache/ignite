@@ -197,13 +197,18 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Check clenup running queries on node stop.
+     * Check cleanup running queries on node stop.
      *
      * @throws Exception Exception in case of failure.
      */
     @Test
-    public void tesctCloseRunningQueriesOnNodeStop() throws Exception {
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+    public void testCloseRunningQueriesOnNodeStop() throws Exception {
+        IgniteEx ign = startGrid(super.getConfiguration("TST"));
+
+        IgniteCache<Integer, Integer> cache = ign.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("TST")
+            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
+        );
 
         for (int i = 0; i < 10000; i++)
             cache.put(i, i);
@@ -212,11 +217,11 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals("Should be one running query",
             1,
-            ignite.context().query().runningQueries(-1).size());
+            ign.context().query().runningQueries(-1).size());
 
-        ignite.close();
+        ign.close();
 
-        assertNoRunningQueries();
+        Assert.assertEquals(0, ign.context().query().runningQueries(-1).size());
     }
 
     /**

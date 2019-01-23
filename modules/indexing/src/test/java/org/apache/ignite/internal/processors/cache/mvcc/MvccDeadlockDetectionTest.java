@@ -82,13 +82,17 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         client = startGrid(n);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @After
     public void cleanupTest() throws Exception {
         stopAllGrids();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectSimpleDeadlock() throws Exception {
         setUpGrids(2, false);
@@ -129,7 +133,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectSimpleDeadlockFastUpdate() throws Exception {
         setUpGrids(2, true);
@@ -173,7 +179,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detect3Deadlock() throws Exception {
         setUpGrids(3, false);
@@ -227,7 +235,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1, fut2);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectMultipleLockWaitDeadlock() throws Exception {
         // T0 -> T1
@@ -290,7 +300,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut2);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectDeadlockLocalEntriesEnlistFuture() throws Exception {
         setUpGrids(1, false);
@@ -330,7 +342,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectDeadlockLocalPrimary() throws Exception {
         // Checks that case when near tx does local on enlist on the same node and no dht tx is created
@@ -372,7 +386,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void detectDeadlockLocalQueryEnlistFuture() throws Exception {
         setUpGrids(1, true);
@@ -420,7 +436,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void nonDeadlockedTxDetectsDeadlock1() throws Exception {
         setUpGrids(2, false);
@@ -468,7 +486,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void nonDeadlockedTxDetectsDeadlock2() throws Exception {
         setUpGrids(2, false);
@@ -519,7 +539,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         assertExactlyOneAbortedDueDeadlock(fut0, fut1);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void randomizedPuts() throws Exception {
         int gridCnt = SF.applyLB(10, 2);

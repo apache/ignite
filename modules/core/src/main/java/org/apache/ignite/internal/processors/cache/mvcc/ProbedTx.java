@@ -47,7 +47,13 @@ public class ProbedTx implements Message {
     public ProbedTx() {
     }
 
-    /** */
+    /**
+     * @param nodeId Node on which probed transaction runs.
+     * @param xidVer Identifier of transaction.
+     * @param nearXidVer Identifier of near transaction.
+     * @param startTime Transaction start time.
+     * @param lockCntr Number of locks acquired by probed transaction at a time of probe handling.
+     */
     public ProbedTx(UUID nodeId, GridCacheVersion xidVer, GridCacheVersion nearXidVer, long startTime,
         int lockCntr) {
         this.nodeId = nodeId;
@@ -58,7 +64,7 @@ public class ProbedTx implements Message {
     }
 
     /**
-     * @return Node on which probed transction runs.
+     * @return Node on which probed transaction runs.
      */
     public UUID nodeId() {
         return nodeId;
@@ -86,7 +92,7 @@ public class ProbedTx implements Message {
     }
 
     /**
-     * @return Number of locks aquired by probed transaction at a time of probe handling.
+     * @return Number of locks acquired by probed transaction at a time of probe handling.
      */
     public int lockCounter() {
         return lockCntr;
