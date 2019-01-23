@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -135,6 +136,9 @@ public class JdbcThinTcpIo {
 
     /** Server index. */
     private volatile int srvIdx;
+
+    /** Socket. */
+    private Socket sock;
 
     /**
      * Constructor.
@@ -257,6 +261,8 @@ public class JdbcThinTcpIo {
 
                 try {
                     sock.connect(addr, timeout);
+
+                    this.sock = sock;
                 }
                 catch (IOException e) {
                     throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
@@ -727,6 +733,35 @@ public class JdbcThinTcpIo {
             long nextIdx = IDX_GEN.getAndIncrement();
 
             return (int)(nextIdx % len);
+        }
+    }
+
+    /**
+     * Enable/disable socket timeout with specified timeout.
+     *
+     * @param ms the specified timeout, in milliseconds.
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public void timeout(int ms) throws SQLException {
+        try {
+            sock.setSoTimeout(ms);
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
+        }
+    }
+
+    /**
+     * Returns socket timeout.
+     *
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public int timeout() throws SQLException {
+        try {
+            return sock.getSoTimeout();
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
         }
     }
 }

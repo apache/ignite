@@ -51,6 +51,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinConnectionMultipleAddressesTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataSourceSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedNearSelfTest;
@@ -175,6 +176,7 @@ public class IgniteJdbcDriverTestSuite {
         suite.addTest(new JUnit4TestAdapter(JdbcThinMetadataPrimaryKeysSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinErrorsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinStatementCancelSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinConnectionTimeoutSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(JdbcThinInsertStatementSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(JdbcThinUpdateStatementSelfTest.class));
