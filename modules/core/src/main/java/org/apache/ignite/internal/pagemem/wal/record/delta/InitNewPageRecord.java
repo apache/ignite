@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -51,6 +52,12 @@ public class InitNewPageRecord extends PageDeltaRecord {
         this.ioType = ioType;
         this.ioVer = ioVer;
         this.newPageId = newPageId;
+
+        if (PageIdUtils.partId(newPageId()) != PageIdUtils.partId(pageId())) {
+            throw new AssertionError("Partition consistency failure: " +
+                "newPageId=" + Long.toHexString(newPageId) + " " +
+                "pageId=" + Long.toHexString(pageId));
+        }
     }
 
     /** {@inheritDoc} */

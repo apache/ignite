@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -115,11 +116,16 @@ public class IgniteTcBotSandboxTest extends GridCommonAbstractTest {
                 InitNewPageRecord initRec = (InitNewPageRecord)rec;
 
                 if (initRec.groupId() == grpId
-                    && initRec.pageId() == pageId) {
+                    && (initRec.pageId() == pageId || initRec.newPageId() == pageId)) {
                     System.out.println("InitNewPageRecord:: pos=" + pos
-                        + ", rec=" + initRec.toString());
+                        + ", rec=" + initRec.toString() + ", ioType=" + initRec.ioType()
+                        + ", ioVersion=" + initRec.ioVersion());
+
+                    assertEquals(PageIdUtils.partId(initRec.newPageId()),
+                        PageIdUtils.partId(initRec.pageId()));
                 }
-            } else if (rec instanceof PageSnapshot) {
+            }
+            else if (rec instanceof PageSnapshot) {
                 PageSnapshot snapshot = (PageSnapshot)rec;
 
                 if (snapshot.fullPageId().groupId() == grpId
