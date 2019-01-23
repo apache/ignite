@@ -136,6 +136,9 @@ public class CacheGroupAffinityMessage implements Message {
     }
 
     /**
+     * Fill Map of CacheGroupAffinityMessages.
+     * The input Map expected to be thread safe.
+     *
      * @param cctx Context.
      * @param topVer Topology version.
      * @param affReq Cache group IDs.

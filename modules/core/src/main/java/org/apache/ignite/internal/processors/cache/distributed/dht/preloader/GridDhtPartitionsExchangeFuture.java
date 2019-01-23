@@ -3344,11 +3344,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                        GridDhtPartitionTopology top = grp != null ? grp.topology() :
-                            cctx.exchange().clientTopology(grpId, events().discoveryCache());
+                        GridDhtPartitionTopology top = grp != null
+                            ? grp.topology()
+                            : cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-                        CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId,
-                            top.partitions());
+                        CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
 
                         if (cntrs != null)
                             top.collectUpdateCounters(cntrs);
@@ -3715,9 +3715,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
 
-        Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
 
         if (affReq != null) {
+            Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
+
             CacheGroupAffinityMessage.createAffinityMessages(
                 cctx,
                 finishState.resTopVer,
