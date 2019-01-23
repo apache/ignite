@@ -13,40 +13,43 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.websession;
+package org.apache.ignite.internal.processors.query;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Tests web sessions with TRANSACTIONAL cache.
+ * Check query history metrics from client node.
  */
-public class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
+public class SqlQueryHistoryFromClientSelfTest extends SqlQueryHistorySelfTest {
+
+    private int idx;
+
     /** {@inheritDoc} */
-    @Override protected String getCacheName() {
-        return "partitioned_tx";
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (idx++ == 2)
+            cfg.setClientMode(true);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Test
-    @Override public void testRestarts() {
-        // No-op.
+    @Override protected IgniteEx queryNode() {
+        IgniteEx node = grid(2);
+
+        assertTrue(node.context().clientNode());
+
+        return node;
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Test
-    @Override public void testInvalidatedSession() {
-        // No-op.
+    @Override protected void startTestGrid() throws Exception {
+        startGrids(3);
     }
 
-    /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Test
-    @Override public void testClientReconnectRequest() {
-        // No-op.
-    }
 }

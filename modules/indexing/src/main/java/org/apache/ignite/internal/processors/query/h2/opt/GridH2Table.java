@@ -242,7 +242,7 @@ public class GridH2Table extends TableBase {
      * for external affinity calculation (e.g. on thin clients).
      * <p>
      * Note that it is different from {@link #isColumnForPartitionPruning(Column)} method in that not every column
-     * which qualifies for partition pruning can be used by thin clients or join partinion prunining logic.
+     * which qualifies for partition pruning can be used by thin clients or join partition pruning logic.
      * <p>
      * Consider the following schema:
      * <pre>
