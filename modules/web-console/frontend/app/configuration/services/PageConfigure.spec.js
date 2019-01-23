@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {suite, test} from 'mocha';
 import {assert} from 'chai';
 import {spy} from 'sinon';
 import {of, throwError} from 'rxjs';
@@ -30,7 +29,7 @@ const mocks = () => new Map([
 
 import {REMOVE_CLUSTERS_LOCAL_REMOTE, CLONE_CLUSTERS} from './PageConfigure';
 import PageConfigure from './PageConfigure';
-import {REMOVE_CLUSTERS, LOAD_LIST, ADD_CLUSTERS, UPDATE_CLUSTER} from '../reducer';
+import {REMOVE_CLUSTERS, LOAD_LIST, ADD_CLUSTERS, UPDATE_CLUSTER} from '../store/reducer';
 
 suite.skip('PageConfigure service', () => {
     suite('cloneCluster$ effect', () => {
