@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +46,9 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final Map<Integer, List<ClusterNode>> idealAssignmentDiff;
 
+    /** */
+    private volatile transient List<List<ClusterNode>> idealAssignmentView;
+
     /**
      * @param assign Assignment.
      */
@@ -67,12 +71,25 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> idealAssignment() {
-        List<List<ClusterNode>> idealAssignment = new ArrayList<>(assignment);
+        List<List<ClusterNode>> view = idealAssignmentView;
 
-        for (Map.Entry<Integer, List<ClusterNode>> entry : idealAssignmentDiff.entrySet())
-            idealAssignment.set(entry.getKey(), entry.getValue());
+        if (view == null) {
+            view = new AbstractList<List<ClusterNode>>() {
+                @Override public List<ClusterNode> get(int idx) {
+                    List<ClusterNode> nodes = idealAssignmentDiff.get(idx);
 
-        return idealAssignment;
+                    return nodes == null ? assignment.get(idx) : nodes;
+                }
+
+                @Override public int size() {
+                    return assignment.size();
+                }
+            };
+
+            idealAssignmentView = view;
+        }
+
+        return view;
     }
 
     /** {@inheritDoc} */
