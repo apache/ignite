@@ -53,10 +53,11 @@ public class H2RowFactory {
      * !!! from all the index pages, so that row can be safely erased from the data page.
      *
      * @param link Link.
+     * @param colInfo column info to extract only specified columns.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2SearchRow getRow(long link, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
+    public GridH2Row getRow(long link, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
         // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
         // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
 
@@ -64,11 +65,17 @@ public class H2RowFactory {
 
         rowBuilder.initFromLink(
             cctx.group(),
-            colInfo != null ? CacheDataRowAdapter.RowData.FULL_TRY_OFFHEAP : CacheDataRowAdapter.RowData.FULL);
+            CacheDataRowAdapter.RowData.FULL);
+//            colInfo != null ? CacheDataRowAdapter.RowData.FULL_TRY_OFFHEAP : CacheDataRowAdapter.RowData.FULL);
 
-        GridH2SearchRow row = rowDesc.createRow(rowBuilder, colInfo);
+        try {
+            GridH2Row row = rowDesc.createRow(rowBuilder, colInfo);
 
-        return row;
+            return row;
+        }
+        finally {
+            rowBuilder.unlock();
+        }
     }
 
     /**

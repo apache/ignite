@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -85,6 +86,18 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @Override public int segmentsCount() {
         return 1;
     }
+
+    /** {@inheritDoc} */
+    @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
+        return find(filter.getSession(), first, last);
+        // TODO: implement
+//        return find(
+//            filter.getSession(),
+//            first,
+//            last,
+//            GridH2UsedColumnInfo.extractUsedColumns(filter));
+    }
+
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {

@@ -82,6 +82,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected int cacheId;
 
+    /** Unlock page lock run. */
+    private Runnable unlockRun;
+
     /**
      * @param link Link.
      */
@@ -127,7 +130,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     public final void initFromLink(
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
-        PageMemory pageMem,
+        final PageMemory pageMem,
         RowData rowData)
         throws IgniteCheckedException {
         assert link != 0 : "link";
@@ -147,14 +150,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
             // Group is null if try evict page, with persistence evictions should be disabled.
             assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
 
-            int grpId = grp != null ? grp.groupId() : 0;
+            final int grpId = grp != null ? grp.groupId() : 0;
 
             final IoStatisticsHolder statHolder = (grp != null) ?
                 grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
             final long page = pageMem.acquirePage(grpId, pageId, statHolder);
-
-            boolean unlock = true;
 
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
@@ -174,11 +175,17 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     if (first) {
                         if (nextLink == 0) {
-                            if (rowData == RowData.FULL_TRY_OFFHEAP)
-                                unlock = false;
-
                             // Fast path for a single page row.
                             readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
+
+                            if (key instanceof BinaryKeyObjectOffheapImpl || val instanceof BinaryObjectOffheapImpl) {
+                                unlockRun = new Runnable() {
+                                    @Override public void run() {
+                                        pageMem.readUnlock(grpId, pageId, page);
+                                        pageMem.releasePage(grpId, pageId, page);
+                                    }
+                                };
+                            }
 
                             return;
                         }
@@ -208,12 +215,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         return;
                 }
                 finally {
-                    if (unlock)
+                    if (unlockRun == null)
                         pageMem.readUnlock(grpId, pageId, page);
                 }
             }
             finally {
-                if (unlock)
+                if (unlockRun == null)
                     pageMem.releasePage(grpId, pageId, page);
             }
         }
@@ -690,6 +697,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public byte newMvccTxState() {
         return TxState.NA;
+    }
+
+    /**
+     * Unlock page if needs.
+     */
+    public void unlock() {
+        if (unlockRun != null)
+            unlockRun.run();
     }
 
     /**

@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.h2.value.Value;
 import org.h2.value.ValueString;
 
 /**
  *
  */
-public class GridH2SimpleRow extends GridH2SearchRowAdapter {
+public class GridH2SimpleRow extends GridH2Row {
     /** Special value for not initialized fields. */
     public static final Value NOT_INITIALIZED = new ValueString(null) {};
 
@@ -35,16 +39,13 @@ public class GridH2SimpleRow extends GridH2SearchRowAdapter {
      * @param colCnt Columns count.
      */
     public GridH2SimpleRow(int colCnt) {
+        super(null);
+
         data = new Value[colCnt];
 
         Arrays.fill(data, NOT_INITIALIZED);
-    }
 
-    /**
-     * @param data Row values.
-     */
-    public GridH2SimpleRow(Value[] data) {
-        this.data = data;
+        System.out.println("+++ GridH2SimpleRow");
     }
 
     /** {@inheritDoc} */
@@ -67,5 +68,59 @@ public class GridH2SimpleRow extends GridH2SearchRowAdapter {
     /** {@inheritDoc} */
     @Override public void setValue(int index, Value v) {
         data[index] = v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return 0;
+    }
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void newMvccVersion(MvccUpdateVersionAware other) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void newMvccVersion(MvccVersion ver) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccVersion newMvccVersion() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(MvccVersionAware other) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(MvccVersion ver) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(long crd, long cntr, int opCntr) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccVersion mvccVersion() {
+        throw new UnsupportedOperationException();
     }
 }

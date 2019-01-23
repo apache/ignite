@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -53,7 +51,6 @@ import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -282,14 +279,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        Set<Integer> colsToExtract = new HashSet<Integer>(filter.getTable().getColumns().length);
-
-//        for (int i = 0; i < filter.getTable().getColumns().length; ++i)
-//            colsToExtract.add(filter.getTable().getColumns()[i].getColumnId());
-        colsToExtract.add(1);
-
-        return find(filter.getSession(), first, last,
-            new GridH2UsedColumnInfo(colsToExtract, filter.getTable().getColumns().length));
+        return find(
+            filter.getSession(),
+            first,
+            last,
+            GridH2UsedColumnInfo.extractUsedColumns(filter));
     }
 
     /** {@inheritDoc} */
@@ -324,7 +318,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             }
             else {
                 return new H2Cursor(tree.find((GridH2SearchRow)lower,
-                    (GridH2SearchRow)upper, filter(GridH2QueryContext.get()), null));
+                    (GridH2SearchRow)upper, filter(GridH2QueryContext.get()), colInfo));
             }
         }
         catch (IgniteCheckedException e) {

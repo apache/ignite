@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 
@@ -78,7 +79,7 @@ public interface H2RowLinkIO {
      * @return Lookup row.
      * @throws IgniteCheckedException If failed.
      */
-    default GridH2SearchRow getLookupRow(BPlusTree<GridH2SearchRow,?> tree, long pageAddr, int idx,
+    default GridH2Row getLookupRow(BPlusTree<GridH2SearchRow,?> tree, long pageAddr, int idx,
         GridH2UsedColumnInfo usedColInfo)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);

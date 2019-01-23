@@ -38,6 +38,8 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
+        System.out.println("+++ H2 Tree cost " + mul * baseCost);
+
         return mul * baseCost;
     }
 

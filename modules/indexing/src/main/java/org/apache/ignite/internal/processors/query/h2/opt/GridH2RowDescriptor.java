@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VER_COL;
 
 /**
  * Row descriptor.
@@ -186,12 +187,13 @@ public class GridH2RowDescriptor {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2SearchRow createRow(CacheDataRow dataRow, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
-        GridH2SearchRow row;
+    public GridH2Row createRow(CacheDataRow dataRow, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
+        GridH2Row row;
 
         try {
             if (colInfo == null) {
-                if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
+                if (dataRow.value() == null) {
+                    // Only can happen for remove operation, can create simple search row.
                     row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
                 }
                 else
@@ -200,21 +202,8 @@ public class GridH2RowDescriptor {
             else {
                 row = new GridH2SimpleRow(colInfo.columnsCount());
 
-                for (int colIdx : colInfo.columns()) {
-                    Object res = columnValue(dataRow.key(), dataRow.value(), colIdx);
-
-                    if (res == null)
-                        row.setValue(colIdx, ValueNull.INSTANCE);
-                    else {
-                        try {
-                            row.setValue(colIdx, H2Utils.wrap(indexing().objectContext(), res, fieldType(colIdx)));
-                        }
-                        catch (IgniteCheckedException e) {
-                            e.printStackTrace();
-                            throw DbException.convert(e);
-                        }
-                    }
-                }
+                for (int colIdx : colInfo.columns())
+                    row.setValue(colIdx, getValue(dataRow.key(), dataRow.value(), colIdx));
             }
         }
         catch (ClassCastException e) {
@@ -259,7 +248,7 @@ public class GridH2RowDescriptor {
      * @param key Key.
      * @param val Value.
      * @param col Column index.
-     * @return  Column value.
+     * @return Column value.
      */
     public Object columnValue(Object key, Object val, int col) {
         try {
@@ -269,6 +258,51 @@ public class GridH2RowDescriptor {
             throw DbException.convert(e);
         }
     }
+
+    /**
+     * Gets column value by column index.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param col Column index.
+     * @return Column value.
+     */
+    public Value getValue(Object key, Object val, int col) throws IgniteCheckedException {
+        switch (col) {
+            case KEY_COL:
+                return H2Utils.wrap(indexing().objectContext(), key, keyType);
+
+            case VAL_COL:
+                return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
+
+            case VER_COL:
+                return ValueNull.INSTANCE;
+
+            default:
+                if (isKeyAliasColumn(col))
+                    return H2Utils.wrap(indexing().objectContext(), key, keyType);
+                else if (isValueAliasColumn(col))
+                    return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
+
+                Object res = columnValue(key, val, col - DEFAULT_COLUMNS_COUNT);
+
+                Value v;
+                if (res == null)
+                    v = ValueNull.INSTANCE;
+                else {
+                    try {
+                        v = H2Utils.wrap(indexing().objectContext(), res, fieldType(col - DEFAULT_COLUMNS_COUNT));
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                        throw DbException.convert(e);
+                    }
+                }
+
+                return v;
+        }
+    }
+
 
     /**
      * Gets column value by column index.

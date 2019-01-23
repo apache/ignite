@@ -35,7 +35,7 @@ import org.junit.runners.JUnit4;
  */
 @SuppressWarnings("deprecation")
 @RunWith(JUnit4.class)
-public class SearchRowSelfTest extends AbstractIndexingCommonTest {
+public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCommonTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
 
@@ -81,9 +81,55 @@ public class SearchRowSelfTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < 100; ++i)
             sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
 
+        // hidden fileds
+        res = sql("SELECT valStr from test WHERE _key = 5");
+
+        assertEquals("val_5", res.get(0).get(0));
+
+        // simple
         res = sql("SELECT valStr from test WHERE id > 4 AND valLong < 6");
 
         assertEquals("val_5", res.get(0).get(0));
+
+        res = sql("SELECT valStr from test WHERE valLong < 5");
+
+        assertEquals(5, res.size());
+
+        // wildcard
+        res = sql("SELECT * from test WHERE valLong < 5");
+
+        assertEquals(5, res.size());
+        assertEquals(3, res.get(0).size());
+
+        // order by
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY id");
+
+        assertEquals(5, res.size());
+
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
+
+        assertEquals(5, res.size());
+
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
+
+        assertEquals(5, res.size());
+
+        // GROUP BY / aggregates
+        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
+        assertEquals(5, res.size());
+
+        // GROUP BY / having
+        res = sql("SELECT id from test WHERE id < 5 GROUP BY id having sum(valLong) < 5");
+        assertEquals(5, res.size());
     }
 
     /**
@@ -109,10 +155,38 @@ public class SearchRowSelfTest extends AbstractIndexingCommonTest {
 
         res = sql(
             "SELECT comp.name AS compName, pers.name AS persName FROM company AS comp " +
-                "JOIN person AS pers ON comp.id = pers.compId " +
-                "WHERE comp.id = 1");
+                "LEFT JOIN person AS pers ON comp.id = pers.compId " +
+                "WHERE comp.id = 2");
 
         assertEquals(res.size(), 10);
+    }
+
+    /**
+     * Test single table.
+     */
+    @Test
+    public void testSubquery() {
+        List<List<?>> res;
+
+        sql(
+            "CREATE TABLE person (id LONG, compId LONG, name VARCHAR, " +
+                "PRIMARY KEY (id, compId)) " +
+                "WITH \"AFFINITY_KEY=compId\"");
+        sql("CREATE TABLE company (id LONG PRIMARY KEY, name VARCHAR)");
+
+        long persId = 0;
+        for (long compId = 0; compId < 10; ++compId) {
+            sql("INSERT INTO company VALUES (?, ?)", compId, "company_" + compId);
+
+            for (long persCnt = 0; persCnt < 10; ++persCnt, ++persId)
+                sql("INSERT INTO person VALUES (?, ?, ?)", persId, compId, "person_" + compId + "_" + persId);
+        }
+
+        res = sql(
+            "SELECT comp.name FROM company AS comp " +
+                "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person As pers WHERE pers.compId = comp.Id)");
+
+        assertEquals(res.size(), 1);
     }
 
     /**

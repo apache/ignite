@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -2286,6 +2287,34 @@ public class GridSqlQueryParser {
             return false;
 
         return !EXPLAIN_COMMAND.get((Explain)statement).isQuery();
+    }
+
+    /**
+     * @param tbl Table.
+     * @param colIds Columns IDs to extract.
+     * @param e expression.
+     */
+    public void extractUsedColumnsFromExpression(Table tbl, Set<Integer> colIds, Expression e) {
+        GridSqlElement elem = parseExpression(e, false);
+
+        extractUsedColumnsFromExpression0(tbl, colIds, elem);
+
+    }
+
+    /**
+     * @param tbl Table.
+     * @param colIds Columns IDs to extract.
+     * @param e expression.
+     */
+    private void extractUsedColumnsFromExpression0(Table tbl, Set<Integer> colIds, GridSqlAst e) {
+        if (e == null)
+            return;
+        else if (e instanceof GridSqlColumn && ((GridSqlColumn)e).column().getTable() == tbl)
+            colIds.add(((GridSqlColumn)e).column().getColumnId());
+        else {
+            for (int i = 0; i < e.size(); ++i)
+                extractUsedColumnsFromExpression0(tbl, colIds, e.child(i));
+        }
     }
 
     /**

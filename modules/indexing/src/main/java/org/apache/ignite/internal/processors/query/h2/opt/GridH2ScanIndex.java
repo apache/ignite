@@ -100,7 +100,7 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        return find(filter.getSession(), first, last);
+        return delegate().find(filter, null, null);
     }
 
     /** {@inheritDoc} */

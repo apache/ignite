@@ -225,9 +225,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2SearchRow createRowFromLink(long link, GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
+    public GridH2Row createRowFromLink(long link, GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
         if (rowCache != null) {
-            GridH2SearchRow row = rowCache.get(link);
+            GridH2Row row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link, null);
@@ -276,7 +276,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object colsToExtract)
         throws IgniteCheckedException {
-        return (GridH2Row)((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridH2UsedColumnInfo)colsToExtract);
+        return ((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridH2UsedColumnInfo)colsToExtract);
     }
 
     /**
