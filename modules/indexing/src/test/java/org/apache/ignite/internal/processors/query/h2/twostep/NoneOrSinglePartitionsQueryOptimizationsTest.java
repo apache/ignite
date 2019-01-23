@@ -63,9 +63,11 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     public static final int RES_RETRIEVAL_TIMEOUT = 500_000;
 
     /** Nodes count. */
+    // TODO: Why 8? Will 2 be enough for test?
     private static final int NODES_COUNT = 8;
 
     /** Organizations count. */
+    // TODO: Why do we need so many records? Will 100 be enough?
     private static final int ORG_COUNT = 10000;
 
     /** Organizations cache name. */
@@ -229,6 +231,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void testQueryWithNonePartititons() throws Exception {
         TestCommunicationSpi commSpi =
@@ -321,10 +324,12 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
             QueryCursor cursor = orgCache.query(new SqlFieldsQuery(sqlQry).setArgs(args));
 
+            // TODO: Use U.field() instead.
             Field outerIterField = QueryCursorImpl.class.getDeclaredField("iterExec");
             outerIterField.setAccessible(true);
             Iterable iter = (Iterable)outerIterField.get(cursor);
 
+            // TODO: Use U.field() instead.
             Field innerIterField = GridQueryCacheObjectsIterator.class.getDeclaredField("iter");
             innerIterField.setAccessible(true);
             Iterator innerIter = (Iterator)innerIterField.get(iter.iterator());
@@ -385,6 +390,8 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         }
     }
 
+    // TODO: Add a test with multiple map queries.
+
     /**
      * Test communication SPI.
      */
@@ -411,6 +418,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         /**
          * @return List of map queries.
          */
+        // TODO: Unused tests.
         List<String> mapQueries() {
             return Collections.unmodifiableList(mapQueries);
         }

@@ -60,9 +60,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
     /**
      * Trains model based on the specified data.
      *
@@ -140,7 +137,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
-            .withSeed(seed)
             .withDistance(distance)
             .withEpsilon(epsilon);
 
@@ -331,26 +327,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      */
     public ANNClassificationTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public ANNClassificationTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 

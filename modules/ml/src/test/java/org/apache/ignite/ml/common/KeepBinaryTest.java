@@ -81,7 +81,7 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
 
         IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double) v.field("label");
 
-        KMeansTrainer trainer = new KMeansTrainer().withSeed(123L);
+        KMeansTrainer trainer = new KMeansTrainer();
 
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
