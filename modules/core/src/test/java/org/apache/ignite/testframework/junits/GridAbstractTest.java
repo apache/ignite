@@ -124,9 +124,12 @@ import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -152,6 +155,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
+@RunWith(GridAbstractTest.TestCaseWrapper.class)
 public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
@@ -185,22 +189,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper(isFirst);
-
-    /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            runSerializer.lock();
-            try {
-                assert getName() != null : "getName returned null";
-
-                helper.onBefore(GridAbstractTest.this::onFirstTest, GridAbstractTest.this::onLastTest);
-
-                runTestCase(base);
-            } finally {
-                runSerializer.unlock();
-            }
-        }
-    };
 
     /** */
     private transient boolean startGrid;
@@ -2528,5 +2516,34 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
          * @param cache Cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
+    }
+
+    /** Manage test execution and reporting. */
+    public static class TestCaseWrapper extends BlockJUnit4ClassRunner {
+        /**
+         *  Lock to maintain integrity of {@link BeforeAfterClassHelper}
+         *  and of {@link IgniteConfigVariationsAbstractTest}.
+         */
+        private static final Lock runSerializer = new ReentrantLock();
+
+        /** */
+        public TestCaseWrapper(Class<?> klass) throws InitializationError {
+            super(klass);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Statement methodInvoker(final FrameworkMethod mtd, Object test) {
+            return super.methodInvoker(new FrameworkMethod(mtd.getMethod()){
+                /** */
+                @Override public Object invokeExplosively(Object target, Object... params) throws Throwable {
+                    runSerializer.lock();
+                    try {
+                        return ((JUnit3TestLegacySupport)target).wrapTestCase(mtd, target, params);
+                    } finally {
+                        runSerializer.unlock();
+                    }
+                }
+            }, test);
+        }
     }
 }
