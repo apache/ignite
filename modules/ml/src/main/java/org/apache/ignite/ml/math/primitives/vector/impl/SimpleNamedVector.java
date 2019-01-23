@@ -42,7 +42,7 @@ public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> impleme
      * @param map Map that maps field names on field indexes.
      */
     public SimpleNamedVector(Map<String, Integer> map) {
-        this.map = new HashMap<>(map);
+        this.map = map;
 
         setStorage(new DenseVectorStorage(map.size()));
     }
