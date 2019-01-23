@@ -398,7 +398,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
     /**
      * @throws Exception  If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10756")
     @Test
     public void testUpdateCountersGapClosedPartitioned() throws Exception {
         checkUpdateCountersGapsClosed(CacheMode.PARTITIONED);
@@ -554,7 +553,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         assertEquals(range * 2, arrivedEvts.size());
 
         cur.close();
-        nearNode.close();
     }
 
     /**

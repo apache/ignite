@@ -89,6 +89,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
+        return new AutoClosableCursorIterator<>(this, iter());
+    }
+
+    /**
+     * @return An simple iterator.
+     */
+    protected Iterator<T> iter() {
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
@@ -111,8 +118,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         List<T> all = new ArrayList<>();
 
         try {
-            for (T t : this) // Implicitly calls iterator() to do all checks.
-                all.add(t);
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                all.add(iter.next());
         }
         finally {
             close();
@@ -124,8 +133,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** {@inheritDoc} */
     @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
         try {
-            for (T t : this)
-                clo.consume(t);
+            Iterator<T> iter = iter(); // Implicitly calls iterator() to do all checks.
+
+            while (iter.hasNext())
+                clo.consume(iter.next());
         }
         finally {
             close();

@@ -173,6 +173,16 @@ namespace ignite
                     bool Remove(const WritableKey& key);
 
                     /**
+                     * Removes given key mapping from cache if one exists and value is equal to the passed in value.
+                     * If write-through is enabled, the value will be removed from store.
+                     *
+                     * @param key Key whose mapping is to be removed from cache.
+                     * @param val Value to match against currently cached value.
+                     * @return True if entry was removed, false otherwise.
+                     */
+                    bool Remove(const WritableKey& key, const Writable& val);
+
+                    /**
                      * Removes given key mappings from cache.
                      * If write-through is enabled, the value will be removed from store.
                      *
@@ -206,6 +216,79 @@ namespace ignite
                      * @param keys Keys to clear.
                      */
                     void ClearAll(const Writable& keys);
+
+                    /**
+                     * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+                     * as argument.
+                     *
+                     * @param key Key to store in cache.
+                     * @param oldVal Old value to match.
+                     * @param newVal Value to be associated with the given key.
+                     * @return True if replace happened, false otherwise.
+                     */
+                    bool Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal);
+
+                    /**
+                     * Associates the specified value with the specified key in this cache, returning an existing value
+                     * if one existed.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valIn Value to be associated with the specified key.
+                     * @param valOut The value associated with the key at the start of the operation or null if none
+                     *     was associated.
+                     */
+                    void GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut);
+
+                    /**
+                     * Atomically removes the entry for a key only if currently mapped to some value.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valOut The value associated with the key at the start of the operation or null if none
+                     *     was associated.
+                     */
+                    void GetAndRemove(const WritableKey& key, Readable& valOut);
+
+                    /**
+                     * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+                     * the key.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valIn Value to be associated with the specified key.
+                     * @param valOut The value associated with the key at the start of the operation or null if none was
+                     *     associated.
+                     */
+                    void GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut);
+
+                    /**
+                     * Atomically associates the specified key with the given value if it is not already associated with
+                     * a value.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param val Value to be associated with the specified key.
+                     * @return True if a value was set.
+                     */
+                    bool PutIfAbsent(const WritableKey& key, const Writable& val);
+
+                    /**
+                     * Stores given key-value pair in cache only if cache had no previous mapping for it.
+                     *
+                     * If cache previously contained value for the given key, then this value is returned.
+                     *
+                     * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
+                     * which in  its turn may load the value from the swap storage, and consecutively, if it's not in
+                     * swap, from the underlying persistent storage.
+                     *
+                     *  If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
+                     * avoid the overhead associated with returning of the previous value.
+                     *
+                     * If write-through is enabled, the stored value will be persisted to store.
+                     *
+                     * @param key Key to store in cache.
+                     * @param valIn Value to be associated with the given key.
+                     * @param valOut Previously contained value regardless of whether put happened or not (null if there
+                     *     was no previous value).
+                     */
+                    void GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut);
 
                     /**
                      * Get from CacheClient.

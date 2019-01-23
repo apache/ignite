@@ -1788,8 +1788,7 @@ public class IgniteTxHandler {
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
-                                                /*keepBinary*/true,
-                                                null); // TODO IGNITE-7371
+                                                /*keepBinary*/true);
 
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
@@ -1915,7 +1914,7 @@ public class IgniteTxHandler {
                             invokeArgs = invokeVal.invokeArgs();
                         }
 
-                        assert entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
+                        assert entries != null || entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
 
                         GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
 

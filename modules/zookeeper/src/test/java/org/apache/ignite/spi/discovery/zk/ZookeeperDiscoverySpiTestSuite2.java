@@ -38,12 +38,12 @@ import org.junit.runners.Suite;
     GridCacheReplicatedMultiNodeFullApiSelfTest.class,
     GridCommandHandlerTest.class
 })
-public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
-    /** */
+public class ZookeeperDiscoverySpiTestSuite2  {
+    /**
+     * @throws Exception Thrown in case of the failure.
+     */
     @BeforeClass
     public static void init() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }
