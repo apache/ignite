@@ -42,9 +42,6 @@ import static java.util.Collections.singletonList;
  */
 @RunWith(JUnit4.class)
 public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
-    /** Ignite instance */
-    private IgniteEx ign;
-
     /** Connection. */
     private Connection conn;
 
@@ -52,7 +49,7 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        ign = startGrid(0);
+        IgniteEx ign = startGrid(0);
 
         conn = GridTestUtils.connect(ign, null);
     }
@@ -140,9 +137,11 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         try {
-            stopAllGrids();
-
             conn.close();
+
+            conn = null;
+
+            stopAllGrids();
         }
         finally {
             super.afterTestsStopped();
