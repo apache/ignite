@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.inference;
+package org.apache.ignite.examples.ml.inference.spark;
 
 import java.io.File;
 import java.io.FileInputStream;
