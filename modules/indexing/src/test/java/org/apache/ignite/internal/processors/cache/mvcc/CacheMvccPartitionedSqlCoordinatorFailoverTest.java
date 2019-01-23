@@ -42,7 +42,6 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxSql_ClientServer_Backups2_CoordinatorFails() throws Exception {
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
