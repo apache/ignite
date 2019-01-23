@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import com.google.common.base.Preconditions;
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
@@ -27,7 +30,23 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,9 +54,27 @@ public class IgniteTcBotSandboxTest extends GridCommonAbstractTest {
 
     public static final String TEST_HIST_CACHE_NAME = "teamcityTestRunHist";
 
+    // todo set correct path
+    public static final String WORK_DIR = "C:\\projects\\corrupt\\work";
+
     @Test
     public void readTcBotDb() throws Exception {
-        System.out.println("Cache name hash code: " + U.safeAbs(TEST_HIST_CACHE_NAME.hashCode()));
+
+        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
+        H2ExtrasInnerIO.register();
+        H2ExtrasLeafIO.register();
+
+        int grpId = U.safeAbs(TEST_HIST_CACHE_NAME.hashCode());
+        System.out.println("Cache name hash code: " + grpId);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        WALIterator iter = factory.iterator(new File(WORK_DIR, "db\\wal\\archive\\TcHelper").getAbsolutePath());
+
+        long pageId = 0x00010000000145b4L;
+        processRecords(grpId, iter, pageId);
+
+        WALIterator iter2 = factory.iterator(new File(WORK_DIR, "db\\wal\\TcHelper").getAbsolutePath());
+
+        processRecords(grpId, iter2, pageId);
 
         IgniteEx ignite = startGrid(0);
         ignite.cluster().active(true);
@@ -60,11 +97,53 @@ public class IgniteTcBotSandboxTest extends GridCommonAbstractTest {
         System.out.println(val);
     }
 
+    private void processRecords(int grpId, WALIterator iter, long pageId) {
+        Set<Long> segments = new HashSet<>();
+        while (iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = iter.next();
+            WALPointer pos = next.get1();
+            WALRecord rec = next.get2();
+            FileWALPointer walPtr = (FileWALPointer)pos;
+            long idx = walPtr.index();
+
+            if (segments.add(idx)) {
+                System.out.println("Scanning segment [" + idx + "]," +
+                    " relIdx [" + (idx % 10) + "]");
+            }
+
+            if (rec instanceof InitNewPageRecord) {
+                InitNewPageRecord initRec = (InitNewPageRecord)rec;
+
+                if (initRec.groupId() == grpId
+                    && initRec.pageId() == pageId) {
+                    System.out.println("InitNewPageRecord:: pos=" + pos
+                        + ", rec=" + initRec.toString());
+                }
+            } else if (rec instanceof PageSnapshot) {
+                PageSnapshot snapshot = (PageSnapshot)rec;
+
+                if (snapshot.fullPageId().groupId() == grpId
+                    && snapshot.fullPageId().pageId() == pageId) {
+                    System.out.println("PageSnapshot:: pos=" + pos
+                        + ", rec=" + snapshot.toString());
+                }
+            } else if(rec instanceof PageDeltaRecord) {
+                PageDeltaRecord deltaRec = (PageDeltaRecord)rec;
+
+                if (deltaRec.groupId() == grpId
+                    && deltaRec.pageId() == pageId) {
+                    System.out.println("PageDeltaRecord:: pos=" + pos
+                        + ", rec=" + deltaRec.toString());
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setWorkDirectory("C:\\projects\\corrupt\\work"); // todo set correct path
+        cfg.setWorkDirectory(WORK_DIR);
 
         cfg.setConsistentId("TcHelper");
 
