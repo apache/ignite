@@ -20,7 +20,7 @@ package org.apache.ignite.testframework.junits;
 import junit.framework.Assert; // IMPL NOTE some old tests expect inherited deprecated assertions.
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runners.model.Statement;
+import org.junit.runners.model.FrameworkMethod;
 
 /**
  * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,
@@ -46,22 +46,25 @@ public abstract class JUnit3TestLegacySupport extends Assert {
     /** This method is called before a test is executed. */
     abstract void setUp() throws Exception;
 
-    /** Runs test code in between {@code setUp} and {@code tearDown}. */
-    abstract void runTest(Statement testRoutine) throws Throwable;
+    /** Runs test code in between {@code @Before}, {@code setUp} and {@code tearDown}, {@code @After}. */
+    abstract Object runTestWrapped(FrameworkMethod mtd, Object target, Object... params) throws Throwable;
 
     /** This method is called after a test is executed. */
     abstract void tearDown() throws Exception;
 
     /**
-     * Runs the bare test sequence like in JUnit 3 class TestCase.
+     * Runs the bare test sequence like in JUnit 3 class {@code TestCase}.
      *
      * @throws Throwable if any exception is thrown
      */
-    protected void runTestCase(Statement testRoutine) throws Throwable {
+    protected Object wrapTestCase(FrameworkMethod mtd, Object target, Object... params) throws Throwable {
+        Object res = null;
         Throwable e = null;
+
         setUp();
+
         try {
-            runTest(testRoutine);
+            return runTestWrapped(mtd, target, params);
         } catch (Throwable running) {
             e = running;
         } finally {
@@ -71,7 +74,10 @@ public abstract class JUnit3TestLegacySupport extends Assert {
                 if (e == null) e = tearingDown;
             }
         }
+
         if (e != null) throw e;
+
+        return res;
     }
 
     /**

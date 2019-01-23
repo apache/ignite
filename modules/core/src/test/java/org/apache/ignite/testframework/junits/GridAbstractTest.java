@@ -39,6 +39,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -179,11 +180,11 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Lock to maintain integrity of {@link BeforeAfterClassHelper} and of {@link IgniteConfigVariationsAbstractTest}. */
-    private final Lock runSerializer = new ReentrantLock();
+    /** */
+    private static final AtomicBoolean isFirst = new AtomicBoolean();
 
     /** */
-    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
+    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper(isFirst);
 
     /** Manages test execution and reporting. */
     @Rule public transient TestRule runRule = (base, description) -> new Statement() {
@@ -283,6 +284,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @BeforeClass
     public static void beforeClassGridAbstractTest() {
         helper.onBeforeClass();
+    }
+
+    /** */
+    @Before
+    public void beforeGridAbstractTest() throws Exception {
+        helper.onBefore(this::onFirstTest, this::onLastTest);
     }
 
     /** */
@@ -2046,8 +2053,10 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** {@inheritDoc} */
-    @Override void runTest(Statement testRoutine) throws Throwable {
+    @Override protected Object runTestWrapped(FrameworkMethod mtd, Object target, Object... params) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
+
+        final AtomicReference<Object> res = new AtomicReference<>(null);
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
@@ -2055,7 +2064,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
 
-                    testRoutine.evaluate();
+                    res.set(mtd.invokeExplosively(target, params));
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
@@ -2102,6 +2111,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+
+        return res.get();
     }
 
     /**

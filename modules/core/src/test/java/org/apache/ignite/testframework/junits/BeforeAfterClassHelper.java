@@ -31,7 +31,14 @@ public class BeforeAfterClassHelper {
     private static final AtomicReference<InstanceAction> afterClsAct = new AtomicReference<>(null);
 
     /** */
-    private static final AtomicBoolean isFirst = new AtomicBoolean();
+    private final AtomicBoolean isFirst;
+
+    /**
+     * @param isFirst Holds value indicating whether it is a first invokation.
+     */
+    public BeforeAfterClassHelper(AtomicBoolean isFirst) {
+        this.isFirst = isFirst;
+    }
 
     /**
      * Must be invoked from containing class in the method annotated with {@code BeforeClass}.
