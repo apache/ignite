@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
@@ -258,14 +259,15 @@ public class AbstractVectorTest {
 
         double[] data1 = storage1.data().clone();
 
-        AbstractVector testVector1 = getAbstractVector(storage1);
+        TestAbstractVector testVector1 = getAbstractVector(storage1);
 
         StringBuilder testVal = new StringBuilder();
 
         for (int i = 0; i < data0.length; i++)
             testVal.append(data0[i] + data1[i]);
 
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal.toString());
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1,
+            (IgniteBiFunction<String, Double, String>)(string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal.toString());
     }
 
     /** */
@@ -353,68 +355,8 @@ public class AbstractVectorTest {
      * @param storage {@link VectorStorage}
      * @return AbstractVector.
      */
-    private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
-            /** {@inheritDoc} */
-            @Override public boolean isDense() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Matrix likeMatrix(int rows, int cols) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector copy() {
-                return getAbstractVector(this.getStorage());
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector like(int crd) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector normalize() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector normalize(double power) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector logNormalize() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector logNormalize(double power) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector viewPart(int off, int len) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
-            }
-        };
+    private TestAbstractVector getAbstractVector(VectorStorage storage) {
+        return new TestAbstractVector(storage); // TODO: IGNITE-5723, find out how to fix warning about missing constructor
     }
 
     /**
@@ -422,68 +364,8 @@ public class AbstractVectorTest {
      *
      * @return AbstractVector.
      */
-    private AbstractVector getAbstractVector() {
-        return new AbstractVector() { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
-            /** {@inheritDoc} */
-            @Override public boolean isDense() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Matrix likeMatrix(int rows, int cols) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector copy() {
-                return getAbstractVector(this.getStorage());
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector like(int crd) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector normalize() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector normalize(double power) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector logNormalize() {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector logNormalize(double power) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Vector viewPart(int off, int len) {
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
-            }
-        };
+    private TestAbstractVector getAbstractVector() {
+        return new TestAbstractVector(); // TODO: IGNITE-5723, find out how to fix warning about missing constructor
     }
 
     /**
@@ -537,5 +419,87 @@ public class AbstractVectorTest {
         addNilValues();
         testRef[10] = 0;
         testRef[50] = 0;
+    }
+
+    /**
+     * Test abstract vector.
+     */
+    private static class TestAbstractVector extends AbstractVector<TestAbstractVector> {
+
+        /**
+         * Constructs a new instance of test abstract vector.
+         */
+        public TestAbstractVector() {
+            // No-op.
+        }
+
+        /**
+         * Constructs a new instance of test abstract vector.
+         *
+         * @param storage Vector storage.
+         */
+        public TestAbstractVector(VectorStorage storage) {
+            super(storage);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDense() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isSequentialAccess() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Matrix likeMatrix(int rows, int cols) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector copy() {
+            return new TestAbstractVector(getStorage());
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector like(int crd) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector normalize() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector normalize(double power) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector logNormalize() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TestAbstractVector logNormalize(double power) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Vector viewPart(int off, int len) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRandomAccess() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDistributed() {
+            return false;
+        }
     }
 }

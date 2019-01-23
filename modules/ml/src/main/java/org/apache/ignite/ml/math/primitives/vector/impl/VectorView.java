@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.storage.VectorViewStorage;
 /**
  * Implements the partial view into the parent {@link Vector}.
  */
-public class VectorView extends AbstractVector {
+public class VectorView extends AbstractVector<VectorView> {
     /**
      * Constructor for {@link Externalizable} interface.
      */
@@ -60,7 +60,7 @@ public class VectorView extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
+    @Override public VectorView copy() {
         // TODO: IGNITE-5723, revise this
         VectorViewStorage sto = storage();
 
@@ -68,7 +68,7 @@ public class VectorView extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
+    @Override public VectorView like(int crd) {
         throw new UnsupportedOperationException();
     }
 

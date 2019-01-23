@@ -26,13 +26,12 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.storage.SparseVectorStorage;
 
 /**
  * Local on-heap sparse vector based on hash map storage.
  */
-public class SparseVector extends AbstractVector implements StorageConstants {
+public class SparseVector extends AbstractVector<SparseVector> implements StorageConstants {
     /**
      *
      */
@@ -64,7 +63,7 @@ public class SparseVector extends AbstractVector implements StorageConstants {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
+    @Override public SparseVector like(int crd) {
         SparseVectorStorage sto = storage();
 
         return new SparseVector(crd, sto.getAccessMode());
@@ -73,14 +72,6 @@ public class SparseVector extends AbstractVector implements StorageConstants {
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return new SparseMatrix(rows, cols);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector times(double x) {
-        if (x == 0.0)
-            return assign(0);
-        else
-            return super.times(x);
     }
 
     /** Indexes of non-default elements. */

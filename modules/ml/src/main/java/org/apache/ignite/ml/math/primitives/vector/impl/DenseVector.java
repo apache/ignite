@@ -22,7 +22,6 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 
@@ -34,7 +33,7 @@ import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
  * to keep the entire data set.
  */
-public class DenseVector extends AbstractVector {
+public class DenseVector extends AbstractVector<DenseVector> {
     /**
      * @param size Vector cardinality.
      */
@@ -99,7 +98,7 @@ public class DenseVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
+    @Override public DenseVector like(int crd) {
         return new DenseVector(crd);
     }
 }

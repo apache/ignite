@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
  */
-public abstract class AbstractVector implements Vector {
+public abstract class AbstractVector<Self extends AbstractVector<? super Self>> implements Vector {
     /** Vector storage implementation. */
     private VectorStorage sto;
 
@@ -101,6 +101,9 @@ public abstract class AbstractVector implements Vector {
     public AbstractVector() {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public abstract Self like(int crd);
 
     /**
      * Set storage.
@@ -166,17 +169,17 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector sort() {
+    @Override public Self sort() {
         if (isArrayBased())
             Arrays.parallelSort(sto.data());
         else
             throw new UnsupportedOperationException();
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(IgniteDoubleFunction<Double> fun) {
+    @Override public Self map(IgniteDoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {
             double[] data = sto.data();
 
@@ -189,11 +192,11 @@ public abstract class AbstractVector implements Vector {
                 storageSet(i, fun.apply(storageGet(i)));
         }
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
+    @Override public Self map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(vec);
 
         int len = size();
@@ -201,17 +204,17 @@ public abstract class AbstractVector implements Vector {
         for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), vec.get(i)));
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
+    @Override public Self map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         int len = size();
 
         for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), y));
 
-        return this;
+        return (Self)this;
     }
 
     /**
@@ -282,35 +285,35 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector set(int idx, double val) {
+    @Override public Self set(int idx, double val) {
         checkIndex(idx);
 
         storageSet(idx, val);
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector setX(int idx, double val) {
+    @Override public Self setX(int idx, double val) {
         storageSet(idx, val);
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector increment(int idx, double val) {
+    @Override public Self increment(int idx, double val) {
         checkIndex(idx);
 
         storageSet(idx, storageGet(idx) + val);
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector incrementX(int idx, double val) {
+    @Override public Self incrementX(int idx, double val) {
         storageSet(idx, storageGet(idx) + val);
 
-        return this;
+        return (Self)this;
     }
 
     /**
@@ -460,7 +463,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector assign(double val) {
+    @Override public Self assign(double val) {
         if (sto.isArrayBased()) {
             ensureReadOnly();
 
@@ -473,11 +476,11 @@ public abstract class AbstractVector implements Vector {
                 storageSet(i, val);
         }
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector assign(double[] vals) {
+    @Override public Self assign(double[] vals) {
         checkCardinality(vals);
 
         if (sto.isArrayBased()) {
@@ -494,21 +497,21 @@ public abstract class AbstractVector implements Vector {
                 storageSet(i, vals[i]);
         }
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector assign(Vector vec) {
+    @Override public Self assign(Vector vec) {
         checkCardinality(vec);
 
         for (Vector.Element x : vec.all())
             storageSet(x.index(), x.get());
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector assign(IntToDoubleFunction fun) {
+    @Override public Self assign(IntToDoubleFunction fun) {
         assert fun != null;
 
         if (sto.isArrayBased()) {
@@ -523,7 +526,7 @@ public abstract class AbstractVector implements Vector {
                 storageSet(i, fun.applyAsDouble(i));
         }
 
-        return this;
+        return (Self)this;
     }
 
     /** {@inheritDoc} */
@@ -730,24 +733,24 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector minus(Vector vec) {
+    @Override public Self minus(Vector vec) {
         checkCardinality(vec);
 
-        Vector cp = copy();
+        Self cp = copy();
 
-        return cp.map(vec, Functions.MINUS);
+        return (Self)cp.map(vec, Functions.MINUS);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector plus(double x) {
-        Vector cp = copy();
+    @Override public Self plus(double x) {
+        Self cp = copy();
 
-        return x != 0.0 ? cp.map(Functions.plus(x)) : cp;
+        return x != 0.0 ? (Self)cp.map(Functions.plus(x)) : cp;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector divide(double x) {
-        Vector cp = copy();
+    @Override public Self divide(double x) {
+        Self cp = copy();
 
         if (x != 1.0)
             for (Element element : cp.all())
@@ -757,36 +760,36 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector times(double x) {
+    @Override public Self times(double x) {
         if (x == 0.0)
-            return like(size());
+            return (Self)like(size());
         else
-            return copy().map(Functions.mult(x));
+            return (Self)copy().map(Functions.mult(x));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector times(Vector vec) {
+    @Override public Self times(Vector vec) {
         checkCardinality(vec);
 
-        return copy().map(vec, Functions.MULT);
+        return (Self)copy().map(vec, Functions.MULT);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector plus(Vector vec) {
+    @Override public Self plus(Vector vec) {
         checkCardinality(vec);
 
-        Vector cp = copy();
+        Self cp = copy();
 
-        return cp.map(vec, Functions.PLUS);
+        return (Self)cp.map(vec, Functions.PLUS);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector logNormalize() {
+    @Override public Self logNormalize() {
         return logNormalize(2.0, Math.sqrt(getLengthSquared()));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector logNormalize(double power) {
+    @Override public Self logNormalize(double power) {
         return logNormalize(power, kNorm(power));
     }
 
@@ -795,12 +798,12 @@ public abstract class AbstractVector implements Vector {
      * @param normLen Normalized length.
      * @return logNormalized value.
      */
-    private Vector logNormalize(double power, double normLen) {
+    private Self logNormalize(double power, double normLen) {
         assert !(Double.isInfinite(power) || power <= 1.0);
 
         double denominator = normLen * Math.log(power);
 
-        Vector cp = copy();
+        Self cp = copy();
 
         for (Element element : cp.all())
             element.set(Math.log1p(element.get()) / denominator);
@@ -827,23 +830,23 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector normalize() {
+    @Override public Self normalize() {
         return divide(Math.sqrt(getLengthSquared()));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector normalize(double power) {
+    @Override public Self normalize(double power) {
         return divide(kNorm(power));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
-        return like(size()).assign(this);
+    @Override public Self copy() {
+        return (Self)like(size()).assign(this);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copyOfRange(int from, int to) {
-        Vector copiedVector = like(to - from);
+    @Override public Self copyOfRange(int from, int to) {
+        Self copiedVector = like(to - from);
         for (int i = from, j = 0; i < to; i++, j++)
             copiedVector.set(j, this.get(i));
 

@@ -17,52 +17,43 @@
 
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.omg.CORBA.NamedValue;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 
-/**
- * Delegating named vector that delegates all operations to underlying vector and adds implementation of
- * {@link NamedValue} functionality using embedded map that maps string index on real integer index.
- */
-public class DelegatingNamedVector extends DelegatingVector implements NamedVector {
-    /** */
-    private static final long serialVersionUID = -3425468245964928754L;
+public class SimpleNamedVector extends AbstractVector<SimpleNamedVector> implements NamedVector {
 
-    /** Map that maps string index on real integer index. */
     private final Map<String, Integer> map;
 
-    /**
-     * Constructs a new instance of delegating named vector.
-     */
-    public DelegatingNamedVector() {
-        this.map = Collections.emptyMap();
+    public SimpleNamedVector(Map<String, Integer> map) {
+        this.map = new HashMap<>(map);
+
+        setStorage(new DenseVectorStorage(map.size()));
     }
 
-    /**
-     * Constructs a new instance of delegating named vector.
-     *
-     * @param vector Underlying vector.
-     * @param map Map that maps string index on real integer index.
-     */
-    public DelegatingNamedVector(Vector vector, Map<String, Integer> map) {
-        super(vector);
+    @Override public SimpleNamedVector like(int crd) {
+        if (crd != size())
+            throw new IllegalArgumentException("...");
 
-        this.map = Objects.requireNonNull(map);
+        return new SimpleNamedVector(map);
     }
 
-    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
+        return new DenseMatrix(rows, cols);
+    }
+
     @Override public double get(String idx) {
         int intIdx = Objects.requireNonNull(map.get(idx), "Index not found [name='" + idx + "']");
 
         return get(intIdx);
     }
 
-    /** {@inheritDoc} */
     @Override public NamedVector set(String idx, double val) {
         int intIdx = Objects.requireNonNull(map.get(idx), "Index not found [name='" + idx + "']");
 
@@ -71,7 +62,6 @@ public class DelegatingNamedVector extends DelegatingVector implements NamedVect
         return this;
     }
 
-    /** {@inheritDoc} */
     @Override public Set<String> getKeys() {
         return map.keySet();
     }

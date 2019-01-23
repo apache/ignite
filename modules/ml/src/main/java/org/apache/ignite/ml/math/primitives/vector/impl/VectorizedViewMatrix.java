@@ -23,13 +23,12 @@ import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.storage.VectorizedViewMatrixStorage;
 
 /**
  * Row or column vector view off the matrix.
  */
-public class VectorizedViewMatrix extends AbstractVector {
+public class VectorizedViewMatrix extends AbstractVector<VectorizedViewMatrix> {
     /** */
     private Matrix parent;
 
@@ -77,13 +76,13 @@ public class VectorizedViewMatrix extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
+    @Override public VectorizedViewMatrix copy() {
         return new VectorizedViewMatrix(parent, row, col, rowStride, colStride);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
-        return parent.likeVector(crd);
+    @Override public VectorizedViewMatrix like(int crd) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

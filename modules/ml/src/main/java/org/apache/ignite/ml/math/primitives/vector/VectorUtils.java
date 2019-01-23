@@ -24,8 +24,8 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.SimpleNamedVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
 /**
@@ -228,19 +228,19 @@ public class VectorUtils {
      * @return Named vector.
      */
     public static NamedVector of(Map<String, Double> values) {
-        SparseVector vector = new SparseVector(values.size(), StorageConstants.RANDOM_ACCESS_MODE);
-        for (int i = 0; i < values.size(); i++)
-            vector.set(i, Double.NaN);
-
         Map<String, Integer> dict = new HashMap<>();
         int idx = 0;
         for (Map.Entry<String, Double> e : values.entrySet()) {
             dict.put(e.getKey(), idx);
-            vector.set(idx, e.getValue());
             idx++;
         }
 
-        return new DelegatingNamedVector(vector, dict);
+        SimpleNamedVector vector = new SimpleNamedVector(dict);
+
+        for (Map.Entry<String, Double> e : values.entrySet())
+            vector.set(e.getKey(), e.getValue());
+
+        return vector;
     }
 
     /**

@@ -96,7 +96,7 @@ public class LearningEnvironmentTest {
 
                 Vector v = null;
                 for (int iter = 0; iter < iterations; iter++) {
-                    v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
+                    v = ds.compute((dw, env) -> (Vector)VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
                         (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
                 }
                 return constantModel(v);
