@@ -39,8 +39,8 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionFromSparkExample {
-    /** Path to Spark LogReg model. */
-    public static final String SPARK_LINEAR_REG_MDL_PATH = "examples/src/main/resources/models/spark/serialized/linreg/data" +
+    /** Path to Spark linear regression model. */
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/linreg/data" +
         "/part-00000-1ff2d09d-6cdf-4ad3-bddd-7cad8378429d-c000.snappy.parquet";
 
     /** Run example. */
@@ -65,7 +65,7 @@ public class LinearRegressionFromSparkExample {
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[4];
 
             LinearRegressionModel mdl = (LinearRegressionModel)SparkModelParser.parse(
-                SPARK_LINEAR_REG_MDL_PATH,
+                SPARK_MDL_PATH,
                 SupportedSparkModels.LINEAR_REGRESSION
             );
 
