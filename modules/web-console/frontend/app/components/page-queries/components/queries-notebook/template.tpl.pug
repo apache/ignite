@@ -187,6 +187,9 @@ mixin query-actions
     button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
         | Explain
 
+    button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+        | Cancel
+
 mixin table-result-heading-query
     .total.row
         .col-xs-7
@@ -339,6 +342,9 @@ mixin paragraph-scan
                     span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
                     span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
                     | Scan on selected node
+
+                button.btn-ignite.btn-ignite--secondary(ng-if='cancelQueryAvailable(paragraph)' ng-click='cancelQuery(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{"Cancel query execution"}}')
+                    | Cancel
             div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')

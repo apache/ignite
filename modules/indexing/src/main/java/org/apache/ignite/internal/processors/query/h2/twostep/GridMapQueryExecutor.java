@@ -115,6 +115,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
 /**
@@ -570,6 +571,7 @@ public class GridMapQueryExecutor {
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = (FORCE_LAZY && req.queries().size() == 1) || req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        final Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
         final List<Integer> cacheIds = req.caches();
 
@@ -668,7 +670,8 @@ public class GridMapQueryExecutor {
                     tx,
                     txReq,
                     lockFut,
-                    runCntr);
+                    runCntr,
+                    dataPageScanEnabled);
             }
             else {
                 ctx.closure().callLocal(
@@ -694,7 +697,8 @@ public class GridMapQueryExecutor {
                                 tx,
                                 txReq,
                                 lockFut,
-                                runCntr);
+                                runCntr,
+                                dataPageScanEnabled);
 
                             return null;
                         }
@@ -722,7 +726,9 @@ public class GridMapQueryExecutor {
             req.mvccSnapshot(),
             tx,
             txReq,
-            lockFut, runCntr);
+            lockFut,
+            runCntr,
+            dataPageScanEnabled);
     }
 
     /**
@@ -743,6 +749,7 @@ public class GridMapQueryExecutor {
      * @param txDetails TX details, if it's a {@code FOR UPDATE} request, or {@code null}.
      * @param lockFut Lock future.
      * @param runCntr Counter which counts remaining queries in case segmented index is used.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -765,7 +772,9 @@ public class GridMapQueryExecutor {
         @Nullable final GridDhtTxLocalAdapter tx,
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
         @Nullable final CompoundLockFuture lockFut,
-        @Nullable final AtomicInteger runCntr) {
+        @Nullable final AtomicInteger runCntr,
+        Boolean dataPageScanEnabled
+    ) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         // In presence of TX, we also must always have matching details.
@@ -801,7 +810,8 @@ public class GridMapQueryExecutor {
                         tx,
                         txDetails,
                         lockFut,
-                        runCntr);
+                        runCntr,
+                        dataPageScanEnabled);
                 }
             });
 
@@ -928,7 +938,7 @@ public class GridMapQueryExecutor {
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx));
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx), dataPageScanEnabled);
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
@@ -991,9 +1001,9 @@ public class GridMapQueryExecutor {
 
                     // Send the first page.
                     if (lockFut == null)
-                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping, dataPageScanEnabled);
                     else {
-                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping, dataPageScanEnabled);
 
                         if (msg != null) {
                             lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
@@ -1130,6 +1140,7 @@ public class GridMapQueryExecutor {
             fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
             fldsQry.setPageSize(req.pageSize());
             fldsQry.setLocal(true);
+            fldsQry.setDataPageScanEnabled(req.isDataPageScanEnabled());
 
             boolean local = true;
 
@@ -1263,17 +1274,19 @@ public class GridMapQueryExecutor {
         else if (qr.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
+            Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
+
             MapQueryLazyWorker lazyWorker = qr.lazyWorker();
 
             if (lazyWorker != null) {
                 lazyWorker.submit(new Runnable() {
                     @Override public void run() {
-                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
+                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false, dataPageScanEnabled);
                     }
                 });
             }
             else
-                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false, dataPageScanEnabled);
         }
     }
 
@@ -1285,11 +1298,12 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Next page.
      * @throws IgniteCheckedException If failed.
      */
     private GridQueryNextPageResponse prepareNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) throws IgniteCheckedException {
+        int pageSize, boolean removeMapping, Boolean dataPageScanEnabled) throws IgniteCheckedException {
         MapQueryResult res = qr.result(qry);
 
         assert res != null;
@@ -1301,7 +1315,7 @@ public class GridMapQueryExecutor {
 
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+        boolean last = res.fetchNextPage(rows, pageSize, dataPageScanEnabled);
 
         if (last) {
             res.close();
@@ -1341,11 +1355,13 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
+     * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) {
+        int pageSize, boolean removeMapping, Boolean dataPageScanEnabled) {
         try {
-            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
+            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping,
+                dataPageScanEnabled);
 
             if (msg != null) {
                 if (node.isLocal())

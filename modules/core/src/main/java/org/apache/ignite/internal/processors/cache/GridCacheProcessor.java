@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -3220,6 +3221,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         MvccCachingManager mvccCachingMgr = new MvccCachingManager();
 
+        DeadlockDetectionManager deadlockDetectionMgr = new DeadlockDetectionManager();
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -3238,7 +3241,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             evict,
             jta,
             storeSesLsnrs,
-            mvccCachingMgr
+            mvccCachingMgr,
+            deadlockDetectionMgr
         );
     }
 
