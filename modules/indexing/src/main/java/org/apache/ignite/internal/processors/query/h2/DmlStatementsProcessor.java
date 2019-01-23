@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
@@ -105,7 +106,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
-import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -623,7 +623,10 @@ public class DmlStatementsProcessor {
                 return res;
             }
             catch (IgniteCheckedException e) {
-                checkKnownException(e);
+                checkSqlException(e);
+
+                if (e instanceof IgniteTxSerializationCheckedException)
+                    throw new TransactionSerializationException(e.getMessage(), e);
 
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
@@ -694,9 +697,13 @@ public class DmlStatementsProcessor {
     /**
      * @param e Exception.
      */
-    private void checkKnownException(IgniteCheckedException e) {
-        if (e instanceof IgniteTxSerializationCheckedException)
-            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR, e);
+    private void checkSqlException(IgniteCheckedException e) {
+//        if (e instanceof IgniteTxSerializationCheckedException)
+//            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR, e);
+//            throw new TransactionSerializationException(e.getMessage(),e);
+//            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR,
+//                    new TransactionSerializationException(e.getMessage(), e));
+
 
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
