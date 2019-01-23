@@ -1834,7 +1834,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         fetchFut.init(false);
 
-                        fetchFuts.add(fetchFut);
+                        synchronized (CacheAffinitySharedManager.this) {
+                            fetchFuts.add(fetchFut);
+                        }
                     }
                     else {
                         if (!fut.events().discoveryCache().serverNodes().isEmpty())
@@ -1848,18 +1850,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        for (int i = 0; i < fetchFuts.size(); i++) {
-            GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
+        synchronized (this) {
+            for (int i = 0; i < fetchFuts.size(); i++) {
+                GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
 
-            int grpId = fetchFut.groupId();
+                int grpId = fetchFut.groupId();
 
-            fetchAffinity(topVer,
-                fut.events(),
-                fut.events().discoveryCache(),
-                cctx.cache().cacheGroup(grpId).affinity(),
-                fetchFut);
+                fetchAffinity(topVer,
+                    fut.events(),
+                    fut.events().discoveryCache(),
+                    groupAffinity(grpId),
+                    fetchFut);
 
-            cctx.exchange().exchangerUpdateHeartbeat();
+                cctx.exchange().exchangerUpdateHeartbeat();
+            }
         }
     }
 
