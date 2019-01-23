@@ -1811,7 +1811,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.initialVersion();
 
-        List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
+        List<GridDhtAssignmentFetchFuture> fetchFuts = Collections.synchronizedList(new ArrayList<>());
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
@@ -1834,9 +1834,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         fetchFut.init(false);
 
-                        synchronized (CacheAffinitySharedManager.this) {
-                            fetchFuts.add(fetchFut);
-                        }
+                        fetchFuts.add(fetchFut);
                     }
                     else {
                         if (!fut.events().discoveryCache().serverNodes().isEmpty())
@@ -1850,20 +1848,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        synchronized (this) {
-            for (int i = 0; i < fetchFuts.size(); i++) {
-                GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
+        for (int i = 0; i < fetchFuts.size(); i++) {
+            GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
 
-                int grpId = fetchFut.groupId();
+            int grpId = fetchFut.groupId();
 
-                fetchAffinity(topVer,
-                    fut.events(),
-                    fut.events().discoveryCache(),
-                    groupAffinity(grpId),
-                    fetchFut);
+            fetchAffinity(topVer,
+                fut.events(),
+                fut.events().discoveryCache(),
+                groupAffinity(grpId),
+                fetchFut);
 
-                cctx.exchange().exchangerUpdateHeartbeat();
-            }
+            cctx.exchange().exchangerUpdateHeartbeat();
         }
     }
 
