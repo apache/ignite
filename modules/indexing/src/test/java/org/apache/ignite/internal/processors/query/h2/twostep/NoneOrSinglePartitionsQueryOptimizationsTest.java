@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,12 +34,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -60,15 +58,13 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(JUnit4.class)
 public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbstractTest {
     /** Result retrieval timeout. */
-    public static final int RES_RETRIEVAL_TIMEOUT = 500_000;
+    private static final int RES_RETRIEVAL_TIMEOUT = 5_000;
 
     /** Nodes count. */
-    // TODO: Why 8? Will 2 be enough for test?
-    private static final int NODES_COUNT = 8;
+    private static final int NODES_COUNT = 2;
 
     /** Organizations count. */
-    // TODO: Why do we need so many records? Will 100 be enough?
-    private static final int ORG_COUNT = 10000;
+    private static final int ORG_COUNT = 100;
 
     /** Organizations cache name. */
     private static final String ORG_CACHE_NAME = "orgBetweenTest";
@@ -259,6 +255,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testQueryWithNonePartititonsAndParams() throws Exception {
         TestCommunicationSpi commSpi =
             (TestCommunicationSpi)grid(NODES_COUNT).configuration().
@@ -280,18 +277,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     }
 
     /**
-     * Test simple query that leads to multiple partitions but doesn't create megre table.
-     *
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
-    @Test
-    public void testQueryWithMultiplePartitionsAndParams() throws Exception {
-        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? ",
-            2, false, false, 1, 2);
-    }
-
-    /**
      * Test simple query that leads to sinle partition and doesn't create megre table. Map query is expected to be the
      * same as original query.
      *
@@ -301,6 +286,18 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     public void testQueryWithSinglePartitionAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? order by org._KEY",
             1, false, true, 1);
+    }
+
+    /**
+     * Test simple query that leads to multiple partitions but doesn't create megre table.
+     *
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Test
+    public void testQueryWithMultiplePartitionsAndParams() throws Exception {
+        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? ",
+            2, false, false, 1, 2);
     }
 
     /**
@@ -324,15 +321,9 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
             QueryCursor cursor = orgCache.query(new SqlFieldsQuery(sqlQry).setArgs(args));
 
-            // TODO: Use U.field() instead.
-            Field outerIterField = QueryCursorImpl.class.getDeclaredField("iterExec");
-            outerIterField.setAccessible(true);
-            Iterable iter = (Iterable)outerIterField.get(cursor);
+            Iterable iter = U.field(cursor,"iterExec");
 
-            // TODO: Use U.field() instead.
-            Field innerIterField = GridQueryCacheObjectsIterator.class.getDeclaredField("iter");
-            innerIterField.setAccessible(true);
-            Iterator innerIter = (Iterator)innerIterField.get(iter.iterator());
+            Iterator innerIter = U.field(iter.iterator(),"iter");
 
             if (expMergeTbl)
                 assertTrue(innerIter instanceof H2ResultSetIterator);
@@ -390,7 +381,22 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         }
     }
 
-    // TODO: Add a test with multiple map queries.
+    /**
+     * Test
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    // TODO: 23.01.19 comment
+    public void testMultipleQueriesWithMixedPartitionsAndParams() throws Exception {
+        // TODO: Add test for the following case: complex qry with many map queries, has 2+ parameter placeholders,
+        // TODO: execute with 1 partition, then with many partitions.
+        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
+            1, false, true, 1, 1);
+
+        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
+            2, true, false, 1, 2);
+    }
 
     /**
      * Test communication SPI.
@@ -413,14 +419,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             }
 
             super.sendMessage(node, msg, ackC);
-        }
-
-        /**
-         * @return List of map queries.
-         */
-        // TODO: Unused tests.
-        List<String> mapQueries() {
-            return Collections.unmodifiableList(mapQueries);
         }
 
         /**
