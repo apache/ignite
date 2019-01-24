@@ -97,11 +97,7 @@ public class TestReconnectPluginProvider implements PluginProvider {
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // No-op
     }
-
-    @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
-        // No-op
-    }
-
+    
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
         if (enabled && GridSecurityProcessor.class.equals(cls))

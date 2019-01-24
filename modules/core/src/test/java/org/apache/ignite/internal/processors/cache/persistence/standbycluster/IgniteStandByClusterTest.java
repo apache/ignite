@@ -494,11 +494,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
-
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
             return null;
         }
