@@ -111,15 +111,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         activateCachesRestore(5, true);
     }
 
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10750");
-
-        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
-    }
-
     /**
      * Test deactivation on cluster that is not yet activated.
      *
