@@ -23,32 +23,32 @@ import {default as Models} from '../../../../services/Models';
 import {default as ModalImportModels} from '../../../../components/modal-import-models/service';
 import {default as IgniteVersion} from 'app/services/Version.service';
 import {Confirm} from 'app/services/Confirm.service';
+import {DomainModel} from '../../../../types';
+import ErrorPopover from 'app/services/ErrorPopover.service';
+import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
+import ConfigChangesGuard from '../../../../services/ConfigChangesGuard';
+import FormUtils from 'app/services/FormUtils.service';
 
-/** @type {ng.IComponentController} */
 export default class ModelEditFormController {
-    /** @type {ig.config.model.DomainModel} */
-    model;
-    /** @type {ng.ICompiledExpression} */
-    onSave;
+    model: DomainModel;
+    onSave: ng.ICompiledExpression;
 
     static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', 'Confirm', 'ConfigChangesGuard', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
 
-    /**
-     * @param {ModalImportModels} ModalImportModels
-     * @param {Confirm} Confirm
-     * @param {ng.IScope} $scope
-     * @param {Models} Models
-     * @param {IgniteVersion} IgniteVersion
-     */
-    constructor(ModalImportModels, ErrorPopover, LegacyUtils, Confirm, ConfigChangesGuard, IgniteVersion, $scope, Models, IgniteFormUtils) {
-        Object.assign(this, {ErrorPopover, LegacyUtils, ConfigChangesGuard, IgniteFormUtils});
-        this.ModalImportModels = ModalImportModels;
-        this.Confirm = Confirm;
-        this.$scope = $scope;
-        this.Models = Models;
-        this.IgniteVersion = IgniteVersion;
-        this.javaBuiltInClassesBase = LegacyUtils.javaBuiltInClasses;
-    }
+    constructor(
+        private ModalImportModels: ModalImportModels,
+        private ErrorPopover: ErrorPopover,
+        private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
+        private Confirm: Confirm,
+        private ConfigChangesGuard: ConfigChangesGuard,
+        private IgniteVersion: IgniteVersion,
+        private $scope: ng.IScope,
+        private Models: Models,
+        private IgniteFormUtils: ReturnType<typeof FormUtils>
+    ) {}
+
+    javaBuiltInClassesBase = this.LegacyUtils.javaBuiltInClasses;
+
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
@@ -67,10 +67,9 @@ export default class ModelEditFormController {
 
     /**
      * Create list of fields to show in index fields dropdown.
-     * @param {string} prefix
-     * @param {Array<string>} cur Current queryKeyFields
+     * @param cur Current queryKeyFields
      */
-    fields(prefix, cur) {
+    fields(prefix: string, cur: string[]) {
         const fields = this.$scope.backupItem
             ? _.map(this.$scope.backupItem.fields, (field) => ({value: field.name, label: field.name}))
             : [];
@@ -90,10 +89,7 @@ export default class ModelEditFormController {
         return this.ModalImportModels.open();
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} item
-     */
-    checkQueryConfiguration(item) {
+    checkQueryConfiguration(item: DomainModel) {
         if (item.queryMetadata === 'Configuration' && this.LegacyUtils.domainForQueryConfigured(item)) {
             if (_.isEmpty(item.fields))
                 return this.ErrorPopover.show('queryFields', 'Query fields should not be empty', this.$scope.ui, 'query');
@@ -115,10 +111,7 @@ export default class ModelEditFormController {
         return true;
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} item
-     */
-    checkStoreConfiguration(item) {
+    checkStoreConfiguration(item: DomainModel) {
         if (this.LegacyUtils.domainForStoreConfigured(item)) {
             if (this.LegacyUtils.isEmptyString(item.databaseSchema))
                 return this.ErrorPopover.show('databaseSchemaInput', 'Database schema should not be empty', this.$scope.ui, 'store');
@@ -141,9 +134,8 @@ export default class ModelEditFormController {
 
     /**
      * Check domain model logical consistency.
-     * @param {ig.config.model.DomainModel} item
      */
-    validate(item) {
+    validate(item: DomainModel) {
         if (!this.checkQueryConfiguration(item))
             return false;
 
@@ -173,10 +165,7 @@ export default class ModelEditFormController {
             this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c._id}));
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} model
-     */
-    onQueryFieldsChange(model) {
+    onQueryFieldsChange(model: DomainModel) {
         this.$scope.backupItem = this.Models.removeInvalidFields(model);
     }
 
@@ -194,7 +183,7 @@ export default class ModelEditFormController {
         this.onSave({$event: {model: cloneDeep(this.$scope.backupItem), download}});
     }
 
-    reset = (forReal) => forReal ? this.$scope.backupItem = cloneDeep(this.model) : void 0;
+    reset = (forReal: boolean) => forReal ? this.$scope.backupItem = cloneDeep(this.model) : void 0;
 
     confirmAndReset() {
         return this.Confirm.confirm('Are you sure you want to undo all changes for current model?').then(() => true)

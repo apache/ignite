@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs';
+import {Subject, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 
@@ -37,6 +37,10 @@ import {default as ConfigurationDownload} from '../../services/ConfigurationDown
 
 import {confirmClustersRemoval} from '../../store/actionCreators';
 
+import {UIRouter} from '@uirouter/angularjs';
+import {ShortCluster} from '../../types';
+import {IColumnDefOf} from 'ui-grid';
+
 export default class PageConfigureOverviewController {
     static $inject = [
         '$uiRouter',
@@ -47,44 +51,38 @@ export default class PageConfigureOverviewController {
         'ConfigurationDownload'
     ];
 
-    /**
-     * @param {uirouter.UIRouter} $uiRouter
-     * @param {ModalPreviewProject} ModalPreviewProject
-     * @param {Clusters} Clusters
-     * @param {ConfigureState} ConfigureState
-     * @param {ConfigSelectors} ConfigSelectors
-     * @param {ConfigurationDownload} ConfigurationDownload
-     */
-    constructor($uiRouter, ModalPreviewProject, Clusters, ConfigureState, ConfigSelectors, ConfigurationDownload) {
-        this.$uiRouter = $uiRouter;
-        this.ModalPreviewProject = ModalPreviewProject;
-        this.Clusters = Clusters;
-        this.ConfigureState = ConfigureState;
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigurationDownload = ConfigurationDownload;
-    }
+    constructor(
+        private $uiRouter: UIRouter,
+        private ModalPreviewProject: ModalPreviewProject,
+        private Clusters: Clusters,
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors,
+        private ConfigurationDownload: ConfigurationDownload
+    ) {}
+
+    shortClusters$: Observable<Array<ShortCluster>>
+    clustersColumnDefs: Array<IColumnDefOf<ShortCluster>>
+    selectedRows$: Subject<Array<ShortCluster>>
+    selectedRowsIDs$: Observable<Array<string>>
 
     $onDestroy() {
         this.selectedRows$.complete();
     }
 
-    /** @param {Array<ig.config.cluster.ShortCluster>} clusters */
-    removeClusters(clusters) {
+    removeClusters(clusters: Array<ShortCluster>) {
         this.ConfigureState.dispatchAction(confirmClustersRemoval(clusters.map((c) => c._id)));
 
         // TODO: Implement storing selected rows in store to share this data between other components.
         this.selectedRows$.next([]);
     }
 
-    /** @param {ig.config.cluster.ShortCluster} cluster */
-    editCluster(cluster) {
+    editCluster(cluster: ShortCluster) {
         return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster._id});
     }
 
     $onInit() {
         this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
 
-        /** @type {Array<uiGrid.IColumnDefOf<ig.config.cluster.ShortCluster>>} */
         this.clustersColumnDefs = [
             {
                 name: 'name',
@@ -138,7 +136,6 @@ export default class PageConfigureOverviewController {
             }
         ];
 
-        /** @type {Subject<Array<ig.config.cluster.ShortCluster>>} */
         this.selectedRows$ = new Subject();
 
         this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedClusters) => selectedClusters.map((cluster) => cluster._id)));

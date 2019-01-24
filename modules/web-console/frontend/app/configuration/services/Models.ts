@@ -17,29 +17,18 @@
 
 import ObjectID from 'bson-objectid';
 import omit from 'lodash/fp/omit';
+import {DomainModel, IndexField, ShortDomainModel, Index, Field, KeyField, ValueField} from '../types';
 
 export default class Models {
     static $inject = ['$http'];
 
-    /**
-     * @param {ng.IHttpService} $http
-     */
-    constructor($http) {
-        this.$http = $http;
+    constructor(private $http: ng.IHttpService) {}
+
+    getModel(modelID: string) {
+        return this.$http.get<{data: DomainModel[]}>(`/api/v1/configuration/domains/${modelID}`);
     }
 
-    /**
-     * @param {string} modelID
-     * @returns {ng.IPromise<ng.IHttpResponse<{data: ig.config.model.DomainModel}>>}
-     */
-    getModel(modelID) {
-        return this.$http.get(`/api/v1/configuration/domains/${modelID}`);
-    }
-
-    /**
-     * @returns {ig.config.model.DomainModel}
-     */
-    getBlankModel() {
+    getBlankModel(): DomainModel {
         return {
             _id: ObjectID.generate(),
             generatePojo: true,
@@ -74,17 +63,11 @@ export default class Models {
 
     normalize = omit(['__v', 'space']);
 
-    /**
-     * @param {Array<ig.config.model.IndexField>} fields
-     */
-    addIndexField(fields) {
+    addIndexField(fields: IndexField[]) {
         return fields[fields.push({_id: ObjectID.generate(), direction: true}) - 1];
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} model
-     */
-    addIndex(model) {
+    addIndex(model: DomainModel) {
         if (!model)
             return;
 
@@ -101,20 +84,13 @@ export default class Models {
         return model.indexes[model.indexes.length - 1];
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} model
-     */
-    hasIndex(model) {
+    hasIndex(model: DomainModel) {
         return model.queryMetadata === 'Configuration'
             ? !!(model.keyFields && model.keyFields.length)
             : (!model.generatePojo || !model.databaseSchema && !model.databaseTable);
     }
 
-    /**
-     * @param {ig.config.model.DomainModel} model
-     * @returns {ig.config.model.ShortDomainModel}
-     */
-    toShortModel(model) {
+    toShortModel(model: DomainModel): ShortDomainModel {
         return {
             _id: model._id,
             keyType: model.keyType,
@@ -126,26 +102,22 @@ export default class Models {
     queryIndexes = {
         /**
          * Validates query indexes for completeness
-         * @param {Array<ig.config.model.Index>} $value
          */
-        complete: ($value = []) => $value.every((index) => (
+        complete: ($value: Index[] = []) => $value.every((index) => (
             index.name && index.indexType &&
             index.fields && index.fields.length && index.fields.every((field) => !!field.name))
         ),
         /**
          * Checks if field names used in indexes exist
-         * @param {Array<ig.config.model.Index>} $value
-         * @param {Array<ig.config.model.Field>} fields
          */
-        fieldsExist: ($value = [], fields = []) => {
+        fieldsExist: ($value: Index[] = [], fields: Field[] = []) => {
             const names = new Set(fields.map((field) => field.name));
             return $value.every((index) => index.fields && index.fields.every((field) => names.has(field.name)));
         },
         /**
          * Check if fields of query indexes have unique names
-         * @param {Array<ig.config.model.Index>} $value
          */
-        indexFieldsHaveUniqueNames: ($value = []) => {
+        indexFieldsHaveUniqueNames: ($value: Index[] = []) => {
             return $value.every((index) => {
                 if (!index.fields)
                     return true;
@@ -158,11 +130,8 @@ export default class Models {
 
     /**
      * Removes instances of removed fields from queryKeyFields and index fields
-     * 
-     * @param {ig.config.model.DomainModel} model
-     * @returns {ig.config.model.DomainModel}
      */
-    removeInvalidFields(model) {
+    removeInvalidFields(model: DomainModel): DomainModel {
         if (!model)
             return model;
 
@@ -179,9 +148,8 @@ export default class Models {
 
     /**
      * Checks that collection of DB fields has unique DB and Java field names
-     * @param {Array<ig.config.model.KeyField|ig.config.model.ValueField>} DBFields
      */
-    storeKeyDBFieldsUnique(DBFields = []) {
+    storeKeyDBFieldsUnique(DBFields: (KeyField|ValueField)[] = []) {
         return ['databaseFieldName', 'javaFieldName'].every((key) => {
             const items = new Set(DBFields.map((field) => field[key]));
             return items.size === DBFields.length;

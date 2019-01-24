@@ -17,11 +17,15 @@
 
 import {Subject, merge, combineLatest} from 'rxjs';
 import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
+import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
 import {removeClusterItems, advancedSaveCache} from '../../../../store/actionCreators';
 import ConfigureState from '../../../../services/ConfigureState';
 import ConfigSelectors from '../../../../store/selectors';
 import Caches from '../../../../services/Caches';
+import Version from 'app/services/Version.service';
+import {ShortCache} from '../../../../types';
+import {IColumnDefOf} from 'ui-grid';
 
 // Controller for Caches screen.
 export default class Controller {
@@ -32,74 +36,62 @@ export default class Controller {
         '$transitions',
         'ConfigureState',
         '$state',
-        'IgniteFormUtils',
         'IgniteVersion',
         'Caches'
     ];
 
-    /**
-     * @param {ConfigSelectors} ConfigSelectors
-     * @param {object} configSelectionManager
-     * @param {uirouter.UIRouter} $uiRouter
-     * @param {uirouter.TransitionService} $transitions
-     * @param {ConfigureState} ConfigureState
-     * @param {uirouter.StateService} $state
-     * @param {object} FormUtils
-     * @param {object} Version
-     * @param {Caches} Caches
-     */
-    constructor(ConfigSelectors, configSelectionManager, $uiRouter, $transitions, ConfigureState, $state, FormUtils, Version, Caches) {
-        Object.assign(this, {configSelectionManager, FormUtils});
-        this.$state = $state;
-        this.$transitions = $transitions;
-        this.$uiRouter = $uiRouter;
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigureState = ConfigureState;
-        this.Caches = Caches;
+    constructor(
+        private ConfigSelectors,
+        private configSelectionManager,
+        private $uiRouter: UIRouter,
+        private $transitions: TransitionService,
+        private ConfigureState: ConfigureState,
+        private $state: StateService,
+        private Version: Version,
+        private Caches: Caches
+    ) {}
 
-        this.visibleRows$ = new Subject();
-        this.selectedRows$ = new Subject();
+    visibleRows$ = new Subject();
+    selectedRows$ = new Subject();
 
-        /** @type {Array<uiGrid.IColumnDefOf<ig.config.cache.ShortCache>>} */
-        this.cachesColumnDefs = [
-            {
-                name: 'name',
-                displayName: 'Name',
-                field: 'name',
-                enableHiding: false,
-                sort: {direction: 'asc', priority: 0},
-                filter: {
-                    placeholder: 'Filter by name…'
-                },
-                sortingAlgorithm: naturalCompare,
-                minWidth: 165
+    cachesColumnDefs: Array<IColumnDefOf<ShortCache>> = [
+        {
+            name: 'name',
+            displayName: 'Name',
+            field: 'name',
+            enableHiding: false,
+            sort: {direction: 'asc', priority: 0},
+            filter: {
+                placeholder: 'Filter by name…'
             },
-            {
-                name: 'cacheMode',
-                displayName: 'Mode',
-                field: 'cacheMode',
-                multiselectFilterOptions: Caches.cacheModes,
-                width: 160
-            },
-            {
-                name: 'atomicityMode',
-                displayName: 'Atomicity',
-                field: 'atomicityMode',
-                multiselectFilterOptions: Caches.atomicityModes,
-                width: 160
-            },
-            {
-                name: 'backups',
-                displayName: 'Backups',
-                field: 'backups',
-                width: 130,
-                enableFiltering: false,
-                cellTemplate: `
-                    <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
-                `
-            }
-        ];
-    }
+            sortingAlgorithm: naturalCompare,
+            minWidth: 165
+        },
+        {
+            name: 'cacheMode',
+            displayName: 'Mode',
+            field: 'cacheMode',
+            multiselectFilterOptions: this.Caches.cacheModes,
+            width: 160
+        },
+        {
+            name: 'atomicityMode',
+            displayName: 'Atomicity',
+            field: 'atomicityMode',
+            multiselectFilterOptions: this.Caches.atomicityModes,
+            width: 160
+        },
+        {
+            name: 'backups',
+            displayName: 'Backups',
+            field: 'backups',
+            width: 130,
+            enableFiltering: false,
+            cellTemplate: `
+                <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
+            `
+        }
+    ];
 
     $onInit() {
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
@@ -153,10 +145,7 @@ export default class Controller {
         ]));
     }
 
-    /**
-     * @param {Array<string>} itemIDs
-     */
-    remove(itemIDs) {
+    remove(itemIDs: Array<string>) {
         this.ConfigureState.dispatchAction(
             removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
         );
@@ -168,10 +157,7 @@ export default class Controller {
         this.selectedRows$.complete();
     }
 
-    /**
-     * @param {string} cacheID
-     */
-    edit(cacheID) {
+    edit(cacheID: string) {
         this.$state.go('base.configuration.edit.advanced.caches.cache', {cacheID});
     }
 

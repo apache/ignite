@@ -17,46 +17,35 @@
 
 import ObjectID from 'bson-objectid';
 import omit from 'lodash/fp/omit';
+import {CacheModes, AtomicityModes, ShortCache} from '../types';
+import {Menu} from 'app/types';
 
 export default class Caches {
     static $inject = ['$http'];
 
-    /** @type {ig.menu<ig.config.cache.CacheModes>} */
-    cacheModes = [
+    cacheModes: Menu<CacheModes> = [
         {value: 'LOCAL', label: 'LOCAL'},
         {value: 'REPLICATED', label: 'REPLICATED'},
         {value: 'PARTITIONED', label: 'PARTITIONED'}
     ];
 
-    /** @type {ig.menu<ig.config.cache.AtomicityModes>} */
-    atomicityModes = [
+    atomicityModes: Menu<AtomicityModes> = [
         {value: 'ATOMIC', label: 'ATOMIC'},
         {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
         {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
     ];
 
-    /**
-     * @param {ng.IHttpService} $http
-     */
-    constructor($http) {
-        this.$http = $http;
-    }
+    constructor(private $http: ng.IHttpService) {}
 
     saveCache(cache) {
         return this.$http.post('/api/v1/configuration/caches/save', cache);
     }
 
-    /**
-     * @param {string} cacheID
-     */
-    getCache(cacheID) {
+    getCache(cacheID: string) {
         return this.$http.get(`/api/v1/configuration/caches/${cacheID}`);
     }
 
-    /**
-     * @param {string} cacheID
-     */
-    removeCache(cacheID) {
+    removeCache(cacheID: string) {
         return this.$http.post(`/api/v1/configuration/caches/remove/${cacheID}`);
     }
 
@@ -83,11 +72,7 @@ export default class Caches {
         };
     }
 
-    /**
-     * @param {object} cache
-     * @returns {ig.config.cache.ShortCache}
-     */
-    toShortCache(cache) {
+    toShortCache(cache: any): ShortCache {
         return {
             _id: cache._id,
             name: cache.name,
@@ -229,19 +214,13 @@ export default class Caches {
         }
     };
 
-    /**
-     * @param {ig.config.cache.ShortCache} cache
-     */
-    getCacheBackupsCount(cache) {
+    getCacheBackupsCount(cache: ShortCache) {
         return this.shouldShowCacheBackupsCount(cache)
             ? (cache.backups || 0)
             : void 0;
     }
 
-    /**
-     * @param {ig.config.cache.ShortCache} cache
-     */
-    shouldShowCacheBackupsCount(cache) {
+    shouldShowCacheBackupsCount(cache: ShortCache) {
         return cache && cache.cacheMode === 'PARTITIONED';
     }
 }

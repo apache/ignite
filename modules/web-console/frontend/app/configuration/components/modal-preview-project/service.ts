@@ -15,18 +15,13 @@
  * limitations under the License.
  */
 
+import {ShortCluster} from '../../types';
+
 export default class ModalPreviewProject {
     static $inject = ['$modal'];
-    /**
-     * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     */
-    constructor($modal) {
-        this.$modal = $modal;
-    }
-    /**
-     * @param {ig.config.cluster.ShortCluster} cluster
-     */
-    open(cluster) {
+    modalInstance: mgcrea.ngStrap.modal.IModal
+    constructor(private $modal: mgcrea.ngStrap.modal.IModalService) {}
+    open(cluster: ShortCluster) {
         this.modalInstance = this.$modal({
             locals: {
                 cluster

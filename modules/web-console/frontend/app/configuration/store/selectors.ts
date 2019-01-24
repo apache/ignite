@@ -19,6 +19,7 @@ import {uniqueName} from 'app/utils/uniqueName';
 import {of, empty, combineLatest, forkJoin, pipe} from 'rxjs';
 import {filter, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
 import {defaultNames} from '../defaultNames';
+import {DomainModel, ShortCluster} from '../types';
 
 import {default as Caches} from '../services/Caches';
 import {default as Clusters} from '../services/Clusters';
@@ -77,34 +78,32 @@ export default class ConfigSelectors {
      * @param {IGFSs} IGFSs
      * @param {Models} Models
      */
-    constructor(Caches, Clusters, IGFSs, Models) {
-        this.Caches = Caches;
-        this.Clusters = Clusters;
-        this.IGFSs = IGFSs;
-        this.Models = Models;
+    constructor(private Caches: Caches, private Clusters: Clusters, private IGFSs: IGFSs, private Models: Models) {}
 
-        /**
-         * @param {string} id
-         * @returns {(state$: Observable) => Observable<ig.config.model.DomainModel>}
-         */
-        this.selectModel = (id) => selectMapItem('models', id);
-        /**
-         * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ig.config.model.ShortDomainModel>}>}
-         */
-        this.selectShortModels = () => selectItems('shortModels');
-        this.selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
-        /**
-         * @returns {(state$: Observable) => Observable<Array<ig.config.cluster.ShortCluster>>}
-         */
-        this.selectShortClustersValue = () => (state$) => state$.pipe(this.selectShortClusters(), selectValues);
-        /**
-         * @returns {(state$: Observable) => Observable<Array<string>>}
-         */
-        this.selectClusterNames = (clusterIDs) => (state$) => state$.pipe(
-            this.selectShortClusters(),
-            selectNames(clusterIDs)
-        );
-    }
+    /**
+     * @returns {(state$: Observable) => Observable<DomainModel>}
+     */
+    selectModel = (id: string) => selectMapItem('models', id);
+
+    /**
+     * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ShortDomainModel>}>}
+     */
+    selectShortModels = () => selectItems('shortModels');
+
+    selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
+
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortCluster>>}
+     */
+    selectShortClustersValue = () => (state$) => state$.pipe(this.selectShortClusters(), selectValues);
+
+    /**
+     * @returns {(state$: Observable) => Observable<Array<string>>}
+     */
+    selectClusterNames = (clusterIDs) => (state$) => state$.pipe(
+        this.selectShortClusters(),
+        selectNames(clusterIDs)
+    );
 
     selectCluster = (id) => selectMapItem('clusters', id);
 

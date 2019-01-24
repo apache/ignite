@@ -17,24 +17,33 @@
 
 import get from 'lodash/get';
 
-export default class PCFormFieldSizeController {
-    /** @type {ng.INgModelController} */
-    ngModel;
-    /** @type {number} */
-    min;
-    /** @type {number} */
-    max;
-    /** @type {ng.ICompiledExpression} */
-    onScaleChange;
-    /** @type {ng.IFormController} */
-    innerForm;
-    /** @type {boolean?} */
-    autofocus;
+interface ISizeTypeOption {
+    label: string,
+    value: number
+}
+
+type ISizeType = Array<ISizeTypeOption>;
+
+interface ISizeTypes {
+    [name: string]: ISizeType
+}
+
+export default class PCFormFieldSizeController<T> {
+    ngModel: ng.INgModelController;
+    min: number;
+    max: number;
+    onScaleChange: ng.ICompiledExpression;
+    innerForm: ng.IFormController;
+    autofocus?: boolean;
+    id = Math.random();
+    inputElement?: HTMLInputElement
+    sizesMenu?: Array<ISizeTypeOption>
+    private _sizeScale: ISizeTypeOption
+    value: number
 
     static $inject = ['$element', '$attrs'];
 
-    /** @type {ig.config.formFieldSize.ISizeTypes} */
-    static sizeTypes = {
+    static sizeTypes: ISizeTypes = {
         bytes: [
             {label: 'Kb', value: 1024},
             {label: 'Mb', value: 1024 * 1024},
@@ -56,15 +65,7 @@ export default class PCFormFieldSizeController {
         ]
     };
 
-    /**
-     * @param {JQLite} $element
-     * @param {ng.IAttributes} $attrs
-     */
-    constructor($element, $attrs) {
-        this.$element = $element;
-        this.$attrs = $attrs;
-        this.id = Math.random();
-    }
+    constructor(private $element: JQLite, private $attrs: ng.IAttributes) {}
 
     $onDestroy() {
         delete this.$element[0].focus;
@@ -101,10 +102,7 @@ export default class PCFormFieldSizeController {
         if ('min' in changes) this.ngModel.$validate();
     }
 
-    /**
-     * @param {ig.config.formFieldSize.ISizeTypeOption} value
-     */
-    set sizeScale(value) {
+    set sizeScale(value: ISizeTypeOption) {
         this._sizeScale = value;
         if (this.onScaleChange) this.onScaleChange({$event: this.sizeScale});
         if (this.ngModel) this.assignValue(this.ngModel.$viewValue);
@@ -114,10 +112,7 @@ export default class PCFormFieldSizeController {
         return this._sizeScale;
     }
 
-    /**
-     * @param {number} rawValue
-     */
-    assignValue(rawValue) {
+    assignValue(rawValue: number) {
         if (!this.sizesMenu) this.setDefaultSizeType();
         return this.value = rawValue
             ? rawValue / this.sizeScale.value

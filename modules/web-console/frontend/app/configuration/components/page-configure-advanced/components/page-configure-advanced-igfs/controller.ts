@@ -23,25 +23,24 @@ import {removeClusterItems, advancedSaveIGFS} from '../../../../store/actionCrea
 import ConfigureState from '../../../../services/ConfigureState';
 import ConfigSelectors from '../../../../store/selectors';
 import IGFSs from '../../../../services/IGFSs';
+import {UIRouter, StateService} from '@uirouter/angularjs';
+import ConfigSelectionManager from '../../../../services/ConfigSelectionManager';
+import {ShortIGFS} from '../../../../types';
+import {IColumnDefOf} from 'ui-grid';
 
 export default class PageConfigureAdvancedIGFS {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'IGFSs', '$state', 'configSelectionManager'];
 
-    /**
-     * @param {ConfigSelectors} ConfigSelectors        
-     * @param {ConfigureState} ConfigureState         
-     * @param {uirouter.UIRouter} $uiRouter              
-     * @param {IGFSs} IGFSs                  
-     * @param {uirouter.StateService} $state       
-     */
-    constructor(ConfigSelectors, ConfigureState, $uiRouter, IGFSs, $state, configSelectionManager) {
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigureState = ConfigureState;
-        this.$uiRouter = $uiRouter;
-        this.IGFSs = IGFSs;
-        this.$state = $state;
-        this.configSelectionManager = configSelectionManager;
-    }
+    constructor(
+        private ConfigSelectors: ConfigSelectors,
+        private ConfigureState: ConfigureState,
+        private $uiRouter: UIRouter,
+        private IGFSs: IGFSs,
+        private $state: StateService,
+        private configSelectionManager: ReturnType<typeof ConfigSelectionManager>
+    ) {}
+    columnDefs: Array<IColumnDefOf<ShortIGFS>>
+    shortItems$: Observable<ShortIGFS>
     $onDestroy() {
         this.subscription.unsubscribe();
         this.visibleRows$.complete();
@@ -51,7 +50,6 @@ export default class PageConfigureAdvancedIGFS {
         this.visibleRows$ = new Subject();
         this.selectedRows$ = new Subject();
 
-        /** @type {Array<uiGrid.IColumnDefOf<ig.config.igfs.ShortIGFS>>} */
         this.columnDefs = [
             {
                 name: 'name',
@@ -83,7 +81,6 @@ export default class PageConfigureAdvancedIGFS {
 
         this.itemID$ = this.$uiRouter.globals.params$.pipe(pluck('igfsID'));
 
-        /** @type {Observable<ig.config.igfs.ShortIGFS>} */
         this.shortItems$ = this.ConfigureState.state$.pipe(
             this.ConfigSelectors.selectCurrentShortIGFSs,
             map((items = []) => items.map((i) => ({

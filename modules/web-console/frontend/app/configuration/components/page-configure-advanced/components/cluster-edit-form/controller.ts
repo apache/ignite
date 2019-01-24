@@ -20,25 +20,31 @@ import get from 'lodash/get';
 import isEqual from 'lodash/isEqual';
 import _ from 'lodash';
 import {tap} from 'rxjs/operators';
+import {ShortCache} from '../../../../types';
+import {Menu} from 'app/types';
+import Clusters from '../../../../services/Clusters';
+import LegacyUtils from 'app/services/LegacyUtils.service';
+import IgniteEventGroups from '../../../../generator/generator/defaults/Event-groups.service';
+import LegacyConfirm from 'app/services/Confirm.service';
+import Version from 'app/services/Version.service';
+import FormUtils from 'app/services/FormUtils.service';
 
 export default class ClusterEditFormController {
-    /** @type {Array<ig.config.cache.ShortCache>} */
-    caches;
-    /** @type {ig.menu<string>} */
-    cachesMenu;
-    /** @type {ig.menu<string>} */
-    servicesCachesMenu;
-    /** @type {ng.ICompiledExpression} */
-    onSave;
+    caches: ShortCache[];
+    cachesMenu: Menu<string>;
+    servicesCachesMenu: Menu<string>;
+    onSave: ng.ICompiledExpression;
 
     static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
-    /**
-     * @param {import('app/services/Clusters').default} Clusters
-     */
-    constructor(IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils) {
-        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, IgniteFormUtils});
-        this.Clusters = Clusters;
-    }
+    constructor(
+        private IgniteLegacyUtils: ReturnType<typeof LegacyUtils>,
+        private IgniteEventGroups: IgniteEventGroups,
+        private IgniteConfirm: ReturnType<typeof LegacyConfirm>,
+        private IgniteVersion: Version,
+        private $scope: ng.IScope,
+        private Clusters: Clusters,
+        private IgniteFormUtils: ReturnType<typeof FormUtils>
+    ) {}
 
     $onDestroy() {
         this.subscription.unsubscribe();
@@ -123,10 +129,10 @@ export default class ClusterEditFormController {
      * The form should accept incoming cluster value if:
      * 1. It has different _id ("new" to real id).
      * 2. Different caches or models (imported from DB).
-     * @param {Object} a Incoming value.
-     * @param {Object} b Current value.
+     * @param a Incoming value.
+     * @param b Current value.
      */
-    shouldOverwriteValue(a, b) {
+    shouldOverwriteValue<T>(a: T, b: T) {
         return get(a, '_id') !== get(b, '_id') ||
             !isEqual(get(a, 'caches'), get(b, 'caches')) ||
             !isEqual(get(a, 'models'), get(b, 'models'));

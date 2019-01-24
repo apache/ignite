@@ -19,21 +19,17 @@ import {default as ConfigSelectors} from '../../../../store/selectors';
 import {default as ConfigureState} from '../../../../services/ConfigureState';
 import {advancedSaveCluster} from '../../../../store/actionCreators';
 import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
+import {UIRouter} from '@uirouter/angularjs';
 
 // Controller for Clusters screen.
 export default class PageConfigureAdvancedCluster {
     static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigureState'];
 
-    /**
-     * @param {uirouter.UIRouter} $uiRouter
-     * @param {ConfigSelectors} ConfigSelectors
-     * @param {ConfigureState} ConfigureState
-     */
-    constructor($uiRouter, ConfigSelectors, ConfigureState) {
-        this.$uiRouter = $uiRouter;
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigureState = ConfigureState;
-    }
+    constructor(
+        private $uiRouter: UIRouter,
+        private ConfigSelectors: ConfigSelectors,
+        private ConfigureState: ConfigureState
+    ) {}
 
     $onInit() {
         const clusterID$ = this.$uiRouter.globals.params$.pipe(

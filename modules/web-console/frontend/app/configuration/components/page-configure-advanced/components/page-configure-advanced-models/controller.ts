@@ -30,37 +30,38 @@ import {default as ConfigSelectors} from '../../../../store/selectors';
 import {default as ConfigureState} from '../../../../services/ConfigureState';
 import {default as Models} from '../../../../services/Models';
 
+import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
+import {ShortDomainModel, DomainModel, ShortCache} from '../../../../types';
+import {IColumnDefOf} from 'ui-grid';
+import ConfigSelectionManager from '../../../../services/ConfigSelectionManager';
+
 export default class PageConfigureAdvancedModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];
 
-    /**
-     * @param {ConfigSelectors} ConfigSelectors
-     * @param {ConfigureState} ConfigureState
-     * @param {Models} Models
-     * @param {uirouter.UIRouter} $uiRouter
-     * @param {uirouter.StateService} $state
-     */
-    constructor(ConfigSelectors, ConfigureState, $uiRouter, Models, $state, configSelectionManager) {
-        this.$state = $state;
-        this.$uiRouter = $uiRouter;
-        this.configSelectionManager = configSelectionManager;
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigureState = ConfigureState;
-        this.Models = Models;
-    }
+    constructor(
+        private ConfigSelectors: ConfigSelectors,
+        private ConfigureState: ConfigureState,
+        private $uiRouter: UIRouter,
+        private Models: Models,
+        private $state: StateService,
+        private configSelectionManager: ReturnType<typeof ConfigSelectionManager>
+    ) {}
+    visibleRows$: Subject<Array<ShortDomainModel>>;
+    selectedRows$: Subject<Array<ShortDomainModel>>;
+    columnDefs: Array<IColumnDefOf<ShortDomainModel>>
+    itemID$: Observable<string>
+    shortItems$: Observable<Array<ShortDomainModel>>
+    shortCaches$: Observable<Array<ShortCache>>
+    originalItem$: Observable<DomainModel>
+
     $onDestroy() {
         this.subscription.unsubscribe();
         this.visibleRows$.complete();
         this.selectedRows$.complete();
     }
     $onInit() {
-        /** @type {Subject<Array<ig.config.model.ShortDomainModel>>} */
         this.visibleRows$ = new Subject();
-
-        /** @type {Subject<Array<ig.config.model.ShortDomainModel>>} */
         this.selectedRows$ = new Subject();
-
-        /** @type {Array<uiGrid.IColumnDefOf<ig.config.model.ShortDomainModel>>} */
         this.columnDefs = [
             {
                 name: 'hasIndex',
@@ -98,10 +99,8 @@ export default class PageConfigureAdvancedModels {
             }
         ];
 
-        /** @type {Observable<string>} */
         this.itemID$ = this.$uiRouter.globals.params$.pipe(pluck('modelID'));
 
-        /** @type {Observable<Array<ig.config.model.ShortDomainModel>>} */
         this.shortItems$ = this.ConfigureState.state$.pipe(
             this.ConfigSelectors.selectCurrentShortModels,
             tap((shortModels = []) => {
@@ -114,7 +113,6 @@ export default class PageConfigureAdvancedModels {
 
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
 
-        /** @type {Observable<ig.config.model.DomainModel>} */
         this.originalItem$ = this.itemID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
@@ -168,10 +166,7 @@ export default class PageConfigureAdvancedModels {
         this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 
-    /**
-     * @param {Array<string>} itemIDs
-     */
-    remove(itemIDs) {
+    remove(itemIDs: Array<string>) {
         this.ConfigureState.dispatchAction(
             removeClusterItems(this.$uiRouter.globals.params.clusterID, 'models', itemIDs, true, true)
         );

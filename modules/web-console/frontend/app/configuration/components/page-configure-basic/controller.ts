@@ -34,41 +34,29 @@ import Caches from '../../services/Caches';
 import Clusters from '../../services/Clusters';
 import IgniteVersion from 'app/services/Version.service';
 import {default as ConfigChangesGuard} from '../../services/ConfigChangesGuard';
+import {UIRouter} from '@uirouter/angularjs';
+import FormUtils from 'app/services/FormUtils.service';
 
 export default class PageConfigureBasicController {
-    /** @type {ng.IFormController} */
-    form;
+    form: ng.IFormController;
 
     static $inject = [
         'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteVersion', '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
     ];
 
-    /**
-     * @param {Confirm} Confirm
-     * @param {uirouter.UIRouter} $uiRouter
-     * @param {ConfigureState} ConfigureState
-     * @param {ConfigSelectors} ConfigSelectors
-     * @param {Clusters} Clusters
-     * @param {Caches} Caches
-     * @param {IgniteVersion} IgniteVersion
-     * @param {JQLite} $element
-     * @param {ConfigChangesGuard} ConfigChangesGuard
-     * @param {object} IgniteFormUtils
-     * @param {ng.IScope} $scope
-     */
-    constructor(Confirm, $uiRouter, ConfigureState, ConfigSelectors, Clusters, Caches, IgniteVersion, $element, ConfigChangesGuard, IgniteFormUtils, $scope) {
-        Object.assign(this, {IgniteFormUtils});
-        this.ConfigChangesGuard = ConfigChangesGuard;
-        this.$uiRouter = $uiRouter;
-        this.$scope = $scope;
-        this.$element = $element;
-        this.Caches = Caches;
-        this.Clusters = Clusters;
-        this.Confirm = Confirm;
-        this.ConfigureState = ConfigureState;
-        this.ConfigSelectors = ConfigSelectors;
-        this.IgniteVersion = IgniteVersion;
-    }
+    constructor(
+        private Confirm: Confirm,
+        private $uiRouter: UIRouter,
+        private ConfigureState: ConfigureState,
+        private ConfigSelectors: ConfigSelectors,
+        private Clusters: Clusters,
+        private Caches: Caches,
+        private IgniteVersion: IgniteVersion,
+        private $element: JQLite,
+        private ConfigChangesGuard: ReturnType<typeof ConfigChangesGuard>,
+        private IgniteFormUtils: ReturnType<typeof FormUtils>,
+        private $scope: ng.IScope
+    ) {}
 
     $onDestroy() {
         this.subscription.unsubscribe();

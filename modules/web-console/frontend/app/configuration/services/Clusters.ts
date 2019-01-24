@@ -20,6 +20,8 @@ import {from} from 'rxjs';
 import ObjectID from 'bson-objectid/objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import omit from 'lodash/fp/omit';
+import {DiscoveryKinds, ShortDomainModel, ShortCluster, FailoverSPIs, LoadBalancingKinds} from '../types';
+import {Menu} from 'app/types';
 
 const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
     return a && !items.some((b) => b._id !== a._id && (a.name || defaultName) === (b.name || defaultName));
@@ -28,8 +30,7 @@ const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
 export default class Clusters {
     static $inject = ['$http'];
 
-    /** @type {ig.menu<ig.config.cluster.DiscoveryKinds>}>} */
-    discoveries = [
+    discoveries: Menu<DiscoveryKinds> = [
         {value: 'Vm', label: 'Static IPs'},
         {value: 'Multicast', label: 'Multicast'},
         {value: 'S3', label: 'AWS S3'},
@@ -74,13 +75,10 @@ export default class Clusters {
 
     /**
      * Cluster-related configuration stuff
-     * @param {ng.IHttpService} $http
      */
-    constructor($http) {
-        this.$http = $http;
-    }
+    constructor(private $http: ng.IHttpService) {}
 
-    getConfiguration(clusterID) {
+    getConfiguration(clusterID: string) {
         return this.$http.get(`/api/v1/configuration/${clusterID}`);
     }
 
@@ -88,31 +86,24 @@ export default class Clusters {
         return this.$http.get('/api/v1/configuration/list');
     }
 
-    getCluster(clusterID) {
+    getCluster(clusterID: string) {
         return this.$http.get(`/api/v1/configuration/clusters/${clusterID}`);
     }
 
-    getClusterCaches(clusterID) {
+    getClusterCaches(clusterID: string) {
         return this.$http.get(`/api/v1/configuration/clusters/${clusterID}/caches`);
     }
 
-    /**
-     * @param {string} clusterID
-     * @returns {ng.IPromise<ng.IHttpResponse<{data: Array<ig.config.model.ShortDomainModel>}>>}
-     */
-    getClusterModels(clusterID) {
-        return this.$http.get(`/api/v1/configuration/clusters/${clusterID}/models`);
+    getClusterModels(clusterID: string) {
+        return this.$http.get<{data: ShortDomainModel[]}>(`/api/v1/configuration/clusters/${clusterID}/models`);
     }
 
     getClusterIGFSs(clusterID) {
         return this.$http.get(`/api/v1/configuration/clusters/${clusterID}/igfss`);
     }
 
-    /**
-     * @returns {ng.IPromise<ng.IHttpResponse<{data: Array<ig.config.cluster.ShortCluster>}>>}
-     */
     getClustersOverview() {
-        return this.$http.get('/api/v1/configuration/clusters/');
+        return this.$http.get<{data: ShortCluster[]}>('/api/v1/configuration/clusters/');
     }
 
     getClustersOverview$() {
@@ -215,8 +206,7 @@ export default class Clusters {
         };
     }
 
-    /** @type {ig.menu<ig.config.cluster.FailoverSPIs>} */
-    failoverSpis = [
+    failoverSpis: Menu<FailoverSPIs> = [
         {value: 'JobStealing', label: 'Job stealing'},
         {value: 'Never', label: 'Never'},
         {value: 'Always', label: 'Always'},
@@ -410,8 +400,7 @@ export default class Clusters {
         return cluster.loadBalancingSpi.push(this.makeBlankLoadBalancingSpi());
     }
 
-    /** @type {ig.menu<ig.config.cluster.LoadBalancingKinds>} */
-    loadBalancingKinds = [
+    loadBalancingKinds: Menu<LoadBalancingKinds> = [
         {value: 'RoundRobin', label: 'Round-robin'},
         {value: 'Adaptive', label: 'Adaptive'},
         {value: 'WeightedRandom', label: 'Random'},
