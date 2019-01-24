@@ -515,8 +515,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         else {
                             GridDhtPartitionFullMap partMap = new GridDhtPartitionFullMap(cctx.localNodeId(), cctx.localNode().order(), 1);
 
-                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer,
-                                new ClusterTopologyServerNotFoundException("All server nodes left grid."));
+                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
 
                             grp.topology().updateTopologyVersion(topFut,
                                 discoCache,
