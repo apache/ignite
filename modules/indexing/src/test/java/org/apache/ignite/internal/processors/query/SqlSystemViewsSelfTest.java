@@ -22,10 +22,12 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -528,6 +530,42 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test IO statistics SQL system views for cache groups.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testIoStatisticsViews() throws Exception {
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+
+        ignite.cluster().active(true);
+
+        execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
+
+        for (int i = 0; i < 500; i++)
+            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
+
+        List<List<?>> res1 = execSql(sql1);
+
+        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(1), v -> v.get(3)));
+
+        assertEquals(2, map.size());
+
+        assertTrue(map.containsKey("SQL_default_TST"));
+
+        assertTrue((Long)map.get("SQL_default_TST") > 0);
+
+        assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
+
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO WHERE " +
+            "GROUP_NAME='SQL_default_TST'";
+
+        assertEquals(1, execSql(sql1).size());
     }
 
     /**
