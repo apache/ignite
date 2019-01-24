@@ -59,6 +59,12 @@ public class GridH2UsedColumnInfo {
     /** Columns count in full row. */
     private final int colsCnt;
 
+    /** Extract key. */
+    private boolean extractKey;
+
+    /** Extract value. */
+    private boolean extractVal;
+
     /**
      * @param colsToExtract Columns to extract from full row.
      * @param colsCnt Columns count in full row.
