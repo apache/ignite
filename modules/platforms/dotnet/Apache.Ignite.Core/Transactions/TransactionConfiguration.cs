@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets or sets timeout before starting deadlock detection.
         /// <see cref="TimeSpan.Zero"/> for disabling deadlock detection.
         /// </summary>
-        [DefaultValue(DefaultDeadlockTimeout)]
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan DeadlockTimeout { get; set; }
 
         /// <summary>
