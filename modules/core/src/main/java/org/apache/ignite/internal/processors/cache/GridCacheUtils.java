@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheInterceptorDeserialize;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
@@ -1954,5 +1955,18 @@ public class GridCacheUtils {
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
         IgniteBiInClosure<CacheObject, GridCacheVersion>{
+    }
+
+    /**
+     * Compute keep binary flag for cache interceptor.
+     *
+     * @param cctx Cache context.
+     * @param keepBinary Keep binary flag.
+     * @return {@code true} if value should keep binary, and {@code false} otherwise.
+     */
+    public static boolean keepBinaryForCacheInterceptor(GridCacheContext<?, ?> cctx, boolean keepBinary) {
+        assert cctx.config().getInterceptor() != null : cctx.config().getName();
+
+        return keepBinary && !(cctx.config().getInterceptor() instanceof CacheInterceptorDeserialize);
     }
 }

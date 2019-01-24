@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.Cache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
+import org.apache.ignite.cache.CacheInterceptorDeserializeAdapter;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -50,6 +52,8 @@ public class ThinClientPutCacheInterceptorTest extends GridCommonAbstractTest {
 
             ignite.cluster().active(true);
 
+            ignite.cache("test").put("key", new ThinBinaryValue());
+
             ClientConfiguration ccfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + ignite.configuration().getClientConnectorConfiguration().getPort());
 
@@ -61,10 +65,35 @@ public class ThinClientPutCacheInterceptorTest extends GridCommonAbstractTest {
         }
     }
 
-    private static class ThinBinaryValueInterceptor extends CacheInterceptorAdapter<String, ThinBinaryValue> {
-        @Nullable @Override
-        public ThinBinaryValue onBeforePut(Cache.Entry<String, ThinBinaryValue> entry, ThinBinaryValue newVal) {
+    private static class ThinBinaryValueInterceptor extends CacheInterceptorDeserializeAdapter<String, ThinBinaryValue> {
+        /** {@inheritDoc} */
+        @Override public @Nullable ThinBinaryValue onGet(String key, ThinBinaryValue val) {
+            return super.onGet(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable ThinBinaryValue onBeforePut(
+            Cache.Entry<String, ThinBinaryValue> entry,
+            ThinBinaryValue newVal
+        ) {
             return super.onBeforePut(entry, newVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Cache.Entry<String, ThinBinaryValue> entry) {
+            super.onAfterPut(entry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable IgniteBiTuple<Boolean, ThinBinaryValue> onBeforeRemove(
+            Cache.Entry<String, ThinBinaryValue> entry
+        ) {
+            return super.onBeforeRemove(entry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Cache.Entry<String, ThinBinaryValue> entry) {
+            super.onAfterRemove(entry);
         }
     }
 

@@ -1496,11 +1496,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
 
-                CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
+                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinaryInterceptor, false);
 
-                key0 = e.key();
+                CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinaryInterceptor);
+
+                key0 = e.getKey();
 
                 Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, val0);
 
@@ -1613,8 +1615,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (writeThrough)
             cctx.store().put(tx, key, val, newVer);
 
-        if (intercept)
-            cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0, keepBinary, updateCntr0));
+        if (intercept) {
+            boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
+
+            CacheLazyEntry<?, ?> entry =
+                new CacheLazyEntry<>(cctx, key, key0, val, val0, keepBinaryInterceptor, updateCntr0);
+
+            cctx.config().getInterceptor().onAfterPut(entry);
+        }
 
         return valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr) :
             new GridCacheUpdateTxResult(false, logPtr);
@@ -1712,7 +1720,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
+                entry0 = new CacheLazyEntry(cctx, key, old, CU.keepBinaryForCacheInterceptor(cctx, keepBinary));
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
@@ -2033,15 +2041,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (intercept) {
                 CacheLazyEntry e;
 
-                if (op == UPDATE) {
-                    updated0 = value(updated0, updated, keepBinary, false);
+                boolean interceptorKeepBinary = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
 
-                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
+                if (op == UPDATE) {
+                    updated0 = value(updated0, updated, interceptorKeepBinary, false);
+
+                    e = new CacheLazyEntry(cctx, key, key0, old, old0, interceptorKeepBinary);
 
                     Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
 
-                    if (interceptorVal == null)
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, keepBinary, false)), invokeRes);
+                    if (interceptorVal == null) {
+                        Object temp = cctx.unwrapTemporary(value(old0, old, interceptorKeepBinary, false));
+
+                        return new GridTuple3<>(false, temp, invokeRes);
+                    }
                     else {
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
@@ -2049,7 +2062,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
                 else {
-                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
+                    boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
+
+                    e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinaryInterceptor);
 
                     interceptorRes = cctx.config().getInterceptor().onBeforeRemove(e);
 
@@ -2185,10 +2200,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept) {
+                boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
+
+                CacheObject cVal = op == UPDATE ? updated : old;
+
+                CacheLazyEntry entry = new CacheLazyEntry(cctx, key, key0, cVal, updated0, keepBinaryInterceptor, 0L);
+
                 if (op == UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, 0L));
+                    cctx.config().getInterceptor().onAfterPut(entry);
                 else
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary, 0L));
+                    cctx.config().getInterceptor().onAfterRemove(entry);
             }
         }
         finally {
@@ -2490,7 +2511,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     c.op == UPDATE ? updateVal : oldVal,
                     null,
-                    keepBinary,
+                    CU.keepBinaryForCacheInterceptor(cctx, keepBinary),
                     c.updateRes.updateCounter()
                 );
 
@@ -6313,10 +6334,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
-                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
+                boolean interceptorKeepBinary = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
+
+                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, interceptorKeepBinary, false);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
-                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, interceptorKeepBinary);
 
                 Object interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
@@ -6426,8 +6449,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
+                boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(cctx, keepBinary);
+
                 CacheLazyEntry<Object, Object> intercepEntry =
-                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinaryInterceptor);
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
 
