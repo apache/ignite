@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSe
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
@@ -88,6 +89,7 @@ import org.junit.runners.Suite;
     IgniteConcurrentEntryProcessorAccessStopTest.class,
     GridUpdateNotifierSelfTest.class,
     GridAddressResolverSelfTest.class,
+    ChangeTopologyWatcher.class,
     IgniteUpdateNotifierPerClusterSettingSelfTest.class,
     GridLocalEventListenerSelfTest.class,
     IgniteTopologyPrintFormatSelfTest.class,

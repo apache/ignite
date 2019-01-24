@@ -70,8 +70,7 @@ class BaselineAutoAdjustExecutor {
                     if (data.isInvalidate())
                         return;
 
-                    if (!ChangeTopologyWatcher.eqNotOrdered(data.getTargetBaselineNodes(), cluster.currentBaselineTopology()))
-                        cluster.triggerBaselineAutoAdjust(data.getTargetBaselineNodes());
+                    cluster.triggerBaselineAutoAdjust(data.getTargetTopologyVersion());
                 }
                 catch (IgniteException e) {
                     //TODO any actions?

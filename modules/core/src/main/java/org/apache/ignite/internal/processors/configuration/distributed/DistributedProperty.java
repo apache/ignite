@@ -40,7 +40,7 @@ public class DistributedProperty<T extends Serializable> {
      * wide.
      */
     @GridToStringExclude
-    private volatile IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter> clusterWideUpdater;
+    private volatile IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter<Boolean>> clusterWideUpdater;
 
     /**
      * @param name Name of property.
@@ -68,9 +68,7 @@ public class DistributedProperty<T extends Serializable> {
         if (clusterWideUpdater == null)
             return false;
 
-        clusterWideUpdater.accept(name, newVal).get();
-
-        return true;
+        return clusterWideUpdater.accept(name, newVal).get();
     }
 
     /**
@@ -83,16 +81,19 @@ public class DistributedProperty<T extends Serializable> {
      * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
-    public boolean propagateAsync(T newVal) throws IgniteCheckedException {
+    public GridFutureAdapter<Boolean> propagateAsync(T newVal) throws IgniteCheckedException {
         if (!attached)
             throw new DetachedPropertyException(name);
 
-        if (clusterWideUpdater == null)
-            return false;
+        if (clusterWideUpdater == null) {
+            GridFutureAdapter<Boolean> adapter = new GridFutureAdapter<>();
 
-        clusterWideUpdater.accept(name, newVal);
+            adapter.onDone(false);
 
-        return true;
+            return adapter;
+        }
+
+        return clusterWideUpdater.accept(name, newVal);
     }
 
     /**
@@ -121,7 +122,8 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param updater Consumer for update value across cluster.
      */
-    void onReadyForUpdate(@NotNull IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter> updater) {
+    void onReadyForUpdate(
+        @NotNull IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter<Boolean>> updater) {
         this.clusterWideUpdater = updater;
     }
 

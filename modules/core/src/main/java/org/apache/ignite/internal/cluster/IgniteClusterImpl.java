@@ -369,27 +369,14 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /**
-     * Sets baseline topology. The cluster must be activated for this method to be called.
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
+     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * baseline.
      *
-     * @param baselineTop A collection of nodes to be included to the baseline topology.
+     * @param topVer Topology version to set.
      */
-    public void triggerBaselineAutoAdjust(Collection<? extends BaselineNode> baselineTop) {
-        guard();
-
-        try {
-            if (isInMemoryMode())
-                return;
-
-            validateBeforeBaselineChange(baselineTop);
-
-            ctx.state().changeGlobalState(true, baselineTop, true, true).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
+    public void triggerBaselineAutoAdjust(long topVer) {
+        setBaselineTopology(topVer, true);
     }
 
     /** */
@@ -484,6 +471,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void setBaselineTopology(long topVer) {
+        setBaselineTopology(topVer, false);
+    }
+
+    private void setBaselineTopology(long topVer, boolean isBaselineAutoAdjust) {
         guard();
 
         try {
@@ -504,7 +495,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             validateBeforeBaselineChange(target);
 
-            ctx.state().changeGlobalState(true, target, true).get();
+            ctx.state().changeGlobalState(true, target, true, isBaselineAutoAdjust).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -42,15 +42,12 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 /**
  * Watcher of topology changes. It initiate to set new baseline after some timeout.
  */
 public class ChangeTopologyWatcher implements GridLocalEventListener {
     /** Task represented NULL value is using when normal task can not be created. */
-    private static final BaselineAutoAdjustData NULL_BASELINE_DATA = new BaselineAutoAdjustData(null, null, -1, -1);
+    private static final BaselineAutoAdjustData NULL_BASELINE_DATA = new BaselineAutoAdjustData(null, -1);
     /** */
     private final IgniteLogger log;
     /** */
@@ -84,8 +81,9 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
         this.discoveryMgr = ctx.discovery();
 
         ctx.internalSubscriptionProcessor().registerChangeStateListener((msg) -> {
-            boolean isManualBaselineChange = msg.success() && !msg.isBaselineAutoAdjust();
-            if (isManualBaselineChange && isBaselineAutoAdjustEnabled() && isLocalNodeCoordinator()
+            boolean isBaselineChangedManually = msg.success() && !msg.isBaselineAutoAdjust();
+
+            if (isBaselineChangedManually && isBaselineAutoAdjustEnabled() && isLocalNodeCoordinator()
                 && !isBaselineEqualToGrid())
                 disableBaselineAutoAdjust("manual baseline change was detected");
         });
@@ -107,10 +105,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
         }
 
         synchronized (this) {
-            if (eqNotOrdered(lastBaselineData.getTargetBaselineNodes(), cluster.currentBaselineTopology()))
-                lastBaselineData.onSet();
-
-            lastBaselineData = lastBaselineData.next(evt, ((DiscoveryEvent)evt).topologyVersion(), newTargetBaseline(evt));
+            lastBaselineData = lastBaselineData.next(evt, ((DiscoveryEvent)evt).topologyVersion());
 
             if (isLocalNodeCoordinator()) {
                 exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion()))
@@ -122,7 +117,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
                             return;
                         }
 
-                        long setBaselineTimeout = calculateSetBaselineTimeout();
+                        long setBaselineTimeout = baselineConfiguration.getBaselineAutoAdjustTimeout();
 
                         log.info("Baseline will be changed in '" + setBaselineTimeout + "' ms - ");
 
@@ -174,56 +169,6 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
         Set<Object> firstConsId = first.stream().map(BaselineNode::consistentId).collect(Collectors.toSet());
 
         return first.stream().map(BaselineNode::consistentId).allMatch(firstConsId::contains);
-    }
-
-    /**
-     * Calculate timeout for next baseline changing.
-     *
-     * @return Timeout of set baseline.
-     */
-    private long calculateSetBaselineTimeout() {
-        if (baselineConfiguration.getBaselineAutoAdjustMaxTimeout() == 0)
-            return baselineConfiguration.getBaselineAutoAdjustTimeout();
-
-        long currTime = System.currentTimeMillis();
-
-        return max(
-            min(
-                baselineConfiguration.getBaselineAutoAdjustMaxTimeout() - (currTime - lastBaselineData.getFirstUnfinishedTaskCreatedTime()),
-                baselineConfiguration.getBaselineAutoAdjustTimeout()
-            )
-            , 0);
-    }
-
-    /**
-     * Create new target baseline nodes fof event.
-     *
-     * @param evt Causing event of changing baseline.
-     * @return New target baseline nodes.
-     */
-    private Collection<BaselineNode> newTargetBaseline(Event evt) {
-        Collection<BaselineNode> baselineNodes = lastBaselineData.getTargetBaselineNodes() == null
-            ? cluster.currentBaselineTopology()
-            : lastBaselineData.getTargetBaselineNodes();
-
-        return new ArrayList<>(((DiscoveryEvent)evt).topologyNodes());
-
-//        if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
-//            Object evtNodeConsistentId = ((DiscoveryEvent)evt).eventNode().consistentId();
-//
-//            return baselineNodes.stream()
-//                .filter(node -> !node.consistentId().equals(evtNodeConsistentId))
-//                .collect(Collectors.toList());
-//        }
-//        else {
-//            assert evt.type() == EVT_NODE_JOINED;
-//
-//            ArrayList<BaselineNode> nodes = new ArrayList<>(baselineNodes);
-//
-//            nodes.add(((DiscoveryEvent)evt).eventNode());
-//
-//            return nodes;
-//        }
     }
 
     /**

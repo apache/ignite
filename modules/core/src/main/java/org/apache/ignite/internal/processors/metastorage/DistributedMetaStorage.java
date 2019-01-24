@@ -39,7 +39,7 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
     void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
 
     /**
-     * Write value into distributed metastorage async.
+     * Write value into distributed metastorage asynchronously.
      *
      * @param key The key.
      * @param val Value to write. Must not be null.
@@ -66,6 +66,22 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
      *      {@code False} otherwise.
      */
     boolean compareAndSet(
+        @NotNull String key,
+        @Nullable Serializable expVal,
+        @NotNull Serializable newVal
+    ) throws IgniteCheckedException;
+
+    /**
+     * Write value into distributed metastorage asynchronously but only if current value matches the expected one.
+     *
+     * @param key The key.
+     * @param expVal Expected value. Might be null.
+     * @param newVal Value to write. Must not be null.
+     * @throws IgniteCheckedException If cluster is in deactivated state.
+     * @return {@code True} if expected value matched the actual one and write was completed successfully.
+     *      {@code False} otherwise.
+     */
+    GridFutureAdapter<Boolean> compareAndSetAsync(
         @NotNull String key,
         @Nullable Serializable expVal,
         @NotNull Serializable newVal
