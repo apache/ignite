@@ -28,7 +28,6 @@ import org.junit.Test;
 
 /** Test for {@link DiscreteNaiveBayesTrainer} */
 public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
     /** */
