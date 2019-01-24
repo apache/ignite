@@ -126,7 +126,7 @@ fi
 # If this is a Hadoop edition, and HADOOP_HOME set, add the native library location:
 #
 if [ -d "${IGNITE_HOME}/libs/ignite-hadoop/" ] && [ -n "${HADOOP_HOME}" ] && [ -d "${HADOOP_HOME}/lib/native/" ]; then
-   if [[ "${JVM_OPTS}${JVM_XOPTS}" != *-Djava.library.path=* ]]; then
+   if [[ "${JVM_OPTS}${JVM_XOPTS[@]}" != *-Djava.library.path=* ]]; then
       JVM_OPTS="${JVM_OPTS} -Djava.library.path=${HADOOP_HOME}/lib/native/"
    fi
 fi
@@ -188,12 +188,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS}
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS}
             ;;
         esac
     else
@@ -201,12 +201,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_PROG_NAME="$0" "${JVM_XOPTS[@]}" -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
             ;;
         esac
     fi
