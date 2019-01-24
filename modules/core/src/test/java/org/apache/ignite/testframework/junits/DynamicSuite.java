@@ -28,7 +28,7 @@ import org.junit.runners.model.InitializationError;
  * <pre>
  * &#064;RunWith(DynamicSuite.class)
  * public class SomeTestSuite {
- *    public public static List&lt;Class&lt;?&gt;&gt; suite() {
+ *    public static List&lt;Class&lt;?&gt;&gt; suite() {
  *       ...
  *    }
  * }
