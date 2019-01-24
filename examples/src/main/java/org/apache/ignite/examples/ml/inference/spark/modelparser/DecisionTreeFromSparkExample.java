@@ -40,7 +40,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 public class DecisionTreeFromSparkExample {
     /** Path to Spark LogReg model. */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt/data" +
-        "/part-00000-5d9c5682-730a-4b15-9c24-79a53cfcdb78-c000.snappy.parquet";
+        "/part-00000-86bc0f70-df49-48b3-8356-9a26f9a6eb0f-c000.snappy.parquet";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
