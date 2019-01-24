@@ -33,14 +33,10 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
     /** Soft timeout. */
     public final long softTimeout;
 
-    /** Hard timeout. */
-    public final long hardTimeout;
-
     /** Constructor. */
-    public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout, long hardTimeout) {
+    public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout) {
         this.enabled= enabled;
         this.softTimeout = softTimeout;
-        this.hardTimeout = hardTimeout;
     }
 
     /** */
@@ -54,8 +50,6 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
             out.writeBoolean(baselineAutoAdjustSettings.enabled);
 
             out.writeLong(baselineAutoAdjustSettings.softTimeout);
-
-            out.writeLong(baselineAutoAdjustSettings.hardTimeout);
         }
     }
 
@@ -68,9 +62,7 @@ public class VisorBaselineAutoAdjustSettings implements Serializable {
 
             long timeout = in.readLong();
 
-            long maxTimeout = in.readLong();
-
-            return new VisorBaselineAutoAdjustSettings(autoAdjustmentEnabled, timeout, maxTimeout);
+            return new VisorBaselineAutoAdjustSettings(autoAdjustmentEnabled, timeout);
         }
 
         return null;

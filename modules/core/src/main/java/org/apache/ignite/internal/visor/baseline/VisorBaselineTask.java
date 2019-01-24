@@ -81,8 +81,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
             VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
                 cluster.baselineConfiguration().isBaselineAutoAdjustEnabled(),
-                cluster.baselineConfiguration().getBaselineAutoAdjustTimeout(),
-                cluster.baselineConfiguration().getBaselineAutoAdjustMaxTimeout()
+                cluster.baselineConfiguration().getBaselineAutoAdjustTimeout()
             );
 
             return new VisorBaselineTaskResult(ignite.cluster().active(), cluster.topologyVersion(),
@@ -223,11 +222,8 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             DistributedBaselineConfiguration baselineConfiguration = ignite.cluster().baselineConfiguration();
 
             try {
-                if (settings.enabled) {
+                if (settings.enabled)
                     baselineConfiguration.setBaselineAutoAdjustTimeout(settings.softTimeout);
-
-                    baselineConfiguration.setBaselineAutoAdjustMaxTimeout(settings.hardTimeout);
-                }
 
                 baselineConfiguration.setBaselineAutoAdjustEnabled(settings.enabled);
             }

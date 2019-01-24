@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -53,6 +54,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -521,21 +523,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         long softTimeout = bc.getBaselineAutoAdjustTimeout();
 
-        long hardTimeout = bc.getBaselineAutoAdjustMaxTimeout();
-
         assertEquals(EXIT_CODE_OK, execute(
             "--baseline",
             "autoadjust",
             "enable",
-            Long.toString(softTimeout + 1),
-            Long.toString(hardTimeout + 1)
+            Long.toString(softTimeout + 1)
         ));
 
         assertTrue(bc.isBaselineAutoAdjustEnabled());
 
         assertEquals(softTimeout + 1, bc.getBaselineAutoAdjustTimeout());
-
-        assertEquals(hardTimeout + 1, bc.getBaselineAutoAdjustMaxTimeout());
 
         assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
 
@@ -547,9 +544,85 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "enable", "x"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "enable", "600000", "x"));
-
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "autoadjust", "disable", "x"));
+    }
+
+    /**
+     * Test that updating of baseline autoadjustment settings via control.sh actually influence cluster's baseline.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentAutoRemoveNode() throws Exception {
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "enable", "2000"));
+
+        assertEquals(3, ignite.cluster().currentBaselineTopology().size());
+
+        stopGrid(2);
+
+        assertEquals(3, ignite.cluster().currentBaselineTopology().size());
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(2, baselineNodesAfter.size());
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+
+        stopGrid(1);
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesFinal = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(
+            baselineNodesAfter.stream().map(BaselineNode::consistentId).collect(Collectors.toList()),
+            baselineNodesFinal.stream().map(BaselineNode::consistentId).collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Test that updating of baseline autoadjustment settings via control.sh actually influence cluster's baseline.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustmentAutoAddNode() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "enable", "2000"));
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+
+        startGrid(1);
+
+        assertEquals(1, ignite.cluster().currentBaselineTopology().size());
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesAfter = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(2, baselineNodesAfter.size());
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "autoadjust", "disable"));
+
+        startGrid(2);
+
+        Thread.sleep(3000L);
+
+        Collection<BaselineNode> baselineNodesFinal = ignite.cluster().currentBaselineTopology();
+
+        assertEquals(
+            baselineNodesAfter.stream().map(BaselineNode::consistentId).collect(Collectors.toList()),
+            baselineNodesFinal.stream().map(BaselineNode::consistentId).collect(Collectors.toList())
+        );
     }
 
     /**

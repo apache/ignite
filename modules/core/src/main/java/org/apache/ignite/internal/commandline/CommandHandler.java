@@ -1285,25 +1285,24 @@ public class CommandHandler {
 
             case AUTOADJUST:
                 if (BASELINE_AUTO_ADJUST_DISABLE.equals(s)) {
-                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(false, -1, -1);
+                    VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(false, -1);
 
                     return new VisorBaselineTaskArg(op, -1, null, settings);
                 }
                 else {
                     String[] argsArr = s.split(" ");
 
-                    assert argsArr.length == 3;
+                    assert argsArr.length == 2;
 
                     VisorBaselineAutoAdjustSettings settings = new VisorBaselineAutoAdjustSettings(
                         true,
-                        Long.parseLong(argsArr[1]),
-                        Long.parseLong(argsArr[2])
+                        Long.parseLong(argsArr[1])
                     );
 
                     return new VisorBaselineTaskArg(op, -1, null, settings);
                 }
             default:
-                return new VisorBaselineTaskArg(op, -1, null, new VisorBaselineAutoAdjustSettings(false, -1, -1));
+                return new VisorBaselineTaskArg(op, -1, null, new VisorBaselineAutoAdjustSettings(false, -1));
         }
     }
 
@@ -1334,7 +1333,7 @@ public class CommandHandler {
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         log("Baseline auto adjustment " + (autoAdjustSettings.enabled ? "enabled" : "disabled") +
-            ": softTimeout=" + autoAdjustSettings.softTimeout + ", hardTimeout=" + autoAdjustSettings.hardTimeout
+            ": softTimeout=" + autoAdjustSettings.softTimeout
         );
 
         nl();
@@ -1473,7 +1472,7 @@ public class CommandHandler {
      * Set baseline autoadjustment settings.
      *
      * @param client Client.
-     * @param args Argument from command line. Either {@code disable} or {@code enable <softTimeout> <hardTimeout>}.
+     * @param args Argument from command line. Either {@code disable} or {@code enable <softTimeout>}.
      */
     private void baselineAutoAdjust(GridClient client, String args) throws GridClientException {
         try {
@@ -2050,15 +2049,11 @@ public class CommandHandler {
                                         long softTimeout = nextLongArg("Expected soft timeout" +
                                             " argument for baseline autoadjust");
 
-                                        long hardTimeout = nextLongArg("Expected hard timeout" +
-                                            " argument for baseline autoadjust");
+                                        if (softTimeout < 0)
+                                            throw new IllegalArgumentException("Soft timeout value for baseline" +
+                                                " autoadjustment can't be negative");
 
-                                        if (hardTimeout < softTimeout) {
-                                            throw new IllegalArgumentException("Hard timeout for baseline" +
-                                                " autoadjustment can't be less then soft timeout");
-                                        }
-
-                                        baselineArgs = enableDisable + " " + softTimeout + " " + hardTimeout;
+                                        baselineArgs = enableDisable + " " + softTimeout;
                                     }
 
                                     break;
@@ -2841,7 +2836,7 @@ public class CommandHandler {
         usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, constistIds, op(CMD_AUTO_CONFIRMATION));
         usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-        usage(i("Set baseline autoadjustment settings:"), BASELINE, BASELINE_AUTO_ADJUST, "disable|(enable <softTimeout> <hardTimeout>)", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline autoadjustment settings:"), BASELINE, BASELINE_AUTO_ADJUST, "disable|(enable <softTimeout>)", op(CMD_AUTO_CONFIRMATION));
         usage(i("List or kill transactions:"), TX, getTxOptions());
 
         if (enableExperimental) {
