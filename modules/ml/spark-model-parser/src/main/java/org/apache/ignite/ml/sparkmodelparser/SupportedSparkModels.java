@@ -29,6 +29,9 @@ public enum SupportedSparkModels {
     /** Linear regression. */
     LINEAR_REGRESSION,
 
+    /** Decision tree. */
+    DECISION_TREE,
+
     /** Support Vector Machine . */
     LINEAR_SVM
 }
