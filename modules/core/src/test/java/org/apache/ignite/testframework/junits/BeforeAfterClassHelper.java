@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Helper for Junit 4 test classes that need to use instance-specific actions along with BeforeClass and AfterClass
@@ -38,6 +39,7 @@ public class BeforeAfterClassHelper {
      * Must be invoked from containing class in the method annotated with {@code BeforeClass}.
      */
     public void onBeforeClass() {
+        U.warn(null, ">>>>>>> helper onBeforeClass <<<<<<<<<<");
         isFirst.set(true);
     }
 
@@ -49,9 +51,11 @@ public class BeforeAfterClassHelper {
      * @param afterClsAct Action to execute on last time after test cases or {@code null} to do nothing.
      */
     public void onBefore(Callable<Void> beforeClsAct, Callable<Void> afterClsAct) throws Exception {
+        U.warn(null, ">>>>>>> helper onBefore <<<<<<<<<<");
         if (!isFirst.getAndSet(false))
             return;
 
+        U.warn(null, ">>>>>>> helper onBefore is first <<<<<<<<<<");
         afterClsActRef.set(afterClsAct);
 
         if (beforeClsAct != null)
@@ -62,6 +66,7 @@ public class BeforeAfterClassHelper {
      * Must be invoked from containing class in the method annotated with {@code AfterClass}.
      */
     public void onAfterClass() throws Exception {
+        U.warn(null, ">>>>>>> helper onAfterClass <<<<<<<<<<");
         try {
             Callable<Void> afterClsAct = afterClsActRef.get();
 

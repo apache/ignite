@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -54,12 +52,16 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.BeforeAfterClassHelper;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -76,25 +78,24 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
 
-    /** Lock to maintain integrity of {@link BeforeAfterClassHelper}. */
-    private final Lock runSerializer = new ReentrantLock();
+    /** */
+    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
+
+    /** */
+    @SuppressWarnings({"TransientFieldInNonSerializableClass"})
+    private transient TestRule rule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            U.warn(null, ">>>>>>> place for helper 1 onbefore <<<<<<<<<<");
+            GridSpiAbstractTest instance = (GridSpiAbstractTest)description.getTestClass().newInstance();
+            instance.beforeGridSpiAbstractTest();
+
+            base.evaluate();
+        }
+    };
 
     /** Manages test execution and reporting. */
     @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-    @Rule public transient RuleChain runRule = RuleChain.outerRule(super.runRule)
-        .around((base, description) -> new Statement() {
-            @Override public void evaluate() throws Throwable {
-                runSerializer.lock();
-                try {
-                    U.warn(null, ">>>>>>> place for helper 1 onbefore <<<<<<<<<<");
-
-                    base.evaluate();
-                }
-                finally {
-                    runSerializer.unlock();
-                }
-            }
-        });
+    @Rule public transient RuleChain runRule = RuleChain.outerRule(rule).around(super.runRule);
 
     /** */
     private final boolean autoStart;
@@ -116,6 +117,71 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         super(false);
 
         this.autoStart = autoStart;
+    }
+
+    /** */
+    @BeforeClass
+    public static void beforeClassGridSpiAbstractTest() {
+        U.warn(null, ">>>>>>> beforeClassGridSpiAbstractTest <<<<<<<<<<");
+        helper.onBeforeClass();
+    }
+
+    /** */
+    @Before
+    public void before2() { // todo delete
+        U.warn(null, ">>>>>>> before2 <<<<<<<<<<");
+    }
+
+    /** */
+    @After
+    public void after2() { // todo delete
+        U.warn(null, ">>>>>>> after2 <<<<<<<<<<");
+    }
+
+    /** */
+    private void beforeGridSpiAbstractTest() throws Exception {
+        U.warn(null, ">>>>>>> beforeGridSpiAbstractTest <<<<<<<<<<");
+        helper.onBefore(
+            () -> {
+                if (autoStart) {
+                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+                    assert spiTest != null;
+
+                    beforeSpiStarted();
+
+                    if (spiTest.trigger())
+                        spiStart();
+
+                    info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
+                }
+
+                return null;
+            },
+            () -> {
+                if (autoStart) {
+                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+                    assert spiTest != null;
+
+                    if (spiTest.trigger()) {
+                        spiStop();
+
+                        afterSpiStopped();
+                    }
+
+                    info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
+                }
+
+                return null;
+            });
+    }
+
+    /** */
+    @AfterClass
+    public static void afterClassGridSpiAbstractTest() throws Exception {
+        U.warn(null, ">>>>>>> afterClassGridSpiAbstractTest <<<<<<<<<<");
+        helper.onAfterClass();
     }
 
     /** {@inheritDoc} */
@@ -166,7 +232,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         cntrs.incrementStarted();
 
-        if (autoStart && isFirstTest()) {
+        if (autoStart && isFirstTest() && false) { // todo remove
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
             assert spiTest != null;
@@ -521,7 +587,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         super.tearDown();
 
-        if (autoStart && wasLast) {
+        if (autoStart && wasLast && false) { // todo remove
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
             assert spiTest != null;
