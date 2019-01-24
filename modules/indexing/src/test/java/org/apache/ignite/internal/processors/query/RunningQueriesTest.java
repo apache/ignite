@@ -257,9 +257,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        long nodeOrderId = ignite.context().cluster().get().localNode().order();
+        String prefixClusterWideQryId = ignite.context().cluster().get().localNode().id() + "_";
 
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             FieldsQueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE 1 = 1"));
 
             Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
@@ -268,7 +268,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
             GridRunningQueryInfo r = runningQueries.iterator().next();
 
-            String expClusterWideQryId = Long.toHexString(nodeOrderId) + "X" + Long.toHexString(r.id());
+            String expClusterWideQryId = prefixClusterWideQryId + r.id();
 
             assertEquals(expClusterWideQryId, r.clusterWideQueryId());
 

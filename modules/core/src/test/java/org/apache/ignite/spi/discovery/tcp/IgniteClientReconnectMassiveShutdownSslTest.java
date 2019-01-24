@@ -13,22 +13,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.stat;
+package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for cache IO statistics for persistence mode.
+ * Client reconnect test in multi threaded mode while cache operations are in progress.
  */
 @RunWith(JUnit4.class)
-public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
-
+public class IgniteClientReconnectMassiveShutdownSslTest extends IgniteClientReconnectMassiveShutdownTest {
     /** {@inheritDoc} */
-    @Override protected boolean persist() {
-        return true;
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        return cfg;
     }
 }

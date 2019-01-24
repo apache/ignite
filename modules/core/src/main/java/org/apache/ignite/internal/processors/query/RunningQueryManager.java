@@ -110,13 +110,10 @@ public class RunningQueryManager {
      * @return Cluster wide query id.
      */
     @NotNull private String clusterWideQueryId(long qryId) {
-        if (prefixClusterWideQryId == null) {
-            long nodeOrder = ctx.cluster().get().localNode().order();
+        if (prefixClusterWideQryId == null)
+            prefixClusterWideQryId = ctx.cluster().get().localNode().id() + "_";
 
-            prefixClusterWideQryId = Long.toHexString(nodeOrder) + "X";
-        }
-
-        return prefixClusterWideQryId + Long.toHexString(qryId);
+        return prefixClusterWideQryId + qryId;
     }
 
     /**
