@@ -86,8 +86,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.yield;
@@ -105,7 +103,6 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Tests an ability to async rollback near transactions.
  */
-@RunWith(JUnit4.class)
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final int DURATION = SF.applyLB(60_000, 5_000);

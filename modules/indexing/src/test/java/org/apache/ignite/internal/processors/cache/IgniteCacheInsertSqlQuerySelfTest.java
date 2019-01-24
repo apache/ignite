@@ -27,8 +27,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
@@ -36,7 +34,6 @@ import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQu
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -204,30 +201,22 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     }
 
     /**
-     * Test that nested fields could be updated using sql UPDATE just by nested field name.
+     *
      */
     @Test
     public void testNestedFieldsHandling() {
         IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
 
-        final int ROOT_KEY = 1;
-
-        // Create 1st level value
-        AllTypes rootVal = new AllTypes(1L);
-
-        // With random inner field
-        rootVal.innerTypeCol = new AllTypes.InnerType(42L);
-
-
         p.query(new SqlFieldsQuery(
-            "INSERT INTO AllTypes(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
-        ).getAll();
+            "insert into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) values (1, ?, ?, ?, 'sss')").
+            setArgs(
+                new AllTypes.InnerType(50L),
+                new ArrayList<>(Arrays.asList(3L, 2L, 1L)),
+                new AllTypes(1L)
+            )
+        );
 
-        // Update inner fields just by their names
-        p.query(new SqlFieldsQuery("UPDATE AllTypes SET innerLongCol = ?, innerStrCol = ?, arrListCol = ?;")
-            .setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
-
-        AllTypes res = p.get(ROOT_KEY);
+        AllTypes res = p.get(1);
 
         AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
@@ -243,14 +232,12 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     @Test
     public void testCacheRestartHandling() {
         for (int i = 0; i < 4; i++) {
-            IgniteCache<Integer, AllTypes> p =
+            IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p =
                 ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
-                    AllTypes.class));
+                    IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class));
 
-            p.query(new SqlFieldsQuery("INSERT INTO AllTypes(_key, _val) VALUES (1, ?)")
-                .setArgs(new AllTypes(1L))).getAll();
-
-            p.query(new SqlFieldsQuery("UPDATE AllTypes SET dateCol = null;")).getAll();
+            p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val, dateCol) values (1, ?, null)")
+                .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
 
             p.destroy();
         }

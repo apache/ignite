@@ -43,8 +43,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
@@ -57,7 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstractTest {
     /** */
     private static final int TIME_TO_EXECUTE = 30 * 1000;

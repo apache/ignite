@@ -22,8 +22,6 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
@@ -31,7 +29,6 @@ import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQu
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
     /**
      *

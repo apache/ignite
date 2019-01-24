@@ -27,8 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +40,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Test node restart.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommonAbstractTest {
     /** Flag for debug output. */
     private static final boolean DEBUG = false;

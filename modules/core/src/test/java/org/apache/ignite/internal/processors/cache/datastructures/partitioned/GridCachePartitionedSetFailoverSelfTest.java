@@ -20,15 +20,12 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetFailoverAbstractSelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Set failover tests.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {

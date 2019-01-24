@@ -35,15 +35,12 @@ import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests affinity and affinity mapper P2P loading.
  */
-@RunWith(JUnit4.class)
 public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityMapper";
