@@ -28,8 +28,9 @@ public class TransactionSerializationException extends TransactionException {
      * Creates new transaction serialization exception with given error message.
      *
      * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
      */
-    public TransactionSerializationException(String msg, Exception e) {
-        super(msg, e);
+    public TransactionSerializationException(String msg, Exception cause) {
+        super(msg, cause);
     }
 }

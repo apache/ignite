@@ -63,7 +63,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
@@ -198,7 +197,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             try {
                 return fut.get();
             }
-            catch (IgniteCheckedException | TransactionException e) {
+            catch (IgniteCheckedException e) {
                 return exceptionToResult(e);
             }
         }

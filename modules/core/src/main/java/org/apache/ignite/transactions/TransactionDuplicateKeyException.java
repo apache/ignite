@@ -27,9 +27,19 @@ public class TransactionDuplicateKeyException extends TransactionException {
     /**
      * Creates new duplicate ket exception with given error message.
      *
+     * @param msg Error message.\
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public TransactionDuplicateKeyException(String msg, Exception cause) {
+        super(msg, cause);
+    }
+
+    /**
+     * Creates new duplicate ket exception with given error message.
+     *
      * @param msg Error message.
      */
-    public TransactionDuplicateKeyException(String msg, Exception e) {
-        super(msg, e);
+    public TransactionDuplicateKeyException(String msg) {
+        super(msg);
     }
 }

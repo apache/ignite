@@ -729,13 +729,6 @@ public class DmlStatementsProcessor {
      * @param e Exception.
      */
     private void checkSqlException(IgniteCheckedException e) {
-//        if (e instanceof IgniteTxSerializationCheckedException)
-//            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR, e);
-//            throw new TransactionSerializationException(e.getMessage(),e);
-//            throw new IgniteSQLException(e.getMessage(), TRANSACTION_SERIALIZATION_ERROR,
-//                    new TransactionSerializationException(e.getMessage(), e));
-
-
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
         if(sqlEx != null)
@@ -1001,7 +994,7 @@ public class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+                throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             // Keys that failed to INSERT due to duplication.
