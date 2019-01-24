@@ -210,14 +210,17 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         for (long i = 0; i < 10; ++i) {
             sql("INSERT INTO test VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 i, "0_" + i, "1_" + i, "2_" + i, "3_" + i, "4_" + i, "5_" + i, "6_" + i);
-
         }
 
-//        res = sql(
-//            "SELECT comp.name FROM company AS comp " +
-//                "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person As pers WHERE pers.compId = comp.Id)");
-//
-//        assertEquals(res.size(), 1);
+        res = sql(
+            "SELECT t0.val0, t1.val2, t2.val4 FROM " +
+                "(SELECT id AS id, val0, val1 FROM test where id > -1) AS t0 " +
+                "LEFT JOIN " +
+                "(SELECT id AS id, val2, val3 FROM test) AS t1 ON t0.id = t1.id " +
+                "LEFT JOIN " +
+                "(SELECT id AS id, val4, val5 FROM test) AS t2 ON t1.id = t2.id");
+
+        assertEquals(res.size(), 10);
     }
 
     /**
