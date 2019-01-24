@@ -39,7 +39,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class LogRegFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_LOG_REG_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg/data" +
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg/data" +
         "/part-00000-7551081d-c0a8-4ed7-afe4-a464aabc7f80-c000.snappy.parquet";
 
     /** Run example. */
@@ -64,7 +64,7 @@ public class LogRegFromSparkExample {
             IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
 
             LogisticRegressionModel mdl = (LogisticRegressionModel) SparkModelParser.parse(
-                SPARK_LOG_REG_MDL_PATH,
+                SPARK_MDL_PATH,
                 SupportedSparkModels.LOG_REGRESSION
                 );
 
