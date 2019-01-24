@@ -168,6 +168,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
         // No-op
     }
 
+    /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
         // No-op
     }

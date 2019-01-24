@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.plugin;
 
 import java.io.Serializable;
@@ -7,30 +24,50 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Validates node on join, it requires nodes to provide token that matches configured on primary node.
+ */
 public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugin {
 
+    /** */
     private NodeValidationPluginConfiguration pluginConfiguration;
-    public static volatile boolean enabled;
+    /** */
+    private static volatile boolean enabled;
 
+    /** */
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    /** */
+    public static void setEnabled(boolean enabled) {
+        NodeValidationPluginProvider.enabled = enabled;
+    }
+
+    /** {@inheritDoc} */
     @Override public String name() {
         return "NodeValidationPluginProvider";
     }
 
+    /** {@inheritDoc} */
     @Override public String version() {
         return "1.0";
     }
 
+    /** {@inheritDoc} */
     @Override public String copyright() {
         return "";
     }
 
+    /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
         return this;
     }
 
-    @Override
-    public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-        if(!enabled) return;
+    /** {@inheritDoc} */
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+        if (!enabled)
+            return;
 
         IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
 
@@ -45,48 +82,61 @@ public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugi
         }
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
         //no-op
     }
 
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         //no-op
     }
 
+    /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
         //no-op
     }
 
+    /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
         //no-op
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-        if(!enabled) return null;
+        if (!enabled)
+            return null;
 
         MyDiscoData data = new MyDiscoData(pluginConfiguration.getToken());
 
         return data;
     }
 
+    /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        if(!enabled) return;
+        if (!enabled)
+            return;
     }
 
+    /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // no-op
     }
 
+    /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node, Serializable serializable) {
-        if(!enabled) return;
+        if (!enabled)
+            return;
 
         MyDiscoData newNodeDiscoData = serializable instanceof MyDiscoData ? (MyDiscoData)serializable : null;
 
@@ -97,21 +147,46 @@ public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugi
         }
     }
 
+    /**
+     *
+     */
     private static class MyDiscoData implements Serializable {
+        /**  */
         String token;
 
-        public MyDiscoData(String token) {
+        /**  */
+        MyDiscoData(String token) {
             this.token = token;
         }
 
+        /**  */
         public String getToken() {
             return token;
         }
 
+        /**  */
         @Override public String toString() {
             return "MyDiscoData{" +
                 "token='" + token + '\'' +
                 '}';
+        }
+    }
+
+    /**
+     *
+     */
+    public static class NodeValidationPluginConfiguration implements PluginConfiguration {
+        /** */
+        private final String token;
+
+        /** */
+        NodeValidationPluginConfiguration(String token) {
+            this.token = token;
+        }
+
+        /** */
+        public String getToken() {
+            return token;
         }
     }
 }

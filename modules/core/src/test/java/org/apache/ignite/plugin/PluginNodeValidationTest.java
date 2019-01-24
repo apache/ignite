@@ -17,17 +17,12 @@
 
 package org.apache.ignite.plugin;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,11 +30,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+/**
+ * Test node validation on join by plugin.
+ */
 @RunWith(JUnit4.class)
 public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
+    /** */
     private volatile String token;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -50,11 +50,12 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setPluginConfigurations(new NodeValidationPluginConfiguration(token));
+        cfg.setPluginConfigurations(new NodeValidationPluginProvider.NodeValidationPluginConfiguration(token));
 
         return cfg;
     }
 
+    /** Tests that node join fails due failure in node validation. */
     @Test
     public void testValidationException() throws Exception {
         token = "123456";
@@ -74,6 +75,7 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
         fail("Exception is expected due validation error in plugin");
     }
 
+    /** Tests that node joins on successful node validation by plugin. */
     @Test
     public void testSuccessfulValidation() throws Exception {
         token = "123456";
@@ -82,18 +84,21 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
         startGrid(1);
     }
 
+    /** Stop all nodes after each test. */
     @After
-    public void after() throws Exception {
+    public void after() {
         stopAllGrids();
     }
 
+    /** Enables plugin before test start. */
     @BeforeClass
     public static void enablePlugin() {
-        NodeValidationPluginProvider.enabled = true;
+        NodeValidationPluginProvider.setEnabled(true);
     }
 
+    /** Disable plugin after test end. */
     @AfterClass
     public static void disablePlugin() {
-        NodeValidationPluginProvider.enabled = false;
+        NodeValidationPluginProvider.setEnabled(false);
     }
 }
