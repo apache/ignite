@@ -65,7 +65,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests that cache data survives node restart.
         /// </summary>
         [Test]
-        public void TestCacheDataSurvivesNodeRestart()
+        public void TestCacheDataSurvivesNodeRestart(
+            [Values(true, false)] bool withCacheStore,
+            [Values(true, false)] bool withCustomAffinity)
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -104,7 +106,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var cache = ignite.CreateCache<int, int>(new CacheConfiguration
                 {
                     Name = cacheName,
-                    CacheStoreFactory = new TestCacheStoreFactory()
+                    CacheStoreFactory = withCacheStore ? new CustomStoreFactory() : null,
+                    AffinityFunction = withCustomAffinity ? new CustomAffinityFunction() : null
                 });
                 cache[1] = 1;
 
@@ -355,15 +358,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
         }
 
-        private class TestCacheStoreFactory : IFactory<ICacheStore>
+        private class CustomStoreFactory : IFactory<ICacheStore>
         {
             public ICacheStore CreateInstance()
             {
-                return new TestStore();
+                return new CustomStore();
             }
         }
 
-        private class TestStore : CacheStoreAdapter<object, object>
+        private class CustomStore : CacheStoreAdapter<object, object>
         {
             public override object Load(object key)
             {
@@ -372,12 +375,21 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             public override void Write(object key, object val)
             {
-                throw new NotImplementedException();
+                // No-op.
             }
 
             public override void Delete(object key)
             {
-                throw new NotImplementedException();
+                // No-op.
+            }
+        }
+
+        private class CustomAffinityFunction : RendezvousAffinityFunction
+        {
+            public override int Partitions
+            {
+                get { return 10; }
+                set { throw new NotSupportedException(); }
             }
         }
     }
