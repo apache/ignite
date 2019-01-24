@@ -96,7 +96,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
@@ -632,7 +632,7 @@ public class DmlStatementsProcessor {
                 if (e instanceof IgniteTxSerializationCheckedException)
                     throw new TransactionSerializationException(e.getMessage(), e);
                 if (e instanceof IgniteTxDuplicateKeyCheckedException)
-                    throw new TransactionException(e.getMessage(), e);
+                    throw new TransactionDuplicateKeyException(e.getMessage(), e);
                 if (e instanceof ClusterTopologyServerNotFoundException)
                     throw new CacheServerNotFoundException(e.getMessage(), e);
 
