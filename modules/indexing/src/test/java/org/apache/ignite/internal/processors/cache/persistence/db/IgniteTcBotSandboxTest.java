@@ -154,7 +154,7 @@ public class IgniteTcBotSandboxTest extends GridCommonAbstractTest {
         cfg.setConsistentId("TcHelper");
 
         DataRegionConfiguration regCfg = new DataRegionConfiguration()
-            .setMaxSize(2L * 1024 * 1024 * 1027)
+            .setMaxSize(2L * 1024 * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
