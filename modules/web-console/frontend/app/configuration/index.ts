@@ -17,6 +17,7 @@
 
 import uiValidate from 'angular-ui-validate';
 import {UIRouterRx} from '@uirouter/rx';
+import {UIRouter} from '@uirouter/angularjs';
 
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 
@@ -79,17 +80,12 @@ import {
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
 
-/**
- * @param {uirouter.UIRouter} $uiRouter
- * @param {ActivitiesData} ActivitiesData
- */
-function registerActivitiesHook($uiRouter, ActivitiesData) {
+registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
+function registerActivitiesHook($uiRouter: UIRouter, ActivitiesData: ActivitiesData) {
     $uiRouter.transitionService.onSuccess({to: 'base.configuration.**'}, (transition) => {
         ActivitiesData.post({group: 'configuration', action: transition.targetState().name()});
     });
 }
-registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
-
 
 export default angular.module('ignite-console.configuration', [
     uiValidate,
