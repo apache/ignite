@@ -51,6 +51,7 @@ import buttonDownloadProject from './components/button-download-project';
 import buttonPreviewProject from './components/button-preview-project';
 import previewPanel from './components/preview-panel';
 import pcSplitButton from './components/pc-split-button';
+import uiAceTabs from './components/ui-ace-tabs.directive';
 
 import uiAceJava from './components/ui-ace-java';
 import uiAceSpring from './components/ui-ace-spring';
@@ -173,4 +174,5 @@ export default angular.module('ignite-console.configuration', [
     .service('ConfigurationDownload', ConfigurationDownload)
     .directive('pcIsInCollection', isInCollection)
     .directive('fakeUiCanExit', fakeUiCanExit)
-    .directive('formUiCanExitGuard', formUICanExitGuard);
+    .directive('formUiCanExitGuard', formUICanExitGuard)
+    .directive('igniteUiAceTabs', uiAceTabs);

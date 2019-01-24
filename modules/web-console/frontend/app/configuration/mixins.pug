@@ -1,0 +1,29 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+//- Mixin for XML and Java preview.
+mixin preview-xml-java(master, generator, detail)
+    ignite-ui-ace-tabs
+        .preview-panel(ng-init='mode = "spring"')
+            .preview-legend
+                a(ng-class='{active: mode === "spring"}' ng-click='mode = "spring"') Spring
+                a(ng-class='{active: mode === "java"}' ng-click='mode = "java"') Java
+                //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
+            .preview-content(ng-switch='mode')
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content-empty(ng-if='!data')
+                label All Defaults

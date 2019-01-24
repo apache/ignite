@@ -52,23 +52,14 @@ import i18n from './data/i18n';
 
 // Directives.
 import igniteAutoFocus from './directives/auto-focus.directive';
-import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
-import igniteCentered from './directives/centered/centered.directive';
 import igniteCopyToClipboard from './directives/copy-to-clipboard.directive';
 import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
-import igniteInformation from './directives/information/information.directive';
 import igniteMatch from './directives/match.directive';
 import igniteOnClickFocus from './directives/on-click-focus.directive';
 import igniteOnEnter from './directives/on-enter.directive';
 import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive';
 import igniteOnEscape from './directives/on-escape.directive';
 import igniteOnFocusOut from './directives/on-focus-out.directive';
-import igniteRestoreInputFocus from './directives/restore-input-focus.directive';
-import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
-import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
-import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
-import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
-import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
 import btnIgniteLink from './directives/btn-ignite-link';
 
@@ -266,24 +257,15 @@ export default angular.module('ignite-console', [
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.
 .directive('igniteAutoFocus', igniteAutoFocus)
-.directive('igniteBsAffixUpdate', igniteBsAffixUpdate)
-.directive('centered', igniteCentered)
 .directive('igniteCopyToClipboard', igniteCopyToClipboard)
 .directive('hideOnStateChange', igniteHideOnStateChange)
-.directive('igniteInformation', igniteInformation)
 .directive('igniteMatch', igniteMatch)
 .directive('igniteOnClickFocus', igniteOnClickFocus)
 .directive('igniteOnEnter', igniteOnEnter)
 .directive('igniteOnEnterFocusMove', igniteOnEnterFocusMove)
 .directive('igniteOnEscape', igniteOnEscape)
-.directive('igniteUiAceSharp', igniteUiAceCSharp)
-.directive('igniteUiAcePojos', igniteUiAcePojos)
-.directive('igniteUiAcePom', igniteUiAcePom)
-.directive('igniteUiAceDocker', igniteUiAceDocker)
-.directive('igniteUiAceTabs', igniteUiAceTabs)
 .directive('igniteRetainSelection', igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
-.directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
