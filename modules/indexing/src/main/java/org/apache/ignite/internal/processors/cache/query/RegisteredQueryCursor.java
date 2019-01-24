@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -38,6 +39,9 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** */
     private Long qryId;
 
+    /** Flag to indicate error. */
+    private boolean failed;
+
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
@@ -55,10 +59,21 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         this.qryId = qryId;
     }
 
+    @Override protected Iterator<T> iter() {
+        try {
+            return super.iter();
+        }
+        catch (Exception e) {
+            failed = true;
+
+            throw e;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
         if (unregistered.compareAndSet(false, true))
-            runningQryMgr.unregister(qryId);
+            runningQryMgr.unregister(qryId, failed);
 
         super.close();
     }

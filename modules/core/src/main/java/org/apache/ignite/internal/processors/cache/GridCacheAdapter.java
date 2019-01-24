@@ -73,6 +73,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -3419,12 +3420,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        return new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
+
+        return isCacheMetricsV2Supported() ? new CacheMetricsSnapshotV2(ctx.cache().localMetrics(), metrics) :
+            new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        return new CacheMetricsSnapshot(metrics);
+        return isCacheMetricsV2Supported() ? new CacheMetricsSnapshotV2(metrics) :
+            new CacheMetricsSnapshot(metrics);
+    }
+
+    /**
+     * @return checks cluster server nodes version is compatible with Cache Metrics V2
+     */
+    private boolean isCacheMetricsV2Supported() {
+        Collection<ClusterNode> nodes = ctx.discovery().allNodes();
+
+        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
     }
 
     /** {@inheritDoc} */

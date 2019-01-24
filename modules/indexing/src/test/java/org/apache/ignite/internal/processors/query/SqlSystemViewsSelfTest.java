@@ -22,10 +22,12 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -33,6 +35,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -47,8 +50,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -59,6 +64,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import static java.util.Arrays.asList;
 
 /**
  * Tests for ignite SQL system views.
@@ -88,7 +95,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param args Args.
      */
     @SuppressWarnings("unchecked")
-    private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
+    private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
         IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
@@ -103,7 +110,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      * @param args Args.
      */
-    private List<List<?>> execSql(String sql, Object ... args) {
+    private List<List<?>> execSql(String sql, Object... args) {
         return execSql(grid(), sql, args);
     }
 
@@ -200,7 +207,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param rowData Row data.
      * @param colTypes Column types.
      */
-    private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
+    private void assertColumnTypes(List<?> rowData, Class<?>... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
                 assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
@@ -226,7 +233,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
-                "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
+            "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Integer.class, String.class, String.class);
@@ -371,7 +378,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         // Broadcast jobs to server and client nodes to get non zero metric values.
         for (int i = 0; i < 100; i++) {
-            IgniteFuture<Void > fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
+            IgniteFuture<Void> fut = igniteSrv.compute(igniteSrv.cluster().forNodeId(nodeId0, nodeId(1)))
                 .broadcastAsync(
                     new IgniteRunnable() {
                         @Override public void run() {
@@ -523,6 +530,272 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test IO statistics SQL system views for cache groups.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testIoStatisticsViews() throws Exception {
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+
+        ignite.cluster().active(true);
+
+        execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
+
+        for (int i = 0; i < 500; i++)
+            execSql("INSERT INTO DEFAULT.TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
+
+        String sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO";
+
+        List<List<?>> res1 = execSql(sql1);
+
+        Map<?, ?> map = res1.stream().collect(Collectors.toMap(k -> k.get(1), v -> v.get(3)));
+
+        assertEquals(2, map.size());
+
+        assertTrue(map.containsKey("SQL_default_TST"));
+
+        assertTrue((Long)map.get("SQL_default_TST") > 0);
+
+        assertTrue(map.containsKey(DEFAULT_CACHE_NAME));
+
+        sql1 = "SELECT GROUP_ID, GROUP_NAME, PHYSICAL_READS, LOGICAL_READS FROM IGNITE.CACHE_GROUPS_IO WHERE " +
+            "GROUP_NAME='SQL_default_TST'";
+
+        assertEquals(1, execSql(sql1).size());
+    }
+
+    /**
+     * Simple test for {@link SqlSystemViewTables}
+     */
+    @Test
+    public void testTablesView() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        GridCacheProcessor cacheProc = ignite.context().cache();
+
+        execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR) WITH " +
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic,wrap_value=true,value_type=random_name\"");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1, ID2)) WITH"
+            + "\"affinity_key=ID2,wrap_value=false,key_type=random_name\"");
+
+        int cacheSqlId = cacheProc.cacheDescriptor("cache_sql").cacheId();
+        int ddlTabId = cacheProc.cacheDescriptor("SQL_PUBLIC_DFLT_CACHE").cacheId();
+
+        List<List<?>> cacheSqlInfos = execSql("SELECT * FROM IGNITE.TABLES WHERE TABLE_NAME = 'CACHE_SQL'");
+
+        List<?> expRow = asList(
+            "DEFAULT",           // SCHEMA_NAME
+            "CACHE_SQL",         // TABLE_NAME
+            "cache_sql",         // CACHE_NAME
+            cacheSqlId,          // CACHE_ID
+            null,                // AFFINITY_KEY_COLUMN
+            "ID",                // KEY_ALIAS
+            null,                // VALUE_ALIAS
+            "java.lang.Integer", // KEY_TYPE_NAME
+            "random_name"        // VALUE_TYPE_NAME
+
+        );
+
+        assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
+
+        // no more rows are expected.
+        assertEquals("Expected to return only one row", 1, cacheSqlInfos.size());
+
+        List<List<?>> allInfos = execSql("SELECT * FROM IGNITE.TABLES");
+
+        List<?> allExpRows = asList(
+            expRow,
+            asList(
+                "PUBLIC",                // SCHEMA_NAME
+                "DFLT_CACHE",            // TABLE_NAME
+                "SQL_PUBLIC_DFLT_CACHE", // CACHE_NAME
+                ddlTabId,                // CACHE_ID
+                "ID2",                   // AFFINITY_KEY_COLUMN
+                null,                    // KEY_ALIAS
+                "MY_VAL",                // VALUE_ALIAS
+                "random_name",           // KEY_TYPE_NAME
+                "java.lang.String"       // VALUE_TYPE_NAME
+            )
+        );
+
+        if (!F.eqNotOrdered(allExpRows, allInfos))
+            fail("Returned incorrect rows [expected=" + allExpRows + ", actual=" + allInfos + "].");
+
+        // Filter by cache name:
+        assertEquals(
+            Collections.singletonList(asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        assertEquals(
+            Collections.singletonList(asList("CACHE_SQL", "cache_sql")),
+            execSql("SELECT TABLE_NAME, CACHE_NAME " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME NOT LIKE 'SQL\\_PUBLIC\\_%'"));
+
+        // Join with CACHES view.
+        assertEquals(
+            asList(
+                asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE"),
+                asList("CACHE_SQL", "cache_sql", "cache_sql")),
+            execSql("SELECT TABLE_NAME, TAB.CACHE_NAME, C.NAME " +
+                "FROM IGNITE.TABLES AS TAB JOIN IGNITE.CACHES AS C " +
+                "ON TAB.CACHE_ID = C.CACHE_ID " +
+                "ORDER BY C.NAME")
+        );
+    }
+
+    /**
+     * Verify that if we drop or create table, TABLES system view reflects these changes.
+     */
+    @Test
+    public void testTablesDropAndCreate() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        final String selectTabNameCacheName = "SELECT TABLE_NAME, CACHE_NAME FROM IGNITE.TABLES ORDER BY TABLE_NAME";
+
+        assertTrue("Initially no tables expected", execSql(selectTabNameCacheName).isEmpty());
+
+        execSql("CREATE TABLE PUBLIC.TAB1 (ID INT PRIMARY KEY, VAL VARCHAR)");
+
+        assertEquals(
+            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            execSql(selectTabNameCacheName));
+
+        execSql("CREATE TABLE PUBLIC.TAB2 (ID LONG PRIMARY KEY, VAL_STR VARCHAR) WITH \"cache_name=cache2\"");
+        execSql("CREATE TABLE PUBLIC.TAB3 (ID LONG PRIMARY KEY, VAL_INT INT) WITH \"cache_name=cache3\" ");
+
+        assertEquals(
+            asList(
+                asList("TAB1", "SQL_PUBLIC_TAB1"),
+                asList("TAB2", "cache2"),
+                asList("TAB3", "cache3")
+            ),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB2");
+
+        assertEquals(
+            asList(
+                asList("TAB1", "SQL_PUBLIC_TAB1"),
+                asList("TAB3", "cache3")
+            ),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB3");
+
+        assertEquals(
+            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            execSql(selectTabNameCacheName));
+
+        execSql("DROP TABLE PUBLIC.TAB1");
+
+        assertTrue("All tables should be dropped", execSql(selectTabNameCacheName).isEmpty());
+    }
+
+
+
+    /**
+     * Dummy implementation of the mapper. Required to test "AFFINITY_KEY_COLUMN".
+     */
+    static class ConstantMapper implements AffinityKeyMapper {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 7018626316531791556L;
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey(Object key) {
+            return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            //NO-op
+        }
+    }
+
+    /**
+     * Check affinity column if custom affinity mapper is specified.
+     */
+    @Test
+    public void testTablesNullAffinityKey() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        AffinityKeyMapper fakeMapper = new ConstantMapper();
+
+        ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_KEY_FIELDS_CACHE").setAffinityMapper(fakeMapper)
+            .setQueryEntities(Collections.singleton(
+                // A cache with  no key fields
+                new QueryEntity(Object.class.getName(), "Object2")
+                    .addQueryField("name", String.class.getName(), null)
+                    .addQueryField("salary", Integer.class.getName(), null)
+                    .setTableName("NO_KEY_TABLE")
+            )));
+
+        List<List<String>> expected = Collections.singletonList(asList("NO_KEY_TABLE", null));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE CACHE_NAME = 'NO_KEY_FIELDS_CACHE'"));
+
+        assertEquals(expected,
+            execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
+                "FROM IGNITE.TABLES " +
+                "WHERE AFFINITY_KEY_COLUMN IS NULL"));
+    }
+
+    /**
+     * Special test for key/val name and type. Covers most used cases
+     */
+    @Test
+    public void testTablesViewKeyVal() throws Exception {
+        IgniteEx ignite = startGrid(getConfiguration());
+
+        {
+            ignite.getOrCreateCache(defaultCacheConfiguration().setName("NO_ALIAS_NON_SQL_KEY")
+                .setQueryEntities(Collections.singleton(
+                    // A cache with  no key fields
+                    new QueryEntity(Object.class.getName(), "Object2")
+                        .addQueryField("name", String.class.getName(), null)
+                        .addQueryField("salary", Integer.class.getName(), null)
+                        .setTableName("NO_ALIAS_NON_SQL_KEY")
+                )));
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'NO_ALIAS_NON_SQL_KEY'").get(0);
+
+            assertEquals(asList(null, null), keyValAliases);
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.SIMPLE_KEY_SIMPLE_VAL (ID INT PRIMARY KEY, NAME VARCHAR) WITH \"wrap_value=false\"");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'SIMPLE_KEY_SIMPLE_VAL'").get(0);
+
+            assertEquals(asList("ID", "NAME"), keyValAliases);
+
+        }
+
+        {
+            execSql("CREATE TABLE PUBLIC.COMPLEX_KEY_COMPLEX_VAL " +
+                "(ID1 INT, " +
+                "ID2 INT, " +
+                "VAL1 VARCHAR, " +
+                "VAL2 VARCHAR, " +
+                "PRIMARY KEY(ID1, ID2))");
+
+            List<?> keyValAliases = execSql("SELECT KEY_ALIAS, VALUE_ALIAS FROM IGNITE.TABLES " +
+                "WHERE TABLE_NAME = 'COMPLEX_KEY_COMPLEX_VAL'").get(0);
+
+            assertEquals(asList(null, null), keyValAliases);
+        }
     }
 
     /**
