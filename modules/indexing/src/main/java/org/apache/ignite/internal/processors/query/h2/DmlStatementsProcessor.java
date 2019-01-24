@@ -40,11 +40,13 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
@@ -627,6 +629,9 @@ public class DmlStatementsProcessor {
             }
             catch (IgniteCheckedException e) {
                 checkSqlException(e);
+
+                if (e instanceof ClusterTopologyServerNotFoundException)
+                    throw new CacheServerNotFoundException(e.getMessage(), e);
 
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
