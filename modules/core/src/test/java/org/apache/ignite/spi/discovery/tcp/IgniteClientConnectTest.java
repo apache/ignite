@@ -74,7 +74,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
-        disco.setNetworkTimeout(2000);
+        disco.setNetworkTimeout(6_000);
 
         cfg.setNetworkSendRetryCount(1);
 

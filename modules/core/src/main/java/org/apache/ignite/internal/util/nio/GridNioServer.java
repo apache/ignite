@@ -122,8 +122,8 @@ public class GridNioServer<T> {
     /** Selection key meta key. */
     private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Meta key for pending messages to be written. */
-    private static final int MESSAGES_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** Meta key for pending requests to be written. */
+    private static final int REQUESTS_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
@@ -1377,11 +1377,10 @@ public class GridNioServer<T> {
                         return;
                     }
                     else {
-                        List<Message> messages = ses.removeMeta(MESSAGES_META_KEY);
+                        List<SessionWriteRequest> requests = ses.removeMeta(REQUESTS_META_KEY);
 
-                        if (messages != null)
-                            for (Message message : messages)
-                                onMessageWritten(ses, message);
+                        if (requests != null)
+                            onRequestsWritten(ses, requests);
                     }
                 }
 
@@ -1419,7 +1418,7 @@ public class GridNioServer<T> {
                     Message msg;
                     boolean finished = false;
 
-                    List<Message> pendingMessages = new ArrayList<>(2);
+                    List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
 
                     if (req != null) {
                         msg = (Message) req.message();
@@ -1432,7 +1431,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            pendingMessages.add(msg);
+                            pendingRequests.add(req);
 
                             if (writer != null)
                                 writer.reset();
@@ -1459,7 +1458,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            pendingMessages.add(msg);
+                            pendingRequests.add(req);
 
                             if (writer != null)
                                 writer.reset();
@@ -1513,13 +1512,12 @@ public class GridNioServer<T> {
                     if (buf.hasRemaining()) {
                         ses.addMeta(BUF_META_KEY, buf);
 
-                        ses.addMeta(MESSAGES_META_KEY, pendingMessages);
+                        ses.addMeta(REQUESTS_META_KEY, pendingRequests);
 
                         break;
                     }
                     else {
-                        for (Message message : pendingMessages)
-                            onMessageWritten(ses, message);
+                        onRequestsWritten(ses, pendingRequests);
 
                         buf = ses.writeBuffer();
 
@@ -1714,6 +1712,19 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DirectNioClientWorker.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Notifies SessionWriteRequests and it's messages when requests were actually written.
+     * @param ses GridNioSession.
+     * @param requests SessionWriteRequests.
+     */
+    private void onRequestsWritten(GridSelectorNioSessionImpl ses, List<SessionWriteRequest> requests) {
+        for (SessionWriteRequest request : requests) {
+            request.onMessageWritten();
+
+            onMessageWritten(ses, (Message)request.message());
         }
     }
 
