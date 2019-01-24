@@ -351,12 +351,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
-    /** Default start delay in case of NEED_WAIT received on handshake, millis. */
-    public static final long DFLT_NEED_WAIT_DELAY = 200;
-
-    /** Default max delay in case of NEED_WAIT received on handshake, millis. */
-    public static final long DFLT_MAX_NEED_WAIT_DELAY = 60_000;
-
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
         @Override public void run() {
@@ -1161,12 +1155,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
-    /** Delay on subsequent retry if NEED_WAIT received. */
-    private long needWaitDelay = DFLT_NEED_WAIT_DELAY;
-
-    /** Max value of needWaitDelay. */
-    private long maxNeedWaitDelay = DFLT_MAX_NEED_WAIT_DELAY;
-
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
      * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -1849,56 +1837,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public TcpCommunicationSpi setSlowClientQueueLimit(int slowClientQueueLimit) {
         this.slowClientQueueLimit = slowClientQueueLimit;
-
-        return this;
-    }
-
-    /**
-     * Get initial needWaitDelay.
-     * @return Initial needWaitDelay.
-     */
-    public long getNeedWaitDelay() {
-        return needWaitDelay;
-    }
-
-    /**
-     * Setting to set start needWaitDelay.
-     * <p>
-     * Configures delay on subsequent reconnect if NEED_WAIT received.
-     * <p>
-     * If not provided, default value is {@link #DFLT_NEED_WAIT_DELAY}.
-     *
-     * @param needWaitDelay Delay between subsequent retries on NEED_WAIT.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setNeedWaitDelay(long needWaitDelay) {
-        this.needWaitDelay = needWaitDelay;
-
-        return this;
-    }
-
-    /**
-     * Get max needWaitDelay.
-     * @return Max needWaitDelay.
-     */
-    public long getMaxNeedWaitDelay() {
-        return maxNeedWaitDelay;
-    }
-
-    /**
-     * Setting to set start needWaitDelay.
-     * <p>
-     * Configures max delay on subsequent reconnect if NEED_WAIT received.
-     * <p>
-     * If not provided, default value is {@link #DFLT_MAX_NEED_WAIT_DELAY}.
-     *
-     * @param maxNeedWaitDelay Max delay between subsequent retries on NEED_WAIT.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setMaxNeedWaitDelay(long maxNeedWaitDelay) {
-        this.maxNeedWaitDelay = maxNeedWaitDelay;
 
         return this;
     }
@@ -3297,7 +3235,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            long needWaitDelay0 = needWaitDelay;
+            long needWaitDelay0 = 200;
 
             while (client == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3410,7 +3348,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 recoveryDesc.release();
 
                             if (needWait) {
-                                if (needWaitDelay0 < maxNeedWaitDelay)
+                                /*
+                                    https://issues.apache.org/jira/browse/IGNITE-7648
+                                    We should add failure detection check here like exception case.
+                                */
+                                if (needWaitDelay0 < 60_000)
                                     needWaitDelay0 *= 2;
 
                                 if (log.isDebugEnabled())
