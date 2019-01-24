@@ -121,6 +121,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
                     info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
                 }
+
+                return null;
             },
             () -> {
                 if (autoStart) {
@@ -136,6 +138,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
                     info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
                 }
+
+                return null;
             });
     }
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class BeforeAfterClassHelper {
     /** */
-    private final AtomicReference<InstanceAction> afterClsActRef = new AtomicReference<>(null);
+    private final AtomicReference<Callable<Void>> afterClsActRef = new AtomicReference<>(null);
 
     /** */
     private final AtomicBoolean isFirst = new AtomicBoolean();
@@ -46,14 +47,14 @@ public class BeforeAfterClassHelper {
      * @param beforeClsAct Action to execute on first time before test cases or {@code null} to do nothing.
      * @param afterClsAct Action to execute on last time after test cases or {@code null} to do nothing.
      */
-    public void onBefore(InstanceAction beforeClsAct, InstanceAction afterClsAct) throws Exception {
+    public void onBefore(Callable<Void> beforeClsAct, Callable<Void> afterClsAct) throws Exception {
         if (!isFirst.getAndSet(false))
             return;
 
         afterClsActRef.set(afterClsAct);
 
         if (beforeClsAct != null)
-            beforeClsAct.apply();
+            beforeClsAct.call();
     }
 
     /**
@@ -61,20 +62,13 @@ public class BeforeAfterClassHelper {
      */
     public void onAfterClass() throws Exception {
         try {
-            InstanceAction afterClsAct = afterClsActRef.get();
+            Callable<Void> afterClsAct = afterClsActRef.get();
 
             if (afterClsAct != null)
-                afterClsAct.apply();
+                afterClsAct.call();
         }
         finally {
             afterClsActRef.set(null);
         }
-    }
-
-    /** */
-    @FunctionalInterface
-    public static interface InstanceAction {
-        /** */
-        public void apply() throws Exception;
     }
 }
