@@ -66,5 +66,5 @@ export type NavigationMenu = Array<NavigationMenuItem>;
 export enum WellKnownOperationStatus {
     WAITING = 'WAITING',
     ERROR = 'ERROR',
-    ARRIVED = 'ARRIVED'
+    DONE = 'DONE'
 }

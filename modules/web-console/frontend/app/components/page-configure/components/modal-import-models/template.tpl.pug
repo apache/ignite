@@ -32,7 +32,7 @@ mixin td-ellipses-lbl(w, lbl)
                 h4.modal-title()
                     span(ng-if='!importDomain.demo') Import domain models from database
                     span(ng-if='importDomain.demo') Import domain models from demo database
-            .modal-body(ng-if='$ctrl.agentIsAvailable$ | async: this')
+            .modal-body(ng-if-start='$ctrl.agentIsAvailable$ | async: this')
                 modal-import-models-step-indicator(
                     steps='$ctrl.actions'
                     current-step='importDomain.action'
@@ -226,40 +226,42 @@ mixin td-ellipses-lbl(w, lbl)
                             })
 
 
-            .modal-body(ng-if='!($ctrl.agentIsAvailable$ | async: this)')
-                no-data
 
-            .modal-footer(ng-if='$ctrl.agentIsAvailable$ | async: this')
+
+            .modal-footer(ng-if-end)
                 button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
-                    type='button'
-                    ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
-                    ng-click='importDomainPrev()'
-                    b_s-tooltip=''
-                    d_ata-title='{{prevTooltipText()}}'
-                    d_ata-placement='bottom'
+                type='button'
+                ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"'
+                ng-click='importDomainPrev()'
+                b_s-tooltip=''
+                d_ata-title='{{prevTooltipText()}}'
+                d_ata-placement='bottom'
                 ) Prev
                 selected-items-amount-indicator(
-                    ng-if='$ctrl.$scope.importDomain.action === "schemas"'
-                    selected-amount='$ctrl.selectedSchemasIDs.length'
-                    total-amount='$ctrl.$scope.importDomain.schemas.length'
+                ng-if='$ctrl.$scope.importDomain.action === "schemas"'
+                selected-amount='$ctrl.selectedSchemasIDs.length'
+                total-amount='$ctrl.$scope.importDomain.schemas.length'
                 )
                 selected-items-amount-indicator(
-                    ng-if='$ctrl.$scope.importDomain.action === "tables"'
-                    selected-amount='$ctrl.selectedTablesIDs.length'
-                    total-amount='$ctrl.$scope.importDomain.tables.length'
+                ng-if='$ctrl.$scope.importDomain.action === "tables"'
+                selected-amount='$ctrl.selectedTablesIDs.length'
+                total-amount='$ctrl.$scope.importDomain.tables.length'
                 )
                 button.btn-ignite.btn-ignite--success.modal-import-models__next-button(
-                    type='button'
-                    ng-click='importDomainNext(optionsForm)'
-                    ng-disabled='!importDomainNextAvailable()'
-                    b_s-tooltip=''
-                    d_ata-title='{{nextTooltipText()}}'
-                    d_ata-placement='bottom'
+                type='button'
+                ng-click='importDomainNext(optionsForm)'
+                ng-disabled='!importDomainNextAvailable()'
+                b_s-tooltip=''
+                d_ata-title='{{nextTooltipText()}}'
+                d_ata-placement='bottom'
                 )
                     svg.icon-left(ignite-icon='checkmark' ng-show='importDomain.button === "Save"')
                     | {{importDomain.button}}
 
-            .modal-footer(ng-if='!($ctrl.agentIsAvailable$ | async: this)')
+            .modal-body(ng-if-start='!($ctrl.agentIsAvailable$ | async: this)')
+                no-data
+
+            .modal-footer(ng-if-end)
                 button.btn-ignite.btn-ignite--success.modal-import-models__next-button(ng-click='$ctrl.onHide()') Cancel
 
 

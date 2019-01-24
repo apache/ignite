@@ -1082,7 +1082,6 @@ export class ModalImportModels {
 
         this.subscribers$ = merge(
             this.subscription,
-            this.agentIsAvailable$,
             this.domainData$
         ).subscribe();
 
