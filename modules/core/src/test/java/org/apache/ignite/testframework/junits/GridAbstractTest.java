@@ -122,6 +122,10 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -186,6 +190,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             runSerializer.lock();
             try {
                 assert getName() != null : "getName returned null";
+
+                U.warn(null, ">>>>>>> place for helper onbefore <<<<<<<<<<");
 
                 runTestCase(base);
             } finally {
@@ -281,6 +287,30 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      */
     protected <T> T allocateInstance(Class<T> cls) throws Exception {
         return (T)GridUnsafe.allocateInstance(cls);
+    }
+
+    /** */
+    @BeforeClass
+    public static void beforeClass1() {
+        U.warn(null, ">>>>>>> before1 class <<<<<<<<<<");
+    }
+
+    /** */
+    @AfterClass
+    public static void afterClass1() {
+        U.warn(null, ">>>>>>> after1 class <<<<<<<<<<");
+    }
+
+    /** */
+    @Before
+    public void before1() {
+        U.warn(null, ">>>>>>> before1 <<<<<<<<<<");
+    }
+
+    /** */
+    @After
+    public void after1() {
+        U.warn(null, ">>>>>>> after1 <<<<<<<<<<");
     }
 
     /**

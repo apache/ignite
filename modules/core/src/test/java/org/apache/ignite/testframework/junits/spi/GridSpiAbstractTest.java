@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -50,10 +52,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.BeforeAfterClassHelper;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -68,6 +75,26 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** */
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
+
+    /** Lock to maintain integrity of {@link BeforeAfterClassHelper}. */
+    private final Lock runSerializer = new ReentrantLock();
+
+    /** Manages test execution and reporting. */
+    @SuppressWarnings({"TransientFieldInNonSerializableClass"})
+    @Rule public transient RuleChain runRule = RuleChain.outerRule(super.runRule)
+        .around((base, description) -> new Statement() {
+            @Override public void evaluate() throws Throwable {
+                runSerializer.lock();
+                try {
+                    U.warn(null, ">>>>>>> place for helper 1 onbefore <<<<<<<<<<");
+
+                    base.evaluate();
+                }
+                finally {
+                    runSerializer.unlock();
+                }
+            }
+        });
 
     /** */
     private final boolean autoStart;
