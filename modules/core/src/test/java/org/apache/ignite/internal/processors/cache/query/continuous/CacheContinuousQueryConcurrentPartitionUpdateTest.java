@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -220,8 +221,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
                                     }
                                 }
                             }
@@ -416,8 +416,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                             committed = true;
                                         }
                                         catch (CacheException e) {
-                                            assertTrue(e.getMessage() != null &&
-                                                e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                            assertTrue(e.getCause() instanceof TransactionSerializationException);
                                         }
                                     }
                                 }
@@ -465,8 +464,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         committed = true;
                                     }
                                     catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
                                     }
                                 }
                             }

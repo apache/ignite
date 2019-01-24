@@ -103,6 +103,7 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
@@ -294,21 +295,9 @@ public class DmlStatementsProcessor {
                     ress.add(res);
                 }
                 catch (Exception e ) {
-                    String sqlState;
+                    SQLException sqlEx = toSqlException(e);
 
-                    int code;
-
-                    if (e instanceof IgniteSQLException) {
-                        sqlState = ((IgniteSQLException)e).sqlState();
-
-                        code = ((IgniteSQLException)e).statusCode();
-                    } else {
-                        sqlState = SqlStateCode.INTERNAL_ERROR;
-
-                        code = IgniteQueryErrorCode.UNKNOWN;
-                    }
-
-                    batchException = chainException(batchException, new SQLException(e.getMessage(), sqlState, code, e));
+                    batchException = chainException(batchException, sqlEx);
 
                     cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
                 }
@@ -323,6 +312,40 @@ public class DmlStatementsProcessor {
 
             return ress;
         }
+    }
+
+    /**
+     * Converts exception in to IgniteSqlException.
+     * @param e Exception.
+     * @return IgniteSqlException.
+     */
+    @NotNull private SQLException toSqlException(Exception e) {
+        String sqlState;
+
+        int code;
+
+        if (e instanceof IgniteSQLException) {
+            sqlState = ((IgniteSQLException)e).sqlState();
+
+            code = ((IgniteSQLException)e).statusCode();
+        }
+        else if (e instanceof TransactionDuplicateKeyException){
+            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(DUPLICATE_KEY);
+        }
+        else if (e instanceof TransactionSerializationException){
+            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(DUPLICATE_KEY);
+        }
+        else {
+            sqlState = SqlStateCode.INTERNAL_ERROR;
+
+            code = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new SQLException(e.getMessage(), sqlState, code, e);
     }
 
     /**
@@ -978,8 +1001,7 @@ public class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    DUPLICATE_KEY);
+                throw new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + t.getKey() + ']');
         }
         else {
             // Keys that failed to INSERT due to duplication.

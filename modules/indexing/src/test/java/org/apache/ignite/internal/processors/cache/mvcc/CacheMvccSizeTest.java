@@ -33,7 +33,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -121,7 +121,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                     personTbl.query(q("insert into person values(1, 'a')"));
                 }
                 catch (Exception e) {
-                    if (e.getCause() instanceof TransactionException)
+                    if (e.getCause() instanceof TransactionDuplicateKeyException)
                         assertTrue(e.getMessage().startsWith("Duplicate key during INSERT ["));
                     else {
                         e.printStackTrace();

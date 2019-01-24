@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -72,7 +72,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
         try {
             update("insert into Integer(_key, _val) values(3, 3),(1, 1)");
         } catch (CacheException e) {
-            assertTrue(e.getCause() instanceof TransactionException);
+            assertTrue(e.getCause() instanceof TransactionDuplicateKeyException);
             assertTrue(e.getMessage().startsWith("Duplicate key during INSERT ["));
         }
 

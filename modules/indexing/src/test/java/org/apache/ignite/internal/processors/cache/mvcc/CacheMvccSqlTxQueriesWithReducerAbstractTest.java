@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -173,11 +174,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
             IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() {
                     return cache0.query(qry);
                 }
-            }, TransactionException.class, "Duplicate key during INSERT");
+            }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT");
 
             tx.rollback();
         }

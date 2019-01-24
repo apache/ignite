@@ -63,6 +63,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1587,7 +1588,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         final Ignite updateNode = grid(rnd.nextInt(4));
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
+        Throwable ex = GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     tx.timeout(TX_TIMEOUT);
@@ -1603,7 +1604,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 return null;
             }
-        }, CacheException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
+        }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
     }
 
     /**
