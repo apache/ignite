@@ -96,7 +96,9 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <junit.jupiter.version>5.3.2</junit.jupiter.version>
+        <junit.version>4.11</junit.version>
+        <junit.jupiter.version>5.3.1</junit.jupiter.version>
+        <junit.vintage.version>5.3.2</junit.vintage.version>
         <junit.platform.version>1.3.2</junit.platform.version>
         <kafka.version>2.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
@@ -259,6 +261,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.jupiter.version}</version>
@@ -266,7 +274,7 @@
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
-            <version>${junit.jupiter.version}</version>
+            <version>${junit.vintage.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
