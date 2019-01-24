@@ -37,7 +37,8 @@ AM_CPPFLAGS = \
 	-I$(JAVA_HOME)/include/linux \
 	-DIGNITE_IMPL \
 	-D__STDC_LIMIT_MACROS \
-	-D__STDC_CONSTANT_MACROS
+	-D__STDC_CONSTANT_MACROS \
+	-DBOOST_TEST_DYN_LINK
 
 AM_CXXFLAGS = \
 	-Wall \
@@ -49,16 +50,17 @@ ignite_thin_client_tests_LDADD = \
 	-lpthread \
 	-lboost_thread \
 	-lboost_system \
-	-lboost_chrono
+	-lboost_chrono \
+	-lboost_unit_test_framework
 
 ignite_thin_client_tests_LDFLAGS = \
 	-static-libtool-libs \
 	-rdynamic
 
 ignite_thin_client_tests_SOURCES = \
-        src/cache_client_test.cpp \
         src/teamcity/teamcity_boost.cpp \
         src/teamcity/teamcity_messages.cpp \
+        src/cache_client_test.cpp \
         src/test_utils.cpp \
         src/ignite_client_test.cpp \
         src/auth_test.cpp \

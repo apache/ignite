@@ -42,6 +42,8 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTe
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -120,6 +123,8 @@ import org.junit.runners.Suite;
 
     GridReleaseTypeSelfTest.class,
     GridProductVersionSelfTest.class,
+    GridAffinityAssignmentV2Test.class,
+    GridAffinityAssignmentV2TestNoOptimizations.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,
     GridClosureProcessorSelfTest.class,
@@ -174,6 +179,7 @@ import org.junit.runners.Suite;
     CacheFreeListImplSelfTest.class,
     DataRegionMetricsSelfTest.class,
     SwapPathConstructionSelfTest.class,
+    BitSetIntSetTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
