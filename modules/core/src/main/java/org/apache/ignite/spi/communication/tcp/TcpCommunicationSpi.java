@@ -3263,7 +3263,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            int lastWaitingTimeout = 1;
+            long needWaitDelay0 = 200;
 
             while (client == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3346,12 +3346,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta,
                             handshakeConnIdx);
 
-                        if (rcvCnt == ALREADY_CONNECTED) {
+                        if (rcvCnt == ALREADY_CONNECTED)
                             return null;
-                        }
-                        else if (rcvCnt == NODE_STOPPING) {
+                        else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
-                        }
                         else if (rcvCnt == NEED_WAIT) {
                             needWait = true;
 
@@ -3378,10 +3376,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 recoveryDesc.release();
 
                             if (needWait) {
-                                if (lastWaitingTimeout < 60000)
-                                    lastWaitingTimeout *= 2;
+                                /*
+                                    https://issues.apache.org/jira/browse/IGNITE-7648
+                                    We should add failure detection check here like exception case.
+                                */
+                                if (needWaitDelay0 < 60_000)
+                                    needWaitDelay0 *= 2;
 
-                                U.sleep(lastWaitingTimeout);
+                                if (log.isDebugEnabled())
+                                    log.debug("NEED_WAIT received, reconnect after delay [node = "
+                                        + node + ", delay = " + needWaitDelay0 + "ms]");
+
+                                U.sleep(needWaitDelay0);
                             }
                         }
                     }
@@ -3720,10 +3726,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
             }
             else
-                ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
+                U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
             ClusterNode locNode = getLocalNode();
 
@@ -3767,19 +3773,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    ch.write(sslHnd.encrypt(buf));
+                    U.writeFully(ch, sslHnd.encrypt(buf));
                 }
                 else
-                    ch.write(buf);
+                    U.writeFully(ch, buf);
             }
             else {
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
+                    U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
                 }
                 else
-                    ch.write(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
+                    U.writeFully(ch, ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
             }
 
             if (recovery != null) {
