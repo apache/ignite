@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {WellKnownOperationStatus} from 'app/types';
+import {IgniteChartController} from '../../controller';
 
-import chartNoData from './components/chart-no-data';
-import IgniteChartCmp from './component';
-import './style.scss';
+const BLANK_STATUS = new Set([WellKnownOperationStatus.ERROR, WellKnownOperationStatus.WAITING]);
 
-export default angular
-    .module('ignite-console.ignite-chart', [
-        chartNoData.name
-    ])
-    .component('igniteChart', IgniteChartCmp);
+export default class IgniteChartNoDataCtrl implements ng.I {
+    static $inject = ['$compile', '$element', '$scope'];
+
+    constructor(private $compile, private $element, private $scope) {}
+
+    igniteChart: IgniteChartController;
+
+    $onChanges(changes) {
+        if (changes.resultDataStatus && BLANK_STATUS.has(changes.resultDataStatus.currentValue) && this.igniteChart.chart) {
+            this.igniteChart.chart.destroy();
+            this.igniteChart.config = null;
+            this.igniteChart.chart = null;
+        }
+    }
+}
