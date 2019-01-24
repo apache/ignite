@@ -42,6 +42,9 @@ public class MavenUtils {
     /** */
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
+    /** */
+    private static final String LOCAL_PROXY_MAVEN_SETTINGS = "~/.m2/local-proxy.xml";
+
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
 
@@ -148,7 +151,8 @@ public class MavenUtils {
         X.println("Downloading artifact... Identifier: " + artifact);
 
         exec(buildMvnCommand() + " org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact +
-            (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : ""));
+            (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "") +
+            (U.isWindows() ? "" : " -s" + LOCAL_PROXY_MAVEN_SETTINGS));
 
         X.println("Download is finished");
     }
