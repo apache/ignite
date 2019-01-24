@@ -673,6 +673,9 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        initBaselineAutoAdjustEnabled = cfg.isInitBaselineAutoAdjustEnabled();
+        initBaselineAutoAdjustTimeout = cfg.getInitBaselineAutoAdjustTimeout();
+        initBaselineAutoAdjustMaxTimeout = cfg.getInitBaselineAutoAdjustMaxTimeout();
     }
 
     /**

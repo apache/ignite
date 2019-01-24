@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ public class DistributedProperty<T extends Serializable> {
      * wide.
      */
     @GridToStringExclude
-    private volatile IgniteThrowableBiConsumer<String, Serializable> clusterWideUpdater;
+    private volatile IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter> clusterWideUpdater;
 
     /**
      * @param name Name of property.
@@ -61,6 +62,28 @@ public class DistributedProperty<T extends Serializable> {
      * @throws IgniteCheckedException If failed during cluster wide update.
      */
     public boolean propagate(T newVal) throws IgniteCheckedException {
+        if (!attached)
+            throw new DetachedPropertyException(name);
+
+        if (clusterWideUpdater == null)
+            return false;
+
+        clusterWideUpdater.accept(name, newVal).get();
+
+        return true;
+    }
+
+    /**
+     * Change value across whole cluster.
+     *
+     * @param newVal Value which this property should be changed on.
+     * @return {@code true} if value was successfully updated and {@code false} if cluster wide update have not
+     * permitted yet.
+     * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws IgniteCheckedException If failed during cluster wide update.
+     */
+    public boolean propagateAsync(T newVal) throws IgniteCheckedException {
         if (!attached)
             throw new DetachedPropertyException(name);
 
@@ -98,7 +121,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param updater Consumer for update value across cluster.
      */
-    void onReadyForUpdate(@NotNull IgniteThrowableBiConsumer<String, Serializable> updater) {
+    void onReadyForUpdate(@NotNull IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter> updater) {
         this.clusterWideUpdater = updater;
     }
 
