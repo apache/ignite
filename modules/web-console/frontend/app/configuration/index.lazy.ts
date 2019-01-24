@@ -16,6 +16,9 @@
  */
 
 import {UIRouter, LazyLoadResult} from '@uirouter/angularjs';
+import {default as configurationIcon} from './icons/configuration.icon.svg';
+import {default as IconsService} from '../components/ignite-icon/service';
+import {navigationMenuItem, AppStore} from '../store';
 
 export default angular.module('ignite-console.configuration-lazy', [])
     .run(['$uiRouter', '$injector', function($uiRouter: UIRouter, $injector: ng.auto.IInjectorService) {
@@ -28,6 +31,18 @@ export default angular.module('ignite-console.configuration-lazy', [])
                 return [] as LazyLoadResult;
             }
         });
+    }])
+    .run(['IgniteIcon', (icons: IconsService) => {
+        icons.registerIcons({configuration: configurationIcon});
+    }])
+    .run(['Store', (store: AppStore) => {
+        store.dispatch(navigationMenuItem({
+            activeSref: 'base.configuration.**',
+            icon: 'configuration',
+            label: 'Configuration',
+            order: 1,
+            sref: 'base.configuration.overview'
+        }));
     }])
     .config(['DefaultStateProvider', (DefaultState) => {
         DefaultState.setRedirectTo(() => 'base.configuration.overview');

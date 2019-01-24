@@ -77,10 +77,6 @@ import {
 } from './store/reducer';
 
 import {errorState} from './transitionHooks/errorState';
-
-import {navigationMenuItem, AppStore} from '../store';
-import {default as configurationIcon} from './icons/configuration.icon.svg';
-import {default as IconsService} from '../components/ignite-icon/service';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
 
 /**
@@ -120,9 +116,7 @@ export default angular.module('ignite-console.configuration', [
     .config(registerStates)
     .run(registerActivitiesHook)
     .run(errorState)
-    .run(['ConfigEffects', 'ConfigureState', '$uiRouter', 'Store', 'IgniteIcon', (ConfigEffects, ConfigureState, $uiRouter, store: AppStore, icons: IconsService) => {
-        icons.registerIcons({configuration: configurationIcon});
-
+    .run(['ConfigEffects', 'ConfigureState', '$uiRouter', (ConfigEffects, ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);
 
         ConfigureState.addReducer(refsReducer({
@@ -171,14 +165,6 @@ export default angular.module('ignite-console.configuration', [
         )
         .subscribe();
         ConfigEffects.connect();
-
-        store.dispatch(navigationMenuItem({
-            activeSref: 'base.configuration.**',
-            icon: 'configuration',
-            label: 'Configuration',
-            order: 1,
-            sref: 'base.configuration.overview'
-        }));
     }])
     .factory('configSelectionManager', ConfigSelectionManager)
     .service('IgniteSummaryZipper', SummaryZipper)
