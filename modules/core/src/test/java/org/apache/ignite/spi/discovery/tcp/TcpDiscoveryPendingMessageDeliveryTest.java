@@ -30,6 +30,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -191,7 +192,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
-        IgniteEx coord = startGrid("coordinator");
+        IgniteEx coord = (IgniteEx)startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
 
         Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new GridConcurrentHashSet<>();
@@ -201,10 +202,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         });
 
         //Node which receive message but will not send it further around the ring.
-        IgniteEx receiver = startGrid("receiver");
+        IgniteEx receiver = (IgniteEx)startGrid("receiver");
 
         //Node which will be failed first.
-        IgniteEx dummy = startGrid("dummy");
+        IgniteEx dummy = (IgniteEx)startGrid("dummy");
 
         //Node which should received all fail message in any way.
         startGrid("listener");
