@@ -28,11 +28,11 @@ import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,12 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
  */
 @RunWith(JUnit4.class)
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10415");
-    }
-
     /**
      *
      */
@@ -87,8 +81,8 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            assertTrue(ex.getCause() instanceof TransactionRollbackException);
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
@@ -98,8 +92,8 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            assertTrue(ex.getCause() instanceof TransactionRollbackException);
         }
     }
 
