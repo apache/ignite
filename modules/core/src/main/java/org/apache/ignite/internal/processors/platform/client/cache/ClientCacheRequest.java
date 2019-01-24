@@ -58,10 +58,7 @@ class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteCache cache(ClientConnectionContext ctx) {
-        if(!isKeepBinary() && cacheDescriptor(ctx).cacheConfiguration().getInterceptor() != null)
-            return rawCache(ctx);
-        else
-            return rawCache(ctx).withKeepBinary();
+        return rawCache(ctx).withKeepBinary();
     }
 
     /**
