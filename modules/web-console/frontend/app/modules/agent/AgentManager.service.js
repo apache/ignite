@@ -723,7 +723,7 @@ export default class AgentManager {
      * @param {Number} pageSize
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
-     * @returns {Promise}
+     * @returns {Promise<VisorQueryResult>}
      */
     querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
@@ -766,7 +766,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {String} queryId Query ID.
      * @param {Number} pageSize
-     * @returns {Promise}
+     * @returns {Promise<VisorQueryResult>}
      */
     queryFetchFistsPage(nid, queryId, pageSize) {
         return this.visorTask('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
@@ -781,7 +781,7 @@ export default class AgentManager {
      * @param {String} nid Node id.
      * @param {Number} queryId
      * @param {Number} pageSize
-     * @returns {Promise}
+     * @returns {Promise<VisorQueryResult>}
      */
     queryNextPage(nid, queryId, pageSize) {
         if (this.available(IGNITE_2_0))
@@ -790,58 +790,10 @@ export default class AgentManager {
         return this.visorTask('queryFetch', nid, queryId, pageSize);
     }
 
-    _fetchQueryAllResults(acc, pageSize) {
-        if (!_.isNil(acc.rows)) {
-            if (!acc.hasMore)
-                return acc;
-
-            return of(acc).pipe(
-                expand((acc) => {
-                    return from(this.queryNextPage(acc.responseNodeId, acc.queryId, pageSize)
-                        .then((res) => {
-                            acc.rows = acc.rows.concat(res.rows);
-                            acc.hasMore = res.hasMore;
-
-                            return acc;
-                        }));
-                }),
-                takeWhile((acc) => acc.hasMore),
-                last()
-            ).toPromise();
-        }
-
-        return timer(100, 500).pipe(
-            exhaustMap(() => this.queryFetchFistsPage(acc.responseNodeId, acc.queryId, pageSize)),
-            filter((res) => !_.isNil(res.rows)),
-            first(),
-            map((res) => this._fetchQueryAllResults(res, 1024))
-        ).toPromise();
-    }
-
-    /**
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @param {String} [query] Query if null then scan query.
-     * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
-     * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
-     * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
-     * @param {Boolean} local Flag whether to execute query locally.
-     * @param {Boolean} lazy query flag.
-     * @param {Boolean} collocated Collocated query.
-     * @returns {Promise}
-     */
-    querySqlGetAll({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated}) {
-        // Page size for query.
-        const pageSize = 1024;
-
-        return this.querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated})
-            .then((res) => this._fetchQueryAllResults(res, pageSize));
-    }
-
     /**
      * @param {String} nid Node id.
      * @param {Number} [queryId]
-     * @returns {Promise}
+     * @returns {Promise<Void>}
      */
     queryClose(nid, queryId) {
         if (this.available(IGNITE_2_0)) {
@@ -861,7 +813,7 @@ export default class AgentManager {
      * @param {Boolean} near Scan near cache.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Number} pageSize Page size.
-     * @returns {Promise}
+     * @returns {Promise<VisorQueryResult>}
      */
     queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {
@@ -884,24 +836,6 @@ export default class AgentManager {
         const query = `${prefix}${filter}`;
 
         return this.querySql({nid, cacheName, query, nonCollocatedJoins: false, enforceJoinOrder: false, replicatedOnly: false, local, pageSize});
-    }
-
-    /**
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @param {String} filter Filter text.
-     * @param {Boolean} regEx Flag whether filter by regexp.
-     * @param {Boolean} caseSensitive Case sensitive filtration.
-     * @param {Boolean} near Scan near cache.
-     * @param {Boolean} local Flag whether to execute query locally.
-     * @returns {Promise}
-     */
-    queryScanGetAll({nid, cacheName, filter, regEx, caseSensitive, near, local}) {
-        // Page size for query.
-        const pageSize = 1024;
-
-        return this.queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize})
-            .then((res) => this._fetchQueryAllResults(res, pageSize));
     }
 
     /**
