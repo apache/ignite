@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.stat;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,12 +29,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for IO statistic manager.
  */
+@RunWith(JUnit4.class)
 public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
@@ -49,10 +54,48 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test existing zero statistics for not touched caches.
+     *
+     * @throws Exception In case of failure.
+     */
+    @Test
+    public void testEmptyIOStat() throws Exception {
+        IgniteEx ign = prepareIgnite(true);
+
+        IoStatisticsManager ioStatMgr = ign.context().ioStats();
+
+        Map<IoStatisticsHolderKey, IoStatisticsHolder> stat = ioStatMgr.statistics(IoStatisticsType.CACHE_GROUP);
+
+        checkEmptyStat(stat, DEFAULT_CACHE_NAME, null);
+
+        stat = ioStatMgr.statistics(IoStatisticsType.HASH_INDEX);
+
+        checkEmptyStat(stat, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+    }
+
+    /**
+     * @param stat Statistics map.
+     * @param name Name of statistics.
+     * @param subName Subname of statistics.
+     */
+    private void checkEmptyStat(Map<IoStatisticsHolderKey, IoStatisticsHolder> stat, String name, String subName) {
+        assertEquals(1, stat.size());
+
+        IoStatisticsHolder cacheIoStatHolder = stat.get(new IoStatisticsHolderKey(name, subName));
+
+        assertNotNull(cacheIoStatHolder);
+
+        assertEquals(0, cacheIoStatHolder.logicalReads());
+
+        assertEquals(0, cacheIoStatHolder.physicalReads());
+    }
+
+    /**
      * Test LOCAL_NODE statistics tracking for persistent cache.
      *
      * @throws Exception In case of failure.
      */
+    @Test
     public void testNotPersistentIOGlobalStat() throws Exception {
         ioStatGlobalPageTrackTest(false);
     }
@@ -62,6 +105,7 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of failure.
      */
+    @Test
     public void testPersistentIOGlobalStat() throws Exception {
         ioStatGlobalPageTrackTest(true);
     }
