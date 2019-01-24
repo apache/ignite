@@ -88,15 +88,16 @@ namespace Apache.Ignite.Core
         /// Gets the size of pages loaded to RAM in bytes.
         /// </summary>
         long PhysicalMemorySize { get; }
-
+        
         /// <summary>
-        /// Gets checkpointing buffer size in pages.
+        /// Gets checkpoint buffer size in pages.
+        /// Deprecated, always returns 0. Use <see cref="UsedCheckpointBufferPages"/> instead.
         /// </summary>
         [Obsolete("Deprecated, always returns 0. Use UsedCheckpointBufferPages instead.")]
         long CheckpointBufferPages { get; }
-
+        
         /// <summary>
-        /// Gets checkpointing buffer size in bytes.
+        /// Gets checkpoint buffer size in bytes.
         /// </summary>
         long CheckpointBufferSize { get; }
 
