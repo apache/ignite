@@ -2075,6 +2075,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
                                 assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                             }
                         }
@@ -2181,7 +2182,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             updated = true;
                         }
                         catch (CacheException e) {
-                            assertTrue(X.hasCause(e, TransactionSerializationException.class));
+                            assertTrue(e.getCause() instanceof TransactionSerializationException);
                             assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                         }
                     }
