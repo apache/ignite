@@ -30,6 +30,10 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrim
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
+import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsManagerSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -68,6 +72,12 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, TxDataConsistencyOnCommitFailureTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheOperationsInterruptTest.class, ignoredTests);
+
+        // IO statistics
+        GridTestUtils.addTestIfNeeded(suite, IoStatisticsCachePersistenceSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IoStatisticsCacheSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IoStatisticsManagerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
 
         return suite;
     }
