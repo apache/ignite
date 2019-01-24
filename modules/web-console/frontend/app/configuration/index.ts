@@ -16,7 +16,6 @@
  */
 
 import uiValidate from 'angular-ui-validate';
-import 'angular1-async-filter';
 import {UIRouterRx} from '@uirouter/rx';
 
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';

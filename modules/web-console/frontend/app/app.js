@@ -171,6 +171,7 @@ export default angular.module('ignite-console', [
     'ngSanitize',
     'ngMessages',
     // Third party libs.
+    'asyncFilter',
     'dndLists',
     'gridster',
     'mgcrea.ngStrap',
