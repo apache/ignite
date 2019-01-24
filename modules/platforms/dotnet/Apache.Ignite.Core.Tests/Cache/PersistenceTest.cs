@@ -20,7 +20,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -99,7 +101,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ignite.GetCluster().SetActive(true);
 
                 // Create cache with default region (persistence enabled), add data.
-                var cache = ignite.CreateCache<int, int>(cacheName);
+                var cache = ignite.CreateCache<int, int>(new CacheConfiguration
+                {
+                    Name = cacheName,
+                    CacheStoreFactory = new TestCacheStoreFactory()
+                });
                 cache[1] = 1;
 
                 // Check some metrics.
@@ -347,6 +353,32 @@ namespace Apache.Ignite.Core.Tests.Cache
                     }
                 }
             };
+        }
+
+        private class TestCacheStoreFactory : IFactory<ICacheStore>
+        {
+            public ICacheStore CreateInstance()
+            {
+                return new TestStore();
+            }
+        }
+
+        private class TestStore : CacheStoreAdapter<object, object>
+        {
+            public override object Load(object key)
+            {
+                return null;
+            }
+
+            public override void Write(object key, object val)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Delete(object key)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
