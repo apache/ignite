@@ -31,7 +31,7 @@ const cellTemplate = (state) => `
 
 import {default as ConfigureState} from '../../services/ConfigureState';
 import {default as ConfigSelectors} from '../../store/selectors';
-import {default as Clusters} from 'app/services/Clusters';
+import {default as Clusters} from '../../services/Clusters';
 import {default as ModalPreviewProject} from '../../components/modal-preview-project/service';
 import {default as ConfigurationDownload} from '../../services/ConfigurationDownload';
 

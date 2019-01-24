@@ -28,7 +28,7 @@ import {removeClusterItems, advancedSaveModel} from '../../../../store/actionCre
 
 import {default as ConfigSelectors} from '../../../../store/selectors';
 import {default as ConfigureState} from '../../../../services/ConfigureState';
-import {default as Models} from 'app/services/Models';
+import {default as Models} from '../../../../services/Models';
 
 export default class PageConfigureAdvancedModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];

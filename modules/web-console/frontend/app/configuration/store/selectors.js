@@ -20,10 +20,10 @@ import {of, empty, combineLatest, forkJoin, pipe} from 'rxjs';
 import {filter, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
 import {defaultNames} from '../defaultNames';
 
-import {default as Caches} from 'app/services/Caches';
-import {default as Clusters} from 'app/services/Clusters';
-import {default as IGFSs} from 'app/services/IGFSs';
-import {default as Models} from 'app/services/Models';
+import {default as Caches} from '../services/Caches';
+import {default as Clusters} from '../services/Clusters';
+import {default as IGFSs} from '../services/IGFSs';
+import {default as Models} from '../services/Models';
 
 const isDefined = filter((v) => v);
 

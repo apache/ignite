@@ -22,7 +22,7 @@ import get from 'lodash/get';
 import {removeClusterItems, advancedSaveIGFS} from '../../../../store/actionCreators';
 import ConfigureState from '../../../../services/ConfigureState';
 import ConfigSelectors from '../../../../store/selectors';
-import IGFSs from 'app/services/IGFSs';
+import IGFSs from '../../../../services/IGFSs';
 
 export default class PageConfigureAdvancedIGFS {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'IGFSs', '$state', 'configSelectionManager'];

@@ -21,7 +21,7 @@ import naturalCompare from 'natural-compare-lite';
 import {removeClusterItems, advancedSaveCache} from '../../../../store/actionCreators';
 import ConfigureState from '../../../../services/ConfigureState';
 import ConfigSelectors from '../../../../store/selectors';
-import Caches from 'app/services/Caches';
+import Caches from '../../../../services/Caches';
 
 // Controller for Caches screen.
 export default class Controller {

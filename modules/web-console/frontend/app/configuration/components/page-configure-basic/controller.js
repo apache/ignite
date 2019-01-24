@@ -30,8 +30,8 @@ import {
 import {Confirm} from 'app/services/Confirm.service';
 import ConfigureState from '../../services/ConfigureState';
 import ConfigSelectors from '../../store/selectors';
-import Caches from 'app/services/Caches';
-import Clusters from 'app/services/Clusters';
+import Caches from '../../services/Caches';
+import Clusters from '../../services/Clusters';
 import IgniteVersion from 'app/services/Version.service';
 import {default as ConfigChangesGuard} from '../../services/ConfigChangesGuard';
 

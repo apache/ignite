@@ -60,10 +60,10 @@ import {
 import ConfigureState from '../services/ConfigureState';
 import ConfigurationDownload from '../services/ConfigurationDownload';
 import ConfigSelectors from './selectors';
-import Clusters from 'app/services/Clusters';
-import Caches from 'app/services/Caches';
-import Models from 'app/services/Models';
-import IGFSs from 'app/services/IGFSs';
+import Clusters from '../services/Clusters';
+import Caches from '../services/Caches';
+import Models from '../services/Models';
+import IGFSs from '../services/IGFSs';
 import {Confirm} from 'app/services/Confirm.service';
 
 export const ofType = (type) => (s) => s.pipe(filter((a) => a.type === type));

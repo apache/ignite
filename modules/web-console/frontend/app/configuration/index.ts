@@ -32,6 +32,10 @@ import SummaryZipper from './services/SummaryZipper';
 import ConfigurationResource from './services/ConfigurationResource';
 import selectors from './store/selectors';
 import effects from './store/effects';
+import Clusters from './services/Clusters';
+import Caches from './services/Caches';
+import IGFSs from './services/IGFSs';
+import Models from './services/Models';
 
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
@@ -172,6 +176,10 @@ export default angular.module('ignite-console.configuration', [
     .service('PageConfigure', PageConfigure)
     .service('ConfigureState', ConfigureState)
     .service('ConfigurationDownload', ConfigurationDownload)
+    .service('Clusters', Clusters)
+    .service('Caches', Caches)
+    .service('IGFSs', IGFSs)
+    .service('Models', Models)
     .directive('pcIsInCollection', isInCollection)
     .directive('fakeUiCanExit', fakeUiCanExit)
     .directive('formUiCanExitGuard', formUICanExitGuard)

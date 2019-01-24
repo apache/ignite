@@ -80,11 +80,9 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service';
-import Caches from './services/Caches';
 import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler';
-import IGFSs from './services/IGFSs';
-import Models from './services/Models';
+
 import {Store} from './services/store';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
@@ -287,10 +285,7 @@ export default angular.module('ignite-console', [
 .service('IgniteFormUtils', FormUtils)
 .service('IgniteLegacyUtils', LegacyUtils)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
-.service('Caches', Caches)
 .service('CSV', CSV)
-.service('IGFSs', IGFSs)
-.service('Models', Models)
 .service('Store', Store)
 // Filters.
 .filter('byName', byName)
