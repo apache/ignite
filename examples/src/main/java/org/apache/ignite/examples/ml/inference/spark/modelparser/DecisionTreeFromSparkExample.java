@@ -38,7 +38,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DecisionTreeFromSparkExample {
-    /** Path to Spark LogReg model. */
+    /** Path to Spark DT model. */
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dt/data" +
         "/part-00000-86bc0f70-df49-48b3-8356-9a26f9a6eb0f-c000.snappy.parquet";
 
