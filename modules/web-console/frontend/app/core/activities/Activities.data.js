@@ -20,7 +20,7 @@ export default class ActivitiesData {
 
     /**
      * @param {ng.IHttpService} $http
-     * @param {uirouter.StateService} $state
+     * @param {import('@uirouter/angularjs').StateService} $state
      */
     constructor($http, $state) {
         this.$http = $http;
