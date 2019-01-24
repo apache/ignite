@@ -2298,7 +2298,6 @@ public class GridSqlQueryParser {
         GridSqlElement elem = parseExpression(e, false);
 
         extractUsedColumnsFromExpression0(tbl, colIds, elem);
-
     }
 
     /**

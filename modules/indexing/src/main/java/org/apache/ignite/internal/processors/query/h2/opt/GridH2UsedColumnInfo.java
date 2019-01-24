@@ -105,6 +105,8 @@ public class GridH2UsedColumnInfo {
                 parser.extractUsedColumnsFromExpression(f.getTable(), colsToExtract, e);
         }
 
+        parser.extractUsedColumnsFromExpression(f.getTable(), colsToExtract, f.getJoinCondition());
+
         if (F.isEmpty(colsToExtract) || colsToExtract.size() == f.getTable().getColumns().length)
             return null;
         else {

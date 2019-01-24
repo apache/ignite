@@ -144,13 +144,15 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     public void testSimpleJoin() {
         List<List<?>> res;
 
-        sql(
-            "CREATE TABLE person (id LONG, compId LONG, name VARCHAR, " +
+        sql("CREATE TABLE person (id LONG, compId LONG, name VARCHAR, " +
                 "PRIMARY KEY (id, compId)) " +
                 "WITH \"AFFINITY_KEY=compId\"");
+
         sql("CREATE TABLE company (id LONG PRIMARY KEY, name VARCHAR)");
+        sql("CREATE INDEX idx_company_name ON company (name)");
 
         long persId = 0;
+
         for (long compId = 0; compId < 10; ++compId) {
             sql("INSERT INTO company VALUES (?, ?)", compId, "company_" + compId);
 
@@ -161,7 +163,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         res = sql(
             "SELECT comp.name AS compName, pers.name AS persName FROM company AS comp " +
                 "LEFT JOIN person AS pers ON comp.id = pers.compId " +
-                "WHERE comp.id = 2");
+                "WHERE comp.name='company_1'");
 
         assertEquals(res.size(), 10);
     }

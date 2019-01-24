@@ -232,8 +232,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     if (incomplete == null || (rowData == KEY_ONLY && key != null)) {
                         if (key instanceof BinaryKeyObjectOffheapImpl || val instanceof BinaryObjectOffheapImpl ) {
                             unlockRun = () -> {
-                                pageMem.readUnlock(grpId, pageId, page);
-                                pageMem.releasePage(grpId, pageId, page);
+                                try {
+                                    pageMem.readUnlock(grpId, pageId, page);
+                                }
+                                finally {
+                                    pageMem.releasePage(grpId, pageId, page);
+                                }
                             };
                         }
 
