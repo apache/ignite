@@ -89,23 +89,9 @@ public class GridH2UsedColumnInfo {
     public static GridH2UsedColumnInfo extractUsedColumns(TableFilter f) {
         Set<Integer> colsToExtract = new HashSet<Integer>(f.getTable().getColumns().length);
 
-        Select select = f.getSelect();
-
         GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
-        assert select.getExpressions() != null;
-
-        for (Expression e : select.getExpressions())
-            parser.extractUsedColumnsFromExpression (f.getTable(), colsToExtract, e);
-
-        parser.extractUsedColumnsFromExpression (f.getTable(), colsToExtract, select.getCondition());
-
-        if (select.getGroupBy() != null) {
-            for (Expression e : select.getGroupBy())
-                parser.extractUsedColumnsFromExpression(f.getTable(), colsToExtract, e);
-        }
-
-        parser.extractUsedColumnsFromExpression(f.getTable(), colsToExtract, f.getJoinCondition());
+        parser.extractUsedColumnsFromQuery(f, colsToExtract, f.getSelect());
 
         if (F.isEmpty(colsToExtract) || colsToExtract.size() == f.getTable().getColumns().length)
             return null;

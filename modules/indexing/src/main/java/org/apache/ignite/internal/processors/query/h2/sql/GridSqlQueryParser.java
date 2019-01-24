@@ -95,6 +95,7 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
 import org.h2.schema.Schema;
 import org.h2.table.Column;
+import org.h2.table.ColumnResolver;
 import org.h2.table.FunctionTable;
 import org.h2.table.IndexColumn;
 import org.h2.table.MetaTable;
@@ -270,6 +271,9 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<ExpressionColumn, String> SCHEMA_NAME = getter(ExpressionColumn.class, "schemaName");
+
+    /** */
+    private static final Getter<ExpressionColumn, ColumnResolver> COLUMN_RESOLVER = getter(ExpressionColumn.class, "columnResolver");
 
     /** */
     private static final Getter<JdbcPreparedStatement, Command> COMMAND = getter(JdbcPreparedStatement.class, "command");
@@ -1997,11 +2001,14 @@ public class GridSqlQueryParser {
         if (expression instanceof ExpressionColumn) {
             ExpressionColumn expCol = (ExpressionColumn)expression;
 
-            return new GridSqlColumn(expCol.getColumn(),
+            ColumnResolver colResolver = COLUMN_RESOLVER.get(expCol);
+
+            return new GridSqlColumnExpression(expCol.getColumn(),
                 parseTableFilter(expCol.getTableFilter()),
                 SCHEMA_NAME.get(expCol),
                 expCol.getOriginalTableAliasName(),
-                expCol.getColumnName());
+                expCol.getColumnName(),
+                colResolver instanceof TableFilter ? (TableFilter)colResolver : null);
         }
 
         if (expression instanceof Alias)
@@ -2292,27 +2299,27 @@ public class GridSqlQueryParser {
     /**
      * @param tbl Table.
      * @param colIds Columns IDs to extract.
-     * @param e expression.
+     * @param select query.
      */
-    public void extractUsedColumnsFromExpression(Table tbl, Set<Integer> colIds, Expression e) {
-        GridSqlElement elem = parseExpression(e, false);
+    public void extractUsedColumnsFromQuery(TableFilter tbl, Set<Integer> colIds, Select select) {
+        GridSqlAst qry = parseQuery(select);
 
-        extractUsedColumnsFromExpression0(tbl, colIds, elem);
+        extractUsedColumnsFromAst(tbl, colIds, qry);
     }
 
     /**
-     * @param tbl Table.
+     * @param filter Source table filter.
      * @param colIds Columns IDs to extract.
-     * @param e expression.
+     * @param e Query AST subtree.
      */
-    private void extractUsedColumnsFromExpression0(Table tbl, Set<Integer> colIds, GridSqlAst e) {
+    private void extractUsedColumnsFromAst(TableFilter filter, Set<Integer> colIds, GridSqlAst e) {
         if (e == null)
             return;
-        else if (e instanceof GridSqlColumn && ((GridSqlColumn)e).column().getTable() == tbl)
+        else if (e instanceof GridSqlColumnExpression && ((GridSqlColumnExpression)e).columnResolver() == filter)
             colIds.add(((GridSqlColumn)e).column().getColumnId());
         else {
             for (int i = 0; i < e.size(); ++i)
-                extractUsedColumnsFromExpression0(tbl, colIds, e.child(i));
+                extractUsedColumnsFromAst(filter, colIds, e.child(i));
         }
     }
 

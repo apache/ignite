@@ -86,55 +86,55 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
         assertEquals(100L, res.size());
 
-//        // hidden fields
-//        res = sql("SELECT valStr from test WHERE _key = 5");
-//
-//        assertEquals("val_5", res.get(0).get(0));
-//
-//        // simple
-//        res = sql("SELECT valStr from test WHERE id > 4 AND valLong < 6");
-//
-//        assertEquals("val_5", res.get(0).get(0));
-//
-//        res = sql("SELECT valStr from test WHERE valLong < 5");
-//
-//        assertEquals(5, res.size());
-//
-//        // wildcard
-//        res = sql("SELECT * from test WHERE valLong < 5");
-//
-//        assertEquals(5, res.size());
-//        assertEquals(3, res.get(0).size());
-//
-//        // order by
-//        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY id");
-//
-//        assertEquals(5, res.size());
-//
-//        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
-//
-//        assertEquals(5, res.size());
-//
-//        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
-//
-//        assertEquals(5, res.size());
-//
-//        // GROUP BY / aggregates
-//        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
-//        assertEquals(5, res.size());
-//
-//        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
-//        assertEquals(5, res.size());
-//
-//        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
-//        assertEquals(5, res.size());
-//
-//        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
-//        assertEquals(5, res.size());
-//
-//        // GROUP BY / having
-//        res = sql("SELECT id from test WHERE id < 5 GROUP BY id having sum(valLong) < 5");
-//        assertEquals(5, res.size());
+        // hidden fields
+        res = sql("SELECT valStr from test WHERE _key = 5");
+
+        assertEquals("val_5", res.get(0).get(0));
+
+        // simple
+        res = sql("SELECT valStr from test WHERE id > 4 AND valLong < 6");
+
+        assertEquals("val_5", res.get(0).get(0));
+
+        res = sql("SELECT valStr from test WHERE valLong < 5");
+
+        assertEquals(5, res.size());
+
+        // wildcard
+        res = sql("SELECT * from test WHERE valLong < 5");
+
+        assertEquals(5, res.size());
+        assertEquals(3, res.get(0).size());
+
+        // order by
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY id");
+
+        assertEquals(5, res.size());
+
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
+
+        assertEquals(5, res.size());
+
+        res = sql("SELECT valStr from test WHERE valLong < 5 ORDER BY valStr");
+
+        assertEquals(5, res.size());
+
+        // GROUP BY / aggregates
+        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(valLong) from test WHERE valLong < 5 GROUP BY id");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
+        assertEquals(5, res.size());
+
+        res = sql("SELECT sum(id) from test WHERE valLong < 5 GROUP BY valLong");
+        assertEquals(5, res.size());
+
+        // GROUP BY / having
+        res = sql("SELECT id from test WHERE id < 5 GROUP BY id having sum(valLong) < 5");
+        assertEquals(5, res.size());
     }
 
     /**
@@ -169,7 +169,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     }
 
     /**
-     * Test single table.
+     * Test subquery.
      */
     @Test
     public void testSubquery() {
@@ -194,6 +194,30 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person As pers WHERE pers.compId = comp.Id)");
 
         assertEquals(res.size(), 1);
+    }
+
+    /**
+     * Test subquery.
+     */
+    @Test
+    public void testSeveralSubqueries() {
+        List<List<?>> res;
+
+        sql(
+            "CREATE TABLE test (id LONG PRIMARY KEY, " +
+                "val0 VARCHAR, val1 VARCHAR, val2 VARCHAR, val3 VARCHAR, val4 VARCHAR, val5 VARCHAR, val6 VARCHAR)");
+
+        for (long i = 0; i < 10; ++i) {
+            sql("INSERT INTO test VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                i, "0_" + i, "1_" + i, "2_" + i, "3_" + i, "4_" + i, "5_" + i, "6_" + i);
+
+        }
+
+//        res = sql(
+//            "SELECT comp.name FROM company AS comp " +
+//                "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person As pers WHERE pers.compId = comp.Id)");
+//
+//        assertEquals(res.size(), 1);
     }
 
     /**
