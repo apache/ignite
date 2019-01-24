@@ -139,7 +139,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData md = conn.getMetaData();
 
-            ResultSet rs = md.getPrimaryKeys(conn.getCatalog(), "", tabName);
+            ResultSet rs = md.getPrimaryKeys(conn.getCatalog(), null, tabName);
 
             List<String> colNames = new ArrayList<>();
 
