@@ -332,12 +332,12 @@ public class DmlStatementsProcessor {
         else if (e instanceof TransactionDuplicateKeyException){
             code = IgniteQueryErrorCode.DUPLICATE_KEY;
 
-            sqlState = IgniteQueryErrorCode.codeToSqlState(DUPLICATE_KEY);
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
         else if (e instanceof TransactionSerializationException){
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 
-            sqlState = IgniteQueryErrorCode.codeToSqlState(DUPLICATE_KEY);
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;
