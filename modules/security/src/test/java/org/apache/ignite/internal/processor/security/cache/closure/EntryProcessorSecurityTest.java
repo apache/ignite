@@ -39,82 +39,101 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     /** */
     @Test
     public void testEntryProcessor() {
-        assertAllowed(clntAllPerms, srvAllPerms);
-        assertAllowed(clntAllPerms, srvReadOnlyPerm);
-        assertAllowed(srvAllPerms, srvReadOnlyPerm);
+        checkInvoke(clntAllPerms, srvAllPerms, true);
+        checkInvoke(clntAllPerms, srvReadOnlyPerm, true);
+        checkInvoke(srvAllPerms, srvReadOnlyPerm, true);
 
-        assertForbidden(clntReadOnlyPerm, srvAllPerms);
-        assertForbidden(srvReadOnlyPerm, srvAllPerms);
+        checkInvoke(clntReadOnlyPerm, srvAllPerms, false);
+        checkInvoke(srvReadOnlyPerm, srvAllPerms, false);
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void assertAllowed(IgniteEx initiator, IgniteEx remote) {
+    private void checkInvoke(IgniteEx initiator, IgniteEx remote, boolean isSuccess) {
         assert !remote.localNode().isClient();
 
-        invoke(initiator, remote);
-        invokeAll(initiator, remote);
-        invokeAsync(initiator, remote);
-        invokeAllAsync(initiator, remote);
+        final UUID remoteId = remote.localNode().id();
+
+        final Integer key = primaryKey(remote);
+
+        for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
+            if (isSuccess)
+                invoke(ime, initiator, new TestEntryProcessor(remoteId), key);
+            else {
+                forbiddenRun(
+                    () -> invoke(ime, initiator, new TestEntryProcessor(remoteId), key)
+                );
+            }
+        }
+
+        final UUID transitionId = srvTransitionAllPerms.localNode().id();
+
+        final Integer transitionKey = primaryKey(srvTransitionAllPerms);
+
+        for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
+            if (isSuccess) {
+                invoke(ime, initiator,
+                    new TestTransitionEntryProcessor(ime, transitionId, remoteId, key),
+                    transitionKey);
+            }
+            else {
+                forbiddenRun(
+                    () -> invoke(ime, initiator,
+                        new TestTransitionEntryProcessor(ime, transitionId, remoteId, key),
+                        transitionKey)
+                );
+            }
+        }
     }
 
     /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    private void assertForbidden(IgniteEx initiator, IgniteEx remote) {
-        assert !remote.localNode().isClient();
-
-        forbiddenRun(() -> invoke(initiator, remote));
-        forbiddenRun(() -> invokeAll(initiator, remote));
-        forbiddenRun(() -> invokeAsync(initiator, remote));
-        forbiddenRun(() -> invokeAllAsync(initiator, remote));
-    }
-
-    /**
+     * @param ime Invoke Method.
      * @param initiator Initiator.
-     * @param remote Remote.
+     * @param ep Entry Processor.
+     * @param key Key.
      */
-    private void invoke(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invoke(
-            primaryKey(remote),
-            new TestEntryProcessor(remote.localNode().id())
-        );
+    static void invoke(InvokeMethodEnum ime, IgniteEx initiator,
+        EntryProcessor<Integer, Integer, Object> ep, Integer key) {
+        switch (ime) {
+            case INVOKE:
+                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                    .invoke(key, ep);
+
+                break;
+            case INVOKE_ALL:
+                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                    .invokeAll(Collections.singleton(key), ep)
+                    .values().stream().findFirst().ifPresent(EntryProcessorResult::get);
+
+                break;
+            case INVOKE_ASYNC:
+                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                    .invokeAsync(key, ep).get();
+
+                break;
+            case INVOKE_ALL_ASYNC:
+                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                    .invokeAllAsync(Collections.singleton(key), ep)
+                    .get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
+
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown invoke method " + ime);
+        }
     }
 
-    /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     */
-    private void invokeAsync(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAsync(
-            primaryKey(remote),
-            new TestEntryProcessor(remote.localNode().id())
-        ).get();
-    }
-
-    /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     */
-    private void invokeAll(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAll(
-            Collections.singleton(primaryKey(remote)),
-            new TestEntryProcessor(remote.localNode().id())
-        ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
-    }
-
-    /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     */
-    private void invokeAllAsync(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAllAsync(
-            Collections.singleton(primaryKey(remote)),
-            new TestEntryProcessor(remote.localNode().id())
-        ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
+    /** Enum for ways to invoke EntryProcessor. */
+    enum InvokeMethodEnum {
+        /** Invoke. */
+        INVOKE,
+        /** Invoke all. */
+        INVOKE_ALL,
+        /** Invoke async. */
+        INVOKE_ASYNC,
+        /** Invoke all async. */
+        INVOKE_ALL_ASYNC
     }
 
     /**
@@ -139,6 +158,42 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
             assertEquals(remoteId, loc.localNode().id());
 
             loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
+
+            return null;
+        }
+    }
+
+    /**
+     * Entry processor for tests with transition invoke call.
+     */
+    static class TestTransitionEntryProcessor extends TestEntryProcessor {
+        /** */
+        private final InvokeMethodEnum ime;
+        /** Transition node id */
+        private final UUID transitionId;
+
+        /** The key that is contained on primary partition on remote node for given cache. */
+        private final Integer remoteKey;
+
+        /**
+         * @param remoteId Remote id.
+         */
+        public TestTransitionEntryProcessor(InvokeMethodEnum ime, UUID transitionId, UUID remoteId, Integer remoteKey) {
+            super(remoteId);
+
+            this.ime = ime;
+            this.transitionId = transitionId;
+            this.remoteKey = remoteKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Integer, Integer> entry,
+            Object... objects) throws EntryProcessorException {
+            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
+
+            assertEquals(transitionId, loc.localNode().id());
+
+            invoke(ime, loc, new TestEntryProcessor(remoteId), remoteKey);
 
             return null;
         }

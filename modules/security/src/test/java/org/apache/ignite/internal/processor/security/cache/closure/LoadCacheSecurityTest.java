@@ -40,6 +40,9 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
+    /** Transition load cache. */
+    private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
+
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
@@ -51,6 +54,11 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
                 .setName(COMMON_USE_CACHE)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
+                .setCacheStoreFactory(new TestStoreFactory()),
+            new CacheConfiguration<Integer, Integer>()
+                .setName(TRANSITION_LOAD_CACHE)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory())
         };
     }
@@ -60,26 +68,45 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
      */
     @Test
     public void testLoadCache() {
-        assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t));
-        assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t));
-        assertAllowed((t) -> load(srvAllPerms, srvAllPerms, t));
-        assertAllowed((t) -> load(srvAllPerms, srvReadOnlyPerm, t));
+        testLoadCache(false);
+        testLoadCache(true);
+    }
 
-        assertForbidden((t) -> load(clntReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> load(srvReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> load(srvReadOnlyPerm, srvReadOnlyPerm, t));
+    /**
+     * @param isTransition True for transition case.
+     */
+    private void testLoadCache(boolean isTransition) {
+        assertAllowed((t) -> load(clntAllPerms, closure(srvAllPerms, t, isTransition)));
+        assertAllowed((t) -> load(clntAllPerms, closure(srvReadOnlyPerm, t, isTransition)));
+        assertAllowed((t) -> load(srvAllPerms, closure(srvAllPerms, t, isTransition)));
+        assertAllowed((t) -> load(srvAllPerms, closure(srvReadOnlyPerm, t, isTransition)));
+
+        assertForbidden((t) -> load(clntReadOnlyPerm, closure(srvAllPerms, t, isTransition)));
+        assertForbidden((t) -> load(srvReadOnlyPerm, closure(srvAllPerms, t, isTransition)));
+        assertForbidden((t) -> load(srvReadOnlyPerm, closure(srvReadOnlyPerm, t, isTransition)));
+    }
+
+    /**
+     * @param remote Remote.
+     * @param entry Entry to put into test cache.
+     * @param isTransition True if predicate to test transition case.
+     */
+    private IgniteBiPredicate<Integer, Integer> closure(IgniteEx remote,
+        T2<String, Integer> entry, boolean isTransition) {
+        assert !remote.localNode().isClient();
+
+        if (isTransition)
+            return new TransitionTestClosure(srvTransitionAllPerms.localNode().id(),
+                remote.localNode().id(), entry);
+        return new TestClosure(remote.localNode().id(), entry);
     }
 
     /**
      * @param initiator Initiator node.
-     * @param remote Remoute node.
+     * @param p Predicate.
      */
-    private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
-        assert !remote.localNode().isClient();
-
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).loadCache(
-            new TestClosure(remote.localNode().id(), entry.getKey(), entry.getValue())
-        );
+    private void load(IgniteEx initiator, IgniteBiPredicate<Integer, Integer> p) {
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).loadCache(p);
     }
 
     /**
@@ -87,33 +114,58 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
      */
     static class TestClosure implements IgniteBiPredicate<Integer, Integer> {
         /** Remote node id. */
-        private final UUID remoteId;
+        protected final UUID remoteId;
 
-        /** Key. */
-        private final String key;
-
-        /** Value. */
-        private final Integer val;
+        /** Data to put into test cache. */
+        protected final T2<String, Integer> t2;
 
         /** Locale ignite. */
         @IgniteInstanceResource
         protected Ignite loc;
 
         /**
-         * @param remoteId Remote id.
-         * @param key Key.
-         * @param val Value.
+         * @param remoteId Remote node id.
+         * @param t2 Data to put into test cache.
          */
-        public TestClosure(UUID remoteId, String key, Integer val) {
+        public TestClosure(UUID remoteId, T2<String, Integer> t2) {
             this.remoteId = remoteId;
-            this.key = key;
-            this.val = val;
+            this.t2 = t2;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(Integer k, Integer v) {
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(key, val);
+                loc.cache(CACHE_NAME).put(t2.getKey(), t2.getValue());
+
+            return false;
+        }
+    }
+
+    /**
+     * Closure for transition tests.
+     */
+    static class TransitionTestClosure extends TestClosure {
+        /** Transition node id. */
+        private final UUID transitionId;
+
+        /**
+         * @param transitionId Transition node id.
+         * @param remoteId Remote node id.
+         * @param t2 Data to put into test cache.
+         */
+        public TransitionTestClosure(UUID transitionId, UUID remoteId, T2<String, Integer> t2) {
+            super(remoteId, t2);
+
+            this.transitionId = transitionId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer k, Integer v) {
+            if (transitionId.equals(loc.cluster().localNode().id())) {
+                loc.<Integer, Integer>cache(TRANSITION_LOAD_CACHE).loadCache(
+                    new TestClosure(remoteId, t2)
+                );
+            }
 
             return false;
         }

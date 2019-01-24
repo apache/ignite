@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 
+import java.util.UUID;
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -67,6 +68,9 @@ public class GridIoMessage implements Message {
     /** Message. */
     private Message msg;
 
+    /** Security subject id that will be used during message processing on an remote node. */
+    private UUID secSubjId;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      * This constructor is not meant to be used for other purposes.
@@ -76,6 +80,7 @@ public class GridIoMessage implements Message {
     }
 
     /**
+     * @param secSubjId Security subject id.
      * @param plc Policy.
      * @param topic Communication topic.
      * @param topicOrd Topic ordinal value.
@@ -85,6 +90,7 @@ public class GridIoMessage implements Message {
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
     public GridIoMessage(
+        UUID secSubjId,
         byte plc,
         Object topic,
         int topicOrd,
@@ -93,10 +99,12 @@ public class GridIoMessage implements Message {
         long timeout,
         boolean skipOnTimeout
     ) {
+        assert secSubjId != null;
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
         assert msg != null;
 
+        this.secSubjId = secSubjId;
         this.plc = plc;
         this.msg = msg;
         this.topic = topic;
@@ -111,6 +119,13 @@ public class GridIoMessage implements Message {
      */
     byte policy() {
         return plc;
+    }
+
+    /**
+     * @return Security subject id.
+     */
+    UUID secSubjId() {
+        return secSubjId;
     }
 
     /**
@@ -245,6 +260,11 @@ public class GridIoMessage implements Message {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeUuid("secSubjId", secSubjId))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -314,6 +334,13 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                secSubjId = reader.readUuid("secSubjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridIoMessage.class);
@@ -326,7 +353,7 @@ public class GridIoMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**

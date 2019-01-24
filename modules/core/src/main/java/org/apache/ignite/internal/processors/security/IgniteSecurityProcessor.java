@@ -27,12 +27,17 @@ public interface IgniteSecurityProcessor {
     /**
      * Creates {@link IgniteSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * node with given noddeId until session {@link IgniteSecuritySession} will be closed.
+     * node with given nodeId until session {@link IgniteSecuritySession} will be closed.
      *
      * @param nodeId Node id.
      * @return Grid security Session.
      */
     public IgniteSecuritySession startSession(UUID nodeId);
+
+    /**
+     * @return SecurityContext of opened session {@link IgniteSecuritySession}.
+     */
+    public SecurityContext securityContext();
 
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,

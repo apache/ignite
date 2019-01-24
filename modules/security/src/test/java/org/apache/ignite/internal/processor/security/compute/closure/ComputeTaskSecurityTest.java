@@ -45,31 +45,59 @@ import static org.junit.Assert.assertThat;
 public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
     /** {@inheritDoc} */
     @Override protected void checkSuccess(IgniteEx initiator, IgniteEx remote) {
-        successCompute(
-            initiator, remote,
-            (cmp, k, v) ->
-                cmp.execute(new TestComputeTask(remote.localNode().id(), k, v), 0)
-        );
+        final UUID remoteId = remote.localNode().id();
 
         successCompute(
             initiator, remote,
             (cmp, k, v) ->
-                cmp.executeAsync(new TestComputeTask(remote.localNode().id(), k, v), 0).get()
+                cmp.execute(new TestComputeTask(remoteId, k, v), 0)
+        );
+        successCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.executeAsync(new TestComputeTask(remoteId, k, v), 0).get()
+        );
+
+        final UUID transitionId = srvTransitionAllPerms.localNode().id();
+
+        successCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.execute(new TestTransitionComputeTask(transitionId, remoteId, k, v), 0)
+        );
+        successCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.executeAsync(new TestTransitionComputeTask(transitionId, remoteId, k, v), 0).get()
         );
     }
 
     /** {@inheritDoc} */
     @Override protected void checkFail(IgniteEx initiator, IgniteEx remote) {
-        failCompute(
-            initiator, remote,
-            (cmp, k, v) ->
-                cmp.execute(new TestComputeTask(remote.localNode().id(), k, v), 0)
-        );
+        final UUID remoteId = remote.localNode().id();
 
         failCompute(
             initiator, remote,
             (cmp, k, v) ->
-                cmp.executeAsync(new TestComputeTask(remote.localNode().id(), k, v), 0).get()
+                cmp.execute(new TestComputeTask(remoteId, k, v), 0)
+        );
+        failCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.executeAsync(new TestComputeTask(remoteId, k, v), 0).get()
+        );
+
+        final UUID transitionId = srvTransitionAllPerms.localNode().id();
+
+        failCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.execute(new TestTransitionComputeTask(transitionId, remoteId, k, v), 0)
+        );
+        failCompute(
+            initiator, remote,
+            (cmp, k, v) ->
+                cmp.executeAsync(new TestTransitionComputeTask(transitionId, remoteId, k, v), 0).get()
         );
     }
 
@@ -78,7 +106,7 @@ public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
      * @param remote Remote node.
      */
     private void successCompute(IgniteEx initiator, IgniteEx remote,
-        TriConsumer<IgniteCompute, String, Integer> consumer) {
+        C3<IgniteCompute, String, Integer> consumer) {
         int val = values.getAndIncrement();
 
         consumer.accept(initiator.compute(), "key", val);
@@ -91,7 +119,7 @@ public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
      * @param remote Remote node.
      */
     private void failCompute(IgniteEx initiator, IgniteEx remote,
-        TriConsumer<IgniteCompute, String, Integer> consumer) {
+        C3<IgniteCompute, String, Integer> consumer) {
         assertCauseSecurityException(
             GridTestUtils.assertThrowsWithCause(
                 () -> consumer.accept(initiator.compute(), "fail_key", -1)
@@ -107,17 +135,17 @@ public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
      */
     static class TestComputeTask implements ComputeTask<Integer, Integer> {
         /** Remote cluster node. */
-        private final UUID remote;
+        protected final UUID remote;
 
         /** Key. */
-        private final String key;
+        protected final String key;
 
         /** Value. */
-        private final Integer val;
+        protected final Integer val;
 
         /** Locale ignite. */
         @IgniteInstanceResource
-        private Ignite loc;
+        protected Ignite loc;
 
         /**
          * @param remote Remote.
@@ -167,6 +195,53 @@ public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
         /** {@inheritDoc} */
         @Override public @Nullable Integer reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
+        }
+    }
+
+    /**
+     * Transition compute task for tests.
+     */
+    static class TestTransitionComputeTask extends TestComputeTask {
+        /** Transition cluster node. */
+        private final UUID transition;
+
+        /**
+         * @param transition Transition.
+         * @param remote Remote.
+         * @param key Key.
+         * @param val Value.
+         */
+        public TestTransitionComputeTask(UUID transition, UUID remote, String key, Integer val) {
+            super(remote, key, val);
+
+            this.transition = transition;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable Integer arg) throws IgniteException {
+            Map<ComputeJob, ClusterNode> res = new HashMap<>();
+
+            res.put(
+                new ComputeJob() {
+                    @IgniteInstanceResource
+                    private Ignite loc;
+
+                    @Override public void cancel() {
+                        // no-op
+                    }
+
+                    @Override public Object execute() throws IgniteException {
+                        loc.compute().execute(
+                            new TestComputeTask(remote, key, val), 0
+                        );
+
+                        return null;
+                    }
+                }, loc.cluster().node(transition)
+            );
+
+            return res;
         }
     }
 }

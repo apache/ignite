@@ -66,7 +66,7 @@ public abstract class AbstractComputeTaskSecurityTest extends AbstractResolveSec
      * @param <C> Third parameter type.
      */
     @FunctionalInterface
-    protected interface TriConsumer<A, B, C> {
+    protected interface C3<A, B, C> {
         /**
          * Performs this operation on the given arguments.
          *

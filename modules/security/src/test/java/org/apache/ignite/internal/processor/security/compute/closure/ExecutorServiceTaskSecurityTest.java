@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
@@ -31,9 +33,7 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
-    /**
-     *
-     */
+    /** */
     @Test
     public void testExecute() {
         assertAllowed((t) -> execute(clntAllPerms, clntReadOnlyPerm, t));
@@ -43,12 +43,26 @@ public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityCont
         assertAllowed((t) -> execute(srvAllPerms, srvAllPerms, t));
         assertAllowed((t) -> execute(clntAllPerms, clntAllPerms, t));
 
+        assertAllowed((t) -> transitionExecute(clntAllPerms, clntReadOnlyPerm, t));
+        assertAllowed((t) -> transitionExecute(clntAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> transitionExecute(srvAllPerms, clntReadOnlyPerm, t));
+        assertAllowed((t) -> transitionExecute(srvAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> transitionExecute(srvAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> transitionExecute(clntAllPerms, clntAllPerms, t));
+
         assertForbidden((t) -> execute(clntReadOnlyPerm, srvAllPerms, t));
         assertForbidden((t) -> execute(clntReadOnlyPerm, clntAllPerms, t));
         assertForbidden((t) -> execute(srvReadOnlyPerm, srvAllPerms, t));
         assertForbidden((t) -> execute(srvReadOnlyPerm, clntAllPerms, t));
         assertForbidden((t) -> execute(srvReadOnlyPerm, srvReadOnlyPerm, t));
         assertForbidden((t) -> execute(clntReadOnlyPerm, clntReadOnlyPerm, t));
+
+        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, clntAllPerms, t));
+        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, clntAllPerms, t));
+        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, srvReadOnlyPerm, t));
+        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, clntReadOnlyPerm, t));
     }
 
     /**
@@ -63,6 +77,40 @@ public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityCont
                         @Override public void run() {
                             Ignition.localIgnite().cache(CACHE_NAME)
                                 .put(entry.getKey(), entry.getValue());
+                        }
+                    }
+                ).get();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param initiator Initiator node.
+     * @param remote Remoute node.
+     */
+    private void transitionExecute(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
+        try {
+            final UUID remoteId = remote.localNode().id();
+
+            initiator.executorService(initiator.cluster().forNode(srvTransitionAllPerms.localNode()))
+                .submit(
+                    new IgniteRunnable() {
+                        @Override public void run() {
+                            Ignite ignite = Ignition.localIgnite();
+
+                            try {
+                                ignite.executorService(ignite.cluster().forNode(ignite.cluster().node(remoteId)))
+                                    .submit(new IgniteRunnable() {
+                                        @Override public void run() {
+                                            Ignition.localIgnite().cache(CACHE_NAME)
+                                                .put(entry.getKey(), entry.getValue());
+                                        }
+                                    }).get();
+                            }catch (Exception e){
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 ).get();

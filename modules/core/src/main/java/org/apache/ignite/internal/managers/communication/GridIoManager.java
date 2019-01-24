@@ -1044,7 +1044,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj);
+                    invokeListener(msg.policy(), lsnr, nodeId, obj, msg.secSubjId());
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1187,7 +1187,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj);
+        invokeListener(msg.policy(), lsnr, nodeId, obj, msg.secSubjId());
     }
 
     /**
@@ -1549,8 +1549,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener.
      * @param nodeId Node ID.
      * @param msg Message.
+     * @param secSubjId Security subject taht will be used to open a security session.
      */
-    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
         Byte oldPlc = CUR_PLC.get();
 
         boolean change = !F.eq(oldPlc, plc);
@@ -1558,7 +1559,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        try(IgniteSecuritySession s = ctx.security().startSession(nodeId)) {
+        try(IgniteSecuritySession s = ctx.security().startSession(secSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1620,7 +1621,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        UUID secSubjId = ctx.security().securityContext().subject().id();
+
+        GridIoMessage ioMsg = new GridIoMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
@@ -2765,7 +2768,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
-                    invokeListener(plc, lsnr, nodeId, t.get1().message());
+                    invokeListener(plc, lsnr, nodeId, t.get1().message(), t.get1().secSubjId());
                 }
                 finally {
                     if (t.get3() != null)

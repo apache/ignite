@@ -79,6 +79,11 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext() {
+        return curSecCtx.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
         return secPrc.authenticateNode(node, cred);

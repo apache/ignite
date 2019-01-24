@@ -37,6 +37,9 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
     /** Sever node that has all permissions for TEST_CACHE. */
     protected IgniteEx srvAllPerms;
 
+    /** Sever node that has all permissions for TEST_CACHE. */
+    protected IgniteEx srvTransitionAllPerms;
+
     /** Client node that has all permissions for TEST_CACHE. */
     protected IgniteEx clntAllPerms;
 
@@ -51,6 +54,8 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
         super.beforeTestsStarted();
 
         srvAllPerms = startGrid("srv_all_perms", allowAllPermissionSet());
+
+        srvTransitionAllPerms = startGrid("srv_trns_all_perms", allowAllPermissionSet());
 
         clntAllPerms = startGrid("clnt_all_perms", allowAllPermissionSet(), true);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processor.security.cache.closure;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -37,9 +38,7 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
-    /**
-     *
-     */
+    /** */
     @Test
     public void testScanQuery() throws Exception {
         putTestData(srvAllPerms, CACHE_NAME);
@@ -67,6 +66,26 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
         assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
         assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
 
+        assertAllowed((t) -> transitionQuery(clntAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transitionQuery(srvAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transitionQuery(clntAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transitionQuery(srvAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+
+        assertAllowed((t) -> transitionTransform(clntAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transitionTransform(srvAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transitionTransform(clntAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transitionTransform(srvAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+
+        assertAllowed((t) -> transitionQuery(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transitionQuery(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transitionQuery(clntAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transitionQuery(srvAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+
+        assertAllowed((t) -> transitionTransform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transitionTransform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transitionTransform(clntAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transitionTransform(srvAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+
         assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
         assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
         assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
@@ -76,6 +95,16 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
         assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
         assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
         assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+
+        assertForbidden((t) -> transitionQuery(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transitionQuery(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transitionQuery(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+        assertForbidden((t) -> transitionQuery(srvReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+
+        assertForbidden((t) -> transitionTransform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transitionTransform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transitionTransform(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+        assertForbidden((t) -> transitionTransform(srvReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
     }
 
     /**
@@ -87,7 +116,22 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
 
         initiator.cache(cacheName).query(
             new ScanQuery<>(
-                new QueryFilter(remote.localNode().id(), entry.getKey(), entry.getValue())
+                new QueryFilter(remote.localNode().id(), entry)
+            )
+        ).getAll();
+    }
+
+    /**
+     * @param initiator Initiator node.
+     * @param remote Remoute node.
+     */
+    private void transitionQuery(IgniteEx initiator, IgniteEx remote, String cacheName, T2<String, Integer> entry) {
+        assert !remote.localNode().isClient();
+
+        initiator.cache(cacheName).query(
+            new ScanQuery<>(
+                new TransitionQueryFilter(srvTransitionAllPerms.localNode().id(),
+                    remote.localNode().id(), cacheName, entry)
             )
         ).getAll();
     }
@@ -100,8 +144,21 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
         assert !remote.localNode().isClient();
 
         initiator.cache(cacheName).query(
-            new ScanQuery<>((k, v) -> true),
-            new Transformer(remote.localNode().id(), entry.getKey(), entry.getValue())
+            new ScanQuery<>(new TransformerFilter(remote.localNode().id())),
+            new Transformer(entry)
+        ).getAll();
+    }
+
+    /**
+     * @param initiator Initiator node.
+     * @param remote Remoute node.
+     */
+    private void transitionTransform(IgniteEx initiator, IgniteEx remote, String cacheName, T2<String, Integer> entry) {
+        assert !remote.localNode().isClient();
+
+        initiator.cache(cacheName).query(
+            new ScanQuery<>(new TransformerFilter(srvTransitionAllPerms.localNode().id())),
+            new TransitionTransformer(remote.localNode().id(), cacheName, entry)
         ).getAll();
     }
 
@@ -117,58 +174,68 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     }
 
     /**
-     * Common class for test closures.
+     * Test query filter.
      */
-    static class CommonClosure {
-        /** Remote node id. */
-        protected final UUID remoteId;
-
-        /** Key. */
-        private final String key;
-
-        /** Value. */
-        private final Integer val;
-
+    static class QueryFilter implements IgniteBiPredicate<String, Integer> {
         /** Locale ignite. */
         @IgniteInstanceResource
         protected Ignite loc;
 
+        /** Remote node id. */
+        protected UUID remoteId;
+
+        /** Data to put into test cache. */
+        protected T2<String, Integer> t2;
+
         /**
-         * @param remoteId Remote id.
-         * @param key Key.
-         * @param val Value.
+         * @param remoteId Remote node id.
+         * @param t2 Data to put into test cache.
          */
-        public CommonClosure(UUID remoteId, String key, Integer val) {
+        public QueryFilter(UUID remoteId, T2<String, Integer> t2) {
             this.remoteId = remoteId;
-            this.key = key;
-            this.val = val;
-        }
-
-        /**
-         * Put value to cache.
-         */
-        protected void put() {
-            if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(key, val);
-        }
-    }
-
-    /**
-     * Test query filter.
-     */
-    static class QueryFilter extends CommonClosure implements IgniteBiPredicate<String, Integer> {
-        /**
-         * @param remoteId Remote id.
-         * @param key Key.
-         * @param val Value.
-         */
-        public QueryFilter(UUID remoteId, String key, Integer val) {
-            super(remoteId, key, val);
+            this.t2 = t2;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(String s, Integer i) {
-            put();
+            if (remoteId.equals(loc.cluster().localNode().id()))
+                loc.cache(CACHE_NAME).put(t2.getKey(), t2.getValue());
+
+            return false;
+        }
+    }
+
+    /** */
+    static class TransitionQueryFilter extends QueryFilter {
+        /** Transition id. */
+        private final UUID transitionId;
+
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param transitionId Transition id.
+         * @param remoteId Remote id.
+         * @param cacheName Cache name.
+         * @param t2 Data to put into test cache.
+         */
+        public TransitionQueryFilter(UUID transitionId, UUID remoteId,
+            String cacheName, T2<String, Integer> t2) {
+            super(remoteId, t2);
+
+            this.transitionId = transitionId;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(String s, Integer i) {
+            if (transitionId.equals(loc.cluster().localNode().id())) {
+                loc.cache(cacheName).query(
+                    new ScanQuery<>(
+                        new QueryFilter(remoteId, t2)
+                    )
+                ).getAll();
+            }
 
             return false;
         }
@@ -177,21 +244,82 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     /**
      * Test transformer.
      */
-    static class Transformer extends CommonClosure implements IgniteClosure<Cache.Entry<String, Integer>, Integer> {
+    static class Transformer implements IgniteClosure<Cache.Entry<String, Integer>, Integer> {
+        /** Locale ignite. */
+        @IgniteInstanceResource
+        protected Ignite loc;
+
+        /** Data to put into test cache. */
+        protected final T2<String, Integer> t2;
+
         /**
-         * @param remoteId Remote id.
-         * @param key Key.
-         * @param val Value.
+         * @param t2 Data to put into test cache.
          */
-        public Transformer(UUID remoteId, String key, Integer val) {
-            super(remoteId, key, val);
+        public Transformer(T2<String, Integer> t2) {
+            this.t2 = t2;
         }
 
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<String, Integer> entry) {
-            put();
+            loc.cache(CACHE_NAME).put(t2.getKey(), t2.getValue());
 
             return entry.getValue();
+        }
+    }
+
+    /** */
+    static class TransitionTransformer extends Transformer {
+        /** Remote node id. */
+        private final UUID remoteId;
+
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param remoteId Remote id.
+         * @param cacheName Cache name.
+         * @param t2 Data to put into test cache.
+         */
+        public TransitionTransformer(UUID remoteId, String cacheName, T2<String, Integer> t2) {
+            super(t2);
+
+            this.remoteId = remoteId;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer apply(Cache.Entry<String, Integer> entry) {
+            loc.cache(cacheName).query(
+                new ScanQuery<>(new TransformerFilter(remoteId)),
+                new Transformer(t2)
+            ).getAll();
+
+            return entry.getValue();
+        }
+    }
+
+    /** */
+    static class TransformerFilter implements IgniteBiPredicate<String, Integer> {
+        /** Node id. */
+        private final UUID nodeId;
+
+        /** Filter must return true only one time. */
+        private AtomicBoolean b = new AtomicBoolean(true);
+
+        /** Locale ignite. */
+        @IgniteInstanceResource
+        protected Ignite loc;
+
+        /**
+         * @param nodeId Node id.
+         */
+        public TransformerFilter(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(String s, Integer integer) {
+            return nodeId.equals(loc.cluster().localNode().id()) && b.getAndSet(false);
         }
     }
 }
