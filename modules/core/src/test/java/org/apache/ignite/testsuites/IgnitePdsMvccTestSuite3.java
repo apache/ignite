@@ -19,14 +19,13 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-@RunWith(IgnitePdsMvccTestSuite3.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite3 {
     /**
      * @return Suite.
@@ -39,13 +38,5 @@ public class IgnitePdsMvccTestSuite3 {
         // No ignored tests yet.
 
         return IgnitePdsTestSuite3.suite(ignoredTests);
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

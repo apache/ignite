@@ -19,6 +19,9 @@ package org.apache.ignite.ml.sparkmodelparser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -28,6 +31,9 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroup;
@@ -38,6 +44,8 @@ import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
+import org.jetbrains.annotations.NotNull;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
@@ -62,9 +70,118 @@ public class SparkModelParser {
                 return loadLinRegModel(ignitePathToMdl);
             case LINEAR_SVM:
                 return loadLinearSVMModel(ignitePathToMdl);
+            case DECISION_TREE:
+                return loadDecisionTreeModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
+    }
+
+    /**
+     * Load Decision Tree model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadDecisionTreeModel(String pathToMdl) {
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
+            PageReadStore pages;
+            final MessageType schema = r.getFooter().getFileMetaData().getSchema();
+            final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+            final Map<Integer, NodeData> nodes = new TreeMap<>();
+            while (null != (pages = r.readNextRowGroup())) {
+                final long rows = pages.getRowCount();
+                final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
+                for (int i = 0; i < rows; i++) {
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
+                    NodeData nodeData = extractNodeDataFromParquetRow(g);
+                    nodes.put(nodeData.id, nodeData);
+                }
+            }
+            return buildDecisionTreeModel(nodes);
+        }
+        catch (IOException e) {
+            System.out.println("Error reading parquet file.");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Builds the DT model by the given sorted map of nodes.
+     *
+     * @param nodes The sorted map of nodes.
+     */
+    private static Model buildDecisionTreeModel(Map<Integer, NodeData> nodes) {
+        DecisionTreeNode mdl = null;
+        if (!nodes.isEmpty()) {
+            NodeData rootNodeData = (NodeData)((NavigableMap)nodes).firstEntry().getValue();
+            mdl = buildTree(nodes, rootNodeData);
+            return mdl;
+        }
+        return mdl;
+    }
+
+    /**
+     * Build tree or sub-tree based on indices and nodes sorted map as a dictionary.
+     *
+     * @param nodes The sorted map of nodes.
+     * @param rootNodeData Root node data.
+     */
+    @NotNull private static DecisionTreeNode buildTree(Map<Integer, NodeData> nodes,
+        NodeData rootNodeData) {
+        return rootNodeData.isLeafNode ? new DecisionTreeLeafNode(rootNodeData.prediction) : new DecisionTreeConditionalNode(rootNodeData.featureIdx,
+            rootNodeData.threshold,
+            buildTree(nodes, nodes.get(rootNodeData.rightChildId)),
+            buildTree(nodes, nodes.get(rootNodeData.leftChildId)),
+            null);
+    }
+
+    /**
+     * Form the node data according data in parquet row.
+     *
+     * @param g The given group presenting the node data from Spark DT model.
+     */
+    @NotNull private static SparkModelParser.NodeData extractNodeDataFromParquetRow(SimpleGroup g) {
+        NodeData nodeData = new NodeData();
+        nodeData.id = g.getInteger(0, 0);
+        nodeData.prediction = g.getDouble(1, 0);
+        nodeData.leftChildId = g.getInteger(5, 0);
+        nodeData.rightChildId = g.getInteger(6, 0);
+
+        if (nodeData.leftChildId == -1 && nodeData.rightChildId == -1) {
+            nodeData.featureIdx = -1;
+            nodeData.threshold = -1;
+            nodeData.isLeafNode = true;
+        }
+        else {
+            final SimpleGroup splitGrp = (SimpleGroup)g.getGroup(7, 0);
+            nodeData.featureIdx = splitGrp.getInteger(0, 0);
+            nodeData.threshold = splitGrp.getGroup(1, 0).getGroup(0, 0).getDouble(0, 0);
+        }
+        return nodeData;
+    }
+
+    /**
+     * Prints the given group in the row of Parquet file.
+     *
+     * @param g The given group.
+     */
+    private static void printGroup(Group g) {
+        int fieldCnt = g.getType().getFieldCount();
+        for (int field = 0; field < fieldCnt; field++) {
+            int valCnt = g.getFieldRepetitionCount(field);
+
+            Type fieldType = g.getType().getType(field);
+            String fieldName = fieldType.getName();
+
+            for (int idx = 0; idx < valCnt; idx++) {
+                if (fieldType.isPrimitive())
+                    System.out.println(fieldName + " " + g.getValueToString(field, idx));
+                else
+                    printGroup(g.getGroup(field, idx));
+            }
+        }
+        System.out.println();
     }
 
     /**
@@ -257,5 +374,43 @@ public class SparkModelParser {
             coefficients.set(j, coefficient);
         }
         return coefficients;
+    }
+
+    /**
+     * Presenting data from one parquet row filled with NodeData in Spark DT model.
+     */
+    private static class NodeData {
+        /** Id. */
+        int id;
+
+        /** Prediction. */
+        double prediction;
+
+        /** Left child id. */
+        int leftChildId;
+
+        /** Right child id. */
+        int rightChildId;
+
+        /** Threshold. */
+        double threshold;
+
+        /** Feature index. */
+        int featureIdx;
+
+        /** Is leaf node. */
+        boolean isLeafNode;
+
+        @Override public String toString() {
+            return "NodeData{" +
+                "id=" + id +
+                ", prediction=" + prediction +
+                ", leftChildId=" + leftChildId +
+                ", rightChildId=" + rightChildId +
+                ", threshold=" + threshold +
+                ", featureIdx=" + featureIdx +
+                ", isLeafNode=" + isLeafNode +
+                '}';
+        }
     }
 }

@@ -31,12 +31,16 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
  */
+@RunWith(JUnit4.class)
 public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
@@ -149,6 +153,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test statistics for TRANSACTIONAL cache.
      */
+    @Test
     public void testTransactonalCache() {
         cacheTest(TRANSACTIONAL_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 3, RECORD_COUNT * 2);
     }
@@ -156,6 +161,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test statistics for MVCC cache.
      */
+    @Test
     public void testMvccCache() {
         cacheTest(MVCC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 6, RECORD_COUNT * 3);
     }
@@ -163,6 +169,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test statistics for ATOMIC cache.
      */
+    @Test
     public void testAtomicCache() {
         cacheTest(ATOMIC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 2, RECORD_COUNT);
     }
@@ -170,6 +177,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test statistics for three caches in the same time.
      */
+    @Test
     public void testForThreeCaches() {
         prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
 
@@ -189,6 +197,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Test statistics for two caches in the same cache group.
      */
+    @Test
     public void testCacheGroupCaches() {
         prepareData(RECORD_COUNT, CACHE1_IN_GROUP_NAME, CACHE2_IN_GROUP_NAME);
 
