@@ -43,8 +43,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         super("CACHE_GROUPS_IO", "IO statistics for cache groups", ctx, "GROUP_NAME",
             newColumn("GROUP_ID", Value.INT),
             newColumn("GROUP_NAME"),
-            newColumn("PHYSICAL_READ", Value.LONG),
-            newColumn("LOGICAL_READ", Value.LONG)
+            newColumn("PHYSICAL_READS", Value.LONG),
+            newColumn("LOGICAL_READS", Value.LONG)
         );
     }
 
@@ -64,7 +64,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
             if (statHolder != null) {
                 rows.add(
-                    createRow(ses, 0,
+                    createRow(
+                        ses,
                         statHolder.cacheGroupId(),
                         cacheGrpName,
                         statHolder.physicalReads(),
@@ -78,7 +79,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
                 IoStatisticsHolderCache statHolder = (IoStatisticsHolderCache)entry.getValue();
 
                 rows.add(
-                    createRow(ses, rows.size(),
+                    createRow(
+                        ses,
                         statHolder.cacheGroupId(),
                         entry.getKey().name(),
                         statHolder.physicalReads(),
