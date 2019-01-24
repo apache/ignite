@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -75,10 +74,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
 
     /** */
-    private static final AtomicBoolean isFirst = new AtomicBoolean();
-
-    /** */
-    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper(isFirst);
+    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
 
     /** */
     private final boolean autoStart;

@@ -28,17 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class BeforeAfterClassHelper {
     /** */
-    private static final AtomicReference<InstanceAction> afterClsAct = new AtomicReference<>(null);
+    private final AtomicReference<InstanceAction> afterClsActRef = new AtomicReference<>(null);
 
     /** */
-    private final AtomicBoolean isFirst;
-
-    /**
-     * @param isFirst Holds value indicating whether it is a first invokation.
-     */
-    public BeforeAfterClassHelper(AtomicBoolean isFirst) {
-        this.isFirst = isFirst;
-    }
+    private final AtomicBoolean isFirst = new AtomicBoolean();
 
     /**
      * Must be invoked from containing class in the method annotated with {@code BeforeClass}.
@@ -57,7 +50,7 @@ public class BeforeAfterClassHelper {
         if (!isFirst.getAndSet(false))
             return;
 
-        BeforeAfterClassHelper.afterClsAct.set(afterClsAct);
+        afterClsActRef.set(afterClsAct);
 
         if (beforeClsAct != null)
             beforeClsAct.apply();
@@ -68,11 +61,13 @@ public class BeforeAfterClassHelper {
      */
     public void onAfterClass() throws Exception {
         try {
-            if (afterClsAct.get() != null)
-                afterClsAct.get().apply();
+            InstanceAction afterClsAct = afterClsActRef.get();
+
+            if (afterClsAct != null)
+                afterClsAct.apply();
         }
         finally {
-            afterClsAct.set(null);
+            afterClsActRef.set(null);
         }
     }
 

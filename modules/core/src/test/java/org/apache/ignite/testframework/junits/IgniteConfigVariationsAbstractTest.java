@@ -25,6 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runners.model.FrameworkMethod;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -80,10 +80,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
      * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
      */
-    @Override protected Object runTestWrapped(FrameworkMethod mtd, Object target, Object... params) throws Throwable {
+    @Override protected Object runTest(Callable<Object> testRoutine) throws Throwable {
         testsCfg = testsCfgInjected;
 
-        return super.runTestWrapped(mtd, target, params);
+        return super.runTest(testRoutine);
     }
 
     /** {@inheritDoc} */

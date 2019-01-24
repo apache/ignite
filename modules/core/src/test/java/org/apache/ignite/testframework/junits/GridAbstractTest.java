@@ -39,7 +39,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -182,10 +181,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** */
-    private static final AtomicBoolean isFirst = new AtomicBoolean();
-
-    /** */
-    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper(isFirst);
+    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
 
     /** */
     private transient boolean startGrid;
@@ -2038,7 +2034,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object runTestWrapped(FrameworkMethod mtd, Object target, Object... params) throws Throwable {
+    @Override protected Object runTest(Callable<Object> testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         final AtomicReference<Object> res = new AtomicReference<>(null);
@@ -2049,7 +2045,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
 
-                    res.set(mtd.invokeExplosively(target, params));
+                    res.set(testRoutine.call());
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
@@ -2535,10 +2531,26 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                 @Override public Object invokeExplosively(Object target, Object... params) throws Throwable {
                     runSerializer.lock();
                     try {
-                        return ((JUnit3TestLegacySupport)target).wrapTestCase(mtd, target, params);
+                        if (!(target instanceof JUnit3TestLegacySupport))
+                            throw new IllegalStateException(target + " is not an instance of "
+                                + JUnit3TestLegacySupport.class.getSimpleName());
+
+                        return delegateInvoke((JUnit3TestLegacySupport)target, params);
                     } finally {
                         runSerializer.unlock();
                     }
+                }
+
+                /** */
+                private Object delegateInvoke(JUnit3TestLegacySupport target, Object[] params) throws Throwable {
+                    return target.runTestCase(() -> {
+                        try {
+                            return mtd.invokeExplosively(target, params);
+                        }
+                        catch (Throwable throwable) {
+                            throw new RuntimeException(throwable);
+                        }
+                    });
                 }
             }, test);
         }
