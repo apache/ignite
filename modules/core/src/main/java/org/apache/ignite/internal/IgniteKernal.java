@@ -1060,6 +1060,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ctx.cache().context().database().startMemoryRestore(ctx);
 
                 ctx.recoveryMode(false);
+
+                ctx.cache().context().database().onActivate0(ctx);
+
+                ctx.cache().context().snapshot().onActivate0();
             }
             catch (Throwable e) {
                 U.error(

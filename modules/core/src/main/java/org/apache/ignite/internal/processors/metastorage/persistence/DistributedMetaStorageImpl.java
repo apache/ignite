@@ -173,13 +173,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 ) throws IgniteCheckedException {
                     onMetaStorageReadyForRead(metastorage);
                 }
-
-                /** {@inheritDoc} */
-                @Override public void onReadyForReadWrite(
-                    ReadWriteMetastorage metastorage
-                ) throws IgniteCheckedException {
-                    onMetaStorageReadyForWrite(metastorage);
-                }
             });
         }
         else {
@@ -212,6 +205,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        log.info("<@> DistributedMetaStorage onActivate");
         if (ctx.clientNode())
             return;
 
@@ -238,10 +232,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             writeAvailable.countDown();
         }
+        else
+            onMetaStorageReadyForWrite(ctx.cache().context().database().metaStorage());
+        log.info("<@> DistributedMetaStorage onActivate finished");
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        log.info("<@> DistributedMetaStorage onDectivate");
         if (ctx.clientNode())
             return;
 
@@ -318,6 +316,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @see MetastorageLifecycleListener#onReadyForReadWrite(ReadWriteMetastorage)
      */
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        log.info("<@> DistributedMetaStorage onReadyForReadWrite");
+
         assert isPersistenceEnabled(ctx.config());
 
         synchronized (innerStateLock) {
@@ -337,6 +337,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             }
 
             bridge = writableBridge;
+
+            log.info("<@> startupExtras = null ");
 
             startupExtras = null;
         }
@@ -455,6 +457,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
+        log.info("<@> validateNode");
+
         if (ctx.clientNode())
             return null;
 
@@ -556,6 +560,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        log.info("<@> collectGridNodeData");
         if (ctx.clientNode())
             return;
 

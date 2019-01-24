@@ -169,6 +169,10 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
         // No-op.
     }
 
+    public void onActivate0() throws IgniteCheckedException {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.

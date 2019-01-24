@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -755,6 +756,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
+        log.info("<@> DatabaseSharedManager stop0 " + cancel);
         onDeActivate(true);
     }
 
@@ -1163,10 +1165,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return new File(workDir, consId);
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** */
+    public void onActivate0(GridKernalContext kctx) throws IgniteCheckedException {
         if (kctx.clientNode() && kctx.config().getDataStorageConfiguration() == null)
             return;
+
+        log.info("<@> DatabaseSharedManager onActivate0");
 
         initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
@@ -1209,7 +1218,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onDeActivate(!reuseMemory);
+        log.info("<@> DatabaseSharedManager onDeactivate");
+//        onDeActivate(!reuseMemory);
     }
 
     /**
@@ -1219,7 +1229,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
-        for (DataRegion region : dataRegionMap.values()) {
+        for (Iterator<Map.Entry<String, DataRegion>> it = dataRegionMap.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, DataRegion> entry = it.next();
+
+            if (!shouldStopDataRegionOnDeactivate(entry.getKey(), shutdown))
+                continue;
+
+            DataRegion region = entry.getValue();
+
             region.pageMemory().stop(shutdown);
 
             region.evictionTracker().stop();
@@ -1229,9 +1246,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 MBEAN_GROUP_NAME,
                 region.memoryMetrics().getName()
             );
-            }
 
-        dataRegionMap.clear();
+            it.remove();
+        }
 
         if (shutdown && memProviderMap != null)
             memProviderMap.clear();
@@ -1239,6 +1256,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         dataRegionsInitialized = false;
 
         dataRegionsStarted = false;
+    }
+
+    /** */
+    protected boolean shouldStopDataRegionOnDeactivate(String regionName, boolean shutdown) {
+        return true;
     }
 
     /**

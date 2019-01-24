@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1085,6 +1086,27 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     try {
                         cctx.activate();
+                    }
+                    finally {
+                        cctx.exchange().exchangerBlockingSectionEnd();
+                    }
+
+                    cctx.exchange().exchangerBlockingSectionBegin();
+                    try {
+                        if (GridCacheUtils.isPersistenceEnabled(cctx.gridConfig()) && !cctx.kernalContext().clientNode()) {
+                            cctx.database().checkpointReadLock();
+
+                            try {
+                                for (MetastorageLifecycleListener subscriber : cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers()) {
+                                    subscriber.onReadyForReadWrite(cctx.database().metaStorage());
+                                }
+                            }
+                            finally {
+                                cctx.database().checkpointReadUnlock();
+                            }
+                        }
+
+                        ((IgniteChangeGlobalStateSupport)cctx.kernalContext().distributedMetastorage()).onActivate(cctx.kernalContext());
                     }
                     finally {
                         cctx.exchange().exchangerBlockingSectionEnd();

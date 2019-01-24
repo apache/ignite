@@ -393,6 +393,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
+        log.info("<@> FileWriteAheadLogManager.start0");
         if(cctx.kernalContext().clientNode())
             return;
 
@@ -565,6 +566,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * It shutdown workers but do not deallocate them to avoid duplication.
      * */
     @Override protected void stop0(boolean cancel) {
+        log.info("<@> FileWriteAheadLogManager.stop0 " + cancel);
+//        if (cancel) {
+//            U.dumpStack("<@> FileWriteAheadLogManager.dumpStack");
+//            System.err.flush();
+//        }
         final GridTimeoutProcessor.CancelableTask schedule = backgroundFlushSchedule;
 
         if (schedule != null)
@@ -596,14 +602,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        log.info("<@> FileWriteAheadLogManager.onActivate");
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
         //NOOP implementation, we need to override it.
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate0(GridKernalContext kctx) {
+        log.info("<@> FileWriteAheadLogManager.onDeActivate0");
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
