@@ -154,6 +154,7 @@ import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
+import org.apache.ignite.internal.processors.cache.index.IgniteIndexNamesTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
@@ -272,6 +273,8 @@ import org.junit.runners.Suite;
 
     BasicIndexTest.class,
     BasicIndexMultinodeTest.class,
+
+    IgniteIndexNamesTest.class,
 
     // Misc tests.
     QueryEntityValidationSelfTest.class,
