@@ -1573,6 +1573,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
 
+        tx.addReader(req.messageId(), cached, entry, tx.topologyVersion());
+
         GridCacheContext cacheCtx = entry.context();
 
         GridDhtCacheAdapter<?, ?> dht = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();

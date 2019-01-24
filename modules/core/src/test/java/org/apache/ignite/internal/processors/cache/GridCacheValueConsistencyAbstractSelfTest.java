@@ -237,9 +237,6 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
-
         for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
 
@@ -291,9 +288,6 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
-
        for (int i = 0; i < SF.applyLB(10, 2); i++) {
            log.info("Iteration: " + i);
 

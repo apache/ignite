@@ -466,16 +466,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @param msgId Message ID.
      * @param e Entry to add.
-     * @return Future for active transactions for the time when reader was added.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry e) throws IgniteCheckedException {
+    public void addEntry(IgniteTxEntry e) throws IgniteCheckedException {
         init();
 
         TransactionState state = state();
 
         assert state == PREPARING : "Invalid tx state for " +
-            "adding entry [msgId=" + msgId + ", e=" + e + ", tx=" + this + ']';
+            "adding entry [e=" + e + ", tx=" + this + ']';
 
         e.unmarshal(cctx, false, cctx.deploy().globalLoader());
 
@@ -525,8 +524,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Added entry to transaction: " + existing);
             }
-
-            return addReader(msgId, dhtCache.entryExx(existing.key()), existing, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
             throw new IgniteCheckedException(ex);
