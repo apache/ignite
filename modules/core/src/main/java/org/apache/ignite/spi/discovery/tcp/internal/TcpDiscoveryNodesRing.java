@@ -65,7 +65,7 @@ public class TcpDiscoveryNodesRing {
     };
 
     /** Local node. */
-    private TcpDiscoveryNode locNode;
+    private volatile TcpDiscoveryNode locNode;
 
     /** All nodes in topology. */
     @GridToStringInclude
