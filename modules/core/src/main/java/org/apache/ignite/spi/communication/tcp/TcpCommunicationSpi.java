@@ -360,6 +360,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
+    /** Default start delay in case of NEED_WAIT received on handshake, millis. */
+    public static final long DFLT_NEED_WAIT_DELAY = 200;
+
+    /** Default max delay in case of NEED_WAIT received on handshake, millis. */
+    public static final long DFLT_MAX_NEED_WAIT_DELAY = 60_000;
+
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
         @Override public void run() {
@@ -1174,6 +1180,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
+    /** Delay on subsequent retry if NEED_WAIT received. */
+    private long needWaitDelay = DFLT_NEED_WAIT_DELAY;
+
+    /** Max value of needWaitDelay. */
+    private long maxNeedWaitDelay = DFLT_MAX_NEED_WAIT_DELAY;
+
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
      * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -1870,6 +1882,56 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setSlowClientQueueLimit(int slowClientQueueLimit) {
         this.slowClientQueueLimit = slowClientQueueLimit;
+
+        return this;
+    }
+
+    /**
+     * Get initial needWaitDelay.
+     * @return Initial needWaitDelay.
+     */
+    public long getNeedWaitDelay() {
+        return needWaitDelay;
+    }
+
+    /**
+     * Setting to set start needWaitDelay.
+     * <p>
+     * Configures delay on subsequent reconnect if NEED_WAIT received.
+     * <p>
+     * If not provided, default value is {@link #DFLT_NEED_WAIT_DELAY}.
+     *
+     * @param needWaitDelay Delay between subsequent retries on NEED_WAIT.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpCommunicationSpi setNeedWaitDelay(long needWaitDelay) {
+        this.needWaitDelay = needWaitDelay;
+
+        return this;
+    }
+
+    /**
+     * Get max needWaitDelay.
+     * @return Max needWaitDelay.
+     */
+    public long getMaxNeedWaitDelay() {
+        return maxNeedWaitDelay;
+    }
+
+    /**
+     * Setting to set start needWaitDelay.
+     * <p>
+     * Configures max delay on subsequent reconnect if NEED_WAIT received.
+     * <p>
+     * If not provided, default value is {@link #DFLT_MAX_NEED_WAIT_DELAY}.
+     *
+     * @param maxNeedWaitDelay Max delay between subsequent retries on NEED_WAIT.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpCommunicationSpi setMaxNeedWaitDelay(long maxNeedWaitDelay) {
+        this.maxNeedWaitDelay = maxNeedWaitDelay;
 
         return this;
     }
@@ -3272,7 +3334,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            int lastWaitingTimeout = 1;
+            long needWaitDelay0 = needWaitDelay;
 
             while (client == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3355,12 +3417,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta,
                             handshakeConnIdx);
 
-                        if (rcvCnt == ALREADY_CONNECTED) {
+                        if (rcvCnt == ALREADY_CONNECTED)
                             return null;
-                        }
-                        else if (rcvCnt == NODE_STOPPING) {
+                        else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
-                        }
                         else if (rcvCnt == NEED_WAIT) {
                             needWait = true;
 
@@ -3387,10 +3447,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 recoveryDesc.release();
 
                             if (needWait) {
-                                if (lastWaitingTimeout < 60000)
-                                    lastWaitingTimeout *= 2;
+                                if (needWaitDelay0 < maxNeedWaitDelay)
+                                    needWaitDelay0 *= 2;
 
-                                U.sleep(lastWaitingTimeout);
+                                if (log.isDebugEnabled())
+                                    log.debug("NEED_WAIT received, reconnect after delay [node = "
+                                        + node + ", delay = " + needWaitDelay0 + "ms]");
+
+                                U.sleep(needWaitDelay0);
                             }
                         }
                     }
@@ -3742,10 +3806,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
             }
             else
-                ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
+                U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
             ClusterNode locNode = getLocalNode();
 
@@ -3789,19 +3853,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    ch.write(sslHnd.encrypt(buf));
+                    U.writeFully(ch, sslHnd.encrypt(buf));
                 }
                 else
-                    ch.write(buf);
+                    U.writeFully(ch, buf);
             }
             else {
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
+                    U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
                 }
                 else
-                    ch.write(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
+                    U.writeFully(ch, ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
             }
 
             if (recovery != null) {

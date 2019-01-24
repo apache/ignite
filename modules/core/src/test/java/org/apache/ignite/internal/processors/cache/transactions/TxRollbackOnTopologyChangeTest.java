@@ -93,7 +93,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9322"); //Won't start nodes if the only test mutes.
+            fail("https://issues.apache.org/jira/browse/IGNITE-10807"); //Won't start nodes if the only test mutes.
 
         super.beforeTest();
 

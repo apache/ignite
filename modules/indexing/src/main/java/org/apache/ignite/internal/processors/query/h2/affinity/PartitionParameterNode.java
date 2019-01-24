@@ -45,7 +45,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * @param idx Parameter index.
      * @param dataType Parameter data type.
      */
-    public PartitionParameterNode(PartitionTableDescriptor tbl, IgniteH2Indexing indexing, int idx,
+    public PartitionParameterNode(PartitionTable tbl, IgniteH2Indexing indexing, int idx,
         int dataType) {
         super(tbl);
 
