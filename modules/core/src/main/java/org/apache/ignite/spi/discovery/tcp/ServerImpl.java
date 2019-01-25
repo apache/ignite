@@ -4285,12 +4285,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert node != null;
 
-            if (!locNode.id().equals(node.id()) && node.internalOrder() < locNode.internalOrder()) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding node added message since local node's order is greater " +
-                        "[node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
+            if (node.internalOrder() < locNode.internalOrder()) {
+                if (!locNode.id().equals(node.id())) {
+                    U.warn(log, "Discarding node added message since local node's order is greater " +
+                            "[node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
 
-                return;
+                    return;
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Received node added message with node order smaller than local node order " +
+                            "(will appy) [node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
+                }
             }
 
             UUID locNodeId = getLocalNodeId();
