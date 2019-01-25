@@ -17,40 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
 /**
- * Mvcc tracker.
+ *
  */
-public interface MvccQueryTracker extends MvccCoordinatorChangeAware {
+public interface MvccCoordinatorChangeAware {
+    /** */
+    AtomicLong ID_CNTR = new AtomicLong();
+
+    /** */
+    long MVCC_TRACKER_ID_NA = -1;
+
+    /** */
+    LongPredicate ID_FILTER = id -> id != MVCC_TRACKER_ID_NA;
 
     /**
-     * @return Requested MVCC snapshot.
+     * @return Tracker id.
      */
-    public MvccSnapshot snapshot();
+    default long id() {
+        return MVCC_TRACKER_ID_NA;
+    }
 
     /**
-     * @return Cache context.
-     */
-    public GridCacheContext context();
-
-    /**
-     * @return Topology version.
-     */
-    public AffinityTopologyVersion topologyVersion();
-
-    /**
-     * Requests version on coordinator.
+     * Mvcc coordinator change callback.
      *
-     * @return Future to wait for result.
+     * @param newCrd New mvcc coordinator.
+     * @return Query id if exists.
      */
-    public IgniteInternalFuture<MvccSnapshot> requestSnapshot();
-
-    /**
-     * Marks tracker as done.
-     */
-    public void onDone();
-
+    default long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        return MVCC_TRACKER_ID_NA;
+    }
 }
