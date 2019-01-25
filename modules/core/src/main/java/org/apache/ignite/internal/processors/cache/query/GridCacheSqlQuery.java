@@ -18,15 +18,19 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -79,6 +83,11 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasSubQries;
 
+    /** Used columns info: (Table alias -> used columns). */
+    @GridToStringInclude
+    @GridDirectMap(keyType = String.class, valueType = GridSqlUsedColumnInfo.class)
+    private Map<String, GridSqlUsedColumnInfo> usedCols;
+
     /**
      * For {@link Message}.
      */
@@ -93,6 +102,17 @@ public class GridCacheSqlQuery implements Message {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
         this.qry = qry;
+    }
+
+    /**
+     * @param qry Query.
+     * @param usedCols Used columns info.
+     */
+    public GridCacheSqlQuery(String qry, Map<String, GridSqlUsedColumnInfo> usedCols) {
+        A.ensure(!F.isEmpty(qry), "qry must not be empty");
+
+        this.qry = qry;
+        this.usedCols = usedCols;
     }
 
     /**
@@ -146,6 +166,13 @@ public class GridCacheSqlQuery implements Message {
         return this;
     }
 
+    /**
+     * @return Used columns info (Table alias -> used columns).
+     */
+    public Map<String, GridSqlUsedColumnInfo> getUsedCols() {
+        return usedCols;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -188,6 +215,12 @@ public class GridCacheSqlQuery implements Message {
 
             case 3:
                 if (!writer.writeString("qry", qry))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMap("usedCols", usedCols, MessageCollectionItemType.STRING, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -237,6 +270,14 @@ public class GridCacheSqlQuery implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                usedCols = reader.readMap("usedCols", MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridCacheSqlQuery.class);
@@ -249,7 +290,7 @@ public class GridCacheSqlQuery implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /**
@@ -265,6 +306,7 @@ public class GridCacheSqlQuery implements Message {
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
         cp.hasSubQries = hasSubQries;
+        cp.usedCols = new HashMap<>(usedCols);
 
         return cp;
     }

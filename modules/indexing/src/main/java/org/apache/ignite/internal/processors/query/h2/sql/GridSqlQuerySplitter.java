@@ -31,17 +31,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1546,6 +1549,8 @@ public class GridSqlQuerySplitter {
         // Replace the given select with generated reduce query in the parent.
         prnt.child(childIdx, rdcQry);
 
+        Map<String, GridSqlUsedColumnInfo> usedCols = GridSqlQueryParser.extractUsedColumns(mapQry);
+
         // Setup resulting map query.
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
 
@@ -1559,6 +1564,25 @@ public class GridSqlQuerySplitter {
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
+    }
+
+    /**
+     * @param select
+     * @return Used columns.
+     */
+    private Map<String, GridSqlUsedColumnInfo> extractUsedColumns(GridSqlSelect select) {
+        Map<String, Set<Integer>> usedCols = new HashMap<>();
+
+        GridSqlQueryParser.extractUsedColumnsFromAst(usedCols, select);
+
+        return usedCols.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                String alias
+                Set<Integer>
+                e.getValue().toArray(new int[0]);
+                GridSqlUsedColumnInfo colsInfo = new GridSqlUsedColumnInfo();
+            }));
+
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -37,6 +38,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -2304,22 +2306,29 @@ public class GridSqlQueryParser {
     public void extractUsedColumnsFromQuery(TableFilter tbl, Set<Integer> colIds, Select select) {
         GridSqlAst qry = parseQuery(select);
 
-        extractUsedColumnsFromAst(tbl, colIds, qry);
+//        extractUsedColumnsFromAst(tbl, colIds, qry);
     }
 
     /**
-     * @param filter Source table filter.
-     * @param colIds Columns IDs to extract.
+     * @param colIds Map from table alias to columns IDs to extract.
      * @param e Query AST subtree.
      */
-    private void extractUsedColumnsFromAst(TableFilter filter, Set<Integer> colIds, GridSqlAst e) {
+    public static void extractUsedColumnsFromAst(Map<String, Set<Integer>> colIds, GridSqlAst e) {
         if (e == null)
             return;
-        else if (e instanceof GridSqlColumnExpression && ((GridSqlColumnExpression)e).columnResolver() == filter)
-            colIds.add(((GridSqlColumn)e).column().getColumnId());
+        else if (e instanceof GridSqlColumnExpression) {
+            GridSqlColumnExpression colExp = (GridSqlColumnExpression)e;
+
+            Set<Integer> set = colIds.get(colExp.columnResolver().getTableAlias());
+
+            if (set == null)
+                set = new HashSet<>();
+
+            set.add(colExp.column().getColumnId());
+        }
         else {
             for (int i = 0; i < e.size(); ++i)
-                extractUsedColumnsFromAst(filter, colIds, e.child(i));
+                extractUsedColumnsFromAst(colIds, e.child(i));
         }
     }
 

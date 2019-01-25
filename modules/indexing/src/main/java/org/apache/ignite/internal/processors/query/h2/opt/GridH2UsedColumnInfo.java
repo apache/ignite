@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.locks.Condition;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.dml.Select;
 import org.h2.expression.Aggregate;
