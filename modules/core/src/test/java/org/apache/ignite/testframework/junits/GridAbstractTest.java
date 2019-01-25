@@ -126,10 +126,12 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import org.springframework.beans.BeansException;
@@ -183,6 +185,27 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
+
+    /** */
+    @ClassRule
+    public static final TestRule firstLastTestRule = new TestRule() {
+        @Override public Statement apply(Statement base, Description desc) {
+            return new Statement() {
+                @Override public void evaluate() throws Throwable {
+                    GridAbstractTest testClsInstance = (GridAbstractTest)desc.getTestClass().newInstance();
+                    try {
+                        U.warn(null, ">>>>>>> place for onFirstTest <<<<<<<<<<");
+                        //testClsInstance.beforeTestsStarted();
+                        base.evaluate();
+                    }
+                    finally {
+                        U.warn(null, ">>>>>>> place for onLastTest <<<<<<<<<<");
+                        //testClsInstance.afterTestsStopped();
+                    }
+                }
+            };
+        }
+    };
 
     /** Lock to maintain integrity of {@link IgniteConfigVariationsAbstractTest}. */
     private final Lock runSerializer = new ReentrantLock();
@@ -288,7 +311,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @BeforeClass
     public static void beforeClassGridAbstractTest() {
         U.warn(null, ">>>>>>> beforeClassGridAbstractTest <<<<<<<<<<");
-        helper.onBeforeClass();
+        // todo delete helper.onBeforeClass();
     }
 
     /** */
@@ -307,7 +330,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @AfterClass
     public static void afterClassGridAbstractTest() throws Exception {
         U.warn(null, ">>>>>>> afterClassGridAbstractTest <<<<<<<<<<");
-        helper.onAfterClass();
+        // todo delete helper.onAfterClass();
     }
 
     /**

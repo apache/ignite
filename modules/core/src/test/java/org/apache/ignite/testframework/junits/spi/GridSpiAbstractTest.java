@@ -59,6 +59,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -80,6 +81,23 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** */
     private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
+
+    /** */
+    private static final TestRule firstLastTestRuleSpi = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            U.warn(null, ">>>>>>> place for helper 1 onbefore <<<<<<<<<<");
+            GridSpiAbstractTest instance = (GridSpiAbstractTest)description.getTestClass().newInstance();
+            instance.beforeGridSpiAbstractTest();
+
+            base.evaluate();
+        }
+    };
+
+    /** Manages test execution and reporting. */
+    @SuppressWarnings({"TransientFieldInNonSerializableClass"})
+    @ClassRule
+    public static transient RuleChain firstLastTestRule
+        = RuleChain.outerRule(firstLastTestRuleSpi).around(GridAbstractTest.firstLastTestRule);
 
     /** */
     @SuppressWarnings({"TransientFieldInNonSerializableClass"})
@@ -121,7 +139,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** */
     @BeforeClass
-    public static void beforeClassGridSpiAbstractTest() {
+    public static void beforeClassGridSpiAbstractTest() { // todo delete
         U.warn(null, ">>>>>>> beforeClassGridSpiAbstractTest <<<<<<<<<<");
         helper.onBeforeClass();
     }
@@ -139,44 +157,48 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private void beforeGridSpiAbstractTest() throws Exception {
+    private void beforeGridSpiAbstractTest() throws Exception { // todo delete
         U.warn(null, ">>>>>>> beforeGridSpiAbstractTest <<<<<<<<<<");
-        helper.onBefore(
-            () -> {
-                if (autoStart) {
-                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-                    assert spiTest != null;
-
-                    beforeSpiStarted();
-
-                    if (spiTest.trigger())
-                        spiStart();
-
-                    info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
-                }
-
-                return null;
-            },
-            () -> {
-                if (autoStart) {
-                    GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-                    assert spiTest != null;
-
-                    if (spiTest.trigger()) {
-                        spiStop();
-
-                        afterSpiStopped();
-                    }
-
-                    info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
-                }
-
-                return null;
-            });
+        helper.onBefore(this::onFirstTest, this::onLastTest);
     }
 
+    /** */
+    private Void onFirstTest() throws Exception {
+        if (autoStart) {
+            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+            assert spiTest != null;
+
+            beforeSpiStarted();
+
+            if (spiTest.trigger())
+                spiStart();
+
+            info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
+        }
+
+        return null;
+    }
+
+
+    /** */
+    private Void onLastTest() throws Exception {
+        if (autoStart) {
+            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+            assert spiTest != null;
+
+            if (spiTest.trigger()) {
+                spiStop();
+
+                afterSpiStopped();
+            }
+
+            info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
+        }
+
+        return null;
+    }
     /** */
     @AfterClass
     public static void afterClassGridSpiAbstractTest() throws Exception {
