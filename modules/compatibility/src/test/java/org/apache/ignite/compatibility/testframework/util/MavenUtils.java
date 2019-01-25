@@ -150,9 +150,11 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
+        boolean proxyFileExists = Files.exists(Paths.get(LOCAL_PROXY_MAVEN_SETTINGS));
+
         exec(buildMvnCommand() + " org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact +
             (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "") +
-            (U.isWindows() ? "" : " -s" + LOCAL_PROXY_MAVEN_SETTINGS));
+            (proxyFileExists ? " -s" + LOCAL_PROXY_MAVEN_SETTINGS : ""));
 
         X.println("Download is finished");
     }
