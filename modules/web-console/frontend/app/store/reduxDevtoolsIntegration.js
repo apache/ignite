@@ -61,7 +61,7 @@ const reviver = (key, value) => {
 
 if (window.__REDUX_DEVTOOLS_EXTENSION__) {
     devTools = window.__REDUX_DEVTOOLS_EXTENSION__.connect({
-        name: 'Ignite configuration',
+        name: 'Ignite Web Console',
         serialize: {
             replacer,
             reviver
