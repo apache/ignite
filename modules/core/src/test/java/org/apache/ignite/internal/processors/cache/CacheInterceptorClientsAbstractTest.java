@@ -26,6 +26,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,7 +41,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -166,7 +167,7 @@ public abstract class CacheInterceptorClientsAbstractTest extends GridCommonAbst
         return cfg.setInterceptor(binary() ?  new NoopBinaryInterceptor() : new NoopDeserializedInterceptor());
     }
 
-    private void populateData() {
+    private void populateData() throws IgniteCheckedException {
         IgniteBinary binary = grid(SERVER_NODE_NAME).context().cacheObjects().binary();
         for (String cacheName : CACHE_NAMES) {
             IgniteCache cache = grid(SERVER_NODE_NAME).cache(cacheName);
@@ -175,11 +176,33 @@ public abstract class CacheInterceptorClientsAbstractTest extends GridCommonAbst
                 Value v = new Value(cacheName + i);
 
                 if (binary())
-                    cache.put(i, binary.toBinary(v));
+                    cache.withKeepBinary().put(createBinaryKey(i, cacheName), binary.toBinary(v));
                 else
                     cache.put(i, v);
             }
         }
+    }
+
+    protected BinaryObject createBinary(Value v) {
+        return grid(SERVER_NODE_NAME).context().cacheObjects().binary().toBinary(v);
+    }
+
+    protected KeyCacheObject createBinaryKey(Integer i, String cacheName) throws IgniteCheckedException {
+        GridKernalContext ctx = grid(SERVER_NODE_NAME).context();
+
+        CacheConfiguration cfg = ctx.cache().cacheConfiguration(cacheName);
+
+        return ctx.cacheObjects().toCacheKeyObject(ctx.cacheObjects().contextForCache(cfg), null, i, true);
+    }
+
+    protected Value fromBinary(BinaryObject o) {
+        return o.deserialize();
+    }
+
+    protected Integer fromBinaryKey(KeyCacheObjectImpl k, String cacheName) throws IgniteCheckedException {
+        CacheConfiguration cfg = grid(SERVER_NODE_NAME).context().cache().cacheConfiguration(cacheName);
+
+        return k.value(grid(SERVER_NODE_NAME).context().cacheObjects().contextForCache(cfg), false);
     }
 
     protected abstract boolean binary();

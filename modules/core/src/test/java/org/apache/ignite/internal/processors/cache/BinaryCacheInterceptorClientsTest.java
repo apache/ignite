@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -80,26 +77,4 @@ public class BinaryCacheInterceptorClientsTest extends CacheInterceptorClientsAb
 //            assertEquals(cacheName, keys.size(), thinCache(cacheName).getAll(keys).values().size());
 //        }
 //    }
-
-    private BinaryObject createBinary(Value v) {
-        return grid(SERVER_NODE_NAME).context().cacheObjects().binary().toBinary(v);
-    }
-
-    private KeyCacheObject createBinaryKey(Integer i, String cacheName) throws IgniteCheckedException {
-        GridKernalContext ctx = grid(SERVER_NODE_NAME).context();
-
-        CacheConfiguration cfg = ctx.cache().cacheConfiguration(cacheName);
-
-        return ctx.cacheObjects().toCacheKeyObject(ctx.cacheObjects().contextForCache(cfg), null, i, true);
-    }
-
-    private Value fromBinary(BinaryObject o) {
-        return o.deserialize();
-    }
-
-    private Integer fromBinaryKey(KeyCacheObjectImpl k, String cacheName) throws IgniteCheckedException {
-        CacheConfiguration cfg = grid(SERVER_NODE_NAME).context().cache().cacheConfiguration(cacheName);
-
-        return k.value(grid(SERVER_NODE_NAME).context().cacheObjects().contextForCache(cfg), false);
-    }
 }
