@@ -2959,7 +2959,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                                 // Topology treated as changes if next node is not available.
-                                hndMsg.changeTopology(sndState != null && !sndState.isStartingPoint());
+                                boolean changeTop = sndState != null && !sndState.isStartingPoint();
+
+                                if (changeTop)
+                                    hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
                                 if (log.isDebugEnabled())
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
@@ -2973,7 +2976,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                if (res.previousNodeAlive() && sndState != null) {
+                                // We should take previousNodeAlive flag into account only if we received the response from the correct node.
+                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
@@ -5947,6 +5951,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         // We got message from previous in less than double connection check interval.
                         boolean ok = rcvdTime + CON_CHECK_INTERVAL * 2 >= now;
+                        TcpDiscoveryNode previous = null;
 
                         if (ok) {
                             // Check case when previous node suddenly died. This will speed up
@@ -5957,11 +5962,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 failed = failedNodes.keySet();
                             }
 
-                            TcpDiscoveryNode previous = ring.previousNode(failed);
+                            previous = ring.previousNode(failed);
 
                             InetSocketAddress liveAddr = null;
 
-                            if (previous != null && !previous.id().equals(nodeId)) {
+                            if (previous != null && !previous.id().equals(nodeId) &&
+                                (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs =
                                     spi.getNodeAddresses(previous, false);
 
@@ -5976,7 +5982,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 if (log.isInfoEnabled())
-                                    log.info("Connection check done: [liveAddr=" + liveAddr
+                                    log.info("Connection check done [liveAddr=" + liveAddr
                                         + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
                                         + ", connectingNodeId=" + nodeId + ']');
                             }
@@ -5989,8 +5995,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         res.previousNodeAlive(ok);
 
                         if (log.isInfoEnabled()) {
-                            log.info("Previous node alive: [alive=" + ok + ", lastMessageReceivedTime="
-                                + rcvdTime + ", now=" + now + ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
+                            log.info("Previous node alive status [alive=" + ok +
+                                ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
+                                ", actualPreviousNode=" + previous +
+                                ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
+                                ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
                         }
                     }
 
