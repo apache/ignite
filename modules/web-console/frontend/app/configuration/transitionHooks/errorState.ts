@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-import {RejectType} from '@uirouter/angularjs';
+import {RejectType, UIRouter, Transition, HookMatchCriteria} from '@uirouter/angularjs';
 
-const isPromise = (object) => object && typeof object.then === 'function';
-const match = {
+const isPromise = (object): object is Promise<any> => object && typeof object.then === 'function';
+const match: HookMatchCriteria = {
     to(state) {
         return state.data && state.data.errorState;
     }
 };
-const go = ($transition) => $transition.router.stateService.go(
+const go = ($transition: Transition) => $transition.router.stateService.go(
     $transition.to().data.errorState,
     $transition.params(),
     {location: 'replace'}
 );
 
-/**
- * @returns {Array<Promise>}
- */
-const getResolvePromises = ($transition) => $transition.getResolveTokens()
+const getResolvePromises = ($transition: Transition) => $transition.getResolveTokens()
     .filter((token) => typeof token === 'string')
     .map((token) => $transition.injector().getAsync(token))
     .filter(isPromise);
@@ -42,7 +39,7 @@ const getResolvePromises = ($transition) => $transition.getResolveTokens()
  * 1. Transition throws an error.
  * 2. Any resolve promise throws an error. onError does not work for this case if resolvePolicy is set to 'NOWAIT'.
  */
-export const errorState = ($uiRouter) => {
+export const errorState = ($uiRouter: UIRouter) => {
     $uiRouter.transitionService.onError(match, ($transition) => {
         if ($transition.error().type !== RejectType.ERROR)
             return;

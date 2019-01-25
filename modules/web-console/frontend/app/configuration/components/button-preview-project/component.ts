@@ -16,22 +16,21 @@
  */
 
 import template from './template.pug';
-import './style.scss';
+import ModalPreviewProject from '../modal-preview-project/service';
 
-export class ButtonImportModels {
-    static $inject = ['ModalImportModels'];
-    constructor(ModalImportModels) {
-        Object.assign(this, {ModalImportModels});
-    }
-    startImport() {
-        return this.ModalImportModels.open(this.clusterID);
+export class ButtonPreviewProject {
+    static $inject = ['ModalPreviewProject'];
+    constructor(private ModalPreviewProject: ModalPreviewProject) {}
+    cluster: any
+    preview() {
+        return this.ModalPreviewProject.open(this.cluster);
     }
 }
 export const component = {
-    name: 'buttonImportModels',
-    controller: ButtonImportModels,
+    name: 'buttonPreviewProject',
+    controller: ButtonPreviewProject,
     template,
     bindings: {
-        clusterID: '<clusterId'
+        cluster: '<'
     }
 };

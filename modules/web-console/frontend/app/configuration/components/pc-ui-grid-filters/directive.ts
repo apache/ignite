@@ -17,8 +17,9 @@
 
 import template from './template.pug';
 import './style.scss';
+import {IUiGridConstants} from 'ui-grid';
 
-export default function pcUiGridFilters(uiGridConstants) {
+export default function pcUiGridFilters(uiGridConstants: IUiGridConstants) {
     return {
         require: 'uiGrid',
         link: {
@@ -58,7 +59,7 @@ export default function pcUiGridFilters(uiGridConstants) {
                 });
             }
         }
-    };
+    } as ng.IDirective;
 }
 
 pcUiGridFilters.$inject = ['uiGridConstants'];

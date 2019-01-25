@@ -30,16 +30,9 @@ import {default as ConfigSelectors} from '../store/selectors';
 export default class PageConfigure {
     static $inject = ['ConfigureState', 'ConfigSelectors'];
 
-    /**
-     * @param {ConfigureState} ConfigureState
-     * @param {ConfigSelectors} ConfigSelectors
-     */
-    constructor(ConfigureState, ConfigSelectors) {
-        this.ConfigureState = ConfigureState;
-        this.ConfigSelectors = ConfigSelectors;
-    }
+    constructor(private ConfigureState: ConfigureState, private ConfigSelectors: ConfigSelectors) {}
 
-    getClusterConfiguration({clusterID, isDemo}) {
+    getClusterConfiguration({clusterID, isDemo}: {clusterID: string, isDemo: boolean}) {
         return merge(
             timer(1).pipe(
                 take(1),

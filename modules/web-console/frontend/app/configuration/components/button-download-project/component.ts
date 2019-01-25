@@ -15,30 +15,22 @@
  * limitations under the License.
  */
 
-import Worker from './summary.worker';
+import template from './template.pug';
+import ConfigurationDownload from '../../services/ConfigurationDownload';
 
-/**
- * @param {ng.IQService} $q
- */
-export default function SummaryZipperService($q) {
-    return function(message) {
-        const defer = $q.defer();
-        const worker = new Worker();
-
-        worker.postMessage(message);
-
-        worker.onmessage = (e) => {
-            defer.resolve(e.data);
-            worker.terminate();
-        };
-
-        worker.onerror = (err) => {
-            defer.reject(err);
-            worker.terminate();
-        };
-
-        return defer.promise;
-    };
+export class ButtonDownloadProject {
+    static $inject = ['ConfigurationDownload'];
+    constructor(private ConfigurationDownload: ConfigurationDownload) {}
+    cluster: any
+    download() {
+        return this.ConfigurationDownload.downloadClusterConfiguration(this.cluster);
+    }
 }
-
-SummaryZipperService.$inject = ['$q'];
+export const component = {
+    name: 'buttonDownloadProject',
+    controller: ButtonDownloadProject,
+    template,
+    bindings: {
+        cluster: '<'
+    }
+};

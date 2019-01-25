@@ -16,6 +16,14 @@
  */
 
 import saver from 'file-saver';
+import {ClusterLike} from '../types';
+
+import MessagesFactory from 'app/services/Messages.service';
+import Activities from 'app/core/activities/Activities.data';
+import ConfigurationResource from './ConfigurationResource';
+import SummaryZipper from './SummaryZipper';
+import Version from 'app/services/Version.service';
+import PageConfigure from './PageConfigure';
 
 export default class ConfigurationDownload {
     static $inject = [
@@ -29,17 +37,20 @@ export default class ConfigurationDownload {
         'PageConfigure'
     ];
 
-    constructor(messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope, PageConfigure) {
-        Object.assign(this, {messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope, PageConfigure});
+    constructor(
+        private messages: ReturnType<typeof MessagesFactory>,
+        private activitiesData: Activities,
+        private configuration: ConfigurationResource,
+        private summaryZipper: SummaryZipper,
+        private Version: Version,
+        private $q: ng.IQService,
+        private $rootScope: ng.IRootScopeService & {IgniteDemoMode: boolean},
+        private PageConfigure: PageConfigure
+    ) {}
 
-        this.saver = saver;
-    }
+    saver = saver
 
-    /**
-     * @param {{_id: string, name: string}} cluster
-     * @returns {Promise}
-     */
-    downloadClusterConfiguration(cluster) {
+    downloadClusterConfiguration(cluster: ClusterLike) {
         this.activitiesData.post({action: '/configuration/download'});
 
         return this.PageConfigure.getClusterConfiguration({clusterID: cluster._id, isDemo: !!this.$rootScope.IgniteDemoMode})
@@ -62,11 +73,11 @@ export default class ConfigurationDownload {
             ));
     }
 
-    nameFile(cluster) {
+    nameFile(cluster: ClusterLike) {
         return `${this.escapeFileName(cluster.name)}-project.zip`;
     }
 
-    escapeFileName(name) {
+    escapeFileName(name: string) {
         return name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
     }
 }

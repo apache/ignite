@@ -17,18 +17,21 @@
 
 import template from './template.pug';
 import './style.scss';
+import ModalImportModels from '../modal-import-models/service';
 
-export class ModalImportModelsStepIndicator {
-    isVisited(index) {
-        return index <= this.steps.findIndex((step) => step.value === this.currentStep);
+export class ButtonImportModels {
+    static $inject = ['ModalImportModels'];
+    constructor(private ModalImportModels: ModalImportModels) {}
+    clusterId: string
+    startImport() {
+        return this.ModalImportModels.open();
     }
 }
-
 export const component = {
+    name: 'buttonImportModels',
+    controller: ButtonImportModels,
     template,
-    controller: ModalImportModelsStepIndicator,
     bindings: {
-        steps: '<',
-        currentStep: '<'
+        clusterID: '<clusterId'
     }
 };

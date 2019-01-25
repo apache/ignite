@@ -17,6 +17,17 @@
 
 import JSZip from 'jszip';
 
+import PageConfigure from '../../services/PageConfigure';
+import ConfigurationResourceFactory from '../../services/ConfigurationResource';
+import SummaryZipperFactory from '../../services/SummaryZipper';
+import IgniteVersion from 'app/services/Version.service';
+import ConfigurationDownload from '../../services/ConfigurationDownload';
+import IgniteLoadingFactory from 'app/modules/loading/loading.service';
+import MessagesFactory from 'app/services/Messages.service';
+import {Cluster, ShortCluster} from '../../types';
+
+type CluserLike = Cluster | ShortCluster;
+
 export default class ModalPreviewProjectController {
     static $inject = [
         'PageConfigure',
@@ -29,9 +40,21 @@ export default class ModalPreviewProjectController {
         'IgniteMessages'
     ];
 
-    constructor(PageConfigure, IgniteConfigurationResource, summaryZipper, IgniteVersion, $scope, ConfigurationDownload, IgniteLoading, IgniteMessages) {
-        Object.assign(this, {PageConfigure, IgniteConfigurationResource, summaryZipper, IgniteVersion, $scope, ConfigurationDownload, IgniteLoading, IgniteMessages});
-    }
+    constructor(
+        private PageConfigure: PageConfigure,
+        private IgniteConfigurationResource: ReturnType<typeof ConfigurationResourceFactory>,
+        private summaryZipper: ReturnType<typeof SummaryZipperFactory>,
+        private IgniteVersion: IgniteVersion,
+        private $scope: ng.IScope,
+        private ConfigurationDownload: ConfigurationDownload,
+        private IgniteLoading: ReturnType<typeof IgniteLoadingFactory>,
+        private IgniteMessages: ReturnType<typeof MessagesFactory>
+    ) {}
+
+    onHide: ng.ICompiledExpression
+    cluster: CluserLike
+    isDemo: boolean
+    fileText: string
 
     $onInit() {
         this.treeOptions = {
@@ -62,7 +85,7 @@ export default class ModalPreviewProjectController {
         });
     }
 
-    doStuff(cluster, isDemo) {
+    doStuff(cluster: CluserLike, isDemo: boolean) {
         this.IgniteLoading.start('projectStructurePreview');
         return this.PageConfigure.getClusterConfiguration({clusterID: cluster._id, isDemo})
         .then((data) => {
@@ -116,7 +139,7 @@ export default class ModalPreviewProjectController {
         })
         .catch((e) => {
             this.IgniteMessages.showError('Failed to generate project preview: ', e);
-            this.onHide();
+            this.onHide({});
         });
     }
 

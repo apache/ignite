@@ -17,17 +17,21 @@
 
 import template from './template.pug';
 import './style.scss';
+import {Menu} from 'app/types';
 
 const IMPORT_DM_NEW_CACHE = 1;
 
 export class TablesActionCell {
     static $inject = ['$element'];
+    constructor(private $element: JQLite) {}
 
-    constructor($element) {
-        Object.assign(this, {$element});
-    }
+    onEditStart?: ng.ICompiledExpression
+    onCacheSelect?: ng.ICompiledExpression
+    table: any
+    caches: Menu<string>
+    importActions: any
 
-    onClick(e) {
+    onClick(e: JQueryEventObject) {
         e.stopPropagation();
     }
 

@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
+import {TransitionService} from '@uirouter/angularjs';
+
 export class FakeUiCanExitController {
     static $inject = ['$element', '$transitions'];
     static CALLBACK_NAME = 'uiCanExit';
 
-    /** @type {string} Name of state to listen exit from */
-    fromState;
+    /** Name of state to listen exit from */
+    fromState: string;
 
-    /**
-     * @param {JQLite} $element
-     * @param {import('@uirouter/angularjs').TransitionService} $transitions
-     */
-    constructor($element, $transitions) {
-        this.$element = $element;
-        this.$transitions = $transitions;
-    }
+    constructor(private $element: JQLite, private $transitions: TransitionService) {}
 
     $onInit() {
         const data = this.$element.data();

@@ -19,21 +19,18 @@ import isEqual from 'lodash/isEqual';
 import map from 'lodash/map';
 import uniqBy from 'lodash/uniqBy';
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
+import {IGridColumn, IUiGridConstants} from 'ui-grid';
 
 const visibilityChanged = (a, b) => {
     return !isEqual(map(a, 'visible'), map(b, 'visible'));
 };
 
-/** @type {(cd: uiGrid.IGridColumn) => boolean} */
-const notSelectionColumn = (cc) => cc.colDef.name !== 'selectionRowHeaderCol';
+const notSelectionColumn = (cc: IGridColumn): boolean => cc.colDef.name !== 'selectionRowHeaderCol';
 
 /**
  * Generates categories for uiGrid columns
- * 
- * @type {ng.IDirectiveFactory}
- * @param {uiGrid.IUiGridConstants} uiGridConstants
  */
-export default function directive(uiGridConstants) {
+export default function directive(uiGridConstants: IUiGridConstants) {
     return {
         require: '^uiGrid',
         link: {

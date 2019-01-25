@@ -18,11 +18,9 @@
 import ace from 'brace';
 import _ from 'lodash';
 
-/**
- * @param {ng.IIntervalService} $interval
- * @param {ng.ITimeoutService} $timeout
- */
-export default function previewPanelDirective($interval, $timeout) {
+previewPanelDirective.$inject = ['$interval', '$timeout'];
+
+export default function previewPanelDirective($interval: ng.IIntervalService, $timeout: ng.ITimeoutService) {
     let animation = {editor: null, stage: 0, start: 0, stop: 0};
     let prevContent = [];
 
@@ -242,5 +240,3 @@ export default function previewPanelDirective($interval, $timeout) {
         require: ['?igniteUiAceTabs', '?^igniteUiAceTabs']
     };
 }
-
-previewPanelDirective.$inject = ['$interval', '$timeout'];

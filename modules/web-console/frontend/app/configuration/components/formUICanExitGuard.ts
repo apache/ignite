@@ -20,14 +20,7 @@ import {default as ConfigChangesGuard} from '../services/ConfigChangesGuard';
 class FormUICanExitGuardController {
     static $inject = ['$element', 'ConfigChangesGuard'];
 
-    /**
-     * @param {JQLite} $element
-     * @param {ConfigChangesGuard} ConfigChangesGuard
-     */
-    constructor($element, ConfigChangesGuard) {
-        this.$element = $element;
-        this.ConfigChangesGuard = ConfigChangesGuard;
-    }
+    constructor(private $element: JQLite, private ConfigChangesGuard: ConfigChangesGuard) {}
 
     $onDestroy() {
         this.$element = null;

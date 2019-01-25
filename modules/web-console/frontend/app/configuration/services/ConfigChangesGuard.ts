@@ -22,7 +22,9 @@ import {DiffPatcher} from 'jsondiffpatch';
 import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
 import 'jsondiffpatch/public/formatters-styles/html.css';
 
-export class IgniteObjectDiffer {
+export class IgniteObjectDiffer<T> {
+    diffPatcher: DiffPatcher
+
     constructor() {
         this.diffPatcher = new DiffPatcher({
             cloneDiffValues: true
@@ -47,25 +49,19 @@ export class IgniteObjectDiffer {
         this.diffPatcher.processor.pipes.diff.before('trivial', igniteConfigFalsyFilter);
     }
 
-    diff(a, b) {
+    diff(a: T, b: T) {
         return this.diffPatcher.diff(a, b);
     }
 }
 
-export default class ConfigChangesGuard {
+export default class ConfigChangesGuard<T> {
     static $inject = ['Confirm', '$sce'];
 
-    /**
-     * @param {Confirm} Confirm.
-     * @param {ng.ISCEService} $sce.
-     */
-    constructor(Confirm, $sce) {
-        this.Confirm = Confirm;
-        this.$sce = $sce;
-        this.differ = new IgniteObjectDiffer();
-    }
+    constructor(private Confirm: Confirm, private $sce: ng.ISCEService) {}
 
-    _hasChanges(a, b) {
+    differ = new IgniteObjectDiffer<T>();
+
+    _hasChanges(a: T, b: T) {
         return this.differ.diff(a, b);
     }
 
@@ -85,11 +81,10 @@ export default class ConfigChangesGuard {
     /**
      * Compares values and asks user if he wants to continue.
      *
-     * @template T
-     * @param {T} a Left comparison value.
-     * @param {T} b Right comparison value.
+     * @param a Left comparison value.
+     * @param b Right comparison value.
      */
-    guard(a, b) {
+    guard(a: T, b: T) {
         if (!a && !b)
             return Promise.resolve(true);
 

@@ -29,17 +29,9 @@ export default class IGFSs {
         {value: 'DUAL_ASYNC', label: 'DUAL_ASYNC'}
     ];
 
-    /**
-     * @param {ng.IHttpService} $http
-     */
-    constructor($http) {
-        this.$http = $http;
-    }
+    constructor(private $http: ng.IHttpService) {}
 
-    /**
-     * @param {string} igfsID
-     */
-    getIGFS(igfsID) {
+    getIGFS(igfsID: string) {
         return this.$http.get(`/api/v1/configuration/igfs/${igfsID}`);
     }
 

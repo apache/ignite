@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
+import {UIRouter, StateDeclaration, StateService} from '@uirouter/angularjs';
+import AgentManager from 'app/modules/agent/AgentManager.service';
+
 export default class ModalImportModels {
     static $inject = ['$modal', '$q', '$uiRouter', 'AgentManager'];
 
-    deferred;
+    deferred: ng.IDeferred<true>;
+    private _state: StateDeclaration
+    private _modal: mgcrea.ngStrap.modal.IModal
 
-    constructor($modal, $q, $uiRouter, AgentManager) {
-        this.$modal = $modal;
-        this.$q = $q;
-        this.$uiRouter = $uiRouter;
-        this.AgentManager = AgentManager;
-    }
+    constructor(
+        private $modal: mgcrea.ngStrap.modal.IModalService,
+        private $q: ng.IQService,
+        private $uiRouter: UIRouter,
+        private AgentManager: AgentManager
+    ) {}
 
     _goToDynamicState() {
         if (this.deferred)
@@ -65,7 +70,7 @@ export default class ModalImportModels {
                     cluster-id='$ctrl.$state.params.clusterID'
                 ></modal-import-models>
             `,
-            controller: ['$state', function($state) {
+            controller: ['$state', function($state: StateService) {
                 this.$state = $state;
 
                 this.onHide = () => {

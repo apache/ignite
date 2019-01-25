@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
-/**
- * @typedef {{icon: string, text: string, click: ng.ICompiledExpression}} ActionMenuItem
- */
+import Worker from './summary.worker';
 
-/**
- * @typedef {Array<ActionMenuItem>} ActionsMenu
- */
+export default function SummaryZipperService($q: ng.IQService) {
+    return function(message) {
+        const defer = $q.defer();
+        const worker = new Worker();
 
-/**
- * Groups multiple buttons into a single button with all but first buttons in a dropdown
- */
-export default class SplitButton {
-    /** @type {ActionsMenu} */
-    actions = [];
+        worker.postMessage(message);
 
-    static $inject = ['$element'];
+        worker.onmessage = (e) => {
+            defer.resolve(e.data);
+            worker.terminate();
+        };
 
-    /**
-     * @param {JQLite} $element Component root element
-     */
-    constructor($element, $transclude) {
-        this.$element = $element;
-    }
+        worker.onerror = (err) => {
+            defer.reject(err);
+            worker.terminate();
+        };
 
-    $onInit() {
-        this.$element[0].classList.add('btn-ignite-group');
-    }
+        return defer.promise;
+    };
 }
+
+SummaryZipperService.$inject = ['$q'];

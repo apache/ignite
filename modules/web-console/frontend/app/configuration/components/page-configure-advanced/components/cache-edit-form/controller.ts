@@ -18,24 +18,31 @@
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import {tap} from 'rxjs/operators';
+import {Menu} from 'app/types';
+
+import LegacyConfirmFactory from 'app/services/Confirm.service';
+import Version from 'app/services/Version.service';
+import Caches from '../../../../services/Caches';
+import FormUtilsFactory from 'app/services/FormUtils.service';
 
 export default class CacheEditFormController {
-    /** @type {ig.menu<string>} */
-    modelsMenu;
-    /** @type {ig.menu<string>} */
-    igfssMenu;
+    modelsMenu: Menu<string>;
+    igfssMenu: Menu<string>;
     /**
      * IGFS IDs to validate against.
-     * @type {Array<string>}
      */
-    igfsIDs;
-    /** @type {ng.ICompiledExpression} */
-    onSave;
+    igfsIDs: string[];
+    onSave: ng.ICompiledExpression;
 
     static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
-    constructor(IgniteConfirm, IgniteVersion, $scope, Caches, IgniteFormUtils) {
-        Object.assign(this, {IgniteConfirm, IgniteVersion, $scope, Caches, IgniteFormUtils});
-    }
+    constructor(
+        private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
+        private IgniteVersion: Version,
+        private $scope: ng.IScope,
+        private Caches: Caches,
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
+    ) {}
+
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 

@@ -19,8 +19,8 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import {tap, scan} from 'rxjs/operators';
 
 export default class ConfigureState {
+    actions$: Subject<{type: string}>
     constructor() {
-        /** @type {Subject<{type: string}>} */
         this.actions$ = new Subject();
         this.state$ = new BehaviorSubject({});
         this._combinedReducer = (state, action) => state;

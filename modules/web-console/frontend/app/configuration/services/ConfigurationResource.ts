@@ -17,10 +17,9 @@
 
 import _ from 'lodash';
 
-/**
- * @param {ng.IHttpService} $http
- */
-export default function ConfigurationResourceService($http) {
+ConfigurationResourceService.$inject = ['$http'];
+
+export default function ConfigurationResourceService($http: ng.IHttpService) {
     return {
         read() {
             return $http.get('/api/v1/configuration/list')
@@ -47,5 +46,3 @@ export default function ConfigurationResourceService($http) {
         }
     };
 }
-
-ConfigurationResourceService.$inject = ['$http'];

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
+import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
+
 export default angular.module('ignite-console.page-configure.validation', [])
     .directive('pcNotInCollection', function() {
-        class Controller {
-            /** @type {ng.INgModelController} */
-            ngModel;
-            /** @type {Array} */
-            items;
+        class Controller<T> {
+            ngModel: ng.INgModelController;
+            items: T[];
 
             $onInit() {
-                this.ngModel.$validators.notInCollection = (item) => {
+                this.ngModel.$validators.notInCollection = (item: T) => {
                     if (!this.items)
                         return true;
 
@@ -48,16 +48,13 @@ export default angular.module('ignite-console.page-configure.validation', [])
         };
     })
     .directive('pcInCollection', function() {
-        class Controller {
-            /** @type {ng.INgModelController} */
-            ngModel;
-            /** @type {Array} */
-            items;
-            /** @type {string} */
-            pluck;
+        class Controller<T> {
+            ngModel: ng.INgModelController;
+            items: T[];
+            pluck?: string;
 
             $onInit() {
-                this.ngModel.$validators.inCollection = (item) => {
+                this.ngModel.$validators.inCollection = (item: T) => {
                     if (!this.items)
                         return false;
 
@@ -86,10 +83,9 @@ export default angular.module('ignite-console.page-configure.validation', [])
     })
     .directive('pcPowerOfTwo', function() {
         class Controller {
-            /** @type {ng.INgModelController} */
-            ngModel;
+            ngModel: ng.INgModelController;
             $onInit() {
-                this.ngModel.$validators.powerOfTwo = (value) => {
+                this.ngModel.$validators.powerOfTwo = (value: number) => {
                     return !value || ((value & -value) === value);
                 };
             }
@@ -103,18 +99,18 @@ export default angular.module('ignite-console.page-configure.validation', [])
             bindToController: true
         };
     })
-    .directive('isValidJavaIdentifier', ['IgniteLegacyUtils', function(LegacyUtils) {
+    .directive('isValidJavaIdentifier', ['IgniteLegacyUtils', function(LegacyUtils: ReturnType<typeof LegacyUtilsFactory>) {
         return {
-            link(scope, el, attr, ngModel) {
-                ngModel.$validators.isValidJavaIdentifier = (value) => LegacyUtils.VALID_JAVA_IDENTIFIER.test(value);
+            link(scope, el, attr, ngModel: ng.INgModelController) {
+                ngModel.$validators.isValidJavaIdentifier = (value: string) => LegacyUtils.VALID_JAVA_IDENTIFIER.test(value);
             },
             require: 'ngModel'
         };
     }])
-    .directive('notJavaReservedWord', ['IgniteLegacyUtils', function(LegacyUtils) {
+    .directive('notJavaReservedWord', ['IgniteLegacyUtils', function(LegacyUtils: ReturnType<typeof LegacyUtilsFactory>) {
         return {
-            link(scope, el, attr, ngModel) {
-                ngModel.$validators.notJavaReservedWord = (value) => !LegacyUtils.JAVA_KEYWORDS.includes(value);
+            link(scope, el, attr, ngModel: ng.INgModelController) {
+                ngModel.$validators.notJavaReservedWord = (value: string) => !LegacyUtils.JAVA_KEYWORDS.includes(value);
             },
             require: 'ngModel'
         };

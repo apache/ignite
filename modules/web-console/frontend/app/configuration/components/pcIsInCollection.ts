@@ -15,22 +15,31 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
+class Controller<T> {
+    ngModel: ng.INgModelController
+    items: T[]
+    $onInit() {
+        this.ngModel.$validators.isInCollection = (item) => {
+            if (!item || !this.items)
+                return true;
 
-export class ButtonDownloadProject {
-    static $inject = ['ConfigurationDownload'];
-    constructor(ConfigurationDownload) {
-        Object.assign(this, {ConfigurationDownload});
+            return this.items.includes(item);
+        };
     }
-    download() {
-        return this.ConfigurationDownload.downloadClusterConfiguration(this.cluster);
+
+    $onChanges() {
+        this.ngModel.$validate();
     }
 }
-export const component = {
-    name: 'buttonDownloadProject',
-    controller: ButtonDownloadProject,
-    template,
-    bindings: {
-        cluster: '<'
-    }
-};
+
+export default function pcIsInCollection() {
+    return {
+        controller: Controller,
+        require: {
+            ngModel: 'ngModel'
+        },
+        bindToController: {
+            items: '<pcIsInCollection'
+        }
+    };
+}

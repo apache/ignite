@@ -125,6 +125,13 @@ export type LoadBalancingKinds = 'RoundRobin'
 
 export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom';
 
+export interface Cluster {
+    _id: string,
+    name: string,
+    // TODO: cover with types
+    [key: string]: any
+}
+
 export interface ShortCluster {
     _id: string,
     name: string,
@@ -133,3 +140,5 @@ export interface ShortCluster {
     models: number,
     igfs: number
 }
+
+export type ClusterLike = Cluster | ShortCluster;

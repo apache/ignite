@@ -18,14 +18,23 @@
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 
+import LegacyConfirmFactory from 'app/services/Confirm.service';
+import Version from 'app/services/Version.service';
+import FormUtilsFactory from 'app/services/FormUtils.service';
+import IGFSs from '../../../../services/IGFSs';
+
 export default class IgfsEditFormController {
-    /** @type {ng.ICompiledExpression} */
-    onSave;
+    onSave: ng.ICompiledExpression;
 
     static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'IGFSs', 'IgniteFormUtils'];
-    constructor( IgniteConfirm, IgniteVersion, $scope, IGFSs, IgniteFormUtils) {
-        Object.assign(this, { IgniteConfirm, IgniteVersion, $scope, IGFSs, IgniteFormUtils});
-    }
+    constructor(
+        private IgniteConfirm: ReturnType<typeof LegacyConfirmFactory>,
+        private IgniteVersion: Version,
+        private $scope: ng.IScope,
+        private IGFSs: IGFSs,
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
+    ) {}
+
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
