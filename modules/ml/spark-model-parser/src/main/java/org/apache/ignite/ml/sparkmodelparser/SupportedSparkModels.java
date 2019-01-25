@@ -27,5 +27,11 @@ public enum SupportedSparkModels {
     LOG_REGRESSION,
 
     /** Linear regression. */
-    LINEAR_REGRESSION
+    LINEAR_REGRESSION,
+
+    /** Decision tree. */
+    DECISION_TREE,
+
+    /** Support Vector Machine . */
+    LINEAR_SVM
 }
