@@ -47,7 +47,7 @@ public class IgniteVersionUtils {
     public static final String ACK_VER_STR;
 
     /** Copyright blurb. */
-    public static final String COPYRIGHT = "2018 Copyright(C) Apache Software Foundation";
+    public static final String COPYRIGHT;
 
     /**
      * Static initializer.
@@ -58,10 +58,15 @@ public class IgniteVersionUtils {
             .replace(".b", "-b")
             .replace(".final", "-final");
 
-        BUILD_TSTAMP = Long.valueOf(IgniteProperties.get("ignite.build"));
+        BUILD_TSTAMP = Long.valueOf(IgniteProperties.get("ignite.build")) != 0 ?
+            Long.valueOf(IgniteProperties.get("ignite.build")) : System.currentTimeMillis() / 1000;
+
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
+        COPYRIGHT = BUILD_TSTAMP_STR.substring(0, 4) + " Copyright(C) Apache Software Foundation";
+
         REV_HASH_STR = IgniteProperties.get("ignite.revision");
+
         RELEASE_DATE_STR = IgniteProperties.get("ignite.rel.date");
 
         String rev = REV_HASH_STR.length() > 8 ? REV_HASH_STR.substring(0, 8) : REV_HASH_STR;
