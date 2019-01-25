@@ -530,6 +530,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.getCause() instanceof TransactionSerializationException);
+                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
@@ -686,7 +687,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));
-                                            assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
+                                            assertEquals(atomicityMode(cache0), TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
