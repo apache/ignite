@@ -177,7 +177,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
+    /** Lock to maintain integrity of {@link TestCounters}. */
     private final Lock runSerializer = new ReentrantLock();
 
     /** Manages test execution and reporting. */
