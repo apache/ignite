@@ -672,9 +672,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
-                    if (!customMsg.getClass().getName().contains("DistributedMetaStorage"))
-                        log.info("<@> onDiscoveryMessage " + customMsg);
-
                     boolean incMinorTopVer;
 
                     if (customMsg instanceof ChangeGlobalStateMessage) {
@@ -808,7 +805,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 if (GridCacheUtils.isPersistenceEnabled(ctx.config())) {
                                     ctx.cache().context().database().checkpointReadLock();
                                     try {
-                                        System.out.println("<@> onLocalJoin onReadyForReadWrite");
                                         for (MetastorageLifecycleListener subscriber : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
                                             subscriber.onReadyForReadWrite(ctx.cache().context().database().metaStorage());
                                         }

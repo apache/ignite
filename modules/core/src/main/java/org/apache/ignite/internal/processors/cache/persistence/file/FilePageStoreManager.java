@@ -287,8 +287,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("Stopping page store manager.");
 
         cleanupPageStoreIfMatch(p -> true, false);
-
-        log.info("<@> PageStore stop0 " + cancel);
     }
 
     /** {@inheritDoc} */
@@ -306,7 +304,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("DeActivate page store manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        log.info("<@> PageStore onDeactivate");
 //        stop0(true);
     }
 

@@ -763,12 +763,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.onActivate0(ctx);
 
-        log.info("<@> GridCacheDatabaseSharedManager.onActivate0");
-
         if (!cctx.kernalContext().clientNode()) {
             initializeCheckpointPool();
 
-            log.info("<@> finishRecovery");
             finishRecovery();
         }
     }
@@ -879,15 +876,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             walTail = null;
 
-            System.out.println("<@> AFTER createMetastorage");
-
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
                 metaStorage = createMetastorage(false);
-
-            System.out.println("<@> BEFORE createMetastorage");
-
-//            notifyMetastorageReadyForReadWrite();
 
             U.log(log, "Finish recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
@@ -985,7 +976,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        log.info("<@> GridCacheDatabaseSharedManager.onKernalStop0");
         checkpointLock.writeLock().lock();
 
         try {
@@ -1012,7 +1002,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        log.info("<@> GridCacheDatabaseSharedManager.stop0");
         super.stop0(cancel);
 
         releaseFileLock();
@@ -2073,8 +2062,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @Override public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (checkpointerThread == null) {
-            U.dumpStack(log, "<@> onStateRestored; this = " + System.identityHashCode(checkpointer));
-
             IgniteThread cpThread = new IgniteThread(cctx.igniteInstanceName(), checkpointer.name(), checkpointer);
 
             cpThread.start();
@@ -3111,13 +3098,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             tmpWriteBuf.order(ByteOrder.nativeOrder());
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            U.dumpStack(log, "<@> checkpoint run; this = " + System.identityHashCode(this));
-
-            super.run();
-        }
-
         /**
          * @return Progress of current chekpoint or {@code null}, if isn't checkpoint at this moment.
          */
@@ -3741,10 +3721,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
-                    if (cpPtr == null) {
-                        log.info("<@> Storing that damn NULL_PTR");
+                    if (cpPtr == null)
                         cpPtr = CheckpointStatus.NULL_PTR;
-                    }
                 }
 
                 if (hasPages || hasPartitionsToDestroy) {

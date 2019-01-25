@@ -756,7 +756,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        log.info("<@> DatabaseSharedManager stop0 " + cancel);
         onDeActivate(true);
     }
 
@@ -1175,8 +1174,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (kctx.clientNode() && kctx.config().getDataStorageConfiguration() == null)
             return;
 
-        log.info("<@> DatabaseSharedManager onActivate0");
-
         initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
@@ -1218,7 +1215,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        log.info("<@> DatabaseSharedManager onDeactivate");
 //        onDeActivate(!reuseMemory);
     }
 

@@ -109,7 +109,6 @@ public abstract class GridWorker implements Runnable {
             log.debug("Grid runnable started: " + name);
 
         try {
-            log.info("<@> try; runner = " + runner + "; this = " + System.identityHashCode(this));
             // Special case, when task gets cancelled before it got scheduled.
             if (isCancelled)
                 runner.interrupt();
@@ -132,7 +131,6 @@ public abstract class GridWorker implements Runnable {
         // Catch everything to make sure that it gets logged properly and
         // not to kill any threads from the underlying thread pool.
         catch (Throwable e) {
-            log.info("<@> catch3; runner = " + runner + "\ne = " + e);
             if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class) && !X.hasCause(e, IgniteInterruptedException.class))
                 U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
             else
@@ -142,7 +140,6 @@ public abstract class GridWorker implements Runnable {
                 throw e;
         }
         finally {
-            log.info("<@> finally; this = " + System.identityHashCode(this) + "; runner = " + runner);
             synchronized (mux) {
                 finished = true;
 
@@ -166,7 +163,6 @@ public abstract class GridWorker implements Runnable {
             // further operations on this runnable won't
             // affect the thread which could have been recycled
             // by thread pool.
-            log.info("<@> runner = null; this = " + System.identityHashCode(this));
             runner = null;
         }
     }
