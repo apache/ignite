@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNo
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -140,6 +141,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         // suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
         suite.addTestSuite(IgnitePdsWithTtlTest.class);
+        suite.addTestSuite(IgnitePdsWithTtlTest2.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 

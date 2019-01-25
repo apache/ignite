@@ -130,7 +130,14 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             Throwable err = null;
 
             try {
-                cctx.discovery().localJoin();
+                blockingSectionBegin();
+
+                try {
+                    cctx.discovery().localJoin();
+                }
+                finally {
+                    blockingSectionEnd();
+                }
 
                 assert !cctx.kernalContext().recoveryMode();
 
