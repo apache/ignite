@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQue
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUnionDuplicatesTest;
@@ -293,10 +292,9 @@ import org.junit.runners.Suite;
     GridH2IndexingInMemSelfTest.class,
     GridH2IndexingOffheapSelfTest.class,
 
-        // Parsing
+    // Parsing
     GridQueryParsingTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
-    IgniteCacheSqlDmlErrorSelfTest.class,
 
     // Config.
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,

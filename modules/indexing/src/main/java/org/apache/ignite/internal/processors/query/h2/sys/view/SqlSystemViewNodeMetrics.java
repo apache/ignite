@@ -132,7 +132,8 @@ public class SqlSystemViewNodeMetrics extends SqlAbstractLocalSystemView {
                 ClusterMetrics metrics = node.metrics();
 
                 rows.add(
-                    createRow(ses, rows.size(),
+                    createRow(
+                        ses,
                         node.id(),
                         valueTimestampFromMillis(metrics.getLastUpdateTime()),
                         metrics.getMaximumActiveJobs(),
