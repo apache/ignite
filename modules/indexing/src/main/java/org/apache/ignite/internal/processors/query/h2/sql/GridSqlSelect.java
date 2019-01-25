@@ -182,7 +182,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @return {@code True} if this simple SQL query like 'SELECT A, B, C from SOME_TABLE' without any conditions
      *      and expressions.
      */
-    @Override public boolean simpleQuery() {
+    @Override public boolean skipMergeTable() {
         boolean simple = !distinct &&
             from instanceof GridSqlTable &&
             where == null &&

@@ -138,7 +138,7 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /**
      * @return If this is a simple query with no conditions, expressions, sorting, etc...
      */
-    public abstract boolean simpleQuery();
+    public abstract boolean skipMergeTable();
 
     /**
      * @param buff Statement builder.

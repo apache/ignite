@@ -100,7 +100,7 @@ public class GridSqlQuerySplitter {
     private Set<String> pushedDownCols = new HashSet<>();
 
     /** */
-    private boolean rdcQrySimple;
+    private boolean skipMergeTbl;
 
     /** */
     private GridCacheSqlQuery rdcSqlQry;
@@ -248,7 +248,7 @@ public class GridSqlQuerySplitter {
         for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys)
             twoStepQry.addMapQuery(mapSqlQry);
 
-        twoStepQry.skipMergeTable(splitter.rdcQrySimple);
+        twoStepQry.skipMergeTable(splitter.skipMergeTbl);
         twoStepQry.explain(explain);
         twoStepQry.distributedJoins(distributedJoins);
 
@@ -314,7 +314,8 @@ public class GridSqlQuerySplitter {
 
         // Setup a resulting reduce query.
         rdcSqlQry = new GridCacheSqlQuery(rdcQry);
-        rdcQrySimple = qry.simpleQuery();
+
+        skipMergeTbl = qry.skipMergeTable();
 
         setupParameters(rdcSqlQry, qry, params);
     }
