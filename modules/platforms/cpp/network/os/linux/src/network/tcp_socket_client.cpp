@@ -215,7 +215,7 @@ namespace ignite
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
         {
-            return sockets::WaitOnSocket(socketHandle, timeout == 0 ? -1 : timeout, rd);
+            return sockets::WaitOnSocket(socketHandle, timeout, rd);
         }
     }
 }

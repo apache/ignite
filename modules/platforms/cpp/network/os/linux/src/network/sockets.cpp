@@ -72,6 +72,8 @@ namespace ignite
 
             int WaitOnSocket(SocketHandle socket, int32_t timeout, bool rd)
             {
+                int32_t timeout0 = timeout == 0 ? -1 : timeout;
+
                 int lastError = 0;
                 int ret;
 
@@ -82,7 +84,7 @@ namespace ignite
                     fds[0].fd = socket;
                     fds[0].events = rd ? POLLIN : POLLOUT;
 
-                    ret = poll(fds, 1, timeout * 1000);
+                    ret = poll(fds, 1, timeout0 * 1000);
 
                     if (ret == SOCKET_ERROR)
                         lastError = GetLastSocketError();
