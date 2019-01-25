@@ -94,10 +94,10 @@ public class GridSqlQuerySplitter {
     private int splitId = -1; // The first one will be 0.
 
     /** Query tables. */
-    private Set<QueryTable> tbls = new HashSet<>();
+    private final Set<QueryTable> tbls = new HashSet<>();
 
     /** */
-    private Set<String> pushedDownCols = new HashSet<>();
+    private final Set<String> pushedDownCols = new HashSet<>();
 
     /** */
     private boolean skipMergeTbl;
@@ -106,19 +106,19 @@ public class GridSqlQuerySplitter {
     private GridCacheSqlQuery rdcSqlQry;
 
     /** */
-    private List<GridCacheSqlQuery> mapSqlQrys = new ArrayList<>();
+    private final List<GridCacheSqlQuery> mapSqlQrys = new ArrayList<>();
 
     /** */
     private Object[] params;
 
     /** */
-    private boolean collocatedGrpBy;
+    private final boolean collocatedGrpBy;
 
     /** */
-    private boolean distributedJoins;
+    private final boolean distributedJoins;
 
     /** */
-    private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
+    private final IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
     /** Partition extractor. */
     private final PartitionExtractor extractor;
