@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -170,7 +169,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param h2 Indexing.
+     * @param partExtractor Partition extractor.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -183,7 +182,7 @@ public class GridSqlQuerySplitter {
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        IgniteH2Indexing h2
+        PartitionExtractor partExtractor
     ) throws SQLException, IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
@@ -199,7 +198,7 @@ public class GridSqlQuerySplitter {
         qry.explain(false);
 
         GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, distributedJoins,
-            h2.partitionExtractor());
+            partExtractor);
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -382,7 +381,7 @@ public class GridSqlQuerySplitter {
                 // We always must be at the right side of the join here to push down
                 // range on the left side. If there are no LEFT JOINs in the SELECT, then
                 // we will never have ON conditions, they are getting moved to WHERE clause.
-                (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(findJoin(qrym, i).on())))) {
+                (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(qrym.findJoin(i).on())))) {
                 // Handle a single table push down case.
                 if (hasPushedDownCol && begin == -1)
                     begin = i - 1;
@@ -481,7 +480,7 @@ public class GridSqlQuerySplitter {
      * @param qrym Query model.
      */
     private void injectSortingFirstJoin(SplitterQueryModel qrym) {
-        GridSqlJoin join = findJoin(qrym, 0);
+        GridSqlJoin join = qrym.findJoin(0);
 
         // We are at the beginning, thus left and right AST must be children of the same join AST.
         //     join2
@@ -495,8 +494,8 @@ public class GridSqlQuerySplitter {
         // Collect all AND conditions.
         List<SplitterAndCondition> andConditions = new ArrayList<>();
 
-        collectAndConditions(andConditions, join, ON_CHILD);
-        collectAndConditions(andConditions, qrym.ast(), WHERE_CHILD);
+        SplitterAndCondition.collectAndConditions(andConditions, join, ON_CHILD);
+        SplitterAndCondition.collectAndConditions(andConditions, qrym.ast(), WHERE_CHILD);
 
         // Collect all the JOIN condition columns for sorting.
         List<GridSqlColumn> leftOrder = new ArrayList<>();
@@ -611,27 +610,6 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param select Select.
-     * @param aliases Table aliases in FROM.
-     */
-    private static void collectFromAliases(GridSqlSelect select, Set<GridSqlAlias> aliases) {
-        GridSqlAst from = select.from();
-
-        if (from == null)
-            return;
-
-        while (from instanceof GridSqlJoin) {
-            GridSqlElement right = ((GridSqlJoin)from).rightTable();
-
-            aliases.add((GridSqlAlias)right);
-
-            from = ((GridSqlJoin)from).leftTable();
-        }
-
-        aliases.add((GridSqlAlias)from);
-    }
-
-    /**
      * @param qrym Query model.
      * @param begin The first child model in range to push down.
      * @param end The last child model in range to push down.
@@ -743,7 +721,7 @@ public class GridSqlQuerySplitter {
 
             //  W: T2
 
-            GridSqlJoin endJoin = findJoin(qrym, end);
+            GridSqlJoin endJoin = qrym.findJoin(end);
 
             wrapSelect.from(qrym.get(end).uniqueAlias());
             endJoin.child(end == 0 ? LEFT_TABLE_CHILD : RIGHT_TABLE_CHILD, wrapAlias);
@@ -779,9 +757,9 @@ public class GridSqlQuerySplitter {
             //           / \
             //         T2   T3
 
-            GridSqlJoin beginJoin = findJoin(qrym, begin);
-            GridSqlJoin afterBeginJoin = findJoin(qrym, begin + 1);
-            GridSqlJoin endJoin = findJoin(qrym, end);
+            GridSqlJoin beginJoin = qrym.findJoin(begin);
+            GridSqlJoin afterBeginJoin = qrym.findJoin(begin + 1);
+            GridSqlJoin endJoin = qrym.findJoin(end);
 
             wrapSelect.from(endJoin);
             afterBeginJoin.leftTable(beginJoin.rightTable());
@@ -811,8 +789,8 @@ public class GridSqlQuerySplitter {
             //         / \
             //       T0   T1
 
-            GridSqlJoin endJoin = findJoin(qrym, end);
-            GridSqlJoin afterEndJoin = findJoin(qrym, end + 1);
+            GridSqlJoin endJoin = qrym.findJoin(end);
+            GridSqlJoin afterEndJoin = qrym.findJoin(end + 1);
 
             wrapSelect.from(endJoin);
             afterEndJoin.leftTable(wrapAlias);
@@ -840,10 +818,10 @@ public class GridSqlQuerySplitter {
             //           / \
             //         T1   T2
 
-            GridSqlJoin beginJoin = findJoin(qrym, begin);
-            GridSqlJoin afterBeginJoin = findJoin(qrym, begin + 1);
-            GridSqlJoin endJoin = findJoin(qrym, end);
-            GridSqlJoin afterEndJoin = findJoin(qrym, end + 1);
+            GridSqlJoin beginJoin = qrym.findJoin(begin);
+            GridSqlJoin afterBeginJoin = qrym.findJoin(begin + 1);
+            GridSqlJoin endJoin = qrym.findJoin(end);
+            GridSqlJoin afterEndJoin = qrym.findJoin(end + 1);
 
             wrapSelect.from(endJoin);
             afterEndJoin.leftTable(beginJoin);
@@ -1031,7 +1009,7 @@ public class GridSqlQuerySplitter {
 
         List<SplitterAndCondition> andConditions = new ArrayList<>();
 
-        collectAndConditions(andConditions, select, WHERE_CHILD);
+        SplitterAndCondition.collectAndConditions(andConditions, select, WHERE_CHILD);
 
         for (int i = 0; i < andConditions.size(); i++) {
             SplitterAndCondition c = andConditions.get(i);
@@ -1071,7 +1049,7 @@ public class GridSqlQuerySplitter {
         else {
             // If it is a subquery, collect all the table aliases to ignore them later.
             if (ast instanceof GridSqlSelect)
-                collectFromAliases((GridSqlSelect)ast, locSubQryTblAliases);
+                ((GridSqlSelect)ast).collectFromAliases(locSubQryTblAliases);
 
             for (int i = 0; i < ast.size(); i++) {
                 if (!isAllRelatedToTables(tblAliases, locSubQryTblAliases, ast.child(i)))
@@ -1080,57 +1058,6 @@ public class GridSqlQuerySplitter {
         }
 
         return true;
-    }
-
-    /**
-     * @param andConditions Conditions in AND.
-     * @param prnt Parent Parent element.
-     * @param childIdx Child index.
-     */
-    private void collectAndConditions(List<SplitterAndCondition> andConditions, GridSqlAst prnt, int childIdx) {
-        GridSqlAst child = prnt.child(childIdx);
-
-        if (child instanceof GridSqlOperation) {
-            GridSqlOperation op = (GridSqlOperation)child;
-
-            if (op.operationType() == GridSqlOperationType.AND) {
-                collectAndConditions(andConditions, op, 0);
-                collectAndConditions(andConditions, op, 1);
-
-                return;
-            }
-        }
-
-        if (!SplitterUtils.isTrue(child))
-            andConditions.add(new SplitterAndCondition(prnt, childIdx));
-    }
-
-    /**
-     * @param qrym Query model for the SELECT.
-     * @param idx Index of the child model for which we need to find a respective JOIN element.
-     * @return JOIN.
-     */
-    private static GridSqlJoin findJoin(SplitterQueryModel qrym, int idx) {
-        assert qrym.type() == SplitterQueryModelType.SELECT : qrym.type();
-        assert qrym.size() > 1; // It must be at least one join with at least two child tables.
-        assert idx < qrym.size(): idx;
-
-        //     join2
-        //      / \
-        //   join1 \
-        //    / \   \
-        //  T0   T1  T2
-
-        // If we need to find JOIN for T0, it is the same as for T1.
-        if (idx == 0)
-            idx = 1;
-
-        GridSqlJoin join = (GridSqlJoin)qrym.<GridSqlSelect>ast().from();
-
-        for (int i = qrym.size() - 1; i > idx; i--)
-            join = (GridSqlJoin)join.leftTable();
-
-        return join;
     }
 
     /**

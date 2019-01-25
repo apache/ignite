@@ -1913,7 +1913,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.isCollocated(),
             qry.isDistributedJoins(),
             qry.isEnforceJoinOrder(),
-            this);
+            partExtractor);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
 

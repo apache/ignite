@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.List;
+
 /**
  * AND condition for splitter.
  */
@@ -28,10 +30,35 @@ public class SplitterAndCondition {
     private final int childIdx;
 
     /**
+     * Collect and conditions from the given element.
+     *
+     * @param res Conditions in AND.
      * @param parent Parent element.
      * @param childIdx Child index.
      */
-    public SplitterAndCondition(GridSqlAst parent, int childIdx) {
+    public static void collectAndConditions(List<SplitterAndCondition> res, GridSqlAst parent, int childIdx) {
+        GridSqlAst child = parent.child(childIdx);
+
+        if (child instanceof GridSqlOperation) {
+            GridSqlOperation op = (GridSqlOperation)child;
+
+            if (op.operationType() == GridSqlOperationType.AND) {
+                collectAndConditions(res, op, 0);
+                collectAndConditions(res, op, 1);
+
+                return;
+            }
+        }
+
+        if (!SplitterUtils.isTrue(child))
+            res.add(new SplitterAndCondition(parent, childIdx));
+    }
+
+    /**
+     * @param parent Parent element.
+     * @param childIdx Child index.
+     */
+    private SplitterAndCondition(GridSqlAst parent, int childIdx) {
         this.parent = parent;
         this.childIdx = childIdx;
     }

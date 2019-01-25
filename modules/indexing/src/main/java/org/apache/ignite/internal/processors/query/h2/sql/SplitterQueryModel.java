@@ -308,6 +308,33 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
+     * @param idx Index of the child model for which we need to find a respective JOIN element.
+     * @return JOIN.
+     */
+    public GridSqlJoin findJoin(int idx) {
+        assert type == SplitterQueryModelType.SELECT : type;
+        assert size() > 1; // It must be at least one join with at least two child tables.
+        assert idx < size(): idx;
+
+        //     join2
+        //      / \
+        //   join1 \
+        //    / \   \
+        //  T0   T1  T2
+
+        // If we need to find JOIN for T0, it is the same as for T1.
+        if (idx == 0)
+            idx = 1;
+
+        GridSqlJoin join = (GridSqlJoin)((GridSqlSelect)ast()).from();
+
+        for (int i = size() - 1; i > idx; i--)
+            join = (GridSqlJoin)join.leftTable();
+
+        return join;
+    }
+
+    /**
      * @param select Select to check.
      * @param collocatedGrpBy Collocated GROUP BY flag.
      * @return {@code true} If we need to split this select.

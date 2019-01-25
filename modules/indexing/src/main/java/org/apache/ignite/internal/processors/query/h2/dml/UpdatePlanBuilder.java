@@ -843,7 +843,7 @@ public final class UpdatePlanBuilder {
                     fieldsQry.isCollocated(),
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
-                    idx);
+                    idx.partitionExtractor());
 
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
