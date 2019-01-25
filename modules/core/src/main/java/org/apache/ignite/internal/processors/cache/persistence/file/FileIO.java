@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * Interface to perform file I/O operations.
@@ -272,4 +273,16 @@ public interface FileIO extends AutoCloseable {
      * @see #punchHole
      */
     long getSparseSize();
+
+    /**
+     * This method will transfers the content of file to the specified channel.
+     *
+     * @param position The relative offset of the file where the transfer begins from.
+     * @param count The number of bytes to be transferred.
+     * @param target Destination channel of the transfer.
+     * @return Count of bytes which was successfully transferred.
+     */
+    public default long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

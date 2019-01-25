@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.GridMessageRequestListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -164,7 +166,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** Message listener. */
-    private GridMessageListener lsnr = new GridMessageListener() {
+    private GridMessageRequestListener lsnr = new GridMessageRequestListener() {
         @Override public void onMessage(final UUID nodeId, final Object msg, final byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
@@ -305,6 +307,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             handleMessage(nodeId, cacheMsg, plc);
+        }
+
+        @Override public void onChannelConfigure(IgniteSocketChannel ch, @Nullable Object msg) {
+            if (msg instanceof GridCacheGroupIdMessage) {
+                GridCacheGroupIdMessage msg0 = (GridCacheGroupIdMessage)msg;
+
+                ch.groupId(msg0.groupId());
+            }
         }
     };
 

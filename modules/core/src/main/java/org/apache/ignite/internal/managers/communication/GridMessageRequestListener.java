@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.EventListener;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Listener for connections established from remote nodes.
- */
-public interface GridIoChannelListener extends EventListener {
+/** */
+public interface GridMessageRequestListener extends GridMessageListener {
     /**
-     * The creation event of {@link IgniteSocketChannel} from remote connection.
-     *
-     * @param channel Local created channel endpoint.
+     * @param ch Channel to configure.
+     * @param msg Configuration message.
      */
-    public default void onChannelCreated(IgniteSocketChannel channel) {
+    public default void onChannelConfigure(IgniteSocketChannel ch, @Nullable Object msg) {
         // No-op.
     }
 }

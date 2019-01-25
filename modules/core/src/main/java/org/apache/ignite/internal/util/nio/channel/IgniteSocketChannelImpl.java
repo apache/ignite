@@ -20,14 +20,13 @@ package org.apache.ignite.internal.util.nio.channel;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
  *
  */
-public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
+public class IgniteSocketChannelImpl implements IgniteSocketChannel {
     /** */
     private final ConnectionKey key;
 
@@ -35,10 +34,19 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
     private final SocketChannel channel;
 
     /** */
-    private final IgniteNioSocketChannelConfig config;
+    private final IgniteSocketChannelConfig config;
 
     /** */
     private final AtomicBoolean readyStatus = new AtomicBoolean();
+
+    /** */
+    private byte plc;
+
+    /** */
+    private Object topic;
+
+    /** */
+    private int grpId;
 
     /**
      * Create a new NIO socket channel.
@@ -46,10 +54,10 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
      * @param key Connection key.
      * @param channel The {@link SocketChannel} which will be used.
      */
-    public IgniteNioSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
+    public IgniteSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
         this.key = key;
         this.channel = channel;
-        this.config = new IgniteNioSocketChannelConfig(channel);
+        this.config = new IgniteSocketChannelConfig(channel);
     }
 
     /** {@inheritDoc} */
@@ -63,12 +71,12 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteNioSocketChannelConfig config() {
+    @Override public IgniteSocketChannelConfig config() {
         return config;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReady() {
+    @Override public boolean ready() {
         return readyStatus.get();
     }
 
@@ -80,28 +88,33 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isInputShutdown() {
-        return channel().socket().isInputShutdown();
+    @Override public byte policy() {
+        return plc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> shutdownInput() {
-        return null;
+    @Override public void policy(byte plc) {
+        this.plc = plc;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isOutputShutdown() {
-        return channel().socket().isOutputShutdown();
+    @Override public Object topic() {
+        return topic;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> shutdownOutput() {
-        return null;
+    @Override public void topic(Object topic) {
+        this.topic = topic;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> closeFuture() {
-        return null;
+    @Override public int groupId() {
+        return grpId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void groupId(int grpId) {
+        this.grpId = grpId;
     }
 
     /** {@inheritDoc} */
@@ -116,7 +129,7 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IgniteNioSocketChannelImpl channel1 = (IgniteNioSocketChannelImpl)o;
+        IgniteSocketChannelImpl channel1 = (IgniteSocketChannelImpl)o;
 
         if (!key.equals(channel1.key))
             return false;
@@ -132,7 +145,7 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IgniteNioSocketChannelImpl{" +
+        return "IgniteSocketChannelImpl{" +
             "key=" + key +
             ", channel=" + channel +
             ", config=" + config +

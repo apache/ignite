@@ -18,14 +18,14 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Message response for creation of {@link IgniteNioSocketChannel}.
+ * Message response for creation of {@link IgniteSocketChannel}.
  */
 public class ChannelCreateResponseMessage implements Message {
     /** Request message type */

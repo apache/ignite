@@ -700,7 +700,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheWorkDir Cache work directory.
      * @param partId Partition id.
      */
-    @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
+    @NotNull public static File getPartitionFile(File cacheWorkDir, int partId) {
         return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
     }
 
@@ -969,14 +969,31 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      */
     public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        String dirName;
+        return cacheWorkDir(storeWorkDir, isSharedGroup, cacheOrGroupName);
+    }
 
-        if (isSharedGroup)
-            dirName = CACHE_GRP_DIR_PREFIX + cacheOrGroupName;
-        else
-            dirName = CACHE_DIR_PREFIX + cacheOrGroupName;
+    /**
+     * @param storeWorkDir Configured file page store base directory.
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return Cache directory.
+     */
+    public static File cacheWorkDir(File storeWorkDir, boolean isSharedGroup, String cacheOrGroupName) {
+        return new File(
+            storeWorkDir,
+            isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+                : CACHE_DIR_PREFIX + cacheOrGroupName
+        );
+    }
 
-        return new File(storeWorkDir, dirName);
+    /**
+     * @param ccfg Cache configuration.
+     * @return Store directory for given cache.
+     */
+    public static File cacheWorkDir(File storeWorkDir, CacheConfiguration ccfg) {
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        return cacheWorkDir(storeWorkDir, isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
     }
 
     /**

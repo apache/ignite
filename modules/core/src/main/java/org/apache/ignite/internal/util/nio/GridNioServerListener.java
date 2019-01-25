@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.EventListener;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,9 +79,9 @@ public interface GridNioServerListener<T> extends EventListener {
     public void onFailure(FailureType failureType, Throwable failure);
 
     /**
-     * Called when new {@link IgniteNioSocketChannel} is created by NIO server.
+     * Called when new {@link IgniteSocketChannel} is created by NIO server.
      */
-    public default void onChannelCreated(IgniteNioSocketChannel ch) {
+    public default void onChannelCreated(IgniteSocketChannel ch) {
         // No-op.
     }
 }

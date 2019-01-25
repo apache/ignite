@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -67,14 +67,14 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
     public void testChannelCreationOnDemand() throws Exception {
         startGrids(NODES_CNT);
 
-        final IgniteNioSocketChannel[] nioCh = new IgniteNioSocketChannel[1];
+        final IgniteSocketChannel[] nioCh = new IgniteSocketChannel[1];
         final CountDownLatch waitChLatch = new CountDownLatch(1);
 
         grid(1).context().io().addChannelListener(new GridIoChannelListener() {
-            @Override public void onChannelCreated(IgniteNioSocketChannel ch) {
+            @Override public void onChannelCreated(IgniteSocketChannel channel) {
                 // Created from ignite node with index = 0;
-                if (ch.id().nodeId().equals(grid(0).localNode().id())) {
-                    nioCh[0] = ch;
+                if (channel.id().nodeId().equals(grid(0).localNode().id())) {
+                    nioCh[0] = channel;
 
                     waitChLatch.countDown();
                 }

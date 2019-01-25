@@ -103,7 +103,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridSelectorNioSession;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -347,9 +347,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Connection configuration messages. */
-    public static final int CHNL_CFG_META = GridNioSessionMetaKey.nextUniqueKey();
-
     /**
      * Default local port range (value is <tt>100</tt>).
      * See {@link #setLocalPortRange(int)} for details.
@@ -374,7 +371,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Maximum {@link GridNioSession} connections per node. */
     public static final int MAX_CONN_PER_NODE = 1024;
 
-    /** Maximum {@link IgniteNioSocketChannel} connections per node. */
+    /** Maximum {@link IgniteSocketChannel} connections per node. */
     public static final int MAX_SOCK_CONN_PER_NODE = 1024;
 
     /** No-op runnable. */
@@ -749,10 +746,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ChannelCreateRequestMessage msg
             ) {
                 try {
-                    IgniteNioSocketChannel ch = nioSrvr.createNioChannel(ses, connKey);
+                    IgniteSocketChannel ch = nioSrvr.createNioChannel(ses, connKey);
 
                     if (lsnr != null)
-                        lsnr.onChannelRequest(ch, msg.getMessage());
+                        lsnr.onChannelConfigure(ch, msg.getMessage());
 
                     ses.send(new ChannelCreateResponseMessage(true)).listen(c1 -> {
                         // Close session and send response.
@@ -877,7 +874,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             c.run();
                     }
                     else if (msg instanceof ChannelCreateResponseMessage) {
-                        IgniteNioSocketChannel nioCh = nioSrvr.getNioSocketChannel(connKey);
+                        IgniteSocketChannel nioCh = nioSrvr.getNioSocketChannel(connKey);
 
                         assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
 
@@ -900,7 +897,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             /** {@inheritDoc} */
-            @Override public void onChannelCreated(IgniteNioSocketChannel ch) {
+            @Override public void onChannelCreated(IgniteSocketChannel ch) {
                 log.info("New channel connection established [key=" + ch.id() + ", channel=" + ch.channel() + ']');
 
                 notifyListener(ch);
@@ -3992,7 +3989,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private void notifyListener(IgniteNioSocketChannel ch) {
+    private void notifyListener(IgniteSocketChannel ch) {
         CommunicationListener<Message> lsnr0 = lsnr;
 
         if (lsnr0 != null)
@@ -4277,12 +4274,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteNioSocketChannel channel(ClusterNode remote, Message msg) throws IgniteSpiException {
+    @Override public IgniteSocketChannel channel(ClusterNode remote, Message msg) throws IgniteSpiException {
         connectGate.enter();
 
         ConnectionKey connKey = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex(), -1);
 
-        IgniteNioSocketChannel nioCh;
+        IgniteSocketChannel nioCh;
         GridSelectorNioSession ses = null;
 
         try {
@@ -4303,7 +4300,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             long endTime = curTime + 15_000L;
 
             while (curTime < endTime) {
-                if (nioCh.isReady())
+                if (nioCh.ready())
                     break;
 
                 U.sleep(200);
@@ -4311,7 +4308,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 curTime = U.currentTimeMillis();
             }
 
-            if (!nioCh.isReady())
+            if (!nioCh.ready())
                 throw new IgniteCheckedException("Timeout while getting response message");
 
             return nioCh;

@@ -60,8 +60,8 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannelImpl;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannelImpl;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -222,7 +222,7 @@ public class GridNioServer<T> {
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** Java NIO channels. */
-    private final ConcurrentMap<ConnectionKey, IgniteNioSocketChannel> channels = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ConnectionKey, IgniteSocketChannel> channels = new ConcurrentHashMap<>();
 
     /** */
     private GridNioSslFilter sslFilter;
@@ -433,7 +433,7 @@ public class GridNioServer<T> {
     }
 
     /** */
-    public IgniteNioSocketChannel getNioSocketChannel(ConnectionKey key) {
+    public IgniteSocketChannel getNioSocketChannel(ConnectionKey key) {
         return channels.get(key);
     }
 
@@ -919,9 +919,9 @@ public class GridNioServer<T> {
     }
 
     /**
-     * Create a {@link IgniteNioSocketChannel} using provided session.
+     * Create a {@link IgniteSocketChannel} using provided session.
      */
-    public IgniteNioSocketChannel createNioChannel(
+    public IgniteSocketChannel createNioChannel(
         GridSelectorNioSession ses,
         ConnectionKey connKey
     ) throws IgniteCheckedException {
@@ -933,7 +933,7 @@ public class GridNioServer<T> {
 
         SelectionKey key = ses.key();
 
-        IgniteNioSocketChannel nioSocketCh = new IgniteNioSocketChannelImpl(connKey, (SocketChannel)key.channel());
+        IgniteSocketChannel nioSocketCh = new IgniteSocketChannelImpl(connKey, (SocketChannel)key.channel());
 
         channels.putIfAbsent(connKey, nioSocketCh);
 

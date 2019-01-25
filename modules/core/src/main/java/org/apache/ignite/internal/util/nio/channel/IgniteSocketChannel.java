@@ -18,15 +18,13 @@
 package org.apache.ignite.internal.util.nio.channel;
 
 import java.io.Closeable;
-import java.net.Socket;
 import java.nio.channels.SocketChannel;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
  * Communication TCP/IP socket.
  */
-public interface IgniteNioSocketChannel extends Closeable {
+public interface IgniteSocketChannel extends Closeable {
     /** */
     public ConnectionKey id();
 
@@ -34,34 +32,29 @@ public interface IgniteNioSocketChannel extends Closeable {
     public SocketChannel channel();
 
     /** */
-    public IgniteNioSocketChannelConfig config();
+    public IgniteSocketChannelConfig config();
 
     /** */
-    public boolean isReady();
+    public boolean ready();
 
     /** */
     public void setReady();
 
-    /**
-     * @see Socket#isInputShutdown().
-     */
-    public boolean isInputShutdown();
-
-    /**
-     * @see Socket#shutdownInput()
-     */
-    public GridNioFuture<Boolean> shutdownInput();
-
-    /**
-     * @see Socket#isOutputShutdown()
-     */
-    public boolean isOutputShutdown();
-
-    /**
-     * @see Socket#shutdownOutput()
-     */
-    public GridNioFuture<Boolean> shutdownOutput();
+    /** */
+    public byte policy();
 
     /** */
-    public GridNioFuture<Boolean> closeFuture();
+    public void policy(byte plc);
+
+    /** */
+    public Object topic();
+
+    /** */
+    public void topic(Object topic);
+
+    /** */
+    public int groupId();
+
+    /** */
+    public void groupId(int grpId);
 }
