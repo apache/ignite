@@ -1283,13 +1283,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     newAssignment = new ArrayList<>(idealAssignment);
 
-                    log.info("Current server nodes topology: " + U.toShortString(evts.discoveryCache().serverNodes()));
-
                     for (Map.Entry<Integer, GridLongList> e : diff.entrySet()) {
                         GridLongList assign = e.getValue();
-
-                        log.info("Cache/group " + aff.cacheOrGroupName() + " partition " + e.getKey() +
-                            " assignments difference, node orders: " + assign.toString());
 
                         newAssignment.set(e.getKey(), CacheGroupAffinityMessage.toNodes(assign,
                             nodesByOrder,
@@ -1319,11 +1314,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
 
         final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
-
-        log.info("Created full partition message with affinity assignment = " + U.foldAssignment(msg));
-
-        log.info("Discovery cache version = " + fut.context().events().discoveryCache().version() + " on sending full partition message = "
-            + fut.context().events().discoveryCache().serverNodes());
 
         assert F.isEmpty(affReq) || (!F.isEmpty(receivedAff) && receivedAff.size() >= affReq.size())
             : ("Requested and received affinity are different " +
@@ -1773,8 +1763,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (futureToFetchAffinity == null)
                             throw new IgniteCheckedException("Failed to find completed exchange future to fetch affinity.");
 
-                        if (log.isInfoEnabled()) {
-                            log.info("Need initialize affinity on coordinator [" +
+                        if (log.isDebugEnabled()) {
+                            log.debug("Need initialize affinity on coordinator [" +
                                 "cacheGrp=" + desc.cacheOrGroupName() +
                                 "prevAff=" + futureToFetchAffinity.topologyVersion() + ']');
                         }

@@ -1473,10 +1473,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
-        log.info("Created full partition message with affinity assignment = " + U.foldAssignment(fullMsgWithAffinity));
-
-        log.info("Discovery cache version = " + exchCtx.events().discoveryCache().version() + " on sending full partition message = " + exchCtx.events().discoveryCache().serverNodes());
-
         // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
@@ -2842,10 +2838,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             fullMsg.exchangeId(msg.exchangeId());
         }
-
-        log.info("Sending full partition message to node " + node + " with affinity assignment = " + U.foldAssignment(fullMsg));
-
-        log.info("Discovery cache on sending full partition message to single node = " + exchCtx.events().discoveryCache().serverNodes());
 
         try {
             cctx.io().send(node, fullMsg, SYSTEM_POOL);

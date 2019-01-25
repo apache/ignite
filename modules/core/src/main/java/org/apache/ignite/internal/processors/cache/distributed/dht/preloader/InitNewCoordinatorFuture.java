@@ -89,15 +89,15 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
     public void init(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         initTopVer = exchFut.initialVersion();
 
-        if (log.isInfoEnabled())
-            log.info("Topology version on new coordinator initialization: initTopVer=" + initTopVer);
+        if (log.isDebugEnabled())
+            log.debug("Topology version on new coordinator initialization: initTopVer=" + initTopVer);
 
         GridCacheSharedContext cctx = exchFut.sharedContext();
 
         restoreState = exchangeProtocolVersion(exchFut.context().events().discoveryCache().minimumNodeVersion()) > 1;
 
-        if (log.isInfoEnabled())
-            log.info("Restore state = " + restoreState);
+        if (log.isDebugEnabled())
+            log.debug("Restore state = " + restoreState);
 
         boolean newAff = exchFut.localJoinExchange();
 
@@ -107,7 +107,6 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             add(fut);
 
         if (restoreState) {
-
             DiscoCache curDiscoCache = cctx.discovery().discoCache();
 
             DiscoCache discoCache = exchFut.events().discoveryCache();
@@ -119,15 +118,18 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                     if (!node.isLocal() && cctx.discovery().alive(node)) {
                         awaited.add(node.id());
 
-                        log.info("Added alive non-local node = " + node + " to awaited nodes set: " + awaited);
+                        if (log.isDebugEnabled())
+                            log.debug("Added alive non-local node = " + node + " to awaited nodes set: " + awaited);
 
                         nodes.add(node);
                     }
                     else if (!node.isLocal())
-                        log.info("Init new coordinator future will skip remote node: " + node);
+                        if (log.isDebugEnabled())
+                            log.debug("Init new coordinator future will skip remote node: " + node);
                 }
 
-                log.info("Awaited nodes on new coordinator future: " + awaited);
+                if (log.isDebugEnabled())
+                    log.debug("Awaited nodes on new coordinator future: " + awaited);
 
                 if (exchFut.context().mergeExchanges() && !curDiscoCache.version().equals(discoCache.version())) {
                     for (ClusterNode node : curDiscoCache.allNodes()) {
@@ -137,12 +139,13 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                             awaited.add(node.id());
 
-                            log.info("Merged exchanges, waited nodes on new coordinator future: " + awaited);
+                            if (log.isDebugEnabled())
+                                log.debug("Merged exchanges, waited nodes on new coordinator future: " + awaited);
 
                             nodes.add(node);
 
-                            if (log.isInfoEnabled())
-                                log.info("Init new coordinator future will skip remote node: " + node);
+                            if (log.isDebugEnabled())
+                                log.debug("Init new coordinator future will skip remote node: " + node);
 
                             if (joinedNodes == null)
                                 joinedNodes = new HashMap<>();
@@ -153,7 +156,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                             joinedNodes.put(node.id(), exchId);
 
-                            log.info("Added node = " + node + " to joined nodes: " + joinedNodes);
+                            if (log.isDebugEnabled())
+                                log.debug("Added node = " + node + " to joined nodes: " + joinedNodes);
                         }
                     }
                 }
@@ -162,7 +166,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                     joinedNodes = Collections.emptyMap();
 
                 if (!awaited.isEmpty()) {
-                    log.info("Awaited nodes set is not empty, will send restore sate requests for nodes = " + awaited);
+                    if (log.isDebugEnabled())
+                        log.debug("Awaited nodes set is not empty, will send restore sate requests for nodes = " + awaited);
 
                     restoreStateFut = new GridFutureAdapter();
 
@@ -181,7 +186,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 GridDhtPartitionsSingleRequest req = GridDhtPartitionsSingleRequest.restoreStateRequest(exchFut.exchangeId(),
                     exchFut.exchangeId());
 
-                log.info("Starting sending partitions single requests for joined nodes = " + joinedNodes);
+                if (log.isDebugEnabled())
+                    log.debug("Starting sending partitions single requests for joined nodes = " + joinedNodes);
 
                 for (ClusterNode node : nodes) {
                     try {
@@ -192,15 +198,18 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                                 joinedNodes.get(node.id()),
                                 exchFut.exchangeId());
 
-                            log.info("Created partitions single request (restore state) for node = " + node);
+                            if (log.isDebugEnabled())
+                                log.debug("Created partitions single request (restore state) for node = " + node);
                         }
 
-                        log.info("Sending partitions single request (restore state) for node = " + node);
+                        if (log.isDebugEnabled())
+                            log.debug("Sending partitions single request (restore state) for node = " + node);
 
                         cctx.io().send(node, sndReq, GridIoPolicy.SYSTEM_POOL);
                     }
                     catch (ClusterTopologyCheckedException e) {
-                        log.info("Failed to send partitions request (restore state), node failed: " + node);
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send partitions request (restore state), node failed: " + node);
 
                         onNodeLeft(node.id());
                     }
@@ -256,7 +265,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         synchronized (this) {
             if (awaited.remove(node.id())) {
-                log.info("Received partitions single message from node = " + node);
+                if (log.isDebugEnabled())
+                    log.debug("Received partitions single message from node = " + node);
 
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
@@ -268,7 +278,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 else
                     msgs.put(node, msg);
 
-                log.info("Removed node = " + node + " from awaited nodes set, awaited nodes: " + awaited);
+                if (log.isDebugEnabled())
+                    log.debug("Removed node = " + node + " from awaited nodes set, awaited nodes: " + awaited);
 
                 done = awaited.isEmpty();
             }

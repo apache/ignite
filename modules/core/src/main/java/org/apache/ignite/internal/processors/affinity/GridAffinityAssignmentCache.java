@@ -199,11 +199,13 @@ public class GridAffinityAssignmentCache {
         assert idealAssignment != null;
 
         // printed out on each topology assignment
-        log.info("Received new affinity assignment [grp=" + cacheOrGrpName
+        if (log.isTraceEnabled())
+            log.trace("Received new affinity assignment [grp=" + cacheOrGrpName
             + ", topVer=" + topVer
             + ", aff=" + U.fold(affAssignment) + "]");
 
-        log.info("Discovery cache version = " + ctx.discovery().discoCache().version() + " on sending full partition message = " + ctx.discovery().discoCache().serverNodes());
+        if (log.isTraceEnabled())
+            log.trace("Discovery cache version = " + ctx.discovery().discoCache().version() + " on sending full partition message = " + ctx.discovery().discoCache().serverNodes());
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
