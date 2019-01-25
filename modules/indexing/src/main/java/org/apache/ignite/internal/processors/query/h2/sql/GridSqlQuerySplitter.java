@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -59,7 +58,6 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.RIG
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.LIMIT_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.OFFSET_CHILD;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.FROM_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.WHERE_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.childIndexForColumn;
@@ -177,6 +175,7 @@ public class GridSqlQuerySplitter {
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Remove H2 indexing.
     public static GridCacheTwoStepQuery split(
         Connection conn,
         Prepared prepared,
@@ -191,7 +190,7 @@ public class GridSqlQuerySplitter {
 
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
-        GridSqlQuery qry = parse(prepared, false);
+        GridSqlQuery qry = GridSqlQueryParser.parseQuery(prepared, false);
 
         String originalSql = prepared.getSQL();
 
@@ -209,7 +208,10 @@ public class GridSqlQuerySplitter {
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
-        qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder), true);
+        qry = GridSqlQueryParser.parseQuery(
+            H2Utils.optimize(conn, qry.getSQL(), params, false, enforceJoinOrder),
+            true
+        );
 
         boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
@@ -226,12 +228,12 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared0 = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
+                Prepared prepared0 = H2Utils.optimize(conn, mapSqlQry.query(), mapSqlQry.parameters(params),
                     true, enforceJoinOrder);
 
                 allCollocated &= isCollocated((Query)prepared0);
 
-                mapSqlQry.query(parse(prepared0, true).getSQL());
+                mapSqlQry.query(GridSqlQueryParser.parseQuery(prepared0, true).getSQL());
             }
 
             // We do not need distributed joins if all MAP queries are collocated.
@@ -1347,42 +1349,6 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param prepared Prepared command.
-     * @param useOptimizedSubqry Use optimized subqueries order for table filters.
-     * @return Parsed SQL query AST.
-     */
-    private static GridSqlQuery parse(Prepared prepared, boolean useOptimizedSubqry) {
-        return (GridSqlQuery)new GridSqlQueryParser(useOptimizedSubqry).parse(prepared);
-    }
-
-    /**
-     * @param h2 Indexing.
-     * @param c Connection.
-     * @param qry Parsed query.
-     * @param params Query parameters.
-     * @param enforceJoinOrder Enforce join order.
-     * @return Optimized prepared command.
-     * @throws SQLException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static Prepared optimize(
-        IgniteH2Indexing h2,
-        Connection c,
-        String qry,
-        Object[] params,
-        boolean distributedJoins,
-        boolean enforceJoinOrder
-    ) throws SQLException, IgniteCheckedException {
-        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
-
-        try (PreparedStatement s = c.prepareStatement(qry)) {
-            h2.bindParameters(s, F.asList(params));
-
-            return prepared(s);
-        }
-    }
-
-    /**
      * @param qry Query.
      */
     private void normalizeQuery(GridSqlQuery qry) {
@@ -1445,7 +1411,6 @@ public class GridSqlQuerySplitter {
 
         return uniqueAlias;
     }
-
 
     /**
      * @param prnt Parent element.

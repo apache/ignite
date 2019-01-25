@@ -835,7 +835,7 @@ public final class UpdatePlanBuilder {
         try {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
+                H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
                     GridSqlQueryParser.prepared(stmt),
