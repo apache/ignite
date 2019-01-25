@@ -33,42 +33,6 @@
 
 #define SOCKET_ERROR (-1)
 
-namespace
-{
-    /**
-     * Get last socket error message.
-     * @param error Error code.
-     * @return Last socket error message string.
-     */
-    std::string GetSocketErrorMessage(int error)
-    {
-        std::stringstream res;
-
-        res << "error_code=" << error;
-
-        if (error == 0)
-            return res.str();
-
-        char buffer[1024] = "";
-
-        if (!strerror_r(error, buffer, sizeof(buffer)))
-            res << ", msg=" << buffer;
-
-        return res.str();
-    }
-
-    /**
-     * Get last socket error message.
-     * @return Last socket error message string.
-     */
-    std::string GetLastSocketErrorMessage()
-    {
-        int lastError = errno;
-
-        return GetSocketErrorMessage(lastError);
-    }
-}
-
 namespace ignite
 {
     namespace network
@@ -87,7 +51,6 @@ namespace ignite
 
         bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout)
         {
-
             addrinfo hints = { 0 };
 
             hints.ai_family = AF_UNSPEC;
@@ -119,7 +82,7 @@ namespace ignite
 
                 if (socketHandle == SOCKET_ERROR)
                 {
-                    std::string err = "Socket creation failed: " + GetLastSocketErrorMessage();
+                    std::string err = "Socket creation failed: " + sockets::GetLastSocketErrorMessage();
 
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
                 }
@@ -134,7 +97,7 @@ namespace ignite
 
                     if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
                     {
-                        lastErrorMsg.append(": ").append(GetSocketErrorMessage(lastError));
+                        lastErrorMsg.append(": ").append(sockets::GetSocketErrorMessage(lastError));
 
                         Close();
 
@@ -254,66 +217,7 @@ namespace ignite
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
         {
-            int ready = 0;
-            int lastError = 0;
-
-            fd_set fds;
-
-            do {
-                struct timeval tv = { 0 };
-                tv.tv_sec = timeout;
-
-                FD_ZERO(&fds);
-                FD_SET(socketHandle, &fds);
-
-                fd_set* readFds = 0;
-                fd_set* writeFds = 0;
-
-                if (rd)
-                    readFds = &fds;
-                else
-                    writeFds = &fds;
-
-                ready = select(static_cast<int>((socketHandle) + 1),
-                    readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
-
-                if (ready == SOCKET_ERROR)
-                    lastError = GetLastSocketError();
-
-            } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
-
-            if (ready == SOCKET_ERROR)
-                return -lastError;
-
-            socklen_t size = sizeof(lastError);
-            int res = getsockopt(socketHandle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
-
-            if (res != SOCKET_ERROR && lastError != 0)
-                return -lastError;
-
-            if (ready == 0)
-                return WaitResult::TIMEOUT;
-
-            return WaitResult::SUCCESS;
-        }
-
-        int TcpSocketClient::GetLastSocketError()
-        {
-            return errno;
-        }
-
-        int TcpSocketClient::GetLastSocketError(int handle)
-        {
-            int lastError = 0;
-            socklen_t size = sizeof(lastError);
-            int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
-
-            return res == SOCKET_ERROR ? 0 : lastError;
-        }
-
-        bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
-        {
-            return errorCode == EINTR;
+            return sockets::WaitOnSocket(timeout == 0 ? -1 : timeout, rd);
         }
     }
 }

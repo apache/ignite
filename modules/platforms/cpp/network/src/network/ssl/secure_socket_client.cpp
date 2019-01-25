@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include "network/sockets.h"
+
 #include <sstream>
 #include <cassert>
 
@@ -22,13 +24,8 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "network/tcp_socket_client.h"
 #include "network/ssl/secure_socket_client.h"
 #include "network/ssl/ssl_gateway.h"
-
-#ifndef SOCKET_ERROR
-#   define SOCKET_ERROR (-1)
-#endif // SOCKET_ERROR
 
 enum { OPERATION_SUCCESS = 1 };
 
@@ -365,13 +362,8 @@ namespace ignite
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
                 assert(sslGateway.Loaded());
-
-                int ready = 0;
-                int lastError = 0;
+                
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
-
-                fd_set fds;
-
                 int fd = sslGateway.SSL_get_fd_(ssl0);
 
                 if (fd < 0)
@@ -383,40 +375,7 @@ namespace ignite
                     ThrowNetworkError(ss.str());
                 }
 
-                do {
-                    struct timeval tv = { 0 };
-                    tv.tv_sec = timeout;
-
-                    FD_ZERO(&fds);
-                    FD_SET(static_cast<long>(fd), &fds);
-
-                    fd_set* readFds = 0;
-                    fd_set* writeFds = 0;
-
-                    if (rd)
-                        readFds = &fds;
-                    else
-                        writeFds = &fds;
-
-                    ready = select(fd + 1, readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
-
-                    if (ready == SOCKET_ERROR)
-                        lastError = TcpSocketClient::GetLastSocketError();
-
-                } while (ready == SOCKET_ERROR && TcpSocketClient::IsSocketOperationInterrupted(lastError));
-
-                if (ready == SOCKET_ERROR)
-                    return -lastError;
-
-                lastError = TcpSocketClient::GetLastSocketError(fd);
-
-                if (lastError != 0)
-                    return -lastError;
-
-                if (ready == 0)
-                    return WaitResult::TIMEOUT;
-
-                return WaitResult::SUCCESS;
+                return sockets::WaitOnSocket(fd, timeout, rd);
             }
         }
     }

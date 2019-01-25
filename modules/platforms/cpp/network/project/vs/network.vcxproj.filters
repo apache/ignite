@@ -36,21 +36,27 @@
     <ClInclude Include="..\..\include\ignite\network\network.h">
       <Filter>Code\network</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\os\win\src\network\sockets.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp">
-      <Filter>Code\network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\network\ssl\secure_socket_client.cpp">
       <Filter>Code\network\ssl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\network\ssl\ssl_gateway.cpp">
       <Filter>Code\network\ssl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\net\utils.cpp">
+    <ClCompile Include="..\..\src\network\network.cpp">
       <Filter>Code\network</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\network\network.cpp">
+    <ClCompile Include="..\..\os\win\src\network\tcp_socket_client.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\network\utils.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\network\sockets.cpp">
       <Filter>Code\network</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include "network/sockets.h"
+
 #include <ignite/network/network.h>
 
 #include "network/ssl/ssl_gateway.h"

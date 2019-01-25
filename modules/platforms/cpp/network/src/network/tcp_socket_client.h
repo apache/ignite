@@ -18,6 +18,8 @@
 #ifndef _IGNITE_NETWORK_TCP_SOCKET_CLIENT
 #define _IGNITE_NETWORK_TCP_SOCKET_CLIENT
 
+#include "network/sockets.h"
+
 #include <stdint.h>
 
 #include <ignite/common/common.h>
@@ -96,26 +98,7 @@ namespace ignite
              */
             virtual bool IsBlocking() const;
 
-            /**
-             * Get socket error.
-             * @return Last socket error.
-             */
-            static int GetLastSocketError();
-
-            /**
-             * Get socket error.
-             * @param handle Socket handle.
-             * @return Last socket error.
-             */
-            static int GetLastSocketError(int handle);
-
-            /**
-             * Check whether socket operation was interupted.
-             * @return @c true if the socket operation was interupted.
-             */
-            static bool IsSocketOperationInterrupted(int errorCode);
         private:
-
             /**
              * Close established connection.
              */
@@ -139,7 +122,7 @@ namespace ignite
             int WaitOnSocket(int32_t timeout, bool rd);
 
             /** Handle. */
-            intptr_t socketHandle;
+            sockets::SocketHandle socketHandle;
 
             /** Blocking flag. */
             bool blocking;

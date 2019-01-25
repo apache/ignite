@@ -25,6 +25,8 @@ SUBDIRS = \
 AM_CPPFLAGS = \
 	-I$(srcdir)/include \
 	-I$(srcdir)/src \
+	-I$(srcdir)/os/linux/include \
+	-I$(srcdir)/os/linux/src \
 	-I@top_srcdir@/common/include \
 	-I@top_srcdir@/common/os/linux/include \
 	-DIGNITE_IMPL \
@@ -47,8 +49,9 @@ libignite_network_la_DEPENDENCIES = \
 	@top_srcdir@/common/libignite-common.la
 
 libignite_network_la_SOURCES = \
-	os/linux/src/net/utils.cpp \
-	os/linux/src/net/tcp_socket_client.cpp \
+	os/linux/src/network/utils.cpp \
+	os/linux/src/network/tcp_socket_client.cpp \
+	os/linux/src/network/sockets.cpp \
 	src/network/network.cpp \
 	src/network/ssl/secure_socket_client.cpp \
 	src/network/ssl/ssl_gateway.cpp

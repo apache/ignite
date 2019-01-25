@@ -15,13 +15,7 @@
  * limitations under the License.
  */
 
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCKAPI_
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <mstcpip.h>
+#include "network/sockets.h"
 
 #include <sstream>
 
@@ -30,67 +24,6 @@
 #include <ignite/common/concurrent.h>
 
 #include "network/tcp_socket_client.h"
-
-namespace
-{
-    /**
-     * Get socket error message for the error code.
-     * @param error Error code.
-     * @return Socket error message string.
-     */
-    std::string GetSocketErrorMessage(HRESULT error)
-    {
-        std::stringstream res;
-
-        res << "error_code=" << error;
-
-        if (error == 0)
-            return res.str();
-
-        LPTSTR errorText = NULL;
-
-        DWORD len = FormatMessage(
-            // use system message tables to retrieve error text
-            FORMAT_MESSAGE_FROM_SYSTEM
-            // allocate buffer on local heap for error text
-            | FORMAT_MESSAGE_ALLOCATE_BUFFER
-            // We're not passing insertion parameters
-            | FORMAT_MESSAGE_IGNORE_INSERTS,
-            // unused with FORMAT_MESSAGE_FROM_SYSTEM
-            NULL,
-            error,
-            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-            // output
-            reinterpret_cast<LPTSTR>(&errorText),
-            // minimum size for output buffer
-            0,
-            // arguments - see note
-            NULL);
-
-        if (NULL != errorText && len > 0)
-        {
-            std::string msg(reinterpret_cast<const char*>(errorText), static_cast<size_t>(len));
-
-            if (len != 0)
-                res << ", msg=" << msg;
-
-            LocalFree(errorText);
-        }
-
-        return res.str();
-    }
-
-    /**
-     * Get last socket error message.
-     * @return Last socket error message string.
-     */
-    std::string GetLastSocketErrorMessage()
-    {
-        HRESULT lastError = WSAGetLastError();
-
-        return GetSocketErrorMessage(lastError);
-    }
-}
 
 namespace ignite
 {
@@ -124,7 +57,7 @@ namespace ignite
                     networkInited = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
 
                     if (!networkInited)
-                        ThrowNetworkError("Networking initialisation failed: " + GetLastSocketErrorMessage());
+                        ThrowNetworkError("Networking initialisation failed: " + sockets::GetLastSocketErrorMessage());
                 }
             }
 
@@ -157,8 +90,8 @@ namespace ignite
                 // Create a SOCKET for connecting to server
                 socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
-                if (socketHandle == static_cast<intptr_t>(INVALID_SOCKET))
-                    ThrowNetworkError("Socket creation failed: " + GetLastSocketErrorMessage());
+                if (socketHandle == INVALID_SOCKET)
+                    ThrowNetworkError("Socket creation failed: " + sockets::GetLastSocketErrorMessage());
 
                 TrySetOptions();
 
@@ -170,7 +103,7 @@ namespace ignite
 
                     if (lastError != WSAEWOULDBLOCK)
                     {
-                        lastErrorMsg.append(": ").append(GetSocketErrorMessage(lastError));
+                        lastErrorMsg.append(": ").append(sockets::GetSocketErrorMessage(lastError));
 
                         Close();
 
@@ -194,7 +127,7 @@ namespace ignite
 
             freeaddrinfo(result);
 
-            if (socketHandle == static_cast<intptr_t>(INVALID_SOCKET))
+            if (socketHandle == INVALID_SOCKET)
             {
                 if (isTimeout)
                     return false;
@@ -212,7 +145,7 @@ namespace ignite
 
         void TcpSocketClient::InternalClose()
         {
-            if (socketHandle != static_cast<intptr_t>(INVALID_SOCKET))
+            if (socketHandle != INVALID_SOCKET)
             {
                 closesocket(socketHandle);
 
@@ -256,7 +189,6 @@ namespace ignite
             BOOL trueOpt = TRUE;
             ULONG uTrueOpt = TRUE;
             int bufSizeOpt = BUFFER_SIZE;
-
 
             setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
 
@@ -316,60 +248,7 @@ namespace ignite
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
         {
-            int ready = 0;
-            int lastError = 0;
-
-            fd_set fds;
-
-            do {
-                struct timeval tv = { 0 };
-                tv.tv_sec = timeout;
-
-                FD_ZERO(&fds);
-                FD_SET(socketHandle, &fds);
-
-                fd_set* readFds = 0;
-                fd_set* writeFds = 0;
-
-                if (rd)
-                    readFds = &fds;
-                else
-                    writeFds = &fds;
-
-                ready = select(static_cast<int>((socketHandle) + 1),
-                    readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
-
-                if (ready == SOCKET_ERROR)
-                    lastError = GetLastSocketError();
-
-            } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
-
-            if (ready == SOCKET_ERROR)
-                return -lastError;
-
-            if (ready == 0)
-                return WaitResult::TIMEOUT;
-
-            return WaitResult::SUCCESS;
-        }
-
-        int TcpSocketClient::GetLastSocketError()
-        {
-            return WSAGetLastError();
-        }
-
-        int TcpSocketClient::GetLastSocketError(int handle)
-        {
-            int lastError = 0;
-            socklen_t size = sizeof(lastError);
-            int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
-
-            return res == SOCKET_ERROR ? 0 : lastError;
-        }
-
-        bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
-        {
-            return errorCode == WSAEINTR;
+            return sockets::WaitOnSocket(socketHandle, timeout, rd);
         }
     }
 }
