@@ -22,9 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional;
@@ -38,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.GridCacheC
 /**
  * Tests a cache with TcpClientDiscovery SPI being enabled.
  */
-@RunWith(IgniteCacheTcpClientDiscoveryTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTcpClientDiscoveryTestSuite {
     /**
      * @return Suite.
@@ -65,13 +64,5 @@ public class IgniteCacheTcpClientDiscoveryTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheTcpClientDiscoveryMultiThreadedTest.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

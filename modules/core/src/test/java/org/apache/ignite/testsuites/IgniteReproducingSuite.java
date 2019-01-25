@@ -35,10 +35,10 @@ import org.junit.runners.model.InitializationError;
  *
  * This suite is not included into main build.
  */
-@RunWith(IgniteReproducingSuite.DynamicSuite.class)
+@RunWith(IgniteReproducingSuite.DynamicReproducingSuite.class)
 public class IgniteReproducingSuite {
     /** */
-    public static class DynamicSuite extends Suite {
+    public static class DynamicReproducingSuite extends Suite {
         /**
          * @return List of test(s) for reproduction some problem.
          */
@@ -55,7 +55,7 @@ public class IgniteReproducingSuite {
         }
 
         /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
+        public DynamicReproducingSuite(Class<?> cls) throws InitializationError {
             super(cls, classes().toArray(new Class<?>[] {null}));
         }
     }
