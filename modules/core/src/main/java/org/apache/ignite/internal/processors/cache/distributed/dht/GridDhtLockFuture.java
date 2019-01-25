@@ -1233,7 +1233,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         else if (tx != null)
                             sb.append(", ");
                     }
-
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.
