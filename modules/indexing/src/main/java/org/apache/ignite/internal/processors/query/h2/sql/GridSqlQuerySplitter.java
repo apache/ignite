@@ -287,7 +287,7 @@ public class GridSqlQuerySplitter {
         SplitterQueryModel qrym = fakeQrymPrnt.get(0);
 
         // Setup the needed information for split.
-        SplitterQueryModel.analyzeQueryModel(qrym, collocatedGrpBy);
+        qrym.analyzeQueryModel(collocatedGrpBy);
 
         // If we have child queries to split, then go hard way.
         if (qrym.needSplitChild()) {
@@ -298,7 +298,7 @@ public class GridSqlQuerySplitter {
             setupMergeJoinSorting(qrym);
         }
         else if (!qrym.needSplit())  // Just split the top level query.
-            qrym.setNeedSplit();
+            qrym.forceSplit();
 
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(qrym);
@@ -655,7 +655,7 @@ public class GridSqlQuerySplitter {
 
         if (begin == end && qrym.get(end).isQuery()) {
             // Simple case when we have a single subquery to push down, just mark it to be splittable.
-            qrym.get(end).setNeedSplit();
+            qrym.get(end).forceSplit();
         }
         else {
             // Here we have to generate a subquery for all the joined elements and
@@ -697,9 +697,13 @@ public class GridSqlQuerySplitter {
         GridSqlSubquery wrapSubqry = new GridSqlSubquery(wrapSelect);
         GridSqlAlias wrapAlias = alias(nextUniqueTableAlias(null), wrapSubqry);
 
-        SplitterQueryModel wrapQrym = new SplitterQueryModel(SplitterQueryModelType.SELECT, wrapSubqry, 0, wrapAlias);
-
-        wrapQrym.needSplit(needSplit);
+        SplitterQueryModel wrapQrym = new SplitterQueryModel(
+            SplitterQueryModelType.SELECT,
+            wrapSubqry,
+            0,
+            wrapAlias,
+            needSplit
+        );
 
         // Prepare all the prerequisites.
         GridSqlSelect select = qrym.ast();
@@ -1231,6 +1235,7 @@ public class GridSqlQuerySplitter {
      * @param childIdx Child index.
      * @param uniqueAlias Unique parent alias of the current element.
      */
+    // TODO: Move.
     private static void buildQueryModel(SplitterQueryModel prntModel, GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
         GridSqlAst child = prnt.child(childIdx);
 

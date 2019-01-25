@@ -54,17 +54,45 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     private boolean unionAll = true;
 
     /**
+     * Constructor (no split).
+     *
      * @param type Type.
      * @param parent Parent element.
      * @param childIdx Child index.
      * @param uniqueAlias Unique parent alias of the current element.
-     *                    May be {@code null} for selects inside of unions or top level queries.
+     *     May be {@code null} for selects inside of unions or top level queries.
      */
-    public SplitterQueryModel(SplitterQueryModelType type, GridSqlAst parent, int childIdx, GridSqlAlias uniqueAlias) {
+    public SplitterQueryModel(
+        SplitterQueryModelType type,
+        GridSqlAst parent,
+        int childIdx,
+        GridSqlAlias uniqueAlias
+    ) {
+        this(type, parent, childIdx, uniqueAlias, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param type Type.
+     * @param parent Parent element.
+     * @param childIdx Child index.
+     * @param uniqueAlias Unique parent alias of the current element.
+     *     May be {@code null} for selects inside of unions or top level queries.
+     * @param needSplit Need split flag.
+     */
+    public SplitterQueryModel(
+        SplitterQueryModelType type,
+        GridSqlAst parent,
+        int childIdx,
+        GridSqlAlias uniqueAlias,
+        boolean needSplit
+    ) {
         this.type = type;
         this.parent = parent;
         this.childIdx = childIdx;
         this.uniqueAlias = uniqueAlias;
+        this.needSplit = needSplit;
     }
 
     /**
@@ -118,13 +146,6 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
-     * @param needSplit Whether split is needed.
-     */
-    public void needSplit(boolean needSplit) {
-        this.needSplit = needSplit;
-    }
-
-    /**
      * @return Whether split of children is needed.
      */
     public boolean needSplitChild() {
@@ -132,40 +153,26 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
-     * @param needSplitChild Whether split of children is needed.
+     * Force split flag on a model.
      */
-    public void needSplitChild(boolean needSplitChild) {
-        this.needSplitChild = needSplitChild;
-    }
-
-    /**
-     * Set split needed flag.
-     */
-    public void setNeedSplit() {
+    public void forceSplit() {
         if (type == SplitterQueryModelType.SELECT) {
             assert !needSplitChild;
 
-            needSplit(true);
+            needSplit = true;
         }
         else if (type == SplitterQueryModelType.UNION) {
-            needSplitChild(true);
+            needSplitChild = true;
 
             // Mark all the selects in the UNION to be splittable.
             for (SplitterQueryModel s : this) {
                 assert s.type() == SplitterQueryModelType.SELECT : s.type();
 
-                s.needSplit(true);
+                s.needSplit = true;
             }
         }
         else
             throw new IllegalStateException("Type: " + type);
-    }
-
-    /**
-     * @return UNION ALL flag.
-     */
-    public boolean unionAll() {
-        return unionAll;
     }
 
     /**
@@ -177,59 +184,56 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
-     * Analyze query model.
+     * Analyze query model, setting split flags as needed.
      *
-     * @param qrym Query model.
      * @param collocatedGrpBy Collocated GROUP BY flag.
      */
-    // TODO: Document
-    // TODO: Make instance-based
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public static void analyzeQueryModel(SplitterQueryModel qrym, boolean collocatedGrpBy) {
-        if (!qrym.isQuery())
+    public void analyzeQueryModel(boolean collocatedGrpBy) {
+        if (!isQuery())
             return;
 
         // Process all the children at the beginning: depth first analysis.
-        for (int i = 0; i < qrym.size(); i++) {
-            SplitterQueryModel child = qrym.get(i);
+        for (int i = 0; i < size(); i++) {
+            SplitterQueryModel child = get(i);
 
-            analyzeQueryModel(child, collocatedGrpBy);
+            child.analyzeQueryModel(collocatedGrpBy);
 
             // Pull up information about the splitting child.
-            if (child.needSplit() || child.needSplitChild())
-                qrym.needSplitChild(true); // We have a child to split.
+            if (child.needSplit || child.needSplitChild)
+                needSplitChild = true; // We have a child to split.
         }
 
-        if (qrym.type() == SplitterQueryModelType.SELECT) {
+        if (type == SplitterQueryModelType.SELECT) {
             // We may need to split the SELECT only if it has no splittable children,
             // because only the downmost child can be split, the parents will be the part of
             // the reduce query.
-            if (!qrym.needSplitChild())
-                qrym.needSplit(needSplitSelect(qrym.ast(), collocatedGrpBy)); // Only SELECT can have this flag in true.
+            if (!needSplitChild)
+                needSplit = needSplitSelect(ast(), collocatedGrpBy); // Only SELECT can have this flag in true.
         }
-        else if (qrym.type() == SplitterQueryModelType.UNION) {
+        else if (type == SplitterQueryModelType.UNION) {
             // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
             // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
-            if (!qrym.needSplitChild() && (!qrym.unionAll() || qrym.<GridSqlUnion>ast().hasOffsetLimit()))
-                qrym.needSplitChild(true);
+            if (!needSplitChild && (!unionAll || ((GridSqlUnion)ast()).hasOffsetLimit()))
+                needSplitChild = true;
 
             // If we have to split some child SELECT in this UNION, then we have to enforce split
             // for all other united selects, because this UNION has to be a part of the reduce query,
             // thus each SELECT needs to have a reduce part for this UNION, but the whole SELECT can not
             // be a reduce part (usually).
-            if (qrym.needSplitChild()) {
-                for (int i = 0; i < qrym.size(); i++) {
-                    SplitterQueryModel child = qrym.get(i);
+            if (needSplitChild) {
+                for (int i = 0; i < size(); i++) {
+                    SplitterQueryModel child = get(i);
 
                     assert child.type() == SplitterQueryModelType.SELECT : child.type();
 
-                    if (!child.needSplitChild() && !child.needSplit())
-                        child.needSplit(true);
+                    if (!child.needSplitChild && !child.needSplit)
+                        child.needSplit = true;
                 }
             }
         }
         else
-            throw new IllegalStateException("Type: " + qrym.type());
+            throw new IllegalStateException("Type: " + type);
     }
 
     /**
