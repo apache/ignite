@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -206,8 +205,6 @@ public class GridSqlQuerySplitter {
 
         String originalSql = prepared.getSQL();
 
-//        debug("ORIGINAL", originalSql);
-
         final boolean explain = qry.explain();
 
         qry.explain(false);
@@ -219,13 +216,10 @@ public class GridSqlQuerySplitter {
         // Also it will collect all tables and schemas from the query.
         splitter.normalizeQuery(qry);
 
-//        debug("NORMALIZED", qry.getSQL());
-
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
-        qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
-            true);
+        qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder), true);
 
         boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
@@ -284,7 +278,7 @@ public class GridSqlQuerySplitter {
         GridSqlSubquery fakeQryPrnt = new GridSqlSubquery(qry);
 
         // Fake parent query model. We need it just for convenience because buildQueryModel needs parent model.
-        QueryModel fakeQrymPrnt = new QueryModel(null, null, -1, null);
+        SplitterQueryModel fakeQrymPrnt = new SplitterQueryModel(null, null, -1, null);
 
         // Build a simplified query model. We need it because navigation over the original AST is too complex.
         buildQueryModel(fakeQrymPrnt, fakeQryPrnt, 0, null);
@@ -292,26 +286,20 @@ public class GridSqlQuerySplitter {
         assert fakeQrymPrnt.size() == 1;
 
         // Get the built query model from the fake parent.
-        QueryModel qrym = fakeQrymPrnt.get(0);
+        SplitterQueryModel qrym = fakeQrymPrnt.get(0);
 
         // Setup the needed information for split.
         analyzeQueryModel(qrym);
 
-//        debug("ANALYZED", printQueryModel(qrym));
-
         // If we have child queries to split, then go hard way.
-        if (qrym.needSplitChild) {
+        if (qrym.needSplitChild()) {
             // All the siblings to selects we are going to split must be also wrapped into subqueries.
             pushDownQueryModel(qrym);
 
-//            debug("PUSHED_DOWN", printQueryModel(qrym));
-
             // Need to make all the joined subqueries to be ordered by join conditions.
             setupMergeJoinSorting(qrym);
-
-//            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
         }
-        else if (!qrym.needSplit)  // Just split the top level query.
+        else if (!qrym.needSplit())  // Just split the top level query.
             setNeedSplit(qrym);
 
         // Split the query model into multiple map queries and a single reduce query.
@@ -343,17 +331,17 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void pushDownQueryModel(QueryModel qrym) {
+    private void pushDownQueryModel(SplitterQueryModel qrym) {
         if (qrym.type() == SplitterQueryModelType.UNION) {
-            assert qrym.needSplitChild; // Otherwise we should not get here.
+            assert qrym.needSplitChild(); // Otherwise we should not get here.
 
             for (int i = 0; i < qrym.size(); i++)
                 pushDownQueryModel(qrym.get(i));
         }
         else if (qrym.type() == SplitterQueryModelType.SELECT) {
             // If we already need to split, then no need to push down here.
-            if (!qrym.needSplit) {
-                assert qrym.needSplitChild; // Otherwise we should not get here.
+            if (!qrym.needSplit()) {
+                assert qrym.needSplitChild(); // Otherwise we should not get here.
 
                 pushDownQueryModelSelect(qrym);
             }
@@ -429,7 +417,7 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model for the SELECT.
      */
-    private void pushDownQueryModelSelect(QueryModel qrym) {
+    private void pushDownQueryModelSelect(SplitterQueryModel qrym) {
         assert qrym.type() == SplitterQueryModelType.SELECT : qrym.type();
 
         boolean hasLeftJoin = hasLeftJoin(qrym.<GridSqlSelect>ast().from());
@@ -439,14 +427,14 @@ public class GridSqlQuerySplitter {
         // Here we iterate over joined FROM table filters.
         // !!! qrym.size() can change, never assign it to a variable.
         for (int i = 0; i < qrym.size(); i++) {
-            QueryModel child = qrym.get(i);
+            SplitterQueryModel child = qrym.get(i);
 
             boolean hasPushedDownCol = false;
 
             // It is either splittable subquery (it must remain in REDUCE query)
             // or left join condition with pushed down columns (this condition
             // can not be pushed down into a wrap query).
-            if ((child.isQuery() && (child.needSplitChild || child.needSplit)) ||
+            if ((child.isQuery() && (child.needSplitChild() || child.needSplit())) ||
                 // We always must be at the right side of the join here to push down
                 // range on the left side. If there are no LEFT JOINs in the SELECT, then
                 // we will never have ON conditions, they are getting moved to WHERE clause.
@@ -469,7 +457,7 @@ public class GridSqlQuerySplitter {
                     begin = hasPushedDownCol ? i : -1;
                 }
 
-                if (child.needSplitChild)
+                if (child.needSplitChild())
                     pushDownQueryModel(child);
             }
             // It is a table or a function or a subquery that we do not need to split or split child.
@@ -486,21 +474,21 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void setupMergeJoinSorting(QueryModel qrym) {
+    private void setupMergeJoinSorting(SplitterQueryModel qrym) {
         if (qrym.type() == SplitterQueryModelType.UNION) {
             for (int i = 0; i < qrym.size(); i++)
                 setupMergeJoinSorting(qrym.get(i));
         }
         else if (qrym.type() == SplitterQueryModelType.SELECT) {
-            if (!qrym.needSplit) {
+            if (!qrym.needSplit()) {
                 boolean needSplitChild = false;
 
                 for (int i = 0; i < qrym.size(); i++) {
-                    QueryModel child = qrym.get(i);
+                    SplitterQueryModel child = qrym.get(i);
 
                     assert child.isQuery() : child.type();
 
-                    if (child.needSplit)
+                    if (child.needSplit())
                         needSplitChild = true;
                     else
                         setupMergeJoinSorting(child); // Go deeper.
@@ -517,7 +505,7 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void setupMergeJoinSortingSelect(QueryModel qrym) {
+    private void setupMergeJoinSortingSelect(SplitterQueryModel qrym) {
         // After pushing down we can have the following variants:
         //  - splittable SELECT
         //  - subquery with splittable child (including UNION)
@@ -527,9 +515,9 @@ public class GridSqlQuerySplitter {
         // setup sorting for all of them by joined fields.
 
         for (int i = 1; i < qrym.size(); i++) {
-            QueryModel child = qrym.get(i);
+            SplitterQueryModel child = qrym.get(i);
 
-            if (child.needSplit) {
+            if (child.needSplit()) {
                 if (i > 1) {
                     // If we have multiple joined non-splittable subqueries before, then
                     // push down them into a single subquery.
@@ -548,7 +536,7 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void injectSortingFirstJoin(QueryModel qrym) {
+    private void injectSortingFirstJoin(SplitterQueryModel qrym) {
         GridSqlJoin join = findJoin(qrym, 0);
 
         // We are at the beginning, thus left and right AST must be children of the same join AST.
@@ -664,7 +652,7 @@ public class GridSqlQuerySplitter {
      * @param begin The first child model in range to push down.
      * @param end The last child model in range to push down.
      */
-    private void pushDownQueryModelRange(QueryModel qrym, int begin, int end) {
+    private void pushDownQueryModelRange(SplitterQueryModel qrym, int begin, int end) {
         assert end >= begin;
 
         if (begin == end && qrym.get(end).isQuery()) {
@@ -676,27 +664,25 @@ public class GridSqlQuerySplitter {
             // and mark that subquery as splittable.
             doPushDownQueryModelRange(qrym, begin, end, true);
         }
-
-//        debug("PUSH_DOWN_PARTIAL", printQueryModel(qrym));
     }
 
     /**
      * @param qrym Query model.
      */
-    private static void setNeedSplit(QueryModel qrym) {
+    private static void setNeedSplit(SplitterQueryModel qrym) {
         if (qrym.type() == SplitterQueryModelType.SELECT) {
-            assert !qrym.needSplitChild;
+            assert !qrym.needSplitChild();
 
-            qrym.needSplit = true;
+            qrym.needSplit(true);
         }
         else if (qrym.type() == SplitterQueryModelType.UNION) {
-            qrym.needSplitChild = true;
+            qrym.needSplitChild(true);
 
             // Mark all the selects in the UNION to be splittable.
-            for (QueryModel s : qrym) {
+            for (SplitterQueryModel s : qrym) {
                 assert s.type() == SplitterQueryModelType.SELECT : s.type();
 
-                s.needSplit = true;
+                s.needSplit(true);
             }
         }
         else
@@ -730,15 +716,15 @@ public class GridSqlQuerySplitter {
      * @param end The last child model in range to push down.
      * @param needSplit If we will need to split the created subquery model.
      */
-    private void doPushDownQueryModelRange(QueryModel qrym, int begin, int end, boolean needSplit) {
+    private void doPushDownQueryModelRange(SplitterQueryModel qrym, int begin, int end, boolean needSplit) {
         // Create wrap query where we will push all the needed joined elements, columns and conditions.
         GridSqlSelect wrapSelect = new GridSqlSelect();
         GridSqlSubquery wrapSubqry = new GridSqlSubquery(wrapSelect);
         GridSqlAlias wrapAlias = alias(nextUniqueTableAlias(null), wrapSubqry);
 
-        QueryModel wrapQrym = new QueryModel(SplitterQueryModelType.SELECT, wrapSubqry, 0, wrapAlias);
+        SplitterQueryModel wrapQrym = new SplitterQueryModel(SplitterQueryModelType.SELECT, wrapSubqry, 0, wrapAlias);
 
-        wrapQrym.needSplit = needSplit;
+        wrapQrym.needSplit(needSplit);
 
         // Prepare all the prerequisites.
         GridSqlSelect select = qrym.ast();
@@ -772,7 +758,7 @@ public class GridSqlQuerySplitter {
 
         // Move pushed down child models to the newly created model.
         for (int i = begin; i <= end; i++) {
-            QueryModel child = qrym.get(i);
+            SplitterQueryModel child = qrym.get(i);
 
             wrapQrym.add(child);
         }
@@ -796,7 +782,7 @@ public class GridSqlQuerySplitter {
     private void pushDownJoins(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
-        QueryModel qrym,
+        SplitterQueryModel qrym,
         int begin,
         int end,
         GridSqlAlias wrapAlias
@@ -1217,7 +1203,7 @@ public class GridSqlQuerySplitter {
      * @param idx Index of the child model for which we need to find a respective JOIN element.
      * @return JOIN.
      */
-    private static GridSqlJoin findJoin(QueryModel qrym, int idx) {
+    private static GridSqlJoin findJoin(SplitterQueryModel qrym, int idx) {
         assert qrym.type() == SplitterQueryModelType.SELECT : qrym.type();
         assert qrym.size() > 1; // It must be at least one join with at least two child tables.
         assert idx < qrym.size(): idx;
@@ -1243,10 +1229,10 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void splitQueryModel(QueryModel qrym) throws IgniteCheckedException {
+    private void splitQueryModel(SplitterQueryModel qrym) throws IgniteCheckedException {
         switch (qrym.type()) {
             case SELECT:
-                if (qrym.needSplit) {
+                if (qrym.needSplit()) {
                     splitSelect(qrym.parent(), qrym.childIndex());
 
                     break;
@@ -1267,46 +1253,46 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void analyzeQueryModel(QueryModel qrym) {
+    private void analyzeQueryModel(SplitterQueryModel qrym) {
         if (!qrym.isQuery())
             return;
 
         // Process all the children at the beginning: depth first analysis.
         for (int i = 0; i < qrym.size(); i++) {
-            QueryModel child = qrym.get(i);
+            SplitterQueryModel child = qrym.get(i);
 
             analyzeQueryModel(child);
 
             // Pull up information about the splitting child.
-            if (child.needSplit || child.needSplitChild)
-                qrym.needSplitChild = true; // We have a child to split.
+            if (child.needSplit() || child.needSplitChild())
+                qrym.needSplitChild(true); // We have a child to split.
         }
 
         if (qrym.type() == SplitterQueryModelType.SELECT) {
             // We may need to split the SELECT only if it has no splittable children,
             // because only the downmost child can be split, the parents will be the part of
             // the reduce query.
-            if (!qrym.needSplitChild)
-                qrym.needSplit = needSplitSelect(qrym.ast()); // Only SELECT can have this flag in true.
+            if (!qrym.needSplitChild())
+                qrym.needSplit(needSplitSelect(qrym.ast())); // Only SELECT can have this flag in true.
         }
         else if (qrym.type() == SplitterQueryModelType.UNION) {
             // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
             // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
-            if (!qrym.needSplitChild && (!qrym.unionAll() || hasOffsetLimit(qrym.<GridSqlUnion>ast())))
-                qrym.needSplitChild = true;
+            if (!qrym.needSplitChild() && (!qrym.unionAll() || hasOffsetLimit(qrym.<GridSqlUnion>ast())))
+                qrym.needSplitChild(true);
 
             // If we have to split some child SELECT in this UNION, then we have to enforce split
             // for all other united selects, because this UNION has to be a part of the reduce query,
             // thus each SELECT needs to have a reduce part for this UNION, but the whole SELECT can not
             // be a reduce part (usually).
-            if (qrym.needSplitChild) {
+            if (qrym.needSplitChild()) {
                 for (int i = 0; i < qrym.size(); i++) {
-                    QueryModel child = qrym.get(i);
+                    SplitterQueryModel child = qrym.get(i);
 
                     assert child.type() == SplitterQueryModelType.SELECT : child.type();
 
-                    if (!child.needSplitChild && !child.needSplit)
-                        child.needSplit = true;
+                    if (!child.needSplitChild() && !child.needSplit())
+                        child.needSplit(true);
                 }
             }
         }
@@ -1320,26 +1306,26 @@ public class GridSqlQuerySplitter {
      * @param childIdx Child index.
      * @param uniqueAlias Unique parent alias of the current element.
      */
-    private void buildQueryModel(QueryModel prntModel, GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
+    private void buildQueryModel(SplitterQueryModel prntModel, GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
         GridSqlAst child = prnt.child(childIdx);
 
         assert child != null;
 
         if (child instanceof GridSqlSelect) {
-            QueryModel model = new QueryModel(SplitterQueryModelType.SELECT, prnt, childIdx, uniqueAlias);
+            SplitterQueryModel model = new SplitterQueryModel(SplitterQueryModelType.SELECT, prnt, childIdx, uniqueAlias);
 
             prntModel.add(model);
 
             buildQueryModel(model, child, FROM_CHILD, null);
         }
         else if (child instanceof GridSqlUnion) {
-            QueryModel model;
+            SplitterQueryModel model;
 
             // We will collect all the selects into a single UNION model.
             if (prntModel.type() == SplitterQueryModelType.UNION)
                 model = prntModel;
             else {
-                model = new QueryModel(SplitterQueryModelType.UNION, prnt, childIdx, uniqueAlias);
+                model = new SplitterQueryModel(SplitterQueryModelType.UNION, prnt, childIdx, uniqueAlias);
 
                 prntModel.add(model);
             }
@@ -1365,11 +1351,11 @@ public class GridSqlQuerySplitter {
                 assert prnt == uniqueAlias: prnt.getClass();
 
                 if (child instanceof GridSqlTable)
-                    prntModel.add(new QueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
+                    prntModel.add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
                 else if (child instanceof GridSqlSubquery)
                     buildQueryModel(prntModel, child, 0, uniqueAlias);
                 else if (child instanceof GridSqlFunction)
-                    prntModel.add(new QueryModel(SplitterQueryModelType.FUNCTION, prnt, childIdx, uniqueAlias));
+                    prntModel.add(new SplitterQueryModel(SplitterQueryModelType.FUNCTION, prnt, childIdx, uniqueAlias));
                 else
                     throw new IllegalStateException("Unknown child type: " + child.getClass());
             }
@@ -2271,47 +2257,12 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param root Root model.
-     * @return Tree as a string.
-     */
-    @SuppressWarnings("unused")
-    private String printQueryModel(QueryModel root) {
-        GridTreePrinter<QueryModel> mp = new GridTreePrinter<QueryModel>() {
-            /** {@inheritDoc} */
-            @Override protected List<QueryModel> getChildren(QueryModel m) {
-                return m;
-            }
-
-            /** {@inheritDoc} */
-            @Override protected String formatTreeNode(QueryModel m) {
-                return "[ " +(m.uniqueAlias() == null ? "+" : m.uniqueAlias().alias()) +
-                    " -> " + m.type() +
-                    " ns:" + m.needSplit + " nsch:" + m.needSplitChild +
-                    " ast: " + ast(m) +" ]";
-            }
-
-            private String ast(QueryModel m) {
-                if (m.parent() == null)
-                    return "-+-+-";
-
-                String ast = m.ast().getSQL().replace('\n', ' ');
-
-                int maxLen = 2000;
-
-                return ast.length() <= maxLen ? ast : ast.substring(0, maxLen);
-            }
-        };
-
-        return mp.print(root);
-    }
-
-    /**
      * Simplified tree-like model for a query.
      * - SELECT : All the children are list of joined query models in the FROM clause.
      * - UNION  : All the children are united left and right query models.
      * - TABLE and FUNCTION : Never have child models.
      */
-    private static final class QueryModel extends ArrayList<QueryModel> {
+    public static final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
         /** */
         @GridToStringInclude
         private final SplitterQueryModelType type;
@@ -2327,11 +2278,11 @@ public class GridSqlQuerySplitter {
 
         /** If it is a SELECT and we need to split it. Makes sense only for type SELECT. */
         @GridToStringInclude
-        boolean needSplit;
+        private boolean needSplit;
 
         /** If we have a child SELECT that we should split. */
         @GridToStringInclude
-        boolean needSplitChild;
+        private boolean needSplitChild;
 
         /** If this is UNION ALL. Makes sense only for type UNION.*/
         private boolean unionAll = true;
@@ -2343,7 +2294,7 @@ public class GridSqlQuerySplitter {
          * @param uniqueAlias Unique parent alias of the current element.
          *                    May be {@code null} for selects inside of unions or top level queries.
          */
-        QueryModel(SplitterQueryModelType type, GridSqlAst parent, int childIdx, GridSqlAlias uniqueAlias) {
+        public SplitterQueryModel(SplitterQueryModelType type, GridSqlAst parent, int childIdx, GridSqlAlias uniqueAlias) {
             this.type = type;
             this.parent = parent;
             this.childIdx = childIdx;
@@ -2355,6 +2306,13 @@ public class GridSqlQuerySplitter {
          */
         public SplitterQueryModelType type() {
             return type;
+        }
+
+        /**
+         * @return {@code true} If this is a SELECT or UNION query model.
+         */
+        public boolean isQuery() {
+            return type == SplitterQueryModelType.SELECT || type == SplitterQueryModelType.UNION;
         }
 
         /**
@@ -2387,10 +2345,31 @@ public class GridSqlQuerySplitter {
         }
 
         /**
-         * @return {@code true} If this is a SELECT or UNION query model.
+         * @return Whether split is needed.
          */
-        private boolean isQuery() {
-            return type == SplitterQueryModelType.SELECT || type == SplitterQueryModelType.UNION;
+        public boolean needSplit() {
+            return needSplit;
+        }
+
+        /**
+         * @param needSplit Whether split is needed.
+         */
+        public void needSplit(boolean needSplit) {
+            this.needSplit = needSplit;
+        }
+
+        /**
+         * @return Whether split of children is needed.
+         */
+        public boolean needSplitChild() {
+            return needSplitChild;
+        }
+
+        /**
+         * @param needSplitChild Whether split of children is needed.
+         */
+        public void needSplitChild(boolean needSplitChild) {
+            this.needSplitChild = needSplitChild;
         }
 
         /**
@@ -2410,7 +2389,7 @@ public class GridSqlQuerySplitter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(QueryModel.class, this);
+            return S.toString(SplitterQueryModel.class, this);
         }
     }
 }
