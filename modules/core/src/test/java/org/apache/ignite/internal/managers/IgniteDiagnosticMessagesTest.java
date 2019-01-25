@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -61,6 +62,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -380,6 +382,39 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture} timeout object
+     * dumps debug info to log.
+     *
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testTimeOutTxLock() throws Exception {
+        final int longOpDumpTimeout = 1000;
+
+        System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
+
+        try {
+            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
+
+            Ignite node1 = startGrid(0);
+            Ignite node2 = startGrid(1);
+
+            LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
+                    .andMatches(Pattern.compile("xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=deadlock, nodeId=.*"))
+                    .build();
+
+            testLog.registerListener(lsnr);
+
+            startTxDeadlock(node1, node2);
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+        }
+    }
+
+    /**
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
@@ -640,5 +675,65 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * Start tx deadlock.
+     *
+     * @param node1 First node.
+     * @param node2 Second node.
+     * @throws Exception If failed.
+     */
+    private void startTxDeadlock(Ignite node1, Ignite node2) throws Exception {
+        node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
+
+        final CountDownLatch l = new CountDownLatch(2);
+
+        IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    try (Transaction tx = node1.transactions().withLabel("deadlock")
+                            .txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
+                        node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
+
+                        l.countDown();
+
+                        U.awaitQuiet(l);
+
+                        node1.cache(DEFAULT_CACHE_NAME).put(2, 20);
+
+                        tx.commit();
+
+                        fail();
+                    }
+                }
+                catch (Exception ignored) {
+                    // No-op.
+                }
+            }
+        }, "First");
+
+        IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = node2.transactions().withLabel("deadlock")
+                        .txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
+                    node2.cache(DEFAULT_CACHE_NAME).put(2, 2);
+
+                    l.countDown();
+
+                    U.awaitQuiet(l);
+
+                    node2.cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+                    tx.commit();
+                }
+                catch (Exception ignored) {
+                    // No-op.
+                }
+            }
+        }, "Second");
+
+        fut1.get();
+        fut2.get();
     }
 }

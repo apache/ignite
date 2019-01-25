@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1154,6 +1156,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
+                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
         /**
          * Default constructor.
          */
@@ -1163,10 +1168,16 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            if (log.isDebugEnabled())
-                log.debug("Timed out waiting for lock response: " + this);
-
             synchronized (GridDhtLockFuture.this) {
+                if (log.isDebugEnabled() || timeout >= longOpDumpTimeout) {
+                    String msg = "Timed out waiting for lock response: " + dump();
+
+                    if (log.isDebugEnabled())
+                        log.debug(msg);
+                    else
+                        log.warning(msg);
+                }
+
                 timedOut = true;
 
                 // Stop locks and responses processing.
@@ -1183,6 +1194,58 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LockTimeoutObject.class, this);
+        }
+
+        /**
+         * NB! Should be called in synchronized block on {@link GridDhtLockFuture} instance.
+         *
+         * @return Verbose string representation of {@link LockTimeoutObject}.
+         */
+        private String dump() {
+            StringBuilder sb = new StringBuilder().append("[");
+
+            Iterator<KeyCacheObject> locks = pendingLocks.iterator();
+
+            while (locks.hasNext()) {
+                KeyCacheObject key = locks.next();
+
+                sb.append("[key=").append(key).append(", holders=[");
+
+                try {
+                    Iterator<GridCacheMvccCandidate> candidates = cctx.cache().entryEx(key, topVer)
+                            .localCandidates().iterator();
+
+                    while (candidates.hasNext()) {
+                        GridCacheMvccCandidate candidate = candidates.next();
+                        IgniteInternalTx tx = cctx.tm().tx(candidate.version());
+
+                        if (tx != null) {
+                            sb.append("[xid=").append(tx.xid()).append(", ");
+                            sb.append("xidVer=").append(tx.xidVersion()).append(", ");
+                            sb.append("nearXid=").append(tx.nearXidVersion().asGridUuid()).append(", ");
+                            sb.append("nearXidVer=").append(tx.nearXidVersion()).append(", ");
+                            sb.append("label=").append(tx.label()).append(", ");
+                            sb.append("nodeId=").append(candidate.nodeId()).append("]");
+                        }
+
+                        if (!candidates.hasNext())
+                            sb.append("]]");
+                        else if (tx != null)
+                            sb.append(", ");
+                    }
+
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+
+                if (locks.hasNext())
+                    sb.append(", ");
+                else
+                    sb.append("]");
+            }
+
+            return S.toString(LockTimeoutObject.class, this, "pendingLocks", sb.toString());
         }
     }
 
