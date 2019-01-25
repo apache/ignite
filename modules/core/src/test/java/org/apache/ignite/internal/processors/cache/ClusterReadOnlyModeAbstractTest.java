@@ -128,6 +128,6 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
     public static void checkThatRootCauseIsReadOnly(Throwable e) {
         for (Throwable t = e; t != null; t = t.getCause())
             if (t.getCause() == null)
-                assertTrue(t instanceof IgniteClusterReadOnlyException);
+                assertTrue(t.getMessage(), t instanceof IgniteClusterReadOnlyException);
     }
 }
