@@ -1568,8 +1568,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     private void prepareNodeAddedMessage(
         TcpDiscoveryAbstractMessage msg,
         UUID destNodeId,
-        @Nullable Collection<PendingMessage> msgs
-    ) {
+        @Nullable Collection<PendingMessage> msgs,
+        @Nullable IgniteUuid discardMsgId,
+        @Nullable IgniteUuid discardCustomMsgId
+        ) {
         assert destNodeId != null;
 
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
@@ -1607,7 +1609,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // No need to send discardMsgId and discardCustomMsgId because we already filtered out
                 // cleaned up messages.
-                nodeAddedMsg.messages(msgs0, null, null);
+                nodeAddedMsg.messages(msgs0, null, discardCustomMsgId);
 
                 Map<Long, Collection<ClusterNode>> hist;
 
@@ -2273,7 +2275,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryNodeAddedMessage msg0 = new TcpDiscoveryNodeAddedMessage(addedMsg);
 
-                    prepareNodeAddedMessage(msg0, destNodeId, null);
+                    prepareNodeAddedMessage(msg0, destNodeId, null, null, null);
 
                     msg0.topology(addedMsg.clientTopology());
 
@@ -2820,7 +2822,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 msg0 = U.unmarshal(spi.marshaller(), msgBytes,
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
-                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null, null);
 
                                 msgBytes0 = null;
                             }
@@ -3139,7 +3141,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
 
-                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs);
+                                    prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs,
+                                        pendingMsgs.discardId, pendingMsgs.customDiscardId);
 
                                     addFailedNodes(pendingMsg, failedNodes);
 
@@ -3177,7 +3180,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             if (!(msg instanceof TcpDiscoveryConnectionCheckMessage))
-                                prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs);
+                                prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs, pendingMsgs.discardId,
+                                    pendingMsgs.customDiscardId);
 
                             try {
                                 SecurityUtils.serializeVersion(1);
@@ -3371,7 +3375,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "Pending messages will be resent to local node");
 
                     for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
-                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs);
+                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs, pendingMsgs.discardId,
+                            pendingMsgs.customDiscardId);
 
                         pendingMsg.senderNodeId(locNodeId);
 
@@ -4145,7 +4150,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert node != null;
 
-            if (node.internalOrder() < locNode.internalOrder()) {
+            if (!locNode.id().equals(node.id()) && node.internalOrder() < locNode.internalOrder()) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding node added message since local node's order is greater " +
                         "[node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');

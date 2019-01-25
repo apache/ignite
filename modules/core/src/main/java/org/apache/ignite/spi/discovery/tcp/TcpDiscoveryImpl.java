@@ -62,7 +62,7 @@ abstract class TcpDiscoveryImpl {
     protected final IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryNode locNode;
+    protected volatile TcpDiscoveryNode locNode;
 
     /** Debug mode. */
     protected boolean debugMode;
