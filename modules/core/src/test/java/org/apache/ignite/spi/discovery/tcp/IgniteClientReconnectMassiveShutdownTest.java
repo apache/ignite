@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
@@ -279,20 +278,23 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
             clientsFut.get();
 
-            assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
-                for (int i = 0; i < srvsToKill; i++) {
-                    try {
-                        grid(i);
+            // Checks that failing servers was stopped after segmentation policy applying.
+            if (stopType == StopType.FAIL_EVENT) {
+                assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
+                    for (int i = 0; i < srvsToKill; i++) {
+                        try {
+                            grid(i);
 
-                        return false;
+                            return false;
+                        }
+                        catch (IgniteIllegalStateException ignored) {
+                            // No-op.
+                        }
                     }
-                    catch (IgniteIllegalStateException ignored) {
-                        // No-op.
-                    }
-                }
 
-                return true;
-            }, 15_000));
+                    return true;
+                }, 15_000));
+            }
 
             awaitPartitionMapExchange();
 
