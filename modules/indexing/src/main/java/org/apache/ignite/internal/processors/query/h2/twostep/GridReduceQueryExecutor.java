@@ -640,9 +640,7 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                int flags = singlePartMode ?
-                    enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0 :
-                    GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+                int flags = singlePartMode && !enforceJoinOrder ? 0 : GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
 
                 if (distributedJoins)
                     flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
@@ -1357,8 +1355,12 @@ public class GridReduceQueryExecutor {
     private List<GridCacheSqlQuery> prepareMapQueryForSinglePartition(GridCacheTwoStepQuery qry, Object[] params) {
         boolean hasSubQries = false;
 
-        for (GridCacheSqlQuery mapQry : qry.mapQueries())
-            hasSubQries |= mapQry.hasSubQueries();
+        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            if (mapQry.hasSubQueries()) {
+                hasSubQries = true;
+                break;
+            }
+        }
 
         GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
 
