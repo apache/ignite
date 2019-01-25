@@ -79,6 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests cache locks.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-835")]
         public void TestLock()
         {
             var cache = Cache();
