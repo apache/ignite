@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.dml.SelectUnion;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.LEFT_TABLE_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.RIGHT_TABLE_CHILD;
@@ -35,7 +36,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.RI
  * - UNION  : All the children are united left and right query models.
  * - TABLE and FUNCTION : Never have child models.
  */
-public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
+public final class SplitterQueryModel {
     /** */
     @GridToStringInclude
     private final SplitterQueryModelType type;
@@ -48,6 +49,9 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
 
     /** */
     private final int childIdx;
+
+    /** Child models. */
+    private final List<SplitterQueryModel> childModels = new ArrayList<>();
 
     /** If it is a SELECT and we need to split it. Makes sense only for type SELECT. */
     @GridToStringInclude
@@ -160,6 +164,28 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
+     * Move child models to wrap model.
+     *
+     * @param wrapModel Wrap model.
+     * @param begin Child begin index.
+     * @param end Child end index.
+     */
+    public void moveChildModelsToWrapModel(SplitterQueryModel wrapModel, int begin, int end) {
+        for (int i = begin; i <= end; i++) {
+            SplitterQueryModel child = childModels.get(i);
+
+            wrapModel.childModels.add(child);
+        }
+
+        // Replace the first child model with the created one.
+        childModels.set(begin, wrapModel);
+
+        // Drop others.
+        for (int x = begin + 1, i = x; i <= end; i++)
+            childModels.remove(x);
+    }
+
+    /**
      * Force split flag on a model.
      */
     public void forceSplit() {
@@ -172,10 +198,10 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
             needSplitChild = true;
 
             // Mark all the selects in the UNION to be splittable.
-            for (SplitterQueryModel s : this) {
-                assert s.type() == SplitterQueryModelType.SELECT : s.type();
+            for (SplitterQueryModel childModel : childModels) {
+                assert childModel.type() == SplitterQueryModelType.SELECT : childModel.type();
 
-                s.needSplit = true;
+                childModel.needSplit = true;
             }
         }
         else
@@ -188,6 +214,23 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     @SuppressWarnings("SameParameterValue")
     public void unionAll(boolean unionAll) {
         this.unionAll = unionAll;
+    }
+
+    /**
+     * @return Number of child models.
+     */
+    public int childModelsCount() {
+        return childModels.size();
+    }
+
+    /**
+     * Get child model by index.
+     *
+     * @param idx Index.
+     * @return Child model.
+     */
+    public SplitterQueryModel childModel(int idx) {
+        return childModels.get(idx);
     }
 
     /**
@@ -206,7 +249,7 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
             SplitterQueryModel model = new SplitterQueryModel(SplitterQueryModelType.SELECT, prnt, childIdx,
                 uniqueAlias);
 
-            add(model);
+            childModels.add(model);
 
             model.buildQueryModel(child, FROM_CHILD, null);
         }
@@ -219,7 +262,7 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
             else {
                 model = new SplitterQueryModel(SplitterQueryModelType.UNION, prnt, childIdx, uniqueAlias);
 
-                add(model);
+                childModels.add(model);
             }
 
             if (((GridSqlUnion)child).unionType() != SelectUnion.UnionType.UNION_ALL)
@@ -243,11 +286,11 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
                 assert prnt == uniqueAlias: prnt.getClass();
 
                 if (child instanceof GridSqlTable)
-                    add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
+                    childModels.add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
                 else if (child instanceof GridSqlSubquery)
                     buildQueryModel(child, 0, uniqueAlias);
                 else if (child instanceof GridSqlFunction)
-                    add(new SplitterQueryModel(SplitterQueryModelType.FUNCTION, prnt, childIdx, uniqueAlias));
+                    childModels.add(new SplitterQueryModel(SplitterQueryModelType.FUNCTION, prnt, childIdx, uniqueAlias));
                 else
                     throw new IllegalStateException("Unknown child type: " + child.getClass());
             }
@@ -265,8 +308,8 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
             return;
 
         // Process all the children at the beginning: depth first analysis.
-        for (int i = 0; i < size(); i++) {
-            SplitterQueryModel child = get(i);
+        for (int i = 0; i < childModels.size(); i++) {
+            SplitterQueryModel child = childModels.get(i);
 
             child.analyzeQueryModel(collocatedGrpBy);
 
@@ -293,8 +336,8 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
             // thus each SELECT needs to have a reduce part for this UNION, but the whole SELECT can not
             // be a reduce part (usually).
             if (needSplitChild) {
-                for (int i = 0; i < size(); i++) {
-                    SplitterQueryModel child = get(i);
+                for (int i = 0; i < childModels.size(); i++) {
+                    SplitterQueryModel child = childModels.get(i);
 
                     assert child.type() == SplitterQueryModelType.SELECT : child.type();
 
@@ -313,8 +356,8 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
      */
     public GridSqlJoin findJoin(int idx) {
         assert type == SplitterQueryModelType.SELECT : type;
-        assert size() > 1; // It must be at least one join with at least two child tables.
-        assert idx < size(): idx;
+        assert childModels.size() > 1; // It must be at least one join with at least two child tables.
+        assert idx < childModels.size(): idx;
 
         //     join2
         //      / \
@@ -328,7 +371,7 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
 
         GridSqlJoin join = (GridSqlJoin)((GridSqlSelect)ast()).from();
 
-        for (int i = size() - 1; i > idx; i--)
+        for (int i = childModels.size() - 1; i > idx; i--)
             join = (GridSqlJoin)join.leftTable();
 
         return join;

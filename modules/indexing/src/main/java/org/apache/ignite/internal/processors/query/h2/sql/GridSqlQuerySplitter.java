@@ -274,10 +274,10 @@ public class GridSqlQuerySplitter {
         // Build a simplified query model. We need it because navigation over the original AST is too complex.
         fakeQryModelParent.buildQueryModel(fakeQryParent, 0, null);
 
-        assert fakeQryModelParent.size() == 1;
+        assert fakeQryModelParent.childModelsCount() == 1;
 
         // Get the built query model from the fake parent.
-        SplitterQueryModel qrym = fakeQryModelParent.get(0);
+        SplitterQueryModel qrym = fakeQryModelParent.childModel(0);
 
         // Setup the needed information for split.
         qrym.analyzeQueryModel(collocatedGrpBy);
@@ -327,8 +327,8 @@ public class GridSqlQuerySplitter {
         if (qrym.type() == SplitterQueryModelType.UNION) {
             assert qrym.needSplitChild(); // Otherwise we should not get here.
 
-            for (int i = 0; i < qrym.size(); i++)
-                pushDownQueryModel(qrym.get(i));
+            for (int i = 0; i < qrym.childModelsCount(); i++)
+                pushDownQueryModel(qrym.childModel(i));
         }
         else if (qrym.type() == SplitterQueryModelType.SELECT) {
             // If we already need to split, then no need to push down here.
@@ -370,8 +370,8 @@ public class GridSqlQuerySplitter {
 
         // Here we iterate over joined FROM table filters.
         // !!! qrym.size() can change, never assign it to a variable.
-        for (int i = 0; i < qrym.size(); i++) {
-            SplitterQueryModel child = qrym.get(i);
+        for (int i = 0; i < qrym.childModelsCount(); i++) {
+            SplitterQueryModel child = qrym.childModel(i);
 
             boolean hasPushedDownCol = false;
 
@@ -393,7 +393,7 @@ public class GridSqlQuerySplitter {
 
                     i = begin + 1; // We've modified qrym by this range push down, need to adjust counter.
 
-                    assert qrym.get(i) == child; // Adjustment check: we have to return to the same point.
+                    assert qrym.childModel(i) == child; // Adjustment check: we have to return to the same point.
 
                     // Reset range begin: in case of pushed down column we can assume current child as
                     // as new begin (because it is not a splittable subquery), otherwise reset begin
@@ -412,7 +412,7 @@ public class GridSqlQuerySplitter {
 
         // Push down the remaining range.
         if (begin != -1)
-            pushDownQueryModelRange(qrym, begin, qrym.size() - 1);
+            pushDownQueryModelRange(qrym, begin, qrym.childModelsCount() - 1);
     }
 
     /**
@@ -420,15 +420,15 @@ public class GridSqlQuerySplitter {
      */
     private void setupMergeJoinSorting(SplitterQueryModel qrym) {
         if (qrym.type() == SplitterQueryModelType.UNION) {
-            for (int i = 0; i < qrym.size(); i++)
-                setupMergeJoinSorting(qrym.get(i));
+            for (int i = 0; i < qrym.childModelsCount(); i++)
+                setupMergeJoinSorting(qrym.childModel(i));
         }
         else if (qrym.type() == SplitterQueryModelType.SELECT) {
             if (!qrym.needSplit()) {
                 boolean needSplitChild = false;
 
-                for (int i = 0; i < qrym.size(); i++) {
-                    SplitterQueryModel child = qrym.get(i);
+                for (int i = 0; i < qrym.childModelsCount(); i++) {
+                    SplitterQueryModel child = qrym.childModel(i);
 
                     assert child.isQuery() : child.type();
 
@@ -438,7 +438,7 @@ public class GridSqlQuerySplitter {
                         setupMergeJoinSorting(child); // Go deeper.
                 }
 
-                if (needSplitChild && qrym.size() > 1)
+                if (needSplitChild && qrym.childModelsCount() > 1)
                     setupMergeJoinSortingSelect(qrym); // Setup merge join hierarchy for the SELECT.
             }
         }
@@ -458,8 +458,8 @@ public class GridSqlQuerySplitter {
         // the splittable SELECT like in "push down" and
         // setup sorting for all of them by joined fields.
 
-        for (int i = 1; i < qrym.size(); i++) {
-            SplitterQueryModel child = qrym.get(i);
+        for (int i = 1; i < qrym.childModelsCount(); i++) {
+            SplitterQueryModel child = qrym.childModel(i);
 
             if (child.needSplit()) {
                 if (i > 1) {
@@ -469,7 +469,7 @@ public class GridSqlQuerySplitter {
 
                     i = 1;
 
-                    assert qrym.get(i) == child; // We must remain at the same position.
+                    assert qrym.childModel(i) == child; // We must remain at the same position.
                 }
 
                 injectSortingFirstJoin(qrym);
@@ -599,9 +599,9 @@ public class GridSqlQuerySplitter {
     private void pushDownQueryModelRange(SplitterQueryModel qrym, int begin, int end) {
         assert end >= begin;
 
-        if (begin == end && qrym.get(end).isQuery()) {
+        if (begin == end && qrym.childModel(end).isQuery()) {
             // Simple case when we have a single subquery to push down, just mark it to be splittable.
-            qrym.get(end).forceSplit();
+            qrym.childModel(end).forceSplit();
         }
         else {
             // Here we have to generate a subquery for all the joined elements and
@@ -638,7 +638,7 @@ public class GridSqlQuerySplitter {
 
         // Collect all the tables for push down.
         for (int i = begin; i <= end; i++) {
-            GridSqlAlias uniqueTblAlias = qrym.get(i).uniqueAlias();
+            GridSqlAlias uniqueTblAlias = qrym.childModel(i).uniqueAlias();
 
             assert uniqueTblAlias != null: select.getSQL();
 
@@ -661,18 +661,7 @@ public class GridSqlQuerySplitter {
         // Adjust query models to a new AST structure.
 
         // Move pushed down child models to the newly created model.
-        for (int i = begin; i <= end; i++) {
-            SplitterQueryModel child = qrym.get(i);
-
-            wrapQrym.add(child);
-        }
-
-        // Replace the first child model with the created one.
-        qrym.set(begin, wrapQrym);
-
-        // Drop others.
-        for (int x = begin + 1, i = x; i <= end; i++)
-            qrym.remove(x);
+        qrym.moveChildModelsToWrapModel(wrapQrym, begin, end);
     }
 
     /**
@@ -696,7 +685,7 @@ public class GridSqlQuerySplitter {
 
         GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
-        final int last = qrym.size() - 1;
+        final int last = qrym.childModelsCount() - 1;
 
         if (begin == end) {
             //  Simple case when we have to push down only a single table and no joins.
@@ -724,7 +713,7 @@ public class GridSqlQuerySplitter {
 
             GridSqlJoin endJoin = qrym.findJoin(end);
 
-            wrapSelect.from(qrym.get(end).uniqueAlias());
+            wrapSelect.from(qrym.childModel(end).uniqueAlias());
             endJoin.child(end == 0 ? LEFT_TABLE_CHILD : RIGHT_TABLE_CHILD, wrapAlias);
         }
         else if (end == last) {
@@ -889,20 +878,20 @@ public class GridSqlQuerySplitter {
      * @param tblAliases Table aliases to push down.
      * @param cols Columns with generated aliases.
      * @param wrapAlias Alias of the wrap query.
-     * @param prnt Parent expression.
+     * @param parent Parent expression.
      * @param childIdx Child index.
      */
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
-        GridSqlAst prnt,
+        GridSqlAst parent,
         int childIdx
     ) {
-        GridSqlAst child = prnt.child(childIdx);
+        GridSqlAst child = parent.child(childIdx);
 
         if (child instanceof GridSqlColumn)
-            pushDownColumn(tblAliases, cols, wrapAlias, prnt, childIdx);
+            pushDownColumn(tblAliases, cols, wrapAlias, parent, childIdx);
         else {
             for (int i = 0; i < child.size(); i++)
                 pushDownColumnsInExpression(tblAliases, cols, wrapAlias, child, i);
@@ -913,22 +902,22 @@ public class GridSqlQuerySplitter {
      * @param tblAliases Table aliases for push down.
      * @param cols Columns with generated aliases.
      * @param wrapAlias Alias of the wrap query.
-     * @param prnt Parent element.
+     * @param parent Parent element.
      * @param childIdx Child index.
      */
     private void pushDownColumn(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
-        GridSqlAst prnt,
+        GridSqlAst parent,
         int childIdx
     ) {
-        GridSqlAst expr = prnt.child(childIdx);
+        GridSqlAst expr = parent.child(childIdx);
 
         String uniqueColAlias;
 
         if (expr instanceof GridSqlColumn) {
-            GridSqlColumn col = prnt.child(childIdx);
+            GridSqlColumn col = parent.child(childIdx);
 
             // It must always be unique table alias.
             GridSqlAlias tblAlias = (GridSqlAlias)col.expressionInFrom();
@@ -941,7 +930,7 @@ public class GridSqlQuerySplitter {
             uniqueColAlias = uniquePushDownColumnAlias(col);
         }
         else {
-            uniqueColAlias = EXPR_ALIAS_PREFIX + nextExprAliasId++ + "__" + ((GridSqlAlias)prnt).alias();
+            uniqueColAlias = EXPR_ALIAS_PREFIX + nextExprAliasId++ + "__" + ((GridSqlAlias)parent).alias();
         }
 
         GridSqlType resType = expr.resultType();
@@ -961,7 +950,7 @@ public class GridSqlQuerySplitter {
         col.expressionInFrom(wrapAlias);
         col.resultType(resType);
 
-        prnt.child(childIdx, col);
+        parent.child(childIdx, col);
     }
 
     /**
@@ -1075,8 +1064,8 @@ public class GridSqlQuerySplitter {
 
                 // Intentional fallthrough to go deeper.
             case UNION:
-                for (int i = 0; i < qrym.size(); i++)
-                    splitQueryModel(qrym.get(i));
+                for (int i = 0; i < qrym.childModelsCount(); i++)
+                    splitQueryModel(qrym.childModel(i));
 
                 break;
 
@@ -1307,11 +1296,11 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param prnt Table parent element.
+     * @param parent Table parent element.
      * @param childIdx Child index for the table or alias containing the table.
      */
-    private void generateUniqueAlias(GridSqlAst prnt, int childIdx) {
-        GridSqlAst child = prnt.child(childIdx);
+    private void generateUniqueAlias(GridSqlAst parent, int childIdx) {
+        GridSqlAst child = parent.child(childIdx);
         GridSqlAst tbl = GridSqlAlias.unwrap(child);
 
         assert tbl instanceof GridSqlTable || tbl instanceof GridSqlSubquery ||
@@ -1324,7 +1313,7 @@ public class GridSqlQuerySplitter {
         uniqueFromAliases.put(tbl, uniqueAliasAst);
 
         // Replace the child in the parent.
-        prnt.child(childIdx, uniqueAliasAst);
+        parent.child(childIdx, uniqueAliasAst);
     }
 
     /**
@@ -1341,12 +1330,12 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param prnt Parent element.
+     * @param parent Parent element.
      * @param childIdx Child index.
-     * @param prntAlias If the parent is {@link GridSqlAlias}.
+     * @param parentAlias If the parent is {@link GridSqlAlias}.
      */
-    private void normalizeFrom(GridSqlAst prnt, int childIdx, boolean prntAlias) {
-        GridSqlElement from = prnt.child(childIdx);
+    private void normalizeFrom(GridSqlAst parent, int childIdx, boolean parentAlias) {
+        GridSqlElement from = parent.child(childIdx);
 
         if (from instanceof GridSqlTable) {
             GridSqlTable tbl = (GridSqlTable)from;
@@ -1357,13 +1346,13 @@ public class GridSqlQuerySplitter {
             tbls.add(new QueryTable(schemaName, tblName));
 
             // In case of alias parent we need to replace the alias itself.
-            if (!prntAlias)
-                generateUniqueAlias(prnt, childIdx);
+            if (!parentAlias)
+                generateUniqueAlias(parent, childIdx);
         }
         else if (from instanceof GridSqlAlias) {
             // Replace current alias with generated unique alias.
             normalizeFrom(from, 0, true);
-            generateUniqueAlias(prnt, childIdx);
+            generateUniqueAlias(parent, childIdx);
         }
         else if (from instanceof GridSqlSubquery) {
             // We do not need to wrap simple functional subqueries into filtering function,
@@ -1371,7 +1360,7 @@ public class GridSqlQuerySplitter {
             // and functions we have to filter explicitly as well.
             normalizeQuery(((GridSqlSubquery)from).subquery());
 
-            if (!prntAlias) // H2 generates aliases for subqueries in FROM clause.
+            if (!parentAlias) // H2 generates aliases for subqueries in FROM clause.
                 throw new IllegalStateException("No alias for subquery: " + from.getSQL());
         }
         else if (from instanceof GridSqlJoin) {
@@ -1384,20 +1373,20 @@ public class GridSqlQuerySplitter {
         }
         else if (from instanceof GridSqlFunction) {
             // In case of alias parent we need to replace the alias itself.
-            if (!prntAlias)
-                generateUniqueAlias(prnt, childIdx);
+            if (!parentAlias)
+                generateUniqueAlias(parent, childIdx);
         }
         else
             throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
 
     /**
-     * @param prnt Parent element.
+     * @param parent Parent element.
      * @param childIdx Child index.
      */
     @SuppressWarnings("StatementWithEmptyBody")
-    private void normalizeExpression(GridSqlAst prnt, int childIdx) {
-        GridSqlAst el = prnt.child(childIdx);
+    private void normalizeExpression(GridSqlAst parent, int childIdx) {
+        GridSqlAst el = parent.child(childIdx);
 
         if (el instanceof GridSqlAlias ||
             el instanceof GridSqlOperation ||
@@ -1416,7 +1405,7 @@ public class GridSqlQuerySplitter {
             GridSqlAlias uniqueAlias = uniqueFromAliases.get(tbl);
 
             // Unique aliases must be generated for all the table filters already.
-            assert uniqueAlias != null: childIdx + "\n" + prnt.getSQL();
+            assert uniqueAlias != null: childIdx + "\n" + parent.getSQL();
 
             col.tableAlias(uniqueAlias.alias());
             col.expressionInFrom(uniqueAlias);
