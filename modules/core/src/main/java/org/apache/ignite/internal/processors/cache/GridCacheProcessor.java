@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -282,6 +283,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Tmp storage for meta migration. */
     private MetaStorage.TmpStorage tmpStorage;
+
+    /** Node's local cache configurations (both from static configuration and from persistent caches). */
+    private CacheJoinNodeDiscoveryData localConfigs;
 
     /**
      * @param ctx Kernal context.
@@ -781,6 +785,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             templates,
             startAllCachesOnClientStart()
         );
+
+        localConfigs = discoData;
 
         cachesInfo.onStart(discoData);
     }
@@ -1981,6 +1987,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Caches to be started when this node starts.
      */
     @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+        if (ctx.discovery().localNode().order() == 1 && localConfigs != null)
+            cachesInfo.filterDynamicCacheDescriptors(localConfigs);
+
+        localConfigs = null;
+
         return cachesInfo.localJoinCachesContext();
     }
 
@@ -3218,6 +3229,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         MvccCachingManager mvccCachingMgr = new MvccCachingManager();
 
+        DeadlockDetectionManager deadlockDetectionMgr = new DeadlockDetectionManager();
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -3236,7 +3249,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             evict,
             jta,
             storeSesLsnrs,
-            mvccCachingMgr
+            mvccCachingMgr,
+            deadlockDetectionMgr
         );
     }
 
@@ -5417,8 +5431,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 initialize(cfg, cacheObjCtx);
 
-                if (cachesInfo.restartingCaches().contains(req.cacheName()))
-                    req.schema(new QuerySchema(qryEntities == null? cfg.getQueryEntities() : qryEntities));
+                if (restartId != null)
+                    req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
                 else
                     req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
                             : cfg.getQueryEntities()));

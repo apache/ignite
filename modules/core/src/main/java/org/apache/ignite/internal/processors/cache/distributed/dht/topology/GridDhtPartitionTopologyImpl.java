@@ -1172,7 +1172,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             Collection<UUID> diffIds = diffFromAffinity.get(p);
 
             if (!F.isEmpty(diffIds)) {
-                HashSet<UUID> affIds = affAssignment.getIds(p);
+                Collection<UUID> affIds = affAssignment.getIds(p);
 
                 for (UUID nodeId : diffIds) {
                     if (affIds.contains(nodeId)) {
@@ -1229,8 +1229,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", node2part=" + node2part + ']';
 
             // Node IDs can be null if both, primary and backup, nodes disappear.
-            List<ClusterNode> nodes = new ArrayList<>();
-
+            // Empirical size to reduce growing of ArrayList.
+            // We bear in mind that most of the time we filter OWNING partitions.
+            List<ClusterNode> nodes = new ArrayList<>(allIds.size() / 2 + 1);
             for (UUID id : allIds) {
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = ctx.discovery().node(id);

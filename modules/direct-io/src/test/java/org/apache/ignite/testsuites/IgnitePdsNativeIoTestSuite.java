@@ -19,14 +19,13 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
-@RunWith(IgnitePdsNativeIoTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsNativeIoTestSuite {
     /**
      * @return Suite.
@@ -42,13 +41,5 @@ public class IgnitePdsNativeIoTestSuite {
         suite.add(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

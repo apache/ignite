@@ -147,8 +147,8 @@ public class DataStreamGeneratorTest {
         DatasetBuilder<Vector, Double> b2 = generator.asDatasetBuilder(N, (v, l) -> l == 0, 2);
         counter.set(0);
         DatasetBuilder<Vector, Double> b3 = generator.asDatasetBuilder(N, (v, l) -> l == 1, 2,
-            new UpstreamTransformerBuilder<Vector, Double>() {
-                @Override public UpstreamTransformer<Vector, Double> build(LearningEnvironment env) {
+            new UpstreamTransformerBuilder() {
+                @Override public UpstreamTransformer build(LearningEnvironment env) {
                     return new UpstreamTransformerForTest();
                 }
             });
@@ -201,10 +201,10 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private static class UpstreamTransformerForTest implements UpstreamTransformer<Vector, Double> {
-        @Override public Stream<UpstreamEntry<Vector, Double>> transform(
-            Stream<UpstreamEntry<Vector, Double>> upstream) {
-            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -entry.getValue()));
+    private static class UpstreamTransformerForTest implements UpstreamTransformer {
+        @Override public Stream<UpstreamEntry> transform(
+            Stream<UpstreamEntry> upstream) {
+            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
         }
     }
 }

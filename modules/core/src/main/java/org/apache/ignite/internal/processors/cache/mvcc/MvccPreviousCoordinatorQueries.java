@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +52,11 @@ class MvccPreviousCoordinatorQueries {
 
     /** */
     private boolean initDone;
+
+    /** */
+    void init() {
+        init(null, Collections.emptyList(), null);
+    }
 
     /**
      * @param nodeQueries Active queries map.
