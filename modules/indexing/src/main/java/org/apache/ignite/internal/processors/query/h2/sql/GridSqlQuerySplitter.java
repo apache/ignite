@@ -48,7 +48,6 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
@@ -1492,7 +1491,7 @@ public class GridSqlQuerySplitter {
     private static void setupParameters(GridCacheSqlQuery sqlQry, GridSqlQuery qryAst, Object[] params) {
         TreeSet<Integer> paramIdxs = new TreeSet<>();
 
-        findParamsQuery(qryAst, params, paramIdxs);
+        SplitterUtils.findParamsQuery(qryAst, params, paramIdxs);
 
         int[] paramIdxsArr = new int[paramIdxs.size()];
 
@@ -1724,74 +1723,6 @@ public class GridSqlQuerySplitter {
         }
         else
             throw new IllegalStateException(el + ": " + el.getClass());
-    }
-
-    /**
-     * @param qry Select.
-     * @param params Parameters.
-     * @param paramIdxs Parameter indexes.
-     */
-    private static void findParamsQuery(GridSqlQuery qry, Object[] params, TreeSet<Integer> paramIdxs) {
-        if (qry instanceof GridSqlSelect)
-            findParamsSelect((GridSqlSelect)qry, params, paramIdxs);
-        else {
-            GridSqlUnion union = (GridSqlUnion)qry;
-
-            findParamsQuery(union.left(), params, paramIdxs);
-            findParamsQuery(union.right(), params, paramIdxs);
-
-            findParams(qry.limit(), params, paramIdxs);
-            findParams(qry.offset(), params, paramIdxs);
-        }
-    }
-
-    /**
-     * @param select Select.
-     * @param params Parameters.
-     * @param paramIdxs Parameter indexes.
-     */
-    private static void findParamsSelect(GridSqlSelect select, Object[] params, TreeSet<Integer> paramIdxs) {
-        if (params.length == 0)
-            return;
-
-        for (GridSqlAst el : select.columns(false))
-            findParams(el, params, paramIdxs);
-
-        findParams(select.from(), params, paramIdxs);
-        findParams(select.where(), params, paramIdxs);
-
-        // Don't search in GROUP BY and HAVING since they expected to be in select list.
-
-        findParams(select.limit(), params, paramIdxs);
-        findParams(select.offset(), params, paramIdxs);
-    }
-
-    /**
-     * @param el Element.
-     * @param params Parameters.
-     * @param paramIdxs Parameter indexes.
-     */
-    private static void findParams(@Nullable GridSqlAst el, Object[] params, TreeSet<Integer> paramIdxs) {
-        if (el == null)
-            return;
-
-        if (el instanceof GridSqlParameter) {
-            // H2 Supports queries like "select ?5" but first 4 non-existing parameters are need to be set to any value.
-            // Here we will set them to NULL.
-            final int idx = ((GridSqlParameter)el).index();
-
-            if (params.length <= idx)
-                throw new IgniteException("Invalid number of query parameters. " +
-                    "Cannot find " + idx + " parameter.");
-
-            paramIdxs.add(idx);
-        }
-        else if (el instanceof GridSqlSubquery)
-            findParamsQuery(((GridSqlSubquery)el).subquery(), params, paramIdxs);
-        else {
-            for (int i = 0; i < el.size(); i++)
-                findParams(el.child(i), params, paramIdxs);
-        }
     }
 
     /**
