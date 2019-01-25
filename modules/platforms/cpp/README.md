@@ -67,9 +67,9 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 
 [Read More](https://apacheignite-cpp.readme.io/docs/cluster)
 
-## Ignite and Ignite С++
+## Ignite and Ignite C++
 * Ignite C++ is built on top of Ignite.
-* Ignite С++ starts the JVM in the same process and communicates with it via JNI.
+* Ignite C++ starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
 
