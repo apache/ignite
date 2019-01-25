@@ -169,7 +169,7 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(10L * 1024 * 1024)
+                        .setMaxSize(30L * 1024 * 1024)
                         .setPersistenceEnabled(true))
                 .setWalMode(WALMode.LOG_ONLY);
 
