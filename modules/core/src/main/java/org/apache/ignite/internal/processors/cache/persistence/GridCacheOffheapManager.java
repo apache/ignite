@@ -271,7 +271,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
-            if (size > 0 || updCntr > 0 || !store.partUpdateCounter().hasGaps()) {
+            if (size > 0 || updCntr > 0 || !store.partUpdateCounter().sequential()) {
                 GridDhtPartitionState state = null;
 
                 // localPartition will not acquire writeLock here because create=false.

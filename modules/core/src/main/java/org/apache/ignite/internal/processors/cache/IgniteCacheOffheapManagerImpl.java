@@ -1466,7 +1466,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = new PartitionUpdateCounter2(log, partId);
+            pCntr = new PartitionUpdateCounterImpl(log, partId);
         }
 
         /**
@@ -1601,7 +1601,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Partition counter inconsistency is detected. " +
-                    "Most probably a node with most actual data is out of topology.");
+                    "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
+                    "mode (allowOverride=true) concurrently with normal cache operations.");
 
                 ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }

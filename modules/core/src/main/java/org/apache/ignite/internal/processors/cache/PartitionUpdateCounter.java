@@ -17,20 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.NavigableSet;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -93,7 +81,7 @@ public interface PartitionUpdateCounter {
             throw new UnsupportedOperationException();
         }
 
-        @Override public boolean hasGaps() {
+        @Override public boolean sequential() {
             return false;
         }
     };
@@ -122,5 +110,5 @@ public interface PartitionUpdateCounter {
 
     public @Nullable byte[] getBytes();
 
-    public boolean hasGaps();
+    public boolean sequential();
 }

@@ -26,7 +26,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +36,6 @@ import java.util.stream.IntStream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,7 +49,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -651,10 +649,10 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      *
      * @return Counter or null if node is not partition owner.
      */
-    protected @Nullable PartitionUpdateCounter2 counter(int partId, String gridName) {
+    protected @Nullable PartitionUpdateCounterImpl counter(int partId, String gridName) {
         @Nullable GridDhtLocalPartition part = internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
 
-        return part == null ? null : (PartitionUpdateCounter2)part.dataStore().partUpdateCounter();
+        return part == null ? null : (PartitionUpdateCounterImpl)part.dataStore().partUpdateCounter();
     }
 
 

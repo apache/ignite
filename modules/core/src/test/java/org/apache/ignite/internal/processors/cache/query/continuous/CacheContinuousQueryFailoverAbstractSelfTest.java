@@ -74,7 +74,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -1648,6 +1648,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             log.info("Start node: " + idx);
 
             startGrid(idx);
+
+            awaitPartitionMapExchange();
         }
 
         cur.close();
@@ -2766,20 +2768,5 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             super.sendMessage(node, msg, ackC);
         }
-    }
-
-
-
-    /**
-     * @param partId Partition id.
-     * @param gridName Grid name.
-     *
-     * @return Partition update counter or {@code null} if node is not an owner.
-     */
-    private PartitionUpdateCounter2 counter(int partId, String gridName) {
-        @Nullable GridDhtLocalPartition locPart =
-            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
-
-        return locPart == null ? null : (PartitionUpdateCounter2)locPart.dataStore().partUpdateCounter();
     }
 }

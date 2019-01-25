@@ -33,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -83,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
@@ -129,7 +129,6 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.primary;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -1188,8 +1187,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         GridCacheContext<?, ?> cctx = proxy.context();
 
-        AffinityTopologyVersion topVer = cctx.topology().readyTopologyVersion();
-
         int k = 0, c = 0, skip0 = 0;
 
         List<Integer> keys = new ArrayList<>(cnt);
@@ -1212,6 +1209,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         return keys;
+    }
+
+    protected Iterator<Integer> partitionKeysIterator(IgniteCache<?, ?> cache, int part) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        return new Iterator<Integer>() {
+            int cur, next = 0;
+
+            {
+                advance();
+            }
+
+            private void advance() {
+                while(cctx.affinity().partition(cur = next++) != part);
+            }
+
+            @Override public boolean hasNext() {
+                return true;
+            }
+
+            @Override public Integer next() {
+                int tmp = cur;
+
+                advance();
+
+                return tmp;
+            }
+        };
     }
 
     /**
@@ -2216,5 +2243,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (Ignite g : grids)
                 g.events().stopLocalListen(lsnr);
         }
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param cacheName Cache name.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String cacheName, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
+
+        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
     }
 }
