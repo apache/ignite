@@ -156,13 +156,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
-        TestCounters cntrs = getTestCounters();
-
-        if (cntrs.isReset())
-            cntrs.reset();
-
-        cntrs.incrementStarted();
-
         super.setUp();
     }
 
@@ -517,8 +510,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     @Override public final void tearDown() throws Exception {
-        getTestCounters().incrementStopped();
-
         super.tearDown();
 
         Thread.currentThread().setContextClassLoader(cl);

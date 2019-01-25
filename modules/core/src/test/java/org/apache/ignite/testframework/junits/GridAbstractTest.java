@@ -121,13 +121,10 @@ import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestClass;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -172,7 +169,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
+    private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -264,7 +261,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected GridAbstractTest() throws IgniteCheckedException {
         this(false);
 
-        log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
+        log = getIgniteTestResources().getLogger().getLogger(getClass());
     }
 
     /**
@@ -318,14 +315,15 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources() throws IgniteCheckedException {
-        return getTestCounters().getTestResources();
+        return getIgniteTestResources();
     }
 
     /**
+     * @param cfg Ignite configuration.
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return getTestCounters(cfg).getTestResources();
+        return getIgniteTestResources(cfg);
     }
 
     /**
@@ -586,24 +584,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         // Clear log throttle.
         LT.clear();
-
-        TestCounters cntrs = getTestCounters();
-
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
-
-        if (cntrs.isReset()) {
-            info("Resetting test counters.");
-
-            int started = cntrs.getStarted() % cntrs.getNumberOfTests();
-            int stopped = cntrs.getStopped() % cntrs.getNumberOfTests();
-
-            cntrs.reset();
-
-            cntrs.setStarted(started);
-            cntrs.setStopped(stopped);
-        }
 
         info(">>> Starting test: " + testDescription() + " <<<");
 
@@ -1765,12 +1745,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
-        TestCounters cntrs = getTestCounters();
-
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
-
         try {
             afterTest();
         }
@@ -1813,7 +1787,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             }
         }
 
-        // Remove counters.
+        // Remove resources.
         tests.remove(getClass());
 
         // Remove resources cached in static, if any.
@@ -2045,24 +2019,24 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     * @return Test counters.
+     * @return Test resources.
      */
-    protected synchronized TestCounters getTestCounters() throws IgniteCheckedException {
-        TestCounters tc = tests.get(getClass());
+    private synchronized IgniteTestResources getIgniteTestResources() throws IgniteCheckedException {
+        IgniteTestResources rsrcs = tests.get(getClass());
 
-        if (tc == null)
-            tests.put(getClass(), tc = new TestCounters());
+        if (rsrcs == null)
+            tests.put(getClass(), rsrcs = new IgniteTestResources());
 
-        return tc;
+        return rsrcs;
     }
 
     /**
-     * @param cfg Ignite configuration
-     * @return Test counters
-     * @throws IgniteCheckedException In case of error
+     * @param cfg Ignite configuration.
+     * @return Test resources.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected synchronized TestCounters getTestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return new TestCounters(cfg);
+    private synchronized IgniteTestResources getIgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new IgniteTestResources(cfg);
     }
 
     /** {@inheritDoc} */
@@ -2454,144 +2428,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             job.setIgnite(ignite);
 
             return job.call(idx);
-        }
-    }
-
-    /**
-     * Test counters.
-     *
-     * TODO IGNITE-10179 Try to make this class go away since its primary (possibly even only) purpose appears to
-     * support methods isFirstTest() and isLastTest() which in turn look like JUnit 3-specific workaround for
-     * functionality that is natively available in JUnit 4 via BeforeClass and AfterClass annotations. Along the way,
-     * find out if this will allow to get rid of runSerializer lock which is introduced with sole purpose to
-     * maintain integrity of TestCounters.
-     */
-    protected class TestCounters {
-        /** */
-        private int numOfTests = -1;
-
-        /** */
-        private int started;
-
-        /** */
-        private int stopped;
-
-        /** */
-        private boolean reset;
-
-        /** */
-        private IgniteTestResources rsrcs;
-
-        /**
-         * @throws IgniteCheckedException In case of error.
-         */
-        public TestCounters() throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources();
-        }
-
-        /**
-         * @param cfg Ignite configuration
-         * @throws IgniteCheckedException In case of error
-         */
-        public TestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources(cfg);
-        }
-
-        /**
-         * @return Reset flag.
-         */
-        public boolean isReset() {
-            return reset;
-        }
-
-        /**
-         * @return Test resources.
-         */
-        public IgniteTestResources getTestResources() {
-            return rsrcs;
-        }
-
-        /**
-         * @param reset Reset flag.
-         */
-        public void setReset(boolean reset) {
-            this.reset = reset;
-        }
-
-        /** */
-        public void reset() {
-            numOfTests = -1;
-            started = 0;
-            stopped = 0;
-            reset = false;
-        }
-
-        /**
-         * @return Started flag.
-         */
-        public int getStarted() {
-            return started;
-        }
-
-        /**
-         * @param started Started flag.
-         */
-        public void setStarted(int started) {
-            this.started = started;
-        }
-
-        /**
-         * @return Stopped flag.
-         */
-        public int getStopped() {
-            return stopped;
-        }
-
-        /**
-         * @param stopped Stopped flag.
-         */
-        public void setStopped(int stopped) {
-            this.stopped = stopped;
-        }
-
-        /** */
-        public void incrementStarted() {
-            if (isDebug())
-                info("Incrementing started tests counter.");
-
-            started++;
-        }
-
-        /** */
-        public void incrementStopped() {
-            if (isDebug())
-                info("Incrementing stopped tests counter.");
-
-            stopped++;
-        }
-
-        /**
-         * @return Number of tests
-         */
-        public int getNumberOfTests() {
-            if (numOfTests == -1) {
-                GridAbstractTest this0 = GridAbstractTest.this;
-
-                int cnt;
-
-                if (this0.forceTestCnt)
-                    cnt = this0.testCnt;
-                else
-                    cnt = (int)new TestClass(this0.getClass())
-                        .getAnnotatedMethods(Test.class)
-                        .stream()
-                        .filter(method -> method.getAnnotation(Ignore.class) == null)
-                        .count();
-
-                numOfTests = cnt;
-            }
-
-            return numOfTests;
         }
     }
 
