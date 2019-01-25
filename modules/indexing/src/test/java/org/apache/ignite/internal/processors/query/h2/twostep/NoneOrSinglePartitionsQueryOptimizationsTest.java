@@ -137,7 +137,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         // This query considered to be simple, so merge table won't be created
         // @see org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery.simpleQuery
         runQuery("select * from Organization org where org._KEY = 1 or org._KEY = 2",
-            2, false, false);
+            2, false, false, 1);
     }
 
     /**
@@ -148,7 +148,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithMultiplePartitionsOrderBy() throws Exception {
         runQuery("select * from Organization org where org._KEY = 1 or org._KEY = 2 order by org._KEY",
-            2, true, false);
+            2, true, false, 2);
     }
 
     /**
@@ -159,7 +159,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithMultiplePartitionsGroupBy() throws Exception {
         runQuery("select * from Organization org where org._KEY  between 10 and 20  group by org._KEY",
-            11, true, false);
+            11, true, false, 2);
     }
 
     /**
@@ -170,11 +170,12 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithMultiplePartitionsHaving() throws Exception {
         runQuery("select org.debtCapital, count(*) from Organization org " +
-            "group by org.debtCapital having count(*) < 10", ORG_COUNT, true, false);
+            "group by org.debtCapital having count(*) < 10", ORG_COUNT, true, false,
+            2);
     }
 
     /**
-     * Test simple query that leads to sinle partition and doesn't create megre table. Map query is expected to be the
+     * Test simple query that leads to single partition and doesn't create megre table. Map query is expected to be the
      * same as original query.
      *
      * @throws Exception If failed.
@@ -182,7 +183,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithSinglePartition() throws Exception {
         runQuery("select * from Organization org where org._KEY = 1 order by org._KEY",
-            1, false, true);
+            1, false, true, 1);
     }
 
     /**
@@ -194,7 +195,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithSinglePartitionOrderBy() throws Exception {
         runQuery("select * from Organization org where org._KEY = 1 order by org._KEY",
-            1, false, true);
+            1, false, true, 1);
     }
 
     /**
@@ -206,7 +207,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithSinglePartitionGroupBy() throws Exception {
         runQuery("select * from Organization org where org._KEY  between 10 and 10 group by org._KEY",
-            1, false, true);
+            1, false, true, 1);
     }
 
     /**
@@ -219,7 +220,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     public void testQueryWithSinglePartitionHaving() throws Exception {
         runQuery("select org.debtCapital, count(*) from Organization org where " +
                 "org._KEY = 1 group by org.debtCapital having count(*) < 10", 1, false,
-            true);
+            true, 1);
     }
 
     /**
@@ -277,7 +278,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     }
 
     /**
-     * Test simple query that leads to sinle partition and doesn't create megre table. Map query is expected to be the
+     * Test simple query that leads to single partition and doesn't create megre table. Map query is expected to be the
      * same as original query.
      *
      * @throws Exception If failed.
@@ -285,7 +286,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithSinglePartitionAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? order by org._KEY",
-            1, false, true, 1);
+            1, false, true, 1, 1);
     }
 
     /**
@@ -297,7 +298,37 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     @Test
     public void testQueryWithMultiplePartitionsAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? ",
-            2, false, false, 1, 2);
+            2, false, false, 1, 1, 2);
+    }
+
+    /**
+     * Test query that leads to single or multiple partitions depending on query parameters.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryWithMixedPartitionsAndParams() throws Exception {
+        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
+            1, false, true, 1,  1, 1);
+
+        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
+            2, true, false, 2,  1, 2);
+    }
+
+    /**
+     * Test query that leads to multiple map queries and single or multiple partitions depending on query parameters.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryWithMultipleMapQueriesAndMixedPartitionsAndParams() throws Exception {
+        runQuery("select org._KEY from Organization org where org._KEY = ? or org._KEY = ? union " +
+                "select org._KEY from Organization org where org._KEY = ? or org._KEY = ?",
+            1, false, true, 1, 1, 1, 1, 1);
+
+        runQuery("select org._KEY from Organization org where org._KEY = ? or org._KEY = ? union " +
+                "select org._KEY from Organization org where org._KEY = ? or org._KEY = ?",
+            4, true, false, 3,  1, 2, 3, 4);
     }
 
     /**
@@ -306,11 +337,13 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      * @param sqlQry SQL query
      * @param expResCnt Expected result rows count.
      * @param expMergeTbl Flag that signals that merge table is expected to be created.
+     * @param explainSize Explain plan response size.
      * @param expOriginalQry Flag that signals that orignial sql query is expected as map query.
      * @throws Exception If failed.s
      */
     @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
-    private void runQuery(String sqlQry, int expResCnt, boolean expMergeTbl, boolean expOriginalQry, Object... args)
+    private void runQuery(String sqlQry, int expResCnt, boolean expMergeTbl, boolean expOriginalQry, int explainSize,
+        Object... args)
         throws Exception {
         TestCommunicationSpi commSpi =
             (TestCommunicationSpi)grid(NODES_COUNT).configuration().
@@ -352,7 +385,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         }
         else {
             for (String mapQry : commSpi.mapQueries)
-                assertNotEquals(expOriginalQry, mapQry);
+                assertNotEquals(sqlQry, mapQry);
         }
 
         // Test explain query.
@@ -360,10 +393,11 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
 
         List<List<?>> explainRes = explainCursor.getAll();
 
-        assertEquals(expMergeTbl ? 2 : 1, explainRes.size());
+        assertEquals(explainSize, explainRes.size());
 
         if (expMergeTbl)
-            assertTrue(((String)explainRes.get(1).get(0)).contains(GridSqlQuerySplitter.mergeTableIdentifier(0)));
+            assertTrue(((String)explainRes.get(explainRes.size() - 1).get(0)).
+                contains(GridSqlQuerySplitter.mergeTableIdentifier(0)));
     }
 
     /**
@@ -379,23 +413,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
 
             orgCache.put(i, org);
         }
-    }
-
-    /**
-     * Test
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    // TODO: 23.01.19 comment
-    public void testMultipleQueriesWithMixedPartitionsAndParams() throws Exception {
-        // TODO: Add test for the following case: complex qry with many map queries, has 2+ parameter placeholders,
-        // TODO: execute with 1 partition, then with many partitions.
-        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
-            1, false, true, 1, 1);
-
-        runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? order by org._KEY",
-            2, true, false, 1, 2);
     }
 
     /**

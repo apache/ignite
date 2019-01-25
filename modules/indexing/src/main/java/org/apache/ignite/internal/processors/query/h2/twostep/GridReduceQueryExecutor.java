@@ -408,12 +408,12 @@ public class GridReduceQueryExecutor {
 
         final boolean singlePartMode = parts != null && parts.length == 1;
 
+        if (F.isEmpty(params))
+            params = EMPTY_PARAMS;
+
         final List<GridCacheSqlQuery> mapQueries = singlePartMode ?
             prepareMapQueryForSinglePartition(qry, params) :
             qry.mapQueries();
-
-        if (F.isEmpty(params))
-            params = EMPTY_PARAMS;
 
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
