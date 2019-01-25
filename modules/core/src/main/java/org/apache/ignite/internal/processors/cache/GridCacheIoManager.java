@@ -1149,8 +1149,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (!onSend(msg, node.id()))
             return;
 
-        if (log.isInfoEnabled())
-            log.info("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
+        if (log.isDebugEnabled())
+            log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
         int cnt = 0;
 
@@ -1163,8 +1163,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 return;
             }
             catch (ClusterTopologyCheckedException e) {
-                log.error("Failed to send to grid topic for node: " + node, e);
-
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -1173,15 +1171,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 if (cnt == retryCnt || cctx.kernalContext().isStopping())
                     throw e;
-                else if (log.isInfoEnabled())
-                    log.info("Failed to send message to node (will retry): " + node.id());
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to send message to node (will retry): " + node.id());
             }
 
             U.sleep(retryDelay);
         }
 
-        if (log.isInfoEnabled())
-            log.info("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
+        if (log.isDebugEnabled())
+            log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
     }
 
     /**
