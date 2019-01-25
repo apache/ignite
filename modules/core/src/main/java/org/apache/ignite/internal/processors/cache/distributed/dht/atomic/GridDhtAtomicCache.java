@@ -2241,16 +2241,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(ctx, req.keepBinary());
-
-                            CacheLazyEntry e = new CacheLazyEntry(
-                                ctx,
-                                entry.key(),
-                                invokeEntry.key(),
-                                old,
-                                oldVal,
-                                keepBinaryInterceptor
-                            );
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
@@ -2295,16 +2286,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(ctx, req.keepBinary());
-
-                            CacheLazyEntry e = new CacheLazyEntry(
-                                ctx,
-                                entry.key(),
-                                invokeEntry.key(),
-                                old,
-                                oldVal,
-                                keepBinaryInterceptor
-                            );
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
 
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
@@ -2372,13 +2354,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
-                        boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(ctx, req.keepBinary());
-
-                        CacheLazyEntry<?, ?> e = new CacheLazyEntry<>(ctx, entry.key(), old, keepBinaryInterceptor);
-
-                        Object unwrappedUpdate = ctx.unwrapBinaryIfNeeded(updated, keepBinaryInterceptor, false);
-
-                        Object val = ctx.config().getInterceptor().onBeforePut(e, unwrappedUpdate);
+                        Object val = ctx.config().getInterceptor().onBeforePut(
+                            new CacheLazyEntry(
+                                ctx,
+                                entry.key(),
+                                old,
+                                req.keepBinary()),
+                            ctx.unwrapBinaryIfNeeded(
+                                updated,
+                                req.keepBinary(),
+                                false));
 
                         if (val == null)
                             continue;
@@ -2414,12 +2399,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
-                        boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(ctx, req.keepBinary());
-
-                        CacheLazyEntry removedEntry = new CacheLazyEntry(ctx, entry.key(), old, keepBinaryInterceptor);
-
-                        IgniteBiTuple<Boolean, ?> interceptorRes =
-                            ctx.config().getInterceptor().onBeforeRemove(removedEntry);
+                        IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
+                            .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));
 
                         if (ctx.cancelRemove(interceptorRes))
                             continue;
@@ -2892,20 +2873,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         "success=" + updRes.success() + ", newTtl=" + updRes.newTtl() + ", expiry=" + expiry;
 
                     if (intercept) {
-                        assert op == UPDATE || op == DELETE : op;
-
-                        boolean keepBinaryInterceptor = CU.keepBinaryForCacheInterceptor(ctx, req.keepBinary());
-
-                        CacheObject interceptVal = op == UPDATE ? updRes.newValue() : updRes.oldValue();
-
-                        CacheLazyEntry<?, ?> interceptEntry =
-                            new CacheLazyEntry<>(ctx, entry.key(), interceptVal, keepBinaryInterceptor);
-
-                        if (op == UPDATE)
-                            ctx.config().getInterceptor().onAfterPut(interceptEntry);
+                        if (op == UPDATE) {
+                            ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
+                                ctx,
+                                entry.key(),
+                                updRes.newValue(),
+                                req.keepBinary()));
+                        }
                         else {
+                            assert op == DELETE : op;
+
                             // Old value should be already loaded for 'CacheInterceptor.onBeforeRemove'.
-                            ctx.config().getInterceptor().onAfterRemove(interceptEntry);
+                            ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(ctx, entry.key(),
+                                updRes.oldValue(), req.keepBinary()));
                         }
                     }
 
