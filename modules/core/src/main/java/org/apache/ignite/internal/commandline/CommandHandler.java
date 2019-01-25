@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
@@ -1297,12 +1298,20 @@ public class CommandHandler {
      */
     private void baselinePrint0(VisorBaselineTaskResult res) {
         log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
-        log("Current topology version: " + res.getTopologyVersion());
-        nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
+
+        Optional<VisorBaselineNode> crdOpt = srvs.values().stream()
+            .min(Comparator.comparing(VisorBaselineNode::getOrder));
+
+        String crdStr = crdOpt.map(
+            crd -> "ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder())
+            .orElse("");
+
+        log("Current topology version: " + res.getTopologyVersion() + " (Coordinator: " + crdStr + ")");
+        nl();
 
         if (F.isEmpty(baseline))
             log("Baseline nodes not found.");
@@ -1310,9 +1319,13 @@ public class CommandHandler {
             log("Baseline nodes:");
 
             for (VisorBaselineNode node : baseline.values()) {
-                boolean online = srvs.containsKey(node.getConsistentId());
+                VisorBaselineNode srvNode = srvs.get(node.getConsistentId());
 
-                log(i("ConsistentID=" + node.getConsistentId() + ", STATE=" + (online ? "ONLINE" : "OFFLINE"), 2));
+                String state = ", State=" + (srvNode != null ? "ONLINE" : "OFFLINE");
+
+                String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
+
+                log(i("ConsistentId=" + node.getConsistentId() + state + order, 2));
             }
 
             log(DELIM);
@@ -1333,7 +1346,7 @@ public class CommandHandler {
                 log("Other nodes:");
 
                 for (VisorBaselineNode node : others)
-                    log(i("ConsistentID=" + node.getConsistentId(), 2));
+                    log(i("ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder(), 2));
 
                 log("Number of other nodes: " + others.size());
             }
