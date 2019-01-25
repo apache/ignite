@@ -188,4 +188,13 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
         if (offset != null)
             buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
     }
+
+    /**
+     * Whether offset or limit exists.
+     *
+     * @return {@code true} If we have OFFSET LIMIT.
+     */
+    public boolean hasOffsetLimit() {
+        return limit() != null || offset() != null;
+    }
 }

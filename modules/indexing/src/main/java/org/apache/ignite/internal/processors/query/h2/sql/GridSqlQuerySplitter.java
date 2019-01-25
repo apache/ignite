@@ -287,7 +287,7 @@ public class GridSqlQuerySplitter {
         SplitterQueryModel qrym = fakeQrymPrnt.get(0);
 
         // Setup the needed information for split.
-        analyzeQueryModel(qrym);
+        SplitterQueryModel.analyzeQueryModel(qrym, collocatedGrpBy);
 
         // If we have child queries to split, then go hard way.
         if (qrym.needSplitChild()) {
@@ -298,7 +298,7 @@ public class GridSqlQuerySplitter {
             setupMergeJoinSorting(qrym);
         }
         else if (!qrym.needSplit())  // Just split the top level query.
-            setNeedSplit(qrym);
+            qrym.setNeedSplit();
 
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(qrym);
@@ -655,36 +655,13 @@ public class GridSqlQuerySplitter {
 
         if (begin == end && qrym.get(end).isQuery()) {
             // Simple case when we have a single subquery to push down, just mark it to be splittable.
-            setNeedSplit(qrym.get(end));
+            qrym.get(end).setNeedSplit();
         }
         else {
             // Here we have to generate a subquery for all the joined elements and
             // and mark that subquery as splittable.
             doPushDownQueryModelRange(qrym, begin, end, true);
         }
-    }
-
-    /**
-     * @param qrym Query model.
-     */
-    private static void setNeedSplit(SplitterQueryModel qrym) {
-        if (qrym.type() == SplitterQueryModelType.SELECT) {
-            assert !qrym.needSplitChild();
-
-            qrym.needSplit(true);
-        }
-        else if (qrym.type() == SplitterQueryModelType.UNION) {
-            qrym.needSplitChild(true);
-
-            // Mark all the selects in the UNION to be splittable.
-            for (SplitterQueryModel s : qrym) {
-                assert s.type() == SplitterQueryModelType.SELECT : s.type();
-
-                s.needSplit(true);
-            }
-        }
-        else
-            throw new IllegalStateException("Type: " + qrym.type());
     }
 
     /**
@@ -968,7 +945,7 @@ public class GridSqlQuerySplitter {
             }
 
             if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.newIdentityHashSet(), expr)
-                && !hasAggregates(expr)) {
+                && !SplitterUtils.hasAggregates(expr)) {
                 // Push down the whole expression.
                 pushDownColumn(tblAliases, cols, wrapAlias, expr, 0);
             }
@@ -1249,62 +1226,12 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qrym Query model.
-     */
-    private void analyzeQueryModel(SplitterQueryModel qrym) {
-        if (!qrym.isQuery())
-            return;
-
-        // Process all the children at the beginning: depth first analysis.
-        for (int i = 0; i < qrym.size(); i++) {
-            SplitterQueryModel child = qrym.get(i);
-
-            analyzeQueryModel(child);
-
-            // Pull up information about the splitting child.
-            if (child.needSplit() || child.needSplitChild())
-                qrym.needSplitChild(true); // We have a child to split.
-        }
-
-        if (qrym.type() == SplitterQueryModelType.SELECT) {
-            // We may need to split the SELECT only if it has no splittable children,
-            // because only the downmost child can be split, the parents will be the part of
-            // the reduce query.
-            if (!qrym.needSplitChild())
-                qrym.needSplit(needSplitSelect(qrym.ast())); // Only SELECT can have this flag in true.
-        }
-        else if (qrym.type() == SplitterQueryModelType.UNION) {
-            // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
-            // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
-            if (!qrym.needSplitChild() && (!qrym.unionAll() || hasOffsetLimit(qrym.<GridSqlUnion>ast())))
-                qrym.needSplitChild(true);
-
-            // If we have to split some child SELECT in this UNION, then we have to enforce split
-            // for all other united selects, because this UNION has to be a part of the reduce query,
-            // thus each SELECT needs to have a reduce part for this UNION, but the whole SELECT can not
-            // be a reduce part (usually).
-            if (qrym.needSplitChild()) {
-                for (int i = 0; i < qrym.size(); i++) {
-                    SplitterQueryModel child = qrym.get(i);
-
-                    assert child.type() == SplitterQueryModelType.SELECT : child.type();
-
-                    if (!child.needSplitChild() && !child.needSplit())
-                        child.needSplit(true);
-                }
-            }
-        }
-        else
-            throw new IllegalStateException("Type: " + qrym.type());
-    }
-
-    /**
      * @param prntModel Parent model.
      * @param prnt Parent AST element.
      * @param childIdx Child index.
      * @param uniqueAlias Unique parent alias of the current element.
      */
-    private void buildQueryModel(SplitterQueryModel prntModel, GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
+    private static void buildQueryModel(SplitterQueryModel prntModel, GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
         GridSqlAst child = prnt.child(childIdx);
 
         assert child != null;
@@ -1361,52 +1288,16 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qry Query.
-     * @return {@code true} If we have OFFSET LIMIT.
-     */
-    private static boolean hasOffsetLimit(GridSqlQuery qry) {
-        return qry.limit() != null || qry.offset() != null;
-    }
-
-    /**
-     * @param select Select to check.
-     * @return {@code true} If we need to split this select.
-     */
-    private boolean needSplitSelect(GridSqlSelect select) {
-        if (select.distinct())
-            return true;
-
-        if (hasOffsetLimit(select))
-            return true;
-
-        if (collocatedGrpBy)
-            return false;
-
-        if (select.groupColumns() != null)
-            return true;
-
-        for (int i = 0; i < select.allColumns(); i++) {
-            if (hasAggregates(select.column(i)))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * !!! Notice that here we will modify the original query AST in this method.
      *
-     * @param prnt Parent AST element.
+     * @param parent Parent AST element.
      * @param childIdx Index of child select.
      */
-    private void splitSelect(
-        final GridSqlAst prnt,
-        final int childIdx
-    ) throws IgniteCheckedException {
+    private void splitSelect(GridSqlAst parent, int childIdx) throws IgniteCheckedException {
         if (++splitId > 99)
             throw new CacheException("Too complex query to process.");
 
-        final GridSqlSelect mapQry = prnt.child(childIdx);
+        final GridSqlSelect mapQry = parent.child(childIdx);
 
         final int visibleCols = mapQry.visibleColumns();
 
@@ -1531,7 +1422,7 @@ public class GridSqlQuerySplitter {
         }
 
         // Replace the given select with generated reduce query in the parent.
-        prnt.child(childIdx, rdcQry);
+        parent.child(childIdx, rdcQry);
 
         // Setup resulting map query.
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
@@ -1931,7 +1822,7 @@ public class GridSqlQuerySplitter {
             el = alias.child();
         }
 
-        if (!collocatedGrpBy && hasAggregates(el)) {
+        if (!collocatedGrpBy && SplitterUtils.hasAggregates(el)) {
             aggregateFound = true;
 
             if (alias == null)
@@ -1974,27 +1865,6 @@ public class GridSqlQuerySplitter {
     private static <Z> void set(List<Z> list, int idx, Z item) {
         assert list.size() == idx;
         list.add(item);
-    }
-
-    /**
-     * @param el Expression part in SELECT clause.
-     * @return {@code true} If expression contains aggregates.
-     */
-    private static boolean hasAggregates(GridSqlAst el) {
-        if (el instanceof GridSqlAggregateFunction)
-            return true;
-
-        // If in SELECT clause we have a subquery expression with aggregate,
-        // we should not split it. Run the whole subquery on MAP stage.
-        if (el instanceof GridSqlSubquery)
-            return false;
-
-        for (int i = 0; i < el.size(); i++) {
-            if (hasAggregates(el.child(i)))
-                return true;
-        }
-
-        return false;
     }
 
     /**

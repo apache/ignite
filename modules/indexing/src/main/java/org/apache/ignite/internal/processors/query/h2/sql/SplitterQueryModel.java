@@ -139,6 +139,29 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     }
 
     /**
+     * Set split needed flag.
+     */
+    public void setNeedSplit() {
+        if (type == SplitterQueryModelType.SELECT) {
+            assert !needSplitChild;
+
+            needSplit(true);
+        }
+        else if (type == SplitterQueryModelType.UNION) {
+            needSplitChild(true);
+
+            // Mark all the selects in the UNION to be splittable.
+            for (SplitterQueryModel s : this) {
+                assert s.type() == SplitterQueryModelType.SELECT : s.type();
+
+                s.needSplit(true);
+            }
+        }
+        else
+            throw new IllegalStateException("Type: " + type);
+    }
+
+    /**
      * @return UNION ALL flag.
      */
     public boolean unionAll() {
@@ -151,6 +174,88 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     @SuppressWarnings("SameParameterValue")
     public void unionAll(boolean unionAll) {
         this.unionAll = unionAll;
+    }
+
+    /**
+     * Analyze query model.
+     *
+     * @param qrym Query model.
+     * @param collocatedGrpBy Collocated GROUP BY flag.
+     */
+    // TODO: Document
+    // TODO: Make instance-based
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static void analyzeQueryModel(SplitterQueryModel qrym, boolean collocatedGrpBy) {
+        if (!qrym.isQuery())
+            return;
+
+        // Process all the children at the beginning: depth first analysis.
+        for (int i = 0; i < qrym.size(); i++) {
+            SplitterQueryModel child = qrym.get(i);
+
+            analyzeQueryModel(child, collocatedGrpBy);
+
+            // Pull up information about the splitting child.
+            if (child.needSplit() || child.needSplitChild())
+                qrym.needSplitChild(true); // We have a child to split.
+        }
+
+        if (qrym.type() == SplitterQueryModelType.SELECT) {
+            // We may need to split the SELECT only if it has no splittable children,
+            // because only the downmost child can be split, the parents will be the part of
+            // the reduce query.
+            if (!qrym.needSplitChild())
+                qrym.needSplit(needSplitSelect(qrym.ast(), collocatedGrpBy)); // Only SELECT can have this flag in true.
+        }
+        else if (qrym.type() == SplitterQueryModelType.UNION) {
+            // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
+            // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
+            if (!qrym.needSplitChild() && (!qrym.unionAll() || qrym.<GridSqlUnion>ast().hasOffsetLimit()))
+                qrym.needSplitChild(true);
+
+            // If we have to split some child SELECT in this UNION, then we have to enforce split
+            // for all other united selects, because this UNION has to be a part of the reduce query,
+            // thus each SELECT needs to have a reduce part for this UNION, but the whole SELECT can not
+            // be a reduce part (usually).
+            if (qrym.needSplitChild()) {
+                for (int i = 0; i < qrym.size(); i++) {
+                    SplitterQueryModel child = qrym.get(i);
+
+                    assert child.type() == SplitterQueryModelType.SELECT : child.type();
+
+                    if (!child.needSplitChild() && !child.needSplit())
+                        child.needSplit(true);
+                }
+            }
+        }
+        else
+            throw new IllegalStateException("Type: " + qrym.type());
+    }
+
+    /**
+     * @param select Select to check.
+     * @param collocatedGrpBy Collocated GROUP BY flag.
+     * @return {@code true} If we need to split this select.
+     */
+    private static boolean needSplitSelect(GridSqlSelect select, boolean collocatedGrpBy) {
+        if (select.distinct())
+            return true;
+
+        if (select.hasOffsetLimit())
+            return true;
+
+        if (collocatedGrpBy)
+            return false;
+
+        if (select.groupColumns() != null)
+            return true;
+
+        for (int i = 0; i < select.allColumns(); i++) {
+            if (SplitterUtils.hasAggregates(select.column(i)))
+                return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
