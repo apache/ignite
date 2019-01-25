@@ -56,14 +56,11 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutG
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
-/**
- *
- */
-@RunWith(IgnitePdsTestSuite.DynamicSuite.class)
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.
@@ -174,13 +171,5 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStorageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }
