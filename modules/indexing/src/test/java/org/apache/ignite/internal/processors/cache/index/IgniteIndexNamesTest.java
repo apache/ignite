@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -144,7 +145,7 @@ public class IgniteIndexNamesTest extends GridCommonAbstractTest {
 
         // Check that repeated queries fail.
         for (String sql : createIndexQueries) {
-            GridTestUtils.assertThrows(
+            Throwable e = GridTestUtils.assertThrows(
                 log,
                 () -> {
                     runSql(sql);
@@ -153,6 +154,10 @@ public class IgniteIndexNamesTest extends GridCommonAbstractTest {
                 useJdbc ? SQLException.class : IgniteSQLException.class,
                 "Index already exists"
             );
+
+            int errorCode = useJdbc ? ((SQLException)e).getErrorCode() : ((IgniteSQLException)e).statusCode();
+
+            assertEquals(IgniteQueryErrorCode.INDEX_ALREADY_EXISTS, errorCode);
         }
 
         checkIndexes(expIndexNames);
