@@ -1433,6 +1433,7 @@ public class GridSqlQuerySplitter {
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
 
         setupParameters(map, mapQry, params);
+
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
         map.partitioned(hasPartitionedTables(mapQry));
@@ -1749,11 +1750,7 @@ public class GridSqlQuerySplitter {
      * @param params Parameters.
      * @param paramIdxs Parameter indexes.
      */
-    private static void findParamsSelect(
-        GridSqlSelect select,
-        Object[] params,
-        TreeSet<Integer> paramIdxs
-    ) {
+    private static void findParamsSelect(GridSqlSelect select, Object[] params, TreeSet<Integer> paramIdxs) {
         if (params.length == 0)
             return;
 
@@ -1774,8 +1771,7 @@ public class GridSqlQuerySplitter {
      * @param params Parameters.
      * @param paramIdxs Parameter indexes.
      */
-    private static void findParams(@Nullable GridSqlAst el, Object[] params,
-        TreeSet<Integer> paramIdxs) {
+    private static void findParams(@Nullable GridSqlAst el, Object[] params, TreeSet<Integer> paramIdxs) {
         if (el == null)
             return;
 
