@@ -31,8 +31,6 @@
 #include <ignite/ignite_error.h>
 #include "network/tcp_socket_client.h"
 
-#define SOCKET_ERROR (-1)
-
 namespace ignite
 {
     namespace network
@@ -217,7 +215,7 @@ namespace ignite
 
         int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
         {
-            return sockets::WaitOnSocket(timeout == 0 ? -1 : timeout, rd);
+            return sockets::WaitOnSocket(socketHandle, timeout == 0 ? -1 : timeout, rd);
         }
     }
 }

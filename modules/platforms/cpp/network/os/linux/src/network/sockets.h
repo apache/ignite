@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <string>
 
+#define SOCKET_ERROR (-1)
+
 namespace ignite
 {
     namespace network

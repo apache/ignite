@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 
-#include "network/sockets.h"
+#include <sys/socket.h>
+#include <poll.h>
+
+#include <errno.h>
+#include <string.h>
 
 #include <sstream>
 
+#include "network/sockets.h"
 #include <ignite/network/socket_client.h>
 
 namespace ignite
@@ -41,7 +46,7 @@ namespace ignite
                 return res == SOCKET_ERROR ? 0 : lastError;
             }
 
-            std::string GetSocketErrorMessage(HRESULT error)
+            std::string GetSocketErrorMessage(int error)
             {
                 std::stringstream res;
 
@@ -94,9 +99,9 @@ namespace ignite
                     return -lastError;
 
                 if (ret == 0)
-                    return WaitResult::TIMEOUT;
+                    return SocketClient::WaitResult::TIMEOUT;
 
-                return WaitResult::SUCCESS;
+                return SocketClient::WaitResult::SUCCESS;
             }
 
             bool IsSocketOperationInterrupted(int errorCode)
