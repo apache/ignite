@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.runners.model.Statement;
@@ -57,7 +58,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
     /** Dummy initial stub to just let people launch test classes not from suite. */
-    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 1, false);
+    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(
+        new ConfigVariationsFactory(null, null, null, null),
+        "Dummy config", false, null, 1, false);
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
