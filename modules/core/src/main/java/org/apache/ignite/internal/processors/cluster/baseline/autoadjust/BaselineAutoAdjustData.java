@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
-import java.util.Collection;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.events.Event;
 
 /**
@@ -27,28 +25,19 @@ import org.apache.ignite.events.Event;
 class BaselineAutoAdjustData {
     /** Event with which this data correspond to. For statistic only. */
     private final Event reasonEvent;
-    /** Baseline nodes which should be set by this task. */
-    private final Collection<BaselineNode> targetBaselineNodes;
+    /** Topology version nodes of which should be set to baseline by this task. */
     private final long targetTopologyVersion;
-    /** Time when was created first task which was declined by next task. */
-    private final long firstUnfinishedTaskCreatedTime;
 
     /** {@code true} If this data don't actual anymore and it setting should be skipped. */
     private volatile boolean isInvalidate = false;
-    /** {@code true} If this data was set to grid. */
-    private volatile boolean isSet = false;
 
     /**
      * @param evt Event with which this data correspond to. For statistic only.
-     * @param nodes Baseline nodes which should be set by this task.
-     * @param targetTopologyVersion
-     * @param time Time when was created first task which was declined by next task.
+     * @param targetTopologyVersion Topology version nodes of which should be set by this task.
      */
-    BaselineAutoAdjustData(Event evt, Collection<BaselineNode> nodes, long targetTopologyVersion, long time) {
+    BaselineAutoAdjustData(Event evt, long targetTopologyVersion) {
         reasonEvent = evt;
-        targetBaselineNodes = nodes;
         this.targetTopologyVersion = targetTopologyVersion;
-        firstUnfinishedTaskCreatedTime = time;
     }
 
     /**
@@ -59,33 +48,10 @@ class BaselineAutoAdjustData {
     }
 
     /**
-     * @return {@code true} If this data was set to grid.
+     * @return Topology version nodes of which should be set to baseline by this task.
      */
-    private boolean isSet() {
-        return isSet;
-    }
-
-    /**
-     * Mark that this data was set.
-     */
-    public void onSet() {
-        isSet = true;
-    }
-
-    /**
-     * @return Time when was created first task which was declined by next task.
-     */
-    public long getFirstUnfinishedTaskCreatedTime() {
-        return firstUnfinishedTaskCreatedTime == -1
-            ? System.currentTimeMillis()
-            : firstUnfinishedTaskCreatedTime;
-    }
-
-    /**
-     * @return Baseline nodes which should be set by this task.
-     */
-    public Collection<BaselineNode> getTargetBaselineNodes() {
-        return targetBaselineNodes;
+    public long getTargetTopologyVersion() {
+        return targetTopologyVersion;
     }
 
     /**
@@ -99,16 +65,11 @@ class BaselineAutoAdjustData {
      * Produce next set baseline data based on this data.
      *
      * @param evt New triggired event.
-     * @param newTargetBaseline New baseline.
      * @return New set baseline data.
      */
-    public BaselineAutoAdjustData next(Event evt, long targetTopologyVersion, Collection<BaselineNode> newTargetBaseline) {
+    public BaselineAutoAdjustData next(Event evt, long targetTopologyVersion) {
         onInvalidate();
 
-        return new BaselineAutoAdjustData(
-            evt,
-            newTargetBaseline,
-            targetTopologyVersion, isSet() ? System.currentTimeMillis() : getFirstUnfinishedTaskCreatedTime()
-        );
+        return new BaselineAutoAdjustData(evt, targetTopologyVersion);
     }
 }

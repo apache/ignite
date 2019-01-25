@@ -366,7 +366,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
+    @Override public GridFutureAdapter<Boolean> writeAsync(@NotNull String key, @NotNull Serializable val)
+        throws IgniteCheckedException {
         assert val != null : key;
 
         return startWrite(key, marshal(val));
@@ -385,6 +386,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert newVal != null : key;
 
+        return compareAndSetAsync(key, marshal(expVal), marshal(newVal)).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFutureAdapter<Boolean> compareAndSetAsync(
+        @NotNull String key,
+        @Nullable Serializable expVal,
+        @NotNull Serializable newVal
+    ) throws IgniteCheckedException {
+        assert newVal != null : key;
+
         return startCas(key, marshal(expVal), marshal(newVal));
     }
 
@@ -395,7 +407,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert expVal != null : key;
 
-        return startCas(key, marshal(expVal), null);
+        return startCas(key, marshal(expVal), null).get();
     }
 
     /** {@inheritDoc} */
@@ -805,7 +817,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Basically the same as {@link #startWrite(String, byte[])} but for CAS operations.
      */
-    private boolean startCas(String key, byte[] expValBytes, byte[] newValBytes) throws IgniteCheckedException {
+    private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
+        throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
@@ -816,7 +829,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         ctx.discovery().sendCustomEvent(msg);
 
-        return fut.get();
+        return fut;
     }
 
     /**
