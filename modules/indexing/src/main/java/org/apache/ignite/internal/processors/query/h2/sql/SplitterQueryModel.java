@@ -19,8 +19,15 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.command.dml.SelectUnion;
 
 import java.util.ArrayList;
+
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.LEFT_TABLE_CHILD;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin.RIGHT_TABLE_CHILD;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.FROM_CHILD;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.LEFT_CHILD;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.RIGHT_CHILD;
 
 /**
  * Simplified tree-like model for a query.
@@ -181,6 +188,70 @@ public final class SplitterQueryModel extends ArrayList<SplitterQueryModel> {
     @SuppressWarnings("SameParameterValue")
     public void unionAll(boolean unionAll) {
         this.unionAll = unionAll;
+    }
+
+    /**
+     * Prepare query model.
+     *
+     * @param prnt Parent AST element.
+     * @param childIdx Child index.
+     * @param uniqueAlias Unique parent alias of the current element.
+     */
+    public void buildQueryModel(GridSqlAst prnt, int childIdx, GridSqlAlias uniqueAlias) {
+        GridSqlAst child = prnt.child(childIdx);
+
+        assert child != null;
+
+        if (child instanceof GridSqlSelect) {
+            SplitterQueryModel model = new SplitterQueryModel(SplitterQueryModelType.SELECT, prnt, childIdx,
+                uniqueAlias);
+
+            add(model);
+
+            model.buildQueryModel(child, FROM_CHILD, null);
+        }
+        else if (child instanceof GridSqlUnion) {
+            SplitterQueryModel model;
+
+            // We will collect all the selects into a single UNION model.
+            if (type == SplitterQueryModelType.UNION)
+                model = this;
+            else {
+                model = new SplitterQueryModel(SplitterQueryModelType.UNION, prnt, childIdx, uniqueAlias);
+
+                add(model);
+            }
+
+            if (((GridSqlUnion)child).unionType() != SelectUnion.UnionType.UNION_ALL)
+                model.unionAll(false);
+
+            model.buildQueryModel(child, LEFT_CHILD, null);
+            model.buildQueryModel(child, RIGHT_CHILD, null);
+        }
+        else {
+            // Here we must be in FROM clause of the SELECT.
+            assert type == SplitterQueryModelType.SELECT : type;
+
+            if (child instanceof GridSqlAlias)
+                buildQueryModel(child, 0, (GridSqlAlias)child);
+            else if (child instanceof GridSqlJoin) {
+                buildQueryModel(child, LEFT_TABLE_CHILD, uniqueAlias);
+                buildQueryModel(child, RIGHT_TABLE_CHILD, uniqueAlias);
+            }
+            else {
+                // Here we must be inside of generated unique alias for FROM clause element.
+                assert prnt == uniqueAlias: prnt.getClass();
+
+                if (child instanceof GridSqlTable)
+                    add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
+                else if (child instanceof GridSqlSubquery)
+                    buildQueryModel(child, 0, uniqueAlias);
+                else if (child instanceof GridSqlFunction)
+                    add(new SplitterQueryModel(SplitterQueryModelType.FUNCTION, prnt, childIdx, uniqueAlias));
+                else
+                    throw new IllegalStateException("Unknown child type: " + child.getClass());
+            }
+        }
     }
 
     /**
