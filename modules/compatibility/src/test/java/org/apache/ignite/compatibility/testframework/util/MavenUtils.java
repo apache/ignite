@@ -157,14 +157,13 @@ public class MavenUtils {
 
         SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
 
-        if (!F.isEmpty(localProxyMavenSettingsFromEnv)) {
+        if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = localProxyMavenSettingsFromEnv;
 
-            if (Files.exists(Paths.get(localProxyMavenSettings)))
-                mavenCommandArgs.a(" -s" + localProxyMavenSettings);
-            else
-                mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
-        }
+        if (Files.exists(Paths.get(localProxyMavenSettings)))
+            mavenCommandArgs.a(" -s" + localProxyMavenSettings);
+        else
+            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
 
         exec(buildMvnCommand() + mavenCommandArgs.toString());
 
