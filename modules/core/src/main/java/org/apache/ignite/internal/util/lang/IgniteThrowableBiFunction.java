@@ -21,18 +21,18 @@ import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
+ * Represents a function that accepts two arguments and produces a result.
  *
- * @param <E> Type of closure parameter.
+ * @param <E> Type of first closure parameter.
+ * @param <U> Type of second closure parameter.
  * @param <R> Type of result value.
  */
-public interface IgniteThrowableBiConsumer<E, R> extends Serializable {
+public interface IgniteThrowableBiFunction<E, U, R> extends Serializable {
     /**
      * Consumer body.
      *
      * @param e Consumer parameter.
      * @throws IgniteCheckedException if body execution was failed.
      */
-    public void accept(E e, R r) throws IgniteCheckedException;
+    public R accept(E e, U r) throws IgniteCheckedException;
 }

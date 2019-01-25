@@ -70,8 +70,8 @@ public class DistributedBaselineConfiguration {
      * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline.
      * @throws IgniteCheckedException if failed.
      */
-    public void setBaselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteCheckedException {
-        this.baselineAutoAdjustEnabled.propagate(baselineAutoAdjustEnabled);
+    public boolean setBaselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteCheckedException {
+        return this.baselineAutoAdjustEnabled.propagateAsync(baselineAutoAdjustEnabled);
     }
 
     /**

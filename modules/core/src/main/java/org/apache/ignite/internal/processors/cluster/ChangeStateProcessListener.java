@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.configuration.distributed;
+package org.apache.ignite.internal.processors.cluster;
+
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 
 /**
- * Implementation of {@link DistributedProperty} for {@link Boolean}.
+ * Lifecycle listener for distributed configuration.
  */
-public class DistributedBooleanProperty extends DistributedProperty<Boolean> {
-
-    /** {@inheritDoc} */
-    DistributedBooleanProperty(String name, Boolean val) {
-        super(name, val);
-    }
-
+@FunctionalInterface
+public interface ChangeStateProcessListener {
     /**
-     * @param name Name of property.
-     * @param initVal Initial initVal of property.
-     * @return Property detached from processor.(Distributed updating are not accessable).
+     * Notify about processor ready to register properties.
      */
-    public static DistributedBooleanProperty detachedProperty(String name, Boolean initVal) {
-        return new DistributedBooleanProperty(name, initVal);
-    }
+    void onAfterStateChange(ChangeGlobalStateFinishMessage msg);
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,15 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
      * @throws IgniteCheckedException If cluster is in deactivated state.
      */
     void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+
+    /**
+     * Write value into distributed metastorage async.
+     *
+     * @param key The key.
+     * @param val Value to write. Must not be null.
+     * @throws IgniteCheckedException If cluster is in deactivated state.
+     */
+    GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
 
     /**
      * Remove value from distributed metastorage.

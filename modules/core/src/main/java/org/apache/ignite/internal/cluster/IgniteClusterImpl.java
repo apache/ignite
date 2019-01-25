@@ -368,6 +368,30 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
     }
 
+    /**
+     * Sets baseline topology. The cluster must be activated for this method to be called.
+     *
+     * @param baselineTop A collection of nodes to be included to the baseline topology.
+     */
+    public void triggerBaselineAutoAdjust(Collection<? extends BaselineNode> baselineTop) {
+        guard();
+
+        try {
+            if (isInMemoryMode())
+                return;
+
+            validateBeforeBaselineChange(baselineTop);
+
+            ctx.state().changeGlobalState(true, baselineTop, true, true).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** */
     private boolean isInMemoryMode() {
         return !CU.isPersistenceEnabled(cfg);

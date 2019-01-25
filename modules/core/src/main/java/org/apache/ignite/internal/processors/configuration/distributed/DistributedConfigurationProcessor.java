@@ -27,7 +27,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
@@ -253,8 +254,8 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
-            (IgniteThrowableBiConsumer<String, Serializable>)(key, value) ->
-                distributedMetastorage.write(toMetaStorageKey(key), value)
+            (IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter>)(key, value) ->
+                distributedMetastorage.writeAsync(toMetaStorageKey(key), value)
         );
     }
 
