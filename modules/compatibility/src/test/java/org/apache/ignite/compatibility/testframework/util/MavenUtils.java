@@ -27,7 +27,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +46,7 @@ public class MavenUtils {
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
     /** */
-    private static final String LOCAL_PROXY_MAVEN_SETTINGS = "~/.m2/local-proxy.xml";
+    private static String LOCAL_PROXY_MAVEN_SETTINGS = "~/.m2/local-proxy.xml";
 
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
@@ -150,11 +153,20 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        boolean proxyFileExists = Files.exists(Paths.get(LOCAL_PROXY_MAVEN_SETTINGS));
+        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
-        exec(buildMvnCommand() + " org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact +
-            (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "") +
-            (proxyFileExists ? " -s" + LOCAL_PROXY_MAVEN_SETTINGS : ""));
+        SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
+
+        if (!F.isEmpty(localProxyMavenSettingsFromEnv)) {
+            LOCAL_PROXY_MAVEN_SETTINGS = localProxyMavenSettingsFromEnv;
+
+            if (Files.exists(Paths.get(LOCAL_PROXY_MAVEN_SETTINGS)))
+                mavenCommandArgs.a(" -s" + LOCAL_PROXY_MAVEN_SETTINGS);
+            else
+                mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
+        }
+
+        exec(buildMvnCommand() + mavenCommandArgs.toString());
 
         X.println("Download is finished");
     }
