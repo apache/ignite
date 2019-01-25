@@ -76,18 +76,14 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /** */
     private static final TestRule firstLastTestRuleSpi = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
-            U.warn(null, ">>>>>>> place for helper 1 onbefore <<<<<<<<<<");
-
             GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest)description.getTestClass().newInstance();
             try {
-                U.warn(null, ">>>>>>> place for onFirstTest Spi <<<<<<<<<<");
-                testClsInstance.onFirstTest();
+                testClsInstance.beforeFirstTest();
 
                 base.evaluate();
             }
             finally {
-                U.warn(null, ">>>>>>> place for onLastTest Spi <<<<<<<<<<");
-                testClsInstance.onLastTest();
+                testClsInstance.afterLastTest();
             }
         }
     };
@@ -121,7 +117,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private Void onFirstTest() throws Exception {
+    private Void beforeFirstTest() throws Exception {
         if (autoStart) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -138,9 +134,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         return null;
     }
 
-
     /** */
-    private Void onLastTest() throws Exception {
+    private Void afterLastTest() throws Exception {
         if (autoStart) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -205,19 +200,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             cntrs.reset();
 
         cntrs.incrementStarted();
-
-        if (autoStart && isFirstTest() && false) { // todo remove
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            beforeSpiStarted();
-
-            if (spiTest.trigger())
-                spiStart();
-
-            info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
 
         super.setUp();
     }
@@ -557,23 +539,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     @Override public final void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
-        boolean wasLast = isLastTest();
-
         super.tearDown();
-
-        if (autoStart && wasLast && false) { // todo remove
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            if (spiTest.trigger()) {
-                spiStop();
-
-                afterSpiStopped();
-            }
-
-            info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
 
         Thread.currentThread().setContextClassLoader(cl);
     }
