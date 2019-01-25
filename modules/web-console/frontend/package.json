@@ -32,7 +32,7 @@
     "@uirouter/core": "5.0.19",
     "@uirouter/rx": "0.5.0",
     "@uirouter/visualizer": "4.0.2",
-    "angular": "1.7.4",
+    "angular": "1.7.6",
     "angular-acl": "0.1.10",
     "angular-animate": "1.7.4",
     "angular-aria": "1.7.4",
