@@ -19,12 +19,17 @@ package org.apache.ignite.ml.sparkmodelparser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -72,9 +77,50 @@ public class SparkModelParser {
                 return loadLinearSVMModel(ignitePathToMdl);
             case DECISION_TREE:
                 return loadDecisionTreeModel(ignitePathToMdl);
+            case RANDOM_FOREST:
+                return loadRandomForestModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
+    }
+
+    private static Model loadRandomForestModel(String pathToMdl) {
+        try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
+            PageReadStore pages;
+            final MessageType schema = r.getFooter().getFileMetaData().getSchema();
+            final MessageColumnIO colIO = new ColumnIOFactory().getColumnIO(schema);
+            final Map<Integer, TreeMap<Integer, NodeData>> nodesByTreeId = new TreeMap<>();
+            while (null != (pages = r.readNextRowGroup())) {
+                final long rows = pages.getRowCount();
+                final RecordReader recordReader = colIO.getRecordReader(pages, new GroupRecordConverter(schema));
+                for (int i = 0; i < rows; i++) {
+                    final SimpleGroup g = (SimpleGroup)recordReader.read();
+                    final int treeID = g.getInteger(0, 0);
+                    final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
+                    NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
+
+                    if (nodesByTreeId.containsKey(treeID)) {
+                        Map<Integer, NodeData> nodesByNodeId = nodesByTreeId.get(treeID);
+                        nodesByNodeId.put(nodeData.id, nodeData);
+                    }
+                    else {
+                        TreeMap<Integer, NodeData> nodesByNodeId = new TreeMap<>();
+                        nodesByNodeId.put(nodeData.id, nodeData);
+                        nodesByTreeId.put(treeID, nodesByNodeId);
+                    }
+                }
+            }
+
+            final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
+            nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
+
+            return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+        }
+        catch (IOException e) {
+            System.out.println("Error reading parquet file.");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -111,7 +157,7 @@ public class SparkModelParser {
      *
      * @param nodes The sorted map of nodes.
      */
-    private static Model buildDecisionTreeModel(Map<Integer, NodeData> nodes) {
+    private static DecisionTreeNode buildDecisionTreeModel(Map<Integer, NodeData> nodes) {
         DecisionTreeNode mdl = null;
         if (!nodes.isEmpty()) {
             NodeData rootNodeData = (NodeData)((NavigableMap)nodes).firstEntry().getValue();
