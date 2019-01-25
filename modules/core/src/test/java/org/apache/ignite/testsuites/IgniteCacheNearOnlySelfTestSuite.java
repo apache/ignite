@@ -24,14 +24,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClie
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyTopologySelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for near-only cache.
  */
-@RunWith(IgniteCacheNearOnlySelfTestSuite.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheNearOnlySelfTestSuite {
     /**
      * @return Suite.
@@ -47,26 +46,18 @@ public class IgniteCacheNearOnlySelfTestSuite {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheClientOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheClientOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheClientOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlyTopologySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearOnlyTopologySelfTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
 
         return suite;
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

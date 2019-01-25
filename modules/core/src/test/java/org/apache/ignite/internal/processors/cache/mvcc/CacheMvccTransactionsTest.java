@@ -1093,7 +1093,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet1() throws Exception {
         boolean vals[] = {true, false};
@@ -1132,8 +1131,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         awaitPartitionMapExchange();
 
-        final IgniteCache<Object, Object> srvCache =
-            srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+        final IgniteCache<Object, Object> clientCache =
+            client.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+
+        final IgniteCache<Object, Object> srvCache = srv.cache(clientCache.getName());
 
         final Integer key1 = 1;
         final Integer key2 = 2;
@@ -1163,19 +1164,17 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         IgniteInternalFuture<?> getFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
-
                 Map<Integer, Integer> vals;
 
                 if (inTx) {
                     try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        vals = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN, GET);
+                        vals = checkAndGetAll(false, clientCache, F.asSet(key1, key2), SCAN, GET);
 
                         tx.rollback();
                     }
                 }
                 else
-                    vals = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN, GET);
+                    vals = checkAndGetAll(false, clientCache, F.asSet(key1, key2), SCAN, GET);
 
                 if (putOnStart) {
                     assertEquals(2, vals.size());
@@ -1325,7 +1324,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
         for (int i = 0; i < 4; i++) {
