@@ -174,7 +174,6 @@ public class GridSqlQuerySplitter {
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: Remove H2 indexing.
     public static GridCacheTwoStepQuery split(
         Connection conn,
         Prepared prepared,
@@ -269,32 +268,32 @@ public class GridSqlQuerySplitter {
         GridSqlSubquery fakeQryParent = new GridSqlSubquery(qry);
 
         // Fake parent query model. We need it just for convenience because buildQueryModel needs parent model.
-        SplitterQueryModel fakeQryModelParent = new SplitterQueryModel(null, null, -1, null);
+        SplitterQueryModel fakeModelParent = new SplitterQueryModel(null, null, -1, null);
 
         // Build a simplified query model. We need it because navigation over the original AST is too complex.
-        fakeQryModelParent.buildQueryModel(fakeQryParent, 0, null);
+        fakeModelParent.buildQueryModel(fakeQryParent, 0, null);
 
-        assert fakeQryModelParent.childModelsCount() == 1;
+        assert fakeModelParent.childModelsCount() == 1;
 
         // Get the built query model from the fake parent.
-        SplitterQueryModel qrym = fakeQryModelParent.childModel(0);
+        SplitterQueryModel model = fakeModelParent.childModel(0);
 
         // Setup the needed information for split.
-        qrym.analyzeQueryModel(collocatedGrpBy);
+        model.analyzeQueryModel(collocatedGrpBy);
 
         // If we have child queries to split, then go hard way.
-        if (qrym.needSplitChild()) {
+        if (model.needSplitChild()) {
             // All the siblings to selects we are going to split must be also wrapped into subqueries.
-            pushDownQueryModel(qrym);
+            pushDownQueryModel(model);
 
             // Need to make all the joined subqueries to be ordered by join conditions.
-            setupMergeJoinSorting(qrym);
+            setupMergeJoinSorting(model);
         }
-        else if (!qrym.needSplit())  // Just split the top level query.
-            qrym.forceSplit();
+        else if (!model.needSplit())  // Just split the top level query.
+            model.forceSplit();
 
         // Split the query model into multiple map queries and a single reduce query.
-        splitQueryModel(qrym);
+        splitQueryModel(model);
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryParent.subquery();
@@ -321,25 +320,25 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      */
-    private void pushDownQueryModel(SplitterQueryModel qrym) {
-        if (qrym.type() == SplitterQueryModelType.UNION) {
-            assert qrym.needSplitChild(); // Otherwise we should not get here.
+    private void pushDownQueryModel(SplitterQueryModel model) {
+        if (model.type() == SplitterQueryModelType.UNION) {
+            assert model.needSplitChild(); // Otherwise we should not get here.
 
-            for (int i = 0; i < qrym.childModelsCount(); i++)
-                pushDownQueryModel(qrym.childModel(i));
+            for (int i = 0; i < model.childModelsCount(); i++)
+                pushDownQueryModel(model.childModel(i));
         }
-        else if (qrym.type() == SplitterQueryModelType.SELECT) {
+        else if (model.type() == SplitterQueryModelType.SELECT) {
             // If we already need to split, then no need to push down here.
-            if (!qrym.needSplit()) {
-                assert qrym.needSplitChild(); // Otherwise we should not get here.
+            if (!model.needSplit()) {
+                assert model.needSplitChild(); // Otherwise we should not get here.
 
-                pushDownQueryModelSelect(qrym);
+                pushDownQueryModelSelect(model);
             }
         }
         else
-            throw new IllegalStateException("Type: " + qrym.type());
+            throw new IllegalStateException("Type: " + model.type());
     }
 
     /**
@@ -359,19 +358,19 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qrym Query model for the SELECT.
+     * @param model Query model for the SELECT.
      */
-    private void pushDownQueryModelSelect(SplitterQueryModel qrym) {
-        assert qrym.type() == SplitterQueryModelType.SELECT : qrym.type();
+    private void pushDownQueryModelSelect(SplitterQueryModel model) {
+        assert model.type() == SplitterQueryModelType.SELECT : model.type();
 
-        boolean hasLeftJoin = SplitterUtils.hasLeftJoin(qrym.<GridSqlSelect>ast().from());
+        boolean hasLeftJoin = SplitterUtils.hasLeftJoin(model.<GridSqlSelect>ast().from());
 
         int begin = -1;
 
         // Here we iterate over joined FROM table filters.
-        // !!! qrym.size() can change, never assign it to a variable.
-        for (int i = 0; i < qrym.childModelsCount(); i++) {
-            SplitterQueryModel child = qrym.childModel(i);
+        // !!! model.size() can change, never assign it to a variable.
+        for (int i = 0; i < model.childModelsCount(); i++) {
+            SplitterQueryModel child = model.childModel(i);
 
             boolean hasPushedDownCol = false;
 
@@ -382,18 +381,18 @@ public class GridSqlQuerySplitter {
                 // We always must be at the right side of the join here to push down
                 // range on the left side. If there are no LEFT JOINs in the SELECT, then
                 // we will never have ON conditions, they are getting moved to WHERE clause.
-                (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(qrym.findJoin(i).on())))) {
+                (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(model.findJoin(i).on())))) {
                 // Handle a single table push down case.
                 if (hasPushedDownCol && begin == -1)
                     begin = i - 1;
 
                 // Push down the currently collected range.
                 if (begin != -1) {
-                    pushDownQueryModelRange(qrym, begin, i - 1);
+                    pushDownQueryModelRange(model, begin, i - 1);
 
-                    i = begin + 1; // We've modified qrym by this range push down, need to adjust counter.
+                    i = begin + 1; // We've modified model by this range push down, need to adjust counter.
 
-                    assert qrym.childModel(i) == child; // Adjustment check: we have to return to the same point.
+                    assert model.childModel(i) == child; // Adjustment check: we have to return to the same point.
 
                     // Reset range begin: in case of pushed down column we can assume current child as
                     // as new begin (because it is not a splittable subquery), otherwise reset begin
@@ -412,23 +411,23 @@ public class GridSqlQuerySplitter {
 
         // Push down the remaining range.
         if (begin != -1)
-            pushDownQueryModelRange(qrym, begin, qrym.childModelsCount() - 1);
+            pushDownQueryModelRange(model, begin, model.childModelsCount() - 1);
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      */
-    private void setupMergeJoinSorting(SplitterQueryModel qrym) {
-        if (qrym.type() == SplitterQueryModelType.UNION) {
-            for (int i = 0; i < qrym.childModelsCount(); i++)
-                setupMergeJoinSorting(qrym.childModel(i));
+    private void setupMergeJoinSorting(SplitterQueryModel model) {
+        if (model.type() == SplitterQueryModelType.UNION) {
+            for (int i = 0; i < model.childModelsCount(); i++)
+                setupMergeJoinSorting(model.childModel(i));
         }
-        else if (qrym.type() == SplitterQueryModelType.SELECT) {
-            if (!qrym.needSplit()) {
+        else if (model.type() == SplitterQueryModelType.SELECT) {
+            if (!model.needSplit()) {
                 boolean needSplitChild = false;
 
-                for (int i = 0; i < qrym.childModelsCount(); i++) {
-                    SplitterQueryModel child = qrym.childModel(i);
+                for (int i = 0; i < model.childModelsCount(); i++) {
+                    SplitterQueryModel child = model.childModel(i);
 
                     assert child.isQuery() : child.type();
 
@@ -438,18 +437,18 @@ public class GridSqlQuerySplitter {
                         setupMergeJoinSorting(child); // Go deeper.
                 }
 
-                if (needSplitChild && qrym.childModelsCount() > 1)
-                    setupMergeJoinSortingSelect(qrym); // Setup merge join hierarchy for the SELECT.
+                if (needSplitChild && model.childModelsCount() > 1)
+                    setupMergeJoinSortingSelect(model); // Setup merge join hierarchy for the SELECT.
             }
         }
         else
-            throw new IllegalStateException("Type: " + qrym.type());
+            throw new IllegalStateException("Type: " + model.type());
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      */
-    private void setupMergeJoinSortingSelect(SplitterQueryModel qrym) {
+    private void setupMergeJoinSortingSelect(SplitterQueryModel model) {
         // After pushing down we can have the following variants:
         //  - splittable SELECT
         //  - subquery with splittable child (including UNION)
@@ -458,30 +457,30 @@ public class GridSqlQuerySplitter {
         // the splittable SELECT like in "push down" and
         // setup sorting for all of them by joined fields.
 
-        for (int i = 1; i < qrym.childModelsCount(); i++) {
-            SplitterQueryModel child = qrym.childModel(i);
+        for (int i = 1; i < model.childModelsCount(); i++) {
+            SplitterQueryModel child = model.childModel(i);
 
             if (child.needSplit()) {
                 if (i > 1) {
                     // If we have multiple joined non-splittable subqueries before, then
                     // push down them into a single subquery.
-                    doPushDownQueryModelRange(qrym, 0, i - 1, false);
+                    doPushDownQueryModelRange(model, 0, i - 1, false);
 
                     i = 1;
 
-                    assert qrym.childModel(i) == child; // We must remain at the same position.
+                    assert model.childModel(i) == child; // We must remain at the same position.
                 }
 
-                injectSortingFirstJoin(qrym);
+                injectSortingFirstJoin(model);
             }
         }
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      */
-    private void injectSortingFirstJoin(SplitterQueryModel qrym) {
-        GridSqlJoin join = qrym.findJoin(0);
+    private void injectSortingFirstJoin(SplitterQueryModel model) {
+        GridSqlJoin join = model.findJoin(0);
 
         // We are at the beginning, thus left and right AST must be children of the same join AST.
         //     join2
@@ -496,7 +495,7 @@ public class GridSqlQuerySplitter {
         List<SplitterAndCondition> andConditions = new ArrayList<>();
 
         SplitterAndCondition.collectAndConditions(andConditions, join, ON_CHILD);
-        SplitterAndCondition.collectAndConditions(andConditions, qrym.ast(), WHERE_CHILD);
+        SplitterAndCondition.collectAndConditions(andConditions, model.ast(), WHERE_CHILD);
 
         // Collect all the JOIN condition columns for sorting.
         List<GridSqlColumn> leftOrder = new ArrayList<>();
@@ -592,37 +591,37 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      * @param begin The first child model in range to push down.
      * @param end The last child model in range to push down.
      */
-    private void pushDownQueryModelRange(SplitterQueryModel qrym, int begin, int end) {
+    private void pushDownQueryModelRange(SplitterQueryModel model, int begin, int end) {
         assert end >= begin;
 
-        if (begin == end && qrym.childModel(end).isQuery()) {
+        if (begin == end && model.childModel(end).isQuery()) {
             // Simple case when we have a single subquery to push down, just mark it to be splittable.
-            qrym.childModel(end).forceSplit();
+            model.childModel(end).forceSplit();
         }
         else {
             // Here we have to generate a subquery for all the joined elements and
             // and mark that subquery as splittable.
-            doPushDownQueryModelRange(qrym, begin, end, true);
+            doPushDownQueryModelRange(model, begin, end, true);
         }
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      * @param begin The first child model in range to push down.
      * @param end The last child model in range to push down.
      * @param needSplit If we will need to split the created subquery model.
      */
-    private void doPushDownQueryModelRange(SplitterQueryModel qrym, int begin, int end, boolean needSplit) {
+    private void doPushDownQueryModelRange(SplitterQueryModel model, int begin, int end, boolean needSplit) {
         // Create wrap query where we will push all the needed joined elements, columns and conditions.
         GridSqlSelect wrapSelect = new GridSqlSelect();
         GridSqlSubquery wrapSubqry = new GridSqlSubquery(wrapSelect);
         GridSqlAlias wrapAlias = SplitterUtils.alias(nextUniqueTableAlias(null), wrapSubqry);
 
-        SplitterQueryModel wrapQrym = new SplitterQueryModel(
+        SplitterQueryModel wrapModel = new SplitterQueryModel(
             SplitterQueryModelType.SELECT,
             wrapSubqry,
             0,
@@ -631,14 +630,14 @@ public class GridSqlQuerySplitter {
         );
 
         // Prepare all the prerequisites.
-        GridSqlSelect select = qrym.ast();
+        GridSqlSelect select = model.ast();
 
         Set<GridSqlAlias> tblAliases = U.newIdentityHashSet();
         Map<String,GridSqlAlias> cols = new HashMap<>();
 
         // Collect all the tables for push down.
         for (int i = begin; i <= end; i++) {
-            GridSqlAlias uniqueTblAlias = qrym.childModel(i).uniqueAlias();
+            GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
 
             assert uniqueTblAlias != null: select.getSQL();
 
@@ -652,7 +651,7 @@ public class GridSqlQuerySplitter {
         pushDownWhereConditions(tblAliases, cols, wrapAlias, select);
 
         // Push down to a subquery all the JOIN elements and process ON conditions.
-        pushDownJoins(tblAliases, cols, qrym, begin, end, wrapAlias);
+        pushDownJoins(tblAliases, cols, model, begin, end, wrapAlias);
 
         // Add all the collected columns to the wrap query.
         for (GridSqlAlias col : cols.values())
@@ -661,13 +660,13 @@ public class GridSqlQuerySplitter {
         // Adjust query models to a new AST structure.
 
         // Move pushed down child models to the newly created model.
-        qrym.moveChildModelsToWrapModel(wrapQrym, begin, end);
+        model.moveChildModelsToWrapModel(wrapModel, begin, end);
     }
 
     /**
      * @param tblAliases Table aliases for push down.
      * @param cols Columns with generated aliases.
-     * @param qrym Query model.
+     * @param model Query model.
      * @param begin The first child model in range to push down.
      * @param end The last child model in range to push down.
      * @param wrapAlias Alias of the wrap query.
@@ -675,17 +674,17 @@ public class GridSqlQuerySplitter {
     private void pushDownJoins(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
-        SplitterQueryModel qrym,
+        SplitterQueryModel model,
         int begin,
         int end,
         GridSqlAlias wrapAlias
     ) {
         // Get the original SELECT.
-        GridSqlSelect select = qrym.ast();
+        GridSqlSelect select = model.ast();
 
         GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
-        final int last = qrym.childModelsCount() - 1;
+        final int last = model.childModelsCount() - 1;
 
         if (begin == end) {
             //  Simple case when we have to push down only a single table and no joins.
@@ -711,9 +710,9 @@ public class GridSqlQuerySplitter {
 
             //  W: T2
 
-            GridSqlJoin endJoin = qrym.findJoin(end);
+            GridSqlJoin endJoin = model.findJoin(end);
 
-            wrapSelect.from(qrym.childModel(end).uniqueAlias());
+            wrapSelect.from(model.childModel(end).uniqueAlias());
             endJoin.child(end == 0 ? LEFT_TABLE_CHILD : RIGHT_TABLE_CHILD, wrapAlias);
         }
         else if (end == last) {
@@ -747,9 +746,9 @@ public class GridSqlQuerySplitter {
             //           / \
             //         T2   T3
 
-            GridSqlJoin beginJoin = qrym.findJoin(begin);
-            GridSqlJoin afterBeginJoin = qrym.findJoin(begin + 1);
-            GridSqlJoin endJoin = qrym.findJoin(end);
+            GridSqlJoin beginJoin = model.findJoin(begin);
+            GridSqlJoin afterBeginJoin = model.findJoin(begin + 1);
+            GridSqlJoin endJoin = model.findJoin(end);
 
             wrapSelect.from(endJoin);
             afterBeginJoin.leftTable(beginJoin.rightTable());
@@ -779,8 +778,8 @@ public class GridSqlQuerySplitter {
             //         / \
             //       T0   T1
 
-            GridSqlJoin endJoin = qrym.findJoin(end);
-            GridSqlJoin afterEndJoin = qrym.findJoin(end + 1);
+            GridSqlJoin endJoin = model.findJoin(end);
+            GridSqlJoin afterEndJoin = model.findJoin(end + 1);
 
             wrapSelect.from(endJoin);
             afterEndJoin.leftTable(wrapAlias);
@@ -808,10 +807,10 @@ public class GridSqlQuerySplitter {
             //           / \
             //         T1   T2
 
-            GridSqlJoin beginJoin = qrym.findJoin(begin);
-            GridSqlJoin afterBeginJoin = qrym.findJoin(begin + 1);
-            GridSqlJoin endJoin = qrym.findJoin(end);
-            GridSqlJoin afterEndJoin = qrym.findJoin(end + 1);
+            GridSqlJoin beginJoin = model.findJoin(begin);
+            GridSqlJoin afterBeginJoin = model.findJoin(begin + 1);
+            GridSqlJoin endJoin = model.findJoin(end);
+            GridSqlJoin afterEndJoin = model.findJoin(end + 1);
 
             wrapSelect.from(endJoin);
             afterEndJoin.leftTable(beginJoin);
@@ -1051,26 +1050,26 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param qrym Query model.
+     * @param model Query model.
      */
-    private void splitQueryModel(SplitterQueryModel qrym) throws IgniteCheckedException {
-        switch (qrym.type()) {
+    private void splitQueryModel(SplitterQueryModel model) throws IgniteCheckedException {
+        switch (model.type()) {
             case SELECT:
-                if (qrym.needSplit()) {
-                    splitSelect(qrym.parent(), qrym.childIndex());
+                if (model.needSplit()) {
+                    splitSelect(model.parent(), model.childIndex());
 
                     break;
                 }
 
                 // Intentional fallthrough to go deeper.
             case UNION:
-                for (int i = 0; i < qrym.childModelsCount(); i++)
-                    splitQueryModel(qrym.childModel(i));
+                for (int i = 0; i < model.childModelsCount(); i++)
+                    splitQueryModel(model.childModel(i));
 
                 break;
 
             default:
-                throw new IllegalStateException("Type: " + qrym.type());
+                throw new IllegalStateException("Type: " + model.type());
         }
     }
 
