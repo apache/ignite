@@ -418,6 +418,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                             }
                             catch (CacheException e) {
                                 assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)

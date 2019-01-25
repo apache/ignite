@@ -686,6 +686,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));
+                                            assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }

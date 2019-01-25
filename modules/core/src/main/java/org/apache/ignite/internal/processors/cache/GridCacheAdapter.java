@@ -148,7 +148,6 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -2320,7 +2319,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx.mvccEnabled())
             return ctx.tm().threadLocalTx(ctx);
 
-        return MvccUtils.currentTx(ctx.kernalContext(), null);
+        return MvccUtils.tx(ctx.kernalContext(), null);
     }
 
     /**

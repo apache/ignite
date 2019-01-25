@@ -222,6 +222,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                     }
                                     catch (CacheException e) {
                                         assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }
@@ -417,6 +418,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         }
                                         catch (CacheException e) {
                                             assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                            assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                         }
                                     }
                                 }
@@ -465,6 +467,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                     }
                                     catch (CacheException e) {
                                         assertTrue(e.getCause() instanceof TransactionSerializationException);
+                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }

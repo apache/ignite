@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
@@ -83,6 +84,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
         catch (CacheException ex) {
             assertTrue(ex.getCause() instanceof TransactionRollbackException);
+            assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
@@ -94,6 +96,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
         catch (CacheException ex) {
             assertTrue(ex.getCause() instanceof TransactionRollbackException);
+            assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
         }
     }
 
