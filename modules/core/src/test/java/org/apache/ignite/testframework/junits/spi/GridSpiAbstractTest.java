@@ -88,10 +88,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
     };
 
-    /** Manages test execution and reporting. */
+    /** Manages first and last test execution. */
     @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-    @ClassRule
-    public static transient RuleChain firstLastTestRule
+    @ClassRule public static transient RuleChain firstLastTestRule
         = RuleChain.outerRule(firstLastTestRuleSpi).around(GridAbstractTest.firstLastTestRule);
 
     /** */
@@ -114,43 +113,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         super(false);
 
         this.autoStart = autoStart;
-    }
-
-    /** */
-    private Void beforeFirstTest() throws Exception {
-        if (autoStart) {
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            beforeSpiStarted();
-
-            if (spiTest.trigger())
-                spiStart();
-
-            info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
-
-        return null;
-    }
-
-    /** */
-    private Void afterLastTest() throws Exception {
-        if (autoStart) {
-            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
-
-            assert spiTest != null;
-
-            if (spiTest.trigger()) {
-                spiStop();
-
-                afterSpiStopped();
-            }
-
-            info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -202,6 +164,24 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         cntrs.incrementStarted();
 
         super.setUp();
+    }
+
+    /** */
+    private Void beforeFirstTest() throws Exception {
+        if (autoStart) {
+            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+            assert spiTest != null;
+
+            beforeSpiStarted();
+
+            if (spiTest.trigger())
+                spiStart();
+
+            info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
+        }
+
+        return null;
     }
 
     /**
@@ -542,6 +522,25 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         super.tearDown();
 
         Thread.currentThread().setContextClassLoader(cl);
+    }
+
+    /** */
+    private Void afterLastTest() throws Exception {
+        if (autoStart) {
+            GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
+
+            assert spiTest != null;
+
+            if (spiTest.trigger()) {
+                spiStop();
+
+                afterSpiStopped();
+            }
+
+            info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
+        }
+
+        return null;
     }
 
     /**

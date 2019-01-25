@@ -179,9 +179,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** */
-    @ClassRule
-    public static final TestRule firstLastTestRule = new TestRule() {
+    /** Manages first and last test execution. */
+    @ClassRule public static final TestRule firstLastTestRule = new TestRule() {
         @Override public Statement apply(Statement base, Description desc) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
