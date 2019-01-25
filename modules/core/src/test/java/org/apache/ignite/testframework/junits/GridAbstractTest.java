@@ -122,10 +122,6 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -184,9 +180,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** */
-    private static final BeforeAfterClassHelper helper = new BeforeAfterClassHelper();
-
-    /** */
     @ClassRule
     public static final TestRule firstLastTestRule = new TestRule() {
         @Override public Statement apply(Statement base, Description desc) {
@@ -195,12 +188,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     GridAbstractTest testClsInstance = (GridAbstractTest)desc.getTestClass().newInstance();
                     try {
                         U.warn(null, ">>>>>>> place for onFirstTest <<<<<<<<<<");
-                        //testClsInstance.beforeTestsStarted();
+                        testClsInstance.onFirstTest();
+
                         base.evaluate();
                     }
                     finally {
                         U.warn(null, ">>>>>>> place for onLastTest <<<<<<<<<<");
-                        //testClsInstance.afterTestsStopped();
+                        testClsInstance.onLastTest();
                     }
                 }
             };
@@ -216,11 +210,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             runSerializer.lock();
             try {
                 assert getName() != null : "getName returned null";
-
-                U.warn(null, ">>>>>>> place for helper onbefore <<<<<<<<<<");
-                GridAbstractTest instance = (GridAbstractTest)description.getTestClass().newInstance();
-
-                helper.onBefore(instance::onFirstTest, instance::onLastTest);
 
                 runTestCase(base);
             } finally {
@@ -305,32 +294,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
-    }
-
-    /** */
-    @BeforeClass
-    public static void beforeClassGridAbstractTest() {
-        U.warn(null, ">>>>>>> beforeClassGridAbstractTest <<<<<<<<<<");
-        // todo delete helper.onBeforeClass();
-    }
-
-    /** */
-    @Before
-    public void before1() { // todo delete
-        U.warn(null, ">>>>>>> before1 <<<<<<<<<<");
-    }
-
-    /** */
-    @After
-    public void after1() { // todo delete
-        U.warn(null, ">>>>>>> after1 <<<<<<<<<<");
-    }
-
-    /** */
-    @AfterClass
-    public static void afterClassGridAbstractTest() throws Exception {
-        U.warn(null, ">>>>>>> afterClassGridAbstractTest <<<<<<<<<<");
-        // todo delete helper.onAfterClass();
     }
 
     /**
