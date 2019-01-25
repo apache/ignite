@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {StateParams} from '@uirouter/angularjs';
+
 import pageConfigureAdvancedClusterComponent from './components/page-configure-advanced/components/page-configure-advanced-cluster/component';
 import pageConfigureAdvancedModelsComponent from './components/page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from './components/page-configure-advanced/components/page-configure-advanced-caches/component';
@@ -22,6 +24,8 @@ import pageConfigureAdvancedIGFSComponent from './components/page-configure-adva
 
 import {Observable, from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
+
+export type ClusterParams = ({clusterID: string} | {clusterID: 'new'}) & StateParams;
 
 const idRegex = `new|[a-z0-9]+`;
 
