@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -112,6 +113,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware.ID_FILTER;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -500,29 +502,30 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         curCrd = newCrd;
 
-        if (newCrd.local() && !sndQrys)
-            // Coordinator was assigned on local join. There was no coordinator before.
+        if (sndQrys)
+            ctx.closure().runLocalSafe(() -> sendActiveQueries(nodes, newCrd));
+        else if (newCrd.local()) // Coordinator was assigned on local join. There was no coordinator before.
             prevCrdQueries.init();
 
-        if (sndQrys) {
-            GridLongList activeQryTrackers = new GridLongList();
+    }
 
-            for (MvccQueryTracker tracker : activeTrackers.values()) {
-                long trackerId = tracker.onMvccCoordinatorChange(newCrd);
+    /** */
+    private void sendActiveQueries(Collection<ClusterNode> nodes, MvccCoordinator newCrd) {
+        GridLongList qryIds = new GridLongList(
+            Stream.concat(activeTrackers.values().stream(),
+                ctx.cache().context().tm().activeTransactions().stream()
+                    .filter(tx -> tx.near() && tx.local()))
+                .mapToLong(q -> ((MvccCoordinatorChangeAware)q).onMvccCoordinatorChange(newCrd))
+                .filter(ID_FILTER).toArray());
 
-                if (trackerId != MVCC_TRACKER_ID_NA)
-                    activeQryTrackers.add(trackerId);
+        if (newCrd.local())
+            prevCrdQueries.init(qryIds, nodes, ctx.discovery());
+        else {
+            try {
+                sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
             }
-
-            if (newCrd.local())
-                prevCrdQueries.init(activeQryTrackers, nodes, ctx.discovery());
-            else {
-                try {
-                    sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(activeQryTrackers));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
-                }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
             }
         }
     }

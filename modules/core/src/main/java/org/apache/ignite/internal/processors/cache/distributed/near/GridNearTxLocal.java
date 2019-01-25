@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -128,7 +130,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
-public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
+public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -3334,6 +3336,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return !mappings.empty() && mappings.singleMapping().queryUpdate();
         else
             return mappings.mappings().stream().anyMatch(GridDistributedTxMapping::queryUpdate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long id() {
+        return MVCC_TRACKER_ID_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        return MVCC_TRACKER_ID_NA;
     }
 
     /**
