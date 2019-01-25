@@ -495,7 +495,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean mvccEnabled() {
-        return mvccEnabled;
+        return Boolean.TRUE == mvccEnabled;
     }
 
     /** {@inheritDoc} */
