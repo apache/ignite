@@ -150,7 +150,14 @@ public class GridCircularBuffer<T> implements Consumer<T>, Iterable<T> {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Returns read-only iterator over the elements.
+     * <p>
+     * The iterator can be used concurrently with adding new elements to the buffer,
+     * but the data read through iteration may be inconsistent then.
+     *
+     * @return Iterator.
+     */
     @NotNull @Override public Iterator<T> iterator() {
         return new Iterator<T>() {
             int i;
