@@ -55,8 +55,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             System.out.println(">>> Ignite grid started.");
 
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
-                .setSqlSchema("PUBLIC")
-                .setAffinity(new RendezvousAffinityFunction(false, 1));
+                .setSqlSchema("PUBLIC");
 
             IgniteCache<?, ?> cache = ignite.createCache(cacheCfg);
 
