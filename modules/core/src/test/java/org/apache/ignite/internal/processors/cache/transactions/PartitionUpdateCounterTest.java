@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +41,11 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    protected PartitionUpdateCounter newCounter() {
+        return new PartitionUpdateCounter2(log);
+    }
+
+
     /**
      * Test applying update multiple times in random order.
      */
@@ -54,7 +60,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             Collections.shuffle(tmp);
 
-            PartitionUpdateCounter pc0 = new PartitionUpdateCounter(log);
+            PartitionUpdateCounter pc0 = new PartitionUpdateCounter2(log);
 
             for (int[] pair : tmp)
                 pc0.update(pair[0], pair[1]);
@@ -64,7 +70,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             else {
                 assertEquals(pc, pc0);
                 assertEquals(expTotal, pc0.get());
-                assertTrue(pc0.gaps().isEmpty());
+                assertTrue(!pc0.hasGaps());
 
                 pc = pc0;
             }
@@ -77,7 +83,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStaleUpdate() {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+        PartitionUpdateCounter2 pc = new PartitionUpdateCounter2(log);
 
         assertTrue(pc.update(0, 1));
         assertFalse(pc.update(0, 1));
@@ -96,7 +102,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedModeMultithreaded() throws Exception {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+        PartitionUpdateCounter2 pc = new PartitionUpdateCounter2(log);
 
         AtomicBoolean stop = new AtomicBoolean();
 

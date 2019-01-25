@@ -36,4 +36,8 @@ public class CacheContinuousQueryFailoverTxSelfTest extends CacheContinuousQuery
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
+
+    @Override public void testStartStop() throws Exception {
+        super.testStartStop();
+    }
 }

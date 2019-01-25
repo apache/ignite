@@ -74,7 +74,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
@@ -104,6 +106,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -2763,5 +2766,20 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             super.sendMessage(node, msg, ackC);
         }
+    }
+
+
+
+    /**
+     * @param partId Partition id.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    private PartitionUpdateCounter2 counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return locPart == null ? null : (PartitionUpdateCounter2)locPart.dataStore().partUpdateCounter();
     }
 }

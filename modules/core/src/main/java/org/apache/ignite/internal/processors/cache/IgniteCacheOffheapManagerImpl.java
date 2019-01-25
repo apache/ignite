@@ -1466,7 +1466,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = new PartitionUpdateCounter(log, partId);
+            pCntr = new PartitionUpdateCounter2(log, partId);
         }
 
         /**
@@ -1590,15 +1590,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr;
         }
 
+        @Override public long reserve(long delta) {
+            return pCntr.reserve(delta);
+        }
+
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
                 pCntr.update(val);
             }
-            catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Partition counter inconsistency is detected. " +
-                    "Most probably a node with most actual data is out of topology or data streamer on " +
-                    "transactional cache in allowOverwrite=false mode is used concurrently with transactions in the same time.");
+                    "Most probably a node with most actual data is out of topology.");
 
                 ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
@@ -1611,11 +1614,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             //log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
 
             return update;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void releaseCounter(long start, long delta) {
-            // TODO remove.
         }
 
         /** {@inheritDoc} */

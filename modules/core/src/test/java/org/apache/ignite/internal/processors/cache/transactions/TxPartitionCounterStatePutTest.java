@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -276,10 +277,10 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     }
 
     private void assertCountersSame(String cacheName) throws AssertionFailedError {
-        PartitionUpdateCounter c0 = null;
+        PartitionUpdateCounter2 c0 = null;
 
         for (Ignite ignite : G.allGrids()) {
-            PartitionUpdateCounter c = counter(PARTITION_ID, cacheName, ignite.name());
+            PartitionUpdateCounter2 c = counter(PARTITION_ID, cacheName, ignite.name());
 
             if (c0 == null)
                 c0 = c;
@@ -295,8 +296,8 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /**
      * @param partId Partition id.
      */
-    protected PartitionUpdateCounter counter(int partId, String cacheName, String gridName) {
-        return internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    protected PartitionUpdateCounter2 counter(int partId, String cacheName, String gridName) {
+        return (PartitionUpdateCounter2)internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
 
     @Override protected long getTestTimeout() {

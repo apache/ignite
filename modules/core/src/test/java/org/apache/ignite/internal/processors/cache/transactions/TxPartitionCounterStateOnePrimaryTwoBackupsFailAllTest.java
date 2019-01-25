@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -149,7 +150,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
         IgniteEx backupNode = (IgniteEx)G.allGrids().iterator().next();
 
-        PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
+        PartitionUpdateCounter2 cntr = counter(PARTITION_ID, backupNode.name());
 
         assertTrue(cntr.gaps().isEmpty());
     }

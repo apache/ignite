@@ -51,6 +51,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -237,10 +238,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         List<Integer> keysPart2 = part2Sup == null ? null :
             partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0) ;
 
-        log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() + ", backups=" + F.transform(backupz, new IgniteClosure<Ignite, String>() {
-            @Override public String apply(Ignite ignite) {
-                return ignite.name();
-            }
+        log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() + ", backups=" + F.transform(backupz, ignite -> {
+            return ignite.name();
         }));
 
         if (part2Sup != null) {
@@ -254,10 +253,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
             txTop.put(partId2, new T2<>(prim2, backupz2));
 
-            log.info("TX: topology [part2=" + partId2 + ", primary=" + prim2.name() + ", backups=" + F.transform(backupz2, new IgniteClosure<Ignite, String>() {
-                @Override public String apply(Ignite ignite) {
-                    return ignite.name();
-                }
+            log.info("TX: topology [part2=" + partId2 + ", primary=" + prim2.name() + ", backups=" + F.transform(backupz2, ignite -> {
+                return ignite.name();
             }));
         }
 
@@ -654,10 +651,10 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      *
      * @return Counter or null if node is not partition owner.
      */
-    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+    protected @Nullable PartitionUpdateCounter2 counter(int partId, String gridName) {
         @Nullable GridDhtLocalPartition part = internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
 
-        return part == null ? null : part.dataStore().partUpdateCounter();
+        return part == null ? null : (PartitionUpdateCounter2)part.dataStore().partUpdateCounter();
     }
 
 

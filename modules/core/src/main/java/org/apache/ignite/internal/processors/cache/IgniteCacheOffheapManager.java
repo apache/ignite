@@ -646,7 +646,12 @@ public interface IgniteCacheOffheapManager {
         /**
          * @return Update counter.
          */
-        PartitionUpdateCounter partUpdateCounter();
+        @Nullable PartitionUpdateCounter partUpdateCounter();
+
+        /**
+         * @param val Update counter.
+         */
+        long reserve(long delta);
 
         /**
          * @param val Update counter.
@@ -659,12 +664,6 @@ public interface IgniteCacheOffheapManager {
          * @param delta Delta
          */
         boolean updateCounter(long start, long delta);
-
-        /**
-         * @param start Start.
-         * @param delta Delta.
-         */
-        void releaseCounter(long start, long delta);
 
         /**
          * @return Next update counter.

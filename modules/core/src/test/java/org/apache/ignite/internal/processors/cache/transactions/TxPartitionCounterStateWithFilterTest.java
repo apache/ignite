@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -168,7 +169,7 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
                             if (ignite.configuration().isClientMode())
                                 continue;
 
-                            PartitionUpdateCounter cntr = counter(partId, ignite.name());
+                            PartitionUpdateCounter2 cntr = counter(partId, ignite.name());
 
                             if (cntr != null)
                                 assertEquals("Expecting counter for node=" + ignite.name(), 2, cntr.get());
@@ -188,11 +189,11 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
      *
      * @return Partition update counter or {@code null} if node is not an owner.
      */
-    private PartitionUpdateCounter counter(int partId, String gridName) {
+    private PartitionUpdateCounter2 counter(int partId, String gridName) {
         @Nullable GridDhtLocalPartition locPart =
             internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
 
-        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+        return locPart == null ? null : (PartitionUpdateCounter2)locPart.dataStore().partUpdateCounter();
     }
 
     /**
