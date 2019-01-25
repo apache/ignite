@@ -44,7 +44,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,6 +57,7 @@ import org.h2.command.dml.SelectUnion;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -1549,10 +1551,8 @@ public class GridSqlQuerySplitter {
         // Replace the given select with generated reduce query in the parent.
         prnt.child(childIdx, rdcQry);
 
-        Map<String, GridSqlUsedColumnInfo> usedCols = GridSqlQueryParser.extractUsedColumns(mapQry);
-
         // Setup resulting map query.
-        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
+        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL(), extractUsedColumns(mapQry));
 
         setupParameters(map, mapQry, params);
         map.columns(collectColumns(mapExps));
@@ -1567,22 +1567,42 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param select
+     * @param select Query.
      * @return Used columns.
      */
     private Map<String, GridSqlUsedColumnInfo> extractUsedColumns(GridSqlSelect select) {
-        Map<String, Set<Integer>> usedCols = new HashMap<>();
+        Map<TableAlias, Set<Integer>> usedCols = new HashMap<>();
 
         GridSqlQueryParser.extractUsedColumnsFromAst(usedCols, select);
 
         return usedCols.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> {
-                String alias
-                Set<Integer>
-                e.getValue().toArray(new int[0]);
-                GridSqlUsedColumnInfo colsInfo = new GridSqlUsedColumnInfo();
-            }));
+            .collect(Collectors.toMap(
+                e -> e.getKey().alias(),
+                e -> {
+                    boolean keyUsed = false;
+                    boolean valUsed = false;
 
+                    GridH2RowDescriptor desc = e.getKey().table().rowDescriptor();
+
+                    for (Integer colId :  e.getValue()) {
+                        keyUsed |= desc.isKeyColumn(colId);
+                        valUsed |= desc.isValueColumn(colId);
+
+                        if (colId >= DEFAULT_COLUMNS_COUNT) {
+                            if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || desc.isKeyAliasColumn(colId))
+                                keyUsed = true;
+                            else
+                                valUsed = true;
+                        }
+
+                        if (keyUsed && valUsed)
+                            break;
+                    }
+
+                    assert keyUsed || valUsed : "Used columns: " + e.getValue();
+
+                    return new GridSqlUsedColumnInfo(e.getValue(), keyUsed, valUsed);
+                }));
     }
 
     /**

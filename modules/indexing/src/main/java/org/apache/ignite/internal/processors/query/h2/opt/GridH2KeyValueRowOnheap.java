@@ -77,7 +77,8 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         CacheObjectValueContext coCtx = desc.indexing().objectContext();
 
-        this.key = H2Utils.wrap(coCtx, row.key(), keyType);
+        if (row.key() != null)
+            this.key = H2Utils.wrap(coCtx, row.key(), keyType);
 
         if (row.value() != null)
             this.val = H2Utils.wrap(coCtx, row.value(), valType);
@@ -130,7 +131,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         if (v != null)
             return v;
 
-        Object res = desc.columnValue(key.getObject(), val.getObject(), col);
+        Object res = desc.columnValue(key != null ? key.getObject() : null, val.getObject(), col);
 
         if (res == null)
             v = ValueNull.INSTANCE;
@@ -139,7 +140,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                 v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
-                e.printStackTrace();
                 throw DbException.convert(e);
             }
         }

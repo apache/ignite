@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
@@ -176,7 +177,7 @@ public class GridH2RowDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        return (GridH2Row)createRow(dataRow, null);
+        return createRow(dataRow, null);
     }
 
     /**
@@ -187,24 +188,16 @@ public class GridH2RowDescriptor {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheDataRow dataRow, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
+    public GridH2Row createRow(CacheDataRow dataRow, GridSqlUsedColumnInfo colInfo) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
-            if (colInfo == null) {
-                if (dataRow.value() == null) {
-                    // Only can happen for remove operation, can create simple search row.
-                    row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
-                }
-                else
-                    row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
+            if (dataRow.value() == null && colInfo == null) {
+                // Only can happen for remove operation, can create simple search row.
+                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
             }
-            else {
-                row = new GridH2SimpleRow(colInfo.columnsCount());
-
-                for (int colIdx : colInfo.columns())
-                    row.setValue(colIdx, getValue(dataRow.key(), dataRow.value(), colIdx));
-            }
+            else
+                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -260,15 +253,15 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Gets column value by column index.
+     * Gets column value by column ID.
      *
      * @param key Key.
      * @param val Value.
-     * @param col Column index.
+     * @param colId Column index.
      * @return Column value.
      */
-    public Value getValue(Object key, Object val, int col) throws IgniteCheckedException {
-        switch (col) {
+    public Value columnValueById(Object key, Object val, int colId) throws IgniteCheckedException {
+        switch (colId) {
             case KEY_COL:
                 return H2Utils.wrap(indexing().objectContext(), key, keyType);
 
@@ -279,19 +272,19 @@ public class GridH2RowDescriptor {
                 return ValueNull.INSTANCE;
 
             default:
-                if (isKeyAliasColumn(col))
+                if (isKeyAliasColumn(colId))
                     return H2Utils.wrap(indexing().objectContext(), key, keyType);
-                else if (isValueAliasColumn(col))
+                else if (isValueAliasColumn(colId))
                     return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
 
-                Object res = columnValue(key, val, col - DEFAULT_COLUMNS_COUNT);
+                Object res = columnValue(key, val, colId - DEFAULT_COLUMNS_COUNT);
 
                 Value v;
                 if (res == null)
                     v = ValueNull.INSTANCE;
                 else {
                     try {
-                        v = H2Utils.wrap(indexing().objectContext(), res, fieldType(col - DEFAULT_COLUMNS_COUNT));
+                        v = H2Utils.wrap(indexing().objectContext(), res, fieldType(colId - DEFAULT_COLUMNS_COUNT));
                     }
                     catch (IgniteCheckedException e) {
                         e.printStackTrace();

@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 
 /**
  * Data store for H2 rows.
@@ -57,7 +55,7 @@ public class H2RowFactory {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row getRow(long link, GridH2UsedColumnInfo colInfo) throws IgniteCheckedException {
+    public GridH2Row getRow(long link, GridSqlUsedColumnInfo colInfo) throws IgniteCheckedException {
         // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
         // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
 
@@ -65,8 +63,7 @@ public class H2RowFactory {
 
         rowBuilder.initFromLink(
             cctx.group(),
-            CacheDataRowAdapter.RowData.FULL);
-//            colInfo != null ? CacheDataRowAdapter.RowData.FULL_TRY_OFFHEAP : CacheDataRowAdapter.RowData.FULL);
+            GridSqlUsedColumnInfo.asRowData(colInfo));
 
         try {
             GridH2Row row = rowDesc.createRow(rowBuilder, colInfo);

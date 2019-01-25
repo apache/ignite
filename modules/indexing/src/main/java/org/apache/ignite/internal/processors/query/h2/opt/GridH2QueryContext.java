@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SourceKey;
@@ -93,6 +94,9 @@ public class GridH2QueryContext {
 
     /** */
     private MapQueryLazyWorker lazyWorker;
+
+    /** */
+    private Map<String, GridSqlUsedColumnInfo> usedColInfo;
 
     /**
      * @param locNodeId Local node ID.
@@ -537,6 +541,20 @@ public class GridH2QueryContext {
         this.lazyWorker = lazyWorker;
 
         return this;
+    }
+
+    /**
+     * @return Used columns info.
+     */
+    public Map<String, GridSqlUsedColumnInfo> usedColumsInfo() {
+        return usedColInfo;
+    }
+
+    /**
+     * @param usedColInfo Used columns info.
+     */
+    public void usedColumsInfo(Map<String, GridSqlUsedColumnInfo> usedColInfo) {
+        this.usedColInfo = usedColInfo;
     }
 
     /** {@inheritDoc} */

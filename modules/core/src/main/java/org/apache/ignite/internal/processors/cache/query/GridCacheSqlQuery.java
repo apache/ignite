@@ -306,7 +306,7 @@ public class GridCacheSqlQuery implements Message {
         cp.partitioned = partitioned;
         cp.derivedPartitions = derivedPartitions;
         cp.hasSubQries = hasSubQries;
-        cp.usedCols = new HashMap<>(usedCols);
+        cp.usedCols = usedCols == null ? null : new HashMap<>(usedCols);
 
         return cp;
     }

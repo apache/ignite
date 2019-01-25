@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.F;
@@ -283,7 +283,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             filter.getSession(),
             first,
             last,
-            GridH2UsedColumnInfo.extractUsedColumns(filter));
+            GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()));
     }
 
     /** {@inheritDoc} */
@@ -301,7 +301,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param upper the last row, or null for no limit
      * @return the cursor to iterate over the results
      */
-    private Cursor find(Session ses, SearchRow lower, SearchRow upper, GridH2UsedColumnInfo colInfo) {
+    private Cursor find(Session ses, SearchRow lower, SearchRow upper, GridSqlUsedColumnInfo colInfo) {
         assert lower == null || lower instanceof GridH2SearchRow : lower;
         assert upper == null || upper instanceof GridH2SearchRow : upper;
 

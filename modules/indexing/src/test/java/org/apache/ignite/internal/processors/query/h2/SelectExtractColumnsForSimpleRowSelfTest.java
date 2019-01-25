@@ -70,6 +70,42 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     }
 
     /**
+     * Test extract only key.
+     */
+    @Test
+    public void testSelectKeyOnly() {
+        List<List<?>> res;
+
+        sql("CREATE TABLE test (id LONG PRIMARY KEY, valStr VARCHAR, valLong LONG)");
+
+        for (int i = 0; i < 100; ++i)
+            sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
+
+        // scan
+        res = sql("SELECT ID from test WHERE ID < 5");
+
+        assertEquals(5, res.size());
+    }
+
+    /**
+     * Test extract only value.
+     */
+    @Test
+    public void testSelectValueOnly() {
+        List<List<?>> res;
+
+        sql("CREATE TABLE test (id LONG PRIMARY KEY, valStr VARCHAR, valLong LONG)");
+
+        for (int i = 0; i < 100; ++i)
+            sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
+
+        // scan
+        res = sql("SELECT valLong from test WHERE valLong < 5");
+
+        assertEquals(5, res.size());
+    }
+
+    /**
      * Test single table.
      */
     @Test

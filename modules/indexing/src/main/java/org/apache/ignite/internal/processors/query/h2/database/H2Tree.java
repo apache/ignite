@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -225,7 +225,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link, GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
+    public GridH2Row createRowFromLink(long link, GridSqlUsedColumnInfo usedColInfo) throws IgniteCheckedException {
         if (rowCache != null) {
             GridH2Row row = rowCache.get(link);
 
@@ -256,7 +256,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         long mvccCrdVer,
         long mvccCntr,
         int mvccOpCntr,
-        GridH2UsedColumnInfo usedColInfo) throws IgniteCheckedException {
+        GridSqlUsedColumnInfo usedColInfo) throws IgniteCheckedException {
         if (rowCache != null) {
             GridH2Row row = rowCache.get(link);
 
@@ -276,7 +276,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object colsToExtract)
         throws IgniteCheckedException {
-        return ((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridH2UsedColumnInfo)colsToExtract);
+        return ((H2RowLinkIO)io).getLookupRow(this, pageAddr, idx, (GridSqlUsedColumnInfo)colsToExtract);
     }
 
     /**

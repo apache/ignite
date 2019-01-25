@@ -695,8 +695,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
-        assert key != null : "Key is not ready: " + this;
-
         return key;
     }
 
@@ -716,15 +714,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready: " + this;
-
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        assert ver != null : "Version is not ready: " + this;
-
         return ver;
     }
 

@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -31,13 +35,13 @@ public class GridSqlUsedColumnInfo implements Message {
     @GridToStringInclude
     private int[] cols;
 
-    /** Extract key. */
+    /** Flag indicates that key's fields are used in query. */
     @GridToStringInclude
-    private boolean extractKey;
+    private boolean keyUsed;
 
-    /** Extract value. */
+    /** Flag indicates that value's fields are used in query. */
     @GridToStringInclude
-    private boolean extractVal;
+    private boolean valUsed;
 
     /**
      * Constructor.
@@ -48,13 +52,13 @@ public class GridSqlUsedColumnInfo implements Message {
 
     /**
      * @param cols Columns to extract from full row.
-     * @param extractKey flag indicates that key's fields are used in query.
-     * @param extractVal flag indicates that value's fields are used in query.
+     * @param keyUsed Flag indicates that key's fields are used in query.
+     * @param valUsed Flag indicates that value's fields are used in query.
      */
-    public GridSqlUsedColumnInfo(int[] cols, boolean extractKey, boolean extractVal) {
-        this.cols = cols;
-        this.extractKey = extractKey;
-        this.extractVal = extractVal;
+    public GridSqlUsedColumnInfo(Set<Integer> cols, boolean keyUsed, boolean valUsed) {
+        this.cols = F.isEmpty(cols) ? null : cols.stream().mapToInt(Number::intValue).toArray();
+        this.keyUsed = keyUsed;
+        this.valUsed = valUsed;
     }
 
     /**
@@ -65,19 +69,44 @@ public class GridSqlUsedColumnInfo implements Message {
     }
 
     /**
-     * @return {@code true} if key's fields are used in query.
+     * @return Flag indicates that key's fields are used in query.
      */
-    public boolean isExtractKey() {
-        return extractKey;
+    public boolean isKeyUsed() {
+        return keyUsed;
     }
 
     /**
-     * @return {@code true} if value's fields are used in query.
+     * @param colInfo Extracted columns info.
+     * @return row data mode.
      */
-    public boolean isExtractValue() {
-        return extractVal;
+    public static CacheDataRowAdapter.RowData asRowData(GridSqlUsedColumnInfo colInfo) {
+        if (colInfo != null) {
+            if (colInfo.isKeyUsed() && colInfo.isValueUsed())
+                return CacheDataRowAdapter.RowData.FULL;
+            else if (colInfo.isKeyUsed() && !colInfo.isValueUsed())
+                return CacheDataRowAdapter.RowData.KEY_ONLY;
+            else if (!colInfo.isKeyUsed() && colInfo.isValueUsed())
+                return CacheDataRowAdapter.RowData.NO_KEY;
+            else
+                return CacheDataRowAdapter.RowData.LINK_ONLY;
+        }
+        else
+            return CacheDataRowAdapter.RowData.FULL;
     }
 
+    /**
+     * @return Flag indicates that value's fields are used in query.
+     */
+    public boolean isValueUsed() {
+        return valUsed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSqlUsedColumnInfo.class, this);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -96,13 +125,13 @@ public class GridSqlUsedColumnInfo implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("extractKey", extractKey))
+                if (!writer.writeBoolean("keyUsed", keyUsed))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("extractVal", extractVal))
+                if (!writer.writeBoolean("valUsed", valUsed))
                     return false;
 
                 writer.incrementState();
@@ -112,6 +141,7 @@ public class GridSqlUsedColumnInfo implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -128,7 +158,7 @@ public class GridSqlUsedColumnInfo implements Message {
                 reader.incrementState();
 
             case 1:
-                extractKey = reader.readBoolean("extractKey");
+                keyUsed = reader.readBoolean("keyUsed");
 
                 if (!reader.isLastRead())
                     return false;
@@ -136,7 +166,7 @@ public class GridSqlUsedColumnInfo implements Message {
                 reader.incrementState();
 
             case 2:
-                extractVal = reader.readBoolean("extractVal");
+                valUsed = reader.readBoolean("valUsed");
 
                 if (!reader.isLastRead())
                     return false;
@@ -148,15 +178,18 @@ public class GridSqlUsedColumnInfo implements Message {
         return reader.afterMessageRead(GridSqlUsedColumnInfo.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 172;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
-
+        // No-op.
     }
 }

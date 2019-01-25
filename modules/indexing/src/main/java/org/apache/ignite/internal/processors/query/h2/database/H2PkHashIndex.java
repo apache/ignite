@@ -29,13 +29,13 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2UsedColumnInfo;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -98,18 +98,22 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        return find(filter.getSession(), first, last);
-        // TODO: implement
-//        return find(
-//            filter.getSession(),
-//            first,
-//            last,
-//            GridH2UsedColumnInfo.extractUsedColumns(filter));
+        return find(filter.getSession(), first, last, GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()));
     }
-
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
+        return find(ses, lower, upper, null);
+    }
+
+    /**
+     * @param ses The session
+     * @param lower The first row, or null for no limit
+     * @param upper The last row, or null for no limit
+     * @param colInfo Extract column info.
+     * @return The cursor to iterate over the results
+     */
+    public Cursor find(Session ses, final SearchRow lower, final SearchRow upper, GridSqlUsedColumnInfo colInfo) {
         IndexingQueryCacheFilter filter = null;
         MvccSnapshot mvccSnapshot = null;
 
@@ -139,10 +143,11 @@ public class H2PkHashIndex extends GridH2IndexBase {
                     continue;
 
                 if (filter == null || filter.applyPartition(part))
-                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj,
+                        GridSqlUsedColumnInfo.asRowData(colInfo), mvccSnapshot));
             }
 
-            return new H2PkHashIndexCursor(cursors.iterator());
+            return new H2PkHashIndexCursor(cursors.iterator(), colInfo);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -232,21 +237,26 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** */
         private GridCursor<? extends CacheDataRow> curr;
 
+        /** */
+        private GridSqlUsedColumnInfo colInfo;
+
         /**
          * @param iter Cursors iterator.
          */
-        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter) {
+        private H2PkHashIndexCursor(Iterator<GridCursor<? extends CacheDataRow>> iter, GridSqlUsedColumnInfo colInfo) {
             assert iter != null;
 
             this.iter = iter;
 
             desc = tbl.rowDescriptor();
+
+            this.colInfo = colInfo;
         }
 
         /** {@inheritDoc} */
         @Override public Row get() {
             try {
-                return desc.createRow(curr.get());
+                return desc.createRow(curr.get(), colInfo);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
