@@ -159,38 +159,27 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         execute("CREATE INDEX IF NOT EXISTS persidx ON \"Person\".person(cityid)");
 
         insertPerson(1, "John", "Smith", 1, 1);
-
         insertPerson(2, "Mike", "Johns", 1, 2);
-
         insertPerson(3, "Sam", "Jules", 2, 2);
-
         insertPerson(4, "Alex", "Pope", 2, 3);
-
         insertPerson(5, "Peter", "Williams", 2, 3);
 
         insertCity(1, "Los Angeles", 5000);
-
         insertCity(2, "Seattle", 1500);
-
         insertCity(3, "New York", 12000);
-
         insertCity(4, "Cupertino", 400);
 
         insertCompany(1, "Microsoft", 2);
-
         insertCompany(2, "Google", 3);
-
         insertCompany(3, "Facebook", 1);
-
         insertCompany(4, "Uber", 1);
-
         insertCompany(5, "Apple", 4);
 
         insertProduct(1, "Search", 2);
-
         insertProduct(2, "Windows", 1);
-
         insertProduct(3, "Mac", 5);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -198,11 +187,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         super.beforeTestsStarted();
 
         startGrid(0);
-
         startGrid(1);
-
         startGrid(2);
-
         startGrid(3);
     }
 
@@ -344,7 +330,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10770")
     @Test
     public void testInsertAndQueryMultipleCaches() throws SQLException {
         executeInTransaction(new TransactionClosure() {
