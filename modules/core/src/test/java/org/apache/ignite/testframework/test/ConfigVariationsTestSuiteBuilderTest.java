@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -52,7 +54,8 @@ import static org.junit.Assert.assertEquals;
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithIgnored.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class,
-    ConfigVariationsTestSuiteBuilderTest.TestSuiteCacheParams.class
+    ConfigVariationsTestSuiteBuilderTest.TestSuiteCacheParams.class,
+    ConfigVariationsTestSuiteBuilderTest.SimpleDynamicSuite.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
@@ -372,6 +375,17 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** {@inheritDoc} */
         @Override protected long getTestTimeout() {
             return TimeUnit.SECONDS.toMillis(20);
+        }
+    }
+
+    /** */
+    @RunWith(DynamicSuite.class)
+    public static class SimpleDynamicSuite {
+        /**
+         * @return Suite.
+         */
+        public static List<Class<?>> suite() {
+            return Collections.singletonList(NoopTest.class);
         }
     }
 }
