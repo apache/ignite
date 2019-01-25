@@ -109,10 +109,8 @@ public class KMeansTrainerTest extends TrainerTest {
             .withDistance(new EuclideanDistance())
             .withAmountOfClusters(10)
             .withMaxIterations(1)
-            .withEpsilon(PRECISION)
-            .withSeed(2);
+            .withEpsilon(PRECISION);
         assertEquals(10, trainer.getAmountOfClusters());
-        assertEquals(2, trainer.getSeed());
         assertTrue(trainer.getDistance() instanceof EuclideanDistance);
         return trainer;
     }
