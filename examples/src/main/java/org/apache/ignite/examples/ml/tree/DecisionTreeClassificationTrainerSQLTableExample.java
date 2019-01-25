@@ -54,6 +54,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
+            // Dummy cache is required to perform SQL queries.
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
                 .setSqlSchema("PUBLIC");
 
@@ -104,8 +105,11 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             System.out.println(">>> Perform training...");
             IgniteCache<Integer, BinaryObject> titanicTrainCache = ignite.cache("SQL_PUBLIC_TITANIK_TRAIN");
             DecisionTreeNode mdl = trainer.fit(
+                // We have to specify ".withKeepBinary(true)" because SQL caches contains only binary objects and this
+                // information has to be passed into the trainer.
                 new CacheBasedDatasetBuilder<>(ignite, titanicTrainCache).withKeepBinary(true),
                 (k, v) -> VectorUtils.of(
+                    // We have to handle null values here to avoid NpE during unboxing.
                     replaceNull(v.<Integer>field("pclass")),
                     "male".equals(v.<String>field("sex")) ? 1 : 0,
                     replaceNull(v.<Double>field("age")),
@@ -126,6 +130,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 "fare from titanik_test"))) {
                 for (List<?> passenger : cursor) {
                     Vector input = VectorUtils.of(
+                        // We have to handle null values here to avoid NpE during unboxing.
                         replaceNull((Integer)passenger.get(0)),
                         "male".equals(passenger.get(1)) ? 1 : 0,
                         replaceNull((Double)passenger.get(2)),
