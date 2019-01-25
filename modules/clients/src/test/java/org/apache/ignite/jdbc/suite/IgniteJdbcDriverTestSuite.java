@@ -33,6 +33,7 @@ import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcThinMetadataSqlMatchTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBatchSelfTest;
@@ -165,6 +166,7 @@ import org.junit.runners.Suite;
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,
+    JdbcThinMetadataSqlMatchTest.class,
     JdbcThinErrorsSelfTest.class,
     JdbcThinStatementCancelSelfTest.class,
     JdbcThinStatementTimeoutSelfTest.class,
