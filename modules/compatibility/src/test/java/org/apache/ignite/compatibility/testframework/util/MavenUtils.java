@@ -161,7 +161,7 @@ public class MavenUtils {
             localProxyMavenSettings = localProxyMavenSettingsFromEnv;
 
         if (Files.exists(Paths.get(localProxyMavenSettings)))
-            mavenCommandArgs.a(" -s" + localProxyMavenSettings);
+            mavenCommandArgs.a(" -s " + localProxyMavenSettings);
         else
             mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
 
