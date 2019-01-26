@@ -42,8 +42,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
 public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
-
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
@@ -76,6 +74,8 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
     }
 
     /** {@inheritDoc} */
@@ -83,6 +83,8 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
     }
 
     /**
