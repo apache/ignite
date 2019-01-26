@@ -179,15 +179,11 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         @Override public Statement apply(Statement base, Description desc) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
-                    GridAbstractTest testClsInstance = (GridAbstractTest)desc.getTestClass().newInstance();
-                    try {
-                        testClsInstance.beforeFirstTest();
+                    Class<?> cls = (desc.getTestClass());
 
-                        base.evaluate();
-                    }
-                    finally {
-                        testClsInstance.afterLastTest();
-                    }
+                    Method mtd = cls.getMethod("clsRule", Statement.class);
+
+                    mtd.invoke(cls.newInstance(), base);
                 }
             };
         }
@@ -278,6 +274,19 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
+    }
+
+    /** Invoked by reflection from class rule. */
+    @SuppressWarnings("unused")
+    public final void clsRule(Statement base) throws Throwable {
+        try {
+            beforeFirstTest();
+
+            base.evaluate();
+        }
+        finally {
+            afterLastTest();
+        }
     }
 
     /**

@@ -26,13 +26,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -55,7 +58,9 @@ import static org.junit.Assert.assertEquals;
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteCacheParams.class,
-    ConfigVariationsTestSuiteBuilderTest.SimpleDynamicSuite.class
+    ConfigVariationsTestSuiteBuilderTest.SimpleDynamicSuite.class,
+    ConfigVariationsTestSuiteBuilderTest.LegacyLifecycleSimpleTestSuite.class,
+    ConfigVariationsTestSuiteBuilderTest.LegacyLifecycleTestSuite.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
     /** */
@@ -146,7 +151,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(4, SuiteBasic.cntr.get());
+            assertEquals(1, SuiteBasic.cntr.get());
         }
     }
 
@@ -208,7 +213,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         public SuiteBasic(Class<?> cls) throws InitializationError {
-            super(cls, basicBuild(NoopTest.class).toArray(new Class<?>[] {null}));
+            super(cls, basicBuild(NoopTest.class).subList(0, 1).toArray(new Class<?>[] {null}));
         }
 
         /** */
@@ -299,6 +304,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Test
         public void testDummyExecution() throws Exception {
             runInAllDataModes(new TestRunnable() {
+                @SuppressWarnings("deprecation")
                 @Override public void run() throws Exception {
                     info("Running dummy test.");
 
@@ -345,7 +351,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         public SuiteCacheParams(Class<?> cls) throws InitializationError {
-            super(cls, suiteSingleNode().toArray(new Class<?>[] {null}));
+            super(cls, suiteSingleNode().subList(0, 2).toArray(new Class<?>[] {null}));
         }
 
         /** */
@@ -355,7 +361,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
     }
 
-    /**  */
+    /** */
     public static class CacheParamsTest extends IgniteCacheConfigVariationsAbstractTest {
         /** {@inheritDoc} */
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -385,7 +391,163 @@ public class ConfigVariationsTestSuiteBuilderTest {
          * @return Suite.
          */
         public static List<Class<?>> suite() {
-            return Collections.singletonList(NoopTest.class);
+            return Collections.singletonList(SimpleTest.class);
+        }
+
+        /** */
+        public static class SimpleTest extends GridCommonAbstractTest {
+            /** */
+            @Test
+            public void test1() {
+                // No-op.
+            }
+        }
+    }
+
+    /** Test for legacy lifecycle methods. */
+    @SuppressWarnings("deprecation")
+    public static class LegacyLifecycleSimpleTest extends GridCommonAbstractTest {
+        /** */
+        private static final AtomicInteger stageCnt = new AtomicInteger(0);
+
+        /** */
+        private static final AtomicInteger testInstCnt = new AtomicInteger(0);
+
+        /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
+        private final int testClsId = testInstCnt.getAndIncrement();
+
+        /** {@inheritDoc} */
+        @Override protected void beforeTestsStarted() throws Exception {
+            processStage("beforeTestsStarted", 0,  1);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void beforeTest() throws Exception {
+            processStage("beforeTest", 1, 2);
+        }
+
+        /** */
+        @Test
+        public void test1() {
+            processStage("test1", 2, 3);
+        }
+
+        /** */
+        @Test
+        public void test2() {
+            processStage("test2", 2, 3);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void afterTest() throws Exception {
+            processStage("afterTest", 3, 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void afterTestsStopped() throws Exception {
+            processStage("afterTestsStopped", 1, 0);
+        }
+
+        /** */
+        private void processStage(String desc, int exp, int update) {
+            Assert.assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
+
+            stageCnt.set(update);
+        }
+    }
+
+    /** */
+    @RunWith(Suite.class)
+    @Suite.SuiteClasses({LegacyLifecycleSimpleTest.class, LegacyLifecycleSimpleTest.class})
+    public static class LegacyLifecycleSimpleTestSuite {
+    }
+
+    /** Test for legacy lifecycle methods. */
+    public static class LegacyLifecycleTest extends IgniteCacheConfigVariationsAbstractTest {
+        /** */
+        private static final AtomicInteger stageCnt = new AtomicInteger(0);
+
+        /** */
+        private static final AtomicInteger testInstCnt = new AtomicInteger(0);
+
+        /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
+        private final int testClsId = testInstCnt.getAndIncrement();
+
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+            cfg.setClientMode(false);
+
+            return cfg;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void beforeTestsStarted() throws Exception {
+            processStage("beforeTestsStarted", 0,  1);
+
+            super.beforeTestsStarted();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void beforeTest() throws Exception {
+            processStage("beforeTest", 1, 2);
+
+            super.beforeTest();
+        }
+
+        /** */
+        @Test
+        public void test1() {
+            processStage("test1", 2, 3);
+            U.warn(null, ">>> inside test 1"); // todo remove
+        }
+
+        /** */
+        @Test
+        public void test2() {
+            processStage("test2", 2, 3);
+            U.warn(null, ">>> inside test 1"); // todo remove
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void afterTest() throws Exception {
+            processStage("afterTest", 3, 1);
+
+            super.afterTest();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void afterTestsStopped() throws Exception {
+            processStage("afterTestsStopped", 1, 0);
+
+            super.afterTestsStopped();
+        }
+
+        /** */
+        private void processStage(String desc, int exp, int update) {
+            Assert.assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
+
+            stageCnt.set(update);
+        }
+    }
+
+    /** */
+    @RunWith(DynamicSuite.class)
+    public static class LegacyLifecycleTestSuite {
+        /** */
+        public static List<Class<?>> suite() {
+            return new ConfigVariationsTestSuiteBuilder(LegacyLifecycleTest.class)
+                .withBasicCacheParams()
+                .gridsCount(1)
+                .classes()
+                .subList(0, 2);
+        }
+
+        /** */
+        @BeforeClass
+        public static void init(){
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
         }
     }
 }

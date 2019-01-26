@@ -40,12 +40,29 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
  */
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
+    /** Manages test execution and reporting. */
+    private final TestRule rulePrivate = (base, description) -> new Statement() {
+        @Override public void evaluate() {
+            assert getName() != null : "getName returned null";
+
+            testsCfg = testsCfgInjected;;
+        }
+    };
+
+    /** Manages first and last test execution. */
+    @Rule public RuleChain runRule
+        = RuleChain.outerRule(rulePrivate).around(super.runRule);
+
+
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
@@ -87,20 +104,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @SuppressWarnings("unused")
     protected static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
         IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * IMPL NOTE when this override was introduced, alternative was to replace multiple usages of instance member
-     * {@code testsCfg} splattered all over the project with those of static one {@code testsCfgInjected} - kind
-     * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
-     * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
-     */
-    @Override protected void runTestCase(Statement testRoutine) throws Throwable {
-        testsCfg = testsCfgInjected;
-
-        super.runTestCase(testRoutine);
     }
 
     /** {@inheritDoc} */
