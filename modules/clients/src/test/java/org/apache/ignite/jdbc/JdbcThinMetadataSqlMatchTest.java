@@ -43,7 +43,7 @@ import static java.util.Collections.singletonList;
 @RunWith(JUnit4.class)
 public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     /** Connection. */
-    private Connection conn;
+    private static Connection conn;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

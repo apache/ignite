@@ -133,25 +133,25 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     protected static final int SRVS = 4;
 
     /** */
-    protected boolean client;
+    protected static boolean client;
 
     /** */
-    protected boolean testSpi;
+    protected static boolean testSpi;
 
     /** */
-    protected String nodeAttr;
+    protected static String nodeAttr;
 
     /** */
-    protected boolean persistence;
+    protected static boolean persistence;
 
     /** */
-    protected CacheConfiguration ccfg;
+    protected static CacheConfiguration ccfg;
 
     /** */
-    protected CacheConfiguration[] ccfgs;
+    protected static CacheConfiguration[] ccfgs;
 
     /** */
-    protected boolean disableScheduledVacuum;
+    protected static boolean disableScheduledVacuum;
 
     /** */
     protected static final int TX_TIMEOUT = 3000;

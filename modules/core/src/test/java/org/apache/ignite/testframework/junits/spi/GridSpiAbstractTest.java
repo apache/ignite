@@ -97,7 +97,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     private final boolean autoStart;
 
     /** Original context classloader. */
-    private ClassLoader cl;
+    private static ClassLoader cl;
 
     /** */
     protected GridSpiAbstractTest() {

@@ -55,7 +55,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     }
 
     /** Cache. */
-    private IgniteCache<Integer, String> cache;
+    private static IgniteCache<Integer, String> cache;
 
     /**
      * Start grid by default.

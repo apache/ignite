@@ -56,7 +56,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
-    private IgfsEx igfs;
+    private static IgfsEx igfs;
 
     /** */
     private static final String igfsName = "igfs";
