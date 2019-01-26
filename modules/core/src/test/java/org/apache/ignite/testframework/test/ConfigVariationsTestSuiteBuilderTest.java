@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +31,6 @@ import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuit
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -58,8 +56,6 @@ import static org.junit.Assert.assertEquals;
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithExtendsIgnored.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteDummy.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteCacheParams.class,
-    ConfigVariationsTestSuiteBuilderTest.SimpleDynamicSuite.class,
-    ConfigVariationsTestSuiteBuilderTest.LegacyLifecycleSimpleTestSuite.class,
     ConfigVariationsTestSuiteBuilderTest.LegacyLifecycleTestSuite.class
 })
 public class ConfigVariationsTestSuiteBuilderTest {
@@ -382,84 +378,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Override protected long getTestTimeout() {
             return TimeUnit.SECONDS.toMillis(20);
         }
-    }
-
-    /** */
-    @RunWith(DynamicSuite.class)
-    public static class SimpleDynamicSuite {
-        /**
-         * @return Suite.
-         */
-        public static List<Class<?>> suite() {
-            return Collections.singletonList(SimpleTest.class);
-        }
-
-        /** */
-        public static class SimpleTest extends GridCommonAbstractTest {
-            /** */
-            @Test
-            public void test1() {
-                // No-op.
-            }
-        }
-    }
-
-    /** Test for legacy lifecycle methods. */
-    @SuppressWarnings("deprecation")
-    public static class LegacyLifecycleSimpleTest extends GridCommonAbstractTest {
-        /** */
-        private static final AtomicInteger stageCnt = new AtomicInteger(0);
-
-        /** */
-        private static final AtomicInteger testInstCnt = new AtomicInteger(0);
-
-        /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
-        private final int testClsId = testInstCnt.getAndIncrement();
-
-        /** {@inheritDoc} */
-        @Override protected void beforeTestsStarted() throws Exception {
-            processStage("beforeTestsStarted", 0,  1);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void beforeTest() throws Exception {
-            processStage("beforeTest", 1, 2);
-        }
-
-        /** */
-        @Test
-        public void test1() {
-            processStage("test1", 2, 3);
-        }
-
-        /** */
-        @Test
-        public void test2() {
-            processStage("test2", 2, 3);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void afterTest() throws Exception {
-            processStage("afterTest", 3, 1);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void afterTestsStopped() throws Exception {
-            processStage("afterTestsStopped", 1, 0);
-        }
-
-        /** */
-        private void processStage(String desc, int exp, int update) {
-            Assert.assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
-
-            stageCnt.set(update);
-        }
-    }
-
-    /** */
-    @RunWith(Suite.class)
-    @Suite.SuiteClasses({LegacyLifecycleSimpleTest.class, LegacyLifecycleSimpleTest.class})
-    public static class LegacyLifecycleSimpleTestSuite {
     }
 
     /** Test for legacy lifecycle methods. */
