@@ -276,7 +276,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         this.startGrid = startGrid;
     }
 
-    /** Invoked by reflection from class rule. */
+    /** Invoked by reflection from class rule, in order to properly handle overridden legacy lifecycle methods. */
     @SuppressWarnings("unused")
     public final void clsRule(Statement base) throws Throwable {
         try {
