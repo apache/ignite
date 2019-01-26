@@ -60,7 +60,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     protected static final int igfsBlockGroupSize = 8;
 
     /** Initial REST port. */
-    private int restPort = REST_PORT;
+    private static int restPort = REST_PORT;
 
     /** Secondary file system REST endpoint configuration. */
     protected static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
