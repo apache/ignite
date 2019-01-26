@@ -26,14 +26,12 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- *
- */
+/** */
 @RunWith(JUnit4.class)
 public class ServiceDeploymentNonSerializableStaticConfigurationTest extends GridCommonAbstractTest {
     /** */
@@ -43,8 +41,8 @@ public class ServiceDeploymentNonSerializableStaticConfigurationTest extends Gri
     private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** */
-    @BeforeClass
-    public static void check() {
+    @Before
+    public void check() {
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
