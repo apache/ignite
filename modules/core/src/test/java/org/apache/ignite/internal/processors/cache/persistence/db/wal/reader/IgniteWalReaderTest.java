@@ -85,6 +85,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -913,8 +914,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
 
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }

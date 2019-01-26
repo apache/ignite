@@ -192,8 +192,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10917")
+    @Test
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
         int qryThreadNum = 4;

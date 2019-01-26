@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -125,8 +126,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDataLossOnPartitionMove() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
 
         try {
             Ignite ignite = startGridsMultiThreaded(GRIDS_CNT / 2, false);
