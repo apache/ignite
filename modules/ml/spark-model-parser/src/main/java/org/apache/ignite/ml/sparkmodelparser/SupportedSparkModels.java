@@ -33,5 +33,8 @@ public enum SupportedSparkModels {
     DECISION_TREE,
 
     /** Support Vector Machine . */
-    LINEAR_SVM
+    LINEAR_SVM,
+
+    /** Random forest. */
+    RANDOM_FOREST
 }
