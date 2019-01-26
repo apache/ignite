@@ -41,10 +41,10 @@ public class CacheVersionedEntryLocalTransactionalSelfTest extends CacheVersione
     }
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
 }

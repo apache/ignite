@@ -42,10 +42,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 @RunWith(JUnit4.class)
 public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

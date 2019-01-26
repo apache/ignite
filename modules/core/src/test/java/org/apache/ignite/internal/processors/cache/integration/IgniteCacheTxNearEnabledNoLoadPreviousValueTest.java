@@ -25,10 +25,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  */
 public class IgniteCacheTxNearEnabledNoLoadPreviousValueTest extends IgniteCacheTxNoLoadPreviousValueTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

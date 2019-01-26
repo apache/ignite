@@ -27,10 +27,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class IgniteCacheTxStoreSessionWriteBehindTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

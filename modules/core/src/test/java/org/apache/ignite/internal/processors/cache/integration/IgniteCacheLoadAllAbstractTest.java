@@ -52,13 +52,6 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
@@ -74,6 +67,8 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
         storeMap = new ConcurrentHashMap<>();

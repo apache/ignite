@@ -30,10 +30,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheTxLoaderWriterTest extends IgniteCacheLoaderWriterAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

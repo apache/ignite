@@ -30,10 +30,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class IgniteCacheTxLocalLoadAllTest extends IgniteCacheLoadAllAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        super.setUp();
+        super.beforeTest();
     }
     /** {@inheritDoc} */
     @Override protected int gridCount() {

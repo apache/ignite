@@ -72,13 +72,6 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     private static final AtomicInteger uninitializedListenerCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
@@ -105,6 +98,8 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
         operations.clear();
