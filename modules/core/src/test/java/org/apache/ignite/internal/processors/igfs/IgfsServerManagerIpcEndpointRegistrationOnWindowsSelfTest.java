@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -40,8 +40,8 @@ import org.junit.runners.JUnit4;
 public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
     extends IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest {
     /** */
-    @BeforeClass
-    public static void init() {
+    @Before
+    public void init() {
         Assume.assumeTrue("Test is intended to run only on Windows.", U.isWindows());
     }
 
