@@ -27,7 +27,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.configvariations.ConfigVariations;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
@@ -390,6 +393,16 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
         private final int testClsId = testInstCnt.getAndIncrement();
+
+        /**
+         * IMPL NOTE default config doesn't stop nodes.
+         */
+        @BeforeClass
+        public static void init() {
+            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(new VariationsTestsConfig(
+                new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
+                    new int[] {0}), "Dummy config", true, null, 1, false));
+        }
 
         /** {@inheritDoc} */
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
