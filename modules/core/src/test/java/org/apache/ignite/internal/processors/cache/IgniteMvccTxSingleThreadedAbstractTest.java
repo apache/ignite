@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -30,10 +31,9 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10261")
     @Test
     public void testPessimisticRepeatableReadCommit() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10261");
-
         checkCommit(PESSIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -42,10 +42,9 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10261")
     @Test
     public void testPessimisticRepeatableReadRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10261");
-
         checkRollback(PESSIMISTIC, REPEATABLE_READ);
 
         finalChecks();

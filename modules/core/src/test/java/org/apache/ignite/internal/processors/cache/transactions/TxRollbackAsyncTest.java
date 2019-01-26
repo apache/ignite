@@ -85,6 +85,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static java.lang.Thread.interrupted;
@@ -207,8 +208,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackSimple() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         startClient();
 
@@ -480,8 +480,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyReadOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Optimistic transactions are not supported by MVCC.
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
 
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
@@ -491,8 +490,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Optimistic transactions are not supported by MVCC.
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
 
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
@@ -539,8 +537,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
 
         final Ignite client = startClient();
 

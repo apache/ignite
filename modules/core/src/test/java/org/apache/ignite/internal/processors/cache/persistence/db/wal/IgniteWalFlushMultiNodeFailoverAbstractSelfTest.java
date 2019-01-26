@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -70,8 +71,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10550");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10550", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTest();
 

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -556,10 +557,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(
@@ -576,10 +576,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(

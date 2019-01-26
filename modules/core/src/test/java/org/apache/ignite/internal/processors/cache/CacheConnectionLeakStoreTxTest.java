@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -171,20 +172,18 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testConnectionLeakOneBackupMvccPessimisticRepeatableRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testConnectionLeakOneBackupMvccPessimisticRepeatableReadLoadFromStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         isLoadFromStore = true;
 
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);

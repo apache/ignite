@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -234,8 +235,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
 
         for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
@@ -288,8 +288,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        if (nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-627");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
 
        for (int i = 0; i < SF.applyLB(10, 2); i++) {
            log.info("Iteration: " + i);

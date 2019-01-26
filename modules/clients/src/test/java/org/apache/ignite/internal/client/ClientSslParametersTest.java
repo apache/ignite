@@ -175,11 +175,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
+    @Test
     public void testNonExistentCipherSuite() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
@@ -220,11 +218,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
+    @Test
     public void testNonExistentProtocol() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         protocols = new String[] {
             "SSLv3"
         };

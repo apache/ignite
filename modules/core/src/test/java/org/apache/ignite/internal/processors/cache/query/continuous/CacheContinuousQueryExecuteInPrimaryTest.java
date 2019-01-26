@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -166,10 +167,9 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testMvccTransactionLocalCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, LOCAL);
 
         doTestWithoutEventsEntries(ccfg);

@@ -105,8 +105,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
+    @Test
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
         final IgniteInternalFuture restartFut = restartCoordinator();
 

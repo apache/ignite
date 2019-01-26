@@ -56,6 +56,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -215,20 +216,18 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1123")
     @Test
     public void testMultiThreadedClientsServersRestart() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
-
         multiThreadedClientsServersRestart(GRID_CNT, CLIENT_GRID_CNT);
     }
 
     /**
      * @throws Exception If any error occurs.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1123")
     @Test
     public void testMultiThreadedServersRestart() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
-
         multiThreadedClientsServersRestart(GRID_CNT * 2, 0);
     }
 
@@ -498,10 +497,9 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10198")
     @Test
     public void testCustomEventOnJoinCoordinatorStop() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10198");
-
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -597,10 +595,9 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10198")
     @Test
     public void testClientContinuousQueryCoordinatorStop() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10198");
-
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -669,10 +666,9 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10249")
     @Test
     public void testCustomEventNodeRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10249");
-
         clientFlagGlobal = false;
 
         Ignite ignite = startGrid(0);

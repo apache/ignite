@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -162,8 +163,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone1() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
         backups = 1;
@@ -176,8 +176,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone2() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
         backups = 2;

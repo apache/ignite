@@ -43,6 +43,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -329,10 +330,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testMvccTxLocalPessimisticRepeatableRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         checkMvccTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
     }
 
@@ -401,10 +401,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
     @Test
     public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
-
         checkMvccTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
     }
 
@@ -474,10 +473,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
     @Test
     public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
-
         checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
     }
 

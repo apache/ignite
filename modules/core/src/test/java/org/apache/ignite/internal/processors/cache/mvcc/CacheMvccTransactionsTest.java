@@ -1569,8 +1569,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9949")
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
@@ -1738,6 +1738,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, GET);
@@ -1746,6 +1747,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, GET);
@@ -1754,6 +1756,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, SCAN);
@@ -1762,6 +1765,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, SCAN);
@@ -2889,6 +2893,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode_SinglePartition() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
@@ -2897,6 +2902,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 64, 10_000);
@@ -2905,6 +2911,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups0() throws Exception {
         doImplicitPartsScanTest(4, 2, 0, 64, 10_000);
@@ -2913,6 +2920,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups1() throws Exception {
         doImplicitPartsScanTest(4, 2, 1, 64, 10_000);
@@ -2921,6 +2929,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups2() throws Exception {
         doImplicitPartsScanTest(4, 2, 2, 64, 10_000);

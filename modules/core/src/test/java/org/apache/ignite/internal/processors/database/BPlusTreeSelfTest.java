@@ -77,6 +77,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
@@ -2237,10 +2238,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7265")
     @Test
     public void testIterateConcurrentPutRemove_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7265");
-
         MAX_PER_PAGE = 1;
 
         iterateConcurrentPutRemove();

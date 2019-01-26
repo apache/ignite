@@ -39,6 +39,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -112,10 +113,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
     @Test
     public void testOneServerMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
-
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -158,10 +158,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
     @Test
     public void testFourServersMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10377");
-
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
