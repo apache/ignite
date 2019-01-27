@@ -162,8 +162,8 @@ import org.junit.runners.Suite;
     // Tests against configuration variations framework.
     ParametersTest.class,
     VariationsIteratorTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
     NotStringSystemPropertyTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
 
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
