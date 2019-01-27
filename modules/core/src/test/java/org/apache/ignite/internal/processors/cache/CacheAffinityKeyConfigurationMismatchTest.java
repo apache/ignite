@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test was added to check fix for IGNITE-7883.
@@ -42,6 +43,7 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testKeyConfigurationMatch() throws Exception {
         try (Ignite ignite0 = getIgnite(0, getCacheKeyConfiguration("a"))) {
             try (Ignite ignite1 = getIgnite(1, getCacheKeyConfiguration("a"))) {
@@ -65,6 +67,7 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testKeyConfigurationDuplicateTypeName() throws Exception {
         GridTestUtils.assertThrowsAnyCause(
             log,
@@ -86,6 +89,7 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testKeyConfigurationLengthMismatch() throws Exception {
         GridTestUtils.assertThrowsAnyCause(
             log
@@ -109,6 +113,7 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testKeyConfigurationMismatch() throws Exception {
         GridTestUtils.assertThrowsAnyCause(
             log
