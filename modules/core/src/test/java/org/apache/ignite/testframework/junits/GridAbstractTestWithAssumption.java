@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteLogger;
 import org.junit.internal.AssumptionViolatedException;
 
@@ -29,12 +30,17 @@ interface GridAbstractTestWithAssumption {
 
     /** */
     public static void handleAssumption(GridAbstractTestWithAssumption src, IgniteLogger log) throws Throwable {
+        BiConsumer<Throwable, IgniteLogger> report
+            = (t, logger) -> logger.warning("Test skipped by assumption: " + t.getMessage(), t);
+
         try {
             src.evaluateInvokation();
+        } catch (AssumptionViolatedException e) {
+            report.accept(e, log);
         } catch (InvocationTargetException e) {
             Throwable actual = e.getTargetException();
             if (actual instanceof AssumptionViolatedException) {
-                log.warning("Test skipped by assumption: " + actual.getMessage(), actual);
+                report.accept(e, log);
 
                 return;
             }
