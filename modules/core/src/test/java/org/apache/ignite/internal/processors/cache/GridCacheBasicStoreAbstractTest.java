@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -52,11 +53,10 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    /** */
+    @Before
+    public void beforeGridCacheBasicStoreAbstractTest() {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
     }
 
     /**
