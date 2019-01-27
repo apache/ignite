@@ -59,7 +59,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /**
      * @param assign Assignment.
      */
-    public HistoryAffinityAssignment(GridAffinityAssignment assign) {
+    public HistoryAffinityAssignment(AffinityAssignment assign) {
         topVer = assign.topologyVersion();
 
         int tmp = assign.idealAssignment().get(0).size();

@@ -225,6 +225,9 @@ namespace Apache.Ignite.Core
         /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
         private long? _initBaselineAutoAdjustMaxTimeout;
 
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -274,6 +277,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
         /// </summary>
         public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -360,6 +368,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
             writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
             writer.WriteLongNullable(_initBaselineAutoAdjustMaxTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -413,7 +422,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(true);
 
                 var keystoreEnc = enc as KeystoreEncryptionSpi;
-                
+
                 if (keystoreEnc == null)
                     throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
 
@@ -752,6 +761,7 @@ namespace Apache.Ignite.Core
             _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
             _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
             _initBaselineAutoAdjustMaxTimeout = r.ReadLongNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -784,7 +794,7 @@ namespace Apache.Ignite.Core
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
                 new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
@@ -1115,7 +1125,7 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the encryption service provider.
         /// Null for disabled encryption.
@@ -1662,6 +1672,17 @@ namespace Apache.Ignite.Core
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
             set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
         }
 
         /// <summary>
