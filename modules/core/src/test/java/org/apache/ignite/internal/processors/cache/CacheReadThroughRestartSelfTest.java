@@ -44,7 +44,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /** */
     @Before
     public void beforeCacheReadThroughRestartSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

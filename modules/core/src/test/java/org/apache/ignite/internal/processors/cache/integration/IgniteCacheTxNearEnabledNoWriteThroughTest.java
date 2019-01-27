@@ -28,7 +28,7 @@ public class IgniteCacheTxNearEnabledNoWriteThroughTest extends IgniteCacheTxNoW
     /** */
     @Before
     public void beforeIgniteCacheTxNearEnabledNoWriteThroughTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

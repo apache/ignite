@@ -30,7 +30,7 @@ public class IgniteCacheTxStoreSessionWriteBehindTest extends IgniteCacheStoreSe
     /** */
     @Before
     public void beforeIgniteCacheTxStoreSessionWriteBehindTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

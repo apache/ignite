@@ -100,7 +100,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     /** */
     @Before
     public void beforeCacheStoreSessionListenerWriteBehindEnabledTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

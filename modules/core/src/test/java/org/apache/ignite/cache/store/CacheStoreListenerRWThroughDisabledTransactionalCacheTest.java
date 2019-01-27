@@ -45,7 +45,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /** */
     @Before
     public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

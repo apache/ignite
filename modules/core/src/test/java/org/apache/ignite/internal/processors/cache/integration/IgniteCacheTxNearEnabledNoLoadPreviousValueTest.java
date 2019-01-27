@@ -28,7 +28,7 @@ public class IgniteCacheTxNearEnabledNoLoadPreviousValueTest extends IgniteCache
     /** */
     @Before
     public void beforeIgniteCacheTxNearEnabledNoLoadPreviousValueTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

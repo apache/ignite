@@ -35,6 +35,6 @@ public class CacheReadThroughLocalRestartSelfTest extends CacheReadThroughRestar
     /** */
     @Before
     public void beforeCacheReadThroughLocalRestartSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 }

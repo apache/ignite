@@ -33,7 +33,7 @@ public class IgniteCacheTxNoReadThroughTest extends IgniteCacheNoReadThroughAbst
     /** */
     @Before
     public void beforeIgniteCacheTxNoReadThroughTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

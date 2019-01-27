@@ -33,7 +33,7 @@ public class IgniteCacheTxLocalNoWriteThroughTest extends IgniteCacheNoWriteThro
     /** */
     @Before
     public void beforeIgniteCacheTxLocalNoWriteThroughTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

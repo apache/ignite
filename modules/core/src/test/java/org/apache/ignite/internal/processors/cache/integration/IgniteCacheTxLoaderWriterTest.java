@@ -33,7 +33,7 @@ public class IgniteCacheTxLoaderWriterTest extends IgniteCacheLoaderWriterAbstra
     /** */
     @Before
     public void beforeIgniteCacheTxLoaderWriterTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,7 @@ public class IgniteCacheTxStoreSessionWriteBehindCoalescingTest extends IgniteCa
     /** */
     @Before
     public void beforeIgniteCacheTxStoreSessionWriteBehindCoalescingTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

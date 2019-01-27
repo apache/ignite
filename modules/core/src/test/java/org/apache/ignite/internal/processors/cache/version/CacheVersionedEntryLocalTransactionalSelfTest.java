@@ -44,6 +44,6 @@ public class CacheVersionedEntryLocalTransactionalSelfTest extends CacheVersione
     /** */
     @Before
     public void beforeCacheVersionedEntryLocalTransactionalSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 }

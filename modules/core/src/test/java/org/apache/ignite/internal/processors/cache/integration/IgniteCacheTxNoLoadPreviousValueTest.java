@@ -33,7 +33,7 @@ public class IgniteCacheTxNoLoadPreviousValueTest extends IgniteCacheNoLoadPrevi
     /** */
     @Before
     public void beforeIgniteCacheTxNoLoadPreviousValueTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */
