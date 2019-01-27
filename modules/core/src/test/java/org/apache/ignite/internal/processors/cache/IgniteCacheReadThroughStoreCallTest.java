@@ -42,6 +42,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -63,11 +64,10 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     /** */
     protected boolean client;
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
+    /** */
+    @Before
+    public void beforeIgniteCacheReadThroughStoreCallTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

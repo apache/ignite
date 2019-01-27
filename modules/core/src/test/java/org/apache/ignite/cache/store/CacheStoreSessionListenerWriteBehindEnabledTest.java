@@ -79,6 +79,8 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
