@@ -90,7 +90,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     }
     /** */
     @Before
-    public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
+    public void beforeCacheNearReaderUpdateTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
