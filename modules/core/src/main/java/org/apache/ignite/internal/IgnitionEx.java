@@ -132,7 +132,7 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
@@ -2190,7 +2190,7 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
-            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_CONSISTENT_ID);
+            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_OVERRIDE_CONSISTENT_ID);
 
             if (!F.isEmpty(predefineConsistentId))
                 myCfg.setConsistentId(predefineConsistentId);

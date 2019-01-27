@@ -74,7 +74,7 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
         defConsistentId = null;
         persistenceEnabled = false;
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_CONSISTENT_ID);
+        System.clearProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
             persistenceEnabled = false;
         }
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_CONSISTENT_ID);
+        System.clearProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID);
     }
 
     /**
@@ -136,7 +136,7 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
     public void testConsistentIdConfiguredInJvmProp() throws Exception {
         String specificConsistentId = "JvmProp consistent id";
 
-        System.setProperty(IgniteSystemProperties.IGNITE_CONSISTENT_ID, specificConsistentId);
+        System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID, specificConsistentId);
 
         Ignite ignite = startGrid(0);
 
@@ -176,7 +176,7 @@ public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest
 
         String specificConsistentId = "JvmProp consistent id";
 
-        System.setProperty(IgniteSystemProperties.IGNITE_CONSISTENT_ID, specificConsistentId);
+        System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID, specificConsistentId);
 
         Ignite ignite = startGrid(0);
 

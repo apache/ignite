@@ -209,6 +209,7 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+
     ConsistentIdImplicitlyExplicitlyTest.class
 })
 public class IgniteBasicTestSuite {
