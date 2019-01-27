@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Before;
 
@@ -29,6 +30,13 @@ public class GridCacheWriteBehindStoreLocalTest extends GridCacheWriteBehindStor
     @Before
     public void beforeGridCacheWriteBehindStoreLocalTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        return super.getConfiguration();
     }
 
     /** {@inheritDoc} */

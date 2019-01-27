@@ -91,7 +91,9 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
