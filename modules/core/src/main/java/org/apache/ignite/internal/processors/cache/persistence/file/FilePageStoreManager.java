@@ -63,7 +63,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,7 +111,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String META_STORAGE_NAME = "metastorage";
 
     /** Marshaller. */
-    private static final Marshaller marshaller = new JdkMarshaller();
+    private final Marshaller marshaller;
 
     /** */
     private final Map<Integer, CacheStoreHolder> idxCacheStores = new ConcurrentHashMap<>();
@@ -156,6 +156,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         this.dsCfg = dsCfg;
 
         pageStoreV1FileIoFactory = pageStoreFileIoFactory = dsCfg.getFileIOFactory();
+
+        marshaller =  MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
     }
 
     /** {@inheritDoc} */
