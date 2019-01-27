@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -194,6 +195,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * field actual value.
      */
     private Boolean mvccOp;
+
+    /** */
+    private long qryId = MVCC_TRACKER_ID_NA;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -3339,13 +3343,28 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @Override public long id() {
-        return MVCC_TRACKER_ID_NA;
+    @Override public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        if (mvccSnapshot == null && !isDone)
+            setRollbackOnly();
+
+        if (isDone || mvccSnapshot == null)
+            return MVCC_TRACKER_ID_NA;
+
+        if (qryId == MVCC_TRACKER_ID_NA) {
+            qryId = ID_CNTR.incrementAndGet();
+
+            finishFuture().listen(f -> cctx.coordinators().ackQueryDone(mvccSnapshot, qryId));
+        }
+
+        return qryId;
     }
 
     /** {@inheritDoc} */
-    @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        return MVCC_TRACKER_ID_NA;
+    @Override public synchronized void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        if (isRollbackOnly())
+            return;
+
+        super.mvccSnapshot(mvccSnapshot);
     }
 
     /**

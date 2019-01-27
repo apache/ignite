@@ -861,6 +861,8 @@ public class MvccUtils {
                 snapshot = prc.requestWriteSnapshotAsync().get();
 
             tx.mvccSnapshot(snapshot);
+
+            checkActive(tx);
         }
 
         return snapshot;

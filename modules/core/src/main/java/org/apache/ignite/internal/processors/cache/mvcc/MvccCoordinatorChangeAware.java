@@ -34,13 +34,6 @@ public interface MvccCoordinatorChangeAware {
     LongPredicate ID_FILTER = id -> id != MVCC_TRACKER_ID_NA;
 
     /**
-     * @return Tracker id.
-     */
-    default long id() {
-        return MVCC_TRACKER_ID_NA;
-    }
-
-    /**
      * Mvcc coordinator change callback.
      *
      * @param newCrd New mvcc coordinator.

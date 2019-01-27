@@ -25,6 +25,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
  * Mvcc tracker.
  */
 public interface MvccQueryTracker extends MvccCoordinatorChangeAware {
+    /**
+     * @return Tracker id.
+     */
+    default long id() {
+        return MVCC_TRACKER_ID_NA;
+    }
 
     /**
      * @return Requested MVCC snapshot.

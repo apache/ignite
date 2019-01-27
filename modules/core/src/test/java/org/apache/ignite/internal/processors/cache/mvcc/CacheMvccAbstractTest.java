@@ -1750,8 +1750,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         assertTrue("Previous coordinator queries not empty: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Map queries = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "activeQueries");
-                    Boolean prevDone = GridTestUtils.getFieldValue(crd, "prevCrdQueries", "prevQueriesDone");
+                    Map queries = GridTestUtils.getFieldValue(crd, "prevQueries", "active");
+                    Boolean prevDone = GridTestUtils.getFieldValue(crd, "prevQueries", "done");
 
                     if (!queries.isEmpty() || !prevDone)
                         log.info("Previous coordinator state [prevDone=" + prevDone + ", queries=" + queries + ']');

@@ -206,7 +206,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private final ActiveQueries activeQueries = new ActiveQueries();
 
     /** */
-    private final MvccPreviousCoordinatorQueries prevCrdQueries = new MvccPreviousCoordinatorQueries();
+    private final PreviousQueries prevQueries = new PreviousQueries();
 
     /** */
     private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
@@ -232,6 +232,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
+
+
     }
 
     /** {@inheritDoc} */
@@ -425,7 +427,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         if (evt.type() == EVT_NODE_JOINED) {
             if (curCrd0.disconnected()) // Handle join event only if coordinator has not been elected yet.
-                onCoordinatorChanged(topVer, nodes, false);
+                onCoordinatorChanged(topVer, nodes, true);
         }
         else if (Objects.equals(nodeId, curCrd0.nodeId())) {
             // 1. Notify all listeners waiting for a snapshot.
@@ -440,7 +442,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             activeQueries.onNodeFailed(nodeId);
 
             // 2. Notify previous queries.
-            prevCrdQueries.onNodeFailed(nodeId);
+            prevQueries.onNodeFailed(nodeId);
 
             // 3. Recover transactions started by the failed node.
             recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
@@ -487,7 +489,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /**
      * Coordinator change callback. Performs all needed actions for handling new coordinator assignment.
      *
-     * @param sndQrys {@code True} if it is need to send an active queries list to the new coordinator.
+     * @param sndQrys {@code True} if it is need to collect/send an active queries list.
      */
     private void onCoordinatorChanged(AffinityTopologyVersion topVer, Collection<ClusterNode> nodes, boolean sndQrys) {
         MvccCoordinator newCrd = pickMvccCoordinator(nodes, topVer);
@@ -502,25 +504,23 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         curCrd = newCrd;
 
-        if (sndQrys)
-            ctx.closure().runLocalSafe(() -> sendActiveQueries(nodes, newCrd));
-        else if (newCrd.local()) // Coordinator was assigned on local join. There was no coordinator before.
-            prevCrdQueries.init();
-
+        processActiveQueries(nodes, newCrd, sndQrys);
     }
 
     /** */
-    private void sendActiveQueries(Collection<ClusterNode> nodes, MvccCoordinator newCrd) {
-        GridLongList qryIds = new GridLongList(
-            Stream.concat(activeTrackers.values().stream(),
-                ctx.cache().context().tm().activeTransactions().stream()
-                    .filter(tx -> tx.near() && tx.local()))
-                .mapToLong(q -> ((MvccCoordinatorChangeAware)q).onMvccCoordinatorChange(newCrd))
-                .filter(ID_FILTER).toArray());
+    private void processActiveQueries(Collection<ClusterNode> nodes, MvccCoordinator newCrd, boolean sndQrys) {
+        GridLongList qryIds = sndQrys ? new GridLongList(Stream.concat(activeTrackers.values().stream(),
+            ctx.cache().context().tm().activeTransactions().stream()
+                .filter(tx -> tx.near() && tx.local()))
+            .mapToLong(q -> ((MvccCoordinatorChangeAware)q).onMvccCoordinatorChange(newCrd))
+            .filter(ID_FILTER).toArray()) : new GridLongList();
 
-        if (newCrd.local())
-            prevCrdQueries.init(qryIds, nodes, ctx.discovery());
-        else {
+        if (newCrd.local()) {
+            prevQueries.addActiveQueries(ctx.localNodeId(), qryIds);
+
+            prevQueries.init(nodes, ctx.discovery()::alive);
+        }
+        else if (sndQrys) {
             try {
                 sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
             }
@@ -1010,7 +1010,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (minQry != -1)
             cleanup = Math.min(cleanup, minQry);
 
-        cleanup = prevCrdQueries.previousQueriesDone() ? cleanup - 1 : MVCC_COUNTER_NA;
+        cleanup = prevQueries.done() ? cleanup - 1 : MVCC_COUNTER_NA;
 
         res.init(futId, curCrd.version(), ver, MVCC_START_OP_CNTR, cleanup, tracking);
 
@@ -1438,7 +1438,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @param msg Message.
      */
     private void processNewCoordinatorQueryAckRequest(UUID nodeId, MvccAckRequestQueryId msg) {
-        prevCrdQueries.onQueryDone(nodeId, msg.queryTrackerId());
+        prevQueries.onQueryDone(nodeId, msg.queryTrackerId());
     }
 
     /**
@@ -1451,7 +1451,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (msg.queryCounter() != MVCC_COUNTER_NA)
             onQueryDone(nodeId, msg.queryCounter());
         else if (msg.queryTrackerId() != MVCC_TRACKER_ID_NA)
-            prevCrdQueries.onQueryDone(nodeId, msg.queryTrackerId());
+            prevQueries.onQueryDone(nodeId, msg.queryTrackerId());
 
         if (!msg.skipResponse()) {
             try {
@@ -1489,7 +1489,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @param msg Message.
      */
     private void processActiveQueriesMessage(UUID nodeId, MvccActiveQueriesMessage msg) {
-        prevCrdQueries.addNodeActiveQueries(nodeId, msg.activeQueries());
+        GridLongList queryIds = msg.activeQueries();
+
+        assert queryIds != null;
+
+        prevQueries.addActiveQueries(nodeId, queryIds);
     }
 
     /**
