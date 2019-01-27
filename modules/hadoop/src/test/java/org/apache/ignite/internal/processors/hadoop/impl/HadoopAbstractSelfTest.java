@@ -45,7 +45,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryIpFinder singleTestIpFinder;
+    private static TcpDiscoveryIpFinder singleTestIpFinder;
 
     /** REST port. */
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
