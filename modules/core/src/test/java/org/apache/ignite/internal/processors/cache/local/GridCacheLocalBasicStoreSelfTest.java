@@ -31,7 +31,7 @@ public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstrac
     /** */
     @Before
     public void beforeGridCacheLocalBasicStoreSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

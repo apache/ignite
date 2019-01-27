@@ -68,7 +68,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void beforeGridCacheLockAbstractTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /**

@@ -33,7 +33,7 @@ public class GridCachePartitionedMvccTxMultiThreadedSelfTest extends IgniteMvccT
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

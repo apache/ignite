@@ -32,7 +32,7 @@ public class GridCacheLocalBasicApiSelfTest extends GridCacheBasicApiAbstractTes
     /** */
     @Before
     public void beforeGridCacheLocalBasicApiSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

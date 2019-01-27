@@ -56,7 +56,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void beforeGridCacheNearOneNodeSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /**

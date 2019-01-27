@@ -61,7 +61,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /** */
     @Before
     public void beforeGridCacheLocalMultithreadedSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

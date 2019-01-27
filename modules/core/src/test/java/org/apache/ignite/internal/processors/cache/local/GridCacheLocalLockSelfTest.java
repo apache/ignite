@@ -56,7 +56,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void beforeGridCacheLocalLockSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

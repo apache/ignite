@@ -58,7 +58,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /** */
     @Before
     public void beforeGridCacheGetAndTransformStoreAbstractTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

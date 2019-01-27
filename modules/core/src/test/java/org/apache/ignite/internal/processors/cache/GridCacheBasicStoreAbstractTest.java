@@ -56,7 +56,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /** */
     @Before
     public void beforeGridCacheBasicStoreAbstractTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /**

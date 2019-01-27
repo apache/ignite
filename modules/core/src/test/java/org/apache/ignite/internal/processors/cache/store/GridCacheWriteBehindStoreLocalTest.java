@@ -28,7 +28,7 @@ public class GridCacheWriteBehindStoreLocalTest extends GridCacheWriteBehindStor
     /** */
     @Before
     public void beforeGridCacheWriteBehindStoreLocalTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */

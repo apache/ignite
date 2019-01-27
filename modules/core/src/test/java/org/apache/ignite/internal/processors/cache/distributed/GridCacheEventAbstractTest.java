@@ -42,6 +42,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -92,10 +93,14 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             grid(i).events().localListen(evtLsnr, EVTS_CACHE);
     }
 
+    /** */
+    @Before
+    public void beforeGridCacheEventAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         super.beforeTest();
 
         if (TEST_INFO)

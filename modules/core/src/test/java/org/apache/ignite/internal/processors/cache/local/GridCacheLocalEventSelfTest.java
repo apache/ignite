@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheEventAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -27,12 +28,11 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests events.
  */
 public class GridCacheLocalEventSelfTest extends GridCacheEventAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        super.beforeTest();
+    /** */
+    @Before
+    public void beforeGridCacheLocalEventSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */

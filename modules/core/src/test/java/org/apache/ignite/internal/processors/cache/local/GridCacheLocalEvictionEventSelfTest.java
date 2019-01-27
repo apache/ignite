@@ -32,7 +32,7 @@ public class GridCacheLocalEvictionEventSelfTest extends GridCacheEvictionEventA
     /** */
     @Before
     public void beforeGridCacheLocalEvictionEventSelfTest() {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */
