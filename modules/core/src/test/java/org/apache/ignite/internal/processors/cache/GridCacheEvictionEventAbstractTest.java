@@ -65,6 +65,9 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         IgniteConfiguration c = super.getConfiguration();
 
         CacheConfiguration cc = defaultCacheConfiguration();

@@ -66,6 +66,8 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration c = super.getConfiguration();
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
