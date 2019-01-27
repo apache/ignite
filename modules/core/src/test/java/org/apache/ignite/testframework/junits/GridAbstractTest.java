@@ -282,14 +282,19 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      */
     @SuppressWarnings("unused")
     public final void clsRule(Statement base) throws Throwable {
-        try {
-            beforeFirstTest();
+        GridAbstractTestWithAssumption src = () ->
+        {
+            try {
+                beforeFirstTest();
 
-            base.evaluate();
-        }
-        finally {
-            afterLastTest();
-        }
+                base.evaluate();
+            }
+            finally {
+                afterLastTest();
+            }
+        };
+
+        GridAbstractTestWithAssumption.handleAssumption(src, log());
     }
 
     /**
