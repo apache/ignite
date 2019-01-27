@@ -38,6 +38,9 @@ public class GridCachePartitionedMvccTxMultiThreadedSelfTest extends IgniteMvccT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        if (nearEnabled())
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();

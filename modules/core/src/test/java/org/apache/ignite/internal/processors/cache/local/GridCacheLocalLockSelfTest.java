@@ -71,6 +71,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
