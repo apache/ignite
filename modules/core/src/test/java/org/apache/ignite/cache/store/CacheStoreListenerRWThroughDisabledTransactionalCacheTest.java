@@ -49,7 +49,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
-    /** {@inheritDoc} beforeTestsStarted  */
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 

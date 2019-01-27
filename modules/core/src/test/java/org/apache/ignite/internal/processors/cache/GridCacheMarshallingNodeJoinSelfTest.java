@@ -59,6 +59,8 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<Integer, TestObject> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
@@ -77,6 +79,8 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         startGridsMultiThreaded(2);
     }
 
