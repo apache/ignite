@@ -73,24 +73,25 @@ public class GridAffinityAssignmentJolBenchmark {
         // We need to implement compressed bitsets https://issues.apache.org/jira/browse/IGNITE-4554.
         // On 65k partitions and nodes > 700 HashSet take advantage over BitSet.
         // After implementation need to check consumption on big clusters.
-//        for (int part : parts)
-//            for (int node : nodes) {
-//                measure(aff, part, node, 0);
-//
-//                measure(aff, part, node, 3);
-//
-//                measure(aff, part, node, node);
-//            }
+        for (int part : parts)
+            for (int node : nodes) {
+                measure(aff, part, node, 0);
+
+                measure(aff, part, node, 3);
+
+                measure(aff, part, node, node);
+            }
 
         // Measure history assignment for normal and huge partition count.
-//        measureHistory(1024, 32, 0);
+        // Preferably run one at a time to avoid side-effects.
+        measureHistory(1024, 32, 0);
 //        measureHistory(1024, 32, 1);
 //        measureHistory(1024, 32, 2);
 //        measureHistory(1024, 32, Integer.MAX_VALUE);
 //        measureHistory(32768, 32, 0);
 //        measureHistory(32768, 32, 1);
 //        measureHistory(32768, 32, 2);
-        measureHistory(32768, 32, Integer.MAX_VALUE);
+//        measureHistory(32768, 32, Integer.MAX_VALUE);
     }
 
     /**
@@ -246,7 +247,7 @@ public class GridAffinityAssignmentJolBenchmark {
             }
 
             AffinityTopologyVersion topVer = new AffinityTopologyVersion(i + 1, 0);
-            GridAffinityAssignment a = new GridAffinityAssignment(topVer, lateAssignmemnt, idealAssignment);
+            GridAffinityAssignmentV2 a = new GridAffinityAssignmentV2(topVer, lateAssignmemnt, idealAssignment);
             HistoryAffinityAssignment h = new HistoryAffinityAssignment(a);
 
             if (!lateAssignmemnt.equals(h.assignment()))
@@ -267,7 +268,7 @@ public class GridAffinityAssignmentJolBenchmark {
                 assignment.add(clusterNodes);
             }
 
-            GridAffinityAssignment a0 = new GridAffinityAssignment(topVer0, assignment, idealAssignment);
+            GridAffinityAssignmentV2 a0 = new GridAffinityAssignmentV2(topVer0, assignment, idealAssignment);
             HistoryAffinityAssignment h0 = new HistoryAffinityAssignment(a0);
 
             if (!assignment.equals(h0.assignment()))
