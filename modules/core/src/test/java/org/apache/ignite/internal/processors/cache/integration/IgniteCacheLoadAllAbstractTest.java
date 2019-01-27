@@ -55,6 +55,8 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteThrough(writeThrough);
@@ -74,6 +76,8 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
         storeMap = new ConcurrentHashMap<>();
