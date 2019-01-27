@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 /**
  *
  */
 public class IgniteCacheTxNearEnabledNoLoadPreviousValueTest extends IgniteCacheTxNoLoadPreviousValueTest {
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
+    /** */
+    @Before
+    public void beforeIgniteCacheTxNearEnabledNoLoadPreviousValueTest() {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
