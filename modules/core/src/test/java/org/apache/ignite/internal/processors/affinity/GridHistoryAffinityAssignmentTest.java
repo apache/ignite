@@ -17,22 +17,12 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -91,59 +81,6 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
 
             assertEquals(a3.assignment(), a6.assignment());
             assertEquals(a3.idealAssignment(), a6.idealAssignment());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** */
-    @Test
-    public void testHistoryAffinityAssignmentMarshallUnmarshall() throws Exception {
-        try {
-            IgniteEx crd = startGrid(0);
-
-            int parts = 1024;
-            int nodes = 16;
-            int copies = 3;
-
-            List<ClusterNode> top = new ArrayList<>(nodes);
-
-            for (int i = 0; i < nodes; i++)
-                top.add(new GridTestNode(UUID.randomUUID(), null));
-
-            List<List<ClusterNode>> assignments = new ArrayList<>(parts);
-            List<List<ClusterNode>> idealAssignments = new ArrayList<>(parts);
-
-            for (int p = 0; p < parts; p++) {
-                List<ClusterNode> assignment = new ArrayList<>(copies);
-                List<ClusterNode> idealAssignment = new ArrayList<>(copies);
-
-                for (int c = 0; c < copies; c++) {
-                    assignment.add(top.get(ThreadLocalRandom.current().nextInt(nodes)));
-                    idealAssignment.add(top.get(ThreadLocalRandom.current().nextInt(nodes)));
-                }
-
-                assignments.add(assignment);
-                idealAssignments.add(idealAssignment);
-            }
-
-            HistoryAffinityAssignment a0 = new HistoryAffinityAssignment(
-                new GridAffinityAssignment(new AffinityTopologyVersion(1, 0), assignments, idealAssignments));
-
-            CacheObjectContext ctx = crd.context().cache().context().
-                cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).cacheObjectContext();
-
-            byte[] raw = crd.context().cacheObjects().marshal(ctx, a0);
-
-            BinaryObjectImpl b = (BinaryObjectImpl)crd.context().cacheObjects().
-                unmarshal(ctx, raw, crd.configuration().getClassLoader());
-
-            HistoryAffinityAssignment a1 = b.value(ctx, false);
-
-            assertEquals(a0.topologyVersion(), a1.topologyVersion());
-            assertEquals(a0.assignment(), a1.assignment());
-            assertEquals(a0.idealAssignment(), a1.idealAssignment());
         }
         finally {
             stopAllGrids();

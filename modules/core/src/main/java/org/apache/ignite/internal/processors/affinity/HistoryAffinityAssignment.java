@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.affinity;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,52 +45,147 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     private final List<List<ClusterNode>> assignment;
 
     /** */
-    private final Map<Integer, List<ClusterNode>> idealAssignmentDiff;
+    private final List<List<ClusterNode>> idealAssignment;
 
     /** */
-    private volatile transient List<List<ClusterNode>> idealAssignmentView;
+    private final ClusterNode[] nodes;
+
+    /** Assignments are stored as sequences of indexes in nodes array. */
+    private final int[] parts;
+
+    /** */
+    private final Map<Integer, int[]> idealAssignmentDiff;
 
     /**
      * @param assign Assignment.
      */
-    HistoryAffinityAssignment(GridAffinityAssignment assign) {
+    public HistoryAffinityAssignment(GridAffinityAssignment assign) {
         topVer = assign.topologyVersion();
-        assignment = Collections.unmodifiableList(assign.assignment());
 
+        int tmp = assign.idealAssignment().get(0).size();
+
+        int cpys = tmp == 1 ? 2 : tmp; // Special case for late affinity with zero backups.
+
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || cpys > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
+            assignment = Collections.unmodifiableList(assign.assignment());
+
+            idealAssignment = Collections.unmodifiableList(assign.idealAssignment());
+
+            nodes = null;
+
+            parts = null;
+
+            idealAssignmentDiff = null;
+
+            return;
+        }
+
+        List<List<ClusterNode>> assignment = assign.assignment();
         List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
+
+        int partsCnt = assignment.size();
+
+        parts = new int[partsCnt * cpys];
+
+        Map<ClusterNode, Integer> orderMap = new HashMap<>();
+
+        int order = 1; // Zero order is reserved for empty slot case.
 
         idealAssignmentDiff = new HashMap<>();
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> nodes = assignment.get(p);
-            List<ClusterNode> idealNodes = idealAssignment.get(p);
+            List<ClusterNode> nodes0 = idealAssignment.get(p);
 
-            if (!nodes.equals(idealNodes))
-                idealAssignmentDiff.put(p, idealNodes);
+            for (int i = 0; i < nodes.size(); i++) {
+                ClusterNode node = nodes.get(i);
+
+                Integer nodeOrder = orderMap.get(node);
+
+                if (nodeOrder == null)
+                    orderMap.put(node, (nodeOrder = order++));
+
+                parts[p * cpys + i] = nodeOrder;
+            }
+
+            if (!nodes.equals(nodes0)) {
+                int[] idx = new int[nodes0.size()];
+
+                idealAssignmentDiff.put(p, idx);
+
+                for (int i = 0; i < nodes0.size(); i++) {
+                    ClusterNode node = nodes0.get(i);
+
+                    Integer nodeOrder = orderMap.get(node);
+
+                    if (nodeOrder == null)
+                        orderMap.put(node, (nodeOrder = order++));
+
+                    idx[i] = nodeOrder;
+                }
+            }
         }
+
+        // Rewrite according to order.
+        nodes = orderMap.keySet().stream().toArray(ClusterNode[]::new);
+
+        Arrays.sort(nodes, (o1, o2) -> orderMap.get(o1).compareTo(orderMap.get(o2)));
+
+        this.assignment = new AbstractList<List<ClusterNode>>() {
+            @Override public List<ClusterNode> get(int idx) {
+                return partitionNodes(idx, false, cpys);
+            }
+
+            @Override public int size() {
+                return partsCnt;
+            }
+        };
+
+        this.idealAssignment = new AbstractList<List<ClusterNode>>() {
+            @Override public List<ClusterNode> get(int idx) {
+                return partitionNodes(idx, true, cpys);
+            }
+
+            @Override public int size() {
+                return partsCnt;
+            }
+        };
+    }
+
+    /**
+     * @param p Partion.
+     * @param ideal {@code True} for ideal assignment.
+     */
+    private List<ClusterNode> partitionNodes(int p, boolean ideal, int cpys) {
+        int[] order = idealAssignmentDiff.get(p);
+
+        if (ideal && order != null) {
+            List<ClusterNode> ret = new ArrayList<>(order.length);
+
+            for (int i = 0; i < order.length; i++)
+                ret.add(nodes[order[i] - 1]);
+
+            return ret;
+        }
+
+        List<ClusterNode> ret = new ArrayList<>(cpys);
+
+        for (int i = 0; i < cpys; i++) {
+            int ord = parts[p * cpys + i];
+
+            if (ord == 0)
+                break;
+
+            ret.add(nodes[ord - 1]);
+        }
+
+        return ret;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public List<List<ClusterNode>> idealAssignment() {
-        List<List<ClusterNode>> view = idealAssignmentView;
-
-        if (view == null) {
-            view = new AbstractList<List<ClusterNode>>() {
-                @Override public List<ClusterNode> get(int idx) {
-                    List<ClusterNode> nodes = idealAssignmentDiff.get(idx);
-
-                    return nodes == null ? assignment.get(idx) : nodes;
-                }
-
-                @Override public int size() {
-                    return assignment.size();
-                }
-            };
-
-            idealAssignmentView = view;
-        }
-
-        return view;
+        return idealAssignment;
     }
 
     /** {@inheritDoc} */
