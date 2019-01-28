@@ -232,8 +232,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
+    @Test
     public void testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
     }

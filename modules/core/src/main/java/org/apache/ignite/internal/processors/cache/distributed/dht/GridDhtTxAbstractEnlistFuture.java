@@ -508,6 +508,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
                                     try {
+                                        tx.incrementLockCounter();
+
                                         processEntry(entry0, op, fut.get(), val0, backups0);
 
                                         continueLoop(true);
@@ -522,6 +524,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             return;
                         }
                     }
+
+                    tx.incrementLockCounter();
 
                     processEntry(entry, op, res, val0, backups);
                 }
