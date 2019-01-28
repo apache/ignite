@@ -193,6 +193,11 @@ export default class AgentManager {
             pluck('active')
         );
 
+        this.clusterIsAvailable$ = this.connectionSbj.pipe(
+            pluck('cluster'),
+            map((cluster) => !_.isNil(cluster))
+        );
+
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
                 next: ({cluster}) => {
