@@ -409,7 +409,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            startTxDeadlock(grid(0), grid(1));
+            emulateTxLockTimeout(grid(0), grid(1));
 
             assertTrue(waitForCondition(lsnr::check, 5000));
         }
@@ -682,13 +682,13 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Start tx deadlock.
+     * Emulates tx lock timeout.
      *
      * @param node1 First node.
      * @param node2 Second node.
      * @throws Exception If failed.
      */
-    private void startTxDeadlock(Ignite node1, Ignite node2) throws Exception {
+    private void emulateTxLockTimeout(Ignite node1, Ignite node2) throws Exception {
         node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
 
         final CountDownLatch l = new CountDownLatch(1);
