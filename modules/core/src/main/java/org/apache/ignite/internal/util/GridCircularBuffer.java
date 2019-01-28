@@ -267,16 +267,19 @@ public class GridCircularBuffer<T> implements Consumer<T>, Iterable<T> {
 
             idx = newIdx; // Index should be updated even if closure fails.
 
-            if (c != null && item != null)
-                c.applyx(item);
+            try {
+                if (c != null && item != null)
+                    c.applyx(item);
 
-            V old = item;
+                V old = item;
 
-            item = newItem;
+                item = newItem;
 
-            notifyAll();
-
-            return old;
+                return old;
+            }
+            finally {
+                notifyAll();
+            }
         }
 
         /**
