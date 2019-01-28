@@ -38,9 +38,12 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -177,15 +180,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Manages first and last test execution. */
     @ClassRule public static final TestRule firstLastTestRule = new TestRule() {
         @Override public Statement apply(Statement base, Description desc) {
-            return new Statement() {
-                @Override public void evaluate() throws Throwable {
-                    Class<?> cls = (desc.getTestClass());
-
-                    Method mtd = cls.getMethod("clsRule", Statement.class);
-
-                    mtd.invoke(cls.newInstance(), base);
-                }
-            };
+            return ClassRuleWrapper.evaluate(base, desc.getTestClass(), 60);
         }
     };
 
@@ -199,34 +194,28 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     };
 
     /** */
-    private transient boolean startGrid;
+    private static transient boolean startGrid;
 
     /** */
-    protected transient IgniteLogger log;
+    protected static transient IgniteLogger log;
 
     /** */
-    private transient ClassLoader clsLdr;
+    private static transient ClassLoader clsLdr;
 
     /** */
-    private transient boolean stopGridErr;
+    private static transient boolean stopGridErr;
 
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
     /** Force failure flag. */
-    private boolean forceFailure;
+    private static boolean forceFailure;
 
     /** Force failure message. */
-    private String forceFailureMsg;
-
-    /** Whether test count is known is advance. */
-    private boolean forceTestCnt;
-
-    /** Number of tests. */
-    private int testCnt;
+    private static String forceFailureMsg;
 
     /** Lazily initialized current test method. */
-    private volatile Method currTestMtd;
+    private static volatile Method currTestMtd;
 
     /** */
     static {
@@ -273,11 +262,11 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         log = new GridTestLog4jLogger();
 
-        this.startGrid = startGrid;
+        GridAbstractTest.startGrid = startGrid;
     }
 
     /**
-     * Invoked by reflection from {@link #firstLastTestRule}, in order to properly handle
+     * Invoked by reflection from {@link ClassRuleWrapper}, in order to properly handle
      * overridden legacy lifecycle methods.
      */
     @SuppressWarnings("unused")
@@ -2134,15 +2123,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     * Set test count.
-     */
-    public void forceTestCount(int cnt) {
-        testCnt = cnt;
-
-        forceTestCnt = true;
-    }
-
-    /**
      * @return Test case timeout.
      */
     protected long getTestTimeout() {
@@ -2528,5 +2508,37 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
          * @param cache Cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
+    }
+
+    /**
+     *  Runs test classes sequentionally, in order to prevent corruption of static members of {@link GridAbstractTest}.
+     */
+    private static class ClassRuleWrapper {
+        /** */
+        private static final Lock runSerializer = new ReentrantLock();
+
+        /** */
+        static Statement evaluate(Statement base, Class<?> cls, long timeoutMnutes) {
+            return new Statement() {
+                @Override public void evaluate() throws Throwable {
+                    apply(base, cls, timeoutMnutes);
+                }
+            };
+        }
+
+        /** */
+        private static void apply(Statement base, Class<?> cls, long timeoutMnutes) throws Throwable {
+            Method mtd = cls.getMethod("clsRule", Statement.class);
+
+            Object clsInstance = cls.newInstance();
+
+            try {
+                runSerializer.tryLock(timeoutMnutes, TimeUnit.MINUTES);
+                mtd.invoke(clsInstance, base);
+            }
+            finally {
+                runSerializer.unlock();
+            }
+        }
     }
 }
