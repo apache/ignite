@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
@@ -28,7 +29,6 @@ import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -99,7 +99,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
-        if (!learnLabels(datasetBuilder, extractor))
+        if (!learnLabels(datasetBuilder, CompositionUtils.asFeatureExtractor(extractor), CompositionUtils.asLabelExtractor(extractor)))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         IgniteBiFunction<K, V, Vector> featureExtractor =
@@ -166,11 +166,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Defines unique labels in dataset if need (useful in case of classification).
      *
      * @param builder Dataset builder.
-     * @param extractor Mapper of {@link UpstreamEntry} to {@link SimpleLabeledVector}.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
      * @return true if labels learning was successful.
      */
     protected abstract <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor);
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor);
 
     /**
      * Returns regressor model trainer for one step of GDB.

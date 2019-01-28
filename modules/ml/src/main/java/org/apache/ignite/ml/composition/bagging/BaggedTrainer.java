@@ -32,6 +32,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
@@ -164,15 +165,15 @@ public class BaggedTrainer<L> extends
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, featureExtractor, lbExtractor);
+        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, featureExtractor, lbExtractor);
+        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
         return new BaggedModel(updated);
     }
 
@@ -205,7 +206,7 @@ public class BaggedTrainer<L> extends
      * @return Updated model.
      */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
         // Should be never called.
         throw new IllegalStateException();
     }

@@ -44,15 +44,15 @@ public class CompositionUtils {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                return trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+                return trainer.fit(datasetBuilder, extractor);
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> update(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
                 DatasetTrainer<IgniteModel<I, O>, L> trainer1 = (DatasetTrainer<IgniteModel<I, O>, L>)trainer;
-                return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
+                return trainer1.update(mdl, datasetBuilder, extractor);
             }
 
             /**
@@ -78,7 +78,7 @@ public class CompositionUtils {
              * @return Updated model.
              */
             @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
                 throw new IllegalStateException();
             }
         };

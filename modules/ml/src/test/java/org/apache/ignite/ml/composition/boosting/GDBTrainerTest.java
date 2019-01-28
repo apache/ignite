@@ -78,9 +78,9 @@ public class GDBTrainerTest extends TrainerTest {
         assertEquals(0.0, mse, 0.0001);
 
         ModelsComposition composition = (ModelsComposition)mdl;
-        assertTrue(composition.toString().length() > 0);
-        assertTrue(composition.toString(true).length() > 0);
-        assertTrue(composition.toString(false).length() > 0);
+        assertTrue(!composition.toString().isEmpty());
+        assertTrue(!composition.toString(true).isEmpty());
+        assertTrue(!composition.toString(false).isEmpty());
 
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
