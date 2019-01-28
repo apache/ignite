@@ -802,7 +802,7 @@ public final class UpdatePlanBuilder {
             if (desc.isKeyColumn(colId))
                 return true;
 
-            // column ids 0..q are _key, _val
+            // column ids 0..1 are _key, _val
             if (colId >= DEFAULT_COLUMNS_COUNT) {
                 if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
                     return true;

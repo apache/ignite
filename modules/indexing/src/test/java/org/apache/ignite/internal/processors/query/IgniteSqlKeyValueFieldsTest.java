@@ -271,30 +271,6 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         checkSelect(cache, "select _key, _val from Person where id=1", 1, alice);
     }
 
-    /** Check _ver version field is accessible */
-//    @Test
-    // TODO: 23.01.19 rework test
-    public void testVersionField() throws Exception {
-        Person alice = new Person("Alice", 1);
-        Person bob = new Person("Bob", 2);
-
-        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 1, alice);
-        assertNotNull(getVersion(cache, 1));
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 2, bob);
-        assertNotNull(getVersion(cache, 2));
-
-        GridCacheVersion v1 = getVersion(cache, 1);
-
-        checkInsert(cache, "update Person set age = ? where id = ?", 3, 1);
-
-        GridCacheVersion v2 = getVersion(cache, 1);
-
-        assertFalse( v1.equals(v2) );
-    }
-
     /** Check that joins are working on keyFieldName, valueFieldName columns */
     @Test
     public void testJoinKeyValFields() throws Exception {
