@@ -271,7 +271,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        if(!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
+        if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0))) {
             // Add force to avoid interactive confirmation.
             args.add(CMD_AUTO_CONFIRMATION);
         }
@@ -1043,6 +1043,63 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that empty partitions with non-zero update counter are not included into the idle_verify dump.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int emptyPartId = 31;
+
+        // Less than parts number for ability to check skipZeros flag.
+        createCacheAndPreload(ignite, emptyPartId);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String zeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, found " + emptyPartId + " partitions"));
+        assertTrue(zeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(zeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(emptyPartId, zeroUpdateCntrs);
+
+        testOut.reset();
+
+        // The result of the following cache operations is that
+        // the size of the 32-th partition is equal to zero and update counter is equal to 2.
+        ignite.cache(DEFAULT_CACHE_NAME).put(emptyPartId, emptyPartId);
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(emptyPartId, emptyPartId);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String nonZeroUpdateCntrs = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, found " + 31 + " partitions"));
+        assertTrue(nonZeroUpdateCntrs.contains("1 partitions was skipped"));
+        assertTrue(nonZeroUpdateCntrs.contains("idle_verify check has finished, no conflicts have been found."));
+
+        assertSort(31, zeroUpdateCntrs);
+
+        assertEquals(zeroUpdateCntrs, nonZeroUpdateCntrs);
+    }
+
+    /**
      * Tests that idle verify print partitions info.
      *
      * @throws Exception If failed.
@@ -1410,7 +1467,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertNotNull(memorySysCacheCtx);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-                "default-volatile-ds-group"), true, false);
+            "default-volatile-ds-group"), true, false);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
             "default-volatile-ds-group"), false, true);
