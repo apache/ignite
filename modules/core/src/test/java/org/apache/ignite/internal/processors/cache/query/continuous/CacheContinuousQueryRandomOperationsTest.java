@@ -74,6 +74,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -499,10 +500,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testDoubleRemoveMvccTxWithStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL_SNAPSHOT,
@@ -527,10 +527,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testDoubleRemoveReplicatedMvccTxWithStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL_SNAPSHOT,
