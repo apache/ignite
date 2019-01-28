@@ -1729,8 +1729,13 @@ public class IgniteTxHandler {
                 tx.transactionNodes(req.transactionNodes());
             }
 
-            if (req.updateCounters() != null)
-                tx.txCounters(true).updateCounters(req.updateCounters());
+            TxCounters txCounters = null;
+
+            if (req.updateCounters() != null) {
+                txCounters = tx.txCounters(true);
+
+                txCounters.updateCounters(req.updateCounters());
+            }
 
             if (!tx.isSystemInvalidate()) {
                 int idx = 0;
@@ -1747,6 +1752,11 @@ public class IgniteTxHandler {
                     if (locPart != null && locPart.reserve()) {
                         try {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
+
+                            if (txCounters != null) {
+                                entry.updateCounter(
+                                    txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition()));
+                            }
 
                             if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
                                 invalidateNearEntry(cacheCtx, entry.key(), req.version());

@@ -37,7 +37,7 @@ public class CacheContinuousQueryFailoverTxSelfTest extends CacheContinuousQuery
         return TRANSACTIONAL;
     }
 
-    @Override public void testStartStop() throws Exception {
-        super.testStartStop();
+    @Override public void testMultiThreadedFailover() throws Exception {
+        super.testMultiThreadedFailover();
     }
 }
