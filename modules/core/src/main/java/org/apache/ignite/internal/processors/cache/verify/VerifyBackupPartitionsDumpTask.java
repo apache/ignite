@@ -143,7 +143,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         PartitionHashRecordV2 record = records.get(0);
 
-        if (record.updateCounter() != 0 || record.size() != 0)
+        if (record.size() != 0)
             return true;
 
         int firstHash = record.partitionHash();
@@ -151,7 +151,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         for (int i = 1; i < records.size(); i++) {
             record = records.get(i);
 
-            if (record.partitionHash() != firstHash || record.updateCounter() != 0 || record.size() != 0)
+            if (record.partitionHash() != firstHash || record.size() != 0)
                 return true;
         }
 

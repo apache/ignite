@@ -52,23 +52,46 @@ public class SqlSelectKeyOrValueBenchmark extends IgniteAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(id) FROM test_long WHERE id BETWEEN ? AND ?");
+        long expRsSize;
 
-        long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
-        long maxId = id + args.sqlRange() - 1;
+        SqlFieldsQuery qry;
 
-        qry.setArgs(id, maxId);
+        if (args.sqlRange() == 1) {
+            qry = new SqlFieldsQuery("SELECT id FROM test_long WHERE id = ?");
+
+            long id = ThreadLocalRandom.current().nextLong(args.range()) + 1;
+
+            qry.setArgs(id);
+
+            expRsSize = 1;
+        }
+        else if (args.sqlRange() > 0) {
+            qry = new SqlFieldsQuery("SELECT id FROM test_long WHERE id BETWEEN ? AND ?");
+
+            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
+            long maxId = id + args.sqlRange() - 1;
+
+            qry.setArgs(id, maxId);
+
+            expRsSize = args.sqlRange();
+        }
+        else {
+            qry = new SqlFieldsQuery("SELECT id FROM test_long");
+
+            expRsSize = args.range();
+        }
+
+        long rsSize = 0;
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
             .querySqlFields(qry, false)) {
 
-            List<List<?>> res = cursor.getAll();
-
-            if (args.sqlRange() != ((Long)res.get(0).get(0)).intValue()) {
-                throw new Exception("Invalid result [actual=" + res.get(0).get(0)
-                    + ", expected=" + args.sqlRange() + ']');
-            }
+            for (List<?> row : cursor)
+                rsSize++;
         }
+
+        if (rsSize != expRsSize)
+            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize + ']');
 
         return true;
     }
