@@ -42,6 +42,11 @@ public class PartitionNoneNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return PartitionTableModel.GRP_NONE;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionNoneNode.class, this);
     }

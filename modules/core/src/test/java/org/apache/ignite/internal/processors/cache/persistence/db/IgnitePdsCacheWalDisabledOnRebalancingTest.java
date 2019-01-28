@@ -274,6 +274,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalancedPartitionsOwningWithConcurrentAffinityChange() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
         fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);

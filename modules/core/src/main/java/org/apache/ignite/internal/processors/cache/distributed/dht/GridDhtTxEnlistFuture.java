@@ -89,7 +89,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
             threadId,
             nearFutId,
             nearMiniId,
-            null,
             tx,
             timeout,
             cctx,

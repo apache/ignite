@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Key for binary meta data.
+ * Key for binary metadata.
  */
 public class BinaryMetadataKey extends GridCacheUtilityKey<BinaryMetadataKey> implements Externalizable {
     /** */
