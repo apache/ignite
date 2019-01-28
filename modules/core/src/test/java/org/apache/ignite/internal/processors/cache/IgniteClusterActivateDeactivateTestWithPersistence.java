@@ -44,6 +44,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -118,8 +119,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateInactiveCluster() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
 
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
@@ -359,6 +359,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10786");
+
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);

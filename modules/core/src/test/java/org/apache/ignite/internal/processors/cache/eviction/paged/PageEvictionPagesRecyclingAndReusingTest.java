@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -93,10 +94,9 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
     @Test
     public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
     }
 
@@ -104,21 +104,18 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10448")
     @Test
     public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7956,https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPagesRecyclingAndReusingMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
     }
 
