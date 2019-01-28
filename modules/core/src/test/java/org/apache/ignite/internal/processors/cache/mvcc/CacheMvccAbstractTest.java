@@ -243,6 +243,37 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        refreshStaticMembers();
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        refreshStaticMembers();
+    }
+
+    /** */
+    private void refreshStaticMembers() {
+        client = false;
+
+        testSpi = false;
+
+        nodeAttr = null;
+
+        persistence = false;
+
+        ccfg = null;
+
+        ccfgs = null;
+
+        disableScheduledVacuum = false;
+    }
+
     /**
      * @param cfgC Optional closure applied to cache configuration.
      * @throws Exception If failed.

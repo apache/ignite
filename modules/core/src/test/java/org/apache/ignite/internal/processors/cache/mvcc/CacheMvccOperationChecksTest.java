@@ -52,16 +52,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
         return PARTITIONED;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception if failed.
      */
