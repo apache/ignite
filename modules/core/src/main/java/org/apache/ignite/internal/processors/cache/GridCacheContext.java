@@ -2327,7 +2327,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is need to notify continuous query listeners.
      */
     public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
-        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() : contQryMgr.notifyContinuousQueries(tx);
+        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
+            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
     }
 
     /** {@inheritDoc} */

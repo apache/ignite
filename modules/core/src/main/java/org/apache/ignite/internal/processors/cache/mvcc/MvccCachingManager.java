@@ -176,6 +176,9 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
                 Map<Integer, T2<AtomicLong, Long>> cntrPerCache = cntrsMap.get(cacheId);
 
+                if (F.isEmpty(cntrPerCache))
+                    continue; // No updates were made for this cache.
+
                 boolean fakeEntries = false;
 
                 if (F.isEmpty(cached)) {
