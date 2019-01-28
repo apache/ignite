@@ -60,6 +60,13 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+        return super.updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
         assert datasetBuilder != null;

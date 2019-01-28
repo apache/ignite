@@ -84,10 +84,28 @@ public class CompositionUtils {
         };
     }
 
+    /**
+     * Create feature extractor from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     *
+     * @param extractor Mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @param <K> Type of keys.
+     * @param <V> Type of values.
+     * @param <L> Type of labels.
+     * @return Feature extractor created from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     */
     public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
         return (k, v) -> extractor.apply(k, v).features();
     }
 
+    /**
+     * Label extractor feature extractor from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     *
+     * @param extractor Mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @param <K> Type of keys.
+     * @param <V> Type of values.
+     * @param <L> Type of labels.
+     * @return Label extractor created from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     */
     public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
         return (k, v) -> extractor.apply(k, v).label();
     }

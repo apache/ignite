@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
@@ -196,7 +197,8 @@ public class GDBTrainerTest extends TrainerTest {
         ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, fExtr, lExtr);
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, fExtr, lExtr);
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl,
+            epmtyDataset, (k, v) -> new SimpleLabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v)));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);

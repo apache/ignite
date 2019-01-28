@@ -19,7 +19,18 @@ package org.apache.ignite.ml.structures;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * Simple labeled vector.
+ *
+ * @param <L> Type of labels.
+ */
 public class SimpleLabeledVector<L> extends LabeledVector<Vector, L > {
+    /**
+     * Construct instance of this class from given vector and label.
+     *
+     * @param vector Vector.
+     * @param lb Label.
+     */
     public SimpleLabeledVector(Vector vector, L lb) {
         super(vector, lb);
     }

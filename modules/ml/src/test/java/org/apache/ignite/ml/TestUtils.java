@@ -23,6 +23,7 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Assert;
 
@@ -423,8 +424,7 @@ public class TestUtils {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
+                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
                 return ml;
             }
 
@@ -435,7 +435,7 @@ public class TestUtils {
 
             /** {@inheritDoc} */
             @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
                 return ml;
             }
         };
