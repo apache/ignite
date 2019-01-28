@@ -9,8 +9,7 @@
     "dev": "npm start",
     "build": "webpack --config ./webpack/webpack.prod.js",
     "test": "karma start ./test/karma.conf.js",
-    "test-watch": "npm test -- --no-single-run",
-    "eslint": "eslint --ignore-pattern node_modules/ --format node_modules/eslint-formatter-friendly ."
+    "test-watch": "npm test -- --no-single-run"
   },
   "license": "Apache-2.0",
   "keywords": [
