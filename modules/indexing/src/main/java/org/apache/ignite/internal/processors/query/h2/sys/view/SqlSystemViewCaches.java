@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -116,10 +115,9 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
         else
             caches = ctx.cache().cacheDescriptors().values();
 
-        AtomicLong rowKey = new AtomicLong();
-
         return F.iterator(caches,
-            cache -> createRow(ses, rowKey.incrementAndGet(),
+            cache -> createRow(
+                ses,
                 cache.cacheName(),
                 cache.cacheId(),
                 cache.cacheType(),

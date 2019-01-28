@@ -148,7 +148,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-        IoStatisticsHolder stats = cctx.kernalContext().ioStats().register(
+        IoStatisticsHolder stats = cctx.kernalContext().ioStats().registerIndex(
             IoStatisticsType.SORTED_INDEX,
             cctx.name(),
             idxName
