@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -132,7 +133,7 @@ public class MvccDeadlockDetectionConfigTest extends GridCommonAbstractTest  {
 
         IgniteCheckedException e = awaitCompletion(futA, futB);
 
-        assertTrue(e.toString(), e.hasCause(IgniteTxRollbackCheckedException.class));
+        assertTrue(e.toString(), X.hasCause(e, "Deadlock", IgniteTxRollbackCheckedException.class));
     }
 
     /** */
