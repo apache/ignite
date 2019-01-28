@@ -28,6 +28,7 @@ import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -38,6 +39,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
@@ -87,18 +89,23 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
-        if (!learnLabels(datasetBuilder, featureExtractor, lbExtractor))
+        if (!learnLabels(datasetBuilder, extractor))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
+        IgniteBiFunction<K, V, Vector> featureExtractor =
+            (k, v) -> extractor.apply(k, v).features();
+        IgniteBiFunction<K, V, Double> lbExtractor =
+            (k, v) -> extractor.apply(k, v).label();
 
         IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(
             envBuilder,
@@ -126,9 +133,14 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
         List<IgniteModel<Vector, Double>> models;
         if (mdl != null)
-            models = stgy.update((GDBModel)mdl, datasetBuilder, featureExtractor, lbExtractor);
+            models = stgy.update((GDBModel)mdl,
+                datasetBuilder,
+                featureExtractor,
+                lbExtractor);
         else
-            models = stgy.learnModels(datasetBuilder, featureExtractor, lbExtractor);
+            models = stgy.learnModels(datasetBuilder,
+                featureExtractor,
+                lbExtractor);
 
         double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
         environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
@@ -154,12 +166,11 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Defines unique labels in dataset if need (useful in case of classification).
      *
      * @param builder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lExtractor Labels extractor.
+     * @param extractor Mapper of {@link UpstreamEntry} to {@link SimpleLabeledVector}.
      * @return true if labels learning was successful.
      */
     protected abstract <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor);
 
     /**
      * Returns regressor model trainer for one step of GDB.

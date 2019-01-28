@@ -54,10 +54,9 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * Construct an instance of this class from a list of trainers.
      *
      * @param trainers Trainers.
-     * @param <M> Type of model.
      * @param <T> Type of trainer.
      */
-    public <M extends IgniteModel<I, O>, T extends DatasetTrainer<? extends IgniteModel<I, O>, L>> TrainersParallelComposition(
+    public <T extends DatasetTrainer<? extends IgniteModel<I, O>, L>> TrainersParallelComposition(
         List<T> trainers) {
         this.trainers = trainers.stream().map(CompositionUtils::unsafeCoerce).collect(Collectors.toList());
     }

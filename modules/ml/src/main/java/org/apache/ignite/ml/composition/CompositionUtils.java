@@ -21,6 +21,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -81,5 +82,13 @@ public class CompositionUtils {
                 throw new IllegalStateException();
             }
         };
+    }
+
+    public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        return (k, v) -> extractor.apply(k, v).features();
+    }
+
+    public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        return (k, v) -> extractor.apply(k, v).label();
     }
 }

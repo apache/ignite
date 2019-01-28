@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -26,6 +27,7 @@ import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -36,15 +38,15 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
         LSQRResult res;
 
@@ -52,8 +54,8 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
             datasetBuilder,
             envBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
-                new FeatureExtractorWrapper<>(featureExtractor),
-                lbExtractor.andThen(e -> new double[] {e})
+                new FeatureExtractorWrapper<>(CompositionUtils.asFeatureExtractor(extractor)),
+                CompositionUtils.asLabelExtractor(extractor).andThen(e -> new double[] {e})
             )
         )) {
             double[] x0 = null;

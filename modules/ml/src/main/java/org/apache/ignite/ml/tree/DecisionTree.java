@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -75,7 +76,10 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
 
     /** {@inheritDoc} */
     @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor = (k, v) -> extractor.apply(k, v).features();
+        IgniteBiFunction<K, V, Double> lbExtractor = (k, v) -> extractor.apply(k, v).label();
+
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
@@ -93,16 +97,15 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Mapper from upstream entry to {@link SimpleLabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return New model based on new dataset.
      */
     @Override protected <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
 
-        return fit(datasetBuilder, featureExtractor, lbExtractor);
+        return fit(datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
