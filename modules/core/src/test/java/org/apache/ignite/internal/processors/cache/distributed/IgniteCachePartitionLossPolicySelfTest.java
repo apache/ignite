@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -192,10 +193,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10041")
     @Test
     public void testReadOnlyAllWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
         isPersistenceEnabled = true;
@@ -238,10 +238,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10041")
     @Test
     public void testReadWriteAllWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
         isPersistenceEnabled = true;
@@ -396,10 +395,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5078")
     @Test
     public void testIgnore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
         partLossPlc = PartitionLossPolicy.IGNORE;
 
         checkIgnore(killSingleNode);
@@ -408,12 +406,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5078,https://issues.apache.org/jira/browse/IGNITE-10041")
     @Test
     public void testIgnoreWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
         partLossPlc = PartitionLossPolicy.IGNORE;
 
         isPersistenceEnabled = true;
@@ -439,10 +434,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10041")
     @Test
     public void testIgnoreKillThreeNodesWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
         partLossPlc = PartitionLossPolicy.IGNORE;
 
         isPersistenceEnabled = true;
