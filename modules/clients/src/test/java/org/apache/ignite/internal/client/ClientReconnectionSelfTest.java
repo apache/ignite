@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -190,7 +190,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-590")
     @Test
     public void testIdleConnection() throws Exception {
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.

@@ -139,7 +139,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LogisticRegressionModel mdl) {
+    @Override public boolean isUpdateable(LogisticRegressionModel mdl) {
         return true;
     }
 

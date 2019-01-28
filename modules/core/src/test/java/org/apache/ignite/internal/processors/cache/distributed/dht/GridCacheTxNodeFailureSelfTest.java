@@ -45,6 +45,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -142,10 +143,9 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1731")
     @Test
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
-
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 
@@ -368,7 +368,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
 
-        dhtEntry.touch(null);
+        dhtEntry.touch();
     }
 
     /**

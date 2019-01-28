@@ -294,7 +294,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         sockReader = new SocketReader();
         sockReader.start();
 
-        if (spi.ipFinder.isShared())
+        if (spi.ipFinder.isShared() && spi.isForceServerMode())
             registerLocalNodeAddress();
 
         msgWorker = new MessageWorker(log);
@@ -1037,7 +1037,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          */
         SocketReader() {
-            super(spi.ignite().name(), "tcp-client-disco-sock-reader", log);
+            super(spi.ignite().name(), "tcp-client-disco-sock-reader-[]", log);
         }
 
         /**
@@ -1085,6 +1085,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 SocketStream sockStream;
                 UUID rmtNodeId;
 
+                // Disconnected from router node.
+                U.enhanceThreadName("");
+
                 synchronized (mux) {
                     if (stopReadLatch != null) {
                         stopReadLatch.countDown();
@@ -1103,6 +1106,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 Socket sock = sockStream.socket();
+
+                U.enhanceThreadName(U.id8(rmtNodeId)
+                    + ' ' + sockStream.sock.getInetAddress().getHostAddress()
+                    + ":" + sockStream.sock.getPort());
 
                 try {
                     InputStream in = sockStream.stream();

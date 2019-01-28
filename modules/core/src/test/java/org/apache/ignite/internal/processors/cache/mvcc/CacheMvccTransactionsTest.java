@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryC
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -1092,7 +1091,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet1() throws Exception {
         boolean vals[] = {true, false};
@@ -1131,8 +1129,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         awaitPartitionMapExchange();
 
-        final IgniteCache<Object, Object> srvCache =
-            srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+        final IgniteCache<Object, Object> clientCache =
+            client.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 16));
+
+        final IgniteCache<Object, Object> srvCache = srv.cache(clientCache.getName());
 
         final Integer key1 = 1;
         final Integer key2 = 2;
@@ -1162,19 +1162,17 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         IgniteInternalFuture<?> getFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
-
                 Map<Integer, Integer> vals;
 
                 if (inTx) {
                     try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        vals = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN, GET);
+                        vals = checkAndGetAll(false, clientCache, F.asSet(key1, key2), SCAN, GET);
 
                         tx.rollback();
                     }
                 }
                 else
-                    vals = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN, GET);
+                    vals = checkAndGetAll(false, clientCache, F.asSet(key1, key2), SCAN, GET);
 
                 if (putOnStart) {
                     assertEquals(2, vals.size());
@@ -1324,7 +1322,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
         for (int i = 0; i < 4; i++) {
@@ -1575,8 +1572,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9949")
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
@@ -1744,6 +1741,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, GET);
@@ -1752,6 +1750,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxGetAllReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, GET);
@@ -1760,6 +1759,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
         txReadsSnapshot(1, 0, 0, 1, SCAN);
@@ -1768,6 +1768,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
         txReadsSnapshot(4, 2, 1, 64, SCAN);
@@ -2536,7 +2537,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10752")
     @Test
     public void testMvccCoordinatorChangeSimple() throws Exception {
         Ignite srv0 = startGrid(0);
@@ -2896,6 +2896,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode_SinglePartition() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
@@ -2904,6 +2905,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_SingleNode() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 64, 10_000);
@@ -2912,6 +2914,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups0() throws Exception {
         doImplicitPartsScanTest(4, 2, 0, 64, 10_000);
@@ -2920,6 +2923,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups1() throws Exception {
         doImplicitPartsScanTest(4, 2, 1, 64, 10_000);
@@ -2928,6 +2932,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testImplicitPartsScan_ClientServer_Backups2() throws Exception {
         doImplicitPartsScanTest(4, 2, 2, 64, 10_000);
@@ -3303,7 +3308,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessorImpl crd = mvccProcessor(node);
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync((IgniteInternalTx)null);
+        MvccSnapshotFuture fut = new MvccSnapshotFuture();
+
+        crd.requestReadSnapshotAsync(crd.currentCoordinator(), fut);
 
         fut.get();
 

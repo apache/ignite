@@ -107,9 +107,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
+import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.setDataPageScanEnabled;
 
 /**
  * Reduce query executor.
@@ -322,7 +323,8 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize,
+                            (byte)setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -383,6 +385,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
      * @param mvccTracker Query tracker.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -393,9 +396,14 @@ public class GridReduceQueryExecutor {
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
-        final int[] parts,
+        int[] parts,
         boolean lazy,
-        MvccQueryTracker mvccTracker) {
+        MvccQueryTracker mvccTracker,
+        Boolean dataPageScanEnabled
+    ) {
+        if (qry.isLocal() && parts != null)
+            parts = null;
+
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
@@ -476,8 +484,8 @@ public class GridReduceQueryExecutor {
 
             long qryReqId = qryIdGen.incrementAndGet();
 
-            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),
-                qry.mapQueries().size(), qry.pageSize(), sfuFut);
+            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
+                qry.mapQueries().size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
 
             Collection<ClusterNode> nodes;
 
@@ -644,6 +652,8 @@ public class GridReduceQueryExecutor {
                 if (lazy && mapQrys.size() == 1)
                     flags |= GridH2QueryRequest.FLAG_LAZY;
 
+                flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
                     .topologyVersion(topVer)
@@ -758,9 +768,10 @@ public class GridReduceQueryExecutor {
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
                                 timeoutMillis,
-                                cancel);
+                                cancel,
+                                dataPageScanEnabled);
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, false);
+                            resIter = new H2FieldsIterator(res, mvccTracker, false, null);
 
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
@@ -1119,7 +1130,7 @@ public class GridReduceQueryExecutor {
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null);
+                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1138,6 +1149,7 @@ public class GridReduceQueryExecutor {
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
             0,
+            null,
             null);
 
         lists.add(F.asList(getPlan(rs)));

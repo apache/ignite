@@ -55,14 +55,14 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
     /** Start client flag. */
     private final AtomicBoolean clientJustStarted = new AtomicBoolean(false);
-
+    
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
-        if (igniteInstanceName.equals("client")) {
+        if ("client".equals(igniteInstanceName)) {
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
             ipFinder.registerAddresses(Collections.singleton(new InetSocketAddress(InetAddress.getLoopbackAddress(), 47501)));
@@ -74,7 +74,9 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
-        disco.setNetworkTimeout(2000);
+        disco.setNetworkTimeout(6_000);
+
+        cfg.setNetworkSendRetryCount(1);
 
         cfg.setDiscoverySpi(disco);
 
@@ -121,7 +123,6 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         latch.countDown();
 
-        System.err.println("GET ALL");
         client.cache(DEFAULT_CACHE_NAME).getAll(keys);
     }
 
@@ -142,7 +143,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                     try {
                         latch.await();
 
-                        Thread.sleep(3000);
+                        Thread.sleep(5_000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

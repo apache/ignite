@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
@@ -45,6 +42,8 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
@@ -75,6 +74,7 @@ import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTe
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.BitSetIntSetTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -83,145 +83,134 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Basic test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteMarshallerSelfTestSuite.class,
+    IgniteLangSelfTestSuite.class,
+    IgniteUtilSelfTestSuite.class,
+
+    IgniteKernalSelfTestSuite.class,
+    IgniteStartUpTestSuite.class,
+    IgniteExternalizableSelfTestSuite.class,
+    IgniteP2PSelfTestSuite.class,
+    IgniteCacheP2pUnmarshallingErrorTestSuite.class,
+    IgniteStreamSelfTestSuite.class,
+
+    IgnitePlatformsTestSuite.class,
+
+    GridSelfTest.class,
+    ClusterGroupHostsSelfTest.class,
+    IgniteMessagingWithClientTest.class,
+    IgniteMessagingSendAsyncTest.class,
+
+    ClusterGroupSelfTest.class,
+    GridMessagingSelfTest.class,
+    GridMessagingNoPeerClassLoadingSelfTest.class,
+
+    GridReleaseTypeSelfTest.class,
+    GridProductVersionSelfTest.class,
+    GridAffinityAssignmentV2Test.class,
+    GridAffinityAssignmentV2TestNoOptimizations.class,
+    GridAffinityProcessorRendezvousSelfTest.class,
+    GridAffinityProcessorMemoryLeakTest.class,
+    GridClosureProcessorSelfTest.class,
+    GridClosureProcessorRemoteTest.class,
+    GridClosureSerializationTest.class,
+    GridStartStopSelfTest.class,
+    GridProjectionForCachesSelfTest.class,
+    GridProjectionForCachesOnDaemonNodeSelfTest.class,
+    GridSpiLocalHostInjectionTest.class,
+    GridLifecycleBeanSelfTest.class,
+    GridStopWithCancelSelfTest.class,
+    GridReduceSelfTest.class,
+    GridEventConsumeSelfTest.class,
+    GridSuppressedExceptionSelfTest.class,
+    GridLifecycleAwareSelfTest.class,
+    GridMessageListenSelfTest.class,
+    GridFailFastNodeFailureDetectionSelfTest.class,
+    IgniteSlowClientDetectionSelfTest.class,
+    IgniteDaemonNodeMarshallerCacheTest.class,
+    IgniteMarshallerCacheConcurrentReadWriteTest.class,
+    GridNodeMetricsLogSelfTest.class,
+    GridLocalIgniteSerializationTest.class,
+    GridMBeansTest.class,
+    TransactionsMXBeanImplTest.class,
+    SetTxTimeoutOnPartitionMapExchangeTest.class,
+
+    IgniteExceptionInNioWorkerSelfTest.class,
+    IgniteLocalNodeMapBeforeStartTest.class,
+    OdbcConfigurationValidationSelfTest.class,
+    OdbcEscapeSequenceSelfTest.class,
+
+    DynamicProxySerializationMultiJvmSelfTest.class,
+
+    // Tests against configuration variations framework.
+    ParametersTest.class,
+    VariationsIteratorTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
+    NotStringSystemPropertyTest.class,
+
+    MarshallerContextLockingSelfTest.class,
+    MarshallerContextSelfTest.class,
+
+    SecurityPermissionSetBuilderTest.class,
+
+    AttributeNodeFilterSelfTest.class,
+
+    // Basic DB data structures.
+    BPlusTreeSelfTest.class,
+    BPlusTreeFakeReuseSelfTest.class,
+    BPlusTreeReuseSelfTest.class,
+    IndexStorageSelfTest.class,
+    CacheFreeListImplSelfTest.class,
+    DataRegionMetricsSelfTest.class,
+    SwapPathConstructionSelfTest.class,
+    BitSetIntSetTest.class,
+
+    IgniteMarshallerCacheFSRestoreTest.class,
+    IgniteMarshallerCacheClassNameConflictTest.class,
+    IgniteMarshallerCacheClientRequestsMappingOnMissTest.class,
+
+    IgniteDiagnosticMessagesTest.class,
+    IgniteDiagnosticMessagesMultipleConnectionsTest.class,
+
+    IgniteRejectConnectOnNodeStopTest.class,
+
+    GridCleanerTest.class,
+
+    ClassSetTest.class,
+
+    // Basic failure handlers.
+    FailureHandlerTriggeredTest.class,
+    StopNodeFailureHandlerTest.class,
+    StopNodeOrHaltFailureHandlerTest.class,
+    OomFailureHandlerTest.class,
+    TransactionIntegrityWithSystemWorkerDeathTest.class,
+
+    AtomicOperationsInTxTest.class,
+
+    CacheRebalanceConfigValidationTest.class,
+
+    ListeningTestLoggerTest.class,
+
+    CacheLocalGetSerializationTest.class,
+
+    PluginNodeValidationTest.class,
+})
 public class IgniteBasicTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests don't include in the execution. Providing null means nothing to exclude.
-     * @return Test suite.
-     */
-    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Basic Test Suite");
-
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteLangSelfTestSuite.suite());
-        suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
-
-        suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteStartUpTestSuite.suite());
-        suite.addTest(IgniteExternalizableSelfTestSuite.suite());
-        suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteStreamSelfTestSuite.suite());
-
-        suite.addTest(IgnitePlatformsTestSuite.suite());
-
-        suite.addTest(new JUnit4TestAdapter(GridSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClusterGroupHostsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteMessagingWithClientTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteMessagingSendAsyncTest.class));
-
-        GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
-        suite.addTest(new JUnit4TestAdapter(GridProductVersionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorRendezvousSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorMemoryLeakTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridClosureProcessorRemoteTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridClosureSerializationTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridStartStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesOnDaemonNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSpiLocalHostInjectionTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLifecycleBeanSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridStopWithCancelSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridReduceSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridEventConsumeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridSuppressedExceptionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLifecycleAwareSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMessageListenSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridFailFastNodeFailureDetectionSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteSlowClientDetectionSelfTest.class));
-        GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
-        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheConcurrentReadWriteTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridNodeMetricsLogSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridLocalIgniteSerializationTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMBeansTest.class));
-        suite.addTest(new JUnit4TestAdapter(TransactionsMXBeanImplTest.class));
-        suite.addTest(new JUnit4TestAdapter(SetTxTimeoutOnPartitionMapExchangeTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteExceptionInNioWorkerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteLocalNodeMapBeforeStartTest.class));
-        suite.addTest(new JUnit4TestAdapter(OdbcConfigurationValidationSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(OdbcEscapeSequenceSelfTest.class));
-
-        GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
-
-        // Tests against configuration variations framework.
-        suite.addTest(new JUnit4TestAdapter(ParametersTest.class));
-        suite.addTest(new JUnit4TestAdapter(VariationsIteratorTest.class));
-        suite.addTest(new JUnit4TestAdapter(ConfigVariationsTestSuiteBuilderTest.class));
-        suite.addTest(new JUnit4TestAdapter(NotStringSystemPropertyTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(MarshallerContextLockingSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MarshallerContextSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(SecurityPermissionSetBuilderTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(AttributeNodeFilterSelfTest.class));
-
-        // Basic DB data structures.
-        suite.addTest(new JUnit4TestAdapter(BPlusTreeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(BPlusTreeFakeReuseSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(BPlusTreeReuseSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IndexStorageSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheFreeListImplSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DataRegionMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SwapPathConstructionSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheFSRestoreTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClassNameConflictTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesMultipleConnectionsTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteRejectConnectOnNodeStopTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCleanerTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(ClassSetTest.class));
-
-        // Basic failure handlers.
-        suite.addTest(new JUnit4TestAdapter(FailureHandlerTriggeredTest.class));
-        suite.addTest(new JUnit4TestAdapter(StopNodeFailureHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(StopNodeOrHaltFailureHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(OomFailureHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(TransactionIntegrityWithSystemWorkerDeathTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(AtomicOperationsInTxTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(CacheLocalGetSerializationTest.class));
-
-        return suite;
-    }
 }

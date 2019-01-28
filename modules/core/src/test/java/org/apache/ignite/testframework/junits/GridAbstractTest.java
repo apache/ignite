@@ -184,7 +184,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Failure catched by test failure handler. */
     public final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
+    /** Lock to maintain integrity of {@link TestCounters}. */
     private final Lock runSerializer = new ReentrantLock();
 
     /** Manages test execution and reporting. */
