@@ -64,7 +64,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -117,6 +119,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
@@ -198,6 +201,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private long qryId = MVCC_TRACKER_ID_NA;
+    /** */
+    private long crdVer;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -3329,7 +3334,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean queryEnlisted() {
         if (!txState.mvccEnabled())
@@ -3342,29 +3346,100 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return mappings.mappings().stream().anyMatch(GridDistributedTxMapping::queryUpdate);
     }
 
-    /** {@inheritDoc} */
-    @Override public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (mvccSnapshot == null && !isDone)
+    /**
+     * Requests version on coordinator.
+     *
+     * @return Future to wait for result.
+     */
+    public IgniteInternalFuture<MvccSnapshot> requestSnapshot() {
+        if (isRollbackOnly())
+            return new GridFinishedFuture<>(rollbackException());
+
+        MvccSnapshot mvccSnapshot0 = mvccSnapshot;
+
+        if (mvccSnapshot0 != null)
+            return new GridFinishedFuture<>(mvccSnapshot0);
+
+        MvccProcessor prc = cctx.coordinators();
+
+        MvccCoordinator crd = prc.currentCoordinator();
+
+        synchronized (this) {
+            this.crdVer = crd.version();
+        }
+
+        if (crd.local())
+            mvccSnapshot0 = prc.requestWriteSnapshotLocal();
+
+        if (mvccSnapshot0 == null) {
+            MvccSnapshotFuture fut = new MvccSnapshotFuture() {
+                @Override public void onResponse(MvccSnapshot res) {
+                    onResponse0(res, this);
+                }
+
+                @Override public void onError(IgniteCheckedException err) {
+                    setRollbackOnly();
+
+                    super.onError(err);
+                }
+            };
+
+            prc.requestWriteSnapshotAsync(crd, fut);
+
+            return fut;
+        }
+
+        GridFutureAdapter<MvccSnapshot> fut = new GridFutureAdapter<>();
+
+        onResponse0(mvccSnapshot0, fut);
+
+        return fut;
+    }
+
+    /** */
+    private synchronized void onResponse0(MvccSnapshot res, GridFutureAdapter<MvccSnapshot> fut) {
+        assert mvccSnapshot == null;
+
+        if (state() != ACTIVE) {
+            assert isRollbackOnly();
+
+            cctx.coordinators().ackTxRollback(res);
+
+            fut.onDone(timedOut() ? timeoutException() : rollbackException());
+        }
+        else if (crdVer != res.coordinatorVersion()) {
             setRollbackOnly();
 
-        if (isDone || mvccSnapshot == null)
+            fut.onDone(new IgniteTxRollbackCheckedException("Mvcc coordinator has been changed during request."));
+        }
+        else
+            fut.onDone(mvccSnapshot = res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        if (isDone // Already finished.
+            || crdVer == 0 // Mvcc snapshot has not been requested yet.
+            || newCrd.version() == crdVer) // Acceptable operations reordering.
+            return MVCC_TRACKER_ID_NA;
+
+        crdVer = newCrd.version();
+
+        if (mvccSnapshot == null)
             return MVCC_TRACKER_ID_NA;
 
         if (qryId == MVCC_TRACKER_ID_NA) {
-            qryId = ID_CNTR.incrementAndGet();
+            long qryId0 = ID_CNTR.incrementAndGet();
 
-            finishFuture().listen(f -> cctx.coordinators().ackQueryDone(mvccSnapshot, qryId));
+            finishFuture().listen(f -> cctx.coordinators().ackQueryDone(mvccSnapshot, qryId0));
         }
 
         return qryId;
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        if (isRollbackOnly())
-            return;
-
-        super.mvccSnapshot(mvccSnapshot);
+    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        throw new UnsupportedOperationException();
     }
 
     /**

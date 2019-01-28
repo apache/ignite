@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,14 +37,20 @@ class PreviousQueries {
     /** */
     private static class Node {
         /** */
+        @GridToStringInclude
         boolean init;
 
         /** */
+        @GridToStringInclude
         Set<Long> cntrs;
 
         /** */
         boolean done() {
             return init && (cntrs == null || cntrs.stream().allMatch(l -> l < 0));
+        }
+
+        @Override public String toString() {
+            return S.toString(Node.class, this);
         }
     }
 
@@ -149,6 +157,8 @@ class PreviousQueries {
 
             for (int i = 0; i < queryIds.size(); i++) {
                 long qryId = queryIds.get(i);
+
+                assert qryId > 0;
 
                 if (cntrs == null)
                     cntrs = node.cntrs = new HashSet<>();
