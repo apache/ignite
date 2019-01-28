@@ -390,26 +390,25 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     @Test
     public void testTimeOutTxLock() throws Exception {
         final int longOpDumpTimeout = 1000;
-        final int nodeCnt = 2;
-
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
         try {
+
+            Ignite grid1 = startGrid(0);
+
             LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
-                    .andMatches(Pattern.compile("xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=deadlock, nodeId=.*"))
+                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, nodeId=.*"))
                     .build();
 
-            for (int i = 0; i < nodeCnt; i++) {
-                ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
+            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
 
-                testLog.registerListener(lsnr);
+            testLog.registerListener(lsnr);
 
-                startGrid(i);
-            }
+            Ignite grid2 = startGrid(1);
 
             awaitPartitionMapExchange();
 
-            emulateTxLockTimeout(grid(0), grid(1));
+            emulateTxLockTimeout(grid1, grid2);
 
             assertTrue(waitForCondition(lsnr::check, 5000));
         }
@@ -691,18 +690,19 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     private void emulateTxLockTimeout(Ignite node1, Ignite node2) throws Exception {
         node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
 
-        final CountDownLatch l = new CountDownLatch(1);
+        final CountDownLatch l1 = new CountDownLatch(1);
+        final CountDownLatch l2 = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    try (Transaction tx = node1.transactions().withLabel("deadlock")
+                    try (Transaction tx = node1.transactions().withLabel("lock")
                             .txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
                         node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
 
-                        l.countDown();
+                        l1.countDown();
 
-                        U.sleep(5000L);
+                        U.awaitQuiet(l2);
 
                         tx.commit();
                     }
@@ -715,9 +715,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = node2.transactions().withLabel("deadlock")
+                try (Transaction tx = node2.transactions().withLabel("lock")
                         .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 2)) {
-                    U.awaitQuiet(l);
+                    U.awaitQuiet(l1);
 
                     node2.cache(DEFAULT_CACHE_NAME).put(1, 20);
 
@@ -725,6 +725,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                 }
                 catch (Exception e) {
                     log.error("Failed on node2", e);
+
+                    l2.countDown();
                 }
             }
         }, "Second");
