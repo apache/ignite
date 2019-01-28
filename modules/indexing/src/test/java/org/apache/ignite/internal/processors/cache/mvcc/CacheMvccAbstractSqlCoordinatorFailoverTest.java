@@ -62,7 +62,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
@@ -95,7 +94,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10753")
     @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 0, DFLT_PARTITION_COUNT,

@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.affinity;
-
-import org.apache.ignite.IgniteSystemProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
+ * Splitter query model type.
  */
-@RunWith(JUnit4.class)
-public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
-    /** */
-    @BeforeClass
-    public static void beforeTests() {
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
-    }
+public enum SplitterQueryModelType {
+    /** Normal select. */
+    SELECT,
 
-    @AfterClass
-    public static void afterTests() {
-        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
-    }
+    /** Union. */
+    UNION,
+
+    /** Table. */
+    TABLE,
+
+    /** Function. */
+    FUNCTION
 }
