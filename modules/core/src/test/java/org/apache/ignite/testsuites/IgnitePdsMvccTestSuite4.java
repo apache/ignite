@@ -23,14 +23,13 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Mvcc variant of {@link IgnitePdsTestSuite4}.
  */
-@RunWith(IgnitePdsMvccTestSuite4.DynamicSuite.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite4 {
     /**
      * @return Suite.
@@ -48,13 +47,5 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(IgnitePdsTaskCancelingTest.class);
 
         return IgnitePdsTestSuite4.suite(ignoredTests);
-    }
-
-    /** */
-    public static class DynamicSuite extends Suite {
-        /** */
-        public DynamicSuite(Class<?> cls) throws InitializationError {
-            super(cls, suite().toArray(new Class<?>[] {null}));
-        }
     }
 }

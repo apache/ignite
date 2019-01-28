@@ -100,7 +100,8 @@ public class MvccDataRow extends DataRow {
         RowData rowData,
         long crdVer,
         long mvccCntr,
-        int mvccOpCntr) {
+        int mvccOpCntr
+    ) {
         super(grp, hash, link, part, rowData);
 
         assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr, mvccOpCntr);
@@ -115,6 +116,13 @@ public class MvccDataRow extends DataRow {
             this.mvccCntr = mvccCntr;
             this.mvccOpCntr = mvccOpCntr;
         }
+    }
+
+    /**
+     * 
+     */
+    public MvccDataRow() {
+        super(0);
     }
 
     /**

@@ -107,7 +107,7 @@
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.2.5.jre7</postgres.connector.version>
-        <rocketmq.version>4.3.0</rocketmq.version>
+        <rocketmq.version>4.4.0</rocketmq.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -251,6 +251,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
