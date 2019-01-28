@@ -488,7 +488,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -507,11 +506,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true,
-                                mvccSnapshot);
+                                true);
                         }
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {

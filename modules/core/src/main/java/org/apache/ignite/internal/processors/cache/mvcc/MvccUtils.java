@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -137,10 +136,10 @@ public class MvccUtils {
         if (isVisible(cctx, snapshot, mvccCrd, mvccCntr, MVCC_OP_COUNTER_NA, false))
             return false;
 
-        byte state = state(cctx, mvccCrd, mvccCntr, 0);
+        byte state;
 
-        return state != TxState.COMMITTED && state != TxState.ABORTED
-            || cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr);
+        return cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr) ||
+            (state = state(cctx, mvccCrd, mvccCntr, 0)) != TxState.COMMITTED && state != TxState.ABORTED;
     }
 
     /**
@@ -150,9 +149,8 @@ public class MvccUtils {
      * @param mvccOpCntr Mvcc operation counter.
      * @return TxState
      * @see TxState
-     * @throws IgniteCheckedException If failed.
      */
-    public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         return state(cctx.kernalContext().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
@@ -163,9 +161,8 @@ public class MvccUtils {
      * @param mvccOpCntr Mvcc operation counter.
      * @return TxState
      * @see TxState
-     * @throws IgniteCheckedException If failed.
      */
-    public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         return state(grp.shared().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
@@ -175,20 +172,21 @@ public class MvccUtils {
      * @param mvccCntr Mvcc counter.
      * @return TxState
      * @see TxState
-     * @throws IgniteCheckedException If failed.
      */
-    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
             return TxState.COMMITTED; // Initial version is always committed;
 
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
+        MvccCoordinator crd = proc.currentCoordinator();
+
         byte state = proc.state(mvccCrd, mvccCntr);
 
         if ((state == TxState.NA || state == TxState.PREPARED)
-            && (proc.currentCoordinator() == null // Recovery from WAL.
-            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            && (crd.unassigned() // Recovery from WAL.
+            || (crd.initialized() && mvccCrd < crd.version()))) // Stale row.
             state = TxState.ABORTED;
 
         return state;
@@ -242,9 +240,18 @@ public class MvccUtils {
         if (mvccCrd > snapshotCrd)
             return false; // Rows in the future are never visible.
 
-        if (mvccCrd < snapshotCrd)
-            // Don't check the row with TxLog if the row is expected to be committed.
-            return !useTxLog || isCommitted(cctx, mvccCrd, mvccCntr, opCntr);
+        if (mvccCrd < snapshotCrd) {
+            if (!useTxLog)
+                return true; // The checking row is expected to be committed.
+
+            byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
+
+            if (MVCC_MAX_SNAPSHOT.compareTo(snapshot) != 0 // Special version which sees all committed entries.
+                && state != TxState.COMMITTED && state != TxState.ABORTED)
+                throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
+
+            return state == TxState.COMMITTED;
+        }
 
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
@@ -543,15 +550,6 @@ public class MvccUtils {
     }
 
     /**
-     * @param topVer Topology version for cache operation.
-     * @return Error.
-     */
-    public static ClusterTopologyServerNotFoundException noCoordinatorError(AffinityTopologyVersion topVer) {
-        return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned for " +
-            "topology version: " + topVer);
-    }
-
-    /**
      * @return Error.
      */
     public static ClusterTopologyServerNotFoundException noCoordinatorError() {
@@ -590,7 +588,10 @@ public class MvccUtils {
         PageMemory pageMem = cctx.dataRegion().pageMemory();
         int grpId = cctx.groupId();
 
+        int pageSize = pageMem.realPageSize(grpId);
+
         long pageId = pageId(link);
+        int itemId = itemId(link);
         long page = pageMem.acquirePage(grpId, pageId);
 
         try {
@@ -599,23 +600,7 @@ public class MvccUtils {
             try{
                 DataPageIO dataIo = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                int offset = dataIo.getPayloadOffset(pageAddr, itemId(link), pageMem.realPageSize(grpId),
-                    MVCC_INFO_SIZE);
-
-                long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
-                long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-                int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
-
-                assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
-
-                long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
-                long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-                int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
-
-                assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
-                    : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
-
-                return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr, newMvccCrd, newMvccCntr, newMvccOpCntr);
+                return invoke(cctx, dataIo, pageAddr, itemId, pageSize, clo, snapshot);
             }
             finally {
                 pageMem.readUnlock(grpId, pageId, page);
@@ -627,15 +612,49 @@ public class MvccUtils {
     }
 
     /**
-     *
      * @param cctx Cache context.
-     * @param mvccCrd Coordinator version.
-     * @param mvccCntr Counter.
-     * @return {@code True} in case the corresponding transaction is in {@code TxState.COMMITTED} state.
+     * @param dataIo Data page IO.
+     * @param pageAddr Page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @param clo Closure.
+     * @param snapshot Mvcc snapshot.
+     * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        return state(cctx, mvccCrd, mvccCntr, mvccOpCntr) == TxState.COMMITTED;
+    private static <R> R invoke(GridCacheContext cctx, DataPageIO dataIo, long pageAddr, int itemId, int pageSize,
+        MvccClosure<R> clo, MvccSnapshot snapshot) throws IgniteCheckedException {
+        int offset = dataIo.getPayloadOffset(pageAddr, itemId, pageSize, MVCC_INFO_SIZE);
+
+        long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
+        long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
+        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+
+        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
+
+        long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
+        long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
+        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+
+        assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
+            : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+        return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr, newMvccCrd, newMvccCntr, newMvccOpCntr);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param snapshot Mvcc snapshot.
+     * @param dataIo Data page IO.
+     * @param pageAddr Page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @return {@code true} If the row is visible.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, DataPageIO dataIo,
+        long pageAddr, int itemId, int pageSize) throws IgniteCheckedException {
+        return invoke(cctx, dataIo, pageAddr, itemId, pageSize, isVisible, snapshot);
     }
 
     /**
@@ -704,7 +723,7 @@ public class MvccUtils {
         GridNearTxLocal tx = tx0 != null && tx0.user() ? (GridNearTxLocal)tx0 : null;
 
         if (tx != null) {
-            if (!tx.pessimistic() || !tx.repeatableRead()) {
+            if (!tx.pessimistic()) {
                 tx.setRollbackOnly();
 
                 throw new UnsupportedTxModeException();
@@ -809,7 +828,7 @@ public class MvccUtils {
 
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
-        else if ((tracker = tx.mvccQueryTracker()) == null)
+        else
             tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx));
 
         if (tracker.snapshot() == null)
@@ -827,6 +846,8 @@ public class MvccUtils {
      */
     public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
         GridNearTxLocal tx) throws IgniteCheckedException {
+        assert tx != null;
+
         MvccSnapshot snapshot;
 
         tx = checkActive(tx);
@@ -834,11 +855,10 @@ public class MvccUtils {
         if ((snapshot = tx.mvccSnapshot()) == null) {
             MvccProcessor prc = cctx.shared().coordinators();
 
-            snapshot = prc.tryRequestSnapshotLocal(tx);
+            snapshot = prc.requestWriteSnapshotLocal();
 
             if (snapshot == null)
-                // TODO IGNITE-7388
-                snapshot = prc.requestSnapshotAsync(tx).get();
+                snapshot = prc.requestWriteSnapshotAsync().get();
 
             tx.mvccSnapshot(snapshot);
         }
@@ -862,6 +882,15 @@ public class MvccUtils {
     /** */
     private static MvccVersion mvccVersion(long crd, long cntr, int opCntr) {
         return new MvccVersionImpl(crd, cntr, opCntr);
+    }
+
+    /**
+     * @param v1 First MVCC version.
+     * @param v2 Second MVCC version.
+     * @return {@code True} if compared versions belongs to the same transaction.
+     */
+    public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
+        return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
     }
 
     /**
@@ -948,7 +977,7 @@ public class MvccUtils {
         private static final long serialVersionUID = 0L;
         /** */
         private UnsupportedTxModeException() {
-            super("Only pessimistic repeatable read transactions are supported when MVCC is enabled.");
+            super("Only pessimistic transactions are supported when MVCC is enabled.");
         }
     }
 

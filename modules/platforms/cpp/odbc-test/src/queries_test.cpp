@@ -26,10 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -803,8 +799,7 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
-    if (JetBrains::underTeamcity())
-        return;
+    MUTE_TEST_FOR_TEAMCITY;
 
     // Starting additional node.
     Ignite node1 = StartAdditionalNode("Node1");
@@ -1702,7 +1697,7 @@ BOOST_AUTO_TEST_CASE(TestMultipleSelects)
 
     long res = 0;
 
-    BOOST_CHECKPOINT("Binding column");
+    BOOST_TEST_CHECKPOINT("Binding column");
     ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
 
     if (!SQL_SUCCEEDED(ret))
@@ -1752,7 +1747,7 @@ BOOST_AUTO_TEST_CASE(TestMultipleMixedStatements)
 
     long res = 0;
 
-    BOOST_CHECKPOINT("Binding column");
+    BOOST_TEST_CHECKPOINT("Binding column");
     ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
 
     if (!SQL_SUCCEEDED(ret))
@@ -1819,7 +1814,7 @@ BOOST_AUTO_TEST_CASE(TestMultipleMixedStatementsNoFetch)
 
     long res = 0;
 
-    BOOST_CHECKPOINT("Binding column");
+    BOOST_TEST_CHECKPOINT("Binding column");
     ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
 
     if (!SQL_SUCCEEDED(ret))

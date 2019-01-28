@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,6 +131,61 @@ class ClusterCachesInfo {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
+    }
+
+    /**
+     * Filters all dynamic cache descriptors and groups that were not presented on node start
+     * and were received with grid discovery data.
+     *
+     * @param localConfigData node's local cache configurations
+     * (both from static config and stored with persistent caches).
+     *
+     */
+    public void filterDynamicCacheDescriptors(CacheJoinNodeDiscoveryData localConfigData) {
+        if (ctx.isDaemon())
+            return;
+
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = localConfigData.caches();
+
+        Iterator<Map.Entry<String, DynamicCacheDescriptor>> cachesIter = registeredCaches.entrySet().iterator();
+
+        while (cachesIter.hasNext()) {
+            Map.Entry<String, DynamicCacheDescriptor> e = cachesIter.next();
+
+            if (!caches.containsKey(e.getKey())) {
+                cachesIter.remove();
+
+                ctx.discovery().removeCacheFilter(e.getKey());
+            }
+        }
+
+        Iterator<Map.Entry<Integer, CacheGroupDescriptor>> grpsIter = registeredCacheGrps.entrySet().iterator();
+
+        while (grpsIter.hasNext()) {
+            Map.Entry<Integer, CacheGroupDescriptor> e = grpsIter.next();
+
+            boolean removeGrp = true;
+
+            for (DynamicCacheDescriptor cacheDescr : registeredCaches.values()) {
+                if (cacheDescr.groupId() == e.getKey()) {
+                    removeGrp = false;
+
+                    break;
+                }
+            }
+
+            if (removeGrp) {
+                grpsIter.remove();
+
+                ctx.discovery().removeCacheGroup(e.getValue());
+            }
+        }
+
+        locJoinCachesCtx = new LocalJoinCachesContext(
+            locJoinCachesCtx.caches(),
+            locJoinCachesCtx.initCaches(),
+            registeredCacheGrps,
+            registeredCaches);
     }
 
     /**
