@@ -464,7 +464,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @param msgId Message ID.
      * @param e Entry to add.
      * @throws IgniteCheckedException If failed.
      */
