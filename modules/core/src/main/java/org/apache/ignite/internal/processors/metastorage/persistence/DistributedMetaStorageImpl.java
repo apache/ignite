@@ -386,7 +386,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert newVal != null : key;
 
-        return compareAndSetAsync(key, marshal(expVal), marshal(newVal)).get();
+        return compareAndSetAsync(key, expVal, newVal).get();
     }
 
     /** {@inheritDoc} */
