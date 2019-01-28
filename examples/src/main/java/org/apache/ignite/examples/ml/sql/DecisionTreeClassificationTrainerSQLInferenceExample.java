@@ -177,8 +177,10 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 "predict('my_model', pclass, case sex when 'male' then 1 else 0 end, age, sibsp, parch, fare) as prediction " +
                 "from titanik_train"))) {
                 // Print inference result.
+                System.out.println("| Truth | Prediction |");
+                System.out.println("|--------------------|");
                 for (List<?> row : cursor)
-                    System.out.println(row);
+                    System.out.println("|     " + row.get(0) + " |        " + row.get(1) + " |");
             }
         }
     }
