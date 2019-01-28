@@ -218,7 +218,7 @@ class Paragraph {
     }
 
     scanExplain() {
-        return this.queryExecuted() && (this.type === 'scan' || this.queryArgs.query.startsWith('EXPLAIN '));
+        return this.queryExecuted() && (this.qryType === 'scan' || this.queryArgs.query.startsWith('EXPLAIN '));
     }
 
     timeLineSupported() {
