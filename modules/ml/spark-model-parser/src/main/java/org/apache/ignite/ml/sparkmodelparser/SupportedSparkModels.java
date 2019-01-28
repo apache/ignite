@@ -36,5 +36,11 @@ public enum SupportedSparkModels {
     LINEAR_SVM,
 
     /** Random forest. */
-    RANDOM_FOREST
+    RANDOM_FOREST,
+
+    /**
+     * Gradient boosted trees.
+     * NOTE: support binary classification only with raw labels 0 and 1
+     */
+    GRADIENT_BOOSTED_TREES
 }
