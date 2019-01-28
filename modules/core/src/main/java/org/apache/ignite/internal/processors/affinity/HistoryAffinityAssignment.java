@@ -50,11 +50,11 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final ClusterNode[] nodes;
 
-    /** Assignments are stored as sequences of indexes in nodes array. */
-    private final int[] parts;
+    /** Ideal assignments are stored as sequences of indexes in nodes array. */
+    private final char[] idealParts;
 
-    /** */
-    private final Map<Integer, int[]> idealAssignmentDiff;
+    /** Diff with ideal. */
+    private final Map<Integer, char[]> assignmentDiff;
 
     /**
      * @param assign Assignment.
@@ -62,20 +62,18 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     public HistoryAffinityAssignment(AffinityAssignment assign) {
         topVer = assign.topologyVersion();
 
-        int tmp = assign.idealAssignment().get(0).size();
-
-        int cpys = tmp == 1 ? 2 : tmp; // Special case for late affinity with zero backups.
+        int cpys = assign.idealAssignment().get(0).size();
 
         if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || cpys > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
-            assignment = Collections.unmodifiableList(assign.assignment());
+            assignment = assign.assignment();
 
-            idealAssignment = Collections.unmodifiableList(assign.idealAssignment());
+            idealAssignment = assign.idealAssignment();
 
             nodes = null;
 
-            parts = null;
+            idealParts = null;
 
-            idealAssignmentDiff = null;
+            assignmentDiff = null;
 
             return;
         }
@@ -83,40 +81,42 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         List<List<ClusterNode>> assignment = assign.assignment();
         List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
 
+        boolean same = assignment == idealAssignment;
+
         int partsCnt = assignment.size();
 
-        parts = new int[partsCnt * cpys];
+        idealParts = new char[partsCnt * cpys];
 
-        Map<ClusterNode, Integer> orderMap = new HashMap<>();
+        Map<ClusterNode, Character> orderMap = new HashMap<>();
 
-        int order = 1; // Zero order is reserved for empty slot case.
+        char order = 0; // Char type is used as unsigned short to avoid conversions.
 
-        idealAssignmentDiff = new HashMap<>();
+        assignmentDiff = new HashMap<>();
 
         for (int p = 0; p < assignment.size(); p++) {
-            List<ClusterNode> nodes = assignment.get(p);
-            List<ClusterNode> nodes0 = idealAssignment.get(p);
+            List<ClusterNode> curr = assignment.get(p);
+            List<ClusterNode> ideal = idealAssignment.get(p);
 
-            for (int i = 0; i < nodes.size(); i++) {
-                ClusterNode node = nodes.get(i);
+            for (int i = 0; i < ideal.size(); i++) {
+                ClusterNode node = ideal.get(i);
 
-                Integer nodeOrder = orderMap.get(node);
+                Character nodeOrder = orderMap.get(node);
 
                 if (nodeOrder == null)
                     orderMap.put(node, (nodeOrder = order++));
 
-                parts[p * cpys + i] = nodeOrder;
+                idealParts[p * cpys + i] = nodeOrder;
             }
 
-            if (!nodes.equals(nodes0)) {
-                int[] idx = new int[nodes0.size()];
+            if (!same && !curr.equals(ideal)) {
+                char[] idx = new char[curr.size()];
 
-                idealAssignmentDiff.put(p, idx);
+                assignmentDiff.put(p, idx);
 
-                for (int i = 0; i < nodes0.size(); i++) {
-                    ClusterNode node = nodes0.get(i);
+                for (int i = 0; i < curr.size(); i++) {
+                    ClusterNode node = curr.get(i);
 
-                    Integer nodeOrder = orderMap.get(node);
+                    Character nodeOrder = orderMap.get(node);
 
                     if (nodeOrder == null)
                         orderMap.put(node, (nodeOrder = order++));
@@ -126,14 +126,14 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         }
 
-        // Rewrite according to order.
+        // Fill array according to assigned order.
         nodes = orderMap.keySet().stream().toArray(ClusterNode[]::new);
 
         Arrays.sort(nodes, (o1, o2) -> orderMap.get(o1).compareTo(orderMap.get(o2)));
 
-        this.assignment = new AbstractList<List<ClusterNode>>() {
+        this.idealAssignment = new AbstractList<List<ClusterNode>>() {
             @Override public List<ClusterNode> get(int idx) {
-                return partitionNodes(idx, false, cpys);
+                return partitionNodes(idx, true, cpys);
             }
 
             @Override public int size() {
@@ -141,9 +141,9 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         };
 
-        this.idealAssignment = new AbstractList<List<ClusterNode>>() {
+        this.assignment = same ? this.idealAssignment : new AbstractList<List<ClusterNode>>() {
             @Override public List<ClusterNode> get(int idx) {
-                return partitionNodes(idx, true, cpys);
+                return partitionNodes(idx, false, cpys);
             }
 
             @Override public int size() {
@@ -157,27 +157,21 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
      * @param ideal {@code True} for ideal assignment.
      */
     private List<ClusterNode> partitionNodes(int p, boolean ideal, int cpys) {
-        int[] order = idealAssignmentDiff.get(p);
+        char[] order;
 
-        if (ideal && order != null) {
+        if (!ideal && (order = assignmentDiff.get(p)) != null) {
             List<ClusterNode> ret = new ArrayList<>(order.length);
 
             for (int i = 0; i < order.length; i++)
-                ret.add(nodes[order[i] - 1]);
+                ret.add(nodes[order[i]]);
 
             return ret;
         }
 
         List<ClusterNode> ret = new ArrayList<>(cpys);
 
-        for (int i = 0; i < cpys; i++) {
-            int ord = parts[p * cpys + i];
-
-            if (ord == 0)
-                break;
-
-            ret.add(nodes[ord - 1]);
-        }
+        for (int i = 0; i < cpys; i++)
+            ret.add(nodes[idealParts[p * cpys + i]]);
 
         return ret;
     }

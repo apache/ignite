@@ -83,15 +83,16 @@ public class GridAffinityAssignmentJolBenchmark {
             }
 
         // Measure history assignment for normal and huge partition count.
-        // Preferably run one at a time to avoid side-effects.
+        // Best result is achieved when running one measure at a time with large enough size of new region
+        // (to avoid object relocation).
         measureHistory(1024, 32, 0);
-//        measureHistory(1024, 32, 1);
-//        measureHistory(1024, 32, 2);
-//        measureHistory(1024, 32, Integer.MAX_VALUE);
-//        measureHistory(32768, 32, 0);
-//        measureHistory(32768, 32, 1);
-//        measureHistory(32768, 32, 2);
-//        measureHistory(32768, 32, Integer.MAX_VALUE);
+        measureHistory(1024, 32, 1);
+        measureHistory(1024, 32, 2);
+        measureHistory(1024, 32, Integer.MAX_VALUE);
+        measureHistory(32768, 32, 0);
+        measureHistory(32768, 32, 1);
+        measureHistory(32768, 32, 2);
+        measureHistory(32768, 32, Integer.MAX_VALUE);
     }
 
     /**
@@ -185,7 +186,9 @@ public class GridAffinityAssignmentJolBenchmark {
     private static void measureHistory(int parts, int nodes, int backups) throws Exception {
         System.gc();
 
-        long deopt = 0; // measureHistory0(parts, nodes, true, backups);
+        long deopt = measureHistory0(parts, nodes, true, backups);
+
+        System.gc();
 
         long opt = measureHistory0(parts, nodes, false, backups);
 
@@ -281,6 +284,8 @@ public class GridAffinityAssignmentJolBenchmark {
 
             prevAssignment = idealAssignment;
         }
+
+        System.gc();
 
         GraphLayout l = GraphLayout.parseInstance(affCache);
 

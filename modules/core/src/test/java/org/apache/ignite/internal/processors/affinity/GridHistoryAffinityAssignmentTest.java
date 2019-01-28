@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -41,6 +50,35 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
+    }
+
+    /** */
+    @Test
+    public void testSimple() {
+        int cnt = 128;
+
+        List<List<ClusterNode>> curr = new ArrayList<>();
+        List<List<ClusterNode>> ideal = new ArrayList<>();
+
+        for(int i = 0; i < cnt; i++) {
+            List<ClusterNode> nodes = Arrays.asList(new GridTestNode(UUID.randomUUID()), new GridTestNode(UUID.randomUUID()));
+            curr.add(nodes);
+            ideal.add(Arrays.asList(nodes.get(1), nodes.get(0)));
+        }
+
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(1, 0);
+        HistoryAffinityAssignment lateAssign =
+            new HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, curr, ideal));
+
+        assertEquals("Late", curr, lateAssign.assignment());
+        assertEquals("Ideal late", ideal, lateAssign.idealAssignment());
+
+        HistoryAffinityAssignment idealAssign = new
+            HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, ideal, ideal));
+
+        assertSame("Expecting same proxies", idealAssign.assignment(), idealAssign.idealAssignment());
+
+        assertEquals("Ideal", ideal, idealAssign.idealAssignment());
     }
 
     /** */
