@@ -151,20 +151,25 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg.isStopNodes()) {
-            info("Stopping all grids...");
+        try {
+            if (testsCfg.isStopNodes()) {
+                info("Stopping all grids...");
 
+                stopAllGrids();
+
+                FileUtils.deleteDirectory(workDir);
+
+                info("Ignite's 'work' directory has been cleaned.");
+
+                memoryUsage();
+
+                System.gc();
+
+                memoryUsage();
+            }
+        }
+        finally {
             stopAllGrids();
-
-            FileUtils.deleteDirectory(workDir);
-
-            info("Ignite's 'work' directory has been cleaned.");
-
-            memoryUsage();
-
-            System.gc();
-
-            memoryUsage();
         }
     }
 
