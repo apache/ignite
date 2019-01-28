@@ -390,24 +390,28 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     @Test
     public void testTimeOutTxLock() throws Exception {
         final int longOpDumpTimeout = 1000;
+        final int nodeCnt = 2;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
         try {
-            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
-
-            Ignite node1 = startGrid(0);
-            Ignite node2 = startGrid(1);
-
             LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
                     .andMatches(Pattern.compile("xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=deadlock, nodeId=.*"))
                     .build();
 
-            testLog.registerListener(lsnr);
+            for (int i = 0; i < nodeCnt; i++) {
+                ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
 
-            startTxDeadlock(node1, node2);
+                testLog.registerListener(lsnr);
 
-            assertTrue(lsnr.check());
+                startGrid(i);
+            }
+
+            awaitPartitionMapExchange();
+
+            startTxDeadlock(grid(0), grid(1));
+
+            assertTrue(waitForCondition(lsnr::check, 5000));
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
@@ -687,7 +691,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     private void startTxDeadlock(Ignite node1, Ignite node2) throws Exception {
         node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
 
-        final CountDownLatch l = new CountDownLatch(2);
+        final CountDownLatch l = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
             @Override public void run() {
@@ -698,17 +702,13 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                         l.countDown();
 
-                        U.awaitQuiet(l);
-
-                        node1.cache(DEFAULT_CACHE_NAME).put(2, 20);
+                        U.sleep(5000L);
 
                         tx.commit();
-
-                        fail();
                     }
                 }
-                catch (Exception ignored) {
-                    // No-op.
+                catch (Exception e) {
+                    log.error("Failed on node1", e);
                 }
             }
         }, "First");
@@ -716,19 +716,15 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = node2.transactions().withLabel("deadlock")
-                        .txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
-                    node2.cache(DEFAULT_CACHE_NAME).put(2, 2);
-
-                    l.countDown();
-
+                        .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 2)) {
                     U.awaitQuiet(l);
 
-                    node2.cache(DEFAULT_CACHE_NAME).put(1, 1);
+                    node2.cache(DEFAULT_CACHE_NAME).put(1, 20);
 
                     tx.commit();
                 }
-                catch (Exception ignored) {
-                    // No-op.
+                catch (Exception e) {
+                    log.error("Failed on node2", e);
                 }
             }
         }, "Second");

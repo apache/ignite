@@ -1158,7 +1158,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
         /** */
         final long longOpDumpTimeout = IgniteSystemProperties.getLong(
-                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
+                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000L);
         /**
          * Default constructor.
          */
