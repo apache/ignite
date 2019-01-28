@@ -41,7 +41,7 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
     ).subscribe();
 
     $onChanges(changes) {
-        if (changes.resultDataStatus && BLANK_STATUS.has(changes.resultDataStatus.currentValue) && this.igniteChart.chart)
+        if (changes.resultDataStatus && BLANK_STATUS.has(changes.resultDataStatus.currentValue))
             this.destroyChart();
     }
 
@@ -50,8 +50,10 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
     }
 
     destroyChart() {
-        this.igniteChart.chart.destroy();
-        this.igniteChart.config = null;
-        this.igniteChart.chart = null;
+        if (this.igniteChart.chart) {
+            this.igniteChart.chart.destroy();
+            this.igniteChart.config = null;
+            this.igniteChart.chart = null;
+        }
     }
 }
