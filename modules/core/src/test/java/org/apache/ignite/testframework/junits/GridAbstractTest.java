@@ -146,8 +146,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
-    "ProhibitedExceptionDeclared",
-    "JUnitTestCaseWithNonTrivialConstructors"
+    "ProhibitedExceptionDeclared"
 })
 public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /**************************************************************
