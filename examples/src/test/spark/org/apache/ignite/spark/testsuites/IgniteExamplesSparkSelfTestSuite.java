@@ -21,7 +21,7 @@ import org.apache.ignite.spark.examples.IgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.JavaIgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.SharedRDDExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -40,7 +40,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 })
 public class IgniteExamplesSparkSelfTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesSparkSelfTestSuite.class));
