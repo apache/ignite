@@ -149,10 +149,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    /** */
+    private void beforeHadoopCommandLineTest() throws Exception {
         hiveHome = IgniteSystemProperties.getString("HIVE_HOME");
 
         assertFalse("HIVE_HOME hasn't been set.", F.isEmpty(hiveHome));
@@ -216,13 +214,15 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         return path != null ? path : U.resolveIgnitePath("config/hadoop/" + name);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    /** */
+    private void afterHadoopCommandLineTest() throws Exception {
         U.delete(testWorkDir);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        beforeHadoopCommandLineTest();
+
         String cfgPath = "config/hadoop/default-config.xml";
 
         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> tup = IgnitionEx.loadConfiguration(cfgPath);
@@ -237,6 +237,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
+
+        afterHadoopCommandLineTest();
     }
 
     /**
