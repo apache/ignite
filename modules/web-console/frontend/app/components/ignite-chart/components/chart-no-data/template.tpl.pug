@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-no-data(result-data-status='$ctrl.resultDataStatus').no-data
+no-data(result-data-status='$ctrl.resultDataStatus' handle-cluster-inactive='$ctrl.handleClusterInactive').no-data
     div(ng-if='!$ctrl.igniteChart.config.data.datasets')
         | No Data #[br]
         | Make sure you are connected to the right grid.

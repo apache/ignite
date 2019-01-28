@@ -25,6 +25,7 @@ export default {
         igniteChart: '^igniteChart'
     },
     bindings: {
-        resultDataStatus: '<'
+        resultDataStatus: '<',
+        handleClusterInactive: '<'
     }
 } as ng.IComponentOptions;

@@ -15,23 +15,43 @@
  * limitations under the License.
  */
 
+import {map, distinctUntilChanged, tap} from 'rxjs/operators';
+
 import {WellKnownOperationStatus} from 'app/types';
 import {IgniteChartController} from '../../controller';
 
 const BLANK_STATUS = new Set([WellKnownOperationStatus.ERROR, WellKnownOperationStatus.WAITING]);
 
-export default class IgniteChartNoDataCtrl implements ng.I {
-    static $inject = ['$compile', '$element', '$scope'];
+export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestroy {
+    static $inject = ['AgentManager'];
 
-    constructor(private $compile, private $element, private $scope) {}
+    constructor(private AgentManager) {}
 
     igniteChart: IgniteChartController;
 
+    handleClusterInactive: boolean;
+
+    clusterIsInactive$ = this.AgentManager.connectionSbj.pipe(
+        map((sbj) => !_.isNil(sbj.cluster) && sbj.cluster.active === false),
+        distinctUntilChanged(),
+        tap((clusterIsInactive) => {
+            if (clusterIsInactive && this.handleClusterInactive)
+                this.destroyChart();
+        })
+    ).subscribe();
+
     $onChanges(changes) {
-        if (changes.resultDataStatus && BLANK_STATUS.has(changes.resultDataStatus.currentValue) && this.igniteChart.chart) {
-            this.igniteChart.chart.destroy();
-            this.igniteChart.config = null;
-            this.igniteChart.chart = null;
-        }
+        if (changes.resultDataStatus && BLANK_STATUS.has(changes.resultDataStatus.currentValue) && this.igniteChart.chart)
+            this.destroyChart();
+    }
+
+    $onDestroy() {
+        this.clusterIsInactive$.unsubscribe();
+    }
+
+    destroyChart() {
+        this.igniteChart.chart.destroy();
+        this.igniteChart.config = null;
+        this.igniteChart.chart = null;
     }
 }
