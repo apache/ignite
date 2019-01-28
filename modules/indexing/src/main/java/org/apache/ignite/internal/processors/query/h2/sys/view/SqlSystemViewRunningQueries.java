@@ -73,7 +73,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             long duration = now - info.startTime();
 
             rows.add(
-                createRow(ses, rows.size(),
+                createRow(ses,
                     info.clusterWideQueryId(),
                     info.query(),
                     info.schemaName(),

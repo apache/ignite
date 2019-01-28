@@ -201,7 +201,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testRunningQueriesView() throws Exception {
-        Ignite ignite = startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
         IgniteCache cache = ignite.createCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
@@ -229,9 +229,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertNotEquals(id0, id1);
 
-        assertTrue(id0.equals("1X1") || id1.equals("1X1"));
 
-        assertTrue(id0.equals("1X2") || id1.equals("1X2"));
+        String qryPrefix = ignite.localNode().id() + "_";
+
+        String qryId1 = qryPrefix + "1";
+        String qryId2 = qryPrefix + "2";
+
+        assertTrue(id0.equals(qryId1) || id1.equals(qryId1));
+
+        assertTrue(id0.equals(qryId2) || id1.equals(qryId2));
 
         assertEquals(2, cache.query(new SqlFieldsQuery(sql)).getAll().size());
 
@@ -257,9 +263,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         notClosedQryCursor.close();
 
-        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='1X7'";
+        sql = "SELECT SQL, QUERY_ID FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
 
-        assertEquals("1X7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+        assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
 
         sql = "SELECT SQL FROM IGNITE.LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
 
