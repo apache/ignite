@@ -1736,7 +1736,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (cctx.mvccEnabled() || !readThrough || skipVals ||
+        if (cctx.mvccEnabled() || !cctx.readThroughConfigured() || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 
