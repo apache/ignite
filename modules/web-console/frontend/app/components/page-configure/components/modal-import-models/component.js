@@ -1006,7 +1006,7 @@ export class ModalImportModels {
 
         $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-        function fetchDomainData() {
+        const fetchDomainData = () => {
             return agentMgr.awaitAgent()
                 .then(() => {
                     ActivitiesData.post({
@@ -1064,7 +1064,7 @@ export class ModalImportModels {
                             Loading.finish('importDomainFromDb');
                         });
                 });
-        }
+        };
 
         this.agentIsAvailable$ = this.agentMgr.connectionSbj.pipe(
             pluck('state'),
