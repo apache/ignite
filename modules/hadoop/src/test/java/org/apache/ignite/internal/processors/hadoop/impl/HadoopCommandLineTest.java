@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -435,6 +436,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hive integration.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
     @Test
     public void testHiveCommandLine() throws Exception {
         assertEquals(0, executeHiveQuery(
