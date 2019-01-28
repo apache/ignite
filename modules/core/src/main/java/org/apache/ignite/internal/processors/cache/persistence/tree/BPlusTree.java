@@ -2258,59 +2258,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param sortedRows List of sorted rows.
-     */
-    public final void putAll(List<T> sortedRows) throws IgniteCheckedException {
-        checkDestroyed();
-
-        try {
-            PutAll p = new PutAll();
-
-            p.sortedRows = sortedRows;
-
-            for (;;) {
-                p.init();
-
-                Result res = doPutAll(p, p.rootId, 0L, p.rootLvl);
-
-                switch (res) {
-                    case RETRY:
-                    case RETRY_ROOT:
-                        checkInterrupted();
-
-                        continue;
-
-                    case FOUND:
-                        // We may need to insert split key into upper level here.
-                        if (!p.isFinished()) {
-                            checkInterrupted();
-
-                            continue;
-                        }
-
-                        return;
-
-                    default:
-                        throw new IllegalStateException("Result: " + res);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on rows: " + sortedRows, e);
-        }
-        catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on rows: " + sortedRows, e);
-        }
-        finally {
-            checkDestroyed();
-        }
-    }
-
-    private Result doPutAll(PutAll p, long pageId, long fwdId, int lvl) {
-        return RETRY_ROOT;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override public final T put(T row) throws IgniteCheckedException {
@@ -2744,54 +2691,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BPlusTree.class, this);
-    }
-
-    /**
-     *
-     */
-    class PutAll {
-        /** */
-        long rmvId;
-
-        /** Starting point root level. May be outdated. Must be modified only in {@link Get#init()}. */
-        int rootLvl;
-
-        /** Starting point root ID. May be outdated. Must be modified only in {@link Get#init()}. */
-        long rootId;
-
-        /** */
-        List<T> sortedRows;
-
-        /** In/Out parameter: Page ID. */
-        long pageId;
-
-        /**
-         * Initialize operation.
-         *
-         * @throws IgniteCheckedException If failed.
-         */
-        final void init() throws IgniteCheckedException {
-            TreeMetaData meta0 = treeMeta();
-
-            assert meta0 != null;
-
-            restartFromRoot(meta0.rootId, meta0.rootLvl, globalRmvId.get());
-        }
-
-        /**
-         * @param rootId Root page ID.
-         * @param rootLvl Root level.
-         * @param rmvId Remove ID to be afraid of.
-         */
-        void restartFromRoot(long rootId, int rootLvl, long rmvId) {
-            this.rootId = rootId;
-            this.rootLvl = rootLvl;
-            this.rmvId = rmvId;
-        }
-
-        public boolean isFinished() {
-            return false;
-        }
     }
 
     /**
@@ -3747,10 +3646,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    class InvokeAll extends Invoke {
+        /**
+         * @param row Row.
+         * @param x Implementation specific argument.
+         * @param clo Closure.
+         */
+        InvokeAll(L row, Object x, InvokeClosure<T> clo) {
+            super(row, x, clo);
+        }
+    }
+
     /**
      * Invoke operation.
      */
-    public final class Invoke extends Get {
+    class Invoke extends Get {
         /** */
         Object x;
 
@@ -3771,7 +3681,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        private Invoke(L row, Object x, final InvokeClosure<T> clo) {
+        Invoke(L row, Object x, final InvokeClosure<T> clo) {
             super(row, false);
 
             assert clo != null;
