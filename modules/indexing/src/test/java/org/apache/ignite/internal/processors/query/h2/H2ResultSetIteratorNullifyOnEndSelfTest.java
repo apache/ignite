@@ -161,11 +161,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
         populateDataIntoPerson();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache.
      */

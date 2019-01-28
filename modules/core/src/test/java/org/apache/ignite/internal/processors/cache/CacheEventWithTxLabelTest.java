@@ -133,13 +133,6 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
             fail("https://issues.apache.org/jira/browse/IGNITE-10270");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Check all cases for passing transaction label in cash event.
      *

@@ -48,13 +48,6 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Test using PK indexes for complex primary key.
      */

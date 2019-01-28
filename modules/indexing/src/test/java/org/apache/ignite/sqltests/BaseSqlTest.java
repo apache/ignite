@@ -277,13 +277,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         explain = locExp;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Result of sql query. Contains metadata and all values in memory.
      */

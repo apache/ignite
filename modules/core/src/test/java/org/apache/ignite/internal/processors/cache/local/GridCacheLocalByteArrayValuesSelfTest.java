@@ -86,9 +86,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cache = null;
-        ignite = null;
-
-        stopAllGrids();
     }
 
     /**

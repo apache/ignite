@@ -83,11 +83,6 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *
      */
