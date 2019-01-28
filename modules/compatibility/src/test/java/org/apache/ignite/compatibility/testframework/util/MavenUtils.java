@@ -42,6 +42,9 @@ public class MavenUtils {
     /** */
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
+    /** Default path for maven settings file. */
+    private static String localProxyMavenSettings = "~/.m2/local-proxy.xml";
+
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
 
