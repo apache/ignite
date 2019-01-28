@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public interface GridMessageRequestListener extends GridMessageListener {
+public interface GridConfigureMessageListener extends GridMessageListener {
     /**
      * @param ch Channel to configure.
      * @param msg Configuration message.

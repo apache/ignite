@@ -937,8 +937,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** */
     private void onChannelCreated0(IgniteSocketChannel ch) {
+        assert ch != null;
+
         for (GridIoChannelListener lsnr : channelLsnrs)
             lsnr.onChannelCreated(ch);
+
+        if (ch.topic() == null)
+            return;
 
         try {
             final ConcurrentLinkedQueue<GridIoChannelListener> lsnrQueue = channelLsnrMap.get(ch.topic());
@@ -992,8 +997,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             for (int i = 0; i < sysLsnrs.length; i++) {
                 GridMessageListener lsrn = sysLsnrs[i];
 
-                if (lsrn instanceof GridMessageRequestListener) {
-                    GridMessageRequestListener rqLsnr = (GridMessageRequestListener)lsrn;
+                if (lsrn instanceof GridConfigureMessageListener) {
+                    GridConfigureMessageListener rqLsnr = (GridConfigureMessageListener)lsrn;
 
                     rqLsnr.onChannelConfigure(ch, msg.message());
                 }

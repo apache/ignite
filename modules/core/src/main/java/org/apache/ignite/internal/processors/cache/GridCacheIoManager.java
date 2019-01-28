@@ -40,7 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.GridMessageRequestListener;
+import org.apache.ignite.internal.managers.communication.GridConfigureMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
@@ -166,7 +166,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** Message listener. */
-    private GridMessageRequestListener lsnr = new GridMessageRequestListener() {
+    private GridConfigureMessageListener lsnr = new GridConfigureMessageListener() {
         @Override public void onMessage(final UUID nodeId, final Object msg, final byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
