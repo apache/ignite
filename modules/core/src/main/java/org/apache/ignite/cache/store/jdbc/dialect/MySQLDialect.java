@@ -67,4 +67,9 @@ public class MySQLDialect extends BasicJdbcDialect {
         // See: http://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
         return Integer.MIN_VALUE;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkUpdatedEntriesCount(int updCnt) {
+        return updCnt == 1 || updCnt == 2;
+    }
 }

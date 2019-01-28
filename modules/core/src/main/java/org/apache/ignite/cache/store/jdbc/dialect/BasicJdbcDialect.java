@@ -290,4 +290,9 @@ public class BasicJdbcDialect implements JdbcDialect {
     @Override public int getFetchSize() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkUpdatedEntriesCount(int updCnt) {
+        return updCnt != 1;
+    }
 }

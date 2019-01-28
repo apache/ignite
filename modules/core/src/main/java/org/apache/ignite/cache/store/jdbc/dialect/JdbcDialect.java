@@ -132,4 +132,12 @@ public interface JdbcDialect extends Serializable {
      * @return The fetch size for result sets.
      */
     public int getFetchSize();
+
+    /**
+     * Checks the number of updated entries returned by {@link java.sql.PreparedStatement#executeUpdate()}.
+     *
+     * @param updCnt Number of updated entries.
+     * @return {@code True} if number of updated entries is correct for dialect.
+     */
+    public boolean checkUpdatedEntriesCount(int updCnt);
 }
