@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
  */
 public class ExpectThrowableFailureHandler extends TestFailingFailureHandler {
     /** Expected throwables. */
-    private final List<Class<? extends Throwable>> errs = new ArrayList<>();
+    private final List<Class<? extends Throwable>> expectedErrs = new ArrayList<>();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -46,7 +46,7 @@ public class ExpectThrowableFailureHandler extends TestFailingFailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
-        for (Class<? extends Throwable> err : errs) {
+        for (Class<? extends Throwable> err : expectedErrs) {
             if (!X.hasCause(failureCtx.error(), err))
                 continue;
 
@@ -69,7 +69,7 @@ public class ExpectThrowableFailureHandler extends TestFailingFailureHandler {
      * @return {@code true} (as specified by {@link Collection#add})
      */
     public boolean add(Class<? extends Throwable> cls) {
-        return errs.add(cls);
+        return expectedErrs.add(cls);
     }
 
     /**
@@ -77,6 +77,6 @@ public class ExpectThrowableFailureHandler extends TestFailingFailureHandler {
      * @return {@code true} (as specified by {@link Collection#remove})
      */
     public boolean remove(Class<? extends Throwable> cls) {
-        return errs.remove(cls);
+        return expectedErrs.remove(cls);
     }
 }
