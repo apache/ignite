@@ -1311,8 +1311,6 @@ class ClusterCachesInfo {
      * @param firstNode {@code True} if first node in cluster starts.
      */
     private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
-        assert locJoinCachesCtx == null : locJoinCachesCtx;
-
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
 
@@ -1320,6 +1318,9 @@ class ClusterCachesInfo {
         }
 
         if (joinDiscoData != null) {
+            U.debug(log, "Processing join discovery data [joinDiscoData=" + joinDiscoData +
+                ", firstNode=" + firstNode + ", reconnect=" + reconnect + ']');
+
             List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = new ArrayList<>();
             locCfgsForActivation = new HashMap<>();
 
@@ -1375,6 +1376,8 @@ class ClusterCachesInfo {
                 locJoinStartCaches,
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
+
+            U.debug(log, "Created local join caches context: " + locJoinCachesCtx);
         }
     }
 

@@ -1470,6 +1470,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         WaitRebalanceInfo waitRebalanceInfo = null;
 
+        U.debug(log, "All registered cache groups on server join [grps=" + caches.allGroups() +
+            ", crd=" + crd + ", locJoin=" + locJoin + ']');
+
         if (locJoin) {
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {

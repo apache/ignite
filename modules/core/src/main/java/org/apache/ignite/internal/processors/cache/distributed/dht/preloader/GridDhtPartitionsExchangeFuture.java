@@ -775,6 +775,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         LocalJoinCachesContext locJoinCtx = exchActions == null ? null : exchActions.localJoinContext();
 
+        U.debug(log, "Will init caches on local join [locJoinCtx=" + locJoinCtx + ", exchActions=" + exchActions + ']');
+
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = locJoinCtx == null ? null :
             locJoinCtx.caches();
 
