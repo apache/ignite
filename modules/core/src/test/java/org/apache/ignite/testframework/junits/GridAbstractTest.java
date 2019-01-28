@@ -265,12 +265,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         GridAbstractTest.startGrid = startGrid;
     }
 
-    /**
-     * Invoked by reflection from {@link ClassRuleWrapper}, in order to properly handle
-     * overridden legacy lifecycle methods.
-     */
-    @SuppressWarnings("unused")
-    public final void clsRule(Statement base) throws Throwable {
+    /** */
+    private void clsRule(Statement base) throws Throwable {
         GridAbstractTestWithAssumption src = () ->
         {
             try {
@@ -2528,13 +2524,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         /** */
         private static void apply(Statement base, Class<?> cls, long timeoutMnutes) throws Throwable {
-            Method mtd = cls.getMethod("clsRule", Statement.class);
-
-            Object clsInstance = cls.newInstance();
-
             try {
                 runSerializer.tryLock(timeoutMnutes, TimeUnit.MINUTES);
-                mtd.invoke(clsInstance, base);
+                ((GridAbstractTest)cls.newInstance()).clsRule(base);
             }
             finally {
                 runSerializer.unlock();
