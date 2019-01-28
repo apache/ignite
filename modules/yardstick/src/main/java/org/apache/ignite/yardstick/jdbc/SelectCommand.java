@@ -23,7 +23,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Creates SELECT queries and arguments for those queries. Uses data model defined in {@link
- * JdbcUtils#fillData(BenchmarkConfiguration, IgniteEx, long, CacheAtomicityMode)}
+ * JdbcUtils#fillData(BenchmarkConfiguration, IgniteEx, long, CacheAtomicityMode, String...)}
  */
 public enum SelectCommand {
     /**

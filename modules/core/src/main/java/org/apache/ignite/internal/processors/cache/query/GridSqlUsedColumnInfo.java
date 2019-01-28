@@ -31,6 +31,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class GridSqlUsedColumnInfo implements Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Columns to extract from full row. */
     @GridToStringInclude
     private int[] cols;
