@@ -67,10 +67,16 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     private static final int ORG_COUNT = 100;
 
     /** Organizations cache name. */
-    private static final String ORG_CACHE_NAME = "orgBetweenTest";
+    private static final String ORG_CACHE_NAME = "org";
+
+    /** Persons cache name. */
+    public static final String PERS_CACHE_NAME = "pers";
 
     /** Organizations cache. */
     private static IgniteCache<Integer, JoinSqlTestHelper.Organization> orgCache;
+
+    /** Persons cache. */
+    private static IgniteCache<Integer, JoinSqlTestHelper.Person> persCache;
 
     /** Client mode. */
     private boolean clientMode;
@@ -98,6 +104,18 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         return Collections.singletonList(entity);
     }
 
+    /**
+     * @return Query entity for Person.
+     */
+    private static Collection<QueryEntity> personQueryEntity() {
+        QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Person.class);
+
+        entity.setKeyFieldName("ID");
+        entity.getFields().put("ID", String.class.getName());
+
+        return Collections.singletonList(entity);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_COUNT - 1, false);
@@ -110,6 +128,14 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             new CacheConfiguration<Integer, JoinSqlTestHelper.Organization>(ORG_CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setQueryEntities(organizationQueryEntity())
+        );
+
+        persCache = ignite(NODES_COUNT).getOrCreateCache(
+            new CacheConfiguration<Integer, JoinSqlTestHelper.Person>(PERS_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setSqlSchema(PERS_CACHE_NAME)
+                .setIndexedTypes(Integer.class, JoinSqlTestHelper.Person.class)
+                .setQueryEntities(personQueryEntity())
         );
 
         awaitPartitionMapExchange();
@@ -332,6 +358,89 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     }
 
     /**
+     * Test query with join that leads to single or multiple map queries and single or multiple partitions
+     * depending on query parameters.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testJoinQueriesWithMixedMapQueriesAndMixedPartitionsAndParams() throws Exception {
+        runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
+                "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
+            1, false, true, 1, 1 , 1);
+
+        runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
+                "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
+            1, true, false, 3, 1 , 2);
+    }
+
+    /**
+     * Test query with subquery within from clause that leads to single map query and multiple partitions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryWithSubqueryWithinFromWithSingleMapQueryAndMultiplePartitons() throws Exception {
+        runQuery("select _KEY from (select org._KEY, org.debtCapital from Organization org " +
+                "where org._KEY between ? and ?) where debtCapital > ? order by _KEY",
+            9, true, false, 2, 2, 10, 0);
+    }
+
+
+    /**
+     * Test simple query with subquery within from clause that leads to single map query and multiple partitions.
+     *
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Test
+    public void testSimpleQueryWithSubqueryWithinFromWithSingleMapQueryAndMultiplePartitons() throws Exception {
+        runQuery("select _KEY from (select org._KEY, org.debtCapital from Organization org " +
+                "where org._KEY between ? and ?) where debtCapital > ?",
+            9, false, false, 1, 2, 10, 0);
+    }
+
+    /**
+     * Test query with subquery within where clause that leads to single map query and multiple partitions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryWithSubqueryWithinWhereClauseWithSingleMapQueryAndMultiplePartitons() throws Exception {
+        runQuery("select _key from Organization where _key = (select MAX(org._KEY) from Organization org " +
+                "where org._key between ? and ?) group by _key",
+            1, true, false, 2, 12, 20);
+    }
+
+
+    /**
+     * Test simple query with subquery within where clause that leads to single map query and multiple partitions.
+     *
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Test
+    public void testSimpleQueryWithSubqueryWithinWhereClauseWithSingleMapQueryAndMultiplePartitons() throws Exception {
+        runQuery("select _key from Organization where _key = (select MAX(org._KEY) from Organization org " +
+                "where org._key between ? and ?)",
+            1, false, false, 1, 13, 20);
+    }
+
+    /**
+     * Test query with subquery as columnthat leads to single map query and multiple partitions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryWithSubqueryAsColumnWithSingleMapQueryAndMultiplePartitons() throws Exception {
+        runQuery("select debtCapital, select max(_KEY) from Organization where _key > ? as maxKey" +
+                " from Organization order by _key",
+            100, true, false, 2, 50);
+    }
+
+
+
+    /**
      * Runs query and checks that given sql query returns expect rows count.
      *
      * @param sqlQry SQL query
@@ -413,6 +522,15 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
 
             orgCache.put(i, org);
         }
+
+        for (int i = 0; i < ORG_COUNT * 2; i++) {
+            JoinSqlTestHelper.Person pers = new JoinSqlTestHelper.Person();
+
+            pers.setOrgId(String.valueOf(i / 2));
+            pers.setName("Person #" + i);
+
+            persCache.put(i, pers);
+        }
     }
 
     /**
@@ -429,10 +547,8 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             if (((GridIoMessage)msg).message() instanceof GridH2QueryRequest) {
                 GridH2QueryRequest gridH2QryReq = (GridH2QueryRequest)((GridIoMessage)msg).message();
 
-                if (gridH2QryReq.queryPartitions() != null) {
-                    for (GridCacheSqlQuery qry : gridH2QryReq.queries())
-                        mapQueries.add(qry.query());
-                }
+                for (GridCacheSqlQuery qry : gridH2QryReq.queries())
+                    mapQueries.add(qry.query());
             }
 
             super.sendMessage(node, msg, ackC);
