@@ -20,7 +20,6 @@ package org.apache.ignite.failure;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -208,7 +207,8 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
      * @param igniteWork Working ignite instance.
      * @param igniteFail Failed ignite instance.
      */
-    private static void assertFailureState(Ignite igniteWork, Ignite igniteFail) throws IgniteInterruptedCheckedException {
+    protected void assertFailureState(IgniteEx igniteWork, IgniteEx igniteFail)
+        throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return dummyFailureHandler(igniteFail).failure();

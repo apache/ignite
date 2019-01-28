@@ -17,7 +17,6 @@
 
 package org.apache.ignite.failure;
 
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;

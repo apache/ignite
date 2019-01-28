@@ -2084,8 +2084,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** {@inheritDoc} */
     @Override void runTest(Statement testRoutine) throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
-
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 testIsRunning.set(true);
