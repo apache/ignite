@@ -215,7 +215,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void afterHadoopCommandLineTest() throws Exception {
+    private void afterHadoopCommandLineTest() {
         U.delete(testWorkDir);
     }
 
@@ -235,7 +235,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTest() {
         stopAllGrids(true);
 
         afterHadoopCommandLineTest();
