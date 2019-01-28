@@ -13,22 +13,27 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.stat;
+package org.apache.ignite.internal.processors.affinity;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import java.io.Serializable;
+import java.util.Map;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 
 /**
- * Tests for cache IO statistics for persistence mode.
+ *
  */
-@RunWith(JUnit4.class)
-public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
+public class SerializableMetricsProvider implements DiscoveryMetricsProvider, Serializable {
+    /** {@inheritDoc} */
+    @Override public ClusterMetrics metrics() {
+        return null;
+    }
 
     /** {@inheritDoc} */
-    @Override protected boolean persist() {
-        return true;
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+        return null;
     }
 }

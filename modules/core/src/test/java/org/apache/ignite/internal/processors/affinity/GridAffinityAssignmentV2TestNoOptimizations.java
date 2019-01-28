@@ -13,22 +13,30 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.stat;
+package org.apache.ignite.internal.processors.affinity;
 
+import org.apache.ignite.IgniteSystemProperties;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for cache IO statistics for persistence mode.
+ * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
 @RunWith(JUnit4.class)
-public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
+public class GridAffinityAssignmentV2TestNoOptimizations extends GridAffinityAssignmentV2Test {
+    /** */
+    @BeforeClass
+    public static void beforeTests() {
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
+    }
 
-    /** {@inheritDoc} */
-    @Override protected boolean persist() {
-        return true;
+    /** */
+    @AfterClass
+    public static void afterTests() {
+        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
     }
 }

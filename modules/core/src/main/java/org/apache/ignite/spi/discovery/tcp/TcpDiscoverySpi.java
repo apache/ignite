@@ -104,6 +104,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -1648,8 +1649,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
-        if (internalLsnr != null && msg instanceof TcpDiscoveryJoinRequestMessage)
-            internalLsnr.beforeJoin(locNode, log);
+        if (internalLsnr != null) {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                internalLsnr.beforeJoin(locNode, log);
+
+            if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                internalLsnr.beforeReconnect(locNode, log);
+        }
 
         assert sock != null;
         assert msg != null;

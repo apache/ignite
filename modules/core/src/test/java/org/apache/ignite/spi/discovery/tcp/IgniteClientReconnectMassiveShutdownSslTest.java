@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.affinity;
+package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.IgniteSystemProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
+ * Client reconnect test in multi threaded mode while cache operations are in progress.
  */
 @RunWith(JUnit4.class)
-public class GridAffinityAssignmentTestNoOptimizations extends GridAffinityAssignmentTest {
-    /** */
-    @BeforeClass
-    public static void beforeTests() {
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
-    }
+public class IgniteClientReconnectMassiveShutdownSslTest extends IgniteClientReconnectMassiveShutdownTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    @AfterClass
-    public static void afterTests() {
-        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        return cfg;
     }
 }
