@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tree;
+package org.apache.ignite.examples.ml.sql;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
