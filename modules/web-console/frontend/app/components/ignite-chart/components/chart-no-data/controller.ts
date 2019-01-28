@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {map, distinctUntilChanged, tap} from 'rxjs/operators';
+import {map, distinctUntilChanged, tap, pluck} from 'rxjs/operators';
 
 import {WellKnownOperationStatus} from 'app/types';
 import {IgniteChartController} from '../../controller';
@@ -31,12 +31,17 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
 
     handleClusterInactive: boolean;
 
-    clusterIsInactive$ = this.AgentManager.connectionSbj.pipe(
-        map((sbj) => !_.isNil(sbj.cluster) && sbj.cluster.active === false),
-        distinctUntilChanged(),
-        tap((clusterIsInactive) => {
-            if (clusterIsInactive && this.handleClusterInactive)
+    cluster$ = this.AgentManager.connectionSbj.pipe(
+        pluck('cluster'),
+        tap((cluster) => {
+            if (_.isNil(cluster)) {
                 this.destroyChart();
+                return;
+            }
+
+            if (cluster.active === false && this.handleClusterInactive)
+                this.destroyChart();
+
         })
     ).subscribe();
 
@@ -46,11 +51,11 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
     }
 
     $onDestroy() {
-        this.clusterIsInactive$.unsubscribe();
+        this.cluster$.unsubscribe();
     }
 
     destroyChart() {
-        if (this.igniteChart.chart) {
+        if (this.igniteChart && this.igniteChart.chart) {
             this.igniteChart.chart.destroy();
             this.igniteChart.config = null;
             this.igniteChart.chart = null;
