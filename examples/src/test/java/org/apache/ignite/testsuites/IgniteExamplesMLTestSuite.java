@@ -36,7 +36,7 @@ import javassist.bytecode.annotation.Annotation;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
@@ -57,7 +57,7 @@ public class IgniteExamplesMLTestSuite {
     private static final String clsNamePtrn = ".*Example$";
 
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
