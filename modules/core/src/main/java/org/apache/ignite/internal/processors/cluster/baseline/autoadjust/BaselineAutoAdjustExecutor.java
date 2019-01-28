@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -36,7 +37,7 @@ class BaselineAutoAdjustExecutor {
     /** Service for execute this task in async. */
     private final ExecutorService executorService;
     /** {@code true} if baseline auto-adjust enabled. */
-    private final Supplier<Boolean> isBaselineAutoAdjustEnabled;
+    private final BooleanSupplier isBaselineAutoAdjustEnabled;
     /** This protect from execution more than one task at same moment. */
     private final Lock executionGuard = new ReentrantLock();
 
@@ -47,7 +48,7 @@ class BaselineAutoAdjustExecutor {
      * @param enabled {@code true} if baseline auto-adjust enabled.
      */
     public BaselineAutoAdjustExecutor(IgniteLogger log, IgniteClusterImpl cluster, ExecutorService executorService,
-        Supplier<Boolean> enabled) {
+        BooleanSupplier enabled) {
         this.log = log;
         this.cluster = cluster;
         this.executorService = executorService;
@@ -62,7 +63,7 @@ class BaselineAutoAdjustExecutor {
     public void execute(BaselineAutoAdjustData data) {
         executorService.submit(() ->
             {
-                if (data.isInvalidate() || !isBaselineAutoAdjustEnabled.get())
+                if (data.isInvalidate() || !isBaselineAutoAdjustEnabled.getAsBoolean())
                     return;
 
                 executionGuard.lock();

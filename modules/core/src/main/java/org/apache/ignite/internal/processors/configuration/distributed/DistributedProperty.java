@@ -65,10 +65,7 @@ public class DistributedProperty<T extends Serializable> {
         if (!attached)
             throw new DetachedPropertyException(name);
 
-        if (clusterWideUpdater == null)
-            return false;
-
-        return clusterWideUpdater.accept(name, newVal).get();
+        return clusterWideUpdater != null && Boolean.TRUE.equals(clusterWideUpdater.accept(name, newVal).get());
     }
 
     /**
