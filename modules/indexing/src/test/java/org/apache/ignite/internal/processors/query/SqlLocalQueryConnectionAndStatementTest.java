@@ -31,7 +31,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
-    public void beforeTestsStarted() throws Exception {
+    @Override public void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(1);
