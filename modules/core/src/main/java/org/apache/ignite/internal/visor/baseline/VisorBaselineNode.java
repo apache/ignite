@@ -22,7 +22,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +62,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
 
         //Baseline topology returns instances of DetachedClusternode
         if (node instanceof IgniteClusterNode)
-            order = ((ClusterNode)node).order();
+            order = ((IgniteClusterNode)node).order();
     }
 
     /** {@inheritDoc} */

@@ -430,8 +430,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String crdStr = outStr.substring(i);
 
-        crdStr = crdStr.substring(0, crdStr.indexOf('\n'));
-        return crdStr;
+        return crdStr.substring(0, crdStr.indexOf('\n'));
     }
 
     /**
