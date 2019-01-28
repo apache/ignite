@@ -27,7 +27,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -151,8 +154,19 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        exec(buildMvnCommand() + " org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact +
-            (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : ""));
+        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+
+        SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
+
+        if (!F.isEmpty(localProxyMavenSettingsFromEnv))
+            localProxyMavenSettings = localProxyMavenSettingsFromEnv;
+
+        if (Files.exists(Paths.get(localProxyMavenSettings)))
+            mavenCommandArgs.a(" -s " + localProxyMavenSettings);
+        else
+            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
+
+        exec(buildMvnCommand() + mavenCommandArgs.toString());
 
         X.println("Download is finished");
     }
