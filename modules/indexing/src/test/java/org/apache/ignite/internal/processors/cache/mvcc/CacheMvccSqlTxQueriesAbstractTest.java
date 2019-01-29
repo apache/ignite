@@ -1132,7 +1132,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Ignite checkNode = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
             1, new MvccTestSqlIndexValue(1),
@@ -1157,9 +1157,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10764")
     @Test
     public void testQueryInsertMultithread() throws Exception {
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10764 if test starts failing with timeout
         final int THREAD_CNT = 8;
         final int BATCH_SIZE = 1000;
         final int ROUNDS = 10;
@@ -1199,11 +1199,10 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     Ignite checkNode = grid(rnd.nextInt(4));
                     Ignite updateNode = grid(rnd.nextInt(4));
 
-                    IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
+                    // no tx timeout here, deadlocks should not happen because all keys are unique
                     try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
-
                         SqlFieldsQuery qry = new SqlFieldsQuery(bldr.toString()).setPageSize(100);
 
                         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
