@@ -26,6 +26,7 @@ import static junit.framework.Assert.assertEquals;
 
 /**
  * Simple test for DDL generator.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class CassandraConfigTest {
     /**

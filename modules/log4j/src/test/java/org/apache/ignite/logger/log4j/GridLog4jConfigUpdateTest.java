@@ -30,6 +30,7 @@ import static junit.framework.Assert.assertTrue;
 
 /**
  * Checking that Log4j configuration is updated when its source file is changed.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class GridLog4jConfigUpdateTest {
     /** Path to log4j configuration with INFO enabled. */

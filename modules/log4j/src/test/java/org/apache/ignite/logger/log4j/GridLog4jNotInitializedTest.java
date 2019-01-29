@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertTrue;
 
 /**
  * Log4j not initialized test.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 @GridCommonTest(group = "Logger")
 public class GridLog4jNotInitializedTest {

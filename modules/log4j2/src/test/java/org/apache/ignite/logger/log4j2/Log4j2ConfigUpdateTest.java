@@ -29,6 +29,7 @@ import static junit.framework.Assert.assertTrue;
 
 /**
  * Checking that Log4j2 configuration is updated when its source file is changed.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class Log4j2ConfigUpdateTest {
     /** Path to log4j2 configuration with INFO enabled. */

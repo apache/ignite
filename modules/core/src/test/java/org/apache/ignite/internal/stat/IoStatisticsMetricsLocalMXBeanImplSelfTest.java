@@ -38,6 +38,7 @@ import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_ID
 
 /**
  * Test of local node IO statistics MX bean.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 @RunWith(JUnit4.class)
 public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstractTest {

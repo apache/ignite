@@ -34,6 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * TCP protocol test.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 @RunWith(JUnit4.class)
 public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {

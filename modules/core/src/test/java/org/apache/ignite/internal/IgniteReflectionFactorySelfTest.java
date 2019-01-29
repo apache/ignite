@@ -27,6 +27,7 @@ import static junit.framework.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class IgniteReflectionFactorySelfTest {
     /**

@@ -30,6 +30,7 @@ import static junit.framework.Assert.assertTrue;
 
 /**
  * Testing that markers are supported by log4j2 implementation.
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class Slf4jLoggerMarkerTest {
     /** Path to full log. */

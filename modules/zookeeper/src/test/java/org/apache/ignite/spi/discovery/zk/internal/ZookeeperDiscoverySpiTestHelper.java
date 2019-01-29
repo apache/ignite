@@ -48,6 +48,7 @@ import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl
  * 2. info into constructor as Consumer<String>
  * 3. evts into parameter of checkEvents and waitForEventsAcks
  * 4. spis into parameter of waitSpi
+ * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 class ZookeeperDiscoverySpiTestHelper {
     /** */
