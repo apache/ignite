@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -70,15 +71,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected static final int CLIENT_NODE_IDX = 1;
 
     /** */
-    protected int testedNodeIdx;
+    protected static int testedNodeIdx;
 
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
     /** Dummy initial stub to just let people launch test classes not from suite. */
-    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(
-        new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(), new int[] {0}),
-        "Dummy config", false, null, 1, false);
+    protected VariationsTestsConfig testsCfg = dummyCfg();
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
@@ -169,6 +168,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             }
         }
         finally {
+            testedNodeIdx = 0;
+
+            testsCfg = dummyCfg();
+
             stopAllGrids();
         }
     }
@@ -385,6 +388,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
+    }
+
+    /** */
+    private static VariationsTestsConfig dummyCfg() {
+        return new VariationsTestsConfig(
+            new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(), new int[] {0}),
+            "Dummy config", false, null, 1, false);
     }
 
     /**
