@@ -46,12 +46,12 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
+    @Override public Collection<Integer> apply(boolean client, Object... args) throws IgniteCheckedException {
         // Deduplicate same partitions which may appear during resolution.
         HashSet<Integer> res = new HashSet<>(siblings.size());
 
         for (PartitionSingleNode sibling : siblings)
-            res.add(sibling.applySingle(args));
+            res.add(sibling.applySingle(client, args));
 
         return res;
     }
