@@ -15,32 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.sparkmodelparser;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * List of supported Spark models.
- *
- * NOTE: Valid for Spark 2.4.
+ * Splitter query model type.
  */
-public enum SupportedSparkModels {
-    /** Logistic regression. */
-    LOG_REGRESSION,
+public enum SplitterQueryModelType {
+    /** Normal select. */
+    SELECT,
 
-    /** Linear regression. */
-    LINEAR_REGRESSION,
+    /** Union. */
+    UNION,
 
-    /** Decision tree. */
-    DECISION_TREE,
+    /** Table. */
+    TABLE,
 
-    /** Support Vector Machine . */
-    LINEAR_SVM,
-
-    /** Random forest. */
-    RANDOM_FOREST,
-
-    /**
-     * Gradient boosted trees.
-     * NOTE: support binary classification only with raw labels 0 and 1
-     */
-    GRADIENT_BOOSTED_TREES
+    /** Function. */
+    FUNCTION
 }
