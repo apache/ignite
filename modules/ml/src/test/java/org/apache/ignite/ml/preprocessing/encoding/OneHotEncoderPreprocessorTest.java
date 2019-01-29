@@ -24,8 +24,8 @@ import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPr
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link StringEncoderPreprocessor}.

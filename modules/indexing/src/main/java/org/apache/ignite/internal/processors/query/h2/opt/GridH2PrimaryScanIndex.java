@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -56,8 +57,10 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
     @Override protected GridH2IndexBase delegate() {
         boolean rebuildFromHashInProgress = tbl.rebuildFromHashInProgress();
 
-        if (hashIdx != null)
-            return rebuildFromHashInProgress ? hashIdx : super.delegate();
+        if (hashIdx != null) {
+            return rebuildFromHashInProgress || CacheDataTree.isDataPageScanEnabled() ?
+                hashIdx : super.delegate();
+        }
         else {
             assert !rebuildFromHashInProgress;
 

@@ -26,8 +26,8 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for {@link EncoderTrainer}.
