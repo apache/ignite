@@ -15,36 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
 
 /**
- * Common node of partition tree.
+ * Node denoting all available partitions
  */
-public interface PartitionNode {
-    /**
-     * Get partitions.
-     *
-     * @param args Query arguments.
-     * @return Partitions.
-     * @throws IgniteCheckedException If failed.
-     */
-    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
+public class PartitionAllNode implements PartitionNode {
+    /** Singleton. */
+    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
 
     /**
-     * @return Join group for the given node.
+     * Constructor.
      */
-    int joinGroup();
+    private PartitionAllNode() {
+        // No-op.
+    }
 
-    /**
-     * Try optimizing partition nodes into a simpler form.
-     *
-     * @return Optimized node or {@code this} if optimization failed.
-     */
-    default PartitionNode optimize() {
-        return this;
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(Object... args) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return PartitionTableModel.GRP_NONE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionAllNode.class, this);
     }
 }

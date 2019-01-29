@@ -17,32 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResolver;
+
 /**
- * Affinity function type.
+ * Default partition resolver implementation which uses H2 to convert types appropriately.
  */
-public enum PartitionAffinityFunctionType {
-    /** Custom affintiy function. */
-    CUSTOM(0),
-
-    /** Rendezvous affinity function. */
-    RENDEZVOUS(1);
-
-    /** Value. */
-    private final int val;
+public class H2PartitionResolver implements PartitionResolver {
+    /** Indexing. */
+    private final IgniteH2Indexing idx;
 
     /**
      * Constructor.
      *
-     * @param val Value.
+     * @param idx Indexing.
      */
-    PartitionAffinityFunctionType(int val) {
-        this.val = val;
+    public H2PartitionResolver(IgniteH2Indexing idx) {
+        this.idx = idx;
     }
 
-    /**
-     * @return Value.
-     */
-    public int value() {
-        return val;
+    /** {@inheritDoc} */
+    @Override public int partition(Object arg, int dataType, String cacheName) throws IgniteCheckedException {
+        Object param = H2Utils.convert(arg, idx, dataType);
+
+        return idx.kernalContext().affinity().partition(cacheName, param);
     }
 }

@@ -93,7 +93,8 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionResult;
+import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -2040,6 +2041,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 failed = false;
 
                 return new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    @SuppressWarnings("NullableProblems")
                     @Override public Iterator<List<?>> iterator() {
                         return new Iterator<List<?>>() {
                             @Override public boolean hasNext() {
@@ -2420,7 +2422,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         dmlProc = new DmlStatementsProcessor(ctx, this);
         ddlProc = new DdlStatementsProcessor(ctx, schemaMgr);
 
-        partExtractor = new PartitionExtractor(this);
+        partExtractor = new PartitionExtractor(new H2PartitionResolver(this));
         runningQueryMgr = new RunningQueryManager(ctx);
 
         if (JdbcUtils.serializer != null)

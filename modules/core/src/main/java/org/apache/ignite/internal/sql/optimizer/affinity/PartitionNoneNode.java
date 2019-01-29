@@ -15,49 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * Partition extraction result.
- */
-public class PartitionResult {
-    /** Tree. */
-    @GridToStringInclude
-    private final PartitionNode tree;
+import java.util.Collection;
+import java.util.Collections;
 
-    /** Affinity function. */
-    private final PartitionTableAffinityDescriptor aff;
+/**
+ * Node denoting empty partition set.
+ */
+public class PartitionNoneNode implements PartitionNode {
+    /** Singleton. */
+    public static final PartitionNoneNode INSTANCE = new PartitionNoneNode();
 
     /**
      * Constructor.
-     *
-     * @param tree Tree.
-     * @param aff Affinity function.
      */
-    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff) {
-        this.tree = tree;
-        this.aff = aff;
+    private PartitionNoneNode() {
+        // No-op.
     }
 
-    /**
-     * Tree.
-     */
-    public PartitionNode tree() {
-        return tree;
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(Object... args) {
+        return Collections.emptySet();
     }
 
-    /**
-     * @return Affinity function.
-     */
-    public PartitionTableAffinityDescriptor affinity() {
-        return aff;
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return PartitionTableModel.GRP_NONE;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionResult.class, this);
+        return S.toString(PartitionNoneNode.class, this);
     }
 }
