@@ -173,6 +173,7 @@ import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.DISCONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.DISCONNECTING;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.DUPLICATE_ID;
+import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.RING_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.LEFT;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.LOOPBACK_PROBLEM;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.STOPPING;
@@ -995,6 +996,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)joinRes.get());
                 else if (spiState == CHECK_FAILED)
                     throw spi.checkFailedError((TcpDiscoveryCheckFailedMessage)joinRes.get());
+                else if (spiState == RING_FAILED) {
+                    // TODO add more info about failed nodes.
+                    throw new IgniteSpiException("Unable to connect to next nodes in a ring, it seems local node is " +
+                        "experiencing connectivity issues or the rest of the cluster is undergoing massive restarts. " +
+                        "Failing local node join to avoid case when one node fails a big part of cluster. To disable" +
+                        " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                        "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                        + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+                }
                 else if (spiState == LOOPBACK_PROBLEM) {
                     TcpDiscoveryLoopbackProblemMessage msg = (TcpDiscoveryLoopbackProblemMessage)joinRes.get();
 
@@ -2801,6 +2811,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMetricsUpdateMessage();
 
+            synchronized (mux) {
+                if (spiState == RING_FAILED) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discovery detected ring connectivity issues and will stop local node, " +
+                            "ignoring message [msg=" + msg + ", locNode=" + locNode + ']');
+
+                    return;
+                }
+            }
+
             DebugLogger log = messageLogger(msg);
 
             if (log.isDebugEnabled())
@@ -3531,15 +3551,29 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Segment local node on failed message send.
          */
         private void segmentLocalNodeOnSendFail() {
+            synchronized (mux) {
+                if (spiState == CONNECTING) {
+                    U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
+                        "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
+                        "local node join to avoid case when one node fails a big part of cluster. To disable" +
+                        " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                        "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                        + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+
+                    spiState = RING_FAILED;
+
+                    mux.notifyAll();
+
+                    return;
+                }
+            }
+
             U.warn(log, "Unable to connect to next nodes in a ring, " +
                 "it seems local node is experiencing connectivity issues. Segmenting local node " +
                 "to avoid case when one node fails a big part of cluster. To disable" +
-                " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
                 "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
                 + spi.getEffectiveConnectionRecoveryTimeout() + ']');
-
-            // Remove any queued messages to avoid new connect tries.
-            queue.clear();
 
             notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
