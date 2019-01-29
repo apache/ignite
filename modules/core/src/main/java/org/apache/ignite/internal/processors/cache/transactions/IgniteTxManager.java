@@ -166,7 +166,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<TxThreadKey, IgniteInternalTx> sysThreadMap = newMap();
 
     /** Per-ID map. */
-    private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
+    private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = new ConcurrentHashMap() {
+        @Override public Object putIfAbsent(Object o, Object o2) {
+            Object r = super.putIfAbsent(o, o2);
+            DebugHelper.registerCountOfIdMap(size()); // race at size()
+            return r;
+        }
+    };
 
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
