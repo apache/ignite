@@ -63,21 +63,16 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
     private static final int WAL_HISTORY_SIZE = 30;
 
     /** Node name with test file factory. */
-    private static final String NODE_NAME_WITH_TEST_FILE_FACTORY = "0";
+    private static final int NODE_NAME_WITH_TEST_FILE_FACTORY = 0;
 
     /** Node name listen to a left event. */
-    private static final String NODE_NAME_LISTEN_TO_LEFT_EVENT = "1";
+    private static final int NODE_NAME_LISTEN_TO_LEFT_EVENT = 1;
 
     /** Wait on supply message failure. */
     private static final CountDownLatch WAIT_ON_SUPPLY_MESSAGE_FAILURE = new CountDownLatch(1);
 
     /** */
     private AtomicBoolean canFailFirstNode = new AtomicBoolean();
-
-    /** {@inheritDoc} */
-    @Override public String getTestIgniteInstanceName(int idx) {
-        return String.valueOf(idx);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -95,10 +90,10 @@ public class IgniteShutdownOnSupplyMessageFailureTest extends GridCommonAbstract
             .setWalMode(WALMode.FSYNC)
             .setCheckpointFrequency(500);
 
-        if (NODE_NAME_WITH_TEST_FILE_FACTORY.equals(name))
+        if (name.equals(getTestIgniteInstanceName(NODE_NAME_WITH_TEST_FILE_FACTORY)))
             conf.setFileIOFactory(new FailingFileIOFactory(canFailFirstNode));
 
-        if (NODE_NAME_LISTEN_TO_LEFT_EVENT.equals(name))
+        if (name.equals(getTestIgniteInstanceName(NODE_NAME_LISTEN_TO_LEFT_EVENT)))
             registerLeftEvent(cfg);
 
         cfg.setDataStorageConfiguration(conf);

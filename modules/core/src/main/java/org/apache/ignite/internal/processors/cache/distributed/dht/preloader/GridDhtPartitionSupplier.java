@@ -496,7 +496,8 @@ class GridDhtPartitionSupplier {
             }
 
             grp.shared().kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR,
-                new IgniteCheckedException("Failed to continue supplying", t)
+                new IgniteCheckedException("Failed to continue supplying["
+                    + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t)
             ));
         }
     }
