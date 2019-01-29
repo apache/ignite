@@ -71,11 +71,6 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** IPv6 colon substitute. */
     private static final String COLON_SUBST = "_";
 
-    /** Ignite instance . */
-    @IgniteInstanceResource
-    @GridToStringExclude
-    private Ignite ignite;
-
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
