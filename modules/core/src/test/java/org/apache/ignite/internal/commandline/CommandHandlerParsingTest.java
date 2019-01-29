@@ -20,13 +20,14 @@ package org.apache.ignite.internal.commandline;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -34,33 +35,37 @@ import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests Command Handler parsing arguments.
  */
-public class CommandHandlerParsingTest extends TestCase {
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+public class CommandHandlerParsingTest {
+    /** */
+    @Before
+    public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-        super.setUp();
     }
 
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
+    /** */
+    @After
+    public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
-        super.tearDown();
     }
 
     /**
      * validate_indexes command arguments parsing and validation
      */
+    @Test
     public void testValidateIndexArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -73,12 +78,12 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     "cache1, cache2",
                     nodeId.toString(),
-                    VI_CHECK_FIRST,
+                    CHECK_FIRST.toString(),
                     Integer.toString(expectedCheckFirst),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedCheckThrough)
                 )
             ).cacheArgs();
@@ -98,9 +103,9 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     nodeId.toString(),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedParam)
                 )
             ).cacheArgs();
@@ -118,8 +123,8 @@ public class CommandHandlerParsingTest extends TestCase {
             hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
-                    VI_CHECK_FIRST,
+                    VALIDATE_INDEXES.text(),
+                    CHECK_FIRST.toString(),
                     "0"
                 )
             );
@@ -131,7 +136,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
 
             fail("Expected exception hasn't been thrown");
         }
@@ -143,6 +148,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
+    @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -170,6 +176,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for the SSL arguments.
      */
+    @Test
     public void testParseAndValidateSSLArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -208,6 +215,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for user and password arguments.
      */
+    @Test
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
@@ -244,6 +252,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation  of WAL commands.
      */
+    @Test
     public void testParseAndValidateWalActions() {
         CommandHandler hnd = new CommandHandler();
 
@@ -283,6 +292,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests that the auto confirmation flag was correctly parsed.
      */
+    @Test
     public void testParseAutoConfirmationFlag() {
         CommandHandler hnd = new CommandHandler();
 
@@ -325,7 +335,7 @@ public class CommandHandlerParsingTest extends TestCase {
                     break;
                 }
                 case TX: {
-                    args = hnd.parseAndValidate(asList(cmd.text(), "xid", "xid1", "minDuration", "10", "kill", "--yes"));
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
                     assertEquals(cmd, args.command());
                     assertEquals(DFLT_HOST, args.host());
@@ -344,6 +354,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * Tests host and port arguments.
      * Tests connection settings arguments.
      */
+    @Test
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
@@ -398,6 +409,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
+    @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
         Arguments args;
@@ -460,8 +472,8 @@ public class CommandHandlerParsingTest extends TestCase {
         catch (IllegalArgumentException ignored) {
         }
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "120", "minSize", "10", "limit", "100", "order", "SIZE",
-            "servers"));
+        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
+            "--servers"));
 
         VisorTxTaskArg arg = args.transactionArguments();
 
@@ -471,8 +483,8 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
         assertEquals(VisorTxProjection.SERVER, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "130", "minSize", "1", "limit", "60", "order", "DURATION",
-            "clients"));
+        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
+            "--clients"));
 
         arg = args.transactionArguments();
 
@@ -482,7 +494,7 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
         assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "nodes", "1,2,3"));
+        args = hnd.parseAndValidate(asList("--tx", "--nodes", "1,2,3"));
 
         arg = args.transactionArguments();
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceApiSelfTest;
@@ -27,36 +26,29 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMulti
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiTestSuite3 extends ZookeeperDiscoverySpiAbstractTestSuite {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheReplicatedNodeRestartSelfTest.class,
+    GridEventConsumeSelfTest.class,
+    GridCachePartitionedNodeRestartTxSelfTest.class,
+    IgniteClientDataStructuresTest.class,
+    GridCacheReplicatedSequenceApiSelfTest.class,
+    GridCachePartitionedSequenceApiSelfTest.class,
+    GridCacheAtomicMultiJvmFullApiSelfTest.class,
+    GridCachePartitionedMultiJvmFullApiSelfTest.class,
+    GridP2PContinuousDeploymentSelfTest.class
+})
+public class ZookeeperDiscoverySpiTestSuite3 {
     /** */
-    private static TestingCluster testingCluster;
-
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNodeRestartTxSelfTest.class);
-        suite.addTestSuite(IgniteClientDataStructuresTest.class);
-        suite.addTestSuite(GridCacheReplicatedSequenceApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedSequenceApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridP2PContinuousDeploymentSelfTest.class);
-
-        return suite;
+    @BeforeClass
+    public static void init() throws Exception {
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

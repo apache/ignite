@@ -23,10 +23,16 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for cache iterators.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstractSelfTest {
     /** Key prefix. */
     protected static final String KEY_PREFIX = "testKey";
@@ -44,10 +50,9 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      */
     protected abstract int entryCount();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheIterator() throws Exception {
+    /** */
+    @Test
+    public void testCacheIterator() {
         int cnt = 0;
 
         for (Cache.Entry<String, Integer> entry : jcache()) {
@@ -68,6 +73,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).removeAll();
@@ -92,10 +98,11 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         }, 3, "iterator-thread");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEntrySetIterator() throws Exception {
+    /** */
+    @Test
+    public void testEntrySetIterator() {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
+
         assert jcache().localSize(CachePeekMode.ALL) == entryCount();
 
         int cnt = 0;
@@ -118,6 +125,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySetIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).removeAll();

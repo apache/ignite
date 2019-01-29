@@ -217,7 +217,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * @return Full map string representation.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String fullMapString() {
         return node2part == null ? "null" : FULL_MAP_DEBUG ? node2part.toFullString() : node2part.toString();
     }
@@ -226,7 +225,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param map Map to get string for.
      * @return Full map string representation.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String mapString(GridDhtPartitionMap map) {
         return map == null ? "null" : FULL_MAP_DEBUG ? map.toFullString() : map.toString();
     }
@@ -1174,7 +1172,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             Collection<UUID> diffIds = diffFromAffinity.get(p);
 
             if (!F.isEmpty(diffIds)) {
-                HashSet<UUID> affIds = affAssignment.getIds(p);
+                Collection<UUID> affIds = affAssignment.getIds(p);
 
                 for (UUID nodeId : diffIds) {
                     if (affIds.contains(nodeId)) {
@@ -1231,8 +1229,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", node2part=" + node2part + ']';
 
             // Node IDs can be null if both, primary and backup, nodes disappear.
-            List<ClusterNode> nodes = new ArrayList<>();
-
+            // Empirical size to reduce growing of ArrayList.
+            // We bear in mind that most of the time we filter OWNING partitions.
+            List<ClusterNode> nodes = new ArrayList<>(allIds.size() / 2 + 1);
             for (UUID id : allIds) {
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = ctx.discovery().node(id);

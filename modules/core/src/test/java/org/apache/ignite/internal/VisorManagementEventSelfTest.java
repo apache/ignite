@@ -33,12 +33,16 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -86,6 +90,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testManagementOneNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -98,6 +103,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testManagementMultiNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -110,6 +116,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNotManagementOneNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -122,6 +129,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNotManagementMultiNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 

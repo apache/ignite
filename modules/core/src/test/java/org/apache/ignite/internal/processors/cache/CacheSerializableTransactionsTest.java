@@ -58,8 +58,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,9 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -79,6 +74,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -95,10 +94,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final boolean FAST = false;
 
@@ -119,8 +116,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -143,11 +138,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60_000;
     }
@@ -155,6 +145,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxStreamerLoad() throws Exception {
         txStreamerLoad(false);
     }
@@ -162,6 +153,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxStreamerLoadAllowOverwrite() throws Exception {
         txStreamerLoad(true);
     }
@@ -248,6 +240,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLoadFromStore() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -303,6 +296,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitReadOnly1() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -361,6 +355,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitReadOnly2() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -427,6 +422,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommit() throws Exception {
         Ignite ignite0 = ignite(0);
         Ignite ignite1 = ignite(1);
@@ -443,12 +439,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 List<Integer> keys = testKeys(cache0);
 
+                final int ITERATIONS_COUNT = SF.applyLB(100, 5);
                 for (Integer key : keys) {
                     log.info("Test key: " + key);
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < ITERATIONS_COUNT; i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -508,6 +505,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRollback() throws Exception {
         Ignite ignite0 = ignite(0);
         Ignite ignite1 = ignite(1);
@@ -529,7 +527,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < SF.applyLB(100, 10); i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -575,6 +573,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitReadOnlyGetAll() throws Exception {
         testTxCommitReadOnlyGetAll(false);
     }
@@ -582,6 +581,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitReadOnlyGetEntries() throws Exception {
         testTxCommitReadOnlyGetAll(true);
     }
@@ -650,6 +650,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitReadWriteTwoNodes() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -681,6 +682,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictRead1() throws Exception {
         txConflictRead(true, false);
     }
@@ -688,6 +690,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictRead2() throws Exception {
         txConflictRead(false, false);
     }
@@ -695,6 +698,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntry1() throws Exception {
         txConflictRead(true, true);
     }
@@ -702,6 +706,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntry2() throws Exception {
         txConflictRead(false, true);
     }
@@ -786,6 +791,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadWrite1() throws Exception {
         txConflictReadWrite(true, false, false);
     }
@@ -793,6 +799,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadWrite2() throws Exception {
         txConflictReadWrite(false, false, false);
     }
@@ -800,6 +807,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadRemove1() throws Exception {
         txConflictReadWrite(true, true, false);
     }
@@ -807,6 +815,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadRemove2() throws Exception {
         txConflictReadWrite(false, true, false);
     }
@@ -814,6 +823,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntryWrite1() throws Exception {
         txConflictReadWrite(true, false, true);
     }
@@ -821,6 +831,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntryWrite2() throws Exception {
         txConflictReadWrite(false, false, true);
     }
@@ -828,6 +839,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntryRemove1() throws Exception {
         txConflictReadWrite(true, true, true);
     }
@@ -835,6 +847,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadEntryRemove2() throws Exception {
         txConflictReadWrite(false, true, true);
     }
@@ -931,6 +944,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReadWrite3() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -996,6 +1010,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictGetAndPut1() throws Exception {
         txConflictGetAndPut(true, false);
     }
@@ -1003,6 +1018,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictGetAndPut2() throws Exception {
         txConflictGetAndPut(false, false);
     }
@@ -1010,6 +1026,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictGetAndRemove1() throws Exception {
         txConflictGetAndPut(true, true);
     }
@@ -1017,6 +1034,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictGetAndRemove2() throws Exception {
         txConflictGetAndPut(false, true);
     }
@@ -1089,6 +1107,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictInvoke1() throws Exception {
         txConflictInvoke(true, false);
     }
@@ -1096,6 +1115,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictInvoke2() throws Exception {
         txConflictInvoke(false, false);
     }
@@ -1103,6 +1123,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictInvoke3() throws Exception {
         txConflictInvoke(true, true);
     }
@@ -1110,6 +1131,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictInvoke4() throws Exception {
         txConflictInvoke(false, true);
     }
@@ -1182,6 +1204,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testTxConflictInvokeAll() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1276,6 +1299,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictPutIfAbsent() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1362,6 +1386,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictGetAndPutIfAbsent() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1448,6 +1473,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictReplace() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1573,6 +1599,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictGetAndReplace() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1698,6 +1725,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictRemoveWithOldValue() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1835,6 +1863,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictCasReplace() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -1972,6 +2001,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictRemoveReturnBoolean1() throws Exception {
         txConflictRemoveReturnBoolean(false);
     }
@@ -1979,6 +2009,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictRemoveReturnBoolean2() throws Exception {
         txConflictRemoveReturnBoolean(true);
     }
@@ -2143,6 +2174,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictPut1() throws Exception {
         txNoConflictUpdate(true, false, false);
     }
@@ -2150,6 +2182,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictPut2() throws Exception {
         txNoConflictUpdate(false, false, false);
     }
@@ -2157,6 +2190,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictPut3() throws Exception {
         txNoConflictUpdate(false, false, true);
     }
@@ -2164,6 +2198,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictRemove1() throws Exception {
         txNoConflictUpdate(true, true, false);
     }
@@ -2171,6 +2206,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictRemove2() throws Exception {
         txNoConflictUpdate(false, true, false);
     }
@@ -2178,6 +2214,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictRemove3() throws Exception {
         txNoConflictUpdate(false, true, true);
     }
@@ -2293,6 +2330,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictContainsKey1() throws Exception {
         txNoConflictContainsKey(false);
     }
@@ -2300,6 +2338,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoConflictContainsKey2() throws Exception {
         txNoConflictContainsKey(true);
     }
@@ -2383,6 +2422,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRollbackIfLocked1() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -2442,6 +2482,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRollbackIfLocked2() throws Exception {
         rollbackIfLockedPartialLock(false);
     }
@@ -2449,6 +2490,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRollbackIfLocked3() throws Exception {
         rollbackIfLockedPartialLock(true);
     }
@@ -2515,6 +2557,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadLockConflict() throws Exception {
         checkNoReadLockConflict(false);
     }
@@ -2522,6 +2565,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadLockConflictGetEntry() throws Exception {
         checkNoReadLockConflict(true);
     }
@@ -2622,6 +2666,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadLockConflictMultiNode() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -2683,6 +2728,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     public void testReadLockPessimisticTxConflict() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -2737,6 +2783,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     public void testReadWriteTxConflict() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -2790,6 +2837,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
+    @Test
     public void testReadWriteTransactionsNoDeadlock() throws Exception {
         checkReadWriteTransactionsNoDeadlock(false);
     }
@@ -2797,6 +2846,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
+    @Test
     public void testReadWriteTransactionsNoDeadlockMultinode() throws Exception {
         checkReadWriteTransactionsNoDeadlock(true);
     }
@@ -2861,6 +2912,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadWriteAccountTx() throws Exception {
         final CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED,
             FULL_SYNC,
@@ -2871,8 +2923,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         ignite(0).createCache(ccfg);
 
         try {
-            final int ACCOUNTS = 50;
-            final int VAL_PER_ACCOUNT = 1000;
+            final int ACCOUNTS = SF.applyLB(50, 5);
+            final int VAL_PER_ACCOUNT = SF.applyLB(1000, 10);
 
             IgniteCache<Integer, Account> cache0 = ignite(0).cache(ccfg.getName());
 
@@ -3009,7 +3061,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }, 2, "update-thread");
 
             try {
-                U.sleep(15_000);
+                U.sleep(SF.applyLB(15_000, 2_000));
             }
             finally {
                 stop.set(true);
@@ -3040,6 +3092,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheReaderUpdate() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -3088,6 +3141,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackNearCache1() throws Exception {
         rollbackNearCacheWrite(true);
     }
@@ -3095,6 +3149,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackNearCache2() throws Exception {
         rollbackNearCacheWrite(false);
     }
@@ -3174,6 +3229,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackNearCache3() throws Exception {
         rollbackNearCacheRead(true);
     }
@@ -3181,6 +3237,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackNearCache4() throws Exception {
         rollbackNearCacheRead(false);
     }
@@ -3254,6 +3311,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTx() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -3517,6 +3575,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperations() throws Exception {
         Ignite ignite0 = ignite(0);
 
@@ -3616,6 +3675,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxRestart() throws Exception {
         incrementTx(false, false, true);
     }
@@ -3623,6 +3683,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTx1() throws Exception {
         incrementTx(false, false, false);
     }
@@ -3630,6 +3691,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTx2() throws Exception {
         incrementTx(false, true, false);
     }
@@ -3637,6 +3699,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxNearCache1() throws Exception {
         incrementTx(true, false, false);
     }
@@ -3644,6 +3707,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxNearCache2() throws Exception {
         incrementTx(true, true, false);
     }
@@ -3757,6 +3821,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxMultipleNodeRestart() throws Exception {
         incrementTxMultiple(false, false, true);
     }
@@ -3819,7 +3884,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        for (int i = 0; i < 1000; i++) {
+                        final int ITERATIONS_COUNT = SF.applyLB(1000, 50);
+                        for (int i = 0; i < ITERATIONS_COUNT; i++) {
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val1 = cache.get(key1);
@@ -3875,6 +3941,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoveTx() throws Exception {
         getRemoveTx(false, false);
     }
@@ -3882,6 +3949,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoveTxNearCache1() throws Exception {
         getRemoveTx(true, false);
     }
@@ -3889,6 +3957,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoveTxNearCache2() throws Exception {
         getRemoveTx(true, true);
     }
@@ -4007,6 +4076,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountTx1() throws Exception {
         accountTx(false, false, false, false);
     }
@@ -4014,6 +4084,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountTx2() throws Exception {
         accountTx(true, false, false, false);
     }
@@ -4021,6 +4092,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountTxWithNonSerializable() throws Exception {
         accountTx(false, false, true, false);
     }
@@ -4028,6 +4100,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountTxNearCache() throws Exception {
         accountTx(false, true, false, false);
     }
@@ -4035,6 +4108,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountTxNodeRestart() throws Exception {
         accountTx(false, false, false, true);
     }
@@ -4059,8 +4133,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         try {
             final List<Ignite> clients = clients();
 
-            final int ACCOUNTS = 100;
-            final int VAL_PER_ACCOUNT = 10_000;
+            final int ACCOUNTS = SF.applyLB(100, 10);
+            final int VAL_PER_ACCOUNT = SF.applyLB(10_000, 50);
 
             IgniteCache<Integer, Account> srvCache = srv.cache(cacheName);
 
@@ -4069,9 +4143,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger();
 
-            final int THREADS = 20;
+            final int THREADS =  SF.applyLB(20, 5);
 
-            final long testTime = 30_000;
+            final long testTime =  SF.applyLB(30_000, 5_000);
 
             final long stopTime = System.currentTimeMillis() + testTime;
 
@@ -4302,6 +4376,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOptimisticExceptionOnChangingTopology() throws Exception {
         if (FAST)
             return;
@@ -4421,7 +4496,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }, "update-thread-" + i));
             }
 
-            U.sleep(60_000);
+            U.sleep(SF.applyLB(60_000, 5_000));
 
             finished.set(true);
 
@@ -4441,6 +4516,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConflictResolution() throws Exception {
         final Ignite ignite = ignite(0);
 
@@ -4500,6 +4576,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleOptimisticRead() throws Exception {
         final Ignite ignite = ignite(0);
         final Integer key = 1;
@@ -4546,6 +4623,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReadInParallerTxWrite() throws Exception {
         final Ignite ignite = ignite(0);
         final Integer key = 1;
@@ -4622,6 +4700,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlock() throws Exception {
         concurrentUpdateNoDeadlock(Collections.singletonList(ignite(0)), 10, false, false, false);
     }
@@ -4629,6 +4708,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlockGetPut() throws Exception {
         concurrentUpdateNoDeadlock(Collections.singletonList(ignite(0)), 10, true, false, false);
     }
@@ -4636,6 +4716,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlockWithNonSerializable() throws Exception {
         concurrentUpdateNoDeadlock(Collections.singletonList(ignite(0)), 10, true, false, true);
     }
@@ -4643,6 +4724,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlockNodeRestart() throws Exception {
         concurrentUpdateNoDeadlock(Collections.singletonList(ignite(1)), 10, false, true, false);
     }
@@ -4650,6 +4732,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlockFromClients() throws Exception {
         concurrentUpdateNoDeadlock(clients(), 20, false, false, false);
     }
@@ -4657,6 +4740,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateNoDeadlockFromClientsNodeRestart() throws Exception {
         concurrentUpdateNoDeadlock(clients(), 20, false, true, false);
     }

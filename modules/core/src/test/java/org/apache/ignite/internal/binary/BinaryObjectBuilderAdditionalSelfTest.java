@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,6 +68,9 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -76,6 +78,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -127,6 +130,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTypeFieldRead() throws Exception {
         GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -161,6 +165,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testSimpleTypeFieldSerialize() {
         GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -176,6 +181,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testSimpleTypeFieldOverride() throws Exception {
         GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -194,6 +200,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testSimpleTypeFieldSetNull() throws Exception {
         GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -217,6 +224,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws IgniteCheckedException If any error occurs.
      */
+    @Test
     public void testMakeCyclicDependency() throws IgniteCheckedException {
         GridBinaryTestClasses.TestObjectOuter outer = new GridBinaryTestClasses.TestObjectOuter();
         outer.inner = new GridBinaryTestClasses.TestObjectInner();
@@ -237,6 +245,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDateArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -255,6 +264,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testTimestampArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -273,6 +283,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testUUIDArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -291,6 +302,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDecimalArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -310,6 +322,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testBooleanArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -333,6 +346,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testCharArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -351,6 +365,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDoubleArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -369,6 +384,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testFloatArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -389,6 +405,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testLongArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -407,6 +424,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testIntArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -425,6 +443,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testShortArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -443,6 +462,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testByteArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -461,6 +481,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testStringArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -479,6 +500,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testModifyObjectArray() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = new Object[] {"a"};
@@ -499,6 +521,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testOverrideObjectArrayField() {
         BinaryObjectBuilderImpl mutObj = wrap(new GridBinaryTestClasses.TestObjectContainer());
 
@@ -516,6 +539,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDeepArray() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = new Object[] {new Object[] {"a", obj}};
@@ -540,6 +564,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testArrayListRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newArrayList(obj, "a");
@@ -554,6 +579,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testArrayListOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -574,6 +600,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testArrayListModification() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newArrayList("a", "b", "c");
@@ -601,6 +628,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testArrayListClear() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newArrayList("a", "b", "c");
@@ -611,12 +639,13 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         list.clear();
 
-        TestCase.assertEquals(Collections.emptyList(), mutObj.build().<GridBinaryTestClasses.TestObjectContainer>deserialize().foo);
+        Assert.assertEquals(Collections.emptyList(), mutObj.build().<GridBinaryTestClasses.TestObjectContainer>deserialize().foo);
     }
 
     /**
      *
      */
+    @Test
     public void testArrayListWriteUnmodifiable() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -638,6 +667,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testLinkedListRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newLinkedList(Arrays.asList(obj, "a"));
@@ -652,6 +682,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testLinkedListOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -672,6 +703,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testLinkedListModification() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -700,6 +732,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testLinkedListWriteUnmodifiable() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -721,6 +754,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testHashSetRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Sets.newHashSet(obj, "a");
@@ -735,6 +769,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testHashSetOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -756,6 +791,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testHashSetModification() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Sets.newHashSet("a", "b", "c");
@@ -780,6 +816,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testHashSetWriteUnmodifiable() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -800,6 +837,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMapRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(obj, "a", "b", obj));
@@ -814,6 +852,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMapOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -831,6 +870,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMapModification() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(1, "a", 2, "b"));
@@ -852,6 +892,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testEnumArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -870,6 +911,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testEditObjectWithRawData() {
         GridBinaryMarshalerAwareTestClass obj = new GridBinaryMarshalerAwareTestClass();
 
@@ -888,6 +930,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testHashCode() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -901,6 +944,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testCollectionsInCollection() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newArrayList(
@@ -918,6 +962,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMapEntryOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -933,6 +978,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMetadataChangingDoublePut() {
         BinaryObjectBuilderImpl mutableObj = wrap(new GridBinaryTestClasses.TestObjectContainer());
 
@@ -949,6 +995,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMetadataChangingDoublePut2() {
         BinaryObjectBuilderImpl mutableObj = wrap(new GridBinaryTestClasses.TestObjectContainer());
 
@@ -965,6 +1012,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testMetadataChanging() {
         GridBinaryTestClasses.TestObjectContainer c = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -999,6 +1047,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testWrongMetadataNullField() {
         BinaryObjectBuilder builder = binaries().builder("SomeType");
 
@@ -1036,6 +1085,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testWrongMetadataNullField2() {
         BinaryObjectBuilder builder = binaries().builder("SomeType1");
 
@@ -1073,6 +1123,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testCorrectMetadataNullField() {
         BinaryObjectBuilder builder = binaries().builder("SomeType2");
 
@@ -1095,6 +1146,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testCorrectMetadataNullField2() {
         BinaryObjectBuilder builder = binaries().builder("SomeType3");
 
@@ -1116,6 +1168,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDateInObjectField() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1129,6 +1182,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testTimestampInObjectField() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1142,6 +1196,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDateInCollection() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1155,6 +1210,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testTimestampInCollection() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1168,6 +1224,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testDateArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1186,6 +1243,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testTimestampArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1204,6 +1262,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testChangeMap() {
         GridBinaryTestClasses.Addresses addrs = new GridBinaryTestClasses.Addresses();
 
@@ -1246,6 +1305,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testSavingObjectWithNotZeroStart() {
         GridBinaryTestClasses.TestObjectOuter out = new GridBinaryTestClasses.TestObjectOuter();
         GridBinaryTestClasses.TestObjectInner inner = new GridBinaryTestClasses.TestObjectInner();
@@ -1265,6 +1325,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testBinaryObjectField() {
         GridBinaryTestClasses.TestObjectContainer container = new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
 
@@ -1279,6 +1340,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testAssignBinaryObject() {
         GridBinaryTestClasses.TestObjectContainer container = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1293,6 +1355,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testRemoveFromNewObject() {
         BinaryObjectBuilderImpl wrapper = newWrapper(GridBinaryTestClasses.TestObjectAllTypes.class);
 
@@ -1300,12 +1363,13 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         wrapper.removeField("str");
 
-        TestCase.assertNull(wrapper.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        Assert.assertNull(wrapper.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
      *
      */
+    @Test
     public void testRemoveFromExistingObject() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
         obj.setDefaultData();
@@ -1314,12 +1378,13 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         wrapper.removeField("str");
 
-        TestCase.assertNull(wrapper.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        Assert.assertNull(wrapper.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
      *
      */
+    @Test
     public void testCyclicArrays() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1341,6 +1406,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     @SuppressWarnings("TypeMayBeWeakened")
+    @Test
     public void testCyclicArrayList() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1362,6 +1428,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameBinaryKey() throws Exception {
         IgniteCache<BinaryObject, BinaryObject> replicatedCache =
             jcache(0).withKeepBinary();
@@ -1389,6 +1456,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * Ensure that object w/o schema can be re-built.
      */
+    @Test
     public void testBuildFromObjectWithoutSchema() {
         BinaryObjectBuilderImpl binBuilder = wrap(new GridBinaryTestClass2());
 
@@ -1438,6 +1506,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * Check that correct type is stored in binary object.
      */
+    @Test
     public void testCollectionsSerialization() {
         final BinaryObjectBuilder root = newWrapper(BigInteger.class);
 
@@ -1519,6 +1588,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBuilderExternalizable() throws Exception {
         BinaryObjectBuilder builder = newWrapper("TestType");
 
@@ -1554,6 +1624,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnum() throws Exception {
         BinaryObjectBuilder builder = newWrapper("TestType");
 
@@ -1577,6 +1648,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
      */
+    @Test
     public void testMarshallerMappings() throws IgniteCheckedException, ClassNotFoundException {
         String typeName = "TestType";
 
@@ -1611,6 +1683,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails
      */
+    @Test
     public void testBuilderReusage() throws Exception {
         // Check: rewrite null field value.
         BinaryObjectBuilder builder = newWrapper("SimpleCls1");

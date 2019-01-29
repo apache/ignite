@@ -53,8 +53,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -64,6 +62,10 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -78,6 +80,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests an ability to eagerly rollback timed out transactions.
  */
+@RunWith(JUnit4.class)
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
     private static final long DURATION = SF.apply(60 * 1000);
@@ -88,27 +91,14 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "test";
 
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -141,6 +131,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7388", MvccFeatureChecker.forcedMvcc());
+
         super.beforeTest();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -181,6 +173,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAndConcurrentTimeout() throws Exception {
         startClient();
 
@@ -248,6 +241,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitingTxUnblockedOnTimeout() throws Exception {
         waitingTxUnblockedOnTimeout(grid(0), grid(0));
 
@@ -271,6 +265,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitingTxUnblockedOnThreadDeath() throws Exception {
         waitingTxUnblockedOnThreadDeath(grid(0), grid(0));
 
@@ -294,6 +289,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockUnblockedOnTimeout() throws Exception {
         deadlockUnblockedOnTimeout(ignite(0), ignite(1));
 
@@ -372,6 +368,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimeoutRemoval() throws Exception {
         IgniteEx client = (IgniteEx)startClient();
 
@@ -403,6 +400,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimple() throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values())
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -414,6 +412,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * Test timeouts with random values and different tx configurations.
      */
+    @Test
     public void testRandomMixedTxConfigurations() throws Exception {
         final Ignite client = startClient();
 
@@ -518,6 +517,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimeoutOnPrimaryDHTNode() throws Exception {
         final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
 
@@ -532,6 +532,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLockRelease() throws Exception {
         final Ignite client = startClient();
 
@@ -593,6 +594,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyRead() throws Exception {
         testEnlistMany(false);
     }
@@ -600,6 +602,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyWrite() throws Exception {
         testEnlistMany(true);
     }
@@ -607,6 +610,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapOptimisticReadCommitted() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED, true);
     }
@@ -614,6 +618,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapOptimisticRepeatableRead() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ, true);
     }
@@ -621,6 +626,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapOptimisticSerializable() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE, true);
     }
@@ -628,6 +634,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapPessimisticReadCommitted() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, true);
     }
@@ -635,6 +642,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapPessimisticRepeatableRead() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ, true);
     }
@@ -642,6 +650,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxRemapPessimisticSerializable() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE, true);
     }
@@ -649,6 +658,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapOptimisticReadCommitted() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED, false);
     }
@@ -656,6 +666,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapOptimisticRepeatableRead() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ, false);
     }
@@ -663,6 +674,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapOptimisticSerializable() throws Exception {
         doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE, false);
     }
@@ -670,6 +682,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapPessimisticReadCommitted() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, false);
     }
@@ -677,6 +690,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapPessimisticRepeatableRead() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ, false);
     }
@@ -684,6 +698,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTimeoutTxServerRemapPessimisticSerializable() throws Exception {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE, false);
     }

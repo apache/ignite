@@ -34,12 +34,13 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We emulate that client receive message about joining to topology earlier than some server nodes in topology.
@@ -47,23 +48,21 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * To emulate this we connect client to second node in topology and pause sending message about joining finishing to
  * third node.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientConnectTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Latch to stop message sending. */
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** Start client flag. */
     private final AtomicBoolean clientJustStarted = new AtomicBoolean(false);
-
+    
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
-        if (igniteInstanceName.equals("client")) {
+        if ("client".equals(igniteInstanceName)) {
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
             ipFinder.registerAddresses(Collections.singleton(new InetSocketAddress(InetAddress.getLoopbackAddress(), 47501)));
@@ -71,11 +70,13 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             disco.setIpFinder(ipFinder);
         }
         else
-            disco.setIpFinder(ipFinder);
+            disco.setIpFinder(sharedStaticIpFinder);
 
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
-        disco.setNetworkTimeout(2000);
+        disco.setNetworkTimeout(6_000);
+
+        cfg.setNetworkSendRetryCount(1);
 
         cfg.setDiscoverySpi(disco);
 
@@ -94,6 +95,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToBigTopology() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -121,7 +123,6 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         latch.countDown();
 
-        System.err.println("GET ALL");
         client.cache(DEFAULT_CACHE_NAME).getAll(keys);
     }
 
@@ -142,7 +143,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                     try {
                         latch.await();
 
-                        Thread.sleep(3000);
+                        Thread.sleep(5_000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
@@ -44,6 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests leaks at the IgniteH2Indexing
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
@@ -119,22 +124,20 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-
         IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        Map<Thread, H2ConnectionWrapper> conns = h2Idx.connections().connectionsForThread();
+        Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
-        int cntr = 0;
-
-        for (H2ConnectionWrapper w : conns.values())
-            cntr += w.statementCacheSize();
-
-        return cntr;
+        return conns.values().stream()
+            .mapToInt(set ->
+                set.keySet().stream()
+                    .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -187,6 +190,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 

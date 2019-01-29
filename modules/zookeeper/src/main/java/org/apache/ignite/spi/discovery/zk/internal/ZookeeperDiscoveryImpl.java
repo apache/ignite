@@ -300,6 +300,9 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void resolveCommunicationError(ClusterNode node0, Exception err) {
+        if (node0.isClient())
+            return;
+
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
@@ -316,6 +319,8 @@ public class ZookeeperDiscoveryImpl {
                 ZkCommunicationErrorProcessFuture newFut = ZkCommunicationErrorProcessFuture.createOnCommunicationError(
                     this,
                     node.sessionTimeout() + 1000);
+
+                stats.onCommunicationError();
 
                 if (commErrProcFut.compareAndSet(fut, newFut)) {
                     fut = newFut;
@@ -740,7 +745,7 @@ public class ZookeeperDiscoveryImpl {
                 internalLsnr.beforeJoin(locNode, log);
 
             if (locNode.isClient() && reconnect)
-                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+                locNode.setAttributes(spi.getLocNodeAttrs());
 
             marshalCredentialsOnJoin(locNode);
 

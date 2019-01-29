@@ -410,8 +410,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary,
-                        null);  // TODO IGNITE-7371
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -524,8 +523,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true,
-                            null); // TODO IGNITE-7371
+                            /*keepBinary*/true);
                     }
 
                     if (oldVal != null)
@@ -1035,7 +1033,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @param req Prepare request.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
 

@@ -22,8 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
@@ -33,12 +31,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -92,14 +94,10 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
         return 2 * 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockFailover() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -164,6 +162,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnlockPrimaryLeft() throws Exception {
         GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 

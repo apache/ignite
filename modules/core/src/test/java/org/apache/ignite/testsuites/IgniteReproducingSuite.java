@@ -17,7 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
@@ -27,20 +33,39 @@ import junit.framework.TestSuite;
  * You may launch and check results on
  * https://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgniteReproducingSuite
  *
- * This suite is not included into main build
+ * This suite is not included into main build.
  */
-public class IgniteReproducingSuite extends TestSuite {
-    /**
-     * @return suite with test(s) for reproduction some problem.
-     * @throws Exception if failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
+@RunWith(IgniteReproducingSuite.DynamicReproducingSuite.class)
+public class IgniteReproducingSuite {
+    /** */
+    public static class DynamicReproducingSuite extends Suite {
+        /**
+         * @return List of test(s) for reproduction some problem.
+         */
+        private static List<Class<?>> classes() {
+            List <Class<?>> suite = new ArrayList<>();
 
-        //uncomment to add some test
-        //for (int i = 0; i < 100; i++)
-        //    suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
+            suite.add(IgniteReproducingSuite.TestStub.class);
 
-        return suite;
+            //uncomment to add some test
+            //for (int i = 0; i < 100; i++)
+            //    suite.add(IgniteCheckpointDirtyPagesForLowLoadTest.class);
+
+            return suite;
+        }
+
+        /** */
+        public DynamicReproducingSuite(Class<?> cls) throws InitializationError {
+            super(cls, classes().toArray(new Class<?>[] {null}));
+        }
+    }
+
+    /** IMPL NOTE execution of the (empty) test suite was failing with NPE without this stub. */
+    @Ignore
+    public static class TestStub {
+        /** */
+        @Test
+        public void dummy() {
+        }
     }
 }

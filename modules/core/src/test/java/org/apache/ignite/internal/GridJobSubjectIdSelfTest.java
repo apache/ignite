@@ -36,12 +36,16 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 
 /**
  * Test job subject ID propagation.
  */
+@RunWith(JUnit4.class)
 public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     /** Job subject ID. */
     private static volatile UUID taskSubjId;
@@ -85,6 +89,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSubjectId() throws Exception {
         node2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -110,6 +115,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModifiedSubjectId() throws Exception {
         node1.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

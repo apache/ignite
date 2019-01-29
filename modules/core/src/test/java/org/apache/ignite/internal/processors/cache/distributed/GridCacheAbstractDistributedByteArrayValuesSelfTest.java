@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
@@ -26,6 +27,9 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -35,19 +39,33 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for byte array values in distributed caches.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
-    /** Grids. */
-    protected static Ignite[] ignites;
+    /** */
+    private static final String CACHE = "cache";
+
+    /** */
+    private static final String MVCC_CACHE = "mvccCache";
 
     /** Regular caches. */
     private static IgniteCache<Integer, Object>[] caches;
+
+    /** Regular caches. */
+    private static IgniteCache<Integer, Object>[] mvccCaches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
+
+
+        CacheConfiguration ccfg = cacheConfiguration(CACHE);
+
+        c.setCacheConfiguration(ccfg, mvccCfg);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -67,12 +85,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     }
 
     /**
+     * @param name Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration cacheConfiguration(String name) {
         CacheConfiguration cfg = cacheConfiguration0();
 
-        cfg.setName(CACHE_REGULAR);
+        cfg.setName(name);
 
         return cfg;
     }
@@ -85,26 +104,31 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         int gridCnt = gridCount();
 
         assert gridCnt > 0;
 
-        ignites = new Ignite[gridCnt];
-
         caches = new IgniteCache[gridCnt];
+        mvccCaches = new IgniteCache[gridCnt];
+
+        startGridsMultiThreaded(gridCnt);
 
         for (int i = 0; i < gridCnt; i++) {
-            ignites[i] = startGrid(i);
-
-            caches[i] = ignites[i].cache(CACHE_REGULAR);
+            caches[i] = grid(i).cache(CACHE);
+            mvccCaches[i] = grid(i).cache(MVCC_CACHE);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         caches = null;
+        mvccCaches = null;
 
-        ignites = null;
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -112,6 +136,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction0(caches, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -121,6 +146,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed0(caches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -130,6 +156,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction0(caches, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -139,9 +166,31 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed0(caches, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
+
+    /**
+     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticMvcc() throws Exception {
+        testTransaction0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1));
+    }
+
+    /**
+     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticMvccMixed() throws Exception {
+        testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
+    }
+
 
     /**
      * Test transaction behavior.

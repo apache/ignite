@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -38,10 +39,14 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test lazy cache start on client nodes with inmemory cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String PERSON_CACHE = "Person";
@@ -55,14 +60,14 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Full table name. */
     private static final String FULL_TABLE_NAME = PERSON_SCHEMA + "." + PERSON_CACHE;
 
-    /** Number of nodes. */
-    private static final int NODES = 2;
-
     /** Client or server mode for configuration. */
     protected boolean client;
 
     /** Instance of client node. */
     private static IgniteEx clientNode;
+
+    /** Instance of client node. */
+    private static IgniteEx srvNode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,11 +80,11 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         client = false;
 
-        startGridsMultiThreaded(NODES - 1);
+        srvNode = (IgniteEx)startGridsMultiThreaded(1);
 
         client = true;
 
-        clientNode = startGrid(NODES - 1);
+        clientNode = startGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -93,9 +98,9 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -103,6 +108,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testBatchMerge() throws Exception {
         final int BATCH_SIZE = 7;
 
@@ -127,6 +133,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcDelete() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -137,7 +144,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT - 1, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
+        Assert.assertEquals(CACHE_ELEMENT_COUNT - 1, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -145,6 +152,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcInsert() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -156,7 +164,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT + 1, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
+        Assert.assertEquals(CACHE_ELEMENT_COUNT + 1, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -164,6 +172,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbcUpdate() throws Exception {
         try (Connection con = connect(clientNode);
              Statement stmt = con.createStatement()) {
@@ -174,7 +183,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME + " WHERE name = 'new_name'");
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
+        Assert.assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -182,6 +191,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failure.
      */
+    @Test
     public void testClientJdbc() throws Exception {
         try (Connection con = connect(clientNode);
              Statement st = con.createStatement()) {
@@ -196,6 +206,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test from client node to put cache elements through cache API.
      */
+    @Test
     public void testClientPut() {
         clientNode.cache(PERSON_CACHE).put(-100, new Person(-100, "name-"));
 
@@ -203,30 +214,58 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test DDL operation for not started cache on client node.
+     */
+    @Test
+    public void testCreateIdxOnClient() {
+        getDefaultCacheOnClient().query(new SqlFieldsQuery("CREATE INDEX IDX_11 ON " + FULL_TABLE_NAME + " (name asc)")).getAll();
+    }
+
+    /**
+     * Test DDL operation for not started cache on client node.
+     */
+    @Test
+    public void testDropIdxOnClient() {
+        srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name desc)")).getAll();
+
+        //Due to client receive created index asynchronously we need add the ugly sleep.
+        doSleep(2000);
+
+        getDefaultCacheOnClient().query(new SqlFieldsQuery("DROP INDEX " + PERSON_SCHEMA + ".IDX_TST")).getAll();
+    }
+
+
+    /**
      * Test from client node to get cache elements through cache API.
      */
+    @Test
     public void testClientSqlFieldsQuery() {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
+        Assert.assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
      * Test from client node to get cache elements through cache API.
      */
+    @Test
     public void testClientSqlQuery() {
         SqlQuery<Integer, Person> qry = new SqlQuery<>(PERSON_CACHE, "FROM " + PERSON_CACHE);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT,
-            clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
+        Assert.assertEquals(CACHE_ELEMENT_COUNT, clientNode.getOrCreateCache(PERSON_CACHE).query(qry).getAll().size());
+    }
+
+    /**
+     * @return Default cache on client node.
+     */
+    private IgniteCache getDefaultCacheOnClient() {
+        return clientNode.getOrCreateCache(DEFAULT_CACHE_NAME);
     }
 
     /**
      * Create cache at server node and put some values into the cache.
      */
     private void createAndFillServerCache() {
-        IgniteEx srvNode = grid(0);
-
         srvNode.createCache(cacheConfiguration());
 
         for (int i = 0; i < CACHE_ELEMENT_COUNT; i++)
@@ -246,9 +285,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         person.setKeyType(Integer.class.getName());
         person.setValueType(Person.class.getName());
         person.addQueryField("orgId", Integer.class.getName(), null);
-        person.addQueryField("id", Integer.class.getName(), null);
         person.addQueryField("name", String.class.getName(), null);
-        person.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("id"), new QueryIndex("name")));
+        person.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("name")));
 
         ccfg.setQueryEntities(F.asList(person));
 
@@ -296,7 +334,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
          * @param orgId Organization ID.
          * @param name Name.
          */
-        public Person(int orgId, String name) {
+        Person(int orgId, String name) {
             this.orgId = orgId;
             this.name = name;
         }

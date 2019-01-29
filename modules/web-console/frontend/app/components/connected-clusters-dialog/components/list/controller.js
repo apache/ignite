@@ -19,7 +19,7 @@ import _ from 'lodash';
 
 import columnDefs from './column-defs';
 
-export default class SnapshotsListCachesCtrl {
+export default class ConnectedClustersListCtrl {
     static $inject = ['$scope', 'AgentManager'];
 
     /**

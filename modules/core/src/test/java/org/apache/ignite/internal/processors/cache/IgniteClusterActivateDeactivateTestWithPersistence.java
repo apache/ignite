@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,12 +40,21 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
@@ -73,6 +83,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_SingleNode() throws Exception {
         activateCachesRestore(1, false);
     }
@@ -80,6 +91,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_SingleNode_WithNewCaches() throws Exception {
         activateCachesRestore(1, true);
     }
@@ -87,6 +99,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_5_Servers() throws Exception {
         activateCachesRestore(5, false);
     }
@@ -94,8 +107,17 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
         activateCachesRestore(5, true);
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10750", MvccFeatureChecker.forcedMvcc());
+
+        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
     }
 
     /**
@@ -103,12 +125,17 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateInactiveCluster() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
+
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
-                .setGroupName("test_cache"),
+                .setGroupName("test_cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new CacheConfiguration<>("test_cache_2")
                 .setGroupName("test_cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         };
 
         Ignite ignite = startGrids(3);
@@ -223,8 +250,24 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     }
 
     /**
+     * Verifies correctness of BaselineTopology checks when working in persistent mode.
+     */
+    @Override protected void doFinalChecks() {
+        for (int i = 0; i < 4; i++) {
+            int j = i;
+
+            assertThrowsAnyCause(log, () -> {
+                startGrid(j);
+
+                return null;
+            }, IgniteSpiException.class, "not compatible");
+        }
+    }
+
+    /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7330">IGNITE-7330</a> for more information about context of the test
      */
+    @Test
     public void testClientJoinsWhenActivationIsInProgress() throws Exception {
         startGridsAndLoadData(5);
 
@@ -283,6 +326,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCacheRestoreConfigurationConflict() throws Exception {
         final int SRVS = 3;
 
@@ -290,13 +334,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         srv.cluster().active(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         srv.createCache(ccfg);
 
         stopAllGrids();
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1);
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
@@ -319,7 +365,10 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10786", MvccFeatureChecker.forcedMvcc());
+
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);
@@ -328,7 +377,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setIndexedTypes(Integer.class, Integer.class)
-            .setAffinity(new RendezvousAffinityFunction(false, 64));
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache cache = srv.createCache(ccfg);
 

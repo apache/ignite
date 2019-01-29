@@ -22,9 +22,8 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
-import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.bagging.BaggedModel;
+import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -33,8 +32,9 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * This example shows how bagging technique may be applied to arbitrary trainer.
@@ -62,7 +62,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
             System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal,
@@ -75,7 +75,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
 
-            DatasetTrainer< ModelsComposition, Double> baggedTrainer = TrainerTransformers.makeBagged(
+            BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
                 trainer,
                 10,
                 0.6,
@@ -85,7 +85,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform evaluation of the model.");
 
-            double[] score = new CrossValidation<ModelsComposition, Double, Integer, Vector>().score(
+            double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>().score(
                 baggedTrainer,
                 new Accuracy<>(),
                 ignite,
@@ -97,9 +97,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> ---------------------------------");
 
-            Arrays.stream(score).forEach(sc -> {
-                System.out.println("\n>>> Accuracy " + sc);
-            });
+            Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
 
             System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
         }

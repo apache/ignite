@@ -66,9 +66,9 @@ public class KMeansTrainerTest extends TrainerTest {
         );
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.apply(firstVector), 0.0, PRECISION);
+        assertEquals(knnMdl.predict(firstVector), 0.0, PRECISION);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.apply(secondVector), 0.0, PRECISION);
+        assertEquals(knnMdl.predict(secondVector), 0.0, PRECISION);
         assertEquals(trainer.getMaxIterations(), 1);
         assertEquals(trainer.getEpsilon(), PRECISION, PRECISION);
     }
@@ -97,10 +97,10 @@ public class KMeansTrainerTest extends TrainerTest {
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(originalMdl.apply(firstVector), updatedMdlOnSameDataset.apply(firstVector), PRECISION);
-        assertEquals(originalMdl.apply(secondVector), updatedMdlOnSameDataset.apply(secondVector), PRECISION);
-        assertEquals(originalMdl.apply(firstVector), updatedMdlOnEmptyDataset.apply(firstVector), PRECISION);
-        assertEquals(originalMdl.apply(secondVector), updatedMdlOnEmptyDataset.apply(secondVector), PRECISION);
+        assertEquals(originalMdl.predict(firstVector), updatedMdlOnSameDataset.predict(firstVector), PRECISION);
+        assertEquals(originalMdl.predict(secondVector), updatedMdlOnSameDataset.predict(secondVector), PRECISION);
+        assertEquals(originalMdl.predict(firstVector), updatedMdlOnEmptyDataset.predict(firstVector), PRECISION);
+        assertEquals(originalMdl.predict(secondVector), updatedMdlOnEmptyDataset.predict(secondVector), PRECISION);
     }
 
     /** */
@@ -109,10 +109,8 @@ public class KMeansTrainerTest extends TrainerTest {
             .withDistance(new EuclideanDistance())
             .withAmountOfClusters(10)
             .withMaxIterations(1)
-            .withEpsilon(PRECISION)
-            .withSeed(2);
+            .withEpsilon(PRECISION);
         assertEquals(10, trainer.getAmountOfClusters());
-        assertEquals(2, trainer.getSeed());
         assertTrue(trainer.getDistance() instanceof EuclideanDistance);
         return trainer;
     }

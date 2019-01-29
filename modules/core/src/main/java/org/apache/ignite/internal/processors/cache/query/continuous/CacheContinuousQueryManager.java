@@ -799,10 +799,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (notifyExisting) {
             assert locLsnr != null : "Local listener can't be null if notification for existing entries are enabled";
 
-            final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(cctx.cacheId(),
+            final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(
+                cctx.cacheId(),
                 true,
                 true,
                 AffinityTopologyVersion.NONE,
+                null,
                 null);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
@@ -1216,7 +1218,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          * @param evt Event.
          * @return Singleton iterable.
          */
-        @SuppressWarnings("unchecked")
         private Iterable<CacheEntryEvent<? extends K, ? extends V>> singleton(
             CacheEntryEvent<? extends K, ? extends V> evt) {
             assert evt instanceof CacheContinuousQueryEvent;
@@ -1296,7 +1297,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             impl = (CacheEntryEventFilter)in.readObject();
             types = in.readByte();

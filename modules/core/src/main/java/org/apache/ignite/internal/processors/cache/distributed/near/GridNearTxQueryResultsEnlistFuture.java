@@ -22,15 +22,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -150,7 +153,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             boolean first = (nodeId != null);
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(!topLocked && cctx.topology().holdsLock())
+            if (!topLocked && cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
 
             for (Batch batch : next) {
@@ -203,7 +206,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
 
                 if (node == null)
-                    throw new ClusterTopologyCheckedException("Failed to get primary node " +
+                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
                 if (!sequential)
@@ -584,6 +587,14 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
     }
 
     /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        return batches.entrySet().stream()
+            .filter(e -> e.getValue().ready())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxQueryResultsEnlistFuture.class, this, super.toString());
     }
@@ -673,5 +684,4 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             this.ready = ready;
         }
     }
-
 }

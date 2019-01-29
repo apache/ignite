@@ -38,23 +38,22 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -68,10 +67,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRVS = 4;
 
@@ -91,8 +88,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setClientMode(clientMode);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -107,9 +102,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -123,20 +115,21 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
         super.afterTestsStopped();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySyncRestart() throws Exception {
         multithreadedTests(PRIMARY_SYNC, true);
     }
@@ -144,6 +137,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySync() throws Exception {
         multithreadedTests(PRIMARY_SYNC, false);
     }
@@ -151,6 +145,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSync() throws Exception {
         multithreadedTests(FULL_SYNC, false);
     }
@@ -158,6 +153,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSyncRestart() throws Exception {
         multithreadedTests(FULL_SYNC, true);
     }
@@ -165,6 +161,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsync() throws Exception {
         multithreadedTests(FULL_ASYNC, false);
     }
@@ -172,6 +169,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsyncRestart() throws Exception {
         multithreadedTests(FULL_ASYNC, true);
     }
