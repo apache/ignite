@@ -848,6 +848,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology, boolean isAutoAdjust) {
+        boolean isBaselineAutoAdjustEnabled = ctx.cluster().get().baselineConfiguration().isBaselineAutoAdjustEnabled();
+
+        if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
+            throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
+
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 

@@ -40,7 +40,7 @@ public class DistributedProperty<T extends Serializable> {
      * wide.
      */
     @GridToStringExclude
-    private volatile IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter<Boolean>> clusterWideUpdater;
+    private volatile PropertyUpdateClosure clusterWideUpdater;
 
     /**
      * @param name Name of property.
@@ -65,7 +65,7 @@ public class DistributedProperty<T extends Serializable> {
         if (!attached)
             throw new DetachedPropertyException(name);
 
-        return clusterWideUpdater != null && Boolean.TRUE.equals(clusterWideUpdater.accept(name, newVal).get());
+        return clusterWideUpdater != null && Boolean.TRUE.equals(clusterWideUpdater.update(name, val, newVal).get());
     }
 
     /**
@@ -90,7 +90,7 @@ public class DistributedProperty<T extends Serializable> {
             return adapter;
         }
 
-        return clusterWideUpdater.accept(name, newVal);
+        return clusterWideUpdater.update(name, val, newVal);
     }
 
     /**
@@ -119,8 +119,7 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param updater Consumer for update value across cluster.
      */
-    void onReadyForUpdate(
-        @NotNull IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter<Boolean>> updater) {
+    void onReadyForUpdate(@NotNull PropertyUpdateClosure updater) {
         this.clusterWideUpdater = updater;
     }
 

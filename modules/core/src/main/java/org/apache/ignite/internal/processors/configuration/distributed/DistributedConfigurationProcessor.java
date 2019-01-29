@@ -21,14 +21,18 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiFunction;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
@@ -254,9 +258,39 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
-            (IgniteThrowableBiFunction<String, Serializable, GridFutureAdapter>)(key, value) ->
-                distributedMetastorage.writeAsync(toMetaStorageKey(key), value)
+            (key, expectedOldValue, newValue) ->
+                distributedMetastorage.compareAndSetAsync(toMetaStorageKey(key), expectedOldValue, newValue)
         );
+
+        if (isLocalNodeCoordinator()) {
+            try {
+                Serializable oldVal = distributedMetastorage.read(prop.getName());
+
+                if (oldVal == null)
+                    distributedMetastorage.compareAndSetAsync(toMetaStorageKey(prop.getName()), null, prop.value());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Can not set init value to metastore for key='" + prop.getName() + "'", e);
+            }
+        }
+    }
+
+    /**
+     * @return Cluster coordinator, {@code null} if failed to determine.
+     */
+    @Nullable private ClusterNode coordinator() {
+        return U.oldest(ctx.discovery().aliveServerNodes(), null);
+    }
+
+    /**
+     * @return {@code true} if local node is coordinator.
+     */
+    private boolean isLocalNodeCoordinator() {
+        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
+
+        return spi instanceof TcpDiscoverySpi
+            ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
+            : F.eq(ctx.discovery().localNode(), coordinator());
     }
 
     /**
