@@ -263,7 +263,7 @@ public class MvccDataRow extends DataRow {
      * @return {@code True} if key absent before.
      */
     protected boolean keyAbsentBeforeFlag() {
-        long withHint = newMvccCrd == MVCC_CRD_COUNTER_NA ? mvccOpCntr : newMvccOpCntr;
+        long withHint = mvccOpCntr;
 
         return ((withHint & MVCC_KEY_ABSENT_BEFORE_MASK) >>> MVCC_KEY_ABSENT_BEFORE_OFF) == 1;
     }
@@ -275,14 +275,9 @@ public class MvccDataRow extends DataRow {
         if (flag) {
             if (mvccCrd != MVCC_CRD_COUNTER_NA)
                 mvccOpCntr |= MVCC_KEY_ABSENT_BEFORE_MASK;
-
-            if (newMvccCrd != MVCC_CRD_COUNTER_NA)
-                newMvccOpCntr |= MVCC_KEY_ABSENT_BEFORE_MASK;
         }
-        else {
+        else
             mvccOpCntr &= ~MVCC_KEY_ABSENT_BEFORE_MASK;
-            newMvccOpCntr &= ~MVCC_KEY_ABSENT_BEFORE_MASK;
-        }
     }
 
     /** {@inheritDoc} */

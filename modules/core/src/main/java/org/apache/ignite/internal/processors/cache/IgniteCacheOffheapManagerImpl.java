@@ -2033,7 +2033,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         key,
                         updateRow.mvccCoordinatorVersion(),
                         updateRow.mvccCounter(),
-                        updateRow.mvccOperationCounter(),
+                        updateRow.mvccOperationCounter() & ~MVCC_OP_COUNTER_MASK,
                         updateRow.link()));
                 }
 
