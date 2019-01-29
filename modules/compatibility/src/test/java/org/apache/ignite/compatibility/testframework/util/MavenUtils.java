@@ -168,7 +168,7 @@ public class MavenUtils {
             localProxyMavenSettings = localProxyMavenSettingsFromEnv;
 
         if (isDebug) {
-            Files.list(Paths.get(localProxyMavenSettings).getParent())
+            Files.list(Paths.get("~/.m2/"))
                     .forEach(System.out::println);
         }
 
