@@ -17,22 +17,46 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
- * Partition resolver interface. Takes argument, data type and cache name, returns partition.
+ * Partition argument type.
  */
-public interface PartitionResolver {
-    /**
-     * Resolve partition.
-     *
-     * @param arg Argument.
-     * @param dataType Data type.
-     * @param cacheName Cache name.
-     * @return Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    int partition(Object arg, int dataType, String cacheName) throws IgniteCheckedException;
+public enum PartitionParameterType {
+    /** Boolean. */
+    BOOLEAN,
 
+    /** Byte. */
+    BYTE,
 
+    /** Short. */
+    SHORT,
+
+    /** Int. */
+    INT,
+
+    /** Long. */
+    LONG,
+
+    /** Float. */
+    FLOAT,
+
+    /** Double. */
+    DOUBLE,
+
+    /** String. */
+    STRING,
+
+    /** Decimal. */
+    DECIMAL,
+
+    /** Date. */
+    DATE,
+
+    /** Time. */
+    TIME,
+
+    /** Timestamp. */
+    TIMESTAMP,
+
+    /** UUID. */
+    UUID;
 }

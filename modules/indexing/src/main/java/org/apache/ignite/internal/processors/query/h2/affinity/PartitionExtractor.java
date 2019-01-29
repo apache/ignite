@@ -46,6 +46,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
@@ -623,10 +624,68 @@ public class PartitionExtractor {
 
             return new PartitionConstantNode(tbl0, part);
         }
-        else if (rightParam != null)
-            return new PartitionParameterNode(tbl0, partResolver, rightParam.index(), leftCol0.getType());
+        else if (rightParam != null) {
+            int oclType = leftCol0.getType();
+
+            PartitionParameterType mappedType = mappedType(oclType);
+
+            return new PartitionParameterNode(tbl0, partResolver, rightParam.index(), leftCol0.getType(), mappedType);
+        }
         else
             return null;
+    }
+
+    /**
+     * Mapped Ignite type for H2 type.
+     *
+     * @param type H2 type.
+     * @return ignite type.
+     */
+    @Nullable private static PartitionParameterType mappedType(int type) {
+        // Try map if possible.
+        switch (type) {
+            case Value.BOOLEAN:
+                return PartitionParameterType.BOOLEAN;
+
+            case Value.BYTE:
+                return PartitionParameterType.BYTE;
+
+            case Value.SHORT:
+                return PartitionParameterType.SHORT;
+
+            case Value.INT:
+                return PartitionParameterType.INT;
+
+            case Value.LONG:
+                return PartitionParameterType.LONG;
+
+            case Value.FLOAT:
+                return PartitionParameterType.FLOAT;
+
+            case Value.DOUBLE:
+                return PartitionParameterType.DOUBLE;
+
+            case Value.STRING:
+                return PartitionParameterType.STRING;
+
+            case Value.DECIMAL:
+                return PartitionParameterType.DECIMAL;
+
+            case Value.DATE:
+                return PartitionParameterType.DATE;
+
+            case Value.TIME:
+                return PartitionParameterType.TIME;
+
+            case Value.TIMESTAMP:
+                return PartitionParameterType.TIMESTAMP;
+
+            case Value.UUID:
+                return PartitionParameterType.UUID;
+        }
+
+        // Otherwise we do not support it.
+        return null;
     }
 
     /**

@@ -32,8 +32,11 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /** Index. */
     private final int idx;
 
-    /** Data type. */
-    private final int dataType;
+    /** Parameter data type. */
+    private final int type;
+
+    /** Mapped parameter type. */
+    private final PartitionParameterType mappedType;
 
     /**
      * Constructor.
@@ -41,14 +44,17 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * @param tbl Table descriptor.
      * @param partResolver Partition resolver.
      * @param idx Parameter index.
-     * @param dataType Parameter data type.
+     * @param type Parameter data type.
+     * @param mappedType Mapped parameter type to be used by thin clients.
      */
-    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partResolver, int idx, int dataType) {
+    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partResolver, int idx, int type,
+        PartitionParameterType mappedType) {
         super(tbl);
 
         this.partResolver = partResolver;
         this.idx = idx;
-        this.dataType = dataType;
+        this.type = type;
+        this.mappedType = mappedType;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +64,7 @@ public class PartitionParameterNode extends PartitionSingleNode {
 
         return partResolver.partition(
             args[idx],
-            dataType,
+            type,
             tbl.cacheName()
         );
     }
