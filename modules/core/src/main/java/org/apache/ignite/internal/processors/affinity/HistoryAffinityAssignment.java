@@ -86,7 +86,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             if (nodes.size() > max)
                 max = nodes.size();
 
-            if (max == backups)
+            if (max == backups + 1)
                 break;
         }
 

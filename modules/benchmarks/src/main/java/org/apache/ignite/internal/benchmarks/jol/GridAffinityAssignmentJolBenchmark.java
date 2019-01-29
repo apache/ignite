@@ -83,6 +83,7 @@ public class GridAffinityAssignmentJolBenchmark {
             }
 
         // Measure history assignment for normal and huge partition count.
+        // Nodes count doesn't affect heap occupation.
         // Best result is achieved when running one measure at a time with large enough size of new region
         // (to avoid object relocation).
         measureHistory(1024, 32, 0);
