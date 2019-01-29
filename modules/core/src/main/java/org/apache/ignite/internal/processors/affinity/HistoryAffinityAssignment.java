@@ -58,13 +58,12 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
     /**
      * @param assign Assignment.
+     * @param backups Backups.
      */
-    public HistoryAffinityAssignment(AffinityAssignment assign) {
+    public HistoryAffinityAssignment(AffinityAssignment assign, int backups) {
         topVer = assign.topologyVersion();
 
-        int cpys = assign.idealAssignment().get(0).size();
-
-        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || cpys > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
+        if (IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION || backups > IGNITE_AFFINITY_BACKUPS_THRESHOLD) {
             assignment = assign.assignment();
 
             idealAssignment = assign.idealAssignment();
@@ -81,6 +80,18 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         List<List<ClusterNode>> assignment = assign.assignment();
         List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
 
+        int max = 0;
+
+        for (List<ClusterNode> nodes : idealAssignment) { // Estimate required size.
+            if (nodes.size() > max)
+                max = nodes.size();
+
+            if (max == backups)
+                break;
+        }
+
+        int cpys = max;
+
         boolean same = assignment == idealAssignment;
 
         int partsCnt = assignment.size();
@@ -89,7 +100,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
 
         Map<ClusterNode, Character> orderMap = new HashMap<>();
 
-        char order = 0; // Char type is used as unsigned short to avoid conversions.
+        char order = 1; // Char type is used as unsigned short to avoid conversions.
 
         assignmentDiff = new HashMap<>();
 
@@ -163,15 +174,21 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             List<ClusterNode> ret = new ArrayList<>(order.length);
 
             for (int i = 0; i < order.length; i++)
-                ret.add(nodes[order[i]]);
+                ret.add(nodes[order[i] - 1]);
 
             return ret;
         }
 
         List<ClusterNode> ret = new ArrayList<>(cpys);
 
-        for (int i = 0; i < cpys; i++)
-            ret.add(nodes[idealParts[p * cpys + i]]);
+        for (int i = 0; i < cpys; i++) {
+            char ord = idealParts[p * cpys + i];
+
+            if (ord == 0) // Zero
+                break;
+
+            ret.add(nodes[ord - 1]);
+        }
 
         return ret;
     }

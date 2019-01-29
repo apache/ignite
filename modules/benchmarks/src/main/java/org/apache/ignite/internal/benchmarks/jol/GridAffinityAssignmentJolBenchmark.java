@@ -251,7 +251,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
             AffinityTopologyVersion topVer = new AffinityTopologyVersion(i + 1, 0);
             GridAffinityAssignmentV2 a = new GridAffinityAssignmentV2(topVer, lateAssignmemnt, idealAssignment);
-            HistoryAffinityAssignment h = new HistoryAffinityAssignment(a);
+            HistoryAffinityAssignment h = new HistoryAffinityAssignment(a, backups);
 
             if (!lateAssignmemnt.equals(h.assignment()))
                 throw new RuntimeException();
@@ -272,7 +272,7 @@ public class GridAffinityAssignmentJolBenchmark {
             }
 
             GridAffinityAssignmentV2 a0 = new GridAffinityAssignmentV2(topVer0, assignment, idealAssignment);
-            HistoryAffinityAssignment h0 = new HistoryAffinityAssignment(a0);
+            HistoryAffinityAssignment h0 = new HistoryAffinityAssignment(a0, backups);
 
             if (!assignment.equals(h0.assignment()))
                 throw new RuntimeException();
