@@ -110,8 +110,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        testsCfg = testsCfgInjected;
-
         assert testsCfg != null;
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
@@ -168,12 +166,17 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             }
         }
         finally {
-            testedNodeIdx = 0;
-
-            testsCfg = dummyCfg();
-
-            stopAllGrids();
+            unconditionalCleanupAfterTests();
         }
+    }
+
+    /** */
+    protected void unconditionalCleanupAfterTests() {
+        testedNodeIdx = 0;
+
+        testsCfgInjected = testsCfg = dummyCfg();
+
+        stopAllGrids();
     }
 
     /**
