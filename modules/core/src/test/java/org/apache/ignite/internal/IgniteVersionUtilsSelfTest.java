@@ -15,32 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.sparkmodelparser;
+package org.apache.ignite.internal;
+
+import java.util.Calendar;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * List of supported Spark models.
- *
- * NOTE: Valid for Spark 2.4.
  */
-public enum SupportedSparkModels {
-    /** Logistic regression. */
-    LOG_REGRESSION,
-
-    /** Linear regression. */
-    LINEAR_REGRESSION,
-
-    /** Decision tree. */
-    DECISION_TREE,
-
-    /** Support Vector Machine . */
-    LINEAR_SVM,
-
-    /** Random forest. */
-    RANDOM_FOREST,
-
+@RunWith(JUnit4.class)
+public class IgniteVersionUtilsSelfTest extends GridCommonAbstractTest {
     /**
-     * Gradient boosted trees.
-     * NOTE: support binary classification only with raw labels 0 and 1
+     * @throws Exception If failed.
      */
-    GRADIENT_BOOSTED_TREES
+    @Test
+    public void testIgniteCopyrights() throws Exception {
+        final String COPYRIGHT = String.valueOf(Calendar.getInstance().get(Calendar.YEAR)) + " Copyright(C) Apache Software Foundation";
+
+        assertNotNull(IgniteVersionUtils.COPYRIGHT);
+
+        assertTrue(COPYRIGHT.equals(IgniteVersionUtils.COPYRIGHT));
+    }
 }
