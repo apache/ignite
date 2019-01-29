@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteCloudTestSuite;
@@ -76,8 +77,8 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
-    @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-9444")
+    @Test
     public void testRackspace() throws Exception {
         testCloudProvider("rackspace-cloudservers-us");
     }
