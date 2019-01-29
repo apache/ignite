@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -40,7 +37,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsType;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -59,9 +55,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
-    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
-
     /** */
     private final H2Tree[] segments;
 
@@ -114,6 +107,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
         int inlineSize,
         int segmentsCnt
     ) throws IgniteCheckedException {
+        super(unwrappedColsList);
+
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
@@ -209,6 +204,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         initDistributedJoinMessaging(tbl);
     }
 
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return segments[0].inlineSize();
+    }
+
     /**
      * Check if index exists in store.
      *
@@ -233,41 +233,19 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return false;
     }
 
-    /**
-     * @param cols Columns array.
-     * @return List of {@link InlineIndexHelper} objects.
-     */
-    private List<InlineIndexHelper> getAvailableInlineColumns(IndexColumn[] cols) {
-        List<InlineIndexHelper> res = new ArrayList<>();
+    /** {@inheritDoc} */
+    protected void warnCantBeInlined(IndexColumn col) {
+        String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-        for (IndexColumn col : cols) {
-            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
-                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
-
-                U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
-                    "index access may be slow due to additional page reads (change column type if possible) " +
-                    "[cacheName=" + cctx.name() +
-                    ", tableName=" + tblName +
-                    ", idxName=" + idxName +
-                    ", idxType=" + idxType +
-                    ", colName=" + col.columnName +
-                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
-                );
-
-                break;
-            }
-
-            InlineIndexHelper idx = new InlineIndexHelper(
-                col.columnName,
-                col.column.getType(),
-                col.column.getColumnId(),
-                col.sortType,
-                table.getCompareMode());
-
-            res.add(idx);
-        }
-
-        return res;
+        U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
+            "index access may be slow due to additional page reads (change column type if possible) " +
+            "[cacheName=" + cctx.name() +
+            ", tableName=" + tblName +
+            ", idxName=" + idxName +
+            ", idxType=" + idxType +
+            ", colName=" + col.columnName +
+            ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+        );
     }
 
     /** {@inheritDoc} */
@@ -467,44 +445,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
-     * @param inlineIdxs Inline index helpers.
-     * @param cfgInlineSize Inline size from cache config.
-     * @return Inline size.
-     */
-    private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
-        int confSize = cctx.config().getSqlIndexMaxInlineSize();
-
-        int propSize = confSize == -1 ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
-            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT) : confSize;
-
-        if (cfgInlineSize == 0)
-            return 0;
-
-        if (F.isEmpty(inlineIdxs))
-            return 0;
-
-        if (cfgInlineSize == -1) {
-            if (propSize == 0)
-                return 0;
-
-            int size = 0;
-
-            for (InlineIndexHelper idxHelper : inlineIdxs) {
-                if (idxHelper.size() <= 0) {
-                    size = propSize;
-                    break;
-                }
-                // 1 byte type + size
-                size += idxHelper.size() + 1;
-            }
-
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
-        }
-        else
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
-    }
-
-    /**
      * @param segIdx Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
@@ -556,7 +496,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             this.inlineIdx = getAvailableInlineColumns(cols);
 
-            this.inlineSize = computeInlineSize(inlineIdx, cfgInlineSize);
+            this.inlineSize = computeInlineSize(inlineIdx, cfgInlineSize, cctx.config());
         }
 
         /**

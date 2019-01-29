@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
@@ -61,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -159,6 +162,87 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertSqlError("UPDATE IGNITE.NODES SET ID = '-'");
 
         assertSqlError("DELETE IGNITE.NODES");
+    }
+
+    /**
+     * Test indexes system view.
+     * @throws Exception in case of failure.
+     */
+    @Test
+    public void testIndexesView() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration());
+
+        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+
+        srv.createCache(cacheConfiguration("TST1"));
+
+        execSql("CREATE TABLE CACHE_SQL (ID INT PRIMARY KEY, MY_VAL VARCHAR)");
+
+        execSql("CREATE INDEX IDX_2 ON DEFAULT.CACHE_SQL(ID DESC) INLINE_SIZE 13");
+
+        execSql("CREATE TABLE PUBLIC.DFLT_CACHE (ID1 INT, ID2 INT, MY_VAL VARCHAR, PRIMARY KEY (ID1 DESC, ID2))");
+
+        execSql("CREATE INDEX IDX_1 ON PUBLIC.DFLT_CACHE(ID2 DESC, ID1, MY_VAL DESC)");
+
+        execSql("CREATE INDEX IDX_3 ON PUBLIC.DFLT_CACHE(MY_VAL)");
+
+        String idxSql = "SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+
+        List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
+
+        List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
+
+        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+
+        String[][] expectedResults = {
+            {"DEFAULT", "CACHE_SQL", "IDX_2", "ID DESC", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "13"},
+            {"DEFAULT", "CACHE_SQL", "_key_PK", "ID", "683914882", "SQL_default_CACHE_SQL", "683914882", "SQL_default_CACHE_SQL", "5"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_1", "ID2 DESC, ID1, MY_VAL DESC", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "IDX_3", "MY_VAL, ID1, ID2", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"PUBLIC", "DFLT_CACHE", "_key_PK", "ID1, ID2", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "1102275506", "SQL_PUBLIC_DFLT_CACHE", "10"},
+            {"TST1", "VALUECLASS", "TST1_INDEX", "KEY, _KEY", "2584860", "TST1", "2584860", "TST1", "10"},
+            {"TST1", "VALUECLASS", "_key_PK", "_KEY", "2584860", "TST1", "2584860", "TST1", "10"},
+        };
+
+        for (int i = 0; i < srvNodeIndexes.size(); i++) {
+            List<?> resRow = srvNodeIndexes.get(i);
+
+            String[] expRow = expectedResults[i];
+
+            assertEquals(expRow.length, resRow.size());
+
+            for (int j = 0; j < expRow.length; j++)
+                assertEquals(expRow[j], resRow.get(j).toString());
+        }
+    }
+
+
+    /**
+     * @return Default cache configuration.
+     */
+    protected CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> cacheConfiguration(String cacheName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration().setName(cacheName);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType(AbstractSchemaSelfTest.KeyClass.class.getName());
+        entity.setValueType(AbstractSchemaSelfTest.ValueClass.class.getName());
+
+        entity.setKeyFieldName("key");
+        entity.addQueryField("key", entity.getKeyType(), null);
+
+        entity.addQueryField("id", Long.class.getName(), null);
+        entity.addQueryField("field1", Long.class.getName(), null);
+
+        entity.setKeyFields(Collections.singleton("id"));
+
+        entity.setIndexes(Collections.singletonList(
+            new QueryIndex("key", true, cacheName + "_index")
+        ));
+
+        ccfg.setQueryEntities(Collections.singletonList(entity));
+
+        return ccfg;
     }
 
     /**

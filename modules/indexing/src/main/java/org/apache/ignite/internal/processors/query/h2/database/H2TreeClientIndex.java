@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.List;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -32,29 +33,57 @@ import org.h2.table.IndexColumn;
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
 
-    /**
-     *
-     */
+    /** */
     public static final IgniteSQLException SHOULDNT_BE_INVOKED_EXCEPTION = new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+
+    /** Inline size. */
+    private final int inlineSize;
 
     /**
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
+     * @param inlineSize Inline size.
      */
     public H2TreeClientIndex(
         GridH2Table tbl,
         String name,
         boolean pk,
-        List<IndexColumn> colsList
+        List<IndexColumn> colsList,
+        int inlineSize
     ) {
+        super(colsList);
+
+        this.table = tbl;
+
+        this.inlineSize = calculateInlineSize(colsList, inlineSize, tbl.cacheInfo().config());
+
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+    }
+
+    /**
+     * @param colsList Index columns.
+     * @param inlineSize Inline size.
+     * @param cacheConf Cache configuration.
+     * @return Calculated inline size for given indexed columns.
+     */
+    private int calculateInlineSize(List<IndexColumn> colsList, int inlineSize, CacheConfiguration<?, ?> cacheConf) {
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
+
+        List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(cols);
+
+        return computeInlineSize(inlineCols, inlineSize, cacheConf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return inlineSize;
     }
 
     /** {@inheritDoc} */
