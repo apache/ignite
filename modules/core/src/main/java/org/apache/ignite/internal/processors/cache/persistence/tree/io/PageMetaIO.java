@@ -123,6 +123,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulSnapshotId Last successful snapshot id.
+     * @deprecated Will be removed at 3.0.
      */
     public void setLastSuccessfulSnapshotId(long pageAddr, long lastSuccessfulSnapshotId) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF, lastSuccessfulSnapshotId);
@@ -130,6 +131,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0.
      */
     public long getLastSuccessfulSnapshotId(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF);
@@ -138,6 +140,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
+     * @deprecated Will be removed at 3.0.
      */
     public void setLastSuccessfulFullSnapshotId(long pageAddr, long lastSuccessfulFullSnapshotId) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
@@ -145,6 +148,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed in 3.0.
      */
     public long getLastSuccessfulFullSnapshotId(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF);
@@ -153,6 +157,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param nextSnapshotTag Next snapshot tag.
+     * @deprecated Will be removed in 3.0.
      */
     public void setNextSnapshotTag(long pageAddr, long nextSnapshotTag) {
         PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotTag);
@@ -160,6 +165,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed in 3.0.
      */
     public long getLastSuccessfulSnapshotTag(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF);
@@ -168,6 +174,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
+     * @deprecated Will be removed at 3.0.
      */
     public void setLastSuccessfulSnapshotTag(long pageAddr, long lastSuccessfulSnapshotTag) {
         PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF, lastSuccessfulSnapshotTag);
@@ -175,6 +182,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @deprecated Will be removed at 3.0.
      */
     public long getNextSnapshotTag(long pageAddr) {
         return PageUtils.getLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF);

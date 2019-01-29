@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaI
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * @deprecated Will be removed at 3.0.
  */
 public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
     /** */
