@@ -27,5 +27,20 @@ public enum SupportedSparkModels {
     LOG_REGRESSION,
 
     /** Linear regression. */
-    LINEAR_REGRESSION
+    LINEAR_REGRESSION,
+
+    /** Decision tree. */
+    DECISION_TREE,
+
+    /** Support Vector Machine . */
+    LINEAR_SVM,
+
+    /** Random forest. */
+    RANDOM_FOREST,
+
+    /**
+     * Gradient boosted trees.
+     * NOTE: support binary classification only with raw labels 0 and 1
+     */
+    GRADIENT_BOOSTED_TREES
 }

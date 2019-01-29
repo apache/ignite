@@ -33,7 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -139,7 +139,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
         setOptimization(false);
 
-        GridAffinityAssignment ga = new GridAffinityAssignment(
+        GridAffinityAssignmentV2 ga = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
             assignment,
             new ArrayList<>()
@@ -156,7 +156,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
         setOptimization(true);
 
-        GridAffinityAssignment ga2 = new GridAffinityAssignment(
+        GridAffinityAssignmentV2 ga2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
             assignment,
             new ArrayList<>()
