@@ -21,7 +21,7 @@ import org.h2.table.Column;
 import org.h2.table.TableFilter;
 
 /**
- * Column.
+ * Column with reference to table filter.
  */
 public class GridSqlColumnExpression extends GridSqlColumn {
     /** Column resolver. */

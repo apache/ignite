@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Join of two tables or subqueries.
+ * table alias in SQL statement contains alias name and reference to real table.
  */
 public class TableAlias {
     /** Alias. */
