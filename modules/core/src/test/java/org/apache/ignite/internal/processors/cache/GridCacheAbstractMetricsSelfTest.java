@@ -263,18 +263,18 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             Assert.assertEquals(m.getCacheRemovals(), 0);
             Assert.assertEquals(m.getCacheHits(), 0);
             Assert.assertEquals(m.getCacheMisses(), 0);
-            Assert.assertEquals(m.getAverageGetTime(), 0f);
-            Assert.assertEquals(m.getAverageRemoveTime(), 0f);
-            Assert.assertEquals(m.getAveragePutTime(), 0f);
-            Assert.assertEquals(m.getAverageTxCommitTime(), 0f);
-            Assert.assertEquals(m.getAverageTxRollbackTime(), 0f);
+            Assert.assertEquals((Object)m.getAverageGetTime(), 0f);
+            Assert.assertEquals((Object)m.getAverageRemoveTime(), 0f);
+            Assert.assertEquals((Object)m.getAveragePutTime(), 0f);
+            Assert.assertEquals((Object)m.getAverageTxCommitTime(), 0f);
+            Assert.assertEquals((Object)m.getAverageTxRollbackTime(), 0f);
 
             Assert.assertEquals(m.getEntryProcessorPuts(), 0);
             Assert.assertEquals(m.getEntryProcessorRemovals(), 0);
             Assert.assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
-            Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
-            Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
-            Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
+            Assert.assertEquals((Object)m.getEntryProcessorMinInvocationTime(), 0f);
+            Assert.assertEquals((Object)m.getEntryProcessorMaxInvocationTime(), 0f);
+            Assert.assertEquals((Object)m.getEntryProcessorAverageInvocationTime(), 0f);
             Assert.assertEquals(m.getEntryProcessorInvocations(), 0);
         }
     }
