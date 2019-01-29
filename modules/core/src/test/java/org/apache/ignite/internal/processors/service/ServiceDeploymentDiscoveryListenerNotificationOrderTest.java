@@ -41,7 +41,7 @@
   * listener registered by {@link GridCachePartitionExchangeManager}. It allows service manager capture custom message
   * because it may be nullified in PME process at the end of exchange in {@link GridDhtPartitionsExchangeFuture#onDone()}.
   */
-  public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
+ public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
      /** */
      @BeforeClass
      public static void check() {
