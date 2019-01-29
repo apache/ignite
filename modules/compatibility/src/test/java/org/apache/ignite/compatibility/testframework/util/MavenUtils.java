@@ -46,7 +46,7 @@ public class MavenUtils {
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
     /** Default path for maven settings file. */
-    private static String localProxyMavenSettings = "~/.m2/local-proxy.xml";
+    private static String localProxyMavenSettings = System.getProperty("user.home") + "/.m2/local-proxy.xml";
 
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
@@ -168,7 +168,7 @@ public class MavenUtils {
             localProxyMavenSettings = localProxyMavenSettingsFromEnv;
 
         if (isDebug) {
-            Files.list(Paths.get("~/.m2/"))
+            Files.list(Paths.get(localProxyMavenSettingsFromEnv))
                     .forEach(System.out::println);
         }
 
