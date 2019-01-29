@@ -167,7 +167,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      *
      * @param builder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param lbExtractor Labels extractor.
      * @return true if labels learning was successful.
      */
     protected abstract <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
