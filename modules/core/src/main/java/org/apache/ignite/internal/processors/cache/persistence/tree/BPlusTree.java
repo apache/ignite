@@ -289,8 +289,29 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (g.findLast)
                 idx = io.isLeaf() ? cnt - 1 : -cnt - 1; // (-cnt - 1) mimics not_found result of findInsertionPoint
                 // in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
-            else
-                idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, g.row, g.shift);
+            else {
+                // If the page is empty and we are getting high, need to retry higher.
+                if (cnt == 0 && g.gettingHigh)
+                    return RETRY;
+
+                // If we are getting high, then try to compare with the last row before binary search.
+                int cmp = g.gettingHigh ? compare(lvl, io, pageAddr, cnt - 1, g.row) : 1;
+
+                if (cmp > 0)
+                    idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, g.row, g.shift);
+                else if (cmp == 0)
+                    idx = cnt - 1; // Search row is equal to the last row in the page.
+                else
+                    idx = -cnt - 1; // Search row is greater than the last row in the page.
+            }
+
+            // Handle getting high.
+            if (g.gettingHigh) {
+                if (-idx - 1 == cnt)
+                    return RETRY; // Need to get higher if we are on the rightmost edge.
+
+                g.gettingHigh = false; // We are high enough to have valid search.
+            }
 
             boolean found = idx >= 0;
 
@@ -1797,9 +1818,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     default:
                         if (!x.isFinished()) {
-                            res = x.tryFinish();
-
-                            if (res == RETRY || res == RETRY_ROOT) {
+                            if (!x.tryFinish()) {
                                 checkInterrupted();
 
                                 continue;
@@ -1879,7 +1898,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         res = x.tryReplaceInner(pageId, page, fwdId, lvl);
 
                         if (res != RETRY)
-                            res = invokeDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
+                            res = invokeAllDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
 
                         if (res == RETRY_ROOT || x.isFinished())
                             return res;
@@ -1946,9 +1965,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     default:
                         if (!x.isFinished()) {
-                            res = x.tryFinish();
-
-                            if (res == RETRY || res == RETRY_ROOT) {
+                            if (!x.tryFinish()) {
                                 checkInterrupted();
 
                                 continue;
@@ -2850,7 +2867,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get operation.
      */
-    abstract class Get {
+    public abstract class Get {
         /** */
         long rmvId;
 
@@ -2883,6 +2900,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** Number of repetitions to capture a lock in the B+Tree (countdown). */
         int lockRetriesCnt = getLockRetries();
+
+        /**
+         * Used when invokeAll operation updated one or more keys on the left side of the tree
+         * and needs to get high enough to find the rest of rows on the right side.
+         */
+        boolean gettingHigh;
 
         /**
          * @param row Row.
@@ -2965,7 +2988,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lvl Level.
          * @return {@code true} If we can release the given page.
          */
-        boolean canRelease(long pageId, int lvl) {
+        public boolean canRelease(long pageId, int lvl) {
             return pageId != 0L;
         }
 
@@ -3014,6 +3037,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             lockRetriesCnt--;
+        }
+
+        /**
+         * @return Operation row.
+         */
+        public L row() {
+            return row;
         }
     }
 
@@ -3832,7 +3862,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Invoke operation.
      */
-    class Invoke extends Get {
+    public class Invoke extends Get {
         /** */
         Object x;
 
@@ -4064,23 +4094,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /**
-         * @return Result.
+         * @return {@code true} If finished successfully.
          * @throws IgniteCheckedException If failed.
          */
-        Result tryFinish() throws IgniteCheckedException {
+        boolean tryFinish() throws IgniteCheckedException {
             assert op != null; // Must be guarded by isFinished.
 
             if (isPut())
-                return RETRY;
+                return false;
 
             Result res = ((Remove)op).finishTail();
 
-            if (res == NOT_FOUND)
-                res = RETRY;
+            assert res == NOT_FOUND || res == FOUND || res == RETRY: res;
 
-            assert res == FOUND || res == RETRY: res;
-
-            return res;
+            return res == FOUND;
         }
 
         /** {@inheritDoc} */
@@ -5890,10 +5917,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         RETRY,
 
         /** */
-        RETRY_ROOT,
-
-        /** */
-        RETRY_FWD
+        RETRY_ROOT
     }
 
     /**
