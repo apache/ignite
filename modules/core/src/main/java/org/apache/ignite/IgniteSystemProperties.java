@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -1036,6 +1035,11 @@ public final class IgniteSystemProperties {
      * list of cluster nodes to reduce memory consumption on redundant data structures.
      */
     public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
+
+    /**
+     * Limit the maximum number of objects in memory during the recovery procedure.
+     */
+    public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
