@@ -162,7 +162,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
-    private boolean memoryMetricsEnabled;
+    private static boolean memoryMetricsEnabled;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -174,6 +174,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
+
+        if (memoryMetricsEnabled) {
+            memoryMetricsEnabled = false;
+
+            stopAllGrids();
+            Thread.currentThread().sleep(100);
+            startGrids(gridCount());
+
+            initCache();
+        }
     }
 
     /**
