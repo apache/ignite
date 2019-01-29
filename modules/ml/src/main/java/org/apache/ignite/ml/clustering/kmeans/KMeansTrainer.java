@@ -63,9 +63,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /** KMeans initializer. */
-    private long seed;
-
     /** {@inheritDoc} */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
