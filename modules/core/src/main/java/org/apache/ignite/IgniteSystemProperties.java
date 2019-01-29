@@ -1122,6 +1122,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = "IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION";
 
     /**
+     * Limit the maximum number of objects in memory during the recovery procedure.
+     */
+    public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
