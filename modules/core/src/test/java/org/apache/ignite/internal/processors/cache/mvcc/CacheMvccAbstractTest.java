@@ -133,25 +133,25 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     protected static final int SRVS = 4;
 
     /** */
-    protected static boolean client;
+    protected boolean client;
 
     /** */
-    protected static boolean testSpi;
+    protected boolean testSpi;
 
     /** */
-    protected static String nodeAttr;
+    protected String nodeAttr;
 
     /** */
-    protected static boolean persistence;
+    protected boolean persistence;
 
     /** */
-    protected static CacheConfiguration ccfg;
+    protected CacheConfiguration ccfg;
 
     /** */
-    protected static CacheConfiguration[] ccfgs;
+    protected CacheConfiguration[] ccfgs;
 
     /** */
-    protected static boolean disableScheduledVacuum;
+    protected boolean disableScheduledVacuum;
 
     /** */
     protected static final int TX_TIMEOUT = 3000;
@@ -241,37 +241,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        refreshStaticMembers();
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        refreshStaticMembers();
-    }
-
-    /** */
-    private void refreshStaticMembers() {
-        client = false;
-
-        testSpi = false;
-
-        nodeAttr = null;
-
-        persistence = false;
-
-        ccfg = null;
-
-        ccfgs = null;
-
-        disableScheduledVacuum = false;
     }
 
     /**
