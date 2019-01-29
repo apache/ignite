@@ -41,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VER_COL;
 
 /**
  * Row descriptor.
@@ -259,6 +258,7 @@ public class GridH2RowDescriptor {
      * @param val Value.
      * @param colId Column index.
      * @return Column value.
+     * @throws IgniteCheckedException Om error.
      */
     public Value columnValueById(Object key, Object val, int colId) throws IgniteCheckedException {
         switch (colId) {
@@ -267,9 +267,6 @@ public class GridH2RowDescriptor {
 
             case VAL_COL:
                 return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
-
-            case VER_COL:
-                return ValueNull.INSTANCE;
 
             default:
                 if (isKeyAliasColumn(colId))
