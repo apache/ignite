@@ -73,6 +73,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -1685,7 +1686,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoin.isDone())
-            locJoin.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoin.onDone(new NodeStoppingException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
