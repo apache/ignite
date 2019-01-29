@@ -3497,7 +3497,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 e = ex;
             }
 
-            throw new IgniteException("Node is stopping.", e);
+            throw new NodeStoppingException(e);
         }
         finally {
             if (isInterrupted)
