@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {IInputErrorNotifier} from '../../types';
+
 /**
  * Brings user attention to invalid form fields.
  * Use IgniteFormUtils.triggerValidation to trigger the event.
@@ -23,7 +25,7 @@ export function directive($timeout) {
     return {
         require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?formFieldSize', '?^^panelCollapsible'],
         link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, formFieldSize, panelCollapsible]) {
-            const formFieldController = igniteFormField || formFieldSize;
+            const formFieldController: IInputErrorNotifier = igniteFormField || formFieldSize;
 
             let onBlur;
 

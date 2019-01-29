@@ -73,6 +73,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -466,10 +467,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10186")
     @Test
     public void testMergeServerAndClientJoin1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
-
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
