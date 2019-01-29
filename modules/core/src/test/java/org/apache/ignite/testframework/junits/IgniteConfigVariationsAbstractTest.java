@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -55,7 +54,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         @Override public void evaluate() {
             assert getName() != null : "getName returned null";
 
-            testsCfg = testsCfgInjected;;
+            testsCfg = testsCfgInjected;
         }
     };
 
