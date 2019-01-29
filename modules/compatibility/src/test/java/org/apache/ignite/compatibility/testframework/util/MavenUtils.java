@@ -22,11 +22,13 @@ import com.google.common.io.CharStreams;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -166,6 +168,15 @@ public class MavenUtils {
 
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = localProxyMavenSettingsFromEnv;
+
+        if (isDebug) {
+            try (Stream<Path> pathStream = Files.walk(Paths.get(localProxyMavenSettingsFromEnv).getParent())) {
+                pathStream
+                        .filter(Files::isRegularFile)
+                        .forEach(System.out::println);
+            }
+
+        }
 
         if (Files.exists(Paths.get(localProxyMavenSettings)))
             mavenCommandArgs.a(" -s " + localProxyMavenSettings);
