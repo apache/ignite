@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -257,24 +258,24 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
-            junit.framework.Assert.assertEquals(m.getCacheGets(), 0);
-            junit.framework.Assert.assertEquals(m.getCachePuts(), 0);
-            junit.framework.Assert.assertEquals(m.getCacheRemovals(), 0);
-            junit.framework.Assert.assertEquals(m.getCacheHits(), 0);
-            junit.framework.Assert.assertEquals(m.getCacheMisses(), 0);
-            junit.framework.Assert.assertEquals(m.getAverageGetTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getAverageRemoveTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getAveragePutTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getAverageTxCommitTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getAverageTxRollbackTime(), 0f);
+            Assert.assertEquals(m.getCacheGets(), 0);
+            Assert.assertEquals(m.getCachePuts(), 0);
+            Assert.assertEquals(m.getCacheRemovals(), 0);
+            Assert.assertEquals(m.getCacheHits(), 0);
+            Assert.assertEquals(m.getCacheMisses(), 0);
+            Assert.assertEquals(m.getAverageGetTime(), 0f);
+            Assert.assertEquals(m.getAverageRemoveTime(), 0f);
+            Assert.assertEquals(m.getAveragePutTime(), 0f);
+            Assert.assertEquals(m.getAverageTxCommitTime(), 0f);
+            Assert.assertEquals(m.getAverageTxRollbackTime(), 0f);
 
-            junit.framework.Assert.assertEquals(m.getEntryProcessorPuts(), 0);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorRemovals(), 0);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
-            junit.framework.Assert.assertEquals(m.getEntryProcessorInvocations(), 0);
+            Assert.assertEquals(m.getEntryProcessorPuts(), 0);
+            Assert.assertEquals(m.getEntryProcessorRemovals(), 0);
+            Assert.assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
+            Assert.assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
+            Assert.assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
+            Assert.assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
+            Assert.assertEquals(m.getEntryProcessorInvocations(), 0);
         }
     }
 
