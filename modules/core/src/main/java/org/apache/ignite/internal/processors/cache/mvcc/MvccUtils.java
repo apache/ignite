@@ -55,16 +55,16 @@ public class MvccUtils {
     public static final int MVCC_KEY_ABSENT_BEFORE_OFF = 29;
 
     /** */
-    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = 0b0001 << MVCC_KEY_ABSENT_BEFORE_OFF;
-
-    /** */
     public static final int MVCC_HINTS_BIT_OFF = MVCC_KEY_ABSENT_BEFORE_OFF + 1;
 
     /** */
-    public static final int MVCC_HINTS_MASK = 0b0011 << MVCC_HINTS_BIT_OFF;
+    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = Integer.MIN_VALUE >> 2;
+
+    /** */
+    public static final int MVCC_HINTS_MASK = Integer.MIN_VALUE >>> 1;
 
     /** Mask for all masked high bits in operation counter field. */
-    public static final int MVCC_OP_COUNTER_MASK = 0b0111 << MVCC_KEY_ABSENT_BEFORE_OFF;
+    public static final int MVCC_OP_COUNTER_MASK = Integer.MIN_VALUE >>> 2;
 
     /** */
     public static final long MVCC_CRD_COUNTER_NA = 0L;
