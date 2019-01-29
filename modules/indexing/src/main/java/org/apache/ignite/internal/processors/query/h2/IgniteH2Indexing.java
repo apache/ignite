@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -310,31 +307,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
         return prepareStatementAndCaches(conn, sql);
-    }
-
-    /**
-     * Binds object to prepared statement.
-     *
-     * @param stmt SQL statement.
-     * @param idx Index.
-     * @param obj Value to store.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
-        try {
-            if (obj == null)
-                stmt.setNull(idx, Types.VARCHAR);
-            else if (obj instanceof BigInteger)
-                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
-            else if (obj instanceof BigDecimal)
-                stmt.setObject(idx, obj, Types.DECIMAL);
-            else
-                stmt.setObject(idx, obj);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
-                stmt + ']', e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -847,7 +819,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
-        bindParameters(stmt, params);
+        H2Utils.bindParameters(stmt, params);
 
         return stmt;
     }
@@ -990,23 +962,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
-        }
-    }
-
-    /**
-     * Binds parameters to prepared statement.
-     *
-     * @param stmt Prepared statement.
-     * @param params Parameters collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void bindParameters(PreparedStatement stmt,
-        @Nullable Collection<Object> params) throws IgniteCheckedException {
-        if (!F.isEmpty(params)) {
-            int idx = 1;
-
-            for (Object arg : params)
-                bindObject(stmt, idx++, arg);
         }
     }
 
@@ -1815,7 +1770,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
        if (prepared.isQuery()) {
             try {
-                bindParameters(stmt, F.asList(args));
+                H2Utils.bindParameters(stmt, F.asList(args));
             }
             catch (IgniteCheckedException e) {
                 U.closeQuiet(stmt);
@@ -1936,7 +1891,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.isCollocated(),
             qry.isDistributedJoins(),
             qry.isEnforceJoinOrder(),
-            this);
+            partExtractor);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
 

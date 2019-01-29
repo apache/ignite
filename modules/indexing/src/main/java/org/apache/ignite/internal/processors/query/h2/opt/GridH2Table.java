@@ -1230,9 +1230,9 @@ public class GridH2Table extends TableBase {
             StackTraceElement elem = elems[2];
 
             if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[safeColumns0.length - 3];
+                Column[] columns0 = new Column[safeColumns0.length - DEFAULT_COLUMNS_COUNT];
 
-                System.arraycopy(safeColumns0, 3, columns0, 0, columns0.length);
+                System.arraycopy(safeColumns0, DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);
 
                 return columns0;
             }

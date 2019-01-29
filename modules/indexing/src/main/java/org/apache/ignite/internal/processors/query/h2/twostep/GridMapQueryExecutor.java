@@ -832,7 +832,7 @@ public class GridMapQueryExecutor {
                             stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
                         }
 
-                        h2.bindParameters(stmt, params0);
+                        H2Utils.bindParameters(stmt, params0);
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
