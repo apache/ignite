@@ -171,6 +171,7 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /**
      * @param p Partion.
      * @param ideal {@code True} for ideal assignment.
+     * @param cpys Copies.
      */
     private List<ClusterNode> partitionNodes(int p, boolean ideal, int cpys) {
         char[] order;
