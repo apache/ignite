@@ -139,5 +139,7 @@ public interface JdbcDialect extends Serializable {
      * @param updCnt Number of updated entries.
      * @return {@code True} if number of updated entries is correct for dialect.
      */
-    public boolean checkUpdatedEntriesCount(int updCnt);
+    public default boolean checkUpdatedEntriesCount(int updCnt) {
+        return updCnt == 1;
+    }
 }

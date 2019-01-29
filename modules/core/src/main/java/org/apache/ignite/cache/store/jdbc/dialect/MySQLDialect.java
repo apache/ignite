@@ -70,6 +70,10 @@ public class MySQLDialect extends BasicJdbcDialect {
 
     /** {@inheritDoc} */
     @Override public boolean checkUpdatedEntriesCount(int updCnt) {
-        return updCnt == 1 || updCnt == 2;
+        // MySQL's `INSERT ... ON DUPLICATE KEY UPDATE` may return 0 or 2, depending on what was updated:
+        // 1 if the row is inserted as a new row, 2 if an existing row is updated,
+        // and 0 if an existing row is set to its current values.
+        // See: https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html
+        return updCnt == 0 || updCnt == 1 || updCnt == 2;
     }
 }
