@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -86,8 +87,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSystemTxInsideUserTx() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10473");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10473", MvccFeatureChecker.forcedMvcc());
 
         IgniteKernal ignite = (IgniteKernal)grid(0);
 

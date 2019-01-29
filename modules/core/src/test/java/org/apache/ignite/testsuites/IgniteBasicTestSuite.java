@@ -42,8 +42,8 @@ import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTest;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentTestNoOptimizations;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
@@ -83,6 +83,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
@@ -123,8 +124,8 @@ import org.junit.runners.Suite;
 
     GridReleaseTypeSelfTest.class,
     GridProductVersionSelfTest.class,
-    GridAffinityAssignmentTest.class,
-    GridAffinityAssignmentTestNoOptimizations.class,
+    GridAffinityAssignmentV2Test.class,
+    GridAffinityAssignmentV2TestNoOptimizations.class,
     GridAffinityProcessorRendezvousSelfTest.class,
     GridAffinityProcessorMemoryLeakTest.class,
     GridClosureProcessorSelfTest.class,
@@ -208,6 +209,8 @@ import org.junit.runners.Suite;
     ListeningTestLoggerTest.class,
 
     CacheLocalGetSerializationTest.class,
+
+    PluginNodeValidationTest.class,
 })
 public class IgniteBasicTestSuite {
 }

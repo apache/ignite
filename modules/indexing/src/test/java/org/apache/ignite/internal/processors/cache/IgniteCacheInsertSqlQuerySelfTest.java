@@ -207,7 +207,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
      * Test that nested fields could be updated using sql UPDATE just by nested field name.
      */
     @Test
-    public void testNestedFieldsHandling() {
+    public void testNestedFieldsHandling1() {
         IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
 
         final int ROOT_KEY = 1;
