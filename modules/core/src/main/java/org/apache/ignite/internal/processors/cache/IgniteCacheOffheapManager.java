@@ -1010,6 +1010,19 @@ public interface IgniteCacheOffheapManager {
             KeyCacheObject upper, Object x, MvccSnapshot snapshot) throws IgniteCheckedException;
 
         /**
+         * @param cacheId Cache ID.
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         * @param snapshot Mvcc snapshot.
+         * @param skipVer Whether version read should be skipped.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
+            KeyCacheObject upper, Object x, MvccSnapshot snapshot, boolean skipVer) throws IgniteCheckedException;
+
+        /**
          * Destroys the tree associated with the store.
          *
          * @throws IgniteCheckedException If failed.
