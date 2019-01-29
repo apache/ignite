@@ -46,7 +46,6 @@ public class DataRow extends CacheDataRowAdapter {
         super(link);
 
         this.hash = hash;
-
         this.part = part;
 
         try {
@@ -80,6 +79,8 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+
+        verReady = true;
     }
 
     /**

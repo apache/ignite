@@ -58,7 +58,8 @@ public class H2RowFactory {
 
         row.initFromLink(
             cctx.group(),
-            CacheDataRowAdapter.RowData.FULL // TODO: Appropriate data!
+            CacheDataRowAdapter.RowData.FULL,
+            true
         );
 
         return rowDesc.createRow(row);

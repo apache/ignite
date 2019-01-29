@@ -61,10 +61,8 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @param valType Value type.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
-        CacheDataRow row,
-        int keyType,
-        int valType) throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row, int keyType, int valType)
+        throws IgniteCheckedException {
         super(row);
 
         this.desc = desc;

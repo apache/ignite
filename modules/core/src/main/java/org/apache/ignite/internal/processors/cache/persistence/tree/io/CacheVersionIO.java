@@ -171,6 +171,33 @@ public class CacheVersionIO {
     }
 
     /**
+     * Gets needed buffer size to read the whole version instance.
+     * Does not change buffer position.
+     *
+     * @param pageAddr Page address.
+     * @param allowNull Is {@code null} version allowed.
+     * @return Size of serialized version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static int readSize(long pageAddr, boolean allowNull) throws IgniteCheckedException {
+        byte protoVer = checkProtocolVersion(PageUtils.getByte(pageAddr, 0), allowNull);
+
+        switch (protoVer) {
+            case NULL_PROTO_VER:
+                return NULL_SIZE;
+
+            case 1:
+                return SIZE_V1;
+
+            case 2:
+                return SIZE_V2;
+
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    /**
      * Reads GridCacheVersion instance from the given buffer. Moves buffer's position by the number of used
      * bytes.
      *
