@@ -56,6 +56,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -142,8 +143,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10766");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10766", MvccFeatureChecker.forcedMvcc());
 
         IgniteEx ignite = (IgniteEx) startGrids(4);
         ignite.cluster().active(true);

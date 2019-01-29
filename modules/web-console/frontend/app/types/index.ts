@@ -63,9 +63,14 @@ export type NavigationMenuItem = {
 
 export type NavigationMenu = Array<NavigationMenuItem>;
 
-export type MenuItem < T > = {
+export type MenuItem <T> = {
     label: string,
     value: T
 };
 
-export type Menu < T > = MenuItem<T>[];
+export type Menu <T> = MenuItem<T>[];
+
+export interface IInputErrorNotifier {
+    notifyAboutError(): void
+    hideError(): void
+}

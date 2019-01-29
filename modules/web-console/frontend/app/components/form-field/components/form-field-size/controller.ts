@@ -16,6 +16,7 @@
  */
 
 import get from 'lodash/get';
+import {IInputErrorNotifier} from '../../../../types';
 
 interface ISizeTypeOption {
     label: string,
@@ -28,10 +29,10 @@ interface ISizeTypes {
     [name: string]: ISizeType
 }
 
-export default class PCFormFieldSizeController<T> {
+export default class PCFormFieldSizeController<T> implements IInputErrorNotifier {
     ngModel: ng.INgModelController;
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
     onScaleChange: ng.ICompiledExpression;
     innerForm: ng.IFormController;
     autofocus?: boolean;
@@ -142,13 +143,17 @@ export default class PCFormFieldSizeController<T> {
         this.sizeScale = this.chooseSizeScale();
     }
 
+    isTooltipValidation(): boolean {
+        return !this.$element.parents('.theme--ignite-errors-horizontal').length;
+    }
+
     notifyAboutError() {
-        if (this.$element)
+        if (this.$element && this.isTooltipValidation())
             this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
     }
 
     hideError() {
-        if (this.$element)
+        if (this.$element && this.isTooltipValidation())
             this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
     }
 
