@@ -627,9 +627,13 @@ public class PartitionExtractor {
         else if (rightParam != null) {
             int oclType = leftCol0.getType();
 
-            PartitionParameterType mappedType = mappedType(oclType);
-
-            return new PartitionParameterNode(tbl0, partResolver, rightParam.index(), leftCol0.getType(), mappedType);
+            return new PartitionParameterNode(
+                tbl0,
+                partResolver,
+                rightParam.index(),
+                leftCol0.getType(),
+                mappedType(oclType)
+            );
         }
         else
             return null;

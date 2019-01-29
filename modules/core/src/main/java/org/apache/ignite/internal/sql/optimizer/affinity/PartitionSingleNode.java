@@ -45,7 +45,12 @@ public abstract class PartitionSingleNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args)
         throws IgniteCheckedException {
-        return Collections.singletonList(applySingle(cliCtx, args));
+        Integer res = applySingle(cliCtx, args);
+
+        if (res == null)
+            return PartitionNode.FAILED;
+
+        return Collections.singletonList(res);
     }
 
     /**
@@ -53,9 +58,9 @@ public abstract class PartitionSingleNode implements PartitionNode {
      *
      * @param cliCtx Client context.
      * @param args Arguments.
-     * @return Partition.
+     * @return Partition or {@code null} if failed.
      */
-    public abstract int applySingle(@Nullable PartitionClientContext cliCtx, Object... args)
+    public abstract Integer applySingle(@Nullable PartitionClientContext cliCtx, Object... args)
         throws IgniteCheckedException;
 
     /**

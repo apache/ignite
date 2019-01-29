@@ -58,14 +58,13 @@ public class PartitionParameterNode extends PartitionSingleNode {
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException {
+    @Override public Integer applySingle(PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException {
         assert args != null;
         assert idx < args.length;
 
         Object arg = args[idx];
 
         if (cliCtx != null)
-            // TODO: Null handling.
             return cliCtx.partition(arg, mappedType, tbl.cacheName());
         else {
             return partResolver.partition(

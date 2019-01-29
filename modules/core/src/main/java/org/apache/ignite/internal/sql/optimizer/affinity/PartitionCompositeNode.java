@@ -59,7 +59,14 @@ public class PartitionCompositeNode implements PartitionNode {
     @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args)
         throws IgniteCheckedException {
         Collection<Integer> leftParts = left.apply(cliCtx, args);
+
+        if (leftParts == PartitionNode.FAILED)
+            return PartitionNode.FAILED;
+
         Collection<Integer> rightParts = right.apply(cliCtx, args);
+
+        if (rightParts == PartitionNode.FAILED)
+            return PartitionNode.FAILED;
 
         if (op == PartitionCompositeNodeOperator.AND) {
             // () and (...) -> ()

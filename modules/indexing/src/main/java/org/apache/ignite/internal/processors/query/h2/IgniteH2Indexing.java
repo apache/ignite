@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -2104,7 +2105,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 Collection<Integer> realParts = derivedParts.tree().apply(null, args);
 
-                if (F.isEmpty(realParts))
+                if (realParts == PartitionNode.FAILED)
+                    return null;
+                else if (F.isEmpty(realParts))
                     return IgniteUtils.EMPTY_INTS;
                 else {
                     int[] realParts0 = new int[realParts.size()];
