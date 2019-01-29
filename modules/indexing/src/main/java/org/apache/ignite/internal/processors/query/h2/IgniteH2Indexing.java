@@ -2102,7 +2102,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return explicitParts;
         else if (derivedParts != null) {
             try {
-                Collection<Integer> realParts = derivedParts.tree().apply(false, args);
+                Collection<Integer> realParts = derivedParts.tree().apply(null, args);
 
                 if (F.isEmpty(realParts))
                     return IgniteUtils.EMPTY_INTS;
