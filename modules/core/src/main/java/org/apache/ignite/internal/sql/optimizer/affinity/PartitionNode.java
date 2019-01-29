@@ -20,16 +20,12 @@ package org.apache.ignite.internal.sql.optimizer.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
  * Common node of partition tree.
  */
 public interface PartitionNode {
-    /** Special result meaning that partition extraction failed. */
-    Collection<Integer> FAILED = new ArrayList<>();
-
     /**
      * Get partitions.
      *
