@@ -76,7 +76,7 @@ public class SqlSelectKeyOrValueBenchmark extends IgniteAbstractBenchmark {
             expRsSize = args.sqlRange();
         }
         else {
-            qry = new SqlFieldsQuery("SELECT id FROM test_long");
+            qry = new SqlFieldsQuery("SELECT id FROM test_long").setLazy(true);
 
             expRsSize = args.range();
         }
