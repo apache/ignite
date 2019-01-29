@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,11 +50,9 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      */
     protected abstract int entryCount();
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testCacheIterator() throws Exception {
+    public void testCacheIterator() {
         int cnt = 0;
 
         for (Cache.Entry<String, Integer> entry : jcache()) {
@@ -99,13 +98,10 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         }, 3, "iterator-thread");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testEntrySetIterator() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+    public void testEntrySetIterator() {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
 
         assert jcache().localSize(CachePeekMode.ALL) == entryCount();
 

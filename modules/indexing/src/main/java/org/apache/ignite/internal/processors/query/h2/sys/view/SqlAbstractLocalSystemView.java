@@ -72,10 +72,9 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
 
     /**
      * @param ses Session.
-     * @param key Key.
      * @param data Data for each column.
      */
-    protected Row createRow(Session ses, long key, Object... data) {
+    protected Row createRow(Session ses, Object... data) {
         Value[] values = new Value[data.length];
 
         for (int i = 0; i < data.length; i++) {
@@ -87,11 +86,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
             values[i] = cols[i].convert(v);
         }
 
-        Row row = ses.getDatabase().createRow(values, 1);
-
-        row.setKey(key);
-
-        return row;
+        return ses.getDatabase().createRow(values, 0);
     }
 
     /**

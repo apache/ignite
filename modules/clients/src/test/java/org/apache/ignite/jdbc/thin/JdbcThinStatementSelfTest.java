@@ -23,7 +23,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
@@ -33,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -386,29 +386,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    public void testExecuteQueryTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "select sleep_func(3)";
-
-        stmt.setQueryTimeout(1);
-
-        // Timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeQuery(sqlText);
-                }
-            },
-            SQLTimeoutException.class,
-            "Timeout"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @org.junit.Test
     public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
         assert conn.getMetaData().supportsMultipleResultSets();
 
@@ -571,29 +548,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
-    public void testExecuteUpdateTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "update test set val=1 where _key=sleep_func(3)";
-
-        stmt.setQueryTimeout(1);
-
-        // Timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeUpdate(sqlText);
-                }
-            },
-            SQLTimeoutException.class,
-            "Timeout"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @org.junit.Test
     public void testClose() throws Exception {
         String sqlText = "select * from test";
 
@@ -706,9 +660,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5440")
     public void testSetEscapeProcessing() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
-
         stmt.setEscapeProcessing(false);
 
         final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";

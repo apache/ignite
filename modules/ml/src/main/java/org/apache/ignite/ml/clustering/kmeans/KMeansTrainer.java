@@ -233,7 +233,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
             if (data.rowSize() != 0) {
                 if (data.rowSize() > k) { // If it's enough rows in partition to pick k vectors.
-                    final Random random = new Random(seed);
+                    final Random random = environment.randomNumbersGenerator();
 
                     for (int i = 0; i < k; i++) {
                         Set<Integer> uniqueIndices = new HashSet<>();
@@ -270,7 +270,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         // Pick k vectors randomly.
         if (rndPnts.size() >= k) {
             for (int i = 0; i < k; i++) {
-                final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
+                final LabeledVector rndPnt = rndPnts.get(environment.randomNumbersGenerator().nextInt(rndPnts.size()));
                 rndPnts.remove(rndPnt);
                 initCenters[i] = rndPnt.features();
             }
@@ -390,26 +390,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     public KMeansTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
-        return this;
-    }
-
-    /**
-     * Gets the seed number.
-     *
-     * @return The parameter value.
-     */
-    public long getSeed() {
-        return seed;
-    }
-
-    /**
-     * Set up the seed.
-     *
-     * @param seed The parameter value.
-     * @return Model with new seed parameter value.
-     */
-    public KMeansTrainer withSeed(long seed) {
-        this.seed = seed;
         return this;
     }
 }

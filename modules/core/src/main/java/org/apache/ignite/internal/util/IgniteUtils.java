@@ -75,6 +75,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -104,6 +105,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -10502,6 +10504,48 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Puts additional text to thread name.
+     * Calls {@code enhanceThreadName(Thread.currentThread(), text)}.
+     * For details see {@link #enhanceThreadName(Thread, String)}.
+     *
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(String text) {
+        enhanceThreadName(Thread.currentThread(), text);
+    }
+
+    /**
+     * Puts additional text to thread name. It finds first square braces in thread name and
+     * sets required text in them. For example, thread has name "my-thread-[]-%gridname%". After
+     * calling {@code enhanceThreadName(thread, "myText")}, the name of the thread will
+     * be "my-thread-[myText]-%gridname%".<br>
+     * This allows to set additional mutable info to thread, like remote host IP address or so.
+     *
+     * @param thread Thread to be renamed, it must contain square braces in name []. Does nothing if {@code null}.
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(@Nullable Thread thread, String text) {
+        if (thread == null)
+            return;
+
+        String threadName = thread.getName();
+
+        int idxStart = threadName.indexOf('[');
+        int idxEnd = threadName.indexOf(']');
+
+        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
+            return;
+
+        StringBuilder sb = new StringBuilder(threadName.length());
+
+        sb.append(threadName, 0, idxStart + 1);
+        sb.append(text);
+        sb.append(threadName, idxEnd, threadName.length());
+
+        thread.setName(sb.toString());
+    }
+
+    /**
      * @param ctx Context.
      *
      * @return instance of current baseline topology if it exists
@@ -11122,5 +11166,36 @@ public abstract class IgniteUtils {
         catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     *  Safely write buffer fully to blocking socket channel.
+     *  Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @return New identity hash set.
+     */
+    public static <X> Set<X> newIdentityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
     }
 }

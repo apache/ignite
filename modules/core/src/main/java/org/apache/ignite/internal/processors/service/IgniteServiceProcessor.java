@@ -424,6 +424,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         opsLock.writeLock().lock();
 
         try {
+            if (ctx.isStopping())
+                return;
+
             disconnected = true;
 
             stopProcessor(new IgniteClientDisconnectedCheckedException(

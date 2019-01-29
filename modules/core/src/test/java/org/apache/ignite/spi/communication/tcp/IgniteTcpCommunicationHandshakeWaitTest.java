@@ -62,6 +62,8 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
 
         TcpDiscoverySpi discoSpi = new SlowTcpDiscoverySpi();
 
+        discoSpi.setIpFinder(sharedStaticIpFinder);
+
         cfg.setDiscoverySpi(discoSpi);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
