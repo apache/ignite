@@ -1771,6 +1771,160 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return res != null ? res : false;
     }
 
+    /**
+     * @param sortedRows Sorted rows.
+     * @param z Implementation specific argument.
+     * @param c Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void invokeAll(List<? extends L> sortedRows, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
+        checkDestroyed();
+
+        InvokeAll x = new InvokeAll(sortedRows, z, c);
+
+        try {
+            for (;;) {
+                x.init();
+
+                Result res = invokeAllDown(x, x.rootId, 0L, 0L, x.rootLvl);
+
+                switch (res) {
+                    case RETRY:
+                    case RETRY_ROOT:
+                        checkInterrupted();
+
+                        continue;
+
+                    default:
+                        if (!x.isFinished()) {
+                            res = x.tryFinish();
+
+                            if (res == RETRY || res == RETRY_ROOT) {
+                                checkInterrupted();
+
+                                continue;
+                            }
+
+                            assert x.isFinished(): res;
+                        }
+
+                        return;
+                }
+            }
+        }
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+            throw e;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on rows: " + sortedRows, e);
+        }
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on rows: " + sortedRows, e);
+        }
+        finally {
+            x.releaseAll();
+            checkDestroyed();
+        }
+    }
+
+    /**
+     * @param x Invoke operation.
+     * @param pageId Page ID.
+     * @param backId Expected backward page ID if we are going to the right.
+     * @param fwdId Expected forward page ID.
+     * @param lvl Level.
+     * @return Result code.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Result invokeAllDown(final InvokeAll x, final long pageId, final long backId, final long fwdId, final int lvl)
+        throws IgniteCheckedException {
+        assert lvl >= 0 : lvl;
+
+        if (x.isTail(pageId, lvl))
+            return FOUND; // We've already locked this page, so return that we are ok.
+
+        long page = acquirePage(pageId);
+
+        try {
+            Result res = RETRY;
+
+            for (;;) {
+                if (res == RETRY)
+                    x.checkLockRetry();
+
+                // Init args.
+                x.pageId(pageId);
+                x.fwdId(fwdId);
+                x.backId(backId);
+
+                res = read(pageId, page, search, x, lvl, RETRY);
+
+                switch (res) {
+                    case GO_DOWN_X:
+                        assert backId != 0;
+                        assert x.backId == 0; // We did not setup it yet.
+
+                        x.backId(pageId); // Dirty hack to setup a check inside of askNeighbor.
+
+                        // We need to get backId here for our child page, it must be the last child of our back.
+                        res = askNeighbor(backId, x, true);
+
+                        if (res != FOUND)
+                            return res; // Retry.
+
+                        assert x.backId != pageId; // It must be updated in askNeighbor.
+
+                        // Intentional fallthrough.
+                    case GO_DOWN:
+                        res = x.tryReplaceInner(pageId, page, fwdId, lvl);
+
+                        if (res != RETRY)
+                            res = invokeDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
+
+                        if (res == RETRY_ROOT || x.isFinished())
+                            return res;
+
+                        if (res == RETRY) {
+                            checkInterrupted();
+
+                            continue;
+                        }
+
+                        // Unfinished Put does insertion on the same level.
+                        if (x.isPut())
+                            continue;
+
+                        assert x.isRemove(); // Guarded by isFinished.
+
+                        res = x.finishOrLockTail(pageId, page, backId, fwdId, lvl);
+
+                        return res;
+
+                    case NOT_FOUND:
+                        if (lvl == 0)
+                            x.invokeClosure();
+
+                        return x.onNotFound(pageId, page, fwdId, lvl);
+
+                    case FOUND:
+                        if (lvl == 0)
+                            x.invokeClosure();
+
+                        return x.onFound(pageId, page, backId, fwdId, lvl);
+
+                    default:
+                        return res;
+                }
+            }
+        }
+        finally {
+            x.levelExit();
+
+            if (x.canRelease(pageId, lvl))
+                releasePage(pageId, page);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void invoke(L row, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
         checkDestroyed();
@@ -2811,7 +2965,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lvl Level.
          * @return {@code true} If we can release the given page.
          */
-        public boolean canRelease(long pageId, int lvl) {
+        boolean canRelease(long pageId, int lvl) {
             return pageId != 0L;
         }
 
@@ -2860,13 +3014,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             lockRetriesCnt--;
-        }
-
-        /**
-         * @return Operation row.
-         */
-        public L row() {
-            return row;
         }
     }
 
@@ -3646,14 +3793,39 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    /**
+     * Invoke on a list of rows.
+     */
     class InvokeAll extends Invoke {
+        /** */
+        int rowIdx;
+
+        /** */
+        List<? extends L> sortedRows;
+
         /**
-         * @param row Row.
+         * @param sortedRows Sorted rows.
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        InvokeAll(L row, Object x, InvokeClosure<T> clo) {
-            super(row, x, clo);
+        InvokeAll(List<? extends L>  sortedRows, Object x, InvokeClosure<T> clo) {
+            super(sortedRows.get(0), x, clo);
+
+            this.sortedRows = sortedRows;
+        }
+
+        boolean nextRow() {
+            if (++rowIdx >= sortedRows.size())
+                return false;
+
+            row = sortedRows.get(rowIdx);
+            lockRetriesCnt = getLockRetries();
+
+            closureInvoked = FALSE;
+            foundRow = null;
+            op = null;
+
+            return true;
         }
     }
 
@@ -3760,7 +3932,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If failed.
          */
-        private void invokeClosure() throws IgniteCheckedException {
+        void invokeClosure() throws IgniteCheckedException {
             if (closureInvoked != READY)
                 return;
 
@@ -3811,14 +3983,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @return {@code true} If it is a {@link Put} operation internally.
          */
-        private boolean isPut() {
+        boolean isPut() {
             return op != null && op.getClass() == Put.class;
         }
 
         /**
          * @return {@code true} If it is a {@link Remove} operation internally.
          */
-        private boolean isRemove() {
+        boolean isRemove() {
             return op != null && op.getClass() == Remove.class;
         }
 
@@ -3827,13 +3999,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lvl Level.
          * @return {@code true} If it is a {@link Remove} and the page is in tail.
          */
-        private boolean isTail(long pageId, int lvl) {
+        boolean isTail(long pageId, int lvl) {
             return isRemove() && ((Remove)op).isTail(pageId, lvl);
         }
 
         /**
          */
-        private void levelExit() {
+        void levelExit() {
             if (isRemove())
                 ((Remove)op).page = 0L;
         }
@@ -3842,7 +4014,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * Release all the resources by the end of operation.
          * @throws IgniteCheckedException if failed.
          */
-        private void releaseAll() throws IgniteCheckedException {
+        void releaseAll() throws IgniteCheckedException {
             if (isRemove())
                 ((Remove)op).releaseAll();
         }
@@ -3855,7 +4027,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Result.
          * @throws IgniteCheckedException If failed.
          */
-        private Result onNotFound(long pageId, long page, long fwdId, int lvl)
+        Result onNotFound(long pageId, long page, long fwdId, int lvl)
             throws IgniteCheckedException {
             if (op == null)
                 return NOT_FOUND;
@@ -3880,7 +4052,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Result.
          * @throws IgniteCheckedException If failed.
          */
-        private Result onFound(long pageId, long page, long backId, long fwdId, int lvl)
+        Result onFound(long pageId, long page, long backId, long fwdId, int lvl)
             throws IgniteCheckedException {
             if (op == null)
                 return FOUND;
@@ -3895,7 +4067,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Result.
          * @throws IgniteCheckedException If failed.
          */
-        private Result tryFinish() throws IgniteCheckedException {
+        Result tryFinish() throws IgniteCheckedException {
             assert op != null; // Must be guarded by isFinished.
 
             if (isPut())
@@ -3946,7 +4118,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Result.
          * @throws IgniteCheckedException If failed.
          */
-        public Result finishOrLockTail(long pageId, long page, long backId, long fwdId, int lvl)
+        Result finishOrLockTail(long pageId, long page, long backId, long fwdId, int lvl)
             throws IgniteCheckedException {
             return ((Remove)op).finishOrLockTail(pageId, page, backId, fwdId, lvl);
         }
@@ -5718,7 +5890,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         RETRY,
 
         /** */
-        RETRY_ROOT
+        RETRY_ROOT,
+
+        /** */
+        RETRY_FWD
     }
 
     /**
