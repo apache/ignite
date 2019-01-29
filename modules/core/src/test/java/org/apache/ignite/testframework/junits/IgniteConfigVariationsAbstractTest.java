@@ -110,6 +110,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        testsCfg = testsCfgInjected;
+
         assert testsCfg != null;
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
