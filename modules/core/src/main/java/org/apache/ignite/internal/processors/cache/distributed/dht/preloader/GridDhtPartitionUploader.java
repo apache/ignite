@@ -33,12 +33,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOUploader;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
@@ -83,7 +85,7 @@ public class GridDhtPartitionUploader {
 
         log = cctx.logger(getClass());
         top = grp.topology();
-        ioFactory = cctx.kernalContext().config().getDataStorageConfiguration().getFileIOFactory();
+        ioFactory = new RandomAccessFileIOFactory();
         partUploader = new PartitionUploadFuture(log);
 
         // Default implementation.
@@ -165,7 +167,7 @@ public class GridDhtPartitionUploader {
                 partUploader.cancel();
 
             // Need to start new partition upload routine.
-            ch = cctx.gridIO().channelToCustomTopic(nodeId, demandMsg.topic());
+            ch = cctx.io().channelToCustomTopic(nodeId, demandMsg.topic(), demandMsg, PUBLIC_POOL);
 
             partUploader = new PartitionUploadFuture(ch, ctxId, upCtx, log);
 
@@ -176,13 +178,17 @@ public class GridDhtPartitionUploader {
             // Future -
             // Checkpointed file - ?
             //
-            FileIOUploader uploader = new FileIOUploader((WritableByteChannel)ch.channel(), ioFactory);
+            FileIOUploader uploader = new FileIOUploader((WritableByteChannel)ch.channel(), ioFactory, log);
 
-            File partFile = getPartitionFile(grpDir, upCtx.parts.iterator().next());
-            uploader.upload(partFile);
+            int partId = upCtx.parts.iterator().next();
+
+            File partFile = getPartitionFile(grpDir, partId);
 
             if (log.isInfoEnabled())
-                log.info("Finished supplying rebalancing.");
+                log.info("Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
+                    ", part=" + partFile.getName() + ']');
+
+            uploader.upload(partFile, partId);
         }
         catch (Exception e) {
             if (upCtx != null)

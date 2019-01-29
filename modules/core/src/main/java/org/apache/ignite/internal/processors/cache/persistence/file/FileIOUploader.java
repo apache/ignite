@@ -19,8 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.NoSuchFileException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -37,13 +41,30 @@ public class FileIOUploader {
     private final FileIOFactory factory;
 
     /** */
-    public FileIOUploader(WritableByteChannel target, FileIOFactory factory) {
-        this.target = target;
-        this.factory = factory;
-    }
+    private final IgniteLogger log;
+
+    /**
+     * 4 int - partition id.
+     * 8 long - file size.
+     */
+    private final ByteBuffer buff;
 
     /** */
-    public void upload(File partFile) throws IgniteCheckedException {
+    public FileIOUploader(WritableByteChannel target, FileIOFactory factory, IgniteLogger log) {
+        this.target = target;
+        this.factory = factory;
+        this.log = log;
+
+        buff = ByteBuffer.allocate(12);
+        buff.order(ByteOrder.nativeOrder());
+    }
+
+    /**
+     * @param partFile Partition file.
+     * @param partId Partition identifier.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void upload(File partFile, int partId) throws IgniteCheckedException {
         FileIO fileIO = null;
 
         try {
@@ -53,9 +74,22 @@ public class FileIOUploader {
 
             long size = fileIO.size();
 
+            //Send input file length to server
+            buff.clear();
+
+            buff.putInt(partId);
+            buff.putLong(size);
+            buff.flip();
+
+            target.write(buff);
+
+            // Send the whole file to channel.
             // Todo limit thransfer speed
             while (written < size)
                 written += fileIO.transferTo(written, CHUNK_SIZE, target);
+        }
+        catch (NoSuchFileException e) {
+            log.error("Unknown partiton file: " + e.getMessage(), e);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

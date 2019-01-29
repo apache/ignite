@@ -994,13 +994,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // Invoke configure request in the current listener thread.
             // Only system listeners can handle configuration requests.
 
-            for (int i = 0; i < sysLsnrs.length; i++) {
-                GridMessageListener lsrn = sysLsnrs[i];
+            synchronized (sysLsnrsMux) {
+                for (int i = 0; i < sysLsnrs.length; i++) {
+                    GridMessageListener lsrn = sysLsnrs[i];
 
-                if (lsrn instanceof GridConfigureMessageListener) {
-                    GridConfigureMessageListener rqLsnr = (GridConfigureMessageListener)lsrn;
+                    if (lsrn instanceof GridConfigureMessageListener) {
+                        GridConfigureMessageListener rqLsnr = (GridConfigureMessageListener)lsrn;
 
-                    rqLsnr.onChannelConfigure(ch, msg.message());
+                        rqLsnr.onChannelConfigure(ch, msg.message());
+                    }
                 }
             }
 
@@ -1696,19 +1698,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
+     * @param msg {@link Message} to configure channel with.
+     * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
      */
     private IgniteSocketChannel channel(
         ClusterNode node,
         Object topic,
-        int topicOrd
+        int topicOrd,
+        @Nullable Message msg,
+        byte plc
     ) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
         assert topicOrd >= 0 || !(topic instanceof GridTopic);
 
-        GridIoMessage ioMsg = new GridIoMessage(PUBLIC_POOL, topic, topicOrd, null, false, 0, false);
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, false, 0, false);
+
+        if (topicOrd < 0)
+            ioMsg.topicBytes(U.marshal(marsh, topic));
 
         try {
             return getSpi().channel(node, ioMsg);
@@ -1729,51 +1738,49 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
+     * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
      */
-    public IgniteSocketChannel channelToCustomTopic(ClusterNode node, Object topic) throws IgniteCheckedException {
-        return channel(node, topic, -1);
-    }
-
-    /**
-     * @param node Destination node.
-     * @param topic Topic to send the message to.
-     * @return Established {@link IgniteSocketChannel} to use.
-     * @throws IgniteCheckedException If fails.
-     */
-    public IgniteSocketChannel channelToGridTopic(ClusterNode node, GridTopic topic) throws IgniteCheckedException {
-        return channel(node, topic, topic.ordinal());
+    public IgniteSocketChannel channelToCustomTopic(
+        ClusterNode node,
+        Object topic,
+        byte plc
+    ) throws IgniteCheckedException {
+        return channel(node, topic, -1, null, plc);
     }
 
     /**
      * @param nodeId Destination node.
      * @param topic Topic to send the message to.
+     * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
      */
-    public IgniteSocketChannel channelToGridTopic(UUID nodeId, GridTopic topic) throws IgniteCheckedException {
-        ClusterNode node = ctx.discovery().node(nodeId);
-
-        if (node == null)
-            throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
-
-        return channel(node, topic, topic.ordinal());
+    public IgniteSocketChannel channelToCustomTopic(UUID nodeId, Object topic, byte plc) throws IgniteCheckedException {
+        return channelToCustomTopic(nodeId, topic, null, plc);
     }
 
     /**
      * @param nodeId Destination node.
      * @param topic Topic to send the message to.
+     * @param msg {@link Message} to configure channel with.
+     * @param plc Thread policy to execute on.
      * @return Established {@link IgniteSocketChannel} to use.
      * @throws IgniteCheckedException If fails.
      */
-    public IgniteSocketChannel channelToCustomTopic(UUID nodeId, Object topic) throws IgniteCheckedException {
+    public IgniteSocketChannel channelToCustomTopic(
+        UUID nodeId,
+        Object topic,
+        Message msg,
+        byte plc
+    ) throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
             throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        return channel(node, topic, -1);
+        return channel(node, topic, -1, msg, plc);
     }
 
     /**

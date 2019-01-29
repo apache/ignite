@@ -38,9 +38,9 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridConfigureMessageListener;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.GridConfigureMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
@@ -1219,6 +1219,23 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public boolean checkNodeLeft(UUID nodeId, IgniteCheckedException sndErr, boolean ping)
         throws IgniteClientDisconnectedCheckedException {
         return cctx.gridIO().checkNodeLeft(nodeId, sndErr, ping);
+    }
+
+    /**
+     * @param nodeId Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg {@link GridCacheGroupIdMessage} to configure channel with.
+     * @param plc Thread policy to execute on.
+     * @return Established {@link IgniteSocketChannel} to use.
+     * @throws IgniteCheckedException If fails.
+     */
+    public IgniteSocketChannel channelToCustomTopic(
+        UUID nodeId,
+        Object topic,
+        GridCacheGroupIdMessage msg,
+        byte plc
+    ) throws IgniteCheckedException {
+        return cctx.gridIO().channelToCustomTopic(nodeId, topic, msg, plc);
     }
 
     /**

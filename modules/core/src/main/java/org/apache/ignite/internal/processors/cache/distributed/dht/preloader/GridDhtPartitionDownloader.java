@@ -17,16 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.io.File;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODownloader;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 
 /**
  *
@@ -38,8 +49,14 @@ public class GridDhtPartitionDownloader {
     /** */
     private final CacheGroupContext grp;
 
+    /** Cache working directory. */
+    private final File grpDir;
+
     /** */
     private final IgniteLogger log;
+
+    /** Factory to provide I/O interfaces for read/write operations with files */
+    private final FileIOFactory ioFactory;
 
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
@@ -48,19 +65,22 @@ public class GridDhtPartitionDownloader {
     @GridToStringInclude
     private volatile PartitionDonwloadFuture downloadFut;
 
-    /** Last exchange future. */
-    private volatile GridDhtPartitionsExchangeFuture lastExchangeFut;
-
     /**
      * @param grp Ccahe group.
      */
     public GridDhtPartitionDownloader(CacheGroupContext grp) {
         assert grp != null;
+        assert grp.persistenceEnabled();
 
         this.grp = grp;
         cctx = grp.shared();
         log = cctx.logger(getClass());
-        downloadFut = new PartitionDonwloadFuture(); //Dummy.
+        grpDir = cacheWorkDir(((GridCacheDatabaseSharedManager)grp.shared().database())
+                .getFileStoreManager()
+                .workDir(),
+            grp.config());
+        ioFactory = new RandomAccessFileIOFactory();
+        downloadFut = new PartitionDonwloadFuture();
 
         Map<Integer, Object> tops = new HashMap<>();
 
@@ -87,22 +107,37 @@ public class GridDhtPartitionDownloader {
         catch (Exception ignored) {
             downloadFut.onDone(false);
         }
-
-        lastExchangeFut = null;
     }
 
     /**
-     * Sets last exchange future.
-     *
      * @param lastFut Last future to set.
      */
-    void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
-        lastExchangeFut = lastFut;
+    public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
+
     }
 
     /** */
     public void handleChannelCreated(IgniteSocketChannel channel) {
-        // No-op.
+        if (log.isInfoEnabled())
+            log.info("Handle channel creation event with: " + channel);
+
+        assert channel != null;
+
+        if (channel.groupId() != grp.groupId())
+            throw new IgniteException("Incorrect processing [expected=" + grp.groupId() +
+                ", actual=" + channel.groupId() + ']');
+
+        FileIODownloader downloader = new FileIODownloader((ReadableByteChannel)channel.channel(), ioFactory, grpDir, log);
+
+        try {
+            File partFile = downloader.download();
+
+            if (log.isInfoEnabled())
+                log.info("Partition file downloaded: " + partFile.getPath());
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Download process terminated unexpectedly.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -111,7 +146,7 @@ public class GridDhtPartitionDownloader {
     }
 
     /** */
-    private class PartitionDonwloadFuture extends GridFutureAdapter<Boolean> {
+    private static class PartitionDonwloadFuture extends GridFutureAdapter<Boolean> {
 
     }
 }

@@ -22,17 +22,15 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -43,12 +41,47 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
     /** */
     private static final String DHT_PARTITIONED_CACHE = "cacheP";
 
+    /** */
+    @Before
+    public void beforeTestCleanup() throws Exception {
+        cleanPersistenceDir();
+    }
+
+    /** */
+    @After
+    public void afterTestCleanup() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true)
+            )
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception Exception.
      */
     @Test
     public void testClientNodeJoinAtRebalancing() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite0.createCache(
             new CacheConfiguration<Integer, Integer>(DHT_PARTITIONED_CACHE)
@@ -62,7 +95,9 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
         for (int i = 0; i < 2048; i++)
             cache.put(i, i);
 
-        startGrid(1);
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite1.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
         awaitPartitionMapExchange();
     }

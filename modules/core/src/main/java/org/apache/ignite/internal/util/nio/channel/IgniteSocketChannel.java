@@ -40,6 +40,8 @@ public interface IgniteSocketChannel extends Closeable {
     /** */
     public void setReady();
 
+    // Todo move properties below to extended interface
+
     /** */
     public byte policy();
 
