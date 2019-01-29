@@ -37,6 +37,13 @@ public class PartitionClientContext {
         return null;
     }
 
+    /**
+     * Convert argument.
+     *
+     * @param arg Argument.
+     * @param typ Type.
+     * @return Converted argument.
+     */
     private Object convert(Object arg, @Nullable PartitionParameterType typ) {
         // TODO: Implement conversion logic.
         return null;
