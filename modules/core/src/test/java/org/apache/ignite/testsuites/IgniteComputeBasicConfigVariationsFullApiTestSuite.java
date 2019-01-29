@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.compute.IgniteComputeConfigVariationsFullApiTest;
@@ -26,13 +28,13 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Full API compute test.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
@@ -46,29 +48,22 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite {
         Parameters.booleanParameters("setMarshalLocalJobs"),
     };
 
-    /**
-     * @return Compute API test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Compute New Full API Test Suite");
+    /** */
+    public static List<Class<?>> suite() {
+        return Stream.concat(
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Single server",
-            IgniteComputeConfigVariationsFullApiTest.class)
-            .igniteParams(BASIC_COMPUTE_SET)
-            .gridsCount(1)
-            .build());
+            new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
+                .igniteParams(BASIC_COMPUTE_SET)
+                .gridsCount(1)
+                .classes().stream(),
 
-        // Tests run on server (node#0) & client(node#1).
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "3 servers, 1 client",
-            IgniteComputeConfigVariationsFullApiTest.class)
-            .igniteParams(BASIC_COMPUTE_SET)
-            .gridsCount(4)
-            .testedNodesCount(2)
-            .withClients()
-            .build());
-
-        return suite;
+            // Tests run on server (node#0) & client(node#1).
+            new ConfigVariationsTestSuiteBuilder(IgniteComputeConfigVariationsFullApiTest.class)
+                .igniteParams(BASIC_COMPUTE_SET)
+                .gridsCount(4)
+                .testedNodesCount(2)
+                .withClients()
+                .classes().stream())
+            .collect(Collectors.toList());
     }
 }
