@@ -30,12 +30,12 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -232,8 +232,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     public void testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
     }
