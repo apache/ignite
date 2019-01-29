@@ -516,6 +516,18 @@ public class GridNioServer<T> {
     }
 
     /**
+     * @param channel IgniteSocketChannel to close.
+     */
+    public void close(IgniteSocketChannel channel) {
+        assert channel != null;
+
+        IgniteSocketChannel channel0 = channels.remove(channel.id());
+
+        if (channel0 != null)
+            U.closeQuiet(channel.channel());
+    }
+
+    /**
      * @param ses Session.
      */
     public void closeFromWorkerThread(GridNioSession ses) {
@@ -933,7 +945,8 @@ public class GridNioServer<T> {
 
         SelectionKey key = ses.key();
 
-        IgniteSocketChannel nioSocketCh = new IgniteSocketChannelImpl(connKey, (SocketChannel)key.channel());
+        IgniteSocketChannel nioSocketCh =
+            new IgniteSocketChannelImpl(connKey, (SocketChannel)key.channel(), filterChain);
 
         channels.putIfAbsent(connKey, nioSocketCh);
 
@@ -3617,6 +3630,11 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             return pauseResumeReads(ses, NioOperation.RESUME_READ);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onChannelClose(IgniteSocketChannel channel) {
+            close(channel);
         }
     }
 

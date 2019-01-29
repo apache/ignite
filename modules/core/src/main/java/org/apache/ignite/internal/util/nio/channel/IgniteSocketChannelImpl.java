@@ -20,6 +20,8 @@ package org.apache.ignite.internal.util.nio.channel;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.nio.GridNioFilterChain;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
@@ -32,6 +34,9 @@ public class IgniteSocketChannelImpl implements IgniteSocketChannel {
 
     /** */
     private final SocketChannel channel;
+
+    /** */
+    private final GridNioFilterChain filterChain;
 
     /** */
     private final IgniteSocketChannelConfig config;
@@ -54,10 +59,11 @@ public class IgniteSocketChannelImpl implements IgniteSocketChannel {
      * @param key Connection key.
      * @param channel The {@link SocketChannel} which will be used.
      */
-    public IgniteSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
+    public IgniteSocketChannelImpl(ConnectionKey key, SocketChannel channel, GridNioFilterChain filterChain) {
         this.key = key;
         this.channel = channel;
         this.config = new IgniteSocketChannelConfig(channel);
+        this.filterChain = filterChain;
     }
 
     /** {@inheritDoc} */
@@ -119,7 +125,12 @@ public class IgniteSocketChannelImpl implements IgniteSocketChannel {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        U.closeQuiet(channel());
+        try {
+            filterChain.onChannelClose(this);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException(e);
+        }
     }
 
     /** {@inheritDoc} */

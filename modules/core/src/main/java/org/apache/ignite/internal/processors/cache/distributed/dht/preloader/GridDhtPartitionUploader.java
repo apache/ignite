@@ -77,12 +77,10 @@ public class GridDhtPartitionUploader {
 
         this.grp = grp;
         cctx = grp.shared();
-
         grpDir = cacheWorkDir(((GridCacheDatabaseSharedManager)grp.shared().database())
                 .getFileStoreManager()
                 .workDir(),
             grp.config());
-
         log = cctx.logger(getClass());
         top = grp.topology();
         ioFactory = new RandomAccessFileIOFactory();
@@ -186,7 +184,7 @@ public class GridDhtPartitionUploader {
 
             if (log.isInfoEnabled())
                 log.info("Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
-                    ", part=" + partFile.getName() + ']');
+                    ", part=" + partFile.getName() + ", channel=" + ch + ']');
 
             uploader.upload(partFile, partId);
         }
@@ -194,11 +192,12 @@ public class GridDhtPartitionUploader {
             if (upCtx != null)
                 uploadCtx.remove(ctxId);
 
-            U.closeQuiet(ch);
-
             U.error(log, "An error occured while processing initial demand request ["
                 + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId + ", topVer=" + demandMsg.topologyVersion() +
                 ", topic=" + topicId + "]", e);
+        }
+        finally {
+            U.closeQuiet(ch);
         }
     }
 

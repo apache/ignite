@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.channel.IgniteSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 
@@ -119,7 +119,8 @@ public class GridDhtPartitionDownloader {
     /** */
     public void handleChannelCreated(IgniteSocketChannel channel) {
         if (log.isInfoEnabled())
-            log.info("Handle channel creation event with: " + channel);
+            log.info("Handle cache group channel creation event [grp=" + grp.cacheOrGroupName() +
+                ", channel=" + channel + ", grpDir=" + grpDir + ']');
 
         assert channel != null;
 
@@ -137,6 +138,9 @@ public class GridDhtPartitionDownloader {
         }
         catch (IgniteCheckedException e) {
             log.error("Download process terminated unexpectedly.", e);
+        }
+        finally {
+            U.closeQuiet(channel);
         }
     }
 
