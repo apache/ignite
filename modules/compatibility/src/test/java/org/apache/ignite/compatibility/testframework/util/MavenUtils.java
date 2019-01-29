@@ -46,14 +46,8 @@ public class MavenUtils {
     /** */
     private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
 
-    /** Default platform independ path for maven settings file. */
-    private static Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
-
     /** Set this flag to true if running PDS compatibility tests locally. */
     private static boolean useGgRepo;
-
-    /** Set this to true for additional output to console. */
-    private static boolean isDebug = true;
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
@@ -158,28 +152,20 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+        /** Default platform independ path for maven settings file. */
+        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
 
-        if (isDebug)
-            System.out.printf("Environment variable LOCAL_PROXY_MAVEN_SETTINGS=%s%n", localProxyMavenSettingsFromEnv);
+        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
         SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
 
         if (!F.isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
-        if (isDebug) {
-            Files.list(localProxyMavenSettings.getParent())
-                    .forEach(System.out::println);
-        }
-
         if (Files.exists(localProxyMavenSettings))
             mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
         else
             mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
-
-        if (isDebug)
-            System.out.printf("Arguments string for maven: %s%n", mavenCommandArgs.toString());
 
         exec(buildMvnCommand() + mavenCommandArgs.toString());
 
