@@ -173,13 +173,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 ) throws IgniteCheckedException {
                     onMetaStorageReadyForRead(metastorage);
                 }
-
-                /** {@inheritDoc} */
-                @Override public void onReadyForReadWrite(
-                    ReadWriteMetastorage metastorage
-                ) throws IgniteCheckedException {
-                    onMetaStorageReadyForWrite(metastorage);
-                }
             });
         }
         else {
@@ -238,6 +231,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             writeAvailable.countDown();
         }
+        else
+            onMetaStorageReadyForWrite(ctx.cache().context().database().metaStorage());
     }
 
     /** {@inheritDoc} */

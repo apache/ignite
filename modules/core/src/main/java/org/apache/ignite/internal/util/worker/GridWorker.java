@@ -98,7 +98,7 @@ public abstract class GridWorker implements Runnable {
     }
 
     /** {@inheritDoc} */
-    @Override public final void run() {
+    @Override public void run() {
         updateHeartbeat();
 
         // Runner thread must be recorded first as other operations
@@ -116,7 +116,6 @@ public abstract class GridWorker implements Runnable {
             // Listener callback.
             if (lsnr != null)
                 lsnr.onStarted(this);
-
             body();
         }
         catch (IgniteInterruptedCheckedException e) {

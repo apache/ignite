@@ -1295,7 +1295,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             Boolean disabled = (Boolean)ms.read(WAL_DISABLED);
 
             // Node crash when WAL was disabled.
-            if (disabled != null && disabled){
+            if (disabled != null && disabled) {
                 resetWalFlag = true;
 
                 pageStoreMgr.cleanupPersistentSpace();

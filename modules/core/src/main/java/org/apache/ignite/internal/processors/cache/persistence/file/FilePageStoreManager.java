@@ -297,7 +297,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("Activate page store manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        start0();
+//        start0();
     }
 
     /** {@inheritDoc} */
@@ -306,7 +306,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("DeActivate page store manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        stop0(true);
+//        stop0(true);
     }
 
     /** {@inheritDoc} */

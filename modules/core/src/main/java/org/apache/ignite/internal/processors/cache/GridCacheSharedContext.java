@@ -280,6 +280,8 @@ public class GridCacheSharedContext<K, V> {
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
                 stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
+
+        ((ArrayList<?>)stateAwareMgrs).trimToSize();
     }
 
     /**

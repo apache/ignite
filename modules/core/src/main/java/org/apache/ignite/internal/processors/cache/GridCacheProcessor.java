@@ -3179,8 +3179,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx,
-        Collection<CacheStoreSessionListener> storeSesLsnrs) throws IgniteCheckedException {
+    private GridCacheSharedContext createSharedContext(
+        GridKernalContext kernalCtx,
+        Collection<CacheStoreSessionListener> storeSesLsnrs
+    ) throws IgniteCheckedException {
         IgniteTxManager tm = new IgniteTxManager();
         GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
@@ -5624,7 +5626,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void beforeBinaryMemoryRestore(
-            IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+            IgniteCacheDatabaseSharedManager mgr
+        ) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches())
                 preparePageStore(cacheDescriptor, true);
         }
@@ -5632,7 +5635,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void afterBinaryMemoryRestore(
             IgniteCacheDatabaseSharedManager mgr,
-            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
+        ) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
                 startCacheInRecoveryMode(cacheDescriptor);
 

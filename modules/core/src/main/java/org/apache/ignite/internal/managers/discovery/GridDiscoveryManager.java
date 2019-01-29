@@ -86,11 +86,14 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -796,6 +799,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.authentication().onLocalJoin();
 
                         ctx.encryption().onLocalJoin();
+
+                        if (ctx.state().clusterState().active() && !ctx.clientNode()) {
+                            try {
+                                if (GridCacheUtils.isPersistenceEnabled(ctx.config())) {
+                                    ctx.cache().context().database().checkpointReadLock();
+                                    try {
+                                        for (MetastorageLifecycleListener subscriber : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
+                                            subscriber.onReadyForReadWrite(ctx.cache().context().database().metaStorage());
+                                        }
+                                    }
+                                    finally {
+                                        ctx.cache().context().database().checkpointReadUnlock();
+                                    }
+
+                                    IgniteChangeGlobalStateSupport distributedMetastorage =
+                                        (IgniteChangeGlobalStateSupport)ctx.distributedMetastorage();
+
+                                    distributedMetastorage.onActivate(ctx);
+                                }
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+                        }
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);

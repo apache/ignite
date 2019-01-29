@@ -602,8 +602,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         //NOOP implementation, we need to override it.
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate0(GridKernalContext kctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");

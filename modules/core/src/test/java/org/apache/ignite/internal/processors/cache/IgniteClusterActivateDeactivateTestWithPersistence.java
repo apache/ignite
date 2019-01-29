@@ -65,6 +65,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -138,7 +140,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         };
 
-        Ignite ignite = startGrids(3);
+        Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -153,7 +155,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         stopAllGrids();
 
-        ignite = startGrids(2);
+        ignite = startGrid(0);
 
         assertFalse(ignite.cluster().active());
 
