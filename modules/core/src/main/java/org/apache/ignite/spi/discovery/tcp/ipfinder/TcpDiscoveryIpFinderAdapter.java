@@ -43,7 +43,7 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
     /**
      * Ignite instance.
      *
-     * @deprecated Since 2.8. May return an invalid Ignite instance when multiple nodes shares same
+     * @deprecated Since 2.8. May contain an invalid Ignite instance when multiple nodes shares same
      * {@link TcpDiscoveryIpFinder} instance.
      */
     @Deprecated
