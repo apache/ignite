@@ -45,13 +45,14 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,11 +82,11 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** */
     private boolean testSpi;
 
-    /** */
-    private GridStringLogger strLog;
-
-    /** */
-    private ListeningTestLogger testLog;
+    /**
+     * Should be static because of some classes have static references to logger.
+     * See {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture}.
+     */
+    private static ListeningTestLogger testLog;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -99,24 +100,25 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        if (strLog != null) {
-            cfg.setGridLogger(strLog);
-
-            strLog = null;
-        }
-
-        if (testLog != null) {
-            cfg.setGridLogger(testLog);
-
-            testLog = null;
-        }
+        cfg.setGridLogger(testLog);
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    @Before
+    public void before() {
+        if (testLog == null)
+            testLog = new ListeningTestLogger(false, log);
+    }
+
+    /** */
+    @After
+    public void after() {
         stopAllGrids();
+
+        // Should clear listeners after tests.
+        testLog.clearListeners();
     }
 
     /**
@@ -175,15 +177,13 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    public void checkLongRunning(CacheAtomicityMode atomicityMode) throws Exception {
+    private void checkLongRunning(CacheAtomicityMode atomicityMode) throws Exception {
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "3500");
 
         try {
             testSpi = true;
 
             startGrid(0);
-
-            GridStringLogger strLog = this.strLog = new GridStringLogger();
 
             startGrid(1);
 
@@ -198,6 +198,11 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             final Ignite node1 = ignite(1);
 
             UUID id0 = node0.cluster().localNode().id();
+
+            LogListener lsnr = LogListener.matches("GridPartitionedSingleGetFuture waiting for response [node=" + id0)
+                    .andMatches("General node info [id=" + id0).build();
+
+            testLog.registerListener(lsnr);
 
             TestRecordingCommunicationSpi.spi(node0).blockMessages(GridNearSingleGetResponse.class, node1.name());
 
@@ -219,10 +224,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            String log = strLog.toString();
-
-            assertTrue(log.contains("GridPartitionedSingleGetFuture waiting for response [node=" + id0));
-            assertTrue(log.contains("General node info [id=" + id0));
+            assertTrue(lsnr.check());
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
@@ -262,7 +264,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    public void checkSeveralLongRunningTxs(CacheAtomicityMode atomicityMode) throws Exception {
+    private void checkSeveralLongRunningTxs(CacheAtomicityMode atomicityMode) throws Exception {
         int timeout = 3500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(timeout));
@@ -271,10 +273,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             testSpi = true;
 
             startGrid(0);
-
-            GridStringLogger strLog = this.strLog = new GridStringLogger();
-
-            strLog.logLength(1024 * 100);
 
             startGrid(1);
 
@@ -294,6 +292,14 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = node0.cache(DEFAULT_CACHE_NAME);
 
             int txCnt = 4;
+
+            LogListener lsnr = LogListener.matches("Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+                    ", cacheName=" + DEFAULT_CACHE_NAME + "]:")
+                    .andMatches("General node info [id=" + id0)
+                    .andMatches(Pattern.compile("\\sKey \\[key=UserKeyCacheObjectImpl\\s\\[")).times(txCnt)
+                    .build();
+
+            testLog.registerListener(lsnr);
 
             final List<Integer> keys = primaryKeys(cache, txCnt, 0);
 
@@ -323,44 +329,11 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            String log = strLog.toString();
-
-            assertTrue(log.contains("Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
-                ", cacheName=" + DEFAULT_CACHE_NAME + "]:"));
-            assertTrue(countTxKeysInASingleBlock(log) == txCnt);
-
-            assertTrue(log.contains("General node info [id=" + id0));
+            assertTrue(lsnr.check());
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
         }
-    }
-
-    /**
-     * @param log Log.
-     * @return Count of keys in the first Cache entries block.
-     */
-    private int countTxKeysInASingleBlock(String log) {
-        int idx1 = log.indexOf("Cache entries");
-        int idx2 = log.indexOf("Local communication statistics");
-
-        assert idx1 != -1 && idx2 != -1;
-
-        // The first cache entries info block.
-        String txInfo = log.substring(idx1, idx2);
-
-        String srch = "    Key [";  // Search string.
-        int len = 9;                // Search string length.
-
-        int idx0, cnt = 0;
-
-        while ((idx0 = txInfo.indexOf(srch) + len) >= len) {
-            txInfo = txInfo.substring(idx0);
-
-            cnt++;
-        }
-
-        return cnt;
     }
 
     /**
@@ -393,24 +366,21 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
         try {
-
             Ignite grid1 = startGrid(0);
-
-            LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
-                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, nodeId=.*"))
-                    .build();
-
-            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
-
-            testLog.registerListener(lsnr);
 
             Ignite grid2 = startGrid(1);
 
             awaitPartitionMapExchange();
 
+            LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
+                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, nodeId=.*"))
+                    .build();
+
+            testLog.registerListener(lsnr);
+
             emulateTxLockTimeout(grid1, grid2);
 
-            assertTrue(waitForCondition(lsnr::check, 5000));
+            assertTrue(waitForCondition(lsnr::check, 1000L));
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
@@ -421,8 +391,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    public void checkLongRunningTx(CacheAtomicityMode atomicityMode) throws Exception {
-
+    private void checkLongRunningTx(CacheAtomicityMode atomicityMode) throws Exception {
         final int longOpDumpTimeout = 1000;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
@@ -435,8 +404,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             node0.createCache(ccfg);
 
             UUID id0 = node0.cluster().localNode().id();
-
-            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
 
             String msg1 = "Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", cacheName=" + DEFAULT_CACHE_NAME + "]:";
@@ -532,7 +499,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    public void checkRemoteTx(CacheAtomicityMode atomicityMode) throws Exception {
+    private void checkRemoteTx(CacheAtomicityMode atomicityMode) throws Exception {
         int timeout = 3500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(timeout));
@@ -541,10 +508,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             testSpi = true;
 
             startGrid(0);
-
-            GridStringLogger strLog = this.strLog = new GridStringLogger();
-
-            strLog.logLength(1024 * 100);
 
             startGrid(1);
 
@@ -562,6 +525,11 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             node0.createCache(ccfg);
 
             UUID id0 = node0.cluster().localNode().id();
+
+            LogListener lsnr = LogListener.matches("Related transactions [")
+                    .andMatches("General node info [id=" + id0).build();
+
+            testLog.registerListener(lsnr);
 
             TestRecordingCommunicationSpi.spi(node0).blockMessages(GridDhtTxPrepareResponse.class, node1.name());
 
@@ -595,10 +563,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            String log = strLog.toString();
-
-            assertTrue(log.contains("Related transactions ["));
-            assertTrue(log.contains("General node info [id=" + id0));
+            assertTrue(lsnr.check());
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
@@ -697,7 +662,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     try (Transaction tx = node1.transactions().withLabel("lock")
-                            .txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
+                            .txStart(PESSIMISTIC, REPEATABLE_READ, 60_000L, 1)) {
                         node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
 
                         l1.countDown();
@@ -716,7 +681,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = node2.transactions().withLabel("lock")
-                        .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 2)) {
+                        .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 1)) {
                     U.awaitQuiet(l1);
 
                     node2.cache(DEFAULT_CACHE_NAME).put(1, 20);
