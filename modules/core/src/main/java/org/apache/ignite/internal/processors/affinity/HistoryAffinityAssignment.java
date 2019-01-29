@@ -161,6 +161,11 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
                 return partsCnt;
             }
         };
+
+        assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
+
+        assert this.idealAssignment.equals(assign.idealAssignment()) :
+            "new=" + this.idealAssignment + ", old=" + assign.idealAssignment();
     }
 
     /**
