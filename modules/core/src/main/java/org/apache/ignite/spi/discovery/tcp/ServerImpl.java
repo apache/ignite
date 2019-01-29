@@ -53,6 +53,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -943,26 +944,50 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!auth && spi.nodeAuth != null)
                     localAuthentication(locCred);
 
-                locNode.order(1);
-                locNode.internalOrder(1);
+                final CountDownLatch execLatch = new CountDownLatch(1);
 
-                spi.gridStartTime = U.currentTimeMillis();
+                msgWorker.addTask(() -> {
+                    pendingCustomMsgs.clear();
+                    msgWorker.pendingMsgs.reset(null, null, null);
+                    msgWorker.next = null;
+                    failedNodes.clear();
+                    leavingNodes.clear();
+                    failedNodesMsgSent.clear();
 
-                locNode.visible(true);
+                    locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
-                ring.clear();
+                    locNode.order(1);
+                    locNode.internalOrder(1);
 
-                ring.topologyVersion(1);
+                    spi.gridStartTime = U.currentTimeMillis();
 
-                synchronized (mux) {
-                    topHist.clear();
+                    locNode.visible(true);
 
-                    spiState = CONNECTED;
+                    ring.clear();
 
-                    mux.notifyAll();
+                    ring.topologyVersion(1);
+
+                    synchronized (mux) {
+                        topHist.clear();
+
+                        spiState = CONNECTED;
+
+                        mux.notifyAll();
+                    }
+
+                    notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
+
+                    execLatch.countDown();
+                });
+
+                try {
+                    execLatch.await();
                 }
+                catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
 
-                notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
+                    throw new IgniteSpiException("Thread has been interrupted.");
+                }
 
                 break;
             }
@@ -1030,8 +1055,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
-
         assert locNode.order() != 0;
         assert locNode.internalOrder() != 0;
 
@@ -1062,7 +1085,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             locNode.setAttributes(attrs);
 
-        } catch (IgniteException | IgniteCheckedException e) {
+        }
+        catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
         }
     }
@@ -2649,7 +2673,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Message worker for discovery messages processing.
      */
-    private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
+    private class RingMessageWorker extends MessageWorker<Object> {
         /** Next node. */
         private TcpDiscoveryNode next;
 
@@ -2705,6 +2729,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Adds a task to be executed in the message worker thread.
+         *
+         * @param task Task to run in the message worker thread.
+         */
+        void addTask(Runnable task) {
+            queue.addFirst(task);
+        }
+
+        /**
          * Adds message to queue.
          *
          * @param msg Message to add.
@@ -2723,10 +2756,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (msg.highPriority())
-                queue.addFirst(msg);
-            else
-                queue.add(msg);
+            queue.add(msg);
 
             if (log.isDebugEnabled())
                 log.debug("Message has been added to queue: " + msg);
@@ -2803,10 +2833,27 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.info("Connection check threshold is calculated: " + connCheckThreshold);
         }
 
+        /** {@inheritDoc} */
+        @Override protected void processMessage(Object obj) {
+            if (obj instanceof TcpDiscoveryAbstractMessage)
+                processDiscoveryMessage((TcpDiscoveryAbstractMessage)obj);
+            else if (obj instanceof Runnable)
+                processTask((Runnable)obj);
+            else
+                U.error(log, "Invalid object submitted to ring message worker: " + obj);
+        }
+
+        /**
+         * @param task Task to execute in message worker thread.
+         */
+        protected void processTask(Runnable task) {
+            task.run();
+        }
+
         /**
          * @param msg Message to process.
          */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+        protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
             spi.startMessageProcess(msg);
 
             sendMetricsUpdateMessage();
