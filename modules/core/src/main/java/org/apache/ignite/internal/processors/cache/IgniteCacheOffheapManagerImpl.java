@@ -2759,15 +2759,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper, Object x, MvccSnapshot snapshot) throws IgniteCheckedException {
-            return cursor(cacheId, lower, upper, x, snapshot, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x, MvccSnapshot snapshot, boolean skipVer) throws IgniteCheckedException {
             SearchRow lowerRow;
             SearchRow upperRow;
-            // TODO: Use skiPver.
+
             if (grp.sharedGroup()) {
                 assert cacheId != CU.UNDEFINED_CACHE_ID;
 

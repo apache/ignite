@@ -2231,21 +2231,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             Object x,
             MvccSnapshot mvccSnapshot
         ) throws IgniteCheckedException {
-            return cursor(cacheId, lower, upper, x, mvccSnapshot, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            KeyCacheObject lower,
-            KeyCacheObject upper,
-            Object x,
-            MvccSnapshot mvccSnapshot,
-            boolean skipVer
-        ) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot, skipVer);
+                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot);
 
             return EMPTY_CURSOR;
         }

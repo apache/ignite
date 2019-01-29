@@ -82,10 +82,11 @@ public class H2RowFactory {
             0,
             link,
             partId,
-            null, // TODO: Appropriate data!
+            null,
             mvccCrdVer,
             mvccCntr,
-            mvccOpCntr
+            mvccOpCntr,
+            true
         );
 
         return rowDesc.createRow(row);
