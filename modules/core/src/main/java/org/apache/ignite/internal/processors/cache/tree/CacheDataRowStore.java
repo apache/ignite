@@ -34,9 +34,14 @@ public class CacheDataRowStore extends RowStore {
     private static ThreadLocal<Boolean> SKIP_VER = ThreadLocal.withInitial(() -> false);
 
     /**
-     * Set skip version flag.
-     *
-     * @param skipVer Flag value.
+     * @return Skip version flag.
+     */
+    public static boolean getSkipVersion() {
+        return SKIP_VER.get();
+    }
+
+    /**
+     * @param skipVer Skip version flag.
      */
     public static void setSkipVersion(boolean skipVer) {
         SKIP_VER.set(skipVer);
