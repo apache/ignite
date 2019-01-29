@@ -776,18 +776,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        checkpointLock.writeLock().lock();
-
-        try {
-            stopping = true;
-        }
-        finally {
-            checkpointLock.writeLock().unlock();
-        }
-
-        shutdownCheckpointer(false);
-
-        checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+        forceCheckpoint("Cluster deactivation");
 
         super.onDeActivate(kctx);
 
