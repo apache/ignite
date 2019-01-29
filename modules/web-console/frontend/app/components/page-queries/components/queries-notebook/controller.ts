@@ -936,13 +936,13 @@ export class NotebookCtrl {
                 pluck('cluster'),
                 distinctUntilChanged(),
                 tap((cluster) => {
-                    this.clusterIsAvailable = !_.isNil(cluster) && cluster.active === true;
+                    this.clusterIsAvailable = (!_.isNil(cluster) && cluster.active === true) || agentMgr.isDemoMode();
                 })
             );
 
             this.refresh$ = cluster$.pipe(
                 switchMap((cluster) => {
-                    if (_.isNil(cluster))
+                    if (_.isNil(cluster) && !agentMgr.isDemoMode())
                         return of(null);
 
                     return of(cluster).pipe(

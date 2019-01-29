@@ -34,7 +34,7 @@ export default class IgniteChartNoDataCtrl implements ng.IOnChanges, ng.IOnDestr
     cluster$ = this.AgentManager.connectionSbj.pipe(
         pluck('cluster'),
         tap((cluster) => {
-            if (_.isNil(cluster)) {
+            if (_.isNil(cluster) && !this.AgentManager.isDemoMode()) {
                 this.destroyChart();
                 return;
             }
