@@ -22,7 +22,11 @@
 @import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
 @import "./form-field";
-@import "./css-variables.scss";
+
+:root {
+    --sans-serif-font: Roboto;
+    --serif-font: Roboto_slab;
+}
 
 body {
     overflow-y: scroll !important;
