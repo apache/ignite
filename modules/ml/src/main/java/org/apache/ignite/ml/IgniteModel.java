@@ -82,7 +82,7 @@ public interface IgniteModel<T, V> extends Model<T, V>, Serializable {
     }
 
     /**
-     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     * Get a composition model of the form {@code x -> mdl(before(x))}.
      *
      * @param before Function to apply before this model.
      * @param <V1> Type of input of function applied before this model.
