@@ -2056,7 +2056,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final AtomicInteger threadSeq = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
+        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     final ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -2106,7 +2106,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, THREAD, "update-thread");
 
-        restartFut.get();
+        future.get(getTestTimeout());
+
+        restartFut.get(getTestTimeout());
 
         List<T3<Object, Object, Object>> expEvts0 = new ArrayList<>();
 
