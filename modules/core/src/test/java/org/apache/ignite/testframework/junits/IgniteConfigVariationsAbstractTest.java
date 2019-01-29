@@ -63,7 +63,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Rule public RuleChain runRule
         = RuleChain.outerRule(rulePrivate).around(super.runRule);
 
-
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
