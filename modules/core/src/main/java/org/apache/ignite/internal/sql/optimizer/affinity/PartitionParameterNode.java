@@ -67,6 +67,8 @@ public class PartitionParameterNode extends PartitionSingleNode {
         if (cliCtx != null)
             return cliCtx.partition(arg, mappedType, tbl.cacheName());
         else {
+            assert partResolver != null;
+
             return partResolver.partition(
                 arg,
                 type,
