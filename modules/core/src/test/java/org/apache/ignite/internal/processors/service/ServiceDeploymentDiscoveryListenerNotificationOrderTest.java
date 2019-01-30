@@ -32,8 +32,6 @@
  import org.junit.Assume;
  import org.junit.BeforeClass;
  import org.junit.Test;
- import org.junit.runner.RunWith;
- import org.junit.runners.JUnit4;
 
  /**
   * <b>Tests in the class strongly depend on implementation of {@link GridEventStorageManager} and internal logic of
@@ -43,7 +41,6 @@
   * listener registered by {@link GridCachePartitionExchangeManager}. It allows service manager capture custom message
   * because it may be nullified in PME process at the end of exchange in {@link GridDhtPartitionsExchangeFuture#onDone()}.
   */
- @RunWith(JUnit4.class)
  public class ServiceDeploymentDiscoveryListenerNotificationOrderTest extends GridCommonAbstractTest {
      /** */
      @BeforeClass

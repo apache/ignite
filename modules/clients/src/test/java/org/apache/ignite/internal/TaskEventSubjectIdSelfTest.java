@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
@@ -59,7 +57,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 /**
  * Tests for security subject ID in task events.
  */
-@RunWith(JUnit4.class)
 public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<TaskEvent> evts = new ArrayList<>();

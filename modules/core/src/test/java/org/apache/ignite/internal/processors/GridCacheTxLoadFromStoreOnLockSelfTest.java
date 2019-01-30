@@ -36,13 +36,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
