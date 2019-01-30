@@ -62,8 +62,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -71,7 +69,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);

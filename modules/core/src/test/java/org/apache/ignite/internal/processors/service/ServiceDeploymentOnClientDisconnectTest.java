@@ -37,8 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
@@ -46,7 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  * Test service deployment while client node disconnecting.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-@RunWith(JUnit4.class)
 public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final long CLIENT_FAILURE_DETECTION_TIMEOUT = 5_000L;
