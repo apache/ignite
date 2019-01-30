@@ -561,10 +561,6 @@ public class QueryUtils {
         Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
-        // We have to distinguish between empty and null keyFields when the key is not of SQL type -
-        // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
-        // is a value field, and null keyFields tells us that current configuration
-        // does not tell us anything about this field's ownership.
         boolean hasKeyFields = (keyFields != null);
 
         boolean isKeyClsSqlType = isSqlType(d.keyClass());
@@ -578,23 +574,31 @@ public class QueryUtils {
             }
         }
 
+        // We are creating binary properties for all the fields, even if field is of sql type (keyFieldName or
+        // valueFieldName). In that case we rely on the fact, that binary property's methods value() and
+        // setValue() will never get called, because there is no value to extract, key/val object itself is a
+        // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
-            Boolean isKeyField;
+            String fieldName = entry.getKey();
+            String fieldType = entry.getValue();
 
-            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
+            boolean isKeyField;
+
+            if (isKeyClsSqlType)
+                // Entire key is not field of itself, even if it is set in "keyFields".
                 isKeyField = false;
             else
-                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+                isKeyField = hasKeyFields && keyFields.contains(fieldName);
 
-            boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
+            boolean notNull = notNulls != null && notNulls.contains(fieldName);
 
-            Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
+            Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true),
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
+                U.classForName(fieldType, Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
-                precision == null ? -1 : precision.getOrDefault(entry.getKey(), -1),
-                scale == null ? -1 : scale.getOrDefault(entry.getKey(), -1));
+                precision == null ? -1 : precision.getOrDefault(fieldName, -1),
+                scale == null ? -1 : scale.getOrDefault(fieldName, -1));
 
             d.addProperty(prop, false);
         }
@@ -797,7 +801,7 @@ public class QueryUtils {
      * @return Binary property.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
-        Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
+        Class<?> resType, Map<String, String> aliases, boolean isKeyField, boolean notNull, Object dlftVal,
         int precision, int scale) {
         String[] path = pathStr.split("\\.");
 

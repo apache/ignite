@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQue
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUnionDuplicatesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
@@ -355,6 +356,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteCacheDeleteSqlQuerySelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteSqlSkipReducerOnUpdateDmlSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheSqlInsertValidationSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteBinaryObjectQueryArgumentsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteBinaryObjectLocalQueryArgumentsTest.class));
