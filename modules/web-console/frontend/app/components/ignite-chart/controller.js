@@ -197,7 +197,8 @@ export class IgniteChartController {
                     bodyFontSize: 13,
                     callbacks: {
                         title: (tooltipItem) => {
-                            return tooltipItem[0].xLabel.slice(0, -7);
+                            const tooltipTime = Date.parse(tooltipItem[0].xLabel);
+                            return tooltipItem[0].xLabel = this.datePipe(tooltipTime, 'HH:mm:ss');
                         },
                         label: (tooltipItem, data) => {
                             const label = data.datasets[tooltipItem.datasetIndex].label || '';
