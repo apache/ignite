@@ -1315,9 +1315,6 @@ public class GridCacheUtils {
         if (e.getCause() instanceof SecurityException)
             return (SecurityException)e.getCause();
 
-        if (e.hasCause(IgniteTxSerializationCheckedException.class))
-            return new CacheException(new TransactionSerializationException(e.getMessage(), e));
-
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
         return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);

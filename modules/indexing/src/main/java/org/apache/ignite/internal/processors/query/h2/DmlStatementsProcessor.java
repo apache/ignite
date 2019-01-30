@@ -40,13 +40,11 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
@@ -83,9 +81,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -96,13 +93,11 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
@@ -294,7 +289,7 @@ public class DmlStatementsProcessor {
                     ress.add(res);
                 }
                 catch (Exception e ) {
-                    SQLException sqlEx = toSqlException(e);
+                    SQLException sqlEx = QueryUtils.toSqlException(e);
 
                     batchException = chainException(batchException, sqlEx);
 
@@ -311,40 +306,6 @@ public class DmlStatementsProcessor {
 
             return ress;
         }
-    }
-
-    /**
-     * Converts exception in to IgniteSqlException.
-     * @param e Exception.
-     * @return IgniteSqlException.
-     */
-    @NotNull private SQLException toSqlException(Exception e) {
-        String sqlState;
-
-        int code;
-
-        if (e instanceof IgniteSQLException) {
-            sqlState = ((IgniteSQLException)e).sqlState();
-
-            code = ((IgniteSQLException)e).statusCode();
-        }
-        else if (e instanceof TransactionDuplicateKeyException){
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionSerializationException){
-            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else {
-            sqlState = SqlStateCode.INTERNAL_ERROR;
-
-            code = IgniteQueryErrorCode.UNKNOWN;
-        }
-
-        return new SQLException(e.getMessage(), sqlState, code, e);
     }
 
     /**
@@ -657,16 +618,14 @@ public class DmlStatementsProcessor {
             catch (IgniteCheckedException e) {
                 checkSqlException(e);
 
-                if (e instanceof IgniteTxSerializationCheckedException)
-                    throw new TransactionSerializationException(e.getMessage(), e);
-                if (e instanceof IgniteTxDuplicateKeyCheckedException)
-                    throw new TransactionDuplicateKeyException(e.getMessage(), e);
-                if (e instanceof ClusterTopologyServerNotFoundException)
-                    throw new CacheServerNotFoundException(e.getMessage(), e);
+                Exception ex = IgniteUtils.convertExceptionNoWrap(e);
 
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
+                if (ex instanceof IgniteException)
+                    throw (IgniteException)ex;
 
-                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", ex);
+
+                throw new IgniteSQLException("Failed to run update. " + ex.getMessage(), ex);
             }
             finally {
                 if (commit)

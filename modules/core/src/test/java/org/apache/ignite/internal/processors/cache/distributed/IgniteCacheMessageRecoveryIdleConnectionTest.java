@@ -77,8 +77,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES);
-
-        grid(0).destroyCache(DEFAULT_CACHE_NAME);
     }
 
     /**

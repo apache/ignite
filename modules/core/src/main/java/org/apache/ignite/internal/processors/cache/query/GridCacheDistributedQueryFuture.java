@@ -26,8 +26,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -149,7 +149,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         if (callOnPage)
             onPage(nodeId, Collections.emptyList(),
-                new ClusterTopologyException("Remote node has left topology: " + nodeId), true);
+                new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
     }
 
     /** {@inheritDoc} */
