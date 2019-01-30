@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,8 +35,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,35 +69,43 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
         List<Integer> keys = partitionKeys(cache, PARTITION_ID, 100, 0);
 
+        LinkedList<T2<Integer, GridCacheOperation>> ops = new LinkedList<>();
+
         cache.put(keys.get(0), new TestVal(keys.get(0)));
+        ops.add(new T2<>(keys.get(0), GridCacheOperation.CREATE));
+
         cache.put(keys.get(1), new TestVal(keys.get(1)));
+        ops.add(new T2<>(keys.get(1), GridCacheOperation.CREATE));
+
         cache.put(keys.get(2), new TestVal(keys.get(2)));
+        ops.add(new T2<>(keys.get(2), GridCacheOperation.CREATE));
 
         assertCountersSame(PARTITION_ID, false);
 
         cache.remove(keys.get(2));
+        ops.add(new T2<>(keys.get(2), GridCacheOperation.DELETE));
+
         cache.remove(keys.get(1));
+        ops.add(new T2<>(keys.get(1), GridCacheOperation.DELETE));
+
         cache.remove(keys.get(0));
+        ops.add(new T2<>(keys.get(0), GridCacheOperation.DELETE));
 
         assertCountersSame(PARTITION_ID, false);
 
-        WALIterator iter = walIterator((IgniteEx)crd);
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
 
-        while(iter.hasNext()) {
-            IgniteBiTuple<WALPointer, WALRecord> tup = iter.next();
-
-            if (tup.get2() instanceof DataRecord)
-                log.info("next " + tup.get2());
+            checkWAL((IgniteEx)ignite, new LinkedList<>(ops), 6);
         }
-
-        System.out.println();
     }
 
     /**
      * TODO same test with historical rebalanbce and different backups(1,2).
      */
     @Test
-    public void testSingleThreadedUpdateOrderWithPrimaryRestart() throws Exception {
+    public void testMultiThreadedUpdateOrderWithPrimaryRestart() throws Exception {
         backups = 2;
 
         Ignite crd = startGridsMultiThreaded(3);
@@ -121,56 +132,104 @@ public class TxPartitionCounterStateUpdatesOrderTest extends TxPartitionCounterS
 
         Iterator<Integer> it = partitionKeysIterator(cache, PARTITION_ID);
 
-        long stop = U.currentTimeMillis() + 3_000;
+        long stop = U.currentTimeMillis() + 60_000;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            //while(U.currentTimeMillis() < stop) {
+            while(U.currentTimeMillis() < stop) {
                 doSleep(1000);
 
                 stopGrid(prim.name());
 
                 try {
                     awaitPartitionMapExchange();
-                    //startGrid(prim.name());
+                    startGrid(prim.name());
+
+                    doSleep(300);
                 }
                 catch (Exception e) {
                     fail();
                 }
-            //}
+            }
         }, 1, "node-restarter");
 
-        int cnt = 0;
+        LongAdder cnt = new LongAdder();
 
-        while(U.currentTimeMillis() < stop) {
-            Integer key = it.next();
+        final int threads = 1; //Runtime.getRuntime().availableProcessors();
 
-            cache.put(key, 0);
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(() -> {
+            while (U.currentTimeMillis() < stop) {
+                Integer key;
 
-            cnt++;
-        }
+                synchronized (it) {
+                    key = it.next();
+                }
+
+                cache.put(key, 0);
+
+                cnt.increment();
+            }
+        }, threads, "tx-put-thread");
 
         fut.get();
+        fut2.get();
 
         // Wait until primary rebalance.
         awaitPartitionMapExchange();
 
         int size = cache.size();
 
-        assertEquals(cnt, size);
+        assertEquals(cnt.sum(), size);
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, false);
+        assertCountersSame(PARTITION_ID, true);
 
         cur.close();
 
         assertEquals(size, events.size());
     }
 
+    /**
+     * @param ignite Ignite.
+     */
     private WALIterator walIterator(IgniteEx ignite) throws IgniteCheckedException {
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
         return walMgr.replay(null);
+    }
+
+    /**
+     * @param ig Ignite instance.
+     * @param ops Ops queue.
+     * @param exp Expected updates.
+     */
+    private void checkWAL(IgniteEx ig, Queue<T2<Integer, GridCacheOperation>> ops, int exp) throws IgniteCheckedException {
+        WALIterator iter = walIterator(ig);
+
+        long cntr = 0;
+
+        while(iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> tup = iter.next();
+
+            if (tup.get2() instanceof DataRecord) {
+                T2<Integer, GridCacheOperation> op = ops.poll();
+
+                DataRecord rec = (DataRecord)tup.get2();
+
+                assertEquals(1, rec.writeEntries().size());
+
+                DataEntry entry = rec.writeEntries().get(0);
+
+                assertEquals(op.get1(),
+                    entry.key().value(internalCache(ig, DEFAULT_CACHE_NAME).context().cacheObjectContext(), false));
+
+                assertEquals(op.get2(), entry.op());
+
+                assertEquals(entry.partitionCounter(), ++cntr);
+            }
+        }
+
+        assertEquals(exp, cntr);
     }
 
     /** */

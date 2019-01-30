@@ -1576,7 +1576,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public long getAndIncrementUpdateCounter(long delta) {
             long reserve = pCntr.reserve(delta);
 
-            //log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+            // log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
 
             return reserve;
         }
@@ -1598,6 +1598,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public void updateCounter(long val) {
             try {
                 pCntr.update(val);
+
+                // log.info("TX: set=" + val + ", partId=" + partId + ", cntr=" + pCntr);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Partition counter inconsistency is detected. " +
@@ -1610,11 +1612,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean updateCounter(long start, long delta) {
-            boolean update = pCntr.update(start, delta);
+            boolean updated = pCntr.update(start, delta);
 
-            //log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+            // log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", topVer=" + grp.topology().readyTopologyVersion() + ", cntr=" + pCntr + ", updated=" + updated);
 
-            return update;
+            return updated;
         }
 
         /** {@inheritDoc} */

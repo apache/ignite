@@ -690,6 +690,11 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
     }
 
+    /**
+     *
+     * @param partId
+     * @param withReserveCntr {@code True} to compare reserve counters. Counters must be same after rebalance.
+     */
     protected void assertCountersSame(int partId, boolean withReserveCntr) {
         PartitionUpdateCounter cntr0 = null;
 

@@ -38,10 +38,7 @@ public class CacheContinuousQueryFailoverAtomicSelfTest extends CacheContinuousQ
         return CacheAtomicityMode.ATOMIC;
     }
 
-    /** {@inheritDoc} */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5971")
-    @Override public void testFailoverStartStopBackup() throws Exception {
-        super.testFailoverStartStopBackup();
+    @Override public void testMultiThreadedFailover() throws Exception {
+        super.testMultiThreadedFailover();
     }
 }
