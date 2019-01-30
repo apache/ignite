@@ -25,8 +25,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,7 +36,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Sanity tests of deferred delete for different cache configurations.
  */
-@RunWith(JUnit4.class)
 public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

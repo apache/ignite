@@ -29,14 +29,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgfsServerManager} that checks shmem IPC endpoint registration
  * forbidden for Windows.
  */
-@RunWith(JUnit4.class)
 public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
     extends IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest {
     /** */

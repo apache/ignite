@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly if coordinator fail.
  *
  * {@inheritDoc}
  */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentProcessingOnCoordinatorFailTest extends ServiceDeploymentProcessingOnCoordinatorLeftTest {
     /** {@inheritDoc} */
     @Override protected boolean failNode() {

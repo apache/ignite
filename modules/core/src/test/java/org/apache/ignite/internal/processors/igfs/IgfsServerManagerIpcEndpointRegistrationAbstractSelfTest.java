@@ -39,8 +39,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_PORT;
@@ -48,7 +46,6 @@ import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_
 /**
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
  */
-@RunWith(JUnit4.class)
 public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends IgfsCommonAbstractTest {
     private static final AtomicInteger mgmtPort = new AtomicInteger(DFLT_MGMT_PORT);
 

@@ -52,8 +52,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,7 +66,6 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 /**
  * Event consume test.
  */
-@RunWith(JUnit4.class)
 public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PRJ_PRED_CLS_NAME = "org.apache.ignite.tests.p2p.GridEventConsumeProjectionPredicate";
