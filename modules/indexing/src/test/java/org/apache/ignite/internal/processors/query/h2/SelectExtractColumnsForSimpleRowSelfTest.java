@@ -138,13 +138,13 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         for (int i = 0; i < 100; ++i)
             sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
 
-//        // scan and wildcard
-//        res = sql("SELECT * FROM test AS d0");
-//
-//        assertEquals(100L, res.size());
-//        assertUsedColumns(qrys.get().get(0).usedColumns(),
-//            new UsedTableColumns("d0", true, true, 2, 3, 4)
-//        );
+        // scan and wildcard
+        res = sql("SELECT * FROM test AS d0");
+
+        assertEquals(100L, res.size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", true, true, 2, 3, 4)
+        );
 
         // hidden fields, only key
         res = sql("SELECT id FROM test AS d0 WHERE _key < 5");
@@ -235,6 +235,11 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "WHERE comp.name='company_1'");
 
         assertEquals(res.size(), 10);
+        assertEquals(1, qrys.get().size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("pers", true, true, 2, 3, 4),
+            new UsedTableColumns("comp", true, true, 2, 5, 6)
+        );
     }
 
     /**
