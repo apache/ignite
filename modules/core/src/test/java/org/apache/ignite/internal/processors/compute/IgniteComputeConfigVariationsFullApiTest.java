@@ -51,14 +51,11 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Full API compute test.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Max job count. */
     private static final int MAX_JOB_COUNT = 10;

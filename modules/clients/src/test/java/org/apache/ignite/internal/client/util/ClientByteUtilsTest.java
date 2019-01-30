@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.GridClientByteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToInt;
 import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToLong;
@@ -39,7 +37,6 @@ import static org.apache.ignite.internal.util.GridClientByteUtils.shortToBytes;
 /**
  * Test case for client's byte convertion utility.
  */
-@RunWith(JUnit4.class)
 public class ClientByteUtilsTest extends GridCommonAbstractTest {
     /**
      * Test UUID conversions from string to binary and back.

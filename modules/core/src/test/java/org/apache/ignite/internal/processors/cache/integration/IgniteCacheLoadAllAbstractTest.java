@@ -36,14 +36,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private volatile boolean writeThrough = true;

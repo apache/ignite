@@ -29,15 +29,12 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test cases for multi-threaded tests.
  */
-@RunWith(JUnit4.class)
 public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /** Grid. */
     private IgniteKernal grid;

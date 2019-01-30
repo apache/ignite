@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -492,6 +494,11 @@ class GridDhtPartitionSupplier {
                 U.error(log, "Failed to send supply error message ["
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t1);
             }
+
+            grp.shared().kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR,
+                new IgniteCheckedException("Failed to continue supplying ["
+                    + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t)
+            ));
         }
     }
 

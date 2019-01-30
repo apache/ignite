@@ -33,8 +33,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
@@ -46,7 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc SQL API coordinator failover test.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
     /**
      * @throws Exception If failed.

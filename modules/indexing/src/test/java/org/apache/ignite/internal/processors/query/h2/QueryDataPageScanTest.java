@@ -63,14 +63,11 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.Boolean.FALSE;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class QueryDataPageScanTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -217,7 +214,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         assertEquals(accounts * initialBalance,((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
-            .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+                .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         AtomicBoolean cancel = new AtomicBoolean();

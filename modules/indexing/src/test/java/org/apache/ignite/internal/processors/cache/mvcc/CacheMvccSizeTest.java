@@ -35,15 +35,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

@@ -39,10 +39,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -53,7 +50,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-@RunWith(JUnit4.class)
 public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /** Cache. */
     private static final String CACHE = "testCache";
@@ -116,7 +112,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
     @Test
     public void testOneServerMvcc() throws Exception {
         try {
@@ -161,7 +156,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10377")
     @Test
     public void testFourServersMvcc() throws Exception {
         try {

@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -31,16 +40,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
