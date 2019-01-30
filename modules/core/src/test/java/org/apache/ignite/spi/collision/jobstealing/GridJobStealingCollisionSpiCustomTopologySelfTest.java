@@ -53,10 +53,10 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
 public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
-    private GridTestNode rmtNode1;
+    private static GridTestNode rmtNode1;
 
     /** */
-    private GridTestNode rmtNode2;
+    private static GridTestNode rmtNode2;
 
     /** */
     public GridJobStealingCollisionSpiCustomTopologySelfTest() {

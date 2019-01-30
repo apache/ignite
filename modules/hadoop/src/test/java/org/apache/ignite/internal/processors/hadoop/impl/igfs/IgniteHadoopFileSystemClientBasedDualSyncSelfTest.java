@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import org.apache.ignite.igfs.IgfsMode;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * IGFS Hadoop file system Ignite client -based self test for DUAL_SYNC mode.
@@ -34,5 +36,12 @@ public class IgniteHadoopFileSystemClientBasedDualSyncSelfTest
     /** {@inheritDoc} */
     @Override protected String getClientConfig() {
         return "modules/hadoop/src/test/config/igfs-cli-config-dual-sync.xml";
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9919")
+    @Test
+    @Override public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
+        super.testRenameIfSrcPathIsAlreadyBeingOpenedToRead();
     }
 }
