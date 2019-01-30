@@ -15,30 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
 /**
- * Composite node operator.
+ * Affinity function type.
  */
-public enum PartitionCompositeNodeOperator {
-    /** Conjunction. */
-    AND,
+public enum PartitionAffinityFunctionType {
+    /** Custom affintiy function. */
+    CUSTOM(0),
 
-    /** Disjunction. */
-    OR;
+    /** Rendezvous affinity function. */
+    RENDEZVOUS(1);
 
-    /** Enumerated values. */
-    private static final PartitionCompositeNodeOperator[] VALS = values();
+    /** Value. */
+    private final int val;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Constructor.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @param val Value.
      */
-    @Nullable public static PartitionCompositeNodeOperator fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    PartitionAffinityFunctionType(int val) {
+        this.val = val;
+    }
+
+    /**
+     * @return Value.
+     */
+    public int value() {
+        return val;
     }
 }
