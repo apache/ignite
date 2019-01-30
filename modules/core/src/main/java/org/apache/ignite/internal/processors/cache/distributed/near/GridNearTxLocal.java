@@ -4715,7 +4715,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keyLockFut.get();
             }
             catch (IgniteCheckedException ignore) {
-                //No-op.
+                // No-op.
             }
         }
     }
