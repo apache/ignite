@@ -137,6 +137,16 @@ class JUnit3TestLegacyAssert {
     }
 
     /** See class javadocs. */
+    protected static void assertEquals(double exp, Double actual) {
+        Assert.assertEquals(exp, actual, 0);
+    }
+
+    /** See class javadocs. */
+    protected static void assertEquals(Double exp, double actual) {
+        Assert.assertEquals(exp, actual, 0);
+    }
+
+    /** See class javadocs. */
     protected static void assertEquals(double exp, double actual) {
         Assert.assertEquals(exp, actual, 0);
     }
