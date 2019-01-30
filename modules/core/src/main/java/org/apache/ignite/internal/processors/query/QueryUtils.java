@@ -796,8 +796,8 @@ public class QueryUtils {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
-     *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
+     * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
+     * not a field of itself.
      * @param notNull {@code true} if {@code null} value is not allowed.
      * @param dlftVal Default value.
      * @param precision Precision.
