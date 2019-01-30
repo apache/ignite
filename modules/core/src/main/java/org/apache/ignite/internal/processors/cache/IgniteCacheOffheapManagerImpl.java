@@ -2033,7 +2033,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         key,
                         updateRow.mvccCoordinatorVersion(),
                         updateRow.mvccCounter(),
-                        updateRow.mvccOperationCounter() & ~MVCC_OP_COUNTER_MASK,
+                        updateRow.mvccOperationCounter() & MVCC_OP_COUNTER_MASK,
                         updateRow.link()));
                 }
 
@@ -3251,13 +3251,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long crd = iox.mvccCoordinator(pageAddr, off);
             long cntr = iox.mvccCounter(pageAddr, off);
             int opCntrAndHint = iox.mvccOperationCounter(pageAddr, off);
-            int opCntr = opCntrAndHint & ~MVCC_OP_COUNTER_MASK;
+            int opCntr = opCntrAndHint & MVCC_OP_COUNTER_MASK;
             byte txState = (byte)(opCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             long newCrd = iox.newMvccCoordinator(pageAddr, off);
             long newCntr = iox.newMvccCounter(pageAddr, off);
             int newOpCntrAndHint = iox.newMvccOperationCounter(pageAddr, off);
-            int newOpCntr = newOpCntrAndHint & ~MVCC_OP_COUNTER_MASK;
+            int newOpCntr = newOpCntrAndHint & MVCC_OP_COUNTER_MASK;
             byte newTxState = (byte)(newOpCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             assert crd == newRow.mvccCoordinatorVersion();

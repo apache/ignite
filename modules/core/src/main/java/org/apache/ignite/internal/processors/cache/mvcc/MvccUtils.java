@@ -57,14 +57,14 @@ public class MvccUtils {
     /** */
     public static final int MVCC_HINTS_BIT_OFF = MVCC_KEY_ABSENT_BEFORE_OFF + 1;
 
-    /** */
-    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = Integer.MIN_VALUE >> 2;
+    /** Mask for KeyAbsent flag. */
+    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = 1 << MVCC_KEY_ABSENT_BEFORE_OFF;
 
-    /** */
-    public static final int MVCC_HINTS_MASK = Integer.MIN_VALUE >>> 1;
+    /** Mask for tx hints. (2 highest bits)  */
+    public static final int MVCC_HINTS_MASK = Integer.MIN_VALUE >> 1;
 
-    /** Mask for all masked high bits in operation counter field. */
-    public static final int MVCC_OP_COUNTER_MASK = Integer.MIN_VALUE >>> 2;
+    /** Mask for operation counter bits. (Excludes hints and flags) */
+    public static final int MVCC_OP_COUNTER_MASK = ~(Integer.MIN_VALUE >> 2);
 
     /** */
     public static final long MVCC_CRD_COUNTER_NA = 0L;
@@ -87,8 +87,8 @@ public class MvccUtils {
     /** */
     public static final int MVCC_START_OP_CNTR = 1;
 
-    /** */
-    public static final int MVCC_READ_OP_CNTR = ~MVCC_HINTS_MASK;
+    /** Used as 'read' snapshot op counter. */
+    public static final int MVCC_READ_OP_CNTR = MVCC_OP_COUNTER_MASK;
 
     /** */
     public static final int MVCC_INVISIBLE = 0;
@@ -537,7 +537,7 @@ public class MvccUtils {
      * @return Always {@code true}.
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr, int opCntr) {
-        return mvccVersionIsValid(crdVer, cntr) && opCntr != MVCC_OP_COUNTER_NA;
+        return mvccVersionIsValid(crdVer, cntr) && (opCntr & MVCC_READ_OP_CNTR) != MVCC_OP_COUNTER_NA;
     }
 
     /**
@@ -628,13 +628,13 @@ public class MvccUtils {
 
         long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
         long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset);
 
-        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
+        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr ) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
 
         long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
         long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset);
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
             : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);

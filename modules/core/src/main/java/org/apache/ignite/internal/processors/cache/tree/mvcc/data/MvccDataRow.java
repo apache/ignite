@@ -34,9 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_MASK;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 
@@ -75,6 +74,10 @@ public class MvccDataRow extends DataRow {
     /** New mvcc tx state. */
     @GridToStringInclude
     private byte newMvccTxState;
+
+    /** Key absent before tx flag. */
+    @GridToStringInclude
+    private boolean keyAbsentFlag;
 
     /**
      * @param link Link.
@@ -119,6 +122,8 @@ public class MvccDataRow extends DataRow {
             this.mvccCntr = mvccCntr;
             this.mvccOpCntr = mvccOpCntr;
         }
+
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0: mvccOpCntr;
     }
 
     /**
@@ -156,6 +161,9 @@ public class MvccDataRow extends DataRow {
             newMvccCntr = newMvccVer.counter();
             newMvccOpCntr = newMvccVer.operationCounter();
         }
+
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
     }
 
     /** {@inheritDoc} */
@@ -166,8 +174,9 @@ public class MvccDataRow extends DataRow {
 
         int withHint = PageUtils.getInt(addr, off + 16);
 
-        mvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        mvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
+        keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
@@ -177,9 +186,10 @@ public class MvccDataRow extends DataRow {
 
         withHint = PageUtils.getInt(addr, off + 36);
 
-        newMvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        newMvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
+        assert (newMvccTxState & MVCC_KEY_ABSENT_BEFORE_MASK) == 0;
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
         return MVCC_INFO_SIZE;
@@ -197,7 +207,7 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return mvccOpCntr & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        return mvccOpCntr;
     }
 
     /** {@inheritDoc} */
@@ -217,7 +227,7 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
-        return newMvccOpCntr & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        return newMvccOpCntr;
     }
 
     /** {@inheritDoc} */
@@ -263,21 +273,14 @@ public class MvccDataRow extends DataRow {
      * @return {@code True} if key absent before.
      */
     protected boolean keyAbsentBeforeFlag() {
-        long withHint = mvccOpCntr;
-
-        return ((withHint & MVCC_KEY_ABSENT_BEFORE_MASK) >>> MVCC_KEY_ABSENT_BEFORE_OFF) == 1;
+        return keyAbsentFlag;
     }
 
     /**
      * @param flag {@code True} if key is absent before.
      */
     protected void keyAbsentBeforeFlag(boolean flag) {
-        if (flag) {
-            if (mvccCrd != MVCC_CRD_COUNTER_NA)
-                mvccOpCntr |= MVCC_KEY_ABSENT_BEFORE_MASK;
-        }
-        else
-            mvccOpCntr &= ~MVCC_KEY_ABSENT_BEFORE_MASK;
+        keyAbsentFlag = flag;
     }
 
     /** {@inheritDoc} */
