@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheServerNotFoundException;
@@ -49,7 +48,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxSql_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 1, 0, 64,
@@ -246,7 +244,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
                     return null;
                 }
-            }, CacheException.class, "Failed to find data nodes for cache"); // TODO IGNITE-10377 should be CacheServerNotFoundException.
+            }, CacheServerNotFoundException.class, "Failed to find data nodes for cache");
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -254,7 +252,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
                     return null;
                 }
-            }, CacheException.class, "Failed to find data nodes for cache"); // TODO IGNITE-10377 should be CacheServerNotFoundException.
+            }, CacheServerNotFoundException.class, "Failed to find data nodes for cache");
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -262,7 +260,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
                     return null;
                 }
-            }, CacheException.class, "Failed to find data nodes for cache"); // TODO IGNITE-10377 should be CacheServerNotFoundException.
+            }, CacheServerNotFoundException.class, "Failed to find data nodes for cache");
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -270,7 +268,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
                     return null;
                 }
-            }, CacheException.class, "Failed to get primary node"); // TODO IGNITE-10377 should be CacheServerNotFoundException.
+            }, CacheServerNotFoundException.class, "Failed to get primary node");
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -278,7 +276,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
                     return null;
                 }
-            }, CacheException.class, "Failed to find data nodes for cache"); // TODO IGNITE-10377 should be CacheServerNotFoundException.
+            }, CacheServerNotFoundException.class, "Failed to find data nodes for cache");
         }
 
         startGrid(1);

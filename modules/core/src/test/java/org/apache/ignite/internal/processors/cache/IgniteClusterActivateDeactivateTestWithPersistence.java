@@ -109,14 +109,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         activateCachesRestore(5, true);
     }
 
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10750", MvccFeatureChecker.forcedMvcc());
-
-        super.testReActivateSimple_5_Servers_4_Clients_FromServer();
-    }
-
     /**
      * Test deactivation on cluster that is not yet activated.
      *
@@ -364,8 +356,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10786", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);
