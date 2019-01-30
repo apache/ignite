@@ -41,8 +41,8 @@ public class SQLFunctions {
     public static double predict(String mdl, Double... x) {
         System.out.println("Prediction for " + Arrays.toString(x));
 
-        Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel(mdl);
-
-        return infMdl.predict(VectorUtils.of(x));
+        try (Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel(mdl)) {
+            return infMdl.predict(VectorUtils.of(x));
+        }
     }
 }
