@@ -80,14 +80,31 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         List<List<ClusterNode>> assignment = assign.assignment();
         List<List<ClusterNode>> idealAssignment = assign.idealAssignment();
 
+        int min = Integer.MAX_VALUE;
         int max = 0;
 
         for (List<ClusterNode> nodes : idealAssignment) { // Estimate required size.
-            if (nodes.size() > max)
-                max = nodes.size();
+            int size = nodes.size();
 
-            if (max == backups + 1)
-                break;
+            if (size > max)
+                max = size;
+
+            if (size < min)
+                min = size;
+        }
+
+        if (max != min) {
+            this.assignment = assign.assignment();
+
+            this.idealAssignment = assign.idealAssignment();
+
+            nodes = null;
+
+            idealParts = null;
+
+            assignmentDiff = null;
+
+            return;
         }
 
         int cpys = max;
@@ -162,10 +179,21 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
             }
         };
 
-        assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
+        try {
+            assert this.assignment.equals(assign.assignment()) : "new=" + this.assignment + ", old=" + assign.assignment();
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            this.assignment.get(100);
+        }
 
         assert this.idealAssignment.equals(assign.idealAssignment()) :
             "new=" + this.idealAssignment + ", old=" + assign.idealAssignment();
+    }
+
+    private void init() {
+
     }
 
     /**
