@@ -283,7 +283,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             filter.getSession(),
             first,
             last,
-            GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()));
+            GridH2QueryContext.get().usedColumsInfo() != null ?
+                GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()) : null);
     }
 
     /** {@inheritDoc} */
