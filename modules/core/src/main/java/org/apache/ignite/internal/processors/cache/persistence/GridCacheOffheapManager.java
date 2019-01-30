@@ -175,6 +175,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
+        syncMetadata(ctx);
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        syncMetadata(ctx);
+    }
+
+    /**
+     * Syncs and saves meta-information of all data structures to page memory.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void syncMetadata(Context ctx) throws IgniteCheckedException {
         Executor execSvc = ctx.executor();
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
@@ -195,11 +209,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         syncMetadata(ctx, ctx.executor(), needSnapshot);
-    }
-
-    /** {@inheritDoc} */
-    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        syncMetadata(ctx, ctx.executor(), ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName()));
     }
 
     /**
