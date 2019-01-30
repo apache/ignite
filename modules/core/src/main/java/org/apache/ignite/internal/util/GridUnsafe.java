@@ -1451,7 +1451,9 @@ public abstract class GridUnsafe {
             return mth.invoke(null);
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable.", e);
+            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable."
+                + "\nPlease make sure --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED was provided as JVM option." +
+                "\nSee https://apacheignite.readme.io/docs/getting-started#section-running-ignite-with-java-9-10-11 for more info", e);
         }
     }
 
