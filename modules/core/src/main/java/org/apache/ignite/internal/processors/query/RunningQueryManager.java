@@ -21,8 +21,8 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
@@ -46,17 +45,14 @@ public class RunningQueryManager {
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
 
+    /** Local node ID. */
+    private final UUID localNodeId;
+
     /** History size. */
     private final int histSz;
 
     /** Query history tracker. */
     private volatile QueryHistoryTracker qryHistTracker;
-
-    /** Prefix of cluster wide query id. */
-    private String prefixClusterWideQryId = null;
-
-    /** Context. */
-    private GridKernalContext ctx;
 
     /**
      * Constructor.
@@ -64,7 +60,7 @@ public class RunningQueryManager {
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
-        this.ctx = ctx;
+        localNodeId = ctx.localNodeId();
 
         histSz = ctx.config().getSqlQueryHistorySize();
 
@@ -85,11 +81,9 @@ public class RunningQueryManager {
         @Nullable GridQueryCancel cancel) {
         Long qryId = qryIdGen.incrementAndGet();
 
-        String clusterWideQryId = clusterWideQueryId(qryId);
-
         GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
-            clusterWideQryId,
+            localNodeId,
             qry,
             qryType,
             schemaName,
@@ -106,17 +100,6 @@ public class RunningQueryManager {
     }
 
     /**
-     * @param qryId Local node query id.
-     * @return Cluster wide query id.
-     */
-    @NotNull private String clusterWideQueryId(long qryId) {
-        if (prefixClusterWideQryId == null)
-            prefixClusterWideQryId = ctx.cluster().get().localNode().id() + "_";
-
-        return prefixClusterWideQryId + qryId;
-    }
-
-    /**
      * Unregister running query.
      *
      * @param qryId Query id.
@@ -126,11 +109,11 @@ public class RunningQueryManager {
         if (qryId == null)
             return;
 
-        GridRunningQueryInfo unregRunninigQry = runs.remove(qryId);
+        GridRunningQueryInfo qry = runs.remove(qryId);
 
         //We need to collect query history only for SQL queries.
-        if (unregRunninigQry != null && isSqlQuery(unregRunninigQry))
-            qryHistTracker.collectMetrics(unregRunninigQry, failed);
+        if (qry != null && isSqlQuery(qry))
+            qryHistTracker.collectMetrics(qry, failed);
     }
 
     /**

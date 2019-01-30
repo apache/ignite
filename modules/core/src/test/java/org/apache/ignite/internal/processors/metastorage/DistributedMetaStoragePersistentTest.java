@@ -283,11 +283,11 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
                 while (!stop.get()) {
                     stopGrid(gridIdx, true);
 
-                    Thread.sleep(10L);
+                    Thread.sleep(100L);
 
                     startGrid(gridIdx);
 
-                    Thread.sleep(10L);
+                    Thread.sleep(100L);
                 }
             }
             catch (Exception e) {

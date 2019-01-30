@@ -819,7 +819,7 @@ public final class UpdatePlanBuilder {
             if (desc.isKeyColumn(colId))
                 return true;
 
-            // column ids 0..2 are _key, _val, _ver
+            // column ids 0..1 are _key, _val
             if (colId >= DEFAULT_COLUMNS_COUNT) {
                 if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
                     return true;
@@ -922,7 +922,7 @@ public final class UpdatePlanBuilder {
         try {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
+                H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
                     GridSqlQueryParser.prepared(stmt),
@@ -930,7 +930,7 @@ public final class UpdatePlanBuilder {
                     fieldsQry.isCollocated(),
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
-                    idx);
+                    idx.partitionExtractor());
 
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();

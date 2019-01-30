@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 
+import java.util.UUID;
+
 /**
  * Query descriptor.
  */
@@ -26,8 +28,8 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
-    /** Cluster wide unique id. */
-    private final String clusterWideQryId;
+    /** Originating Node ID. */
+    private final UUID nodeId;
 
     /** */
     private final String qry;
@@ -48,8 +50,10 @@ public class GridRunningQueryInfo {
     private final boolean loc;
 
     /**
+     * Constructor.
+     *
      * @param id Query ID.
-     * @param clusterWideQryId Cluster wide query id.
+     * @param nodeId Originating node ID.
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
@@ -57,10 +61,18 @@ public class GridRunningQueryInfo {
      * @param cancel Query cancel.
      * @param loc Local query flag.
      */
-    public GridRunningQueryInfo(Long id, String clusterWideQryId, String qry, GridCacheQueryType qryType, String schemaName, long startTime,
-        GridQueryCancel cancel, boolean loc) {
+    public GridRunningQueryInfo(
+        Long id,
+        UUID nodeId,
+        String qry,
+        GridCacheQueryType qryType,
+        String schemaName,
+        long startTime,
+        GridQueryCancel cancel,
+        boolean loc
+    ) {
         this.id = id;
-        this.clusterWideQryId = clusterWideQryId;
+        this.nodeId = nodeId;
         this.qry = qry;
         this.qryType = qryType;
         this.schemaName = schemaName;
@@ -77,10 +89,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Cluster wide query id.
+     * @return Global query ID.
      */
-    public String clusterWideQueryId() {
-        return clusterWideQryId;
+    public String globalQueryId() {
+        return QueryUtils.globalQueryId(nodeId, id);
     }
 
     /**
