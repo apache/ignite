@@ -22,11 +22,10 @@ import org.apache.ignite.cache.store.cassandra.persistence.KeyPersistenceSetting
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Simple test for DDL generator.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class CassandraConfigTest {
     /**

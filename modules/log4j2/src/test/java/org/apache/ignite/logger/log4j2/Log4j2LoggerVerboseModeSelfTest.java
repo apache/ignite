@@ -31,11 +31,10 @@ import org.apache.logging.log4j.Level;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class Log4j2LoggerVerboseModeSelfTest {
     /** */

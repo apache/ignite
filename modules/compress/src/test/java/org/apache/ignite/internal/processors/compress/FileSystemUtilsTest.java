@@ -30,15 +30,14 @@ import org.junit.Test;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getSparseFileSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
 
 /**
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class FileSystemUtilsTest {
     /**

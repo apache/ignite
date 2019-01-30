@@ -53,7 +53,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -96,6 +95,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -107,7 +107,6 @@ import static org.junit.Assert.assertNotEquals;
 
 /**
  * Binary marshaller tests.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
 @RunWith(JUnit4.class)

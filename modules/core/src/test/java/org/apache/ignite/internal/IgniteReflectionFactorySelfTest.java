@@ -23,11 +23,10 @@ import java.util.Map;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class IgniteReflectionFactorySelfTest {
     /**

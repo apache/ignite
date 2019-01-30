@@ -25,11 +25,10 @@ import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests conversions between GridClientCacheFlag.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class ClientCacheFlagsCodecTest {
     /**

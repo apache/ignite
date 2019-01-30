@@ -92,7 +92,7 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
 
         DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) tree;
 
-        junit.framework.Assert.assertEquals(0, node.getThreshold(), 1e-3);
+        assertEquals(0, node.getThreshold(), 1e-3);
 
         assertTrue(node.getThenNode() instanceof DecisionTreeLeafNode);
         assertTrue(node.getElseNode() instanceof DecisionTreeLeafNode);
@@ -100,7 +100,7 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
         DecisionTreeLeafNode thenNode = (DecisionTreeLeafNode) node.getThenNode();
         DecisionTreeLeafNode elseNode = (DecisionTreeLeafNode) node.getElseNode();
 
-        junit.framework.Assert.assertEquals(1, thenNode.getVal(), 1e-10);
-        junit.framework.Assert.assertEquals(0, elseNode.getVal(), 1e-10);
+        assertEquals(1, thenNode.getVal(), 1e-10);
+        assertEquals(0, elseNode.getVal(), 1e-10);
     }
 }

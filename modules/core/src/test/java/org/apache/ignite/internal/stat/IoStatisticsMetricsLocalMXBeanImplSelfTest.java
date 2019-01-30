@@ -23,13 +23,13 @@ import java.time.format.DateTimeFormatter;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
-import junit.framework.Assert;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -38,7 +38,6 @@ import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_ID
 
 /**
  * Test of local node IO statistics MX bean.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 @RunWith(JUnit4.class)
 public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstractTest {

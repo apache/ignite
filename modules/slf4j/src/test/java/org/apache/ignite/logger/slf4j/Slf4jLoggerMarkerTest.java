@@ -24,13 +24,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Testing that markers are supported by log4j2 implementation.
- * TODO IGNITE-11116 replace {@code junit.framework.Assert} with {@code org.junit.Assert}.
  */
 public class Slf4jLoggerMarkerTest {
     /** Path to full log. */
