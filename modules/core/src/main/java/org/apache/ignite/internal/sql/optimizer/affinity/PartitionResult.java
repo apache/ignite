@@ -15,46 +15,49 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Node with constant partition.
+ * Partition extraction result.
  */
-public class PartitionConstantNode extends PartitionSingleNode {
-    /** Partition. */
-    private final int part;
+public class PartitionResult {
+    /** Tree. */
+    @GridToStringInclude
+    private final PartitionNode tree;
+
+    /** Affinity function. */
+    private final PartitionTableAffinityDescriptor aff;
 
     /**
      * Constructor.
      *
-     * @param tbl Table.
-     * @param part Partition.
+     * @param tree Tree.
+     * @param aff Affinity function.
      */
-    public PartitionConstantNode(PartitionTable tbl, int part) {
-        super(tbl);
-
-        this.part = part;
+    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff) {
+        this.tree = tree;
+        this.aff = aff;
     }
 
-    /** {@inheritDoc} */
-    @Override public int applySingle(Object... args) {
-        return part;
+    /**
+     * Tree.
+     */
+    public PartitionNode tree() {
+        return tree;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean constant() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int value() {
-        return part;
+    /**
+     * @return Affinity function.
+     */
+    public PartitionTableAffinityDescriptor affinity() {
+        return aff;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionConstantNode.class, this);
+        return S.toString(PartitionResult.class, this);
     }
 }
