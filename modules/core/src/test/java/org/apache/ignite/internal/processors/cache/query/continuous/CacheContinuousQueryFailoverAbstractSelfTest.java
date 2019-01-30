@@ -104,6 +104,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -214,6 +215,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testFirstFilteredEvent() throws Exception {
         this.backups = 2;
 
@@ -259,6 +261,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -312,6 +315,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If fail.
      */
     @Test
+    @Ignore
     public void testRebalance() throws Exception {
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
@@ -428,6 +432,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testOneBackup() throws Exception {
         checkBackupQueue(1, false);
     }
@@ -436,6 +441,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testOneBackupClientUpdate() throws Exception {
         checkBackupQueue(1, true);
     }
@@ -444,6 +450,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testUpdatePartitionCounter() throws Exception {
         this.backups = 2;
 
@@ -545,6 +552,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testStartStopQuery() throws Exception {
         this.backups = 1;
 
@@ -650,6 +658,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testLeftPrimaryAndBackupNodes() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -821,6 +830,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testRemoteFilter() throws Exception {
         this.backups = 2;
 
@@ -934,6 +944,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testThreeBackups() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -1361,6 +1372,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testBackupQueueCleanupClientQuery() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1435,6 +1447,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testBackupQueueEvict() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1508,6 +1521,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testBackupQueueCleanupServerQuery() throws Exception {
         Ignite qryClient = startGridsMultiThreaded(2);
 
@@ -1585,6 +1599,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testFailoverStartStopBackup() throws Exception {
         failoverStartStopFilter(2);
     }
@@ -1593,6 +1608,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testStartStop() throws Exception {
         this.backups = 2;
 
@@ -2043,13 +2059,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         });
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long executionTime = 60_000;
+        final long stopTime = System.currentTimeMillis() + executionTime;
 
         final AtomicInteger valCntr = new AtomicInteger(0);
 
         final AtomicInteger threadSeq = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
+        IgniteInternalFuture<Long> updaterFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     final ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -2099,7 +2116,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, THREAD, "update-thread");
 
-        restartFut.get();
+        updaterFut.get(executionTime);
+
+        restartFut.get(executionTime);
 
         List<T3<Object, Object, Object>> expEvts0 = new ArrayList<>();
 
@@ -2121,6 +2140,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testMultiThreaded() throws Exception {
         this.backups = 2;
 
@@ -2315,6 +2335,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testNoEventLossOnTopologyChange() throws Exception {
         final int batchLoadSize = 2000;
 
