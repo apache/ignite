@@ -129,7 +129,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         IgniteInternalFuture txLoadFut = startTxLoad(5, null);
 
-        doSleep(5_000);
+        doSleep(10_000);
 
         txStop.set(true);
 
@@ -150,8 +150,9 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
      */
     private long findSporadicDataRecords(String nodeFolderName) throws IgniteCheckedException {
         File dbDir = new File(U.defaultWorkDirectory(), "db");
-        File walDir = new File(new File(dbDir, "wal"), nodeFolderName);
-        File walArchiveDir = new File(new File(dbDir, "wal\\archive"), nodeFolderName);
+        File commonWalDir = new File(dbDir, "wal");
+        File walDir = new File(commonWalDir, nodeFolderName);
+        File walArchiveDir = new File(new File(commonWalDir, "archive"), nodeFolderName);
 
         assertTrue(walDir.exists());
         assertTrue(walArchiveDir.exists());
