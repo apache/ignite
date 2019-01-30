@@ -237,8 +237,8 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(res.size(), 10);
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("pers", true, true, 2, 3, 4),
-            new UsedTableColumns("comp", true, true, 2, 5, 6)
+            new UsedTableColumns("pers", true, true, 3, 4),
+            new UsedTableColumns("comp", true, true, 2, 3)
         );
     }
 
@@ -264,10 +264,15 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         }
 
         res = sql(
-            "SELECT comp.name FROM company AS comp " +
-                "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person As pers WHERE pers.compId = comp.Id)");
+            "SELECT comp.id FROM company AS comp " +
+                "WHERE comp.id IN (SELECT MAX(COUNT(pers.id)) FROM person AS pers WHERE pers.compId = comp.id)");
 
         assertEquals(res.size(), 1);
+        assertEquals(1, qrys.get().size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("pers", true, false, 2, 3),
+            new UsedTableColumns("comp", true, false, 2)
+        );
     }
 
     /**

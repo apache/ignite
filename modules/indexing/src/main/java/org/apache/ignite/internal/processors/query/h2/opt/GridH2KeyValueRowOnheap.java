@@ -119,7 +119,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         if (v != null)
             return v;
 
-        Object res = desc.columnValue(key != null ? key.getObject() : null, val.getObject(), col);
+        Object res = desc.columnValue(key != null ? key.getObject() : null, val != null ? val.getObject() : null, col);
 
         if (res == null)
             v = ValueNull.INSTANCE;
