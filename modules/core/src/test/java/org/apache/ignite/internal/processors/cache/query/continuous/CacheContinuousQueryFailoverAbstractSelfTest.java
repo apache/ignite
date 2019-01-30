@@ -2056,7 +2056,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final AtomicInteger threadSeq = new AtomicInteger(0);
 
-        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
                     final ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -2081,7 +2081,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
-                                assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                                if(e.getMessage().contains("Cannot serialize transaction due to write conflict (transaction is marked for rollback)")) {
+                                    assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                                } else {
+                                    throw e;
+                                }
                             }
                         }
 
@@ -2106,9 +2110,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, THREAD, "update-thread");
 
-        future.get(getTestTimeout());
-
-        restartFut.get(getTestTimeout());
+        restartFut.get();
 
         List<T3<Object, Object, Object>> expEvts0 = new ArrayList<>();
 
