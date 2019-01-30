@@ -18,35 +18,40 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+/**
+ * Sql global query id
+ */
 public class SqlGlobalQueryId {
-    /** Node order id. */
-    private int nodeOrderId;
+    /** Node id. */
+    private UUID nodeId;
+
     /** Node query id. */
     private long nodeQryId;
 
     /**
+     * @param nodeId Node id.
      * @param nodeQryId Node query id.
-     * @param nodeOrderId Node order id.
      */
-    public SqlGlobalQueryId(int nodeOrderId, long nodeQryId) {
-        this.nodeOrderId = nodeOrderId;
+    public SqlGlobalQueryId(UUID nodeId, long nodeQryId) {
+        this.nodeId = nodeId;
         this.nodeQryId = nodeQryId;
     }
 
     /**
-     * @return Node order id.
+     * @return Node id.
      */
-    public int nodeOrderId() {
-        return nodeOrderId;
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
-     * @param nodeOrderId Node order id.
+     * @param nodeId Node id.
      */
-    public void nodeOrderId(int nodeOrderId) {
-        this.nodeOrderId = nodeOrderId;
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 
     /**

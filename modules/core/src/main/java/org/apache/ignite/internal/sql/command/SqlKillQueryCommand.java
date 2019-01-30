@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.UUID;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 
@@ -25,18 +26,17 @@ import org.apache.ignite.internal.sql.SqlParserUtils;
  * KILL QUERY command.
  */
 public class SqlKillQueryCommand implements SqlCommand {
-    /** Special value to math all query ids. */
-    public static final long ALL_QUERIES = Long.MIN_VALUE;
-    /** Node order id. */
-    private int nodeOrderId;
     /** Node query id. */
     private long nodeQryId;
+
+    /** Node id. */
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         SqlGlobalQueryId globalQryId = SqlParserUtils.parseGlobalQueryId(lex);
 
-        nodeOrderId = globalQryId.nodeOrderId();
+        nodeId = globalQryId.nodeId();
 
         nodeQryId = globalQryId.nodeQryId();
 
@@ -61,16 +61,9 @@ public class SqlKillQueryCommand implements SqlCommand {
     }
 
     /**
-     * @return {@code true} in case all queries on a node.
-     */
-    public boolean isAllQueries() {
-        return nodeQryId == ALL_QUERIES;
-    }
-
-    /**
      * @return Node order id.
      */
-    public int getNodeId() {
-        return nodeOrderId;
+    public UUID getNodeId() {
+        return nodeId;
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.sql;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlGlobalQueryId;
-import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -32,9 +31,6 @@ import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
  * Parser utility methods.
  */
 public class SqlParserUtils {
-    /** */
-    static final int UUID_LENGTH = 36;
-
     /**
      * Parse IF EXISTS statement.
      *
@@ -129,72 +125,6 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parse Long value (positive or negative).
-     *
-     * @param lex Lexer.
-     * @return Long value.
-     */
-    public static long parseLong(SqlLexer lex) {
-        int sign = 1;
-
-        if (lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
-            sign = -1;
-
-            lex.shift();
-        }
-
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
-            try {
-                long val = sign * Long.parseLong(lex.token());
-
-                return val;
-            }
-            catch (NumberFormatException e) {
-                // Fall through.
-            }
-        }
-
-        throw errorUnexpectedToken(lex, "[long]");
-    }
-
-    /**
-     * Parse UUID value.
-     *
-     * @param lex Lexer.
-     * @return UUID value.
-     */
-    public static UUID parseUUID(SqlLexer lex) {
-        StringBuilder sb = new StringBuilder(UUID_LENGTH);
-
-        //Parse first 4 elements of UUID.
-        for (int i = 0; i < 4; i++) {
-            if (lex.shift() && lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
-                sb.append(lex.token()).append("-");
-
-                lex.shift();
-            }
-            else
-                throw errorUnexpectedToken(lex, "[UUID]");
-        }
-
-        //Parse last part of UUID.
-        if (lex.shift()) {
-            sb.append(lex.token());
-
-            if (sb.length() == UUID_LENGTH) {
-                try {
-                    return UUID.fromString(sb.toString());
-                }
-                catch (IllegalArgumentException e) {
-                    // Fall through.
-                }
-            }
-        }
-
-        throw errorUnexpectedToken(lex, "[UUID]");
-    }
-
-    /**
      * Parse boolean parameter value based on presence of tokens 1, 0, ON, OFF. Not that this is not
      * and is not intended to be routine for parsing a boolean literal from TRUE/FALSE.
      * @param lex Lexer.
@@ -266,21 +196,18 @@ public class SqlParserUtils {
      */
     public static SqlGlobalQueryId parseGlobalQueryId(SqlLexer lex) {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
+
             String token = lex.token();
 
-            String[] ids = token.split("\\.");
+            String[] ids = token.split("_");
 
             if (ids.length == 2) {
                 try {
-                    int nodeOrderId = Integer.parseInt(ids[0]);
-                    long qryId;
+                    UUID nodeId = UUID.fromString(ids[0]);
 
-                    if (ids[1].trim().equals("*"))
-                        qryId = SqlKillQueryCommand.ALL_QUERIES;
-                    else
-                        qryId = Long.parseLong(ids[1]);
+                    long qryId = Long.parseLong(ids[1]);
 
-                    return new SqlGlobalQueryId(nodeOrderId, qryId);
+                    return new SqlGlobalQueryId(nodeId, qryId);
                 }
                 catch (NumberFormatException e) {
                     // Fall through.
