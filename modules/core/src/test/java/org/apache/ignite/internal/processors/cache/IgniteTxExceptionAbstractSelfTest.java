@@ -99,8 +99,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10377", MvccFeatureChecker.forcedMvcc());
-
         super.beforeTestsStarted();
 
         lastKey = 0;
@@ -200,8 +198,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @Test
     public void testRemovePrimary() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
         checkRemove(false, keyForNode(grid(0).localNode(), PRIMARY));
 
         checkRemove(true, keyForNode(grid(0).localNode(), PRIMARY));
@@ -590,6 +586,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
+
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
