@@ -2081,7 +2081,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
-                                if(e.getMessage().contains("Cannot serialize transaction due to write conflict (transaction is marked for rollback)")) {
+                                if(e.getMessage().contains("Transaction has been rolled back:")) {
                                     assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                                 } else {
                                     throw e;
