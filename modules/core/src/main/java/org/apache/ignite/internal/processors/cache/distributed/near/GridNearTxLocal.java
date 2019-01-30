@@ -320,7 +320,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
-        PREP_FUT_UPD.compareAndSet(this, fut, null);
+       //No-op.
     }
 
     /**
