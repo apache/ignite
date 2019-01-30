@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
@@ -33,7 +31,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {

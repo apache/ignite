@@ -50,8 +50,6 @@ import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,7 +60,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for distributed queries with node restarts.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest {
     /** */
     private static final String PARTITIONED_QRY = "select co.id, count(*) cnt\n" +

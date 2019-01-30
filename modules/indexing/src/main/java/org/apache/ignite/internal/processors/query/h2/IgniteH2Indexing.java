@@ -96,6 +96,8 @@ import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtracto
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -257,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Partition extractor. */
     private PartitionExtractor partExtractor;
 
-    /** */
+    /** Running query manager. */
     private RunningQueryManager runningQueryMgr;
 
     /** */
