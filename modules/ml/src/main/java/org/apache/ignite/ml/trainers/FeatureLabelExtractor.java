@@ -21,11 +21,41 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
+/**
+ * Class fro extracting features and vectors from upstream.
+ *
+ * @param <K> Type of keys.
+ * @param <V> Type of values.
+ * @param <L> Type of labels.
+ */
 public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, LabeledVector<L>> {
+    /**
+     * Extract {@link LabeledVector} from key and value.
+     *
+     * @param k Key.
+     * @param v Value.
+     * @return Labeled vector.
+     */
+    @Override LabeledVector<L> apply(K k, V v);
+
+    /**
+     * Extract features from key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @return Features vector.
+     */
     public default Vector extractFeatures(K key, V val) {
         return apply(key, val).features();
     }
 
+    /**
+     * Extract label from key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @return Label.
+     */
     public default L extractLabels(K key, V val) {
         return apply(key, val).label();
     }
