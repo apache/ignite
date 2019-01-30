@@ -91,42 +91,6 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     }
 
     /**
-     * Test extract only key.
-     */
-    @Test
-    public void testSelectKeyOnly() {
-        List<List<?>> res;
-
-        sql("CREATE TABLE test (id LONG PRIMARY KEY, valStr VARCHAR, valLong LONG)");
-
-        for (int i = 0; i < 100; ++i)
-            sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
-
-        // scan
-        res = sql("SELECT ID from test WHERE ID < 5");
-
-        assertEquals(5, res.size());
-    }
-
-    /**
-     * Test extract only value.
-     */
-    @Test
-    public void testSelectValueOnly() {
-        List<List<?>> res;
-
-        sql("CREATE TABLE test (id LONG PRIMARY KEY, valStr VARCHAR, valLong LONG)");
-
-        for (int i = 0; i < 100; ++i)
-            sql("INSERT INTO test VALUES (?, ?, ?)", i, "val_" + i, i);
-
-        // scan
-        res = sql("SELECT valLong from test WHERE valLong < 5");
-
-        assertEquals(5, res.size());
-    }
-
-    /**
      * Test single table.
      */
     @Test
@@ -143,67 +107,67 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
 
         assertEquals(100L, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4)
-        );
+            new UsedTableColumns("d0", true, true, 2, 3, 4));
 
         // hidden fields, only key
         res = sql("SELECT id FROM test AS d0 WHERE _key < 5");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, false, 0, 2)
-        );
+            new UsedTableColumns("d0", true, false, 0, 2));
 
-        // Doesn't work for single-partition query
+        // only key
+        res = sql("SELECT id FROM test AS d0 WHERE id < 5");
+
+        assertEquals(5, res.size());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", true, false, 2));
+
+        // Single-partition query (use original query)
         res = sql("SELECT valStr FROM test AS d0 WHERE _key = 5");
 
         assertEquals(1, res.size());
-        assertUsedColumns(qrys.get().get(0).usedColumns());
+        assertUsedColumns(qrys.get().get(0).usedColumns(),
+            new UsedTableColumns("d0", true, true, 0, 3));
 
         // simple
         res = sql("SELECT valStr FROM test AS d0 WHERE id > 4 AND valLong < 6");
 
         assertEquals("val_5", res.get(0).get(0));
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4)
-            );
+            new UsedTableColumns("d0", true, true, 2, 3, 4));
 
         // only value
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", false, true, 3, 4)
-        );
+            new UsedTableColumns("d0", false, true, 3, 4));
 
         // order by
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY id");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 3, 4)
-        );
+            new UsedTableColumns("d0", true, true, 2, 3, 4));
 
         res = sql("SELECT valStr FROM test AS d0 WHERE valLong < 5 ORDER BY valStr");
 
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", false, true, 3, 4)
-        );
+            new UsedTableColumns("d0", false, true, 3, 4));
 
         // GROUP BY / aggregates
         res = sql("SELECT SUM(valLong) FROM test AS d0 WHERE valLong < 5 GROUP BY id");
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 4)
-        );
+            new UsedTableColumns("d0", true, true, 2, 4));
 
         // GROUP BY / having
         res = sql("SELECT id FROM test AS d0 WHERE id < 5 GROUP BY id HAVING SUM(valLong) < 5");
         assertEquals(5, res.size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
-            new UsedTableColumns("d0", true, true, 2, 4)
-        );
+            new UsedTableColumns("d0", true, true, 2, 4));
     }
 
     /**
@@ -238,8 +202,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
             new UsedTableColumns("pers", true, true, 3, 4),
-            new UsedTableColumns("comp", true, true, 2, 3)
-        );
+            new UsedTableColumns("comp", true, true, 2, 3));
     }
 
     /**
@@ -271,8 +234,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertEquals(1, qrys.get().size());
         assertUsedColumns(qrys.get().get(0).usedColumns(),
             new UsedTableColumns("pers", true, false, 2, 3),
-            new UsedTableColumns("comp", true, false, 2)
-        );
+            new UsedTableColumns("comp", true, false, 2));
     }
 
     /**
@@ -303,8 +265,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
         assertUsedColumns(qrys.get().get(0).usedColumns(),
             new UsedTableColumns("d0", true, true, 2, 3, 4),
             new UsedTableColumns("d1", true, true, 2, 5, 6),
-            new UsedTableColumns("d2", true, true, 2, 7, 8)
-            );
+            new UsedTableColumns("d2", true, true, 2, 7, 8));
 
         assertEquals(res.size(), 10);
     }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -49,6 +50,9 @@ public class GridCacheTwoStepQuery {
 
     /** */
     private String originalSql;
+
+    /** */
+    private Map<String, GridSqlUsedColumnInfo> origUsedCols;
 
     /** */
     private Set<QueryTable> tbls;
@@ -299,6 +303,21 @@ public class GridCacheTwoStepQuery {
      */
     public void forUpdate(boolean forUpdate) {
         this.forUpdate = forUpdate;
+    }
+
+    /**
+     * @return Used columns info for original query.
+     */
+    public Map<String, GridSqlUsedColumnInfo> originalUsedColumns() {
+        return origUsedCols;
+    }
+
+    /**
+     * @param originalUsedColumns Used columns info for original query.
+     */
+    public void originalUsedColumns(
+        Map<String, GridSqlUsedColumnInfo> originalUsedColumns) {
+        this.origUsedCols = originalUsedColumns;
     }
 
     /** {@inheritDoc} */

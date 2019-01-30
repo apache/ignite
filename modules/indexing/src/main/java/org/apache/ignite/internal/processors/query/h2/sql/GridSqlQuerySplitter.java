@@ -199,6 +199,8 @@ public class GridSqlQuerySplitter {
 
         String originalSql = prepared.getSQL();
 
+        Map<String, GridSqlUsedColumnInfo> origUsedCols = extractUsedColumns(qry);
+
         final boolean explain = qry.explain();
 
         qry.explain(false);
@@ -249,6 +251,7 @@ public class GridSqlQuerySplitter {
         // Setup resulting two step query and return it.
         GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, splitter.tbls);
 
+        twoStepQry.originalUsedColumns(origUsedCols);
         twoStepQry.reduceQuery(splitter.rdcSqlQry);
 
         for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys)
@@ -1687,7 +1690,7 @@ public class GridSqlQuerySplitter {
      * @param select Query.
      * @return Used columns.
      */
-    private Map<String, GridSqlUsedColumnInfo> extractUsedColumns(GridSqlSelect select) {
+    private static Map<String, GridSqlUsedColumnInfo> extractUsedColumns(GridSqlAst select) {
         Map<TableAlias, Set<Integer>> usedCols = new HashMap<>();
 
         GridSqlQueryParser.extractUsedColumnsFromAst(usedCols, select);

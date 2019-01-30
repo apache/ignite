@@ -1362,7 +1362,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql());
+        GridCacheSqlQuery originalQry = new GridCacheSqlQuery(qry.originalSql(), qry.originalUsedColumns());
 
         if (!F.isEmpty(params)) {
             int[] paramIdxs = new int[params.length];
