@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -41,7 +39,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests near-only cache.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Grid cnt. */
     private static AtomicInteger gridCnt;

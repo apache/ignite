@@ -42,8 +42,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
@@ -54,7 +52,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * Test cases for multi-threaded tests.
  */
 @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-@RunWith(JUnit4.class)
 public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTest {
     /** Grid. */
     private Ignite ignite;
