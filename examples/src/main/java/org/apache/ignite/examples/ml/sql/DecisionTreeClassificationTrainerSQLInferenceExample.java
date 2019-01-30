@@ -108,12 +108,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
                 new SQLFeatureExtractor()
-                    .withField("pclass")
-                    .withField("sex", e -> "male".equals(e) ? 1 : 0)
-                    .withField("age")
-                    .withField("sibsp")
-                    .withField("parch")
-                    .withField("fare"),
+                    .withFields("pclass", "age", "sibsp", "parch", "fare")
+                    .withField("sex", e -> "male".equals(e) ? 1 : 0),
                 new SQLLabelExtractor("survived")
             );
 
@@ -127,7 +123,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             System.out.println("Inference...");
             try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
                 "survived as truth, " +
-                "predict('titanik_model_tree', pclass, case sex when 'male' then 1 else 0 end, age, sibsp, parch, fare) as prediction " +
+                "predict('titanik_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction " +
                 "from titanik_train"))) {
                 // Print inference result.
                 System.out.println("| Truth | Prediction |");

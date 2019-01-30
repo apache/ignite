@@ -74,4 +74,17 @@ public class SQLFeatureExtractor implements IgniteBiFunction<Object, BinaryObjec
 
         return this;
     }
+
+    /**
+     * Adds feature extractor for the field with specified name. Field should be numeric (subclass of {@link Number}).
+     *
+     * @param names Field names.
+     * @return This SQL feature extractor.
+     */
+    public SQLFeatureExtractor withFields(String... names) {
+        for (String name : names)
+            withField(name);
+
+        return this;
+    }
 }

@@ -106,12 +106,8 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
                 new SQLFeatureExtractor()
-                    .withField("pclass")
-                    .withField("sex", e -> "male".equals(e) ? 1 : 0)
-                    .withField("age")
-                    .withField("sibsp")
-                    .withField("parch")
-                    .withField("fare"),
+                    .withFields("pclass", "age", "sibsp", "parch", "fare")
+                    .withField("sex", e -> "male".equals(e) ? 1 : 0),
                 new SQLLabelExtractor("survived")
             );
 
