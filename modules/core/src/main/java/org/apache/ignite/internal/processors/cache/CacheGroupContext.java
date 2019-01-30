@@ -242,11 +242,10 @@ public class CacheGroupContext {
             statHolderData = IoStatisticsHolderNoOp.INSTANCE;
         }
         else {
-            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
+            statHolderIdx = ctx.kernalContext().ioStats().registerIndex(IoStatisticsType.HASH_INDEX,
                 cacheOrGroupName(), HASH_PK_IDX_NAME);
 
-            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
-                cacheOrGroupName());
+            statHolderData = ctx.kernalContext().ioStats().registerCacheGroup(cacheOrGroupName(), grpId);
         }
     }
 

@@ -41,8 +41,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -50,7 +48,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 /**
  * Checks one-phase commit scenarios.
  */
-@RunWith(JUnit4.class)
 public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;

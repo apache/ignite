@@ -29,15 +29,12 @@ import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
 /**
  * IGFS Hadoop file system IPC self test.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends IgniteHadoopFileSystemAbstractSelfTest {
     /**
      * Constructor.

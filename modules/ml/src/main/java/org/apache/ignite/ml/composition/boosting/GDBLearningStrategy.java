@@ -35,7 +35,9 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -122,14 +124,18 @@ public class GDBLearningStrategy {
             if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
-            IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
-                Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.predict(featureExtractor.apply(k, v));
-                return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
+            FeatureLabelExtractor<K, V, Double> extractor = new FeatureLabelExtractor<K, V, Double>() {
+                /** {@inheritDoc} */
+                @Override public LabeledVector<Double> extract(K k, V v) {
+                    Vector features = featureExtractor.apply(k, v);
+                    Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
+                    Double mdlAnswer = currComposition.predict(features);
+                    return new LabeledVector<>(features, -loss.gradient(sampleSize, realAnswer, mdlAnswer));
+                }
             };
 
             long startTs = System.currentTimeMillis();
-            models.add(trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrap));
+            models.add(trainer.fit(datasetBuilder, extractor));
             double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
             trainerEnvironment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
         }

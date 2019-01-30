@@ -57,15 +57,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 
 /**
  * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
  */
-@RunWith(JUnit4.class)
 public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 512 * 1024;

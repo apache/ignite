@@ -819,7 +819,7 @@ public final class UpdatePlanBuilder {
             if (desc.isKeyColumn(colId))
                 return true;
 
-            // column ids 0..2 are _key, _val, _ver
+            // column ids 0..1 are _key, _val
             if (colId >= DEFAULT_COLUMNS_COUNT) {
                 if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
                     return true;
@@ -853,6 +853,8 @@ public final class UpdatePlanBuilder {
         for (Column col : affectedCols) {
             int colId = col.getColumnId();
 
+            // At first, let's define whether column refers to entire key, entire value or one of key/val fields.
+            // Checking that it's not specified both _key(_val) and its alias by the way.
             if (desc.isKeyColumn(colId)) {
                 if (keyColName == null)
                     keyColName = col.getName();
@@ -860,11 +862,8 @@ public final class UpdatePlanBuilder {
                     throw new IgniteSQLException(
                         "Columns " + keyColName + " and " + col + " both refer to entire cache key object.",
                         IgniteQueryErrorCode.PARSING);
-
-                continue;
             }
-
-            if (desc.isValueColumn(colId)) {
+            else if (desc.isValueColumn(colId)) {
                 if (valColName == null)
                     valColName = col.getName();
                 else
@@ -872,28 +871,29 @@ public final class UpdatePlanBuilder {
                         "Columns " + valColName + " and " + col + " both refer to entire cache value object.",
                         IgniteQueryErrorCode.PARSING);
 
-                continue;
+            }
+            else {
+                // Column ids 0..2 are _key, _val, _ver
+                assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + col + ", id=" + colId + "].";
+
+                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                    hasKeyProps = true;
+                else
+                    hasValProps = true;
             }
 
-            // column ids 0..2 are _key, _val, _ver
-            assert colId >= DEFAULT_COLUMNS_COUNT : "Unexpected column [name=" + col + ", id=" + colId + "].";
-
-            if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
-                hasKeyProps = true;
-            else
-                hasValProps = true;
-
+            // And check invariants for the fast fail.
             boolean hasEntireKeyCol = keyColName != null;
             boolean hasEntireValcol = valColName != null;
 
             if (hasEntireKeyCol && hasKeyProps)
                 throw new IgniteSQLException("Column " + keyColName + " refers to entire key cache object. " +
-                    "It cannot not be mixed with other columns that refer to parts of key.",
+                    "It must not be mixed with other columns that refer to parts of key.",
                     IgniteQueryErrorCode.PARSING);
 
             if (hasEntireValcol && hasValProps)
                 throw new IgniteSQLException("Column " + valColName + " refers to entire value cache object. " +
-                    "It cannot not be mixed with other columns that refer to parts of value.",
+                    "It must not be mixed with other columns that refer to parts of value.",
                     IgniteQueryErrorCode.PARSING);
         }
     }
@@ -922,7 +922,7 @@ public final class UpdatePlanBuilder {
         try {
             // Get a new prepared statement for derived select query.
             try (PreparedStatement stmt = conn.prepareStatement(selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
+                H2Utils.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
 
                 GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
                     GridSqlQueryParser.prepared(stmt),
@@ -930,7 +930,7 @@ public final class UpdatePlanBuilder {
                     fieldsQry.isCollocated(),
                     fieldsQry.isDistributedJoins(),
                     fieldsQry.isEnforceJoinOrder(),
-                    idx);
+                    idx.partitionExtractor());
 
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();

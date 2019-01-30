@@ -28,8 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Sanity test verifying that configuration callback specified via
@@ -37,7 +35,6 @@ import org.junit.runners.JUnit4;
  * <p>
  * This test should be run as part of {@link ZookeeperDiscoverySpiTestSuite2}.
  */
-@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySuitePreprocessorTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
