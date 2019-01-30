@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -1465,12 +1466,19 @@ public class QueryUtils {
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
-     * @param ptrn Pattern.
+     * @param sqlPtrn Pattern.
      * @return Whether string matches pattern.
      */
-    public static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.matches(ptrn.replace("%", ".*").replace("_", ".")));
+    public static boolean matches(String str, String sqlPtrn) {
+        if (str == null)
+            return false;
+
+        if (sqlPtrn == null)
+            return true;
+
+        String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
+
+        return str.matches(regex);
     }
 
     /**

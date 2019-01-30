@@ -22,9 +22,7 @@ import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +51,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -1107,25 +1100,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToResult(e);
         }
-    }
-
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param sqlPtrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matches(String str, String sqlPtrn) {
-        if (str == null)
-            return false;
-
-        if (sqlPtrn == null)
-            return true;
-
-        String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
-
-        return str.matches(regex);
     }
 
     /**
