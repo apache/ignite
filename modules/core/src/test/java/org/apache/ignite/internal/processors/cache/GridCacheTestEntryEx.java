@@ -485,8 +485,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val,
-        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer, GridCacheOperation op, boolean needHistory,
-        boolean noCreate, boolean needOldVal, CacheEntryPredicate filter, boolean retVal)
+        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer,
+        GridCacheOperation op, boolean needHistory,
+        boolean noCreate, boolean needOldVal, CacheEntryPredicate filter, boolean retVal, boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 
