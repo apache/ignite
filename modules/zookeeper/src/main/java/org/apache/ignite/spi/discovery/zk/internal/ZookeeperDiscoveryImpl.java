@@ -734,8 +734,8 @@ public class ZookeeperDiscoveryImpl {
             return;
 
         try {
-            // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined or new cluster created.
-            boolean reconnect = locNode.isClient() && prevState != null;
+            // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined.
+            boolean reconnect = locNode.isClient() && prevState != null && prevState.joined;
 
             IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
