@@ -25,6 +25,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.ConsistentIdImplicitlyExplicitlyTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -160,6 +161,12 @@ import org.junit.runners.Suite;
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
+    // Tests against configuration variations framework.
+    ParametersTest.class,
+    VariationsIteratorTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
+    NotStringSystemPropertyTest.class,
+
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
 
@@ -210,11 +217,7 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
 
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    NotStringSystemPropertyTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
+    ConsistentIdImplicitlyExplicitlyTest.class
 })
 public class IgniteBasicTestSuite {
 }
