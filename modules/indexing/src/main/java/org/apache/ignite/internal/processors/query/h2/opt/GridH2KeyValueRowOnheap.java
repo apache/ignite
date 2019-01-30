@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.message.DbException;
 import org.h2.value.Value;
@@ -30,16 +32,13 @@ import org.h2.value.ValueNull;
  */
 public class GridH2KeyValueRowOnheap extends GridH2Row {
     /** */
-    public static final int DEFAULT_COLUMNS_COUNT = 3;
+    public static final int DEFAULT_COLUMNS_COUNT = 2;
 
     /** Key column. */
     public static final int KEY_COL = 0;
 
     /** Value column. */
     public static final int VAL_COL = 1;
-
-    /** Version column. */
-    public static final int VER_COL = 2;
 
     /** */
     protected final GridH2RowDescriptor desc;
@@ -52,9 +51,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
     /** */
     private Value[] valCache;
-
-    /** */
-    private Value ver;
 
     /**
      * Constructor.
@@ -73,13 +69,12 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         this.desc = desc;
 
-        this.key = desc.wrap(row.key(), keyType);
+        CacheObjectValueContext coCtx = desc.indexing().objectContext();
+
+        this.key = H2Utils.wrap(coCtx, row.key(), keyType);
 
         if (row.value() != null)
-            this.val = desc.wrap(row.value(), valType);
-
-        if (row.version() != null)
-            this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+            this.val = H2Utils.wrap(coCtx, row.value(), valType);
     }
 
     /** {@inheritDoc} */
@@ -100,9 +95,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
             case VAL_COL:
                 return val;
-
-            case VER_COL:
-                return ver;
 
             default:
                 if (desc.isKeyAliasColumn(col))
@@ -132,7 +124,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             v = ValueNull.INSTANCE;
         else {
             try {
-                v = desc.wrap(res, desc.fieldType(col));
+                v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -190,9 +182,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         v = val;
         sb.a(", val: ").a(v == null ? "nil" : v.getString());
-
-        v = ver;
-        sb.a(", ver: ").a(v == null ? "nil" : v.getString());
 
         sb.a(" ][ ");
 

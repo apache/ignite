@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -108,6 +109,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private String affKey;
 
     /** */
+    private boolean customAffKeyMapper;
+
+    /** */
     private String keyFieldName;
 
     /** */
@@ -123,7 +127,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private List<GridQueryProperty> propsWithDefaultValue;
 
     /** */
-    @Nullable private CacheObjectContext coCtx;
+    private final CacheObjectContext coCtx;
 
     /**
      * Constructor.
@@ -131,7 +135,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param cacheName Cache name.
      * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName, @Nullable CacheObjectContext coCtx) {
+    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
     }
@@ -202,7 +206,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
         assert field != null;
 
@@ -237,6 +240,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matchType(CacheObject val) {
+        if (val instanceof BinaryObject)
+            return ((BinaryObject)val).type().typeId() == typeId;
+
+        // Value type name can be manually set in QueryEntity to any random value,
+        // also for some reason our conversion from setIndexedTypes sets a full class name
+        // instead of a simple name there, thus we can have a typeId mismatch.
+        // Also, if the type is not in binary format, we always must have it's class available.
+        return val.value(coCtx, false).getClass() == valCls;
     }
 
     /**
@@ -481,6 +496,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         this.affKey = affKey;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean customAffinityKeyMapper() {
+        return customAffKeyMapper;
+    }
+
+    /**
+     * @param customAffKeyMapper Whether custom affinity key mapper is set.
+     */
+    public void customAffinityKeyMapper(boolean customAffKeyMapper) {
+        this.customAffKeyMapper = customAffKeyMapper;
+    }
+
     /**
      * @return Aliases.
      */
@@ -564,14 +591,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             boolean isKey = false;
 
             if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject && coCtx != null ?
-                    ((KeyCacheObject)key).value(coCtx, true) : key;
+                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
 
                 isKey = true;
             }
             else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
-                propVal = val instanceof CacheObject && coCtx != null ?
-                    ((CacheObject)val).value(coCtx, true) : val;
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             }
             else {
                 propVal = prop.value(key, val);

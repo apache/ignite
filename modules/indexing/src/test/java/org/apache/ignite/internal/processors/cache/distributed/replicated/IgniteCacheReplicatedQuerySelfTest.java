@@ -46,16 +46,20 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  * Tests replicated query.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** */
     private static final boolean TEST_DEBUG = false;
@@ -101,8 +105,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite1 = grid(0);
         ignite2 = grid(1);
@@ -114,8 +118,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         ignite1 = null;
         ignite2 = null;
@@ -129,6 +133,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyNode() throws Exception {
         try {
             Ignite g = startGrid("client");
@@ -165,6 +170,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         int keyCnt = 100;
 
@@ -196,6 +202,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLocalQueryWithExplicitFlag() throws Exception {
         doTestLocalQuery(true);
     }
@@ -203,6 +210,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLocalQueryWithoutExplicitFlag() throws Exception {
         doTestLocalQuery(false);
     }
@@ -240,6 +248,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDistributedQuery() throws Exception {
         final int keyCnt = 4;
 
@@ -292,6 +301,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testToString() throws Exception {
         int keyCnt = 4;
 
@@ -309,6 +319,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLostIterator() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
@@ -346,14 +357,14 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
+    @Test
     public void testNodeLeft() throws Exception {
         Ignite g = startGrid("client");
 
         try {
             assertTrue(g.configuration().isClientMode());
 
-            IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -384,7 +395,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid("client");
 
@@ -432,15 +443,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
         assert entry.getKey().equals(new CacheKey(2)) || entry.getKey().equals(new CacheKey(3));
         assert !iter.hasNext();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override public void testSqlQueryEvents() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8765");
-
-        super.testSqlQueryEvents();
     }
 
     /**

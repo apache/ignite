@@ -1339,6 +1339,7 @@ public abstract class GridUnsafe {
      * @return Buffer memory address.
      */
     public static long bufferAddress(ByteBuffer buf) {
+        assert buf.isDirect();
         return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
     }
 

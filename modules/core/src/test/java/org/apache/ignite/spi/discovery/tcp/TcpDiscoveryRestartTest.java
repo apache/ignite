@@ -30,13 +30,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -45,22 +47,14 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
-    /** */
-    private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static AtomicReference<String> err;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         int[] evts = {EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT};
 
@@ -83,6 +77,7 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         err = new AtomicReference<>();
 
@@ -90,7 +85,7 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
 
         startGrids(NODE_CNT);
 
-        final ConcurrentHashSet<UUID> nodeIds = new ConcurrentHashSet<>();
+        final GridConcurrentHashSet<UUID> nodeIds = new GridConcurrentHashSet<>();
 
         final AtomicInteger id = new AtomicInteger(NODE_CNT);
 
@@ -172,10 +167,10 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
      */
     private class TestEventListener implements IgnitePredicate<Event> {
         /** */
-        private final ConcurrentHashSet<UUID> joinIds = new ConcurrentHashSet<>();
+        private final GridConcurrentHashSet<UUID> joinIds = new GridConcurrentHashSet<>();
 
         /** */
-        private final ConcurrentHashSet<UUID> leftIds = new ConcurrentHashSet<>();
+        private final GridConcurrentHashSet<UUID> leftIds = new GridConcurrentHashSet<>();
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {

@@ -166,7 +166,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param evt Discovery event.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
@@ -192,7 +191,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param res Response.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {

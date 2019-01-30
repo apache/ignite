@@ -21,13 +21,15 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,9 +39,12 @@ import org.jetbrains.annotations.NotNull;
  * @param <M> Type of a produced model.
  * @param <L> Type of a label.
  */
-public abstract class DatasetTrainer<M extends Model, L> {
+public abstract class DatasetTrainer<M extends IgniteModel, L> {
+    /** Learning environment builder. */
+    protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
+
     /** Learning Environment. */
-    protected LearningEnvironment environment = LearningEnvironment.DEFAULT;
+    protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
     /**
      * Trains model based on the specified data.
@@ -70,7 +75,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
         if(mdl != null) {
-            if (checkState(mdl))
+            if (isUpdateable(mdl))
                 return updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
             else {
                 environment.logger(getClass()).log(
@@ -88,7 +93,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    protected abstract boolean checkState(M mdl);
+    public abstract boolean isUpdateable(M mdl);
 
     /**
      * Used on update phase when given dataset is empty.
@@ -289,11 +294,56 @@ public abstract class DatasetTrainer<M extends Model, L> {
     }
 
     /**
-     * Sets learning Environment
-     * @param environment Environment.
+     * Changes learning Environment.
+     *
+     * @param envBuilder Learning environment builder.
      */
-    public void setEnvironment(LearningEnvironment environment) {
-        this.environment = environment;
+    // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
+    public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder  = envBuilder;
+        environment = envBuilder.buildForTrainer();
+
+        return this;
+    }
+
+    /**
+     * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     *
+     * @param new2Old Converter of new labels to old labels.
+     * @param <L1> New labels type.
+     * @return {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     */
+    public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
+        DatasetTrainer<M, L> old = this;
+        return new DatasetTrainer<M, L1>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.fit(datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isUpdateable(M mdl) {
+                return old.isUpdateable(mdl);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+        };
+    }
+
+    /**
+     * Get learning environment.
+     *
+     * @return Learning environment.
+     */
+    public LearningEnvironment learningEnvironment() {
+        return environment;
     }
 
     /**
@@ -309,5 +359,33 @@ public abstract class DatasetTrainer<M extends Model, L> {
         public EmptyDatasetException() {
             super("Cannot train model on empty dataset");
         }
+    }
+
+    /**
+     * Returns the trainer which returns identity model.
+     *
+     * @param <I> Type of model input.
+     * @param <L> Type of labels in dataset.
+     * @return Trainer which returns identity model.
+     */
+    public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
+        return new DatasetTrainer<IgniteModel<I, I>, L>() {
+            @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isUpdateable(IgniteModel<I, I> mdl) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return x -> x;
+            }
+        };
     }
 }

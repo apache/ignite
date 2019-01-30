@@ -69,6 +69,10 @@ public abstract class GridCacheMessage implements Message {
     private GridDeploymentInfoBean depInfo;
 
     /** */
+    @GridToStringInclude
+    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
+
+    /** */
     @GridDirectTransient
     protected boolean addDepInfo;
 
@@ -182,6 +186,27 @@ public abstract class GridCacheMessage implements Message {
      */
     public AffinityTopologyVersion topologyVersion() {
         return AffinityTopologyVersion.NONE;
+    }
+
+    /**
+     * Returns the earliest affinity topology version for which this message is valid.
+     *
+     * @return Last affinity topology version when affinity was modified.
+     */
+    public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
+        if (lastAffChangedTopVer == null || lastAffChangedTopVer.topologyVersion() <= 0)
+            return topologyVersion();
+
+        return lastAffChangedTopVer;
+    }
+
+    /**
+     * Sets the earliest affinity topology version for which this message is valid.
+     *
+     * @param topVer Last affinity topology version when affinity was modified.
+     */
+    public void lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        lastAffChangedTopVer = topVer;
     }
 
     /**
@@ -637,7 +662,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -659,6 +684,12 @@ public abstract class GridCacheMessage implements Message {
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeLong("msgId", msgId))
                     return false;
 
@@ -686,6 +717,14 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())

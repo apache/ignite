@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-
-import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
     /**
      *
      */
+    @Test
     public void testMergeWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -46,6 +47,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeFromSubquery() {
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -66,6 +68,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
@@ -81,6 +84,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
@@ -95,6 +99,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
@@ -109,6 +114,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I").withKeepBinary();
 
@@ -118,25 +124,5 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         assertEquals(2, (int)p.get(1));
 
         assertEquals(4, (int)p.get(3));
-    }
-
-    /**
-     *
-     */
-    public void testNestedFieldsHandling() {
-        IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
-
-        p.query(new SqlFieldsQuery("merge into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) " +
-            "values (1, ?, ?, ?, 'sss')") .setArgs(new AllTypes.InnerType(50L),
-            new ArrayList<>(Arrays.asList(3L, 2L, 1L)), new AllTypes(1L)));
-
-        AllTypes res = p.get(1);
-
-        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
-
-        resInner.innerStrCol = "sss";
-        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
-
-        assertEquals(resInner, res.innerTypeCol);
     }
 }

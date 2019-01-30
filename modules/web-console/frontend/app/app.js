@@ -44,7 +44,6 @@ import './modules/configuration/configuration.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
 import './modules/ace.module';
-import './modules/socket.module';
 import './modules/loading/loading.module';
 import servicesModule from './services';
 // endignite
@@ -96,6 +95,7 @@ import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler';
 import IGFSs from './services/IGFSs';
 import Models from './services/Models';
+import {Store} from './services/store';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -159,6 +159,9 @@ import pageSignup from './components/page-signup';
 import pageSignin from './components/page-signin';
 import pageForgotPassword from './components/page-forgot-password';
 import formSignup from './components/form-signup';
+import sidebar from './components/web-console-sidebar';
+import permanentNotifications from './components/permanent-notifications';
+import signupConfirmation from './components/page-signup-confirmation';
 
 import igniteServices from './services';
 
@@ -174,7 +177,6 @@ export default angular.module('ignite-console', [
     'ngSanitize',
     'ngMessages',
     // Third party libs.
-    'btford.socket-io',
     'dndLists',
     'gridster',
     'mgcrea.ngStrap',
@@ -198,7 +200,6 @@ export default angular.module('ignite-console', [
     'ignite-console.input-dialog',
     'ignite-console.user',
     'ignite-console.branding',
-    'ignite-console.socket',
     'ignite-console.agent',
     'ignite-console.nodes',
     'ignite-console.demo',
@@ -266,7 +267,11 @@ export default angular.module('ignite-console', [
     progressLine.name,
     formField.name,
     formSignup.name,
-    timedRedirection.name
+    timedRedirection.name,
+    sidebar.name,
+    permanentNotifications.name,
+    timedRedirection.name,
+    signupConfirmation.name
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.
@@ -314,6 +319,7 @@ export default angular.module('ignite-console', [
 .service('CSV', CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
+.service('Store', Store)
 // Filters.
 .filter('byName', byName)
 .filter('bytes', bytes)

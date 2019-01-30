@@ -34,27 +34,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static volatile boolean autoActivationEnabled = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -92,6 +88,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -117,6 +114,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -142,6 +140,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequence() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -171,6 +170,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceAfterAutoactivation() throws Exception {
         final String seqName = "testSequence";
 
@@ -215,6 +215,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -246,6 +247,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -269,6 +271,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -292,6 +295,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 

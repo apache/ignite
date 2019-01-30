@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -57,7 +57,7 @@ public class ConsoleLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+    @Override public <K, V> IgniteModel<K, V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl) {
         print(verboseLevel, mdl.toString(true));
         return mdl;
     }
@@ -82,6 +82,9 @@ public class ConsoleLogger implements MLLogger {
      * ConsoleLogger factory.
      */
     private static class Factory implements MLLogger.Factory {
+        /** Serial version uuid. */
+        private static final long serialVersionUID = 5864605548782107893L;
+
         /** Max Verbose level. */
         private final VerboseLevel maxVerboseLevel;
 

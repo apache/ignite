@@ -27,15 +27,15 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
@@ -50,10 +50,8 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  * <p>
  * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkIgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
+@RunWith(JUnit4.class)
 public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid #1 config. */
     private IgniteConfiguration g1Cfg;
 
@@ -71,12 +69,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         g1IgfsCfg1.setName("g1IgfsCfg1");
 
@@ -114,6 +106,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalIfAffinityMapperIsWrongClass() throws Exception {
 
         for (FileSystemConfiguration igfsCfg : g1Cfg.getFileSystemConfiguration()) {
@@ -130,6 +123,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalIfIgfsConfigsHaveDuplicatedNames() throws Exception {
         String igfsCfgName = "igfs-cfg";
 
@@ -142,6 +136,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
         g1IgfsCfg1.setDataCacheConfiguration(dataCache(1024));
         g1IgfsCfg1.getDataCacheConfiguration().setIndexedTypes(Integer.class, String.class);
@@ -152,6 +147,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
         g1IgfsCfg1.setMetaCacheConfiguration(metaCache());
 
@@ -163,6 +159,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalNullIgfsNameIsNotSupported() throws Exception {
         try {
             g1IgfsCfg1.setName(null);
@@ -185,6 +182,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalIfNonPrimaryModeAndHadoopFileSystemUriIsNull() throws Exception {
         g1IgfsCfg2.setDefaultMode(PROXY);
 
@@ -194,6 +192,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteIfDataBlockSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
@@ -211,6 +210,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteIfAffinityMapperGroupSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
@@ -226,6 +226,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteIfDefaultModeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
@@ -248,6 +249,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteIfPathModeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
@@ -267,6 +269,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroEndpointTcpPort() throws Exception {
         checkInvalidPort(0);
     }
@@ -274,6 +277,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeEndpointTcpPort() throws Exception {
         checkInvalidPort(-1);
     }
@@ -281,6 +285,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTooBigEndpointTcpPort() throws Exception {
         checkInvalidPort(65536);
     }
@@ -288,6 +293,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreConfiguredCache() throws Exception {
         FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
         igfsCfg1.setName("igfs");
@@ -334,6 +340,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidEndpointThreadCount() throws Exception {
         final String failMsg = "IGFS endpoint thread count must be positive";
 

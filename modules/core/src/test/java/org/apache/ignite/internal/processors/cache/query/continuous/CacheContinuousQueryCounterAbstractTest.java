@@ -45,14 +45,14 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,13 +63,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries counter tests.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommonAbstractTest
     implements Serializable {
     /** */
     protected static final String CACHE_NAME = "test_cache";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
@@ -78,7 +76,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -86,12 +83,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
         if (igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME))
             cfg.setClientMode(true);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -177,6 +168,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntries() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -248,6 +240,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoQueryListener() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -384,6 +377,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -442,6 +436,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -537,6 +532,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 

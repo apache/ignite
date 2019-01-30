@@ -19,7 +19,7 @@ import _ from 'lodash';
 
 export default class PageProfileController {
     static $inject = [
-        '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User'
+        '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User', 'IgniteFormUtils'
     ];
 
     /**
@@ -32,8 +32,9 @@ export default class PageProfileController {
      * @param {import('app/services/Confirm.service').Confirm} Confirm
      * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
      * @param {ReturnType<typeof import('app/modules/user/User.service').default>} User
+     * @param {ReturnType<typeof import('app/services/FormUtils.service').default>} FormUtils
      */
-    constructor($root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User) {
+    constructor($root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User, FormUtils) {
         this.$root = $root;
         this.$scope = $scope;
         this.$http = $http;
@@ -43,6 +44,7 @@ export default class PageProfileController {
         this.Confirm = Confirm;
         this.Countries = Countries;
         this.User = User;
+        this.FormUtils = FormUtils;
     }
 
     $onInit() {
@@ -69,6 +71,12 @@ export default class PageProfileController {
     }
 
     saveUser() {
+        if (this.form.$invalid) {
+            this.FormUtils.triggerValidation(this.form);
+
+            return;
+        }
+
         return this.$http.post('/api/v1/profile/save', this.ui.user)
             .then(this.User.load)
             .then(() => {

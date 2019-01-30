@@ -166,7 +166,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -184,47 +184,48 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeBoolean("removeMapping", removeMapping))
-                    return false;
-
-                writer.incrementState();
-
             case 8:
-                if (!writer.writeLong("res", res))
+                if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
+                if (!writer.writeBoolean("removeMapping", removeMapping))
                     return false;
 
                 writer.incrementState();
+
+            case 10:
+                if (!writer.writeLong("res", res))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -241,7 +242,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -249,7 +250,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -257,7 +258,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
@@ -265,7 +266,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -273,16 +274,8 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 reader.incrementState();
 
-            case 7:
-                removeMapping = reader.readBoolean("removeMapping");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 8:
-                res = reader.readLong("res");
+                newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,12 +283,21 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 9:
-                newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
+                removeMapping = reader.readBoolean("removeMapping");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
+            case 10:
+                res = reader.readLong("res");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearTxQueryEnlistResponse.class);

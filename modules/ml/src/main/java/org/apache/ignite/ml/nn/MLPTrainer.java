@@ -108,7 +108,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
@@ -124,6 +124,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         assert updatesStgy!= null;
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
@@ -353,7 +354,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+    @Override public boolean isUpdateable(MultilayerPerceptron mdl) {
         return true;
     }
 

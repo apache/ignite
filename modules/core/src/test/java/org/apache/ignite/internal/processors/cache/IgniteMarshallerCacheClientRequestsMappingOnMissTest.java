@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -49,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for client requesting missing mappings from server nodes with and without server nodes failures.
  */
+@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCommonAbstractTest {
     /**
      * Need to point client node to a different working directory
@@ -114,6 +118,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRequestedMappingIsStoredInFS() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -151,6 +156,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoNodesDieOnRequest() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -181,6 +187,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testOneNodeDiesOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(1);
 
@@ -216,6 +223,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testTwoNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(2);
 
@@ -252,6 +260,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testAllNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(3);
 

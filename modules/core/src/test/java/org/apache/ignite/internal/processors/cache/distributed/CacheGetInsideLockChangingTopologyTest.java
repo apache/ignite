@@ -37,13 +37,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,9 +57,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -83,8 +83,6 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         Boolean clientMode = client.get();
 
@@ -155,6 +153,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), TX_CACHE1);
         getInsideLockStopPrimary(ignite(SRVS + 1), TX_CACHE1);
@@ -166,6 +165,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -175,6 +175,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideTxStopPrimary() throws Exception {
         getInsideTxStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -184,6 +185,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedPessimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, PESSIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, PESSIMISTIC);
@@ -195,6 +197,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedOptimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, OPTIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, OPTIMISTIC);
@@ -363,9 +366,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2204")
+    @Test
     public void testMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2204");
-
         final AtomicBoolean finished = new AtomicBoolean();
 
         final int NEW_NODE = SRVS + CLIENTS;

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -414,7 +414,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = globalState.finish(msg.success());
+            globalState = state.finish(msg.success());
 
             afterStateChangeFinished(msg.id(), msg.success());
 
@@ -629,11 +629,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         sharedCtx.io().addCacheHandler(
             0, GridChangeGlobalStateMessageResponse.class,
-            new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
-                @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
-                    processChangeGlobalStateResponse(nodeId, msg);
-                }
-            });
+            this::processChangeGlobalStateResponse
+        );
     }
 
     /** {@inheritDoc} */
@@ -849,7 +846,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         DiscoveryDataClusterState curState = globalState;
 
-        if (!curState.transition() && curState.active() == activate && BaselineTopology.equals(curState.baselineTopology(), blt))
+        if (!curState.transition() && curState.active() == activate
+            && (!activate || BaselineTopology.equals(curState.baselineTopology(), blt)))
             return new GridFinishedFuture<>();
 
         GridChangeGlobalStateFuture startedFut = null;
@@ -903,15 +901,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis());
 
+        IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
+
         try {
             if (log.isInfoEnabled())
                 U.log(log, "Sending " + prettyStr(activate) + " request with BaselineTopology " + blt);
 
             ctx.discovery().sendCustomEvent(msg);
 
-            if (ctx.isStopping())
-                startedFut.onDone(new IgniteCheckedException("Failed to execute " + prettyStr(activate) + " request, " +
-                    "node is stopping."));
+            if (ctx.isStopping()) {
+                String errMsg = "Failed to execute " + prettyStr(activate) + " request, node is stopping.";
+
+                startedFut.onDone(new IgniteCheckedException(errMsg));
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send global state change request: " + activate, e);
@@ -919,7 +921,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             startedFut.onDone(e);
         }
 
-        return wrapStateChangeFuture(startedFut, msg);
+        return resFut;
     }
 
     /** {@inheritDoc} */
@@ -1157,12 +1159,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             @Override public void run() {
                 boolean client = ctx.clientNode();
 
-                Exception e = null;
-
                 try {
-                    ctx.service().onUtilityCacheStarted();
+                    if (ctx.service() instanceof GridServiceProcessor) {
+                        GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
 
-                    ctx.service().onActivate(ctx);
+                        srvcProc.onUtilityCacheStarted();
+
+                        srvcProc.onActivate(ctx);
+                    }
 
                     ctx.dataStructures().onActivate(ctx);
 
@@ -1171,6 +1175,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     ctx.task().onActivate(ctx);
 
                     ctx.encryption().onActivate(ctx);
+
+                    ((IgniteChangeGlobalStateSupport)ctx.distributedMetastorage()).onActivate(ctx);
 
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
