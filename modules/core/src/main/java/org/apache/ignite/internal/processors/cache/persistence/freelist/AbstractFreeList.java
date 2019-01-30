@@ -65,7 +65,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private static final int MIN_PAGE_FREE_SPACE = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_MIN_PAGE_FREE_SPACE, 40);
+        IgniteSystemProperties.IGNITE_MIN_PAGE_FREE_SPACE, 32);
 
     /**
      * Step between buckets in free list, measured in powers of two.
