@@ -35,9 +35,6 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     /** */
     private static final long TEST_QRY_ID = 341;
 
-
-    //ToDo: add to a test suite
-
     /**
      * Tests for KILL QUERY command.
      */

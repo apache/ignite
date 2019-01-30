@@ -33,7 +33,7 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDropIndex() throws Exception {
+    public void testDropIndex() {
         // Base.
         parseValidate(null, "DROP INDEX idx", null, "IDX");
         parseValidate(null, "DROP INDEX IDX", null, "IDX");
