@@ -40,8 +40,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
@@ -57,7 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for node failure in transactions.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();

@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
-@RunWith(JUnit4.class)
 public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 4;

@@ -24,8 +24,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -33,7 +31,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for {@link CacheConfiguration#isStoreKeepBinary()}.
  */
-@RunWith(JUnit4.class)
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean storeValBytes;

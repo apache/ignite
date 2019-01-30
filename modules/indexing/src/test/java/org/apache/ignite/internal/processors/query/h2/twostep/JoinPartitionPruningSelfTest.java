@@ -44,8 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +61,6 @@ import java.util.function.Consumer;
  * Tests for join partition pruning.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class JoinPartitionPruningSelfTest extends GridCommonAbstractTest {
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
