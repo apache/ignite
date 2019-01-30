@@ -256,7 +256,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Partition extractor. */
     private PartitionExtractor partExtractor;
 
-    /** */
+    /** Running query manager. */
     private RunningQueryManager runningQueryMgr;
 
     /** */
