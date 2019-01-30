@@ -19,9 +19,9 @@ package org.apache.ignite.ml.trainers;
 
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
-public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, SimpleLabeledVector<L>> {
+public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, LabeledVector<L>> {
     public default Vector extractFeatures(K key, V val) {
         return apply(key, val).features();
     }

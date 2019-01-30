@@ -26,7 +26,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -81,7 +81,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteModel<I, List<O>> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         List<IgniteSupplier<IgniteModel<I, O>>> tasks = trainers.stream()
             .map(tr -> (IgniteSupplier<IgniteModel<I, O>>)(() -> tr.fit(datasetBuilder,
                 CompositionUtils.asFeatureExtractor(extractor),
@@ -97,7 +97,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteModel<I, List<O>> update(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         ModelsParallelComposition<I, O> typedMdl = (ModelsParallelComposition<I, O>)mdl;
 
         assert typedMdl.submodels().size() == trainers.size();
@@ -141,7 +141,7 @@ public class TrainersParallelComposition<I, O, L> extends DatasetTrainer<IgniteM
      * @return Updated model.
      */
     @Override protected <K, V> IgniteModel<I, List<O>> updateModel(IgniteModel<I, List<O>> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

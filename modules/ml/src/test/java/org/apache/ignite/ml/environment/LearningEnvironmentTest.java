@@ -36,7 +36,7 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
@@ -89,7 +89,7 @@ public class LearningEnvironmentTest {
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<Void>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<Void>> extractor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -111,7 +111,7 @@ public class LearningEnvironmentTest {
             /** {@inheritDoc} */
             @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<Void>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<Void>> extractor) {
                 return null;
             }
         };

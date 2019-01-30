@@ -43,7 +43,6 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
@@ -65,7 +64,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -76,7 +75,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
 
         assert datasetBuilder != null;
 

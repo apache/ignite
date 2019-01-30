@@ -21,7 +21,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -44,13 +44,13 @@ public class CompositionUtils {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
                 return trainer.fit(datasetBuilder, extractor);
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> update(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
                 DatasetTrainer<IgniteModel<I, O>, L> trainer1 = (DatasetTrainer<IgniteModel<I, O>, L>)trainer;
                 return trainer1.update(mdl, datasetBuilder, extractor);
             }
@@ -78,35 +78,35 @@ public class CompositionUtils {
              * @return Updated model.
              */
             @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
                 throw new IllegalStateException();
             }
         };
     }
 
     /**
-     * Create feature extractor from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     * Create feature extractor from given mapping {@code (key, value) -> LabeledVector}.
      *
-     * @param extractor Mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @param extractor Mapping {@code (key, value) -> LabeledVector}.
      * @param <K> Type of keys.
      * @param <V> Type of values.
      * @param <L> Type of labels.
-     * @return Feature extractor created from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @return Feature extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+    public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         return (k, v) -> extractor.apply(k, v).features();
     }
 
     /**
-     * Label extractor feature extractor from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     * Label extractor feature extractor from given mapping {@code (key, value) -> LabeledVector}.
      *
-     * @param extractor Mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @param extractor Mapping {@code (key, value) -> LabeledVector}.
      * @param <K> Type of keys.
      * @param <V> Type of values.
      * @param <L> Type of labels.
-     * @return Label extractor created from given mapping {@code (key, value) -> SimpleLabeledVector}.
+     * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+    public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         return (k, v) -> extractor.apply(k, v).label();
     }
 }

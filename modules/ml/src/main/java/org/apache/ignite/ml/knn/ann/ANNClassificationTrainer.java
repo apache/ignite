@@ -40,7 +40,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
@@ -66,18 +65,18 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param extractor Mapping from upstream entry to {@link SimpleLabeledVector}.
+     * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
         IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
@@ -116,7 +115,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
-        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];
+        final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
         for (int i = 0; i < centers.size(); i++)

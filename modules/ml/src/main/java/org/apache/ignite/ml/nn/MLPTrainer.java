@@ -37,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -111,14 +111,14 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
 
     /** {@inheritDoc} */
     @Override public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<double[]>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<double[]>> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<double[]>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<double[]>> extractor) {
 
         assert archSupplier != null;
         assert loss!= null;

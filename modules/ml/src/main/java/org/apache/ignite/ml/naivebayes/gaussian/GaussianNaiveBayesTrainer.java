@@ -28,7 +28,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -45,7 +45,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -68,7 +68,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
         assert datasetBuilder != null;
 
         try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(

@@ -39,7 +39,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
@@ -167,7 +167,7 @@ public class BaggingTest extends TrainerTest {
         /** {@inheritDoc} */
         @Override public <K, V> IgniteModel<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
-            IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+            IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
                 TestUtils.testEnvBuilder(),
                 (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
@@ -188,7 +188,7 @@ public class BaggingTest extends TrainerTest {
         @Override protected <K, V> IgniteModel<Vector, Double> updateModel(
             IgniteModel<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
-            IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+            IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
             return fit(datasetBuilder, extractor);
         }
 

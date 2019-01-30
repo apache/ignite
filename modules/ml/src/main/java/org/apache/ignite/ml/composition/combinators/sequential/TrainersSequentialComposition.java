@@ -26,7 +26,7 @@ import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -54,7 +54,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     private DatasetTrainer<IgniteModel<O1, O2>, L> tr2;
 
     /** Dataset mapping. */
-    protected IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>>>
+    protected IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>>
         datasetMapping;
 
     /**
@@ -72,7 +72,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
      */
     public static <I, O, L> TrainersSequentialComposition<I, O, O, L> ofSame(
         DatasetTrainer<? extends IgniteModel<I, O>, L> tr,
-        IgniteBiFunction<Integer, ? super IgniteModel<I, O>, IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>>> datasetMapping,
+        IgniteBiFunction<Integer, ? super IgniteModel<I, O>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping,
         IgniteBiPredicate<Integer, IgniteModel<I, O>> shouldStop,
         IgniteFunction<O, I> out2In) {
         return new SameTrainersSequentialComposition<>(CompositionUtils.unsafeCoerce(tr),
@@ -112,7 +112,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
          */
         public SameTrainersSequentialComposition(
             DatasetTrainer<IgniteModel<I, O>, L> tr,
-            IgniteBiFunction<Integer, ? super IgniteModel<I, O>, IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>>> datasetMapping,
+            IgniteBiFunction<Integer, ? super IgniteModel<I, O>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping,
             IgniteBiPredicate<Integer, IgniteModel<I, O>> shouldStop,
             IgniteFunction<O, I> out2Input) {
             super(null, null, datasetMapping);
@@ -123,11 +123,11 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
         /** {@inheritDoc} */
         @Override public <K, V> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
-            IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+            IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
 
             int i = 0;
             IgniteModel<I, O> currMdl = null;
-            IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>> mapping =
+            IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping =
                 IgniteFunction.identity();
             List<IgniteModel<I, O>> mdls = new ArrayList<>();
 
@@ -155,7 +155,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
      */
     public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
         DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
-        IgniteFunction<? super IgniteModel<I, O1>, IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>>> datasetMapping) {
+        IgniteFunction<? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
         this.tr1 = CompositionUtils.unsafeCoerce(tr1);
         this.tr2 = CompositionUtils.unsafeCoerce(tr2);
         this.datasetMapping = (i, mdl) -> datasetMapping.apply(mdl);
@@ -169,7 +169,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
      */
     public TrainersSequentialComposition(DatasetTrainer<? extends IgniteModel<I, O1>, L> tr1,
         DatasetTrainer<? extends IgniteModel<O1, O2>, L> tr2,
-        IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>>> datasetMapping) {
+        IgniteBiFunction<Integer, ? super IgniteModel<I, O1>, IgniteFunction<LabeledVector<L>, LabeledVector<L>>> datasetMapping) {
         this.tr1 = CompositionUtils.unsafeCoerce(tr1);
         this.tr2 = CompositionUtils.unsafeCoerce(tr2);
         this.datasetMapping = datasetMapping;
@@ -177,10 +177,10 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
 
         IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
-        IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
 
         IgniteModel<O1, O2> mdl2 = tr2.fit(datasetBuilder, extractor.andThen(mapping));
 
@@ -190,10 +190,10 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
 
         IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, extractor);
-        IgniteFunction<SimpleLabeledVector<L>, SimpleLabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
+        IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
 
         IgniteModel<O1, O2> secondUpdated = tr2.update(mdl.secondModel(),
             datasetBuilder,
@@ -228,7 +228,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     @Override protected <K, V> ModelsSequentialComposition<I, O1, O2> updateModel(
         ModelsSequentialComposition<I, O1, O2> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

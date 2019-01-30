@@ -32,7 +32,7 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -60,7 +60,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      */
     public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
-        return fit(datasetBuilder, (k, v) -> new SimpleLabeledVector<>(featureExtractor.apply(k, v),
+        return fit(datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
             lbExtractor.apply(k, v)));
     }
 
@@ -68,12 +68,12 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link SimpleLabeledVector}.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor);
+    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, LabeledVector<L>> extractor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
@@ -81,13 +81,13 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link SimpleLabeledVector}.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
 
         if(mdl != null) {
             if (isUpdateable(mdl))
@@ -119,7 +119,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
-        return update(mdl, datasetBuilder, (k, v) -> new SimpleLabeledVector<>(featureExtractor.apply(k, v),
+        return update(mdl, datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
             lbExtractor.apply(k, v)));
     }
 
@@ -158,7 +158,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return updateModel(mdl,
-            datasetBuilder, (k, v) -> new SimpleLabeledVector<>(featureExtractor.apply(k, v),
+            datasetBuilder, (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v),
             lbExtractor.apply(k, v)));
     }
 
@@ -167,14 +167,14 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      *
      * @param mdl Learned model.
      * @param datasetBuilder Dataset builder.
-     * @param extractor Extractor of {@link UpstreamEntry} into {@link SimpleLabeledVector}.
+     * @param extractor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
     protected abstract <K, V> M updateModel(M mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor);
+        IgniteBiFunction<K, V, LabeledVector<L>> extractor);
 
 
     /**
@@ -371,11 +371,11 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            private <K, V> IgniteBiFunction<K, V, SimpleLabeledVector<L>> getNewExtractor(
-                IgniteBiFunction<K, V, SimpleLabeledVector<L1>> extractor) {
-                return new IgniteBiFunction<K, V, SimpleLabeledVector<L>>() {
-                    @Override public SimpleLabeledVector<L> apply(K k, V v) {
-                        return new SimpleLabeledVector<>(extractor.apply(k, v).features(),
+            private <K, V> IgniteBiFunction<K, V, LabeledVector<L>> getNewExtractor(
+                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
+                return new IgniteBiFunction<K, V, LabeledVector<L>>() {
+                    @Override public LabeledVector<L> apply(K k, V v) {
+                        return new LabeledVector<>(extractor.apply(k, v).features(),
                             new2Old.apply(extractor.apply(k, v).label()));
                     }
                 };
@@ -383,7 +383,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
 
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L1>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));
             }
 
@@ -394,7 +394,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
 
             /** {@inheritDoc} */
             @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L1>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(extractor));
             }
         };
@@ -434,7 +434,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
         return new DatasetTrainer<IgniteModel<I, I>, L>() {
             @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L>> featureExtractor) {
+                IgniteBiFunction<K, V, LabeledVector<L>> featureExtractor) {
                 return x -> x;
             }
 
@@ -446,7 +446,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             /** {@inheritDoc} */
             @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, SimpleLabeledVector<L>> extractor) {
+                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
                 return x -> x;
             }
         };

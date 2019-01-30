@@ -35,7 +35,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.jetbrains.annotations.NotNull;
@@ -126,11 +126,11 @@ public class GDBLearningStrategy {
 
             FeatureLabelExtractor<K, V, Double> extractor = new FeatureLabelExtractor<K, V, Double>() {
                 /** {@inheritDoc} */
-                @Override public SimpleLabeledVector<Double> apply(K k, V v) {
+                @Override public LabeledVector<Double> apply(K k, V v) {
                     Vector features = featureExtractor.apply(k, v);
                     Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
                     Double mdlAnswer = currComposition.predict(features);
-                    return new SimpleLabeledVector<>(features, -loss.gradient(sampleSize, realAnswer, mdlAnswer));
+                    return new LabeledVector<>(features, -loss.gradient(sampleSize, realAnswer, mdlAnswer));
                 }
             };
 

@@ -39,7 +39,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.structures.SimpleLabeledVector;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
@@ -89,7 +89,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -97,7 +97,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /** {@inheritDoc} */
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, SimpleLabeledVector<Double>> extractor) {
+        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
 
         if (!learnLabels(datasetBuilder, CompositionUtils.asFeatureExtractor(extractor), CompositionUtils.asLabelExtractor(extractor)))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
