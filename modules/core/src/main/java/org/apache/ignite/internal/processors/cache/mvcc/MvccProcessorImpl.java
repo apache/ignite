@@ -452,8 +452,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 RecoveryBallotBox ballotBox = recoveryBallotBoxes
                     .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
-                ballotBox
-                    .voters(evt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));
+                ballotBox.voters(evt.topologyNodes().stream()
+                    .filter(this::supportsMvcc)
+                    .map(ClusterNode::id)
+                    .collect(Collectors.toList()));
 
                 tryFinishRecoveryVoting(nodeId, ballotBox);
             }
