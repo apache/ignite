@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
@@ -50,6 +51,13 @@ public abstract class PageDeltaRecord extends WALRecord implements WalRecordCach
      */
     public long pageId() {
         return pageId;
+    }
+
+    /**
+     * @return Full page ID.
+     */
+    public FullPageId fullPageId() {
+        return new FullPageId(pageId, grpId);
     }
 
     /** {@inheritDoc} */

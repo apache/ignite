@@ -43,14 +43,11 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * JDBC driver reconnect test with multiple addresses.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSelfTest {
     /** Nodes count. */
     private static final int NODES_CNT = 3;

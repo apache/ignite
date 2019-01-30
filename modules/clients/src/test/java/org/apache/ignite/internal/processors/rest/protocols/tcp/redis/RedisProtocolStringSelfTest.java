@@ -22,15 +22,12 @@ import java.util.HashSet;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisDataException;
 
 /**
  * Tests for String commands of Redis protocol.
  */
-@RunWith(JUnit4.class)
 public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.

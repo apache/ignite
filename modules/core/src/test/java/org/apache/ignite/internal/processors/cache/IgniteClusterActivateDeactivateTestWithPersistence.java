@@ -46,15 +46,12 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {

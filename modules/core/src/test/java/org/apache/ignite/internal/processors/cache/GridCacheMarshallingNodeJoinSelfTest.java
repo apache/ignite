@@ -40,15 +40,12 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
