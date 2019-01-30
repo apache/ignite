@@ -215,16 +215,18 @@ public class MvccUtils {
      * @param snapshot Snapshot.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
-     * @param opCntr Operation counter.
+     * @param opCntrWithHints Operation counter.
      * @param useTxLog {@code True} if TxLog should be used.
      * @return {@code True} if visible.
      * @throws IgniteCheckedException If failed.
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
-        int opCntr, boolean useTxLog) throws IgniteCheckedException {
+        int opCntrWithHints, boolean useTxLog) throws IgniteCheckedException {
+        int opCntr = opCntrWithHints & MVCC_OP_COUNTER_MASK;
+
         if (mvccCrd == MVCC_CRD_COUNTER_NA) {
             assert mvccCntr == MVCC_COUNTER_NA && opCntr == MVCC_OP_COUNTER_NA
-                : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+                : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntrWithHints) + ", snapshot=" + snapshot;
 
             return false; // Unassigned version is always invisible
         }
@@ -244,11 +246,11 @@ public class MvccUtils {
             if (!useTxLog)
                 return true; // The checking row is expected to be committed.
 
-            byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
+            byte state = state(cctx, mvccCrd, mvccCntr, opCntrWithHints);
 
             if (MVCC_MAX_SNAPSHOT.compareTo(snapshot) != 0 // Special version which sees all committed entries.
                 && state != TxState.COMMITTED && state != TxState.ABORTED)
-                throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
+                throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntrWithHints, snapshot);
 
             return state == TxState.COMMITTED;
         }
@@ -261,7 +263,7 @@ public class MvccUtils {
         // because read-only queries use last committed version in it's snapshot which could be actually aborted
         // (during transaction recovery we do not know whether recovered transaction was committed or aborted).
         if (mvccCntr == snapshotCntr && snapshotOpCntr != MVCC_READ_OP_CNTR) {
-            assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+            assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntrWithHints) + ", snapshot=" + snapshot;
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates
         }
@@ -272,10 +274,10 @@ public class MvccUtils {
         if (!useTxLog)
             return true; // The checking row is expected to be committed.
 
-        byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
+        byte state = state(cctx, mvccCrd, mvccCntr, opCntrWithHints);
 
         if (state != TxState.COMMITTED && state != TxState.ABORTED)
-            throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
+            throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntrWithHints, snapshot);
 
         return state == TxState.COMMITTED;
     }
@@ -476,7 +478,7 @@ public class MvccUtils {
 
         if ((cmp = Long.compare(mvccCrdLeft, mvccCrdRight)) != 0
             || (cmp = Long.compare(mvccCntrLeft, mvccCntrRight)) != 0
-            || (cmp = Integer.compare(mvccOpCntrLeft & ~MVCC_HINTS_MASK, mvccOpCntrRight & ~MVCC_HINTS_MASK)) != 0)
+            || (cmp = Integer.compare(mvccOpCntrLeft & MVCC_OP_COUNTER_MASK, mvccOpCntrRight & MVCC_OP_COUNTER_MASK)) != 0)
             return cmp;
 
         return 0;
