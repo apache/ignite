@@ -28,6 +28,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Sequential composition of trainers.
@@ -123,7 +124,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
         /** {@inheritDoc} */
         @Override public <K, V> ModelsSequentialComposition<I, O, O> fit(DatasetBuilder<K, V> datasetBuilder,
-            IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+            FeatureLabelExtractor<K, V, L> extractor) {
 
             int i = 0;
             IgniteModel<I, O> currMdl = null;
@@ -177,7 +178,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
 
         IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, extractor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, mdl1);
@@ -190,7 +191,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     /** {@inheritDoc} */
     @Override public <K, V> ModelsSequentialComposition<I, O1, O2> update(
         ModelsSequentialComposition<I, O1, O2> mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
 
         IgniteModel<I, O1> firstUpdated = tr1.update(mdl.firstModel(), datasetBuilder, extractor);
         IgniteFunction<LabeledVector<L>, LabeledVector<L>> mapping = datasetMapping.apply(0, firstUpdated);
@@ -228,7 +229,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     @Override protected <K, V> ModelsSequentialComposition<I, O1, O2> updateModel(
         ModelsSequentialComposition<I, O1, O2> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         // Never called.
         throw new IllegalStateException();
     }

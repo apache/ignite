@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Various utility functions for trainers composition.
@@ -44,13 +45,13 @@ public class CompositionUtils {
         return new DatasetTrainer<IgniteModel<I, O>, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 return trainer.fit(datasetBuilder, extractor);
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> IgniteModel<I, O> update(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 DatasetTrainer<IgniteModel<I, O>, L> trainer1 = (DatasetTrainer<IgniteModel<I, O>, L>)trainer;
                 return trainer1.update(mdl, datasetBuilder, extractor);
             }
@@ -78,7 +79,7 @@ public class CompositionUtils {
              * @return Updated model.
              */
             @Override protected <K, V> IgniteModel<I, O> updateModel(IgniteModel<I, O> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 throw new IllegalStateException();
             }
         };
@@ -93,8 +94,8 @@ public class CompositionUtils {
      * @param <L> Type of labels.
      * @return Feature extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
-        return (k, v) -> extractor.apply(k, v).features();
+    public static <K, V, L> IgniteBiFunction<K, V, Vector> asFeatureExtractor(FeatureLabelExtractor<K, V, L> extractor) {
+        return (k, v) -> extractor.extract(k, v).features();
     }
 
     /**
@@ -106,7 +107,22 @@ public class CompositionUtils {
      * @param <L> Type of labels.
      * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
      */
-    public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
-        return (k, v) -> extractor.apply(k, v).label();
+    public static <K, V, L> IgniteBiFunction<K, V, L> asLabelExtractor(FeatureLabelExtractor<K, V, L> extractor) {
+        return (k, v) -> extractor.extract(k, v).label();
+    }
+
+    /**
+     * Label extractor feature extractor from given mapping {@code (key, value) -> LabeledVector}.
+     *
+     * @param featureExtractor Features extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of keys.
+     * @param <V> Type of values.
+     * @param <L> Type of labels.
+     * @return Label extractor created from given mapping {@code (key, value) -> LabeledVector}.
+     */
+    public static <K, V, L> FeatureLabelExtractor<K, V, L> asFeatureLabelExtractor(IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor) {
+        return (k, v) -> new LabeledVector<>(featureExtractor.apply(k, v), lbExtractor.apply(k, v));
     }
 }

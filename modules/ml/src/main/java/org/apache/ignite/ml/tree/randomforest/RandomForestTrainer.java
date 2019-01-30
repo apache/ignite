@@ -41,10 +41,9 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
@@ -112,7 +111,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
@@ -247,7 +246,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
     /** {@inheritDoc} */
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
         ModelsComposition newModels = fit(datasetBuilder, extractor);

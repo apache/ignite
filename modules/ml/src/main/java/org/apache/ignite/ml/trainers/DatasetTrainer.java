@@ -73,7 +73,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, LabeledVector<L>> extractor);
+    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
@@ -87,7 +87,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @return Updated model.
      */
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
 
         if(mdl != null) {
             if (isUpdateable(mdl))
@@ -174,7 +174,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      */
     protected abstract <K, V> M updateModel(M mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor);
+        FeatureLabelExtractor<K, V, L> extractor);
 
 
     /**
@@ -371,19 +371,20 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            private <K, V> IgniteBiFunction<K, V, LabeledVector<L>> getNewExtractor(
-                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
-                return new IgniteBiFunction<K, V, LabeledVector<L>>() {
-                    @Override public LabeledVector<L> apply(K k, V v) {
-                        return new LabeledVector<>(extractor.apply(k, v).features(),
-                            new2Old.apply(extractor.apply(k, v).label()));
+            private <K, V> FeatureLabelExtractor<K, V, L> getNewExtractor(
+                FeatureLabelExtractor<K, V, L1> extractor) {
+                return new FeatureLabelExtractor<K, V, L>() {
+                    /** {@inheritDoc} */
+                    @Override public LabeledVector<L> extract(K k, V v) {
+                        return new LabeledVector<>(extractor.extractFeatures(k, v),
+                            new2Old.apply(extractor.extractLabel(k, v)));
                     }
                 };
             }
 
             /** {@inheritDoc} */
             @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
+                FeatureLabelExtractor<K, V, L1> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));
             }
 
@@ -394,7 +395,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
 
             /** {@inheritDoc} */
             @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L1>> extractor) {
+                FeatureLabelExtractor<K, V, L1> extractor) {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(extractor));
             }
         };
@@ -434,7 +435,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
         return new DatasetTrainer<IgniteModel<I, I>, L>() {
             @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L>> featureExtractor) {
+                FeatureLabelExtractor<K, V, L> featureExtractor) {
                 return x -> x;
             }
 
@@ -446,7 +447,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
             /** {@inheritDoc} */
             @Override protected <K, V> IgniteModel<I, I> updateModel(IgniteModel<I, I> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+                FeatureLabelExtractor<K, V, L> extractor) {
                 return x -> x;
             }
         };

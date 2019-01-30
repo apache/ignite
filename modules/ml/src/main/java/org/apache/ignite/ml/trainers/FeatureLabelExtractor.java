@@ -17,7 +17,8 @@
 
 package org.apache.ignite.ml.trainers;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import java.util.Objects;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <V> Type of values.
  * @param <L> Type of labels.
  */
-public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, LabeledVector<L>> {
+public interface FeatureLabelExtractor<K, V, L> {
     /**
      * Extract {@link LabeledVector} from key and value.
      *
@@ -36,7 +37,13 @@ public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, L
      * @param v Value.
      * @return Labeled vector.
      */
-    @Override LabeledVector<L> apply(K k, V v);
+    public LabeledVector<L> extract(K k, V v);
+
+    /** */
+    public default <L1> FeatureLabelExtractor<K, V, L1> andThen(IgniteFunction<? super LabeledVector<L>, ? extends LabeledVector<L1>> after) {
+        Objects.requireNonNull(after);
+        return (K k, V v) -> after.apply(extract(k, v));
+    }
 
     /**
      * Extract features from key and value.
@@ -46,7 +53,7 @@ public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, L
      * @return Features vector.
      */
     public default Vector extractFeatures(K key, V val) {
-        return apply(key, val).features();
+        return extract(key, val).features();
     }
 
     /**
@@ -56,7 +63,7 @@ public interface FeatureLabelExtractor<K, V, L> extends IgniteBiFunction<K, V, L
      * @param val Value.
      * @return Label.
      */
-    public default L extractLabels(K key, V val) {
-        return apply(key, val).label();
+    public default L extractLabel(K key, V val) {
+        return extract(key, val).label();
     }
 }

@@ -25,9 +25,9 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Builder for bootstrapped dataset. Bootstrapped dataset consist of several subsamples created in according to random
@@ -43,7 +43,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     private static final long serialVersionUID = 8146220902914010559L;
 
     /** Mapper of upstream entries into {@link LabeledVector}. */
-    private final IgniteBiFunction<K, V, LabeledVector<Double>> extractor;
+    private final FeatureLabelExtractor<K, V, Double> extractor;
 
     /** Samples count. */
     private final int samplesCnt;
@@ -58,7 +58,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public BootstrappedDatasetBuilder(IgniteBiFunction<K, V, LabeledVector<Double>> extractor,
+    public BootstrappedDatasetBuilder(FeatureLabelExtractor<K, V, Double> extractor,
         int samplesCnt,
         double subsampleSize) {
 
@@ -86,7 +86,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
 
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
-            LabeledVector<Double> vecAndLb = extractor.apply(nextRow.getKey(), nextRow.getValue());
+            LabeledVector<Double> vecAndLb = extractor.extract(nextRow.getKey(), nextRow.getValue());
             Vector features = vecAndLb.features();
             Double lb = vecAndLb.label();
             int[] repetitionCounters = new int[samplesCnt];

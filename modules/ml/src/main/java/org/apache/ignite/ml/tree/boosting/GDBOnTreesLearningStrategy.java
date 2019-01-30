@@ -20,6 +20,7 @@ package org.apache.ignite.ml.tree.boosting;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
 import org.apache.ignite.ml.composition.boosting.GDBTrainer;
@@ -72,7 +73,8 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIdx)
+            new DecisionTreeDataBuilder<>(CompositionUtils.asFeatureLabelExtractor(featureExtractor, lbExtractor),
+                useIdx)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
                 double[] weights = Arrays.copyOf(compositionWeights, models.size());

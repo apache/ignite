@@ -126,7 +126,7 @@ public class GDBLearningStrategy {
 
             FeatureLabelExtractor<K, V, Double> extractor = new FeatureLabelExtractor<K, V, Double>() {
                 /** {@inheritDoc} */
-                @Override public LabeledVector<Double> apply(K k, V v) {
+                @Override public LabeledVector<Double> extract(K k, V v) {
                     Vector features = featureExtractor.apply(k, v);
                     Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
                     Double mdlAnswer = currComposition.predict(features);

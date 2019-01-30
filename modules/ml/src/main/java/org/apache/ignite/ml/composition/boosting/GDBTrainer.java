@@ -39,8 +39,8 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -89,7 +89,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -97,15 +97,15 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /** {@inheritDoc} */
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         if (!learnLabels(datasetBuilder, CompositionUtils.asFeatureExtractor(extractor), CompositionUtils.asLabelExtractor(extractor)))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         IgniteBiFunction<K, V, Vector> featureExtractor =
-            (k, v) -> extractor.apply(k, v).features();
+            (k, v) -> extractor.extract(k, v).features();
         IgniteBiFunction<K, V, Double> lbExtractor =
-            (k, v) -> extractor.apply(k, v).label();
+            (k, v) -> extractor.extract(k, v).label();
 
         IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(
             envBuilder,
@@ -211,7 +211,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
+            new DecisionTreeDataBuilder<>(CompositionUtils.asFeatureLabelExtractor(featureExtractor, lbExtractor), false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {

@@ -21,8 +21,7 @@ import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -31,7 +30,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClassificationModel> {
     /** {@inheritDoc} */
     @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -39,7 +38,7 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
     /** {@inheritDoc} */
     @Override protected <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(envBuilder,
             datasetBuilder,

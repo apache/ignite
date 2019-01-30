@@ -34,6 +34,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * {@link DatasetTrainer} encapsulating stacking technique for model training.
@@ -230,14 +231,14 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
 
     /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
 
         return new StackedModel<>(getTrainer().fit(datasetBuilder, extractor));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, L> extractor) {
 
         return new StackedModel<>(getTrainer().update(mdl, datasetBuilder, extractor));
     }
@@ -354,7 +355,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends IgniteModel<IA, O>, L>
      */
     @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<L>> extractor) {
+        FeatureLabelExtractor<K, V, L> extractor) {
         // This method is never called, we override "update" instead.
         throw new IllegalStateException();
     }

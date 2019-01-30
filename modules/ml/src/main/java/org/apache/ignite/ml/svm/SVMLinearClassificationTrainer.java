@@ -32,6 +32,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -62,7 +63,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * @return Model.
      */
     @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -70,12 +71,12 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
     /** {@inheritDoc} */
     @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, LabeledVector<Double>> extractor) {
+        FeatureLabelExtractor<K, V, Double> extractor) {
 
         assert datasetBuilder != null;
 
         IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
-            final Double lb = extractor.apply(k, v).label();
+            final Double lb = extractor.extractLabel(k, v);
             if (lb == 0.0)
                 return -1.0;
             else
