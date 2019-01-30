@@ -14,37 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.binary;
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
-
-import org.apache.ignite.IgniteCheckedException;
-
-import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Common node of partition tree.
+ * Binary context holder. We use to avoid {@code ThreadLocal.clear()} and/or {{}}ThreadLocal.set()}} operations on
+ * every serialization/deserialization, as they may take considerable amount of CPU time (confirmed by benchmarks).
  */
-public interface PartitionNode {
-    /**
-     * Get partitions.
-     *
-     * @param args Query arguments.
-     * @return Partitions.
-     * @throws IgniteCheckedException If failed.
-     */
-    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
+public class BinaryContextHolder {
+    /** Context. */
+    private BinaryContext ctx;
 
     /**
-     * @return Join group for the given node.
+     * @return Context.
      */
-    int joinGroup();
+    @Nullable public BinaryContext get() {
+        return ctx;
+    }
 
     /**
-     * Try optimizing partition nodes into a simpler form.
-     *
-     * @return Optimized node or {@code this} if optimization failed.
+     * @param newCtx New context.
+     * @return Previous context.
      */
-    default PartitionNode optimize() {
-        return this;
+    @Nullable public BinaryContext set(@Nullable BinaryContext newCtx) {
+        BinaryContext oldCtx = ctx;
+
+        ctx = newCtx;
+
+        return oldCtx;
     }
 }

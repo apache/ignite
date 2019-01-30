@@ -102,7 +102,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
                     @Override public CacheDataRowAdapter apply(long link) throws IgniteCheckedException {
                         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-                        row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY);
+                        row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY, false);
 
                         assert row.cacheId() != 0 : "Cache ID should be stored in rows of evictable cache";
 
