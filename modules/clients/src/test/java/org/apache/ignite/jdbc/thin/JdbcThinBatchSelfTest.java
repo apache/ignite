@@ -29,15 +29,12 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Statement test.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +

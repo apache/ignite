@@ -24,13 +24,10 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerAbstr
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checkpoint manager test using {@link S3CheckpointSpi}.
  */
-@RunWith(JUnit4.class)
 public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

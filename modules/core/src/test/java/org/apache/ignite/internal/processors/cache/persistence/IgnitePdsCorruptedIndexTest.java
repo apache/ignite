@@ -49,13 +49,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";

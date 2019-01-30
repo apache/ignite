@@ -52,8 +52,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -69,7 +67,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.cr
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
-@RunWith(JUnit4.class)
 public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;

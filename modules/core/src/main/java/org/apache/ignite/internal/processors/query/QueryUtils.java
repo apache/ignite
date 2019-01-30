@@ -1449,6 +1449,17 @@ public class QueryUtils {
     }
 
     /**
+     * Get global query ID.
+     *
+     * @param nodeId Node ID.
+     * @param qryId Query ID.
+     * @return Global query ID.
+     */
+    public static String globalQueryId(UUID nodeId, long qryId) {
+        return nodeId + "_" + qryId;
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {

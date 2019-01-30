@@ -97,8 +97,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
@@ -109,7 +107,6 @@ import static org.junit.Assert.assertNotEquals;
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
-@RunWith(JUnit4.class)
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

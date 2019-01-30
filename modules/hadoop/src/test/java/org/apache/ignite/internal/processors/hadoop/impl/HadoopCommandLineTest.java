@@ -47,13 +47,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of integration with Hadoop client via command line interface.
  */
-@RunWith(JUnit4.class)
 public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
     private IgfsEx igfs;

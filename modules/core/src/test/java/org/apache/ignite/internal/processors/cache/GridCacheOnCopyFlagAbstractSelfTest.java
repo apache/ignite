@@ -39,15 +39,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests that cache value is copied for get, interceptor and invoke closure.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int ITER_CNT = 1000;
