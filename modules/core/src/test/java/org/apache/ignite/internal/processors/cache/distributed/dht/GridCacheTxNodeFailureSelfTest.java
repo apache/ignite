@@ -45,9 +45,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,7 +59,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests one-phase commit transactions when some of the nodes fail in the middle of the transaction.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @return Grid count.
@@ -142,10 +140,9 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1731")
     @Test
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
-
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 

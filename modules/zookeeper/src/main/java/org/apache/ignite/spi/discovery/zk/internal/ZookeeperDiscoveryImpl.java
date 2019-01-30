@@ -1720,7 +1720,7 @@ public class ZookeeperDiscoveryImpl {
 
         List<T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>>> nodes = joinCtx.nodes;
 
-        assert nodes != null && nodes.size() > 0;
+        assert nodes != null && !nodes.isEmpty();
 
         int nodeCnt = nodes.size();
 
@@ -1926,7 +1926,7 @@ public class ZookeeperDiscoveryImpl {
         if (data instanceof ZkJoiningNodeData) {
             ZkJoiningNodeData joiningNodeData = (ZkJoiningNodeData)data;
 
-            ZkNodeValidateResult validateRes = validateJoiningNode(joiningNodeData.node());
+            ZkNodeValidateResult validateRes = validateJoiningNode(joiningNodeData);
 
             if (validateRes.err == null) {
                 ZookeeperClusterNode joinedNode = joiningNodeData.node();
@@ -1987,10 +1987,12 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node Joining node.
+     * @param node Joining node data.
      * @return Validation result.
      */
-    private ZkNodeValidateResult validateJoiningNode(ZookeeperClusterNode node) {
+    private ZkNodeValidateResult validateJoiningNode(ZkJoiningNodeData joiningNodeData) {
+        ZookeeperClusterNode node = joiningNodeData.node();
+
         ZookeeperClusterNode node0 = rtState.top.nodesById.get(node.id());
 
         if (node0 != null) {
@@ -2007,6 +2009,14 @@ public class ZookeeperDiscoveryImpl {
             return res;
 
         IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+
+        if (err == null) {
+            DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(node.id(), joiningNodeData.node().isClient());
+
+            joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+
+            err = spi.getSpiContext().validateNode(node, joiningNodeBag);
+        }
 
         if (err != null) {
             LT.warn(log, err.message());

@@ -40,8 +40,6 @@ import org.apache.ignite.scheduler.SchedulerFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -50,7 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Test for task scheduler.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "TooBroadScope"})
-@RunWith(JUnit4.class)
 public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 2;

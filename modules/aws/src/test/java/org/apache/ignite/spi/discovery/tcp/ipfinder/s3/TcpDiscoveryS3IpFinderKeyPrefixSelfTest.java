@@ -20,15 +20,12 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3Client;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 
 /**
  * TcpDiscoveryS3IpFinder tests key prefix for IP finder. For information about key prefix visit:
  * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html"/>.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
     /**
      * Constructor.

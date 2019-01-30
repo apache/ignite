@@ -237,6 +237,9 @@ public class IgniteConfiguration {
     /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
     public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT = 0;
 
+    /** Default SQL query history size. */
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -284,6 +287,9 @@ public class IgniteConfiguration {
 
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
+
+    /** SQL query history size. */
+    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -650,6 +656,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
         sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
@@ -1023,6 +1030,30 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * will be switched off.
+     *
+     * @return SQL query history size.
+     */
+    public int getSqlQueryHistorySize() {
+        return sqlQryHistSize;
+    }
+
+    /**
+     * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
+     *
+     * @param size Number of SQL query history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlQueryHistorySize(int size) {
+        sqlQryHistSize = size;
+
+        return this;
     }
 
     /**

@@ -46,8 +46,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -55,7 +53,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {

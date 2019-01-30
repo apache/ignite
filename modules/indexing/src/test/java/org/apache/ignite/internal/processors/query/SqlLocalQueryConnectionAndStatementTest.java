@@ -22,13 +22,10 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for statement reuse.
  */
-@RunWith(JUnit4.class)
 public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     public void beforeTestsStarted() throws Exception {

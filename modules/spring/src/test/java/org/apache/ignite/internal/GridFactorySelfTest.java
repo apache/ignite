@@ -65,8 +65,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -85,7 +83,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * @see GridFactoryVmShutdownTest
  */
 @GridCommonTest(group = "NonDistributed Kernal Self")
-@RunWith(JUnit4.class)
 public class GridFactorySelfTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicInteger cnt = new AtomicInteger();

@@ -62,3 +62,8 @@ export type NavigationMenuItem = {
 );
 
 export type NavigationMenu = Array<NavigationMenuItem>;
+
+export interface IInputErrorNotifier {
+    notifyAboutError(): void
+    hideError(): void
+}

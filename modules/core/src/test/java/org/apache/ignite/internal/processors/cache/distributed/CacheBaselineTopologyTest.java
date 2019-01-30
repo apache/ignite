@@ -59,8 +59,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,7 +68,6 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
