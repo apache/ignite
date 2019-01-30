@@ -18,14 +18,24 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.GridSqlUsedColumnInfo;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,6 +46,9 @@ import org.junit.runners.JUnit4;
 @SuppressWarnings("deprecation")
 @RunWith(JUnit4.class)
 public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCommonTest {
+    /** Tracked map queries. */
+    private static final AtomicReference<List<GridCacheSqlQuery>> qrys = new AtomicReference<>();
+
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
 
@@ -66,6 +79,7 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         return super.getConfiguration(name)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setCommunicationSpi(new TrackingTcpCommunicationSpi())
             .setLocalHost("127.0.0.1");
     }
 
@@ -256,6 +270,11 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
                 "LEFT JOIN " +
                 "(SELECT id AS id, val4, val5 FROM test) AS t2 ON t1.id = t2.id");
 
+        assertEquals(1, qrys.get().size());
+
+        Map<String, GridSqlUsedColumnInfo> usedCols = (Map<String, GridSqlUsedColumnInfo>)qrys.get().get(0).usedColumns();
+
+
         assertEquals(res.size(), 10);
     }
 
@@ -285,5 +304,24 @@ public class SelectExtractColumnsForSimpleRowSelfTest extends AbstractIndexingCo
      */
     private List<List<?>> executeSqlFieldsQuery(SqlFieldsQuery qry) {
         return client().context().query().querySqlFields(qry, false).getAll();
+    }
+
+    /**
+     * TCP communication SPI which will track outgoing query requests.
+     */
+    private static class TrackingTcpCommunicationSpi extends TcpCommunicationSpi {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            if (msg instanceof GridIoMessage) {
+                GridIoMessage msg0 = (GridIoMessage)msg;
+
+                if (msg0.message() instanceof GridH2QueryRequest) {
+                    GridH2QueryRequest req = (GridH2QueryRequest)msg0.message();
+
+                    qrys.set(req.queries());
+                }
+            }
+
+            super.sendMessage(node, msg, ackC);
+        }
     }
 }

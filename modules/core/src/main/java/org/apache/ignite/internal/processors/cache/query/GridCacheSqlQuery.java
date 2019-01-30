@@ -169,7 +169,7 @@ public class GridCacheSqlQuery implements Message {
     /**
      * @return Used columns info (Table alias -> used columns).
      */
-    public Map<String, GridSqlUsedColumnInfo> getUsedCols() {
+    public Map<String, GridSqlUsedColumnInfo> usedColumns() {
         return usedCols;
     }
 
