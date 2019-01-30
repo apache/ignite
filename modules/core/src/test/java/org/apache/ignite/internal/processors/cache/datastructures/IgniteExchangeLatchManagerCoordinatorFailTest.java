@@ -31,6 +31,7 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
@@ -145,6 +146,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail1() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCreate,
@@ -164,6 +166,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail2() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCountDown,
@@ -183,6 +186,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail3() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             all,

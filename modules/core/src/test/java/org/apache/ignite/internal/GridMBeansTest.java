@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.management.ObjectName;
+import org.junit.Test;
 
 /**
  * Tests for the standard JMX beans registered by the kernal.
@@ -54,6 +55,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     }
 
     /** Check that kernal bean is available */
+    @Test
     public void testKernalBeans() throws Exception {
         checkBean("Kernal", "IgniteKernal", "InstanceName", grid().name());
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
@@ -61,6 +63,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     }
 
     /** Check that kernal bean is available */
+    @Test
     public void testExecutorBeans() throws Exception {
         // standard executors
         checkBean("Thread Pools", "GridExecutionExecutor", "Terminated", false);

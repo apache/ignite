@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.junit.Test;
 
 /**
  * Tests for SQL parser: SET STREAMING.
@@ -27,6 +28,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testParseSetStreaming() {
         parseValidate("set streaming on", true, false, 2048, 0, 0, 0, false);
         parseValidate("set streaming 1", true, false, 2048, 0, 0, 0, false);

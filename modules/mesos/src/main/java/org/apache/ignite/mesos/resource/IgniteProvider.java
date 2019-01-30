@@ -47,7 +47,6 @@ public class IgniteProvider {
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteProvider.class.getSimpleName());
 
-    // This constants are set by maven-ant-plugin.
     /** */
     private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-%s-bin.zip";
 

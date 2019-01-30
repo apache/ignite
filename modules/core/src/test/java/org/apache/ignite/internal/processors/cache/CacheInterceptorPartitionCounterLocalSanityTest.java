@@ -47,11 +47,14 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -104,6 +107,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,false);
 
@@ -113,6 +117,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,true);
 
@@ -122,6 +127,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,false);
 
@@ -131,8 +137,31 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,true);
+
+        doTestPartitionCounterOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    public void testLocalMvccTx() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,false);
+
+        doTestPartitionCounterOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    public void testLocalMvccTxWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT,true);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -187,7 +216,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
 
         Transaction tx = null;
 
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL && rnd.nextBoolean())
+        if (atomicityMode(cache) == TRANSACTIONAL && rnd.nextBoolean())
             tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
 
         try {

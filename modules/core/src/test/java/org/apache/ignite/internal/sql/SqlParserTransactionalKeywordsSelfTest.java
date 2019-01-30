@@ -21,6 +21,7 @@ import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
+import org.junit.Test;
 
 /**
  * Tests for processing of keywords BEGIN, COMMIT, ROLLBACK, START.
@@ -29,6 +30,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of BEGIN/START.
      */
+    @Test
     public void testBegin() {
         assertBegin("begin");
         assertBegin("BEGIN");
@@ -44,6 +46,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of COMMIT.
      */
+    @Test
     public void testCommit() {
         assertCommit("commit");
         assertCommit("COMMIT transaction");
@@ -54,6 +57,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of ROLLBACK.
      */
+    @Test
     public void testRollback() {
         assertRollback("rollback");
         assertRollback("ROLLBACK transaction");

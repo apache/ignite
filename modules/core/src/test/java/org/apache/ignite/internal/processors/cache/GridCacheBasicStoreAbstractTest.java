@@ -30,12 +30,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.P2;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -47,11 +46,15 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Basic store test.
  */
 public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -80,12 +83,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
@@ -113,6 +110,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testNotExistingKeys() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = jcache();
         Map<Integer, String> map = store.getMap();
@@ -137,6 +135,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test fails. */
+    @Test
     public void testWriteThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -208,6 +207,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -301,6 +301,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -331,6 +332,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testLoadCacheWithPredicate() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -368,6 +370,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReloadCache() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -438,6 +441,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReloadAll() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -501,7 +505,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
-    @SuppressWarnings("StringEquality")
+    @Test
     public void testReload() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -44,6 +45,7 @@ public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstr
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLatch() throws Exception {
         // Test main functionality.
         IgniteCountDownLatch latch = grid(0).countDownLatch("latch", 2, false, true);

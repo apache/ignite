@@ -32,10 +32,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static java.lang.Thread.yield;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,9 +53,6 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE_NAME = "test";
-
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int SRV_CNT = 6;
@@ -75,8 +73,6 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         cfg.setTransactionConfiguration(new TransactionConfiguration().
             setTxTimeoutOnPartitionMapExchange(ROLLBACK_TIMEOUT));
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) >= SRV_CNT);
@@ -94,6 +90,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9322", MvccFeatureChecker.forcedMvcc());
+        //Won't start nodes if the only test mutes.
+
         super.beforeTest();
 
         startGridsMultiThreaded(TOTAL_CNT);
@@ -109,6 +108,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * Tests rollbacks on topology change.
      */
+    @Test
     public void testRollbackOnTopologyChange() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 

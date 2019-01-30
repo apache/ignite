@@ -17,10 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -28,6 +24,11 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -40,7 +41,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
@@ -69,6 +69,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -118,6 +119,9 @@ public class IgniteConfiguration {
 
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
+
+    /** Default compression level for network messages (value is Deflater.BEST_SPEED. */
+    public static final int DFLT_NETWORK_COMPRESSION = Deflater.BEST_SPEED;
 
     /** Default interval between message send retries. */
     public static final long DFLT_SEND_RETRY_DELAY = 1000;
@@ -221,6 +225,21 @@ public class IgniteConfiguration {
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
+    /** Default of initial value of manual baseline control or auto adjusting baseline. */
+    public static final boolean DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED = false;
+
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
+    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT = 0;
+
+    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT = 0;
+
+    /** Default SQL query history size. */
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -269,6 +288,9 @@ public class IgniteConfiguration {
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
+    /** SQL query history size. */
+    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
+
     /** Ignite installation folder. */
     private String igniteHome;
 
@@ -301,6 +323,9 @@ public class IgniteConfiguration {
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
+
+    /** Compression level for network binary messages. */
+    private int netCompressionLevel = DFLT_NETWORK_COMPRESSION;
 
     /** Interval between message send retries. */
     private long sndRetryDelay = DFLT_SEND_RETRY_DELAY;
@@ -421,7 +446,6 @@ public class IgniteConfiguration {
     private String[] includeProps;
 
     /** Frequency of metrics log print out. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
@@ -517,6 +541,18 @@ public class IgniteConfiguration {
 
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
+
+    /** Initial value of manual baseline control or auto adjusting baseline. */
+    private boolean initBaselineAutoAdjustEnabled = DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED;
+
+    /**
+     * Initial value of time which we would wait before the actual topology change since last discovery event(node
+     * join/exit).
+     */
+    private long initBaselineAutoAdjustTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT;
+
+    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
+    private long initBaselineAutoAdjustMaxTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -620,6 +656,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
         sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
@@ -833,13 +870,9 @@ public class IgniteConfiguration {
      * Returns striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @return Positive value if striped pool should be initialized
-     *      with configured number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @return The number of threads (stripes) to be used for requests processing.
      *
      * @see #getPublicThreadPoolSize()
      * @see #getSystemThreadPoolSize()
@@ -852,13 +885,9 @@ public class IgniteConfiguration {
      * Sets striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @param stripedPoolSize Positive value if striped pool should be initialized
-     *      with passed in number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @param stripedPoolSize The number of threads (stripes) to be used for requests processing.
      * @return {@code this} for chaining.
      *
      * @see #getPublicThreadPoolSize()
@@ -1001,6 +1030,30 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * will be switched off.
+     *
+     * @return SQL query history size.
+     */
+    public int getSqlQueryHistorySize() {
+        return sqlQryHistSize;
+    }
+
+    /**
+     * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
+     *
+     * @param size Number of SQL query history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlQueryHistorySize(int size) {
+        sqlQryHistSize = size;
+
+        return this;
     }
 
     /**
@@ -1476,6 +1529,29 @@ public class IgniteConfiguration {
         this.netTimeout = netTimeout;
 
         return this;
+    }
+
+    /**
+     * Compression level of internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     * @return Network messages default compression level.
+     */
+    public int getNetworkCompressionLevel() {
+        return netCompressionLevel;
+    }
+
+    /**
+     * Compression level for internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     */
+    public void setNetworkCompressionLevel(int netCompressionLevel) {
+        this.netCompressionLevel = netCompressionLevel;
     }
 
     /**
@@ -3144,6 +3220,59 @@ public class IgniteConfiguration {
         this.sqlSchemas = sqlSchemas;
 
         return this;
+    }
+
+    /**
+     * Gets initial value of manual baseline control or auto adjusting baseline. This value would be used only if it
+     * have not been changed earlier in real time.
+     *
+     * @return {@code true} if auto adjusting baseline enabled.
+     */
+    public boolean isInitBaselineAutoAdjustEnabled() {
+        return initBaselineAutoAdjustEnabled;
+    }
+
+    /**
+     * Sets initial value of manual baseline control or auto adjusting baseline.
+     */
+    public void setInitBaselineAutoAdjustEnabled(boolean initBaselineAutoAdjustEnabled) {
+        this.initBaselineAutoAdjustEnabled = initBaselineAutoAdjustEnabled;
+    }
+
+    /**
+     * Gets initial value of time which we would wait before the actual topology change. But it would be reset if new
+     * discovery event happened. (node join/exit). This value would be used only if it have not been changed earlier in
+     * real time.
+     *
+     * @return Timeout of wait the actual topology change.
+     */
+    public long getInitBaselineAutoAdjustTimeout() {
+        return initBaselineAutoAdjustTimeout;
+    }
+
+    /**
+     * Sets initial value of time which we would wait before the actual topology change.
+     */
+    public void setInitBaselineAutoAdjustTimeout(long initBaselineAutoAdjustTimeout) {
+        this.initBaselineAutoAdjustTimeout = initBaselineAutoAdjustTimeout;
+    }
+
+    /**
+     * Gets initial value of time which we would wait from the first discovery event in the chain. If we achieved it
+     * than we would change BLAT right away (no matter were another node join/exit happened or not). This value would be
+     * used only if it have not been changed earlier in real time.
+     *
+     * @return Timeout of wait the actual topology change.
+     */
+    public long getInitBaselineAutoAdjustMaxTimeout() {
+        return initBaselineAutoAdjustMaxTimeout;
+    }
+
+    /**
+     * Sets initial value of time which we would wait from the first discovery event in the chain.
+     */
+    public void setInitBaselineAutoAdjustMaxTimeout(long initBaselineAutoAdjustMaxTimeout) {
+        this.initBaselineAutoAdjustMaxTimeout = initBaselineAutoAdjustMaxTimeout;
     }
 
     /** {@inheritDoc} */

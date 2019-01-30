@@ -654,7 +654,6 @@ class OptimizedClassDescriptor {
      * @param obj Object.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
         out.write(type);
 
@@ -976,7 +975,6 @@ class OptimizedClassDescriptor {
      * @param cls Class.
      * @return Type.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private OptimizedFieldType fieldType(Class<?> cls) {
         OptimizedFieldType type;
 

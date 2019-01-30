@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -89,6 +90,12 @@ public enum IgniteComponentType {
         "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
         "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
         "ignite-schedule"
+    ),
+
+    COMPRESSION(
+        CompressionProcessor.class.getName(),
+        "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
+        "ignite-compress"
     );
 
     /** No-op class name. */
@@ -235,7 +242,6 @@ public enum IgniteComponentType {
      * @return Created component or no-op implementation.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T createOptional0(@Nullable GridKernalContext ctx) throws IgniteCheckedException {
         Class<?> cls;
 
@@ -276,7 +282,6 @@ public enum IgniteComponentType {
      * @return Component instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(clsName);

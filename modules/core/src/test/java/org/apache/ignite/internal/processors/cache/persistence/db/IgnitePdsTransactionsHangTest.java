@@ -40,12 +40,11 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -54,9 +53,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Checks that transactions don't hang during checkpoint creation.
  */
 public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Page cache size. */
     private static final long PAGE_CACHE_SIZE = 512L * 1024 * 1024;
 
@@ -99,10 +95,6 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoSpi);
 
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
         binaryCfg.setCompactFooter(false);
@@ -164,6 +156,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      * */
+    @Test
     public void testTransactionsDontHang() throws Exception {
         try {
             final Ignite g = startGrids(2);
@@ -193,10 +186,17 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
                                 TestEntity entity = TestEntity.newTestEntity(locRandom);
 
-                                try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    cache.put(randomKey, entity);
+                                while (true) {
+                                    try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                        cache.put(randomKey, entity);
 
-                                    tx.commit();
+                                        tx.commit();
+
+                                        break;
+                                    }
+                                    catch (Exception e) {
+                                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                                    }
                                 }
 
                                 operationCnt.increment();

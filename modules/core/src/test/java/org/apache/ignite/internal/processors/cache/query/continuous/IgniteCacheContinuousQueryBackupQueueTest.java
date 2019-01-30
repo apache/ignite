@@ -39,11 +39,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,9 +51,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Keys count. */
     private static final int KEYS_COUNT = 1024;
 
@@ -88,8 +83,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setClientMode(client);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(16 * 1024);
@@ -130,6 +123,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueue() throws Exception {
         final CacheEventListener lsnr = new CacheEventListener();
 
@@ -153,6 +147,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyQueryBackupQueue() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
@@ -185,6 +180,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueAutoUnsubscribeFalse() throws Exception {
         try {
             client = true;

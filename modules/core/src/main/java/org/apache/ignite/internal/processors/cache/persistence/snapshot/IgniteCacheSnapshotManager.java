@@ -94,10 +94,6 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      *
      */
-    public void restoreState() throws IgniteCheckedException {
-        // No-op.
-    }
-
     public boolean snapshotOperationInProgress(){
         return false;
     }

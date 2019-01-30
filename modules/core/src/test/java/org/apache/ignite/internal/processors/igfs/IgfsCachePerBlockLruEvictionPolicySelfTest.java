@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,7 +55,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for IGFS per-block LR eviction policy.
  */
-@SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ConstantConditions"})
 public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";
@@ -243,6 +244,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFilePrimary() throws Exception {
         start();
 
@@ -267,6 +269,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDual() throws Exception {
         start();
 
@@ -297,6 +300,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDualExclusion() throws Exception {
         start();
 
@@ -324,6 +328,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDifferentExcludeSettings() throws Exception {
         start();
 
@@ -351,6 +356,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockCountEviction() throws Exception {
         start();
 
@@ -386,6 +392,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDataSizeEviction() throws Exception {
         start();
 

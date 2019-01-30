@@ -26,9 +26,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -55,7 +57,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setName(CACHE_REGULAR);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(LOCAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -67,16 +68,24 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         ignite = startGrid(1);
 
-        cache = ignite.cache(CACHE_REGULAR);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cache = null;
-
         ignite = null;
+
+        stopAllGrids();
     }
 
     /**
@@ -84,6 +93,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction(cache, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -93,6 +103,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed(cache, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -102,6 +113,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction(cache, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -111,6 +123,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed(cache, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -121,6 +134,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testSwap() throws Exception {
         // TODO GG-11148.
         // assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();

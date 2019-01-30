@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * {@link StopNodeFailureHandler} tests.
@@ -43,6 +44,7 @@ public class StopNodeFailureHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStopped() throws Exception {
         try {
             IgniteEx ignite0 = startGrid(0);

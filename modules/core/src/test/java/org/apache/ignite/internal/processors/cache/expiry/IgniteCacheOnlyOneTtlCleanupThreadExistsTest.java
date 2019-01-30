@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Checks that one and only one Ttl cleanup worker thread must exists, and only
@@ -36,6 +37,7 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnlyOneTtlCleanupThreadExists() throws Exception {
         try (final Ignite g = startGrid(0)) {
             checkCleanupThreadExists(false);

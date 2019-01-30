@@ -50,7 +50,7 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +68,7 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 2:
+            case 3:
                 if (!writer.writeInt("grpId", grpId))
                     return false;
 
@@ -90,7 +90,7 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 2:
+            case 3:
                 grpId = reader.readInt("grpId");
 
                 if (!reader.isLastRead())

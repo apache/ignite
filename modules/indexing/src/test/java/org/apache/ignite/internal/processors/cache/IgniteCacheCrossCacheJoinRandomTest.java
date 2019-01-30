@@ -38,10 +38,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQuery
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -52,9 +50,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -106,10 +101,6 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
 
@@ -195,6 +186,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin2Caches() throws Exception {
         testJoin(2, MODES_1);
     }
@@ -202,6 +194,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin3Caches() throws Exception {
         testJoin(3, MODES_1);
     }
@@ -209,6 +202,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin4Caches() throws Exception {
         testJoin(4, MODES_2);
     }
@@ -216,6 +210,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin5Caches() throws Exception {
         testJoin(5, MODES_2);
     }

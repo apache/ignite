@@ -32,9 +32,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -44,9 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int PERM_NODES_CNT = 5;
 
@@ -96,19 +92,17 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
+        TcpDiscoverySpi disc = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         if (clientMode && ((igniteInstanceName.charAt(igniteInstanceName.length() - 1) - '0') & 1) != 0)
             cfg.setClientMode(true);
         else
             cfg.setClientFailureDetectionTimeout(50000);
 
-        disc.setIpFinder(IP_FINDER);
         disc.setAckTimeout(1000);
         disc.setSocketTimeout(1000);
 
         cfg.setCacheConfiguration(cCfg);
-        cfg.setDiscoverySpi(disc);
         cfg.setMetricsUpdateFrequency(500);
 
         return cfg;
@@ -159,6 +153,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlives() throws Exception {
         clientMode = false;
 
@@ -168,6 +163,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlivesClient() throws Exception {
         clientMode = true;
 

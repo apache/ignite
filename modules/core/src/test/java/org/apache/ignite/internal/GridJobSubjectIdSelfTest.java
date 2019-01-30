@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 
@@ -85,6 +86,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSubjectId() throws Exception {
         node2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -110,6 +112,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModifiedSubjectId() throws Exception {
         node1.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

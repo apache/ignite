@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.junit.Test;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
@@ -28,6 +29,7 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropIndex() throws Exception {
         // Base.
         parseValidate(null, "DROP INDEX idx", null, "IDX");

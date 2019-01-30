@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test that checks indexes handling with JDBC.
@@ -143,6 +144,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that after index creation index is used by queries.
      * @throws SQLException If failed.
      */
+    @Test
     public void testCreateIndex() throws SQLException {
         assertSize(3);
 
@@ -173,6 +175,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that creating an index with duplicate name yields an error.
      * @throws SQLException If failed.
      */
+    @Test
     public void testCreateIndexWithDuplicateName() throws SQLException {
         jdbcRun(CREATE_INDEX);
 
@@ -189,6 +192,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that creating an index with duplicate name does not yield an error with {@code IF NOT EXISTS}.
      * @throws SQLException If failed.
      */
+    @Test
     public void testCreateIndexIfNotExists() throws SQLException {
         jdbcRun(CREATE_INDEX);
 
@@ -200,6 +204,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that after index drop there are no attempts to use it, and data state remains intact.
      * @throws SQLException If failed.
      */
+    @Test
     public void testDropIndex() throws SQLException {
         assertSize(3);
 
@@ -229,6 +234,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
     /**
      * Test that dropping a non-existent index yields an error.
      */
+    @Test
     public void testDropMissingIndex() {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -243,6 +249,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that dropping a non-existent index does not yield an error with {@code IF EXISTS}.
      * @throws SQLException If failed.
      */
+    @Test
     public void testDropMissingIndexIfExists() throws SQLException {
         // Despite index missing, this does not yield an error.
         jdbcRun(DROP_INDEX_IF_EXISTS);
@@ -252,6 +259,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that changes in cache affect index, and vice versa.
      * @throws SQLException If failed.
      */
+    @Test
     public void testIndexState() throws SQLException {
         IgniteCache<String, Person> cache = cache();
 

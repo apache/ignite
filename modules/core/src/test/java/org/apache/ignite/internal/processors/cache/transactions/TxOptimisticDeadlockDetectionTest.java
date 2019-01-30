@@ -52,11 +52,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -70,9 +70,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -89,27 +86,17 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     private static boolean client;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        if (isDebug()) {
-            discoSpi.failureDetectionTimeoutEnabled(false);
-
-            cfg.setDiscoverySpi(discoSpi);
-        }
+        if (isDebug())
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).failureDetectionTimeoutEnabled(false);
 
         TcpCommunicationSpi commSpi = new TestCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
 
         cfg.setClientMode(client);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -131,6 +118,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
@@ -141,6 +129,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
@@ -151,6 +140,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
@@ -161,6 +151,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);

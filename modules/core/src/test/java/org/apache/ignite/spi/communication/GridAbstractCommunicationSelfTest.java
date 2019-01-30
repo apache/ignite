@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
@@ -51,7 +52,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Super class for all communication self tests.
  * @param <T> Type of communication SPI.
  */
-@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static long msgId = 1;
@@ -89,7 +89,6 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class MessageListener implements CommunicationListener<Message> {
         /** */
         private final UUID locNodeId;
@@ -153,6 +152,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendToOneNode() throws Exception {
         info(">>> Starting send to one node test. <<<");
 
@@ -195,7 +195,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WaitWithoutCorrespondingNotify")
+    @Test
     public void testSendToManyNodes() throws Exception {
         msgDestMap.clear();
 

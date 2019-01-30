@@ -300,6 +300,21 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isCancellationCommand(int cmdId) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerRequest(long reqId, int cmdType) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregisterRequest(long reqId) {
+        // No-op.
+    }
+
     /**
      * Make query considering handler configuration.
      * @param schema Schema.
@@ -868,15 +883,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         if (str == null)
             return false;
 
-        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
 
         String[] types = pattern.split(",");
 
         for (String type0 : types) {
-            String type = type0.trim();
-
-            if (type.length() >= 2 && type.matches("['\"].*['\"]"))
-                type = type.substring(1, type.length() - 1);
+            String type = OdbcUtils.removeQuotationMarksIfNeeded(type0.trim());
 
             if (str.toUpperCase().matches(type))
                 return true;
@@ -899,10 +911,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         if (str == null)
             return false;
 
-        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
-
-        if (pattern.length() >= 2 && pattern.matches("['\"].*['\"]"))
-            pattern = pattern.substring(1, pattern.length() - 1);
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
 
         return str.toUpperCase().matches(pattern);
     }

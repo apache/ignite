@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link CacheBasedLabelPairCursor}.
@@ -55,6 +56,7 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testIterate() {
         IgniteCache<Integer, Integer> data = ignite.createCache(UUID.randomUUID().toString());
 

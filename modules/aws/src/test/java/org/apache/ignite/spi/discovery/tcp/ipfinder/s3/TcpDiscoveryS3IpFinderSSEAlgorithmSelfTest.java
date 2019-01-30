@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.junit.Test;
 
 /**
  * TcpDiscoveryS3IpFinder tests server-side encryption algorithm for Amazon S3-managed encryption keys.
@@ -42,6 +43,7 @@ public class TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest extends TcpDiscoveryS3Ip
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }

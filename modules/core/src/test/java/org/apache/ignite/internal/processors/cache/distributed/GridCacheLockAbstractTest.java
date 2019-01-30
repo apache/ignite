@@ -33,13 +33,12 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -62,8 +61,12 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** (for convenience). */
     private static IgniteCache<Integer, String> cache2;
 
-    /** Ip-finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -75,12 +78,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -113,6 +110,17 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite1 = null;
+        ignite2 = null;
+
+        cache1 = null;
+        cache2 = null;
     }
 
     /** {@inheritDoc} */
@@ -195,6 +203,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockSingleThread() throws Exception {
         int k = 1;
         String v = String.valueOf(k);
@@ -229,7 +238,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -320,6 +329,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -405,7 +415,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 
@@ -501,6 +511,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Throwable If failed.
      */
+    @Test
     public void testLockReentrancy() throws Throwable {
         Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 

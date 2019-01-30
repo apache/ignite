@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
+import org.junit.Test;
 
 /**
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
@@ -61,6 +62,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
      * @throws Exception If fails.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMapTask() throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
@@ -140,6 +142,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testReduceTask() throws Exception {
         HadoopJobEx gridJob = getHadoopJob(igfsScheme() + PATH_INPUT, igfsScheme() + PATH_OUTPUT);
 
@@ -166,6 +169,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testCombinerTask() throws Exception {
         HadoopJobEx gridJob = getHadoopJob("/", "/");
 
@@ -214,6 +218,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
      * @throws Exception If fails.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testAllTasks() throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 

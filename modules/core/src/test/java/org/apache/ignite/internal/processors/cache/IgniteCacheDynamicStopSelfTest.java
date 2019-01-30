@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -44,6 +45,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopStartCacheWithDataLoaderNoOverwrite() throws Exception {
         checkStopStartCacheWithDataLoader(false);
     }
@@ -51,6 +53,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopStartCacheWithDataLoaderOverwrite() throws Exception {
         checkStopStartCacheWithDataLoader(true);
     }

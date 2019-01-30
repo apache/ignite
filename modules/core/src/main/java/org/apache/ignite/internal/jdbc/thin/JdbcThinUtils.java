@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -35,6 +36,8 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+
 import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
@@ -56,7 +59,6 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return Type from {@link Types}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int type(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return BOOLEAN;
@@ -80,8 +82,10 @@ public class JdbcThinUtils {
             return TIME;
         else if (Timestamp.class.getName().equals(cls))
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return DATE;
+        else if (BigDecimal.class.getName().equals(cls))
+            return DECIMAL;
         else
             return OTHER;
     }
@@ -92,7 +96,6 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return SQL type name.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static String typeName(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return "BOOLEAN";
@@ -116,8 +119,10 @@ public class JdbcThinUtils {
             return "TIME";
         else if (Timestamp.class.getName().equals(cls))
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return "DATE";
+        else if (BigDecimal.class.getName().equals(cls))
+            return "DECIMAL";
         else
             return "OTHER";
     }

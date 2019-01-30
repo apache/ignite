@@ -49,6 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests client to be able restore connection to cluster if coordination is not available.
@@ -115,6 +116,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnectAfterStart() throws Exception {
         Ignite srv1 = startGrid("server1");
 
@@ -192,6 +194,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnect() throws Exception {
         Ignite srv1 = startGrid("server1");
 
@@ -268,6 +271,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnectDisabled() throws Exception {
         clientReconnectDisabled = true;
 

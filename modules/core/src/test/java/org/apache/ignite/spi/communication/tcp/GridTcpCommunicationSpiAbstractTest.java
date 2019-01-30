@@ -36,6 +36,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test for {@link TcpCommunicationSpi}
@@ -82,6 +83,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
 
@@ -98,6 +100,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /**
      *
      */
+    @Test
     public void testCheckConnection1() {
         for (int i = 0; i < 100; i++) {
             for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
@@ -120,6 +123,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckConnection2() throws Exception {
         final int THREADS = spis.size();
 

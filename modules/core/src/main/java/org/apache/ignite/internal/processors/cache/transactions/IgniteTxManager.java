@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -71,9 +74,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -263,7 +266,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     // Wait some time in case there are some unprocessed messages from failed node.
                     cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(evt.eventNode(), discoCache.mvccCoordinator()));
+                        new NodeFailureTimeoutObject(evt.eventNode(), cctx.coordinators().currentCoordinator()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -311,16 +314,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
             }
-        }
-    }
-
-    /**
-     * Rollback all active transactions with acquired Mvcc snapshot.
-     */
-    public void rollbackMvccTxOnCoordinatorChange() {
-        for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccSnapshot() != null)
-                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }
 
@@ -733,7 +726,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Transaction for current thread.
      */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
     public <T> T tx() {
         IgniteInternalTx tx = txContext();
 
@@ -841,7 +833,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param threadId Id of thread for transaction.
      * @return Transaction for thread with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T tx(GridCacheContext cctx, long threadId) {
         if (cctx == null || !cctx.systemTx())
             return (T)threadMap.get(threadId);
@@ -862,7 +853,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <T extends IgniteInternalTx> T tx(GridCacheVersion txId) {
         return (T)idMap.get(txId);
     }
@@ -871,7 +861,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <T extends IgniteInternalTx> T nearTx(GridCacheVersion txId) {
         return (T)nearIdMap.get(txId);
     }
@@ -1443,6 +1432,35 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Removes Tx from manager. Can be used only if there were no updates.
+     *
+     * @param tx Transaction to finish.
+     */
+    public void forgetTx(IgniteInternalTx tx) {
+        assert tx != null;
+
+        if (transactionMap(tx).remove(tx.xidVersion(), tx)) {
+            // 1. Remove from per-thread storage.
+            clearThreadMap(tx);
+
+            // 2. Unregister explicit locks.
+            if (!tx.alternateVersions().isEmpty())
+                for (GridCacheVersion ver : tx.alternateVersions())
+                    idMap.remove(ver);
+
+            // 3. Remove Near-2-DHT mappings.
+            if (tx instanceof GridCacheMappedVersion)
+                mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
+
+            // 4. Clear context.
+            resetContext();
+
+            // 5. Complete finish future.
+            tx.state(UNKNOWN);
+        }
+    }
+
+    /**
      * Tries to minimize damage from partially-committed transaction.
      *
      * @param tx Tx to uncommit.
@@ -1767,7 +1785,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Currently committing transaction.
      */
-    @SuppressWarnings({"unchecked"})
     private IgniteInternalTx txContext() {
         return threadCtx.get();
     }
@@ -2328,7 +2345,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Collection of active transaction deadlock detection futures.
      */
-    @SuppressWarnings("unchecked")
     public Collection<IgniteInternalFuture<?>> deadlockDetectionFutures() {
         Collection<? extends IgniteInternalFuture<?>> values = deadlockDetectFuts.values();
 
@@ -2418,26 +2434,69 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Marks MVCC transaction as {@link TxState#COMMITTED} or {@link TxState#ABORTED}.
+     * Sets MVCC state.
      *
      * @param tx Transaction.
-     * @param commit Commit flag.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
+     * @param state New state.
      */
-    public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+    public void setMvccState(IgniteInternalTx tx, byte state) {
+        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
+            return;
+
+        cctx.database().checkpointReadLock();
+
+        try {
+            cctx.coordinators().updateState(tx.mvccSnapshot(), state, tx.local());
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
     }
 
     /**
-     * Marks MVCC transaction as {@link TxState#PREPARED}.
+     *  Finishes MVCC transaction.
+     *  @param tx Transaction.
+     */
+    public void mvccFinish(IgniteTxAdapter tx) {
+        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot == null || !tx.local())
+            return;
+
+        cctx.coordinators().releaseWaiters(tx.mvccSnapshot);
+    }
+
+    /**
+     * Logs Tx state to WAL if needed.
      *
      * @param tx Transaction.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
+     * @return WALPointer or {@code null} if nothing was logged.
      */
-    public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
+    @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
+        BaselineTopology baselineTop;
+
+        // Log tx state change to WAL.
+        if (cctx.wal() == null
+            || (!logTxRecords && !tx.txState().mvccEnabled())
+            || (baselineTop = cctx.kernalContext().state().clusterState().baselineTopology()) == null
+            || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
+            return null;
+
+        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+
+        TxRecord record;
+
+        if (tx.txState().mvccEnabled())
+            record = new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+        else
+            record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+
+        try {
+            return cctx.wal().log(record);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to log TxRecord: " + record, e);
+
+            throw new IgniteException("Failed to log TxRecord: " + record, e);
+        }
     }
 
     /**
@@ -2684,7 +2743,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private class DeadlockDetectionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
 
@@ -80,6 +81,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFoldersReuseCompatibility_2_2() throws Exception {
         runFoldersReuse("2.2.0");
     }
@@ -90,6 +92,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFoldersReuseCompatibility_2_1() throws Exception {
         runFoldersReuse("2.1.0");
     }

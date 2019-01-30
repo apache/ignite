@@ -109,7 +109,6 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @param cls Component class.
      * @return Created component.
      */
-    @SuppressWarnings("unchecked")
     public <T> T createComponent(Class<T> cls) {
         for (CachePluginProvider provider : providersList) {
             T res = (T)provider.createComponent(cls);
@@ -146,7 +145,7 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @param <V> Value type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
-    @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach"})
     @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls) {
         for (int i = 0; i < providersList.size(); i++) {
             final T res = (T)providersList.get(i).unwrapCacheEntry(entry, cls);
@@ -175,7 +174,6 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @param rmtNode Remote rmtNode.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public void validateRemotes(CacheConfiguration rmtCfg, ClusterNode rmtNode) throws IgniteCheckedException {
         for (Map.Entry<CachePluginContext, CachePluginProvider> entry : providersMap.entrySet()) {
             CachePluginContext cctx = entry.getKey();

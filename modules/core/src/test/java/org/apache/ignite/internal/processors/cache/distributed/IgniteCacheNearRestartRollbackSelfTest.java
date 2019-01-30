@@ -43,12 +43,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -57,9 +56,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTest {
-    /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * The number of entries to put to the test cache.
      */
@@ -69,19 +65,14 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
         cfg.setClientFailureDetectionTimeout(50000);
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         if (getTestIgniteInstanceName(3).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
-            discoSpi.setForceServerMode(true);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
@@ -128,7 +119,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @Test
     public void testRestarts() throws Exception {
         startGrids(4);
 

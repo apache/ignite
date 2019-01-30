@@ -28,6 +28,7 @@ import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Redundancy for URI deployment test
@@ -44,6 +45,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testMd5FileCheck() throws Exception {
         undeployCntr.set(0);
 
@@ -71,6 +73,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testMd5DirectoryCheck() throws Exception {
         undeployCntr.set(0);
 
@@ -94,7 +97,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     }
 
     /** {@inheritDoc} */
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         U.delete(getGarDir());
         U.delete(new File(getDeployDir(), "uri1.gar"));
         U.delete(new File(getDeployDir(), "uri2.gar"));

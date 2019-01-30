@@ -24,6 +24,7 @@ import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Test file protocol scanner.
@@ -43,6 +44,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentFromFolder() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
         checkTask("GridUriDeploymentTestWithNameTask0");
@@ -53,6 +55,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentFromFile() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
         checkTask("GridUriDeploymentTestWithNameTask3");
@@ -70,6 +73,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDescriptorDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask4");
         checkTask("GridUriDeploymentTestWithNameTask4");
@@ -85,6 +89,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBadDeployment() throws Exception {
         checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentAbstractTestTask");
 
@@ -109,6 +114,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDependenceDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1");
         getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1")
@@ -128,6 +134,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDescriptorDependenceDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask2");
         getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask2")
@@ -148,6 +155,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSignedDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask5");
         checkTask("GridUriDeploymentTestWithNameTask5");

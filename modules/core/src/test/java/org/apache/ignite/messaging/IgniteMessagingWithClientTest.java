@@ -32,18 +32,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implements Serializable {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Message topic. */
     private enum TOPIC {
         /** */
@@ -62,8 +58,6 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         return cfg;
     }
 
@@ -77,6 +71,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageSendWithClientJoin() throws Exception {
         startGrid(0);
 

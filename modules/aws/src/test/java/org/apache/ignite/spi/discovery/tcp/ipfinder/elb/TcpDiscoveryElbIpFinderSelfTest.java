@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.elb;
 
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * TcpDiscoveryElbIpFinderSelfTest test.
@@ -44,6 +45,7 @@ public class TcpDiscoveryElbIpFinderSelfTest extends TcpDiscoveryIpFinderAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         TcpDiscoveryElbIpFinder ipFinder = new TcpDiscoveryElbIpFinder();
 

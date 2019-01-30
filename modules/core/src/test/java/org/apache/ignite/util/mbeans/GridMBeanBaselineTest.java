@@ -28,6 +28,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.Test;
 
 /**
  *
@@ -71,6 +72,7 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testIgniteKernalNodeInBaselineTest() throws Exception {
         try {
             IgniteEx ignite0 = (IgniteEx)startGrids(NODES);

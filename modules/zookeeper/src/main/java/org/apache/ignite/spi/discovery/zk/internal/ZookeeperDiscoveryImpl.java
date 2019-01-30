@@ -192,6 +192,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final ZookeeperDiscoveryStatistics stats;
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -297,6 +300,9 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void resolveCommunicationError(ClusterNode node0, Exception err) {
+        if (node0.isClient())
+            return;
+
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
@@ -313,6 +319,8 @@ public class ZookeeperDiscoveryImpl {
                 ZkCommunicationErrorProcessFuture newFut = ZkCommunicationErrorProcessFuture.createOnCommunicationError(
                     this,
                     node.sessionTimeout() + 1000);
+
+                stats.onCommunicationError();
 
                 if (commErrProcFut.compareAndSet(fut, newFut)) {
                     fut = newFut;
@@ -737,7 +745,7 @@ public class ZookeeperDiscoveryImpl {
                 internalLsnr.beforeJoin(locNode, log);
 
             if (locNode.isClient() && reconnect)
-                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+                locNode.setAttributes(spi.getLocNodeAttrs());
 
             marshalCredentialsOnJoin(locNode);
 
@@ -1710,7 +1718,7 @@ public class ZookeeperDiscoveryImpl {
 
         List<T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>>> nodes = joinCtx.nodes;
 
-        assert nodes != null && nodes.size() > 0;
+        assert nodes != null && !nodes.isEmpty();
 
         int nodeCnt = nodes.size();
 
@@ -1916,7 +1924,7 @@ public class ZookeeperDiscoveryImpl {
         if (data instanceof ZkJoiningNodeData) {
             ZkJoiningNodeData joiningNodeData = (ZkJoiningNodeData)data;
 
-            ZkNodeValidateResult validateRes = validateJoiningNode(joiningNodeData.node());
+            ZkNodeValidateResult validateRes = validateJoiningNode(joiningNodeData);
 
             if (validateRes.err == null) {
                 ZookeeperClusterNode joinedNode = joiningNodeData.node();
@@ -1977,10 +1985,12 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node Joining node.
+     * @param node Joining node data.
      * @return Validation result.
      */
-    private ZkNodeValidateResult validateJoiningNode(ZookeeperClusterNode node) {
+    private ZkNodeValidateResult validateJoiningNode(ZkJoiningNodeData joiningNodeData) {
+        ZookeeperClusterNode node = joiningNodeData.node();
+
         ZookeeperClusterNode node0 = rtState.top.nodesById.get(node.id());
 
         if (node0 != null) {
@@ -1997,6 +2007,14 @@ public class ZookeeperDiscoveryImpl {
             return res;
 
         IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+
+        if (err == null) {
+            DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(node.id(), joiningNodeData.node().isClient());
+
+            joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+
+            err = spi.getSpiContext().validateNode(node, joiningNodeBag);
+        }
 
         if (err != null) {
             LT.warn(log, err.message());
@@ -2224,7 +2242,6 @@ public class ZookeeperDiscoveryImpl {
      * @param prevEvts Events from previous cluster.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void newClusterStarted(@Nullable ZkDiscoveryEventsData prevEvts) throws Exception {
         assert !locNode.isClient() : locNode;
 
@@ -2614,7 +2631,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtsData Events.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processNewEvents(final ZkDiscoveryEventsData evtsData) throws Exception {
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
@@ -2754,6 +2770,8 @@ public class ZookeeperDiscoveryImpl {
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
+        waitForLastListenerFuture();
+
         boolean evtProcessed = false;
 
         for (int i = 0; i < evtData.joinedNodes.size(); i++) {
@@ -2897,7 +2915,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Local join event data.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processLocalJoin(ZkDiscoveryEventsData evtsData,
         ZkJoinedNodeEvtData joinedEvtData,
         ZkDiscoveryNodeJoinEventData evtData)
@@ -3410,7 +3427,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Event data.
      * @param msg Custom message.
      */
-    @SuppressWarnings("unchecked")
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
         assert !(msg instanceof ZkInternalMessage) : msg;
 
@@ -3434,13 +3450,14 @@ public class ZookeeperDiscoveryImpl {
 
         if (msg != null && msg.isMutable())
             fut.get();
+        else
+            lastCustomEvtLsnrFut = fut;
     }
 
     /**
      * @param joinedEvtData Event data.
      * @param joiningData Joining node data.
      */
-    @SuppressWarnings("unchecked")
     private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) {
         final ZookeeperClusterNode joinedNode = joiningData.node();
 
@@ -3989,6 +4006,20 @@ public class ZookeeperDiscoveryImpl {
         }
 
         return out.toByteArray();
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
+        }
     }
 
     /**

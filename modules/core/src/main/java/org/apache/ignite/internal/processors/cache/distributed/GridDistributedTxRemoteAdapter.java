@@ -114,7 +114,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private boolean started;
 
     /** {@code True} only if all write entries are locked by this transaction. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringInclude
     private volatile int commitAllowed;
 
@@ -122,8 +121,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @GridToStringInclude
     protected IgniteTxRemoteState txState;
 
-    /** {@code True} if tx should skip adding itself to completed version map on finish. */
-    private boolean skipCompletedVers;
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -146,6 +146,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param txLbl Transaction label.
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -160,7 +161,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        String txLbl
     ) {
         super(
             ctx,
@@ -178,6 +180,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             taskNameHash);
 
         this.invalidate = invalidate;
+        this.txLbl = txLbl;
 
         commitVersion(commitVer);
 
@@ -428,7 +431,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /**
      * @throws IgniteCheckedException If commit failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
             for (IgniteTxEntry txEntry : writeEntries()) {
@@ -623,8 +625,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
                                         else {
                                             assert val != null : txEntry;
 
@@ -648,8 +649,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
-                                                mvccSnapshot());
+                                                txEntry.updateCounter());
 
                                             txEntry.updateCounter(updRes.updateCounter());
 
@@ -686,8 +686,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            txEntry.updateCounter(),
-                                            mvccSnapshot());
+                                            txEntry.updateCounter());
 
                                         txEntry.updateCounter(updRes.updateCounter());
 
@@ -814,8 +813,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.tm().commitTx(this);
 
-                cctx.tm().mvccFinish(this, true);
-
                 state(COMMITTED);
             }
         }
@@ -913,7 +910,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false, skipCompletedVers);
+                cctx.tm().rollbackTx(this, false, skipCompletedVersions());
 
                 TxCounters counters = txCounters(false);
 
@@ -924,11 +921,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.mvccCaching().onTxFinished(this, false);
 
-                cctx.tm().mvccFinish(this, false);
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
             state(UNKNOWN);
+
+            U.error(log, "Error during tx rollback.", e);
 
             if (e instanceof IgniteCheckedException)
                 throw new IgniteException(e);
@@ -957,20 +955,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /**
-     * @return {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public boolean skipCompletedVersions() {
-        return skipCompletedVers;
-    }
-
-    /**
-     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
-     */
-    public void skipCompletedVersions(boolean skipCompletedVers) {
-        this.skipCompletedVers = skipCompletedVers;
-    }
-
-    /**
      * Adds explicit version if there is one.
      *
      * @param e Transaction entry.
@@ -991,6 +975,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 cctx.tm().addAlternateVersion(e.explicitVersion(), this);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String label() {
+        return txLbl;
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.Project;
+import org.junit.Test;
 
 /**
  *
@@ -35,6 +36,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskCorrect() throws Exception {
         proceedTest("correct.gar", "ignite.xml",
             "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
@@ -43,6 +45,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithBrokenXML() throws Exception {
         proceedTest("broken.gar", "ignite.brokenxml", "brokenxml-task", false);
     }
@@ -50,6 +53,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithEmptyXML() throws Exception {
         proceedTest("empty.gar", "ignite.empty", "emptyxml-task", false);
     }
@@ -57,6 +61,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithIncorrectRefsXML() throws Exception {
         proceedTest("incorrefs.gar", "ignite.incorrefs", "incorrectref-task", false);
     }

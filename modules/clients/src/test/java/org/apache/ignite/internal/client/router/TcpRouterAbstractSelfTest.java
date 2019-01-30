@@ -29,6 +29,7 @@ import org.apache.ignite.internal.client.integration.ClientAbstractSelfTest;
 import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.log4j.Log4JLogger;
+import org.junit.Test;
 
 /**
  * Abstract base class for http routing tests.
@@ -117,6 +118,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     @Override public void testConnectable() throws Exception {
         GridClient client = client();
 

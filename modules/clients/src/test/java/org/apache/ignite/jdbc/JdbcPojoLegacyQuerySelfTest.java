@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
+import org.junit.Test;
 
 /**
  * Test for Jdbc driver query without class on client
@@ -29,6 +30,7 @@ public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcQuery() throws Exception {
         stmt.execute("select * from JdbcTestObject");
 

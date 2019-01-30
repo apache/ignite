@@ -29,12 +29,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
+public class CreateTableWithDateKeySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 1;
 
@@ -62,6 +63,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPassTableWithDateKeyCreation() {
         final String creationQry = "CREATE TABLE %s (id DATE primary key, dateField DATE) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";
@@ -76,6 +78,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPassTableWithTimeKeyCreation() {
         final String creationQry = "CREATE TABLE %s (id TIME primary key, dateField TIME) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";
@@ -90,6 +93,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPassTableWithTimeStampKeyCreation() {
         final String creationQry = "CREATE TABLE %s (id TIMESTAMP primary key, dateField TIMESTAMP) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";

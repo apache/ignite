@@ -33,6 +33,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests grid stop with jobs canceling.
@@ -60,6 +61,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If an error occurs.
      */
+    @Test
     public void testStopGrid() throws Exception {
         cancelCorrect = false;
 

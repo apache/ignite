@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -129,6 +130,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         testTopologyChange(null, null);
     }
@@ -136,6 +138,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConstantTopologyChange() throws Exception {
         testConstantTopologyChange(null, null);
     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
@@ -50,7 +52,6 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void start() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
@@ -82,7 +83,7 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return null;
+        return DiscoveryDataExchangeType.PLUGIN;
     }
 
     /** {@inheritDoc} */
@@ -107,19 +108,25 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
+        JoiningNodeDiscoveryData discoData) {
         try {
-            plugin.validateNewNode(node);
+            Map<String, Serializable> map = (Map<String, Serializable>)discoData.joiningNodeData();
+
+            if (map != null)
+                plugin.validateNewNode(node, map.get(plugin.name()));
+            else
+                plugin.validateNewNode(node, null);
 
             return null;
         }
         catch (PluginValidationException e) {
             return new IgniteNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData) {
-        return null;
     }
 
     /** {@inheritDoc} */

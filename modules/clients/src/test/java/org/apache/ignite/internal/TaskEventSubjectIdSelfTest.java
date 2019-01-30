@@ -44,6 +44,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
@@ -116,6 +117,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTask() throws Exception {
         latch = new CountDownLatch(3);
 
@@ -160,6 +162,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTask() throws Exception {
         latch = new CountDownLatch(2);
 
@@ -206,6 +209,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimedOutTask() throws Exception {
         latch = new CountDownLatch(2);
 
@@ -261,6 +265,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosure() throws Exception {
         latch = new CountDownLatch(3);
 
@@ -312,6 +317,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClient() throws Exception {
         latch = new CountDownLatch(3);
 

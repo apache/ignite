@@ -74,6 +74,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -156,6 +157,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         clientMode = true;
 
@@ -335,6 +337,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactions() throws Exception {
         clientMode = true;
 
@@ -404,6 +407,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxStateAfterClientReconnect() throws Exception {
         clientMode = true;
 
@@ -443,6 +447,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactionInProgress1() throws Exception {
         clientMode = true;
 
@@ -604,6 +609,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactionInProgress2() throws Exception {
         clientMode = true;
 
@@ -663,6 +669,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectExchangeInProgress() throws Exception {
         clientMode = true;
 
@@ -725,6 +732,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInitialExchangeInProgress() throws Exception {
         final UUID clientId = UUID.randomUUID();
 
@@ -813,6 +821,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectOperationInProgress() throws Exception {
         clientMode = true;
 
@@ -885,6 +894,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheDestroyed() throws Exception {
         clientMode = true;
 
@@ -922,6 +932,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheDestroyedAndCreated() throws Exception {
         clientMode = true;
 
@@ -965,6 +976,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMarshallerCache() throws Exception {
         clientMode = true;
 
@@ -1007,6 +1019,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClusterRestart() throws Exception {
         clientMode = true;
 
@@ -1071,6 +1084,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClusterRestartMultinode() throws Exception {
         clientMode = true;
 
@@ -1134,6 +1148,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMultinode() throws Exception {
         reconnectMultinode(false);
     }
@@ -1141,6 +1156,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMultinodeLongHistory() throws Exception {
         reconnectMultinode(true);
     }
@@ -1256,6 +1272,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectDestroyCache() throws Exception {
         clientMode = true;
 

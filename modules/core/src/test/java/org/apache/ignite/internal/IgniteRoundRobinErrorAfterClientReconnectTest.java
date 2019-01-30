@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test to reproduce IGNITE-4060.
@@ -65,6 +66,7 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         final Ignite cli = grid(CLI_IDX);
 

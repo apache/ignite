@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -60,6 +61,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -101,6 +103,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimeMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -122,6 +125,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalFieldMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -179,7 +183,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject {
         /** */
         private byte bVal;
@@ -232,7 +235,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class DecimalValue {
         /** */
         private BigDecimal decVal;

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
@@ -85,6 +86,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -112,6 +114,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPageHandleDeallocation() throws Exception {
         // No-op.
     }

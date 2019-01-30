@@ -17,17 +17,31 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
+    /** Size threshold to use Map instead of List view. */
+    int IGNITE_AFFINITY_BACKUPS_THRESHOLD = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_AFFINITY_BACKUPS_THRESHOLD,
+        5
+    );
+
+    /** Disable memory affinity optimizations. */
+    boolean IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION,
+        false
+    );
+
     /**
      * @return Affinity assignment computed by affinity function.
      */
@@ -57,7 +71,7 @@ public interface AffinityAssignment {
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    public HashSet<UUID> getIds(int part);
+    public Collection<UUID> getIds(int part);
 
     /**
      * @return Nodes having parimary and backup assignments.
@@ -86,7 +100,16 @@ public interface AffinityAssignment {
     public Set<Integer> backupPartitions(UUID nodeId);
 
     /**
-     * @return Mvcc coordinator.
+     * Converts List of Cluster Nodes to HashSet of UUIDs wrapped as unmodifiable collection.
+     * @param assignmentPart Source assignment per partition.
+     * @return List of deduplicated collections if ClusterNode's ids.
      */
-    public MvccCoordinator mvccCoordinator();
+    public default Collection<UUID> assignments2ids(List<ClusterNode> assignmentPart) {
+        Collection<UUID> partIds = U.newHashSet(assignmentPart.size());
+
+        for (ClusterNode node : assignmentPart)
+            partIds.add(node.id());
+
+        return Collections.unmodifiableCollection(partIds);
+    }
 }

@@ -273,8 +273,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 else {
                     // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
                     // operation context is not available here and full row required if filter is set.
-                    if (res == ResultType.PREV_NOT_NULL && (isFlagsSet(NEED_PREV_VALUE) || filter != null))
-                        oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                    if (res == ResultType.PREV_NOT_NULL && (isFlagsSet(NEED_PREV_VALUE) || filter != null)) {
+                        oldRow = tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
+
+                        oldRow.key(key);
+                    }
                     else
                         oldRow = row;
                 }
@@ -398,7 +401,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCoordinatorVersion());
                         rowIo.setMvccLockCounter(pageAddr, idx, mvccCounter());
 
-                        // TODO Delta record IGNITE-7991
+                        // Actually, there is no need to log lock delta record into WAL.
 
                         setFlags(DIRTY);
                     }
@@ -444,7 +447,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             // We can cleanup previous row only if it was deleted by another
             // transaction and delete version is less or equal to cleanup one
-            if (rowNewCrd < mvccCoordinatorVersion() || Long.compare(cleanupVer, rowNewCntr) >= 0)
+            if (rowNewCrd < mvccCoordinatorVersion() || cleanupVer >= rowNewCntr)
                 setFlags(CAN_CLEANUP);
         }
 
@@ -581,9 +584,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
-        assert oldRow != null;
-
-        return oldRow.value();
+        return oldRow == null ? null : oldRow.value();
     }
 
     /** {@inheritDoc} */

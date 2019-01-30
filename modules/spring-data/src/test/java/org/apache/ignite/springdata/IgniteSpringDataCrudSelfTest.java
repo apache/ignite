@@ -25,6 +25,7 @@ import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
@@ -79,6 +80,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPutGet() {
         Person person = new Person("some_name", "some_surname");
 
@@ -103,6 +105,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPutAllGetAll() {
         LinkedHashMap<Integer, Person> map = new LinkedHashMap<>();
 
@@ -142,6 +145,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testGetAll() {
         assertEquals(CACHE_SIZE, repo.count());
 
@@ -160,6 +164,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
 
@@ -181,6 +186,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDeleteSet() {
         assertEquals(CACHE_SIZE, repo.count());
 
@@ -211,6 +217,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDeleteAll() {
         assertEquals(CACHE_SIZE, repo.count());
 

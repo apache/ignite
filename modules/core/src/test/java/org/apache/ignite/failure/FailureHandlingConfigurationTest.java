@@ -33,6 +33,7 @@ import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
@@ -106,6 +107,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCfgParamsPropagation() throws Exception {
         sysWorkerBlockedTimeout = 30_000L;
         checkpointReadLockTimeout = 20_000L;
@@ -130,6 +132,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartialCfgParamsPropagation() throws Exception {
         sysWorkerBlockedTimeout = 30_000L;
         checkpointReadLockTimeout = null;
@@ -154,6 +157,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeParamValues() throws Exception {
         sysWorkerBlockedTimeout = -1L;
         checkpointReadLockTimeout = -85L;
@@ -178,6 +182,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOverridingBySysProps() throws Exception {
         String prevWorkerProp = System.getProperty(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
         String prevCheckpointProp = System.getProperty(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT);
@@ -228,6 +233,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMBeanParamsChanging() throws Exception {
         IgniteEx ignite = startGrid(0);
 

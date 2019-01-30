@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,6 +58,7 @@ public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAllTxNodesAreTrackedCli() throws Exception {
         checkAllTxNodesAreTracked(false);
     }
@@ -64,6 +66,7 @@ public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAllTxNodesAreTrackedSrv() throws Exception {
         checkAllTxNodesAreTracked(true);
     }

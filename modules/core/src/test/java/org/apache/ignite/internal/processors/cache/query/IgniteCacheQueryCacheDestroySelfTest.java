@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * The test for the destruction of the cache during the execution of the query
@@ -55,6 +56,7 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
     /**
      * The main test code.
      */
+    @Test
     public void testQueue() throws Throwable {
         startGridsMultiThreaded(GRID_CNT);
 

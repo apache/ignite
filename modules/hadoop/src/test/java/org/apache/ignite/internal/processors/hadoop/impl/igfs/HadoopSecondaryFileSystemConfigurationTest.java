@@ -53,6 +53,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -420,6 +421,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      *
      * @throws Exception On failure.
      */
+    @Test
     public void testFsConfigurationOnly() throws Exception {
         primaryCfgScheme = IGFS_SCHEME;
         primaryCfgAuthority = PRIMARY_AUTHORITY;
@@ -441,6 +443,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      *
      * @throws Exception On failure.
      */
+    @Test
     public void testFsUriOverridesUriInConfiguration() throws Exception {
         // wrong primary URI in the configuration:
         primaryCfgScheme = "foo";
@@ -538,7 +541,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * @param fs FileSystem to check.
      * @param path Path to check.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertPathDoesNotExist(final FileSystem fs, final Path path) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

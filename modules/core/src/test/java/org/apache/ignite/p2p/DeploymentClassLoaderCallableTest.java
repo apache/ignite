@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  */
@@ -47,6 +48,7 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeploymentFromSecondAndThird() throws Exception {
         try {
             startGrid(1);
@@ -67,6 +69,7 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeploymentFromEach() throws Exception {
         try {
             final Ignite ignite1 = startGrid(1);
@@ -87,6 +90,7 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeploymentFromOne() throws Exception {
         try {
             startGrid(1);

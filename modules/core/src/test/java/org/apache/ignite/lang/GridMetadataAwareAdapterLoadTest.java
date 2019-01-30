@@ -22,6 +22,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheMockEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Check how much memory and time required to fill 1_000_000 entries with meta.
@@ -40,6 +41,7 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void test() throws Exception {
         String[] dic = new String[1_000_000];
 

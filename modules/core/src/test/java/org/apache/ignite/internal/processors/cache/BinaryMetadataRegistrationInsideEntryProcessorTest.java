@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -50,6 +51,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     /**
      * @throws Exception If failed;
      */
+    @Test
     public void test() throws Exception {
         Ignite ignite = startGrids(2);
 

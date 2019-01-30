@@ -18,6 +18,7 @@
 package org.apache.ignite.p2p;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 
@@ -31,6 +32,7 @@ public class GridMultinodeRedeployPrivateModeSelfTest extends GridAbstractMultin
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testPrivateMode() throws Throwable {
         processTest(PRIVATE);
     }

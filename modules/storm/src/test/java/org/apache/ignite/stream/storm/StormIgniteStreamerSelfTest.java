@@ -42,6 +42,7 @@ import org.apache.storm.testing.TestJob;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.Values;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -62,7 +63,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     private static final int STORM_EXECUTORS = 2;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
 
@@ -82,6 +82,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws TimeoutException
      * @throws InterruptedException
      */
+    @Test
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
         final StormStreamer<String, String> stormStreamer = new StormStreamer<>();
 

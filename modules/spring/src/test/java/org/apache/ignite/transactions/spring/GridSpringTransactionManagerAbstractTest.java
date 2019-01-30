@@ -20,6 +20,7 @@ package org.apache.ignite.transactions.spring;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.TransactionStatus;
@@ -48,6 +49,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     }
 
     /** */
+    @Test
     public void testSuccessPut() {
         int entryCnt = 1_000;
 
@@ -57,6 +59,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     }
 
     /** */
+    @Test
     public void testFailPut() {
         int entryCnt = 1_000;
 
@@ -72,6 +75,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     }
 
     /** */
+    @Test
     public void testMandatoryPropagation() {
         try {
             service().putWithMandatoryPropagation(cache());
@@ -84,6 +88,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     }
 
     /** */
+    @Test
     public void testUnsupportedIsolationLevel() {
         try {
             service().putWithUnsupportedIsolationLevel(cache());
@@ -98,6 +103,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDoSetRollbackOnlyInExistingTransaction() throws Exception {
         SpringTransactionManager mngr = new SpringTransactionManager();
         mngr.setIgniteInstanceName(grid().name());

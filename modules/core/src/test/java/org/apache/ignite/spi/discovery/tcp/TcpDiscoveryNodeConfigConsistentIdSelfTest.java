@@ -19,24 +19,18 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link IgniteConfiguration#consistentId}.
  */
 public class TcpDiscoveryNodeConfigConsistentIdSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("0.0.0.0");
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -56,6 +50,7 @@ public class TcpDiscoveryNodeConfigConsistentIdSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConsistentId() throws Exception {
         Object id0 = grid(0).localNode().consistentId();
         Serializable id1 = grid(0).configuration().getConsistentId();

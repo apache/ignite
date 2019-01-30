@@ -26,22 +26,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
 
 /**
  *
  */
 public class DdlTransactionSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -59,11 +54,6 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
             .setDefaultTxConcurrency(TransactionConcurrency.PESSIMISTIC)
             .setDefaultTxTimeout(5000));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(getCacheConfiguration());
         cfg.setClientMode(client);
 
@@ -84,6 +74,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequestMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
@@ -132,6 +123,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequestMultinode() throws Exception {
         Ignite node = startGridsMultiThreaded(4);
 
@@ -174,6 +166,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequest() throws Exception {
         Ignite node = startGrid();
 
@@ -216,6 +209,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTxMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
@@ -260,6 +254,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTxMultinode() throws Exception {
         Ignite node = startGridsMultiThreaded(4);
 
@@ -298,6 +293,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTx() throws Exception {
         Ignite node = startGrid();
 

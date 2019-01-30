@@ -153,7 +153,6 @@ public class DataSource implements Externalizable {
      *
      * @param user user name
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setUser(String user) {
         this.user = user;
 
@@ -165,7 +164,6 @@ public class DataSource implements Externalizable {
      *
      * @param pwd password
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPassword(String pwd) {
         this.pwd = pwd;
 
@@ -177,7 +175,6 @@ public class DataSource implements Externalizable {
      *
      * @param port port
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPort(int port) {
         this.port = port;
 
@@ -224,7 +221,6 @@ public class DataSource implements Externalizable {
     }
 
     /** Sets maximum time to wait for schema agreement before returning from a DDL query. */
-    @SuppressWarnings("UnusedDeclaration")
     public void setMaxSchemaAgreementWaitSeconds(int seconds) {
         maxSchemaAgreementWaitSeconds = seconds;
 
@@ -236,7 +232,6 @@ public class DataSource implements Externalizable {
      *
      * @param ver version number
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setProtocolVersion(int ver) {
         protoVer = ver;
 
@@ -248,7 +243,6 @@ public class DataSource implements Externalizable {
      *
      * @param compression Compression algorithm.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setCompression(String compression) {
         this.compression = compression == null || compression.trim().isEmpty() ? null : compression.trim();
 
@@ -268,7 +262,6 @@ public class DataSource implements Externalizable {
      *
      * @param use Flag to enable/disable SSL.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setUseSSL(boolean use) {
         useSSL = use;
 
@@ -280,7 +273,6 @@ public class DataSource implements Externalizable {
      *
      * @param collect Flag to enable/disable metrics collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setCollectMetrix(boolean collect) {
         collectMetrix = collect;
 
@@ -292,7 +284,6 @@ public class DataSource implements Externalizable {
      *
      * @param enableReporting Flag to enable/disable JMX reporting.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setJmxReporting(boolean enableReporting) {
         jmxReporting = enableReporting;
 
@@ -304,7 +295,6 @@ public class DataSource implements Externalizable {
      *
      * @param size Number of rows to fetch.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setFetchSize(int size) {
         fetchSize = size;
 
@@ -360,7 +350,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Reconnection policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
         reconnectionPlc = plc;
 
@@ -372,7 +361,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Retry policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
         retryPlc = plc;
 
@@ -384,7 +372,6 @@ public class DataSource implements Externalizable {
      *
      * @param translator Address translator.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslator(AddressTranslator translator) {
         addrTranslator = translator;
 
@@ -396,7 +383,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Speculative execution policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
         speculativeExecutionPlc = plc;
 
@@ -408,7 +394,6 @@ public class DataSource implements Externalizable {
      *
      * @param provider Authentication provider.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
         authProvider = provider;
 
@@ -420,7 +405,6 @@ public class DataSource implements Externalizable {
      *
      * @param options SSL options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
         sslOptions = options;
 
@@ -432,7 +416,6 @@ public class DataSource implements Externalizable {
      *
      * @param options pooling options to use.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
         poolingOptions = options;
 
@@ -444,7 +427,6 @@ public class DataSource implements Externalizable {
      *
      * @param options Socket options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
         sockOptions = options;
 
@@ -456,7 +438,6 @@ public class DataSource implements Externalizable {
      *
      * @param options netty options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
         nettyOptions = options;
 
@@ -486,7 +467,6 @@ public class DataSource implements Externalizable {
      * @param log logger
      * @return Cassandra session wrapper
      */
-    @SuppressWarnings("deprecation")
     public synchronized CassandraSession session(IgniteLogger log) {
         if (ses != null)
             return ses;

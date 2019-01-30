@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSerializationWrapper;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -73,6 +74,7 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws IgniteCheckedException If fails.
      */
+    @Test
     public void testCustomSerializationApplying() throws IgniteCheckedException {
         JobConf cfg = new JobConf();
 

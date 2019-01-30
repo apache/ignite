@@ -17,26 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,31 +48,18 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     /** */
     public static final String CACHE_NAME = "part_cache";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    /** */
+    private static final int STARTUP_DELAY = 500;
 
     /** */
-    private volatile boolean run = true;
+    private static final int GRID_CNT = 4;
 
     /** */
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assertEquals(0, G.allGrids().size());
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -93,6 +79,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPrepareOnUnstableTopology() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             doPrepareOnUnstableTopology(4, false, isolation, 0);
@@ -110,58 +97,42 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
      */
     private void doPrepareOnUnstableTopology(int keys, boolean testClient, TransactionIsolation isolation,
         long timeout) throws Exception {
-        Collection<Thread> threads = new ArrayList<>();
+        GridCompoundFuture<Void, Object> compFut = new GridCompoundFuture<>();
+
+        AtomicBoolean stopFlag = new AtomicBoolean();
 
         try {
-            // Start grid 1.
-            IgniteEx grid1 = startGrid(0);
+            int clientIdx = testClient ? 1 : -1;
 
-            assertFalse(grid1.configuration().isClientMode());
+            try {
+                for (int i = 0; i < GRID_CNT; i++) {
+                    client = (clientIdx == i);
 
-            threads.add(runCacheOperations(grid1, isolation, timeout, keys));
+                    IgniteEx grid = startGrid(i);
 
-            TimeUnit.SECONDS.sleep(3L);
+                    assertEquals(client, grid.configuration().isClientMode().booleanValue());
 
-            client = testClient; // If test client start on node in client mode.
+                    client = false;
 
-            // Start grid 2.
-            IgniteEx grid2 = startGrid(1);
+                    IgniteInternalFuture<Void> fut = runCacheOperationsAsync(grid, stopFlag, isolation, timeout, keys);
 
-            assertEquals((Object)testClient, grid2.configuration().isClientMode());
+                    compFut.add(fut);
 
-            client = false;
+                    U.sleep(STARTUP_DELAY);
+                }
+            }
+            finally {
+                stopFlag.set(true);
+            }
 
-            threads.add(runCacheOperations(grid2, isolation, timeout, keys));
+            compFut.markInitialized();
 
-            TimeUnit.SECONDS.sleep(3L);
+            compFut.get();
 
-            // Start grid 3.
-            IgniteEx grid3 = startGrid(2);
-
-            assertFalse(grid3.configuration().isClientMode());
-
-            if (testClient)
-                log.info("Started client node: " + grid3.name());
-
-            threads.add(runCacheOperations(grid3, isolation, timeout, keys));
-
-            TimeUnit.SECONDS.sleep(3L);
-
-            // Start grid 4.
-            IgniteEx grid4 = startGrid(3);
-
-            assertFalse(grid4.configuration().isClientMode());
-
-            threads.add(runCacheOperations(grid4, isolation, timeout, keys));
-
-            TimeUnit.SECONDS.sleep(3L);
-
-            stopThreads(threads);
-
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < GRID_CNT; i++) {
                 IgniteTxManager tm = ((IgniteKernal)grid(i)).internalCache(CACHE_NAME).context().tm();
 
-                assertEquals("txMap is not empty:" + i, 0, tm.idMapSize());
+                assertEquals("txMap is not empty: " + i, 0, tm.idMapSize());
             }
         }
         finally {
@@ -170,64 +141,50 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     }
 
     /**
-     * @param threads Thread which will be stopped.
-     */
-    private void stopThreads(Iterable<Thread> threads) {
-        try {
-            run = false;
-
-            for (Thread thread : threads)
-                thread.join();
-        }
-        catch (Exception e) {
-            U.error(log(), "Couldn't stop threads.", e);
-        }
-    }
-
-    /**
      * @param node Node.
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param keys Number of keys.
-     * @return Running thread.
+     * @return Future representing pending completion of the operation.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
-    private Thread runCacheOperations(Ignite node, TransactionIsolation isolation, long timeout, final int keys) {
-        Thread t = new Thread() {
-            @Override public void run() {
-                while (run) {
-                    TreeMap<Integer, String> vals = generateValues(keys);
+    private IgniteInternalFuture<Void> runCacheOperationsAsync(
+        Ignite node,
+        AtomicBoolean stopFlag,
+        TransactionIsolation isolation,
+        long timeout,
+        final int keys
+    ) {
+        return GridTestUtils.runAsync(() -> {
+            while (!stopFlag.get()) {
+                TreeMap<Integer, String> vals = generateValues(keys);
 
-                    try {
-                        try (Transaction tx = node.transactions().txStart(TransactionConcurrency.OPTIMISTIC, isolation,
-                            timeout, keys)){
+                try {
+                    try (Transaction tx = node.transactions().txStart(TransactionConcurrency.OPTIMISTIC, isolation,
+                        timeout, keys)) {
 
-                            IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
+                        IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
 
-                            // Put or remove.
-                            if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
-                                cache.putAll(vals);
-                            else
-                                cache.removeAll(vals.keySet());
+                        // Put or remove.
+                        if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
+                            cache.putAll(vals);
+                        else
+                            cache.removeAll(vals.keySet());
 
-                            tx.commit();
-                        }
-                        catch (Exception e) {
-                            U.error(log(), "Failed cache operation.", e);
-                        }
-
-                        U.sleep(100);
+                        tx.commit();
                     }
-                    catch (Exception e){
-                        U.error(log(), "Failed unlock.", e);
+                    catch (Exception e) {
+                        U.error(log(), "Failed cache operation.", e);
                     }
+
+                    U.sleep(100);
+                }
+                catch (Exception e) {
+                    U.error(log(), "Failed unlock.", e);
                 }
             }
-        };
 
-        t.start();
-
-        return t;
+            return null;
+        });
     }
 
     /**

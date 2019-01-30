@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /** */
 public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestartTest {
@@ -41,6 +42,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDifferentPreconfiguredCachesOnNodes() throws Exception {
         differentCachesOnNodes = true;
 
@@ -48,6 +50,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testCreateEncryptedCache() throws Exception {
         differentCachesOnNodes = false;
 

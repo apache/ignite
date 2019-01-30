@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.Test;
 
 /**
  * MERGE statement test.
@@ -117,6 +118,7 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         assertEquals(3, stmt.executeUpdate(SQL));
     }
@@ -124,6 +126,7 @@ public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatement
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         assertFalse(stmt.execute(SQL));
     }

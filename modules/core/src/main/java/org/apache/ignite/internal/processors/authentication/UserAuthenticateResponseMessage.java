@@ -98,7 +98,6 @@ public class UserAuthenticateResponseMessage implements Message {
 
                 writer.incrementState();
 
-
         }
 
         return true;
@@ -127,6 +126,7 @@ public class UserAuthenticateResponseMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(UserAuthenticateResponseMessage.class);

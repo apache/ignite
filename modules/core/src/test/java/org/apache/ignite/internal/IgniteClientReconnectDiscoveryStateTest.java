@@ -28,6 +28,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -49,6 +50,7 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         final Ignite client = ignite(serverCount());
 

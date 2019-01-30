@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Node filter test.
@@ -51,6 +52,7 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         UUID nodeId = ignite.cluster().localNode().id();
 

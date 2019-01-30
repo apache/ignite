@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.junit.Test;
+
 /**
  * Version of test to be executed in Direct IO suite.
  * Contains reduced number of records, because Direct IO does not support tmpfs.
@@ -27,7 +29,10 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testWithExchangesMerge() throws Exception {
+
+
         super.testWithExchangesMerge();
     }
 }

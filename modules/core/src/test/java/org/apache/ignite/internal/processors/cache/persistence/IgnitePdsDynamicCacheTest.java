@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  *
@@ -45,8 +46,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(4 * 1024);
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -83,6 +83,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartAndCreate() throws Exception {
         startGrids(3);
 
@@ -150,6 +151,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheSavingOnNewNode() throws Exception {
         Ignite ignite = startGrid(0);
 

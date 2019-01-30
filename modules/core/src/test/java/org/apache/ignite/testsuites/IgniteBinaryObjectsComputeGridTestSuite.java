@@ -17,25 +17,17 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  *
  */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteComputeGridTestSuite.class,
+    GridComputationBinarylizableClosuresSelfTest.class
+})
 public class IgniteBinaryObjectsComputeGridTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
-
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
-
-        return suite;
-    }
 }

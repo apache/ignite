@@ -116,7 +116,7 @@ public class MLPTrainerExample {
             // Calculate score.
             for (int i = 0; i < 4; i++) {
                 LabeledPoint pnt = trainingSet.get(i);
-                Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
+                Matrix predicted = mlp.predict(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
 
                 double predictedVal = predicted.get(0, 0);
                 double lbl = pnt.lb;

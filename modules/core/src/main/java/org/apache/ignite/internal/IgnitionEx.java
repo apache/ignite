@@ -132,6 +132,7 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
@@ -1157,9 +1158,11 @@ public class IgnitionEx {
             try {
                 grid.start(startCtx);
             }
-            catch (IgniteInterruptedCheckedException e) {
-                if (grid.starterThreadInterrupted)
-                    Thread.interrupted();
+            catch (Exception e) {
+                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+                    if (grid.starterThreadInterrupted)
+                        Thread.interrupted();
+                }
 
                 throw e;
             }
@@ -1747,7 +1750,6 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"unchecked", "TooBroadScope"})
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
@@ -1848,7 +1850,8 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1897,7 +1900,8 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -2186,6 +2190,11 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
+            String predefineConsistentId = IgniteSystemProperties.getString(IGNITE_OVERRIDE_CONSISTENT_ID);
+
+            if (!F.isEmpty(predefineConsistentId))
+                myCfg.setConsistentId(predefineConsistentId);
+
             IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
             assert cfgLog != null;
@@ -2350,7 +2359,6 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 

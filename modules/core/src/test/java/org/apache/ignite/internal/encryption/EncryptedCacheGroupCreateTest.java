@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  */
@@ -53,6 +54,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCacheGroup() throws Exception {
         KeystoreEncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
 
@@ -78,6 +80,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
         createEncryptedCache(ENCRYPTED_CACHE + "3", ENCRYPTED_GROUP + "3");
 

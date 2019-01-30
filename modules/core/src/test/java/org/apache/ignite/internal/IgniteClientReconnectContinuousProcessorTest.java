@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -57,6 +58,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventListenerReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -114,6 +116,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromServer() throws Exception {
         testMessageListenerReconnect(false);
     }
@@ -121,6 +124,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromClient() throws Exception {
         testMessageListenerReconnect(true);
     }
@@ -212,6 +216,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -249,6 +254,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnectNewServer() throws Exception {
         Ignite client = grid(serverCount());
 

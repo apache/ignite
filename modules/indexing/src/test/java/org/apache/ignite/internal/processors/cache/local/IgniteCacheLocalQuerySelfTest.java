@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -49,6 +50,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testQueryLocal() throws Exception {
         // Let's do it twice to see how prepared statement caching behaves - without recompilation
         // check for cached prepared statements this would fail.
@@ -98,6 +100,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalSqlQueryFromClient() throws Exception {
         try {
             Ignite g = startGrid("client");
@@ -127,6 +130,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalSqlFieldsQueryFromClient() throws Exception {
         try {
             Ignite g = startGrid("client");

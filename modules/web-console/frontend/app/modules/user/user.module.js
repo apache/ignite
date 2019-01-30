@@ -20,6 +20,7 @@ import aclData from './permissions';
 
 import Auth from './Auth.service';
 import User from './User.service';
+import {registerInterceptor} from './emailConfirmationInterceptor';
 
 /**
  * @param {ng.auto.IInjectorService} $injector
@@ -90,27 +91,21 @@ function run($root, $transitions, AclService, User, Activities) {
                 return $state.target(trans.to().failState || '403');
             });
     });
-
-    $transitions.onFinish({}, (trans) => {
-        const $state = trans.router.stateService;
-        const {name, permission} = trans.to();
-
-        if (AclService.can(permission))
-            Activities.post({action: $state.href(name, trans.params('to'))});
-    });
 }
 
 run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
 
-angular.module('ignite-console.user', [
-    'mm.acl',
-    'ignite-console.config',
-    'ignite-console.core'
-])
-.factory('sessionRecoverer', sessionRecoverer)
-.config(['$httpProvider', ($httpProvider) => {
-    $httpProvider.interceptors.push('sessionRecoverer');
-}])
-.service('Auth', Auth)
-.service('User', User)
-.run(run);
+angular
+    .module('ignite-console.user', [
+        'mm.acl',
+        'ignite-console.config',
+        'ignite-console.core'
+    ])
+    .factory('sessionRecoverer', sessionRecoverer)
+    .config(registerInterceptor)
+    .config(['$httpProvider', ($httpProvider) => {
+        $httpProvider.interceptors.push('sessionRecoverer');
+    }])
+    .service('Auth', Auth)
+    .service('User', User)
+    .run(run);

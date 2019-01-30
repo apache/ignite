@@ -33,13 +33,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,9 +51,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests near transactions.
  */
 public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
 
@@ -78,12 +73,6 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
         return cfg;
     }
 
@@ -96,6 +85,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"unchecked"})
+    @Test
     public void testTxCleanup() throws Exception {
         backups = 1;
 
@@ -184,6 +174,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReadersUpdate() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -240,7 +231,6 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @param tm Transaction manager.
      */
-    @SuppressWarnings( {"unchecked"})
     private void checkTm(Ignite g, IgniteTxManager tm) {
         Collection<IgniteInternalTx> txs = tm.activeTransactions();
 

@@ -24,13 +24,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
@@ -39,19 +38,12 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
  *
  */
 public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -62,14 +54,13 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setDiscoverySpi(discoSpi);
-
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomic() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -79,8 +70,19 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTransactional() throws Exception {
         atomicityMode = TRANSACTIONAL;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testVersionMvccTx() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkVersion();
     }

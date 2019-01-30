@@ -23,6 +23,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Escape sequence parser tests.
@@ -31,6 +32,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple cases.
      */
+    @Test
     public void testTrivial() {
         check(
             "select * from table;",
@@ -41,6 +43,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequence series.
      */
+    @Test
     public void testSimpleFunction() throws Exception {
         check(
             "test()",
@@ -76,6 +79,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequence for explicit data type conversion
      */
+    @Test
     public void testConvertFunction() throws Exception {
         check(
          "CONVERT ( CURDATE(), CHAR )",
@@ -207,6 +211,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple nested escape sequences. Depth = 2.
      */
+    @Test
     public void testNestedFunction() throws Exception {
         check(
             "func1(field1, func2(field2))",
@@ -227,6 +232,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test nested escape sequences. Depth > 2.
      */
+    @Test
     public void testDeepNestedFunction() {
         check(
             "func1(func2(func3(field1)))",
@@ -252,6 +258,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test series of nested escape sequences.
      */
+    @Test
     public void testNestedFunctionMixed() {
         check(
             "func1(func2(field1), func3(field2))",
@@ -272,6 +279,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidFunctionSequence() {
         checkFail("{fnfunc1()}");
 
@@ -283,6 +291,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequences with additional whitespace characters
      */
+    @Test
     public void testFunctionEscapeSequenceWithWhitespaces() throws Exception {
         check("func1()", "{ fn func1()}");
 
@@ -296,6 +305,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test guid escape sequences
      */
+    @Test
     public void testGuidEscapeSequence() {
         check(
             "CAST('12345678-9abc-def0-1234-123456789abc' AS UUID)",
@@ -316,6 +326,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidGuidSequence() {
         checkFail("select {guid'12345678-9abc-def0-1234-123456789abc'}");
 
@@ -341,6 +352,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequences with additional whitespace characters
      */
+    @Test
     public void testGuidEscapeSequenceWithWhitespaces() throws Exception {
         check(
             "CAST('12345678-9abc-def0-1234-123456789abc' AS UUID)",
@@ -361,6 +373,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test date escape sequences
      */
+    @Test
     public void testDateEscapeSequence() throws Exception {
         check(
             "'2016-08-26'",
@@ -381,6 +394,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test date escape sequences with additional whitespace characters
      */
+    @Test
     public void testDateEscapeSequenceWithWhitespaces() throws Exception {
         check("'2016-08-26'", "{ d '2016-08-26'}");
 
@@ -392,6 +406,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidDateSequence() {
         checkFail("{d'2016-08-26'}");
 
@@ -411,6 +426,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test date escape sequences
      */
+    @Test
     public void testTimeEscapeSequence() throws Exception {
         check("'13:15:08'", "{t '13:15:08'}");
 
@@ -423,6 +439,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test date escape sequences with additional whitespace characters
      */
+    @Test
     public void testTimeEscapeSequenceWithWhitespaces() throws Exception {
         check("'13:15:08'", "{ t '13:15:08'}");
 
@@ -434,6 +451,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidTimeSequence() {
         checkFail("{t'13:15:08'}");
 
@@ -453,6 +471,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test timestamp escape sequences
      */
+    @Test
     public void testTimestampEscapeSequence() throws Exception {
         check(
             "'2016-08-26 13:15:08'",
@@ -478,6 +497,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test timestamp escape sequences with additional whitespace characters
      */
+    @Test
     public void testTimestampEscapeSequenceWithWhitespaces() throws Exception {
         check("'2016-08-26 13:15:08'",
             "{ ts '2016-08-26 13:15:08'}"
@@ -495,6 +515,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidTimestampSequence() {
         checkFail("{ts '2016-08-26 13:15:08,12345'}");
 
@@ -523,6 +544,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequence series.
      */
+    @Test
     public void testOuterJoinFunction() throws Exception {
         check(
             "t OUTER JOIN t2 ON t.id=t2.id",
@@ -543,6 +565,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple nested escape sequences. Depth = 2.
      */
+    @Test
     public void testNestedOuterJoin() throws Exception {
         check(
             "t OUTER JOIN (t2 OUTER JOIN t3 ON t2.id=t3.id) ON t.id=t2.id",
@@ -563,6 +586,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test nested escape sequences. Depth > 2.
      */
+    @Test
     public void testDeepNestedOuterJoin() {
         check(
             "t OUTER JOIN (t2 OUTER JOIN (t3 OUTER JOIN t4 ON t3.id=t4.id) ON t2.id=t3.id) ON t.id=t2.id",
@@ -588,6 +612,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidOuterJoinSequence() {
         checkFail("{ojt OUTER JOIN t2 ON t.id=t2.id}");
 
@@ -599,6 +624,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequences with additional whitespace characters
      */
+    @Test
     public void testOuterJoinSequenceWithWhitespaces() throws Exception {
         check(
             "t OUTER JOIN t2 ON t.id=t2.id",
@@ -619,6 +645,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test non-escape sequences.
      */
+    @Test
     public void testNonEscapeSequence() throws Exception {
         check("'{fn test()}'", "'{fn test()}'");
 
@@ -676,6 +703,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequence series.
      */
+    @Test
     public void testSimpleCallProc() throws Exception {
         check(
             "CALL test()",
@@ -711,6 +739,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple nested escape sequences. Depth = 2.
      */
+    @Test
     public void testNestedCallProc() throws Exception {
         check(
             "CALL func1(field1, CALL func2(field2))",
@@ -731,6 +760,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test nested escape sequences. Depth > 2.
      */
+    @Test
     public void testDeepNestedCallProc() {
         check(
             "CALL func1(CALL func2(CALL func3(field1)))",
@@ -756,6 +786,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test series of nested escape sequences.
      */
+    @Test
     public void testNestedCallProcMixed() {
         check(
             "CALL func1(CALL func2(field1), CALL func3(field2))",
@@ -776,6 +807,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testFailedOnInvalidCallProcSequence() {
         checkFail("{callfunc1()}");
 
@@ -787,6 +819,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequences with additional whitespace characters
      */
+    @Test
     public void testCallProcEscapeSequenceWithWhitespaces() throws Exception {
         check("CALL func1()", "{ call func1()}");
 
@@ -800,6 +833,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequence series.
      */
+    @Test
     public void testLikeEscapeSequence() throws Exception {
         check(
             "ESCAPE '\\'",
@@ -850,6 +884,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test escape sequences with additional whitespace characters
      */
+    @Test
     public void testLikeEscapeSequenceWithWhitespaces() throws Exception {
         check("ESCAPE '\\'", "{ '\\' }");
         check("ESCAPE '\\'", "{ escape '\\'}");
@@ -864,6 +899,7 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test invalid escape sequence.
      */
+    @Test
     public void testLikeOnInvalidLikeEscapeSequence() {
         checkFail("LIKE 'AAA's'");
         checkFail("LIKE 'AAA\'s'");
@@ -894,7 +930,6 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      *
      * @param qry Query.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkFail(final String qry) {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {

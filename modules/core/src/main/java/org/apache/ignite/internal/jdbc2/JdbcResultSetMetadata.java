@@ -156,7 +156,6 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());

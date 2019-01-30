@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -183,101 +184,107 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else if (msg instanceof GridRedisMessage)
             redisLsnr.onMessage(ses, (GridRedisMessage)msg);
-        else {
-            if (msg instanceof GridClientPingPacket)
-                ses.send(msg);
-            else if (msg instanceof GridClientHandshakeRequest) {
-                GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
+        else if (msg instanceof GridClientPingPacket)
+            ses.send(msg);
+        else if (msg instanceof GridClientHandshakeRequest) {
+            GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
-                short ver = hs.version();
+            short ver = hs.version();
 
-                if (!SUPP_VERS.contains(ver)) {
-                    U.error(log, "Client protocol version is not supported [ses=" + ses +
-                        ", ver=" + ver +
-                        ", supported=" + SUPP_VERS + ']');
+            if (!SUPP_VERS.contains(ver)) {
+                U.error(log, "Client protocol version is not supported [ses=" + ses +
+                    ", ver=" + ver +
+                    ", supported=" + SUPP_VERS + ']');
+
+                ses.close();
+            }
+            else {
+                byte marshId = hs.marshallerId();
+
+                if (marshMapLatch.getCount() > 0) {
+                    try {
+                        U.await(marshMapLatch);
+                    } catch (IgniteInterruptedCheckedException e) {
+                        U.error(log, "Marshaller is not initialized.", e);
+
+                        ses.close();
+
+                        return;
+                    }
+                }
+
+                GridClientMarshaller marsh = marshMap.get(marshId);
+
+                if (marsh == null) {
+                    U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
+                        "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
 
                     ses.close();
                 }
                 else {
-                    byte marshId = hs.marshallerId();
+                    ses.addMeta(MARSHALLER.ordinal(), marsh);
 
-                    if (marshMapLatch.getCount() > 0)
-                        U.awaitQuiet(marshMapLatch);
-
-                    GridClientMarshaller marsh = marshMap.get(marshId);
-
-                    if (marsh == null) {
-                        U.error(log, "Client marshaller ID is invalid. Note that .NET and C++ clients " +
-                            "are supported only in enterprise edition [ses=" + ses + ", marshId=" + marshId + ']');
-
-                        ses.close();
-                    }
-                    else {
-                        ses.addMeta(MARSHALLER.ordinal(), marsh);
-
-                        ses.send(GridClientHandshakeResponse.OK);
-                    }
+                    ses.send(GridClientHandshakeResponse.OK);
                 }
             }
-            else {
-                final GridRestRequest req = createRestRequest(ses, msg);
+        }
+        else {
+            final GridRestRequest req = createRestRequest(ses, msg);
 
-                if (req != null)
-                    hnd.handleAsync(req).listen(new CI1<IgniteInternalFuture<GridRestResponse>>() {
-                        @Override public void apply(IgniteInternalFuture<GridRestResponse> fut) {
-                            GridClientResponse res = new GridClientResponse();
+            if (req != null)
+                hnd.handleAsync(req).listen(new CI1<IgniteInternalFuture<GridRestResponse>>() {
+                    @Override public void apply(IgniteInternalFuture<GridRestResponse> fut) {
+                        GridClientResponse res = new GridClientResponse();
 
-                            res.requestId(msg.requestId());
-                            res.clientId(msg.clientId());
+                        res.requestId(msg.requestId());
+                        res.clientId(msg.clientId());
 
-                            try {
-                                GridRestResponse restRes = fut.get();
+                        try {
+                            GridRestResponse restRes = fut.get();
 
-                                res.sessionToken(restRes.sessionTokenBytes());
-                                res.successStatus(restRes.getSuccessStatus());
-                                res.errorMessage(restRes.getError());
+                            res.sessionToken(restRes.sessionTokenBytes());
+                            res.successStatus(restRes.getSuccessStatus());
+                            res.errorMessage(restRes.getError());
 
-                                Object o = restRes.getResponse();
+                            Object o = restRes.getResponse();
 
-                                // In case of metrics a little adjustment is needed.
-                                if (o instanceof GridCacheRestMetrics)
-                                    o = ((GridCacheRestMetrics)o).map();
+                            // In case of metrics a little adjustment is needed.
+                            if (o instanceof GridCacheRestMetrics)
+                                o = ((GridCacheRestMetrics)o).map();
 
-                                res.result(o);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to process client request: " + msg, e);
-
-                                res.successStatus(GridClientResponse.STATUS_FAILED);
-                                res.errorMessage("Failed to process client request: " + e.getMessage());
-                            }
-
-                            GridNioFuture<?> sf = ses.send(res);
-
-                            // Check if send failed.
-                            sf.listen(new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    try {
-                                        fut.get();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to process client request [ses=" + ses +
-                                            ", msg=" + msg + ']', e);
-                                    }
-                                }
-                            });
+                            res.result(o);
                         }
-                    });
-                else
-                    U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
-                        ", msg=" + msg + ']');
-            }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to process client request: " + msg, e);
+
+                            res.successStatus(GridClientResponse.STATUS_FAILED);
+                            res.errorMessage("Failed to process client request: " + e.getMessage());
+                        }
+
+                        GridNioFuture<?> sf = ses.send(res);
+
+                        // Check if send failed.
+                        sf.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                try {
+                                    fut.get();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to process client request [ses=" + ses +
+                                        ", msg=" + msg + ']', e);
+                                }
+                            }
+                        });
+                    }
+                });
+            else
+                U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
+                    ", msg=" + msg + ']');
         }
     }
 

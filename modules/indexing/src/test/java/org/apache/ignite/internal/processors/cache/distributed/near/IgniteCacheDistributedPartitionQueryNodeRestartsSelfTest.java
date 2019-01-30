@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
@@ -51,6 +52,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
     /**
      * Tests join query within region on unstable topology.
      */
+    @Test
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 

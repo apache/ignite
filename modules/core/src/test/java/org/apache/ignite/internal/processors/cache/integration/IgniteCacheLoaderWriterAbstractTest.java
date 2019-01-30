@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
 
 /**
  *
@@ -81,6 +82,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriter() throws Exception {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -162,6 +164,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testLoaderException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -180,6 +183,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testWriterException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -198,6 +202,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriterBulk() throws Exception {
         Map<Object, Object> vals = new HashMap<>();
 

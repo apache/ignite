@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -25,18 +28,15 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.NotNull;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import org.junit.Test;
 
 /**
  *
  */
-public class LongIndexNameTest extends GridCommonAbstractTest {
+public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -63,6 +63,7 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongIndexNames() throws Exception {
         try {
             Ignite ignite = startGrid(0);

@@ -20,9 +20,11 @@ package org.apache.ignite.cache.store;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -37,6 +39,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
     /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
@@ -44,6 +53,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#get(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalLookup() {
         testTransactionalLookup(OPTIMISTIC, READ_COMMITTED);
         testTransactionalLookup(OPTIMISTIC, REPEATABLE_READ);
@@ -74,6 +84,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#put(Object, Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalUpdate() {
         testTransactionalUpdate(OPTIMISTIC, READ_COMMITTED);
         testTransactionalUpdate(OPTIMISTIC, REPEATABLE_READ);
@@ -104,6 +115,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#remove(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalRemove() {
         testTransactionalRemove(OPTIMISTIC, READ_COMMITTED);
         testTransactionalRemove(OPTIMISTIC, REPEATABLE_READ);

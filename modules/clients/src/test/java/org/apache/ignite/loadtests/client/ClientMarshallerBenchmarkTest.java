@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientCache
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 
@@ -58,6 +59,7 @@ public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheRequestTime() throws Exception {
         GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 

@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 import static org.apache.ignite.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi.NODE_WEIGHT_ATTR_NAME;
 
@@ -51,6 +52,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testWeights() throws Exception {
         List<ClusterNode> nodes = new ArrayList<>();
 

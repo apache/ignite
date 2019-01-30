@@ -70,7 +70,6 @@ abstract class TcpDiscoveryImpl {
     private int debugMsgHist = 512;
 
     /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     protected ConcurrentLinkedDeque<String> debugLogQ;
 
     /** */
@@ -327,7 +326,6 @@ abstract class TcpDiscoveryImpl {
     /**
      * @throws IgniteSpiException If failed.
      */
-    @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
         // ... but limit it if join timeout is configured.

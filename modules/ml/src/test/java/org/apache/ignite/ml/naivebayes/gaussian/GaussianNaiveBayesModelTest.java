@@ -26,7 +26,6 @@ import org.junit.Test;
  * Tests for {@link GaussianNaiveBayesModel}.
  */
 public class GaussianNaiveBayesModelTest {
-
     /** */
     @Test
     public void testPredictWithTwoClasses() {
@@ -44,7 +43,7 @@ public class GaussianNaiveBayesModelTest {
         GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[] {first, second}, null);
         Vector observation = VectorUtils.of(6, 130, 8);
 
-        Assert.assertEquals(second, mdl.apply(observation), 0.0001);
+        Assert.assertEquals(second, mdl.predict(observation), 0.0001);
     }
 
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
@@ -53,6 +54,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearUpdateTopologyChange() throws Exception {
         awaitPartitionMapExchange();
 

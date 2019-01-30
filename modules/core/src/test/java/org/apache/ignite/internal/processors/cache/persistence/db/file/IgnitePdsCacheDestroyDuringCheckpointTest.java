@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for cache creation/deletion with frequent checkpoints.
@@ -90,6 +91,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testCacheCreatePutCheckpointDestroy() throws Exception {
         IgniteEx ig = startGrid(0);
         ig.active(true);

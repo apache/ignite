@@ -31,18 +31,20 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -53,7 +55,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Test for 6 retry cases
  */
-public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
+public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
 
@@ -80,6 +82,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /**
      * Failed to reserve partitions for query (cache is not found on local node)
      */
+    @Test
     public void testSynthCacheWasNotFoundMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
@@ -121,6 +124,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /**
      * Failed to reserve partitions for query (group reservation failed)
      */
+    @Test
     public void testGrpReservationFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
@@ -166,6 +170,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /**
      * Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state)
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7039")
+    @Test
     public void testReplicatedCacheReserveFailureMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
@@ -189,7 +195,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
 
                         aState.getAndSet(stateVal);
                     }
-                    else 
+                    else
                         startedExecutor.onMessage(nodeId, msg);
                 }
             }.insertRealExecutor(mapQryExec));
@@ -197,6 +203,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         SqlQuery<String, Organization> qry = new SqlQuery<>(Organization.class, ORG_SQL);
 
         qry.setDistributedJoins(true);
+
         try {
             orgCache.query(qry).getAll();
         }
@@ -214,6 +221,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /**
      * Failed to reserve partitions for query (partition of PARTITIONED cache cannot be reserved)
      */
+    @Test
     public void testPartitionedCacheReserveFailureMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
@@ -264,6 +272,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /**
      * Failed to execute non-collocated query (will retry)
      */
+    @Test
     public void testNonCollocatedFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
@@ -278,7 +287,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
                         reservations.put(grpKey, new GridReservable() {
 
                             @Override public boolean reserve() {
-                                throw new GridH2RetryException("test retry exception");
+                                throw H2Utils.retryException("test retry exception");
                             }
 
                             @Override public void release() {
@@ -334,12 +343,12 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         h2Idx = GridTestUtils.getFieldValue(qryProc, GridQueryProcessor.class, "idx");
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, Person.class)
+            .setQueryEntities(JoinSqlTestHelper.personQueryEntity())
         );
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
             .setCacheMode(CacheMode.REPLICATED)
-            .setIndexedTypes(String.class, Organization.class)
+            .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();

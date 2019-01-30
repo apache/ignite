@@ -16,19 +16,16 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -38,10 +35,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test different cache modes for query entry
  */
-public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlEntryCacheModeAgnosticTest extends AbstractIndexingCommonTest {
     /** Host. */
     public static final String HOST = "127.0.0.1";
 
@@ -59,12 +53,6 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setLocalHost(HOST);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(cacheConfiguration(LOCAL_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME));
@@ -116,6 +104,7 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
     /**
      * It should not matter what cache mode does entry cache use, if there is no join
      */
+    @Test
     public void testCrossCacheModeQuery() throws Exception {
         Ignite ignite = startGrid();
 

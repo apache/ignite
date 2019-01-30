@@ -25,11 +25,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -42,6 +44,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
+    }
+
     /** Grid. */
     private Ignite ignite;
 
@@ -89,6 +98,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, READ_COMMITTED);
     }
@@ -96,6 +106,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -103,6 +114,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, SERIALIZABLE);
     }
@@ -110,6 +122,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, READ_COMMITTED);
     }
@@ -117,6 +130,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -124,6 +138,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, SERIALIZABLE);
     }

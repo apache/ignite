@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link GridBoundedConcurrentLinkedHashMap}.
@@ -32,6 +33,7 @@ public class GridBoundedConcurrentLinkedHashMapSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBound() throws Exception {
         Map<Integer, Integer> map = new GridBoundedConcurrentLinkedHashMap<>(MAX);
 

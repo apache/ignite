@@ -51,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -240,6 +241,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception IF failed.
      */
+    @Test
     public void testOpenPrefetchOverride() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 

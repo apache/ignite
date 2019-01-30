@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -50,6 +51,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuer
 /**
  * Query request.
  */
+@IgniteCodeGeneratingFail
 public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -84,6 +86,22 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * If lazy execution is enabled.
      */
     public static final int FLAG_LAZY = 1 << 5;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    @SuppressWarnings("PointlessBitwiseExpression")
+    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_ENABLED = 0b01 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
+    /** */
+    private static final int FLAG_DATA_PAGE_SCAN_DISABLED = 0b10 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
     private long reqId;
@@ -414,6 +432,48 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         this.txReq = txDetails;
     }
 
+    /**
+     * @param flags Flags.
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     * @return Updated flags.
+     */
+    public static int setDataPageScanEnabled(int flags, Boolean dataPageScanEnabled) {
+        int x = dataPageScanEnabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
+            dataPageScanEnabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
+
+        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
+        flags |= x; // Set new bits.
+
+        return flags;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return isDataPageScanEnabled(flags);
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @param flags Flags.
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public static Boolean isDataPageScanEnabled(int flags) {
+        switch (flags & FLAG_DATA_PAGE_SCAN_MASK) {
+            case FLAG_DATA_PAGE_SCAN_ENABLED:
+                return true;
+
+            case FLAG_DATA_PAGE_SCAN_DISABLED:
+                return false;
+        }
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -518,7 +578,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -633,7 +693,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

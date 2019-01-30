@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -37,14 +36,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 /**
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
-public class H2RowCacheSelfTest extends GridCommonAbstractTest {
+public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
 
@@ -79,6 +78,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDestroyCacheCreation() {
         final String cacheName0 = "cache0";
         final String cacheName1 = "cache1";
@@ -99,6 +99,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheSingleCacheInGroup() throws IgniteCheckedException {
         checkDestroyCache();
     }
@@ -106,6 +107,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheWithOtherCacheInGroup() throws IgniteCheckedException {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -115,6 +117,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -122,6 +125,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -131,6 +135,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -138,6 +143,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -147,6 +153,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFixedSize() throws Exception {
         int maxSize = 100;
         String cacheName = "cacheWithLimitedSize";
@@ -166,12 +173,14 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         assertEquals(0, rowCache.size());
 
         // Warmup cache.
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
         // Query again - are there any leaks?
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
@@ -181,7 +190,8 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(maxSize / 2, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
@@ -191,16 +201,16 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(maxSize, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
         // Delete all.
-        cache.query(new SqlFieldsQuery("DELETE FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
     }

@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,6 +45,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -55,9 +54,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  *
  */
 public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRV_CNT = 4;
 
@@ -94,8 +90,6 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
             }
         };
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setMarshaller(null);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -122,6 +116,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
             try {

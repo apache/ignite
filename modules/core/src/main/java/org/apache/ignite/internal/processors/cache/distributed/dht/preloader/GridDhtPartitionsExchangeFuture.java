@@ -51,6 +51,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -91,7 +94,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -99,8 +102,10 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -234,7 +239,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap<>();
 
     /** */
-    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     @GridToStringInclude
     private volatile IgniteInternalFuture<?> partReleaseFut;
 
@@ -337,6 +341,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Future for wait all exchange listeners comepleted. */
     private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
+    /** Time bag to measure and store exchange stages times. */
+    private final TimeBag timeBag;
+
+    /** Start time of exchange. */
+    private long startTime = System.nanoTime();
+
+    /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
+    private T2<Long, UUID> discoveryLag;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -367,6 +380,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
+
+        timeBag = new TimeBag();
 
         initFut = new GridFutureAdapter<Boolean>() {
             @Override public IgniteLogger logger() {
@@ -549,6 +564,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @param cacheOrGroupName Group or cache name for reset lost partitions.
+     * @return {@code True} if reset lost partition exchange.
+     */
+    public boolean resetLostPartitionFor(String cacheOrGroupName) {
+        return exchActions != null && exchActions.cachesToResetLostPartitions().contains(cacheOrGroupName);
+    }
+
+    /**
      * @return {@code True} if activate cluster exchange.
      */
     public boolean activateCluster() {
@@ -565,6 +588,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     public boolean changedBaseline() {
         return exchActions != null && exchActions.changedBaseline();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean changedAffinity() {
+        DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
+
+        assert firstDiscoEvt0 != null;
+
+        return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
+            || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
     }
 
     /**
@@ -644,6 +677,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return Object to collect exchange timings.
+     */
+    public TimeBag timeBag() {
+        return timeBag;
+    }
+
+    /**
      * Starts activity.
      *
      * @param newCrd {@code True} if node become coordinator on this exchange.
@@ -680,24 +720,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             boolean crdNode = crd != null && crd.isLocal();
 
-            MvccCoordinator mvccCrd = firstEvtDiscoCache.mvccCoordinator();
-
-            boolean mvccCrdChange = mvccCrd != null &&
-                (initialVersion().equals(mvccCrd.topologyVersion()) || activateCluster());
-
-            // Mvcc coordinator should has been initialized before exchange context is created.
-            cctx.kernalContext().coordinators().updateCoordinator(mvccCrd);
-
-            exchCtx = new ExchangeContext(crdNode, mvccCrdChange, this);
+            exchCtx = new ExchangeContext(crdNode, this);
 
             cctx.exchange().exchangerBlockingSectionBegin();
-
-            try {
-                cctx.kernalContext().coordinators().onExchangeStart(mvccCrd, exchCtx, crd);
-            }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
 
             assert state == null : state;
 
@@ -708,14 +733,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
-                    ", mvccCrd=" + mvccCrd +
-                    ", mvccCrdChange=" + mvccCrdChange +
                     ", crd=" + crdNode +
                     ", evt=" + IgniteUtils.gridEventName(firstDiscoEvt.type()) +
                     ", evtNode=" + firstDiscoEvt.eventNode().id() +
                     ", customEvt=" + (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() : null) +
                     ", allowMerge=" + exchCtx.mergeExchanges() + ']');
             }
+
+            timeBag.finishGlobalStage("Exchange parameters initialization");
 
             ExchangeType exchange;
 
@@ -799,7 +824,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
 
-            updateTopologies(crdNode, cctx.coordinators().currentCoordinator());
+            updateTopologies(crdNode);
+
+            timeBag.finishGlobalStage("Determine exchange type");
 
             switch (exchange) {
                 case ALL: {
@@ -844,7 +871,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
-            onDone(e);
+            assert cctx.kernalContext().isStopping();
+
+            onDone(new IgniteCheckedException("Node stopped"));
 
             throw e;
         }
@@ -869,26 +898,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (!isLocalNodeInBaseline()) {
+        if (!cctx.kernalContext().clientNode() && !isLocalNodeInBaseline()) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().cleanupRestoredCaches();
+                List<DatabaseLifecycleListener> listeners = cctx.kernalContext().internalSubscriptionProcessor()
+                    .getDatabaseListeners();
 
-                for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
-                    if (CU.isPersistentCache(desc.cacheConfiguration(),
-                        cctx.gridConfig().getDataStorageConfiguration())) {
-                        // Perform cache init from scratch.
-                        cctx.cache().preparePageStore(desc, true);
-                    }
-                }
-
-                // Set initial node started marker.
-                cctx.database().nodeStart(null);
+                for (DatabaseLifecycleListener lsnr : listeners)
+                    lsnr.onBaselineChange();
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
+
+            timeBag.finishGlobalStage("Baseline change callback");
         }
 
         cctx.exchange().exchangerBlockingSectionBegin();
@@ -900,11 +924,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
-        if (!cctx.kernalContext().clientNode())
-            cctx.database().onDoneRestoreBinaryMemory();
+        timeBag.finishGlobalStage("Components activation");
 
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(),
             exchActions == null ? null : exchActions.localJoinContext());
+
+        if (!cctx.kernalContext().clientNode())
+            cctx.cache().shutdownNotFinishedRecoveryCaches();
 
         ensureClientCachesStarted();
 
@@ -966,10 +992,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Updates topology versions and discovery caches on all topologies.
      *
      * @param crd Coordinator flag.
-     * @param mvccCrd Mvcc coordinator.
      * @throws IgniteCheckedException If failed.
      */
-    private void updateTopologies(boolean crd, MvccCoordinator mvccCrd) throws IgniteCheckedException {
+    private void updateTopologies(boolean crd) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
@@ -1006,7 +1031,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 top.updateTopologyVersion(
                     this,
                     events().discoveryCache(),
-                    mvccCrd,
                     updSeq,
                     cacheGroupStopping(grp.groupId()));
             }
@@ -1021,7 +1045,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                 top.updateTopologyVersion(this,
                     events().discoveryCache(),
-                    mvccCrd,
                     -1,
                     cacheGroupStopping(top.groupId()));
             }
@@ -1042,7 +1065,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert req != null : exchActions;
 
-        DiscoveryDataClusterState state = cctx.kernalContext().state().clusterState();
+        GridKernalContext kctx = cctx.kernalContext();
+
+        DiscoveryDataClusterState state = kctx.state().clusterState();
 
         if (state.transitionError() != null)
             exchangeLocE = state.transitionError();
@@ -1051,7 +1076,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (req.activate()) {
                 if (log.isInfoEnabled()) {
                     log.info("Start activation process [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
 
@@ -1065,15 +1090,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionEnd();
                     }
 
-                    if (!cctx.kernalContext().clientNode())
-                        cctx.database().onDoneRestoreBinaryMemory();
-
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     cctx.exchange().exchangerBlockingSectionBegin();
 
                     try {
                         registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                        if (!kctx.clientNode())
+                            cctx.cache().shutdownNotFinishedRecoveryCaches();
                     }
                     finally {
                         cctx.exchange().exchangerBlockingSectionEnd();
@@ -1081,13 +1106,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
-                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", client=" + kctx.clientNode() +
                             ", topVer=" + initialVersion() + "]");
                     }
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]", e);
 
                     exchangeLocE = e;
@@ -1109,33 +1134,36 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 if (log.isInfoEnabled()) {
                     log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
 
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
+                    ((IgniteChangeGlobalStateSupport)kctx.distributedMetastorage()).onDeActivate(kctx);
 
-                    cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
+                    kctx.dataStructures().onDeActivate(kctx);
+
+                    if (cctx.kernalContext().service() instanceof GridServiceProcessor)
+                        ((GridServiceProcessor)kctx.service()).onDeActivate(cctx.kernalContext());
 
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
-                    cctx.kernalContext().encryption().onDeActivate(cctx.kernalContext());
+                    kctx.encryption().onDeActivate(kctx);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
                             "nodeId=" + cctx.localNodeId() +
-                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", client=" + kctx.clientNode() +
                             ", topVer=" + initialVersion() + "]");
                     }
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", client=" + kctx.clientNode() +
                         ", topVer=" + initialVersion() + "]", e);
 
                     exchangeLocE = e;
@@ -1159,13 +1187,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.affinity().onBaselineTopologyChanged(this, crd);
                 }
 
-                if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
-                    cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology(),
+                if (CU.isPersistenceEnabled(kctx.config()) && !kctx.clientNode())
+                    kctx.state().onBaselineTopologyChanged(req.baselineTopology(),
                         req.prevBaselineTopologyHistoryItem());
             }
             catch (Exception e) {
                 U.error(log, "Failed to change baseline topology [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
+                    ", client=" + kctx.clientNode() +
                     ", topVer=" + initialVersion() + "]", e);
 
                 exchangeLocE = e;
@@ -1175,7 +1203,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return kctx.clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
 
     /**
@@ -1200,7 +1228,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 // This exception will be handled by init() method.
                 throw e;
 
-            U.error(log, "Failed to initialize cache(s) (will try to rollback). " + exchId, e);
+            U.error(log, "Failed to initialize cache(s) (will try to rollback) [exchId=" + exchId +
+                ", caches=" + exchActions.cacheGroupsToStart() + ']', e);
 
             exchangeLocE = new IgniteCheckedException(
                 "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
@@ -1348,6 +1377,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        timeBag.finishGlobalStage("Preloading notification");
+
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -1359,6 +1390,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
         }
+
+        timeBag.finishGlobalStage("WAL history reservation");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
         boolean skipWaitOnLocalJoin = cctx.exchange().latch().canSkipJoiningNodes(initialVersion())
@@ -1404,16 +1437,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        /* It is necessary to run database callback before all topology callbacks.
-           In case of persistent store is enabled we first restore partitions presented on disk.
-           We need to guarantee that there are no partition state changes logged to WAL before this callback
-           to make sure that we correctly restored last actual states. */
-        boolean restored;
-
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            restored = cctx.database().beforeExchange(this);
+            /* It is necessary to run database callback before all topology callbacks.
+               In case of persistent store is enabled we first restore partitions presented on disk.
+               We need to guarantee that there are no partition state changes logged to WAL before this callback
+               to make sure that we correctly restored last actual states. */
+
+            cctx.database().beforeExchange(this);
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1440,25 +1472,33 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         // After all partitions have been restored and pre-created it's safe to make first checkpoint.
-        if (restored) {
+        if (localJoinExchange() || activateCluster()) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().onStateRestored();
+                cctx.database().onStateRestored(initialVersion());
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
         }
 
+        timeBag.finishGlobalStage("After states restored callback");
+
         changeWalModeIfNeeded();
+
+        if (events().hasServerLeft())
+            finalizePartitionCounters();
 
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
             if (crd.isLocal()) {
-                if (remaining.isEmpty())
+                if (remaining.isEmpty()) {
+                    initFut.onDone(true);
+
                     onAllReceived(null);
+                }
             }
             else
                 sendPartitions(crd);
@@ -1562,9 +1602,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Assign to class variable so it will be included into toString() method.
             this.partReleaseFut = partReleaseFut;
-
-            if (exchId.isLeft())
-                cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1680,6 +1717,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        timeBag.finishGlobalStage("Wait partitions release");
+
         if (releaseLatch == null) {
             assert !distributed : "Partitions release latch must be initialized in distributed mode.";
 
@@ -1720,6 +1759,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         catch (IgniteCheckedException e) {
             U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
         }
+
+        timeBag.finishGlobalStage("Wait partitions release latch");
     }
 
     /**
@@ -1734,8 +1775,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.exchange().exchangerUpdateHeartbeat();
         }
-
-        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
     }
 
     /**
@@ -1794,8 +1833,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
         assert node != null;
 
-        long time = System.currentTimeMillis();
-
         GridDhtPartitionsSingleMessage msg;
 
         // Reset lost partitions before sending local partitions to coordinator.
@@ -1825,16 +1862,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 msg.partitionHistoryCounters(partHistReserved0);
         }
 
-        if (exchCtx.newMvccCoordinator() && cctx.coordinators().currentCoordinatorId().equals(node.id())) {
-            Map<UUID, GridLongList> activeQueries = exchCtx.activeQueries();
-
-            msg.activeQueries(activeQueries != null ? activeQueries.get(cctx.localNodeId()) : null);
-        }
-
         if ((stateChangeExchange() || dynamicCacheStartExchange()) && exchangeLocE != null)
             msg.setError(exchangeLocE);
         else if (localJoinExchange())
             msg.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
+
+        msg.exchangeStartTime(startTime);
 
         if (log.isTraceEnabled())
             log.trace("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
@@ -1846,9 +1879,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
-
-        if (log.isInfoEnabled())
-            log.info("Sending Single Message performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -1907,8 +1937,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
-        long time = System.currentTimeMillis();
-
         // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
@@ -1961,9 +1989,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     U.error(log, "Failed to send partitions [node=" + node + ']', e);
                 }
             });
-
-        if (log.isInfoEnabled())
-            log.info("Sending Full Message performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -2005,8 +2030,45 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Finish merged future to allow GridCachePartitionExchangeManager.ExchangeFutureSet cleanup.
      */
-    public void finishMerged() {
-        super.onDone(null, null);
+    public void finishMerged(AffinityTopologyVersion resVer) {
+        synchronized (mux) {
+            if (state == null) state = ExchangeLocalState.MERGED;
+        }
+
+        done.set(true);
+
+        super.onDone(resVer, null);
+    }
+
+    /**
+     * @return {@code True} if future was merged.
+     */
+    public boolean isMerged() {
+        synchronized (mux) {
+            return state == ExchangeLocalState.MERGED;
+        }
+    }
+
+    /**
+     * Make a log message that contains given exchange timings.
+     *
+     * @param header Header of log message.
+     * @param timings Exchange stages timings.
+     * @return Log message with exchange timings and exchange version.
+     */
+    private String exchangeTimingsLogMessage(String header, List<String> timings) {
+        StringBuilder timingsToLog = new StringBuilder();
+
+        timingsToLog.append(header).append(" [");
+        timingsToLog.append("startVer=").append(initialVersion());
+        timingsToLog.append(", resVer=").append(topologyVersion());
+
+        for (String stageTiming : timings)
+            timingsToLog.append(", ").append(stageTiming);
+
+        timingsToLog.append(']');
+
+        return timingsToLog.toString();
     }
 
     /** {@inheritDoc} */
@@ -2057,8 +2119,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 }
 
-                if (!grpToRefresh.isEmpty())
+                if (!grpToRefresh.isEmpty()){
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
+                            grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
+
                     cctx.exchange().refreshPartitions(grpToRefresh);
+                }
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -2074,10 +2141,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (serverNodeDiscoveryEvent())
+            if (serverNodeDiscoveryEvent() || localJoinExchange())
                 detectLostPartitions(res);
 
-            Map<Integer, CacheValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
+            Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups())
                 m.put(grp.groupId(), validateCacheGroup(grp, events().lastEvent().topologyNodes()));
@@ -2089,8 +2156,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             tryToPerformLocalSnapshotOperation();
 
         if (err == null)
-            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
-                exchCtx.activeQueries());
+            cctx.coordinators().onExchangeDone(events().discoveryCache());
 
         // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
@@ -2121,7 +2187,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
 
-            cctx.walState().changeLocalStatesOnExchangeDone(res);
+            if (changedAffinity())
+                cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
         }
 
         final Throwable err0 = err;
@@ -2147,14 +2214,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
 
-            if (log.isDebugEnabled()) {
-                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
-                        ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
-            }
-            else if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
-                        ", exchange=" + shortInfo() + ", topVer=" + topologyVersion() +
-                        ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+                        ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
+
+                if (err == null) {
+                    timeBag.finishGlobalStage("Exchange done");
+
+                    // Collect all stages timings.
+                    List<String> timings = timeBag.stagesTimings();
+
+                    if (discoveryLag != null && discoveryLag.get1() != 0)
+                        timings.add("Discovery lag=" + discoveryLag.get1() +
+                            " ms, Latest started node id=" + discoveryLag.get2());
+
+                    log.info(exchangeTimingsLogMessage("Exchange timings", timings));
+
+                    List<String> localTimings = timeBag.longestLocalStagesTimings(3);
+
+                    log.info(exchangeTimingsLogMessage("Exchange longest local stages", localTimings));
+                }
             }
 
             initFut.onDone(err == null);
@@ -2169,8 +2248,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
             }
-
-            exchActions = null;
 
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
@@ -2191,6 +2268,42 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     * Calculates discovery lag (Maximal difference between exchange start times across all nodes).
+     *
+     * @param declared Single messages that were expected to be received during exchange.
+     * @param merged Single messages from nodes that were merged during exchange.
+     *
+     * @return Pair with discovery lag and node id which started exchange later than others.
+     */
+    private T2<Long, UUID> calculateDiscoveryLag(
+        Map<UUID, GridDhtPartitionsSingleMessage> declared,
+        Map<UUID, GridDhtPartitionsSingleMessage> merged
+    ) {
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>(declared);
+
+        msgs.putAll(merged);
+
+        long minStartTime = startTime;
+        long maxStartTime = startTime;
+        UUID latestStartedNode = cctx.localNodeId();
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> msg : msgs.entrySet()) {
+            UUID nodeId = msg.getKey();
+            long exchangeTime = msg.getValue().exchangeStartTime();
+
+            if (exchangeTime != 0) {
+                minStartTime = Math.min(minStartTime, exchangeTime);
+                maxStartTime = Math.max(maxStartTime, exchangeTime);
+            }
+
+            if (maxStartTime == exchangeTime)
+                latestStartedNode = nodeId;
+        }
+
+        return new T2<>(TimeUnit.NANOSECONDS.toMillis(maxStartTime - minStartTime), latestStartedNode);
     }
 
     /**
@@ -2667,9 +2780,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void processSingleMessage(UUID nodeId, GridDhtPartitionsSingleMessage msg) {
         if (msg.client()) {
-            if (msg.activeQueries() != null)
-                cctx.coordinators().processClientActiveQueries(nodeId, msg.activeQueries());
-
             waitAndReplyToNode(nodeId, msg);
 
             return;
@@ -2765,6 +2875,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
+
         if (allReceived) {
             if (!awaitSingleMapUpdates())
                 return;
@@ -2999,15 +3110,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
         boolean detected = false;
 
-        long time = System.currentTimeMillis();
-
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal()) {
-                    boolean detectedOnGrp = grp.topology().detectLostPartitions(resTopVer, events().lastEvent());
+                    // Do not trigger lost partition events on start.
+                    boolean event = !localJoinExchange() && !activateCluster();
+
+                    boolean detectedOnGrp = grp.topology().detectLostPartitions(resTopVer, event ? events().lastEvent() : null);
 
                     detected |= detectedOnGrp;
                 }
@@ -3022,8 +3134,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().scheduleResendPartitions();
         }
 
-        if (log.isInfoEnabled())
-            log.info("Detecting lost partitions performed in " + (System.currentTimeMillis() - time) + " ms.");
+        timeBag.finishGlobalStage("Detect lost partitions");
     }
 
     /**
@@ -3119,6 +3230,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void onAllReceived(@Nullable Collection<ClusterNode> sndResNodes) {
         try {
+            initFut.get();
+
+            timeBag.finishGlobalStage("Waiting for all single messages");
+
             assert crd.isLocal();
 
             assert partHistSuppliers.isEmpty() : partHistSuppliers;
@@ -3142,12 +3257,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (log.isInfoEnabled())
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
-                long time = System.currentTimeMillis();
-
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
 
-                if (log.isInfoEnabled())
-                    log.info("Exchanges merging performed in " + (System.currentTimeMillis() - time) + " ms.");
+                timeBag.finishGlobalStage("Exchanges merge");
 
                 if (!finish)
                     return;
@@ -3183,8 +3295,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<Integer, CacheGroupAffinityMessage> idealAffDiff = null;
 
-            long time = System.currentTimeMillis();
-
             if (exchCtx.mergeExchanges()) {
                 synchronized (mux) {
                     if (mergedJoinExchMsgs != null) {
@@ -3218,16 +3328,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (log.isInfoEnabled())
-                log.info("Affinity changes (coordinator) applied in " + (System.currentTimeMillis() - time) + " ms.");
+            timeBag.finishGlobalStage("Affinity recalculation (crd)");
 
             Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = null;
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
                 GridDhtPartitionsSingleMessage msg = e.getValue();
-
-                if (exchCtx.newMvccCoordinator())
-                    exchCtx.addActiveQueries(e.getKey(), msg.activeQueries());
 
                 // Apply update counters after all single messages are received.
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
@@ -3254,6 +3360,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         joinedNodeAff);
                 }
             }
+
+            timeBag.finishGlobalStage("Collect update counters and create affinity messages");
 
             validatePartitionsState();
 
@@ -3288,21 +3396,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             // Recalculate new affinity based on partitions availability.
-            if (!exchCtx.mergeExchanges() && forceAffReassignment)
+            if (!exchCtx.mergeExchanges() && forceAffReassignment) {
                 idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
+
+                timeBag.finishGlobalStage("Ideal affinity diff calculation (enforced)");
+            }
 
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                 if (!grpCtx.isLocal())
                     grpCtx.topology().applyUpdateCounters();
             }
 
+            timeBag.finishGlobalStage("Apply update counters");
+
             updateLastVersion(cctx.versions().last());
 
             cctx.versions().onExchange(lastVer.get().order());
 
             IgniteProductVersion minVer = exchCtx.events().discoveryCache().minimumNodeVersion();
-
-            time = System.currentTimeMillis();
 
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
@@ -3320,8 +3431,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             msg.prepareMarshal(cctx);
 
-            if (log.isInfoEnabled())
-                log.info("Preparing Full Message performed in " + (System.currentTimeMillis() - time) + " ms.");
+            timeBag.finishGlobalStage("Full message preparing");
 
             synchronized (mux) {
                 finishState = new FinishState(crd.id(), resTopVer, msg);
@@ -3331,8 +3441,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
-
-                time = System.currentTimeMillis();
 
                 IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
 
@@ -3345,9 +3453,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
                 else
                     onAffinityInitialized(fut);
-
-                if (log.isInfoEnabled())
-                    log.info("Centralized affinity changes are performed in " + (System.currentTimeMillis() - time) + " ms.");
             }
             else {
                 Set<ClusterNode> nodes;
@@ -3371,20 +3476,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             }
                         }
                     }
+                    else
+                        mergedJoinExchMsgs0 = Collections.emptyMap();
 
                     if (!F.isEmpty(sndResNodes))
                         nodes.addAll(sndResNodes);
                 }
 
-                time = System.currentTimeMillis();
-
                 if (!nodes.isEmpty())
                     sendAllPartitions(msg, nodes, mergedJoinExchMsgs0, joinedNodeAff);
 
-                partitionsSent = true;
+                timeBag.finishGlobalStage("Full message sending");
 
-                if (log.isInfoEnabled())
-                    log.info("Sending Full Message to all nodes performed in " + (System.currentTimeMillis() - time) + " ms.");
+                discoveryLag = calculateDiscoveryLag(
+                    msgs,
+                    mergedJoinExchMsgs0
+                );
+
+                partitionsSent = true;
 
                 if (!stateChangeExchange())
                     onDone(exchCtx.events().topologyVersion(), null);
@@ -3440,6 +3549,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cctx.discovery().sendCustomEvent(stateFinishMsg);
 
+                timeBag.finishGlobalStage("State finish message sending");
+
                 if (!centralizedAff)
                     onDone(exchCtx.events().topologyVersion(), null);
             }
@@ -3464,11 +3575,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects non local cache groups.
+     *
+     * @return Collection of non local cache groups.
+     */
+    private List<CacheGroupContext> nonLocalCacheGroups() {
+        return cctx.cache().cacheGroups().stream()
+            .filter(grp -> !grp.isLocal() && !cacheGroupStopping(grp.groupId()))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
-        long time = System.currentTimeMillis();
-
         try {
             U.doInParallel(
                 cctx.kernalContext().getSystemExecutorService(),
@@ -3490,7 +3610,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
                         || grpCtx.config().getExpiryPolicyFactory() == null
                         || SKIP_PARTITION_SIZE_VALIDATION)
-                        return;
+                        return null;
 
                     try {
                         validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
@@ -3499,6 +3619,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
                         // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
                     }
+
+                    return null;
                 }
             );
         }
@@ -3506,16 +3628,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException("Failed to validate partitions state", e);
         }
 
-        if (log.isInfoEnabled())
-            log.info("Partitions validation performed in " + (System.currentTimeMillis() - time) + " ms.");
+        timeBag.finishGlobalStage("Validate partitions states");
     }
 
     /**
      *
      */
     private void assignPartitionsStates() {
-        long time = System.currentTimeMillis();
-
         try {
             U.doInParallel(
                 cctx.kernalContext().getSystemExecutorService(),
@@ -3531,6 +3650,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         assignPartitionSizes(top);
                     else
                         assignPartitionStates(top);
+
+                    return null;
                 }
             );
         }
@@ -3538,8 +3659,34 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException("Failed to assign partition states", e);
         }
 
-        if (log.isInfoEnabled())
-            log.info("Partitions assignment performed in " + (System.currentTimeMillis() - time) + " ms.");
+        timeBag.finishGlobalStage("Assign partitions states");
+    }
+
+    /**
+     * Removes gaps in the local update counters. Gaps in update counters are possible on backup node when primary
+     * failed to send update counter deltas to backup.
+     */
+    private void finalizePartitionCounters() {
+        // Reserve at least 2 threads for system operations.
+        int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
+
+        try {
+            U.<CacheGroupContext, Void>doInParallel(
+                parallelismLvl,
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroups(),
+                grp -> {
+                    grp.topology().finalizeUpdateCounters();
+
+                    return null;
+                }
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to finalize partition counters", e);
+        }
+
+        timeBag.finishGlobalStage("Finalize update counters");
     }
 
     /**
@@ -3782,6 +3929,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             assert exchId.equals(msg.exchangeId()) : msg;
             assert msg.lastVersion() != null : msg;
 
+            timeBag.finishGlobalStage("Waiting for Full message");
+
             if (checkCrd) {
                 assert node != null;
 
@@ -3857,8 +4006,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             AffinityTopologyVersion resTopVer = initialVersion();
 
-            long time = System.currentTimeMillis();
-
             if (exchCtx.mergeExchanges()) {
                 if (msg.resultTopologyVersion() != null && !initialVersion().equals(msg.resultTopologyVersion())) {
                     if (log.isInfoEnabled()) {
@@ -3902,8 +4049,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (forceAffReassignment)
                 cctx.affinity().applyAffinityFromFullMessage(this, msg);
 
-            if (log.isInfoEnabled())
-                log.info("Affinity changes applied in " + (System.currentTimeMillis() - time) + " ms.");
+            timeBag.finishGlobalStage("Affinity recalculation");
 
             if (dynamicCacheStartExchange() && !F.isEmpty(exchangeGlobalExceptions)) {
                 assert cctx.localNode().isClient();
@@ -3945,12 +4091,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
 
-        long time = System.currentTimeMillis();
-
-        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
-
         // Reserve at least 2 threads for system operations.
-        parallelismLvl = Math.max(1, parallelismLvl - 2);
+        int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
             doInParallel(
@@ -3987,6 +4129,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 null);
                         }
                     }
+
+                    return null;
                 });
         }
         catch (IgniteCheckedException e) {
@@ -3995,9 +4139,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partitionsReceived = true;
 
-        if (log.isInfoEnabled())
-            log.info("Full map updating for " + msg.partitions().size()
-                + " groups performed in " + (System.currentTimeMillis() - time) + " ms.");
+        timeBag.finishGlobalStage("Full map updating");
     }
 
     /**
@@ -4205,8 +4347,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone() || !enterBusy())
             return;
 
-        cctx.mvcc().removeExplicitNodeLocks(node.id(), initialVersion());
-
         try {
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
@@ -4301,7 +4441,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                                 cctx.kernalContext().closure().callLocal(new Callable<Void>() {
                                     @Override public Void call() throws Exception {
-                                        newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
+                                        try {
+                                            newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
+                                        }
+                                        catch (Throwable t) {
+                                            U.error(log, "Failed to initialize new coordinator future [topVer=" + initialVersion() + "]", t);
+
+                                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+
+                                            throw t;
+                                        }
 
                                         newCrdFut.listen(new CI1<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {

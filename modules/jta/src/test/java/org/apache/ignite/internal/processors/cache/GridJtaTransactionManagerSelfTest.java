@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
 
@@ -70,6 +71,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJtaTxContextSwitch() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
@@ -144,6 +146,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJtaTxContextSwitchWithExistingTx() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();

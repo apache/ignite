@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Sanity test verifying that configuration callback specified via
@@ -62,6 +63,7 @@ public class ZookeeperDiscoverySuitePreprocessorTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiConfigurationIsChanged() throws Exception {
         startGrid(0);
 

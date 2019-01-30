@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
@@ -55,6 +56,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClass() throws Exception {
         assert grid().compute().execute(TestTask.class, null).equals(TASK_NAME);
     }
@@ -62,6 +64,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClassPeerDeployAware() throws Exception {
         assert grid().compute().execute(PeerDeployAwareTestTask.class, null).equals(PEER_DEPLOY_AWARE_TASK_NAME);
     }
@@ -69,6 +72,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInstance() throws Exception {
         assert grid().compute().execute(new TestTask(), null).equals(TASK_NAME);
     }
@@ -76,6 +80,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInstancePeerDeployAware() throws Exception {
         assert grid().compute().execute(new PeerDeployAwareTestTask(), null).
             equals(PEER_DEPLOY_AWARE_TASK_NAME);

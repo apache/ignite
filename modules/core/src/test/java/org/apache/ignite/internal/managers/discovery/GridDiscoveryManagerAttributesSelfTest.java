@@ -27,14 +27,13 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -44,9 +43,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static DeploymentMode mode;
@@ -71,12 +67,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-
-        discoverySpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoverySpi);
-
         return cfg;
     }
 
@@ -95,6 +85,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackTrue() throws Exception {
         testPreferIpV4Stack(true);
     }
@@ -102,6 +93,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackFalse() throws Exception {
         testPreferIpV4Stack(false);
     }
@@ -116,6 +108,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackDifferentValues() throws Exception {
         System.setProperty(PREFER_IPV4, "true");
 
@@ -137,6 +130,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUseDefaultSuid() throws Exception {
         try {
             doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
@@ -184,6 +178,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
     }
 
+    @Test
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
@@ -248,42 +243,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        try {
-            doTestServiceCompatibilityEnabled(true, null, true);
-            doTestServiceCompatibilityEnabled(false, null, true);
-            doTestServiceCompatibilityEnabled(null, false, true);
-            doTestServiceCompatibilityEnabled(true, false, true);
-            doTestServiceCompatibilityEnabled(null, true, true);
-            doTestServiceCompatibilityEnabled(false, true, true);
-
-            doTestServiceCompatibilityEnabled(true, true, false);
-            doTestServiceCompatibilityEnabled(false, false, false);
-            doTestServiceCompatibilityEnabled(null, null, false);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
-            else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-        }
-    }
-
-    /**
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
-        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
+    @Test
+    public void testServiceProcessorModeProperty() throws Exception {
+        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true, false, true);
+        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false, true, true);
+        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true, true, false);
+        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSecurityCompatibilityEnabled() throws Exception {
         TestReconnectPluginProvider.enabled = true;
         TestReconnectProcessor.enabled = true;
@@ -370,6 +341,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentDeploymentModes() throws Exception {
         IgniteEx g = startGrid(0);
 
@@ -391,6 +363,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
         IgniteEx g = startGrid(0);
 

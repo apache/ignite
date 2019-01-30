@@ -20,20 +20,31 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  * WAL delta records consistency test with explicit checks.
  */
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
-     *
+     * @throws Exception If failed.
      */
+    @Test
     public final void testPutRemoveAfterCheckpoint() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 5_000; i++)
             cache.put(i, "Cache value " + i);
@@ -55,22 +66,25 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
+    @Test
     public final void testNotEmptyPds() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10822", MvccFeatureChecker.forcedMvcc());
+
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 3_000; i++)
             cache.put(i, "Cache value " + i);
+
+        forceCheckpoint();
 
         stopGrid(0);
 
@@ -78,7 +92,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite.cluster().active(true);
 
-        cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        cache = ignite.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 2_000; i < 5_000; i++)
             cache.put(i, "Changed cache value " + i);
@@ -87,7 +101,5 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
     }
 }

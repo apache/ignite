@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -96,6 +97,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws TimeoutException If timed out.
      * @throws InterruptedException If interrupted.
      */
+    @Test
     public void testKafkaStreamer() throws TimeoutException, InterruptedException {
         embeddedBroker.createTopic(TOPIC_NAME, PARTITIONS, REPLICATION_FACTOR);
 
