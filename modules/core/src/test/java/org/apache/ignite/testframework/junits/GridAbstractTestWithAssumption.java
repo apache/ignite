@@ -26,7 +26,7 @@ import org.junit.internal.AssumptionViolatedException;
 @FunctionalInterface
 interface GridAbstractTestWithAssumption {
     /** */
-    public void evaluateInvokation() throws Throwable;
+    public void evaluateInvocation() throws Throwable;
 
     /** */
     public static void handleAssumption(GridAbstractTestWithAssumption src, IgniteLogger log) throws Throwable {
@@ -34,7 +34,7 @@ interface GridAbstractTestWithAssumption {
             = (t, logger) -> logger.warning("Test skipped by assumption: " + t.getMessage(), t);
 
         try {
-            src.evaluateInvokation();
+            src.evaluateInvocation();
         } catch (AssumptionViolatedException e) {
             report.accept(e, log);
         } catch (InvocationTargetException e) {
