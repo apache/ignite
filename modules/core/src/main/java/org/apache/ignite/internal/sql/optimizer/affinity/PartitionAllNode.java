@@ -15,49 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * Partition extraction result.
- */
-public class PartitionResult {
-    /** Tree. */
-    @GridToStringInclude
-    private final PartitionNode tree;
+import java.util.Collection;
 
-    /** Affinity function. */
-    private final PartitionTableAffinityDescriptor aff;
+/**
+ * Node denoting all available partitions
+ */
+public class PartitionAllNode implements PartitionNode {
+    /** Singleton. */
+    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
 
     /**
      * Constructor.
-     *
-     * @param tree Tree.
-     * @param aff Affinity function.
      */
-    public PartitionResult(PartitionNode tree, PartitionTableAffinityDescriptor aff) {
-        this.tree = tree;
-        this.aff = aff;
+    private PartitionAllNode() {
+        // No-op.
     }
 
-    /**
-     * Tree.
-     */
-    public PartitionNode tree() {
-        return tree;
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(Object... args) {
+        return null;
     }
 
-    /**
-     * @return Affinity function.
-     */
-    public PartitionTableAffinityDescriptor affinity() {
-        return aff;
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return PartitionTableModel.GRP_NONE;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionResult.class, this);
+        return S.toString(PartitionAllNode.class, this);
     }
 }
