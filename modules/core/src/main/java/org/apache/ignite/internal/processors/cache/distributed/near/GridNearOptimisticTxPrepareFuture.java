@@ -840,6 +840,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
     /**
      * Future that completes when keys are locked.
+     *
+     * @return Key lock future.
      */
     public KeyLockFuture keyLockFut() {
         return keyLockFut;
