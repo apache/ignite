@@ -160,7 +160,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private Void beforeFirstTest() throws Exception {
+    private void beforeFirstTest() throws Exception {
         if (autoStart) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -173,8 +173,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             info("==== Started spi test [test=" + getClass().getSimpleName() + "] ====");
         }
-
-        return null;
     }
 
     /**
@@ -516,7 +514,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private Void afterLastTest() throws Exception {
+    private void afterLastTest() throws Exception {
         if (autoStart) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -530,8 +528,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             info("==== Stopped spi test [test=" + getClass().getSimpleName() + "] ====");
         }
-
-        return null;
     }
 
     /**

@@ -607,7 +607,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** */
-    private Void beforeFirstTest() throws Exception {
+    private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
         info(">>> Starting test class: " + testClassDescription() + " <<<");
@@ -644,8 +644,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
             throw t;
         }
-
-        return null;
     }
 
     /**
@@ -1762,7 +1760,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /** */
-    private Void afterLastTest() throws Exception {
+    private void afterLastTest() throws Exception {
         info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
         Exception err = null;
@@ -1800,8 +1798,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         if (err!= null)
             throw err;
-
-        return null;
     }
 
     /**
