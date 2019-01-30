@@ -17,28 +17,18 @@
 
 package org.apache.ignite.examples.ml.sql;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
-import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 import org.apache.ignite.ml.inference.ModelSignature;
-import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
 import org.apache.ignite.ml.inference.parser.IgniteModelParser;
 import org.apache.ignite.ml.inference.reader.ModelStorageModelReader;
 import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorage;
@@ -46,9 +36,13 @@ import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorageF
 import org.apache.ignite.ml.inference.storage.model.ModelStorage;
 import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.sql.SQLFeatureExtractor;
+import org.apache.ignite.ml.sql.SQLFunctions;
+import org.apache.ignite.ml.sql.SQLLabelExtractor;
+import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.spark.util.Utils;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer} on a data stored in SQL table and inference
@@ -65,7 +59,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
     private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/titanik_test.csv";
 
     /** Run example. */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         System.out.println(">>> Decision tree classification trainer example started.");
 
         // Start ignite grid.
@@ -122,53 +116,23 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
             System.out.println(">>> Perform training...");
-            IgniteCache<Integer, BinaryObject> titanicTrainCache = ignite.cache("SQL_PUBLIC_TITANIK_TRAIN");
             DecisionTreeNode mdl = trainer.fit(
-                // We have to specify ".withKeepBinary(true)" because SQL caches contains only binary objects and this
-                // information has to be passed into the trainer.
-                new CacheBasedDatasetBuilder<>(ignite, titanicTrainCache).withKeepBinary(true),
-                (k, v) -> VectorUtils.of(
-                    // We have to handle null values here to avoid NpE during unboxing.
-                    replaceNull(v.<Integer>field("pclass")),
-                    "male".equals(v.<String>field("sex")) ? 1 : 0,
-                    replaceNull(v.<Double>field("age")),
-                    replaceNull(v.<Integer>field("sibsp")),
-                    replaceNull(v.<Integer>field("parch")),
-                    replaceNull(v.<Double>field("fare"))
-                ),
-                (k, v) -> replaceNull(v.<Integer>field("survived"))
+                new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                new SQLFeatureExtractor()
+                    .withField("pclass")
+                    .withField("sex", e -> "male".equals(e) ? 1 : 0)
+                    .withField("age")
+                    .withField("sibsp")
+                    .withField("parch")
+                    .withField("fare"),
+                new SQLLabelExtractor("survived")
             );
 
             System.out.println(">>> Saving model...");
 
             // Model storage is used to store raw serialized model.
             System.out.println("Saving model into model storage...");
-            byte[] serializedMdl = serialize((IgniteModel<byte[], byte[]>)i -> {
-                // Here we need to wrap model so that it accepts and returns byte array.
-                try {
-                    Vector input = deserialize(i);
-                    return serialize(mdl.predict(input));
-                }
-                catch (IOException | ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
-            storage.mkdirs("/");
-            storage.putFile("/my_model", serializedMdl);
-
-            // Model descriptor storage that is used to store model metadata.
-            System.out.println("Saving model descriptor into model descriptor storage...");
-            ModelDescriptor desc = new ModelDescriptor(
-                "MyModel",
-                "My Cool Model",
-                new ModelSignature("", "", ""),
-                new ModelStorageModelReader("/my_model"),
-                new IgniteModelParser<>()
-            );
-            ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
-            descStorage.put("my_model", desc);
+            IgniteModelStorageUtil.save(mdl, "titanik_model_tree");
 
             // Making inference using saved model.
             System.out.println("Inference...");
@@ -197,78 +161,5 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             return 0;
 
         return obj.doubleValue();
-    }
-
-    /**
-     * SQL functions that should be defined and passed into cache configuration to extend list of functions available
-     * in SQL interface.
-     */
-    public static class SQLFunctions {
-        /**
-         * Makes prediction using specified model name to extract model from model storage and specified input values
-         * as input object for prediction.
-         *
-         * @param mdl Pretrained model.
-         * @param x Input values.
-         * @return Prediction.
-         */
-        @QuerySqlFunction
-        public static double predict(String mdl, Double... x) {
-            // Pretrained models work with vector of doubles so we need to replace null by 0 (or any other double).
-            for (int i = 0; i < x.length; i++)
-                if (x[i] == null)
-                    x[i] = 0.0;
-
-            Ignite ignite = Ignition.ignite();
-
-            ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
-            ModelDescriptor desc = descStorage.get(mdl);
-
-            Model<byte[], byte[]> infMdl = new SingleModelBuilder().build(desc.getReader(), desc.getParser());
-
-            Vector input = VectorUtils.of(x);
-
-            try {
-                return deserialize(infMdl.predict(serialize(input)));
-            }
-            catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Serialized the specified object.
-     *
-     * @param o Object to be serialized.
-     * @return Serialized object as byte array.
-     * @throws IOException In case of exception.
-     */
-    private static <T extends Serializable> byte[] serialize(T o) throws IOException {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-            oos.writeObject(o);
-            oos.flush();
-
-            return baos.toByteArray();
-        }
-    }
-
-    /**
-     * Deserialized object represented as a byte array.
-     *
-     * @param o Serialized object.
-     * @param <T> Type of serialized object.
-     * @return Deserialized object.
-     * @throws IOException In case of exception.
-     * @throws ClassNotFoundException In case of exception.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T extends Serializable> T deserialize(byte[] o) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(o);
-             ObjectInputStream ois = new ObjectInputStream(bais)) {
-
-            return (T)ois.readObject();
-        }
     }
 }

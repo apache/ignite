@@ -21,14 +21,15 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.sql.SQLFeatureExtractor;
+import org.apache.ignite.ml.sql.SQLLabelExtractor;
+import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -102,21 +103,16 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
             System.out.println(">>> Perform training...");
-            IgniteCache<Integer, BinaryObject> titanicTrainCache = ignite.cache("SQL_PUBLIC_TITANIK_TRAIN");
             DecisionTreeNode mdl = trainer.fit(
-                // We have to specify ".withKeepBinary(true)" because SQL caches contains only binary objects and this
-                // information has to be passed into the trainer.
-                new CacheBasedDatasetBuilder<>(ignite, titanicTrainCache).withKeepBinary(true),
-                (k, v) -> VectorUtils.of(
-                    // We have to handle null values here to avoid NpE during unboxing.
-                    replaceNull(v.<Integer>field("pclass")),
-                    "male".equals(v.<String>field("sex")) ? 1 : 0,
-                    replaceNull(v.<Double>field("age")),
-                    replaceNull(v.<Integer>field("sibsp")),
-                    replaceNull(v.<Integer>field("parch")),
-                    replaceNull(v.<Double>field("fare"))
-                ),
-                (k, v) -> replaceNull(v.<Integer>field("survived"))
+                new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                new SQLFeatureExtractor()
+                    .withField("pclass")
+                    .withField("sex", e -> "male".equals(e) ? 1 : 0)
+                    .withField("age")
+                    .withField("sibsp")
+                    .withField("parch")
+                    .withField("fare"),
+                new SQLLabelExtractor("survived")
             );
 
             System.out.println(">>> Perform inference...");
