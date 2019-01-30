@@ -51,7 +51,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxSql_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 1, 0, 64,
