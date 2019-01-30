@@ -162,7 +162,10 @@ public class FunctionalTest {
                             SimpleEntry::getKey, SimpleEntry::getValue, (a, b) -> a, LinkedHashMap::new
                         ))
                     )
-                    .setKeyFields(Collections.singleton("id"))
+                    // During query normalization null keyFields become empty set.
+                    // Set empty collection for comparator.
+                    .setKeyFields(Collections.emptySet())
+                    .setKeyFieldName("id")
                     .setNotNullFields(Collections.singleton("id"))
                     .setDefaultFieldValues(Collections.singletonMap("id", 0))
                     .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))
