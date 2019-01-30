@@ -21,15 +21,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test enabled by system property.
  */
-@RunWith(JUnit4.class)
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -66,9 +62,6 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
      */
     @Test
     public final void testPutRemoveMultinode() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
-
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);

@@ -1793,6 +1793,17 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse query.
+     *
+     * @param prepared Prepared statement.
+     * @param useOptimizedSubqry Whether to user optimized subquery.
+     * @return Parsed query.
+     */
+    public static GridSqlQuery parseQuery(Prepared prepared, boolean useOptimizedSubqry) {
+        return (GridSqlQuery)new GridSqlQueryParser(useOptimizedSubqry).parse(prepared);
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @return Parsed AST.
      */

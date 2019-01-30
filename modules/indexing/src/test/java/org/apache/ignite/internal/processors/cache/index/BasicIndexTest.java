@@ -41,16 +41,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A set of basic tests for caches with indexes.
  */
-@RunWith(JUnit4.class)
-public class BasicIndexTest extends GridCommonAbstractTest {
+public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     private Collection<QueryIndex> indexes = Collections.emptyList();
 
@@ -63,9 +59,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     /** */
     private int gridCount = 1;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         assertNotNull(inlineSize);
 

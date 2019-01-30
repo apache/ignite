@@ -58,8 +58,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -71,8 +73,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -91,7 +91,6 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.C
 /**
  * Continuous queries tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
@@ -206,9 +205,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }, 3000);
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = grid(i).context().continuous();
+            GridKernalContext ctx = grid(i).context();
+            GridContinuousProcessor proc = ctx.continuous();
 
-            assertEquals(String.valueOf(i), 1, ((Map)U.field(proc, "locInfos")).size());
+            final int locInfosCnt = ctx.service() instanceof GridServiceProcessor ? 1 : 0;
+
+            assertEquals(String.valueOf(i), locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "stopFuts")).size());

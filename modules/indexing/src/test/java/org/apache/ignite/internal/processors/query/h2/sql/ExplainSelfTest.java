@@ -21,19 +21,16 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Smoke checks for explain operations.
  */
-@RunWith(JUnit4.class)
-public class ExplainSelfTest extends GridCommonAbstractTest {
+public class ExplainSelfTest extends AbstractIndexingCommonTest {
     /** Ignite instance. */
     private static IgniteEx ignite;
 
@@ -57,6 +54,9 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
         finally {
+            ignite = null;
+            cache = null;
+
             super.afterTestsStopped();
         }
     }

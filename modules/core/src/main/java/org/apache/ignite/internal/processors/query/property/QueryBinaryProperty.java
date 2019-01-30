@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.property;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -35,9 +34,6 @@ import org.apache.ignite.internal.util.typedef.F;
 public class QueryBinaryProperty implements GridQueryProperty {
     /** Kernal context. */
     private final GridKernalContext ctx;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** Property name. */
     private String propName;
@@ -90,9 +86,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
         Class<?> type, boolean key, String alias, boolean notNull, Object defaultValue,
         int precision, int scale) {
         this.ctx = ctx;
-
-        log = ctx.log(QueryBinaryProperty.class);
-
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;

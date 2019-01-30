@@ -20,18 +20,15 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for statement reuse.
  */
-@RunWith(JUnit4.class)
-public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractTest {
+public class SqlLocalQueryConnectionAndStatementTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    public void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(1);
@@ -50,16 +47,21 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
     public void testReplicated() {
         sql("CREATE TABLE repl_tbl (id LONG PRIMARY KEY, val LONG) WITH \"template=replicated\"").getAll();
 
-        for (int i = 0; i < 10; i++)
-            sql("insert into repl_tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
+        try {
+            for (int i = 0; i < 10; i++)
+                sql("insert into repl_tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-        Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).iterator();
+            Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).iterator();
 
-        it0.next();
+            it0.next();
 
-        sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).getAll();
+            sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).getAll();
 
-        it0.next();
+            it0.next();
+        }
+        finally {
+            sql("DROP TABLE repl_tbl").getAll();
+        }
     }
 
     /**
@@ -68,20 +70,25 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
     public void testLocalQuery() {
         sql("CREATE TABLE tbl (id LONG PRIMARY KEY, val LONG)").getAll();
 
-        for (int i = 0; i < 10; i++)
-            sql("insert into tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
+        try {
+            for (int i = 0; i < 10; i++)
+                sql("insert into tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-        Iterator<List<?>> it0 = sql(
-            new SqlFieldsQuery("SELECT * FROM tbl where id > ?")
-                .setArgs(1)
-                .setLocal(true))
-            .iterator();
+            Iterator<List<?>> it0 = sql(
+                new SqlFieldsQuery("SELECT * FROM tbl where id > ?")
+                    .setArgs(1)
+                    .setLocal(true))
+                .iterator();
 
-        it0.next();
+            it0.next();
 
-        sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
+            sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).getAll();
 
-        it0.next();
+            it0.next();
+        }
+        finally {
+            sql("DROP TABLE tbl").getAll();
+        }
     }
 
     /**

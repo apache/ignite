@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.trainers;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <OW> Type of output of inner model.
  * @param <M> Type of inner model.
  */
-public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implements Model<I, O> {
+public class AdaptableDatasetModel<I, O, IW, OW, M extends IgniteModel<IW, OW>> implements IgniteModel<I, O> {
     /** Function applied before inner model. */
     private final IgniteFunction<I, IW> before;
 
@@ -55,13 +55,13 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implem
     /**
      * Result of this model application is a result of composition {@code before `andThen` inner mdl `andThen` after}.
      */
-    @Override public O apply(I i) {
-        return before.andThen(mdl).andThen(after).apply(i);
+    @Override public O predict(I i) {
+        return before.andThen(mdl::predict).andThen(after).apply(i);
     }
 
     /** {@inheritDoc} */
-    @Override public <O1> AdaptableDatasetModel<I, O1, IW, OW, M> andThen(IgniteFunction<O, O1> after) {
-        return new AdaptableDatasetModel<>(before, mdl, i -> after.apply(this.after.apply(i)));
+    @Override public <O1> AdaptableDatasetModel<I, O1, IW, OW, M> andThen(IgniteModel<O, O1> after) {
+        return new AdaptableDatasetModel<>(before, mdl, i -> after.predict(this.after.apply(i)));
     }
 
     /**
@@ -71,7 +71,7 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implem
      * @param <I1> Type of function applied before this model.
      * @return New {@code AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
      */
-    public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
+    @Override public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
         return new AdaptableDatasetModel<>(function, mdl, after);
     }
@@ -92,7 +92,7 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implem
      * @param <M1> Type of inner model.
      * @return New instance of this class with changed inner model.
      */
-    public <M1 extends Model<IW, OW>> AdaptableDatasetModel<I, O, IW, OW, M1> withInnerModel(M1 mdl) {
+    public <M1 extends IgniteModel<IW, OW>> AdaptableDatasetModel<I, O, IW, OW, M1> withInnerModel(M1 mdl) {
         return new AdaptableDatasetModel<>(before, mdl, after);
     }
 }

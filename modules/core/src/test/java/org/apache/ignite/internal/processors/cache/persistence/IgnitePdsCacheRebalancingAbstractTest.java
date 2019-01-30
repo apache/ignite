@@ -58,15 +58,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
  * Test for rebalancing and persistence integration.
  */
-@RunWith(JUnit4.class)
 public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAbstractTest {
     /** Default cache. */
     private static final String CACHE = "cache";

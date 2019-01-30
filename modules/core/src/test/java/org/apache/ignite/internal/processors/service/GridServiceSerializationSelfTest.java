@@ -31,13 +31,10 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Service serialization test.
  */
-@RunWith(JUnit4.class)
 public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -54,7 +51,7 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
             server.services(server.cluster().forServers())
                 .deployClusterSingleton("my-service", new MyServiceImpl());
 
-            MyService svc = client.services().serviceProxy("my-service", MyService.class, false);
+            MyService svc = client.services().serviceProxy("my-service", MyService.class, false, 2_000);
 
             svc.hello();
 

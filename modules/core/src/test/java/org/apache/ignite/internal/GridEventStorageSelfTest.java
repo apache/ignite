@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
 import static org.apache.ignite.events.EventType.EVTS_JOB_EXECUTION;
@@ -59,7 +57,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
  * serialized form.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /** First grid. */
     private static Ignite ignite1;
@@ -81,6 +78,14 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite1 = null;
+        ignite2 = null;
     }
 
     /**

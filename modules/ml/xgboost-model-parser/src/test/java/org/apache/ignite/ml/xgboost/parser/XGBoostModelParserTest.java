@@ -20,10 +20,11 @@ package org.apache.ignite.ml.xgboost.parser;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Scanner;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
-import org.apache.ignite.ml.inference.builder.SyncInfModelBuilder;
-import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.builder.SingleModelBuilder;
+import org.apache.ignite.ml.inference.builder.SyncModelBuilder;
+import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
+import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class XGBoostModelParserTest {
     private final XGModelParser parser = new XGModelParser();
 
     /** Model builder. */
-    private final SyncInfModelBuilder mdlBuilder = new SingleInfModelBuilder();
+    private final SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
     /** End-to-end test for {@code parse()} and {@code predict()} methods. */
     @Test
@@ -50,7 +51,7 @@ public class XGBoostModelParserTest {
         if (url == null)
             throw new IllegalStateException("File not found [resource_name=" + TEST_MODEL_RESOURCE + "]");
 
-        InfModelReader reader = new FileSystemInfModelReader(url.getPath());
+        ModelReader reader = new FileSystemModelReader(url.getPath());
 
         try (XGModelComposition mdl = mdlBuilder.build(reader, parser);
              Scanner testDataScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
@@ -73,7 +74,7 @@ public class XGBoostModelParserTest {
                         testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                 }
 
-                double prediction = mdl.apply(testObj);
+                double prediction = mdl.predict(VectorUtils.of(testObj));
 
                 double expPrediction = Double.parseDouble(testExpResultsStr);
 

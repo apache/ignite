@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
 
 /**
@@ -134,7 +138,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             boolean clientFirst = false;
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(!topLocked && cctx.topology().holdsLock())
+            if (!topLocked && cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
 
             for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {
@@ -243,7 +247,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
         IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
 
         if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
+            cctx.io().send(nodeId, req, QUERY_POOL); // Process query requests in query pool.
         else
             txSync.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
@@ -326,6 +330,19 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
         if (mini != null)
             mini.onResult(res, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        if (initialized() && !isDone()) {
+            return futures().stream()
+                .map(MiniFuture.class::cast)
+                .filter(mini -> !mini.isDone())
+                .map(mini -> mini.node.id())
+                .collect(Collectors.toSet());
+        }
+
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */

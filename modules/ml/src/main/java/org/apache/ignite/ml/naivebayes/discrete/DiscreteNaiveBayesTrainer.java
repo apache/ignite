@@ -21,12 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -38,28 +40,24 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<DiscreteNaiveBayesModel> {
     /** Precision to compare bucketThresholds. */
     private static final double PRECISION = 1e-10;
-    /* Preset prior probabilities. */
+
+    /** Preset prior probabilities. */
     private double[] priorProbabilities;
-    /* Sets equivalent probability for all classes. */
+
+    /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
+
     /** The threshold to convert a feature to a discrete value. */
     private double[][] bucketThresholds;
 
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
+    /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        FeatureLabelExtractor<K, V, Double> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(DiscreteNaiveBayesModel mdl) {
+    @Override public boolean isUpdateable(DiscreteNaiveBayesModel mdl) {
         if (mdl.getBucketThresholds().length != bucketThresholds.length)
             return false;
 
@@ -75,8 +73,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
     /** {@inheritDoc} */
     @Override protected <K, V> DiscreteNaiveBayesModel updateModel(DiscreteNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
 
         try (Dataset<EmptyContext, DiscreteNaiveBayesSumsHolder> dataset = datasetBuilder.build(
             envBuilder,
@@ -85,6 +82,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 DiscreteNaiveBayesSumsHolder res = new DiscreteNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
+
+                    IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
+                    IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
 
                     Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
                     Double lb = lbExtractor.apply(entity.getKey(), entity.getValue());
@@ -116,58 +116,58 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 }
                 return res;
             })) {
-                DiscreteNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
-                    if (a == null)
-                        return b == null ? new DiscreteNaiveBayesSumsHolder() : b;
-                    if (b == null)
-                        return a;
-                    return a.merge(b);
-                });
+            DiscreteNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
+                if (a == null)
+                    return b == null ? new DiscreteNaiveBayesSumsHolder() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
 
-                if (mdl != null && checkState(mdl)) {
-                    if (checkSumsHolder(sumsHolder, mdl.getSumsHolder()))
-                        sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+            if (mdl != null && isUpdateable(mdl)) {
+                if (checkSumsHolder(sumsHolder, mdl.getSumsHolder()))
+                    sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+            }
+
+            List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
+            sortedLabels.sort(Double::compareTo);
+            assert !sortedLabels.isEmpty() : "The dataset should contain at least one feature";
+
+            int lbCnt = sortedLabels.size();
+            int featureCnt = sumsHolder.valuesInBucketPerLbl.get(sortedLabels.get(0)).length;
+
+            double[][][] probabilities = new double[lbCnt][featureCnt][];
+            double[] classProbabilities = new double[lbCnt];
+            double[] labels = new double[lbCnt];
+            long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
+
+            int lbl = 0;
+
+            for (Double label : sortedLabels) {
+                int cnt = sumsHolder.featureCountersPerLbl.get(label);
+                long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
+
+                for (int i = 0; i < featureCnt; i++) {
+
+                    int bucketsCnt = sum[i].length;
+                    probabilities[lbl][i] = new double[bucketsCnt];
+
+                    for (int j = 0; j < bucketsCnt; j++)
+                        probabilities[lbl][i][j] = (double)sum[i][j] / cnt;
                 }
 
-                List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
-                sortedLabels.sort(Double::compareTo);
-                assert !sortedLabels.isEmpty() : "The dataset should contain at least one feature";
-
-                int lbCnt = sortedLabels.size();
-                int featureCnt = sumsHolder.valuesInBucketPerLbl.get(sortedLabels.get(0)).length;
-
-                double[][][] probabilities = new double[lbCnt][featureCnt][];
-                double[] classProbabilities = new double[lbCnt];
-                double[] labels = new double[lbCnt];
-                long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
-
-                int lbl = 0;
-
-                for (Double label : sortedLabels) {
-                    int cnt = sumsHolder.featureCountersPerLbl.get(label);
-                    long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
-
-                    for (int i = 0; i < featureCnt; i++) {
-
-                        int bucketsCnt = sum[i].length;
-                        probabilities[lbl][i] = new double[bucketsCnt];
-
-                        for (int j = 0; j < bucketsCnt; j++)
-                            probabilities[lbl][i][j] = (double)sum[i][j] / cnt;
-                    }
-
-                    if (equiprobableClasses)
-                        classProbabilities[lbl] = 1. / lbCnt;
-                    else if (priorProbabilities != null) {
-                        assert classProbabilities.length == priorProbabilities.length;
-                        classProbabilities[lbl] = priorProbabilities[lbl];
-                    }
-                    else
-                        classProbabilities[lbl] = (double)cnt / datasetSize;
-
-                    labels[lbl] = label;
-                    ++lbl;
+                if (equiprobableClasses)
+                    classProbabilities[lbl] = 1. / lbCnt;
+                else if (priorProbabilities != null) {
+                    assert classProbabilities.length == priorProbabilities.length;
+                    classProbabilities[lbl] = priorProbabilities[lbl];
                 }
+                else
+                    classProbabilities[lbl] = (double)cnt / datasetSize;
+
+                labels[lbl] = label;
+                ++lbl;
+            }
             return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
         }
         catch (Exception e) {

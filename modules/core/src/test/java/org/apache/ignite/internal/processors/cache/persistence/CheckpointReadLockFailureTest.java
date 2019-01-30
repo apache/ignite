@@ -32,6 +32,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -65,21 +68,30 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
                 .setCheckpointReadLockTimeout(1));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /**
+     *
+     */
+    @BeforeClass
+    public static void beforeClass() {
         Set<FailureType> ignoredFailureTypes = new HashSet<>(FAILURE_HND.getIgnoredFailureTypes());
         ignoredFailureTypes.remove(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT);
 
         FAILURE_HND.setIgnoredFailureTypes(ignoredFailureTypes);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     *
+     */
+    @Before
+    public void before() throws Exception {
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     *
+     */
+    @After
+    public void after() throws Exception {
         cleanPersistenceDir();
     }
 

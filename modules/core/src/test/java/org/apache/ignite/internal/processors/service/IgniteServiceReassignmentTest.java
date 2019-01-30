@@ -35,14 +35,12 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /** */
     private ServiceConfiguration srvcCfg;
@@ -87,13 +85,15 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     public void testNodeRestart1() throws Exception {
         srvcCfg = serviceConfiguration();
 
-        Ignite node1 = startGrid(1);
+        IgniteEx node1 = startGrid(1);
+
+        waitForService(node1);
 
         assertEquals(42, serviceProxy(node1).foo());
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node2 = startGrid(2);
+        IgniteEx node2 = startGrid(2);
 
         node1.close();
 
@@ -103,13 +103,19 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node3 = startGrid(3);
+        IgniteEx node3 = startGrid(3);
+
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node3).foo());
 
         srvcCfg = serviceConfiguration();
 
         node1 = startGrid(1);
+
+        waitForService(node1);
+        waitForService(node2);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node2).foo());
@@ -118,6 +124,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         node2.close();
 
         waitForService(node1);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node3).foo());
@@ -174,7 +181,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
                 if (nodeIdx == stopIdx)
                     continue;
 
-                waitForService(ignite(nodeIdx));
+                waitForService(grid(nodeIdx));
 
                 assertEquals(42, serviceProxy(ignite(nodeIdx)).foo());
             }
@@ -191,6 +198,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testZombieAssignmentsCleanup() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
         useStrLog = true;
 
         final int nodesCnt = 2;
@@ -248,6 +257,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
         final int nodesCnt = 2;
         final int maxSvc = 1024;
 
@@ -286,19 +297,23 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      * @param node Node.
      * @throws Exception If failed.
      */
-    private void waitForService(final Ignite node) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                try {
-                    serviceProxy(node).foo();
+    private void waitForService(final IgniteEx node) throws Exception {
+        if (node.context().service() instanceof IgniteServiceProcessor)
+            waitForServicesReadyTopology(node, node.context().discovery().topologyVersionEx());
+        else {
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    try {
+                        serviceProxy(node).foo();
 
-                    return true;
+                        return true;
+                    }
+                    catch (IgniteException ignored) {
+                        return false;
+                    }
                 }
-                catch (IgniteException ignored) {
-                    return false;
-                }
-            }
-        }, 5000));
+            }, 5000));
+        }
     }
 
     /**

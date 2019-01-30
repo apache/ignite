@@ -18,7 +18,7 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.cache.QueryEntity
+import org.apache.ignite.internal.processors.query.{GridQueryTypeDescriptor, QueryTypeDescriptorImpl}
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD, impl}
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
@@ -42,7 +42,7 @@ class IgniteSQLRelation[K, V](
       * @return Schema of Ignite SQL table.
       */
     override def schema: StructType =
-        igniteSQLTable(ic.ignite(), tableName, schemaName)
+        sqlTableInfo(ic.ignite(), tableName, schemaName)
             .map(IgniteSQLRelation.schema)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 
@@ -113,15 +113,15 @@ object IgniteSQLRelation {
       * @param table Ignite table descirption.
       * @return Spark table descirption
       */
-    def schema(table: QueryEntity): StructType = {
+    def schema(table: GridQueryTypeDescriptor): StructType = {
         //Partition columns has to be in the end of list.
         //See `org.apache.spark.sql.catalyst.catalog.CatalogTable#partitionSchema`
-        val columns = table.getFields.toList.sortBy(c ⇒ isKeyColumn(table, c._1))
+        val columns = table.fields.toList.sortBy(c ⇒ isKeyColumn(table, c._1))
 
         StructType(columns.map { case (name, dataType) ⇒
             StructField(
-                name = table.getAliases.getOrDefault(name, name),
-                dataType = IgniteRDD.dataType(dataType, name),
+                name = table.asInstanceOf[QueryTypeDescriptorImpl].aliases.getOrDefault(name, name),
+                dataType = IgniteRDD.dataType(dataType.getName, name),
                 nullable = !isKeyColumn(table, name),
                 metadata = Metadata.empty)
         })

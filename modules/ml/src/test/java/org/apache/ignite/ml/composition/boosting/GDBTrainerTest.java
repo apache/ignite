@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition.boosting;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
@@ -60,7 +61,7 @@ public class GDBTrainerTest extends TrainerTest {
         GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0)
             .withUsingIdx(true);
 
-        Model<Vector, Double> mdl = trainer.fit(
+        IgniteModel<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
             (k, v) -> VectorUtils.of(v[0]),
             (k, v) -> v[1]
@@ -70,7 +71,7 @@ public class GDBTrainerTest extends TrainerTest {
         for (int j = 0; j < size; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = mdl.apply(VectorUtils.of(x));
+            double p = mdl.predict(VectorUtils.of(x));
             mse += Math.pow(y - p, 2);
         }
         mse /= size;
@@ -78,9 +79,9 @@ public class GDBTrainerTest extends TrainerTest {
         assertEquals(0.0, mse, 0.0001);
 
         ModelsComposition composition = (ModelsComposition)mdl;
-        assertTrue(composition.toString().length() > 0);
-        assertTrue(composition.toString(true).length() > 0);
-        assertTrue(composition.toString(false).length() > 0);
+        assertTrue(!composition.toString().isEmpty());
+        assertTrue(!composition.toString(true).isEmpty());
+        assertTrue(!composition.toString(false).isEmpty());
 
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
@@ -117,7 +118,7 @@ public class GDBTrainerTest extends TrainerTest {
 
     /** */
     private void testClassifier(BiFunction<GDBTrainer, Map<Integer, double[]>,
-        Model<Vector, Double>> fitter) {
+        IgniteModel<Vector, Double>> fitter) {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
         double[] ys = new double[sampleSize];
@@ -135,13 +136,13 @@ public class GDBTrainerTest extends TrainerTest {
             .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
-        Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
+        IgniteModel<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
         int errorsCnt = 0;
         for (int j = 0; j < sampleSize; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = mdl.apply(VectorUtils.of(x));
+            double p = mdl.predict(VectorUtils.of(x));
             if (p != y)
                 errorsCnt++;
         }
@@ -196,14 +197,15 @@ public class GDBTrainerTest extends TrainerTest {
         ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, fExtr, lExtr);
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, fExtr, lExtr);
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl,
+            epmtyDataset, (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v)));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);
 
-            Double originalAnswer = originalMdl.apply(features);
-            Double updatedMdlAnswer1 = updatedOnSameDataset.apply(features);
-            Double updatedMdlAnswer2 = updatedOnEmptyDataset.apply(features);
+            Double originalAnswer = originalMdl.predict(features);
+            Double updatedMdlAnswer1 = updatedOnSameDataset.predict(features);
+            Double updatedMdlAnswer2 = updatedOnEmptyDataset.predict(features);
 
             assertEquals(originalAnswer, updatedMdlAnswer1, 0.01);
             assertEquals(originalAnswer, updatedMdlAnswer2, 0.01);

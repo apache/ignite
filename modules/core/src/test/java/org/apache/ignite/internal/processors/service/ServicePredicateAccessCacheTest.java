@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -34,8 +34,6 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -44,7 +42,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     /** */
     private static CountDownLatch latch;
@@ -70,38 +67,42 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPredicateAccessCache() throws Exception {
-        final Ignite ignite0 = startGrid(0);
+        final IgniteEx ignite0 = startGrid(0);
 
-        ignite0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setName("testCache")
-            .setAtomicityMode(ATOMIC)
-            .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC));
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setName("testCache");
+        cacheCfg.setAtomicityMode(ATOMIC);
+        cacheCfg.setCacheMode(REPLICATED);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<String, String> cache = ignite0.getOrCreateCache(cacheCfg);
+
+        if (ignite0.context().service() instanceof IgniteServiceProcessor)
+            cache.put(ignite0.cluster().localNode().id().toString(), "val");
 
         latch = new CountDownLatch(1);
 
-        final ClusterGroup grp = ignite0.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                System.out.println("Predicated started [thread=" + Thread.currentThread().getName() + ']');
+        final ClusterGroup grp = ignite0.cluster().forPredicate((IgnitePredicate<ClusterNode>)node -> {
+            System.out.println("Predicated started [thread=" + Thread.currentThread().getName() + ']');
 
-                latch.countDown();
+            latch.countDown();
 
-                try {
-                    Thread.sleep(3000);
-                }
-                catch (InterruptedException ignore) {
-                    // No-op.
-                }
-
-                System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
-
-                boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
-
-                System.out.println("After contains key [ret=" + ret +
-                    ", thread=" + Thread.currentThread().getName() + ']');
-
-                return ret;
+            try {
+                Thread.sleep(3000);
             }
+            catch (InterruptedException ignore) {
+                // No-op.
+            }
+
+            System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
+
+            boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
+
+            System.out.println("After contains key [ret=" + ret +
+                ", thread=" + Thread.currentThread().getName() + ']');
+
+            return ret;
         });
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {

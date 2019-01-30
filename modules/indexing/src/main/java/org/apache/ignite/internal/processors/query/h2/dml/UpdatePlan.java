@@ -259,7 +259,7 @@ public final class UpdatePlan {
         // column order preserves their precedence for correct update of nested properties.
         Column[] tblCols = tbl.getColumns();
 
-        // First 3 columns are _key, _val and _ver. Skip 'em.
+        // First 2 columns are _key and _val Skip 'em.
         for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
@@ -623,7 +623,7 @@ public final class UpdatePlan {
         private final EnlistOperation op;
 
         /** */
-        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
+        private volatile ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn;
 
         /**
          * @param connMgr Connection manager.
@@ -648,7 +648,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = connMgr.detachThreadConnection();
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn = connMgr.detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();
@@ -658,7 +658,7 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn;
 
             if (conn0 != null)
                 conn0.recycle();

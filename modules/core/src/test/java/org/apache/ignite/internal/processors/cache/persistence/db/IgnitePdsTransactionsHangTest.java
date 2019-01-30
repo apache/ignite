@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -54,7 +52,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks that transactions don't hang during checkpoint creation.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     /** Page cache size. */
     private static final long PAGE_CACHE_SIZE = 512L * 1024 * 1024;

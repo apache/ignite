@@ -35,11 +35,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest {
     /** */
     private static final String SERVICE_NAME = "test-service";
@@ -160,14 +157,6 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testStaticDeployFromEachPersistentNodes() throws Exception {
-        checkDeployFromEachNodes(true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -194,9 +183,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite ignite0 = deployServiceFromNewNode(staticDeploy, 0);
 
-        if (persistence)
-            ignite0.cluster().active(true);
-        else {
+        if (!staticDeploy) {
             IgniteCluster cluster = ignite0.cluster();
 
             cluster.setBaselineTopology(cluster.topologyVersion());

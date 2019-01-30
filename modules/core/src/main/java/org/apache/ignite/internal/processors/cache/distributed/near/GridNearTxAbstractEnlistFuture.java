@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -275,6 +278,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
         if (node.isLocal())
             tx.colocatedLocallyMapped(true);
+
+        checkCompleted();
     }
 
     /**
@@ -315,7 +320,10 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new CacheStoppedException(cctx.name()));
+                onDone(
+                    cctx.shared().cache().isCacheRestarting(cctx.name())?
+                        new IgniteCacheRestartingException(cctx.name()):
+                        new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -333,8 +341,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (tx != null)
-                    tx.topologyVersion(topVer);
+                tx.topologyVersion(topVer);
 
                 if (this.topVer == null)
                     this.topVer = topVer;
@@ -375,7 +382,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             return false;
 
         // Need to unlock topology to avoid deadlock with binary descriptors registration.
-        if(cctx.topology().holdsLock())
+        if (cctx.topology().holdsLock())
             cctx.topology().readUnlock();
 
         cctx.tm().txContext(tx);
@@ -395,14 +402,14 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             tx.setRollbackOnly();
 
         synchronized (this) {
-            boolean done = super.onDone(res, err, cancelled);
-
-            assert done;
-
             GridDhtTxAbstractEnlistFuture localFuture0 = localEnlistFuture;
 
             if (localFuture0 != null && (err != null || cancelled))
                 localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
+
+            boolean done = super.onDone(res, err, cancelled);
+
+            assert done;
 
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);
@@ -478,6 +485,11 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      * @param topLocked Whether topology was already locked.
      */
     protected abstract void map(boolean topLocked);
+
+    /**
+     * @return Nodes from which current future waits responses.
+     */
+    public abstract Set<UUID> pendingResponseNodes();
 
     /**
      * Lock request timeout object.

@@ -25,7 +25,10 @@ import org.apache.ignite.services.ServiceConfiguration;
 
 /**
  * Service deployment.
+ *
+ * @deprecated Services internals use messages for deployment management instead of the utility cache, since Ignite 2.8.
  */
+@Deprecated
 public class GridServiceDeployment implements GridCacheInternal, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -32,7 +35,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -45,15 +47,23 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.result.Row;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
@@ -77,11 +87,14 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
+
+import javax.cache.CacheException;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * H2 utility methods.
@@ -93,6 +106,19 @@ public class H2Utils {
 
     /** Quotation character. */
     private static final char ESC_CH = '\"';
+
+    /** Empty cursor. */
+    public static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row get() {
+            return null;
+        }
+    };
 
     /**
      * @param c1 First column.
@@ -108,6 +134,7 @@ public class H2Utils {
      * @param col Column to find.
      * @return {@code true} If found.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
         for (int i = cols.size() - 1; i >= 0; i--) {
             if (equals(cols.get(i), col))
@@ -159,7 +186,6 @@ public class H2Utils {
             .a(KEY_FIELD_NAME).a(' ').a(keyType).a(keyValVisibility).a(" NOT NULL");
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
-        sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
 
         for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
             GridQueryProperty prop = tbl.type().property(e.getKey());
@@ -249,6 +275,7 @@ public class H2Utils {
      * @param idxName Index name.
      * @param cols Columns.
      */
+    @SuppressWarnings("ConstantConditions")
     public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
         try {
             Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
@@ -388,6 +415,7 @@ public class H2Utils {
      * @param tbl Table to check on not started cache.
      * @return {@code true} in case not started and has been started.
      */
+    @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
     public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
         if (tbl != null && tbl.isCacheLazy()) {
             String cacheName = tbl.cacheInfo().config().getName();
@@ -516,9 +544,7 @@ public class H2Utils {
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) ||
-                name.equalsIgnoreCase(VAL_FIELD_NAME) ||
-                name.equalsIgnoreCase(VER_FIELD_NAME))
+            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
     }
@@ -597,5 +623,109 @@ public class H2Utils {
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 
         return qry;
+    }
+
+    /**
+     * @param row Row.
+     * @return Row message.
+     */
+    public static GridH2RowMessage toRowMessage(Row row) {
+        if (row == null)
+            return null;
+
+        int cols = row.getColumnCount();
+
+        assert cols > 0 : cols;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(cols);
+
+        for (int i = 0; i < cols; i++) {
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
+     * Create retry exception for distributed join.
+     *
+     * @param msg Message.
+     * @return Exception.
+     */
+    public static GridH2RetryException retryException(String msg) {
+        return new GridH2RetryException(msg);
+    }
+
+    /**
+     * Binds parameters to prepared statement.
+     *
+     * @param stmt Prepared statement.
+     * @param params Parameters collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params)
+        throws IgniteCheckedException {
+        if (!F.isEmpty(params)) {
+            int idx = 1;
+
+            for (Object arg : params)
+                bindObject(stmt, idx++, arg);
+        }
+    }
+
+    /**
+     * Binds object to prepared statement.
+     *
+     * @param stmt SQL statement.
+     * @param idx Index.
+     * @param obj Value to store.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
+        try {
+            if (obj == null)
+                stmt.setNull(idx, Types.VARCHAR);
+            else if (obj instanceof BigInteger)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
+            else if (obj instanceof BigDecimal)
+                stmt.setObject(idx, obj, Types.DECIMAL);
+            else
+                stmt.setObject(idx, obj);
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
+                stmt + ']', e);
+        }
+    }
+
+    /**
+     * Get optimized prepared statement.
+     *
+     * @param c Connection.
+     * @param qry Parsed query.
+     * @param params Query parameters.
+     * @param enforceJoinOrder Enforce join order.
+     * @return Optimized prepared command.
+     * @throws SQLException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static Prepared optimize(Connection c, String qry, Object[] params, boolean distributedJoins,
+        boolean enforceJoinOrder) throws SQLException, IgniteCheckedException {
+        setupConnection(c, distributedJoins, enforceJoinOrder);
+
+        try (PreparedStatement s = c.prepareStatement(qry)) {
+            bindParameters(s, F.asList(params));
+
+            return prepared(s);
+        }
     }
 }

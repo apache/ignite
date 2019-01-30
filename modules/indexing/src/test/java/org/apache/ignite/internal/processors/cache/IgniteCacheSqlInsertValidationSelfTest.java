@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -152,14 +151,13 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /**
      * Check that we can't perform insert without at least one key field specified.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10824")
     @Test
     public void testMixedPlaceholderWithOtherKeyFields() {
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO WITH_KEY_FLDS(_key, FK1, _val) VALUES (?, ?, ?)",
                 new Key(1, 2), 42, 43),
             IgniteSQLException.class,
-            "Key columns must not be mixed with '_key' placeholder.");
+            "Column _KEY refers to entire key cache object.");
     }
 
     /**

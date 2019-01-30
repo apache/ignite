@@ -17,32 +17,41 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite9 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         Collection<Class> ignoredTests = new HashSet<>();
 
         // Skip classes that already contains Mvcc tests
         ignoredTests.add(IgniteTxConcurrentRemoveObjectsTest.class);
+
+        // Non supported modes.
+        ignoredTests.add(IgniteCachePrimarySyncTest.class);
+        ignoredTests.add(IgniteTxCachePrimarySyncTest.class);
 
         // Atomic caches.
         ignoredTests.add(CacheAtomicPrimarySyncBackPressureTest.class);
@@ -51,10 +60,10 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(IgniteCacheGetCustomCollectionsSelfTest.class);
         ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 9");
+        // IO statistics.
+        ignoredTests.add(IoStatisticsCacheSelfTest.class);
+        ignoredTests.add(IoStatisticsCachePersistenceSelfTest.class);
 
-        suite.addTest(IgniteCacheTestSuite9.suite(ignoredTests));
-
-        return suite;
+        return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
     }
 }
