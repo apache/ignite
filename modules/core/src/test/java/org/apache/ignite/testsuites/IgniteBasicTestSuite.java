@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -159,6 +160,12 @@ import org.junit.runners.Suite;
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
+    // Tests against configuration variations framework.
+    ParametersTest.class,
+    VariationsIteratorTest.class,
+    ConfigVariationsTestSuiteBuilderTest.class,
+    NotStringSystemPropertyTest.class,
+
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
 
@@ -206,11 +213,8 @@ import org.junit.runners.Suite;
 
     PluginNodeValidationTest.class,
 
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    NotStringSystemPropertyTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
+    // In-memory Distributed MetaStorage.
+    DistributedMetaStorageTest.class
 })
 public class IgniteBasicTestSuite {
 }

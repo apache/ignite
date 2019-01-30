@@ -49,7 +49,7 @@ Supports .NET 4+ and .NET Core 2.0+.
 More info: https://apacheignite-net.readme.io/
         </description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2018</copyright>
+        <copyright>Copyright 2019</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />

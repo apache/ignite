@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -29,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class PartitionParameterNode extends PartitionSingleNode {
     /** Indexing. */
     @GridToStringExclude
-    private final IgniteH2Indexing indexing;
+    private final PartitionResolver partResolver;
 
     /** Index. */
     private final int idx;
@@ -41,15 +39,14 @@ public class PartitionParameterNode extends PartitionSingleNode {
      * Constructor.
      *
      * @param tbl Table descriptor.
-     * @param indexing Indexing.
+     * @param partResolver Partition resolver.
      * @param idx Parameter index.
      * @param dataType Parameter data type.
      */
-    public PartitionParameterNode(PartitionTable tbl, IgniteH2Indexing indexing, int idx,
-        int dataType) {
+    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partResolver, int idx, int dataType) {
         super(tbl);
 
-        this.indexing = indexing;
+        this.partResolver = partResolver;
         this.idx = idx;
         this.dataType = dataType;
     }
@@ -59,9 +56,11 @@ public class PartitionParameterNode extends PartitionSingleNode {
         assert args != null;
         assert idx < args.length;
 
-        Object param = H2Utils.convert(args[idx], indexing, dataType);
-
-        return indexing.kernalContext().affinity().partition(tbl.cacheName(), param);
+        return partResolver.partition(
+            args[idx],
+            dataType,
+            tbl.cacheName()
+        );
     }
 
     /** {@inheritDoc} */

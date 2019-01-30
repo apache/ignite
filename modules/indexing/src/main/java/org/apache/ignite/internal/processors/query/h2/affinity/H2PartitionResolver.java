@@ -17,37 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
-import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResolver;
 
 /**
- * Node denoting empty partition set.
+ * Default partition resolver implementation which uses H2 to convert types appropriately.
  */
-public class PartitionNoneNode implements PartitionNode {
-    /** Singleton. */
-    public static final PartitionNoneNode INSTANCE = new PartitionNoneNode();
+public class H2PartitionResolver implements PartitionResolver {
+    /** Indexing. */
+    private final IgniteH2Indexing idx;
 
     /**
      * Constructor.
+     *
+     * @param idx Indexing.
      */
-    private PartitionNoneNode() {
-        // No-op.
+    public H2PartitionResolver(IgniteH2Indexing idx) {
+        this.idx = idx;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
-        return Collections.emptySet();
-    }
+    @Override public int partition(Object arg, int dataType, String cacheName) throws IgniteCheckedException {
+        Object param = H2Utils.convert(arg, idx, dataType);
 
-    /** {@inheritDoc} */
-    @Override public int joinGroup() {
-        return PartitionTableModel.GRP_NONE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionNoneNode.class, this);
+        return idx.kernalContext().affinity().partition(cacheName, param);
     }
 }
