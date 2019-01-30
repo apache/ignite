@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,9 +34,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with enabled persistence.
@@ -544,12 +540,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     @Test @SuppressWarnings("ThrowableNotThrown")
     public void testConflictingData() throws Exception {
         startGrid(0);
-
-        assumeThat(
-            "https://issues.apache.org/jira/browse/IGNITE-11108",
-            grid(0).configuration().getDiscoverySpi(),
-            is(instanceOf(TcpDiscoverySpi.class))
-        );
 
         startGrid(1);
 
