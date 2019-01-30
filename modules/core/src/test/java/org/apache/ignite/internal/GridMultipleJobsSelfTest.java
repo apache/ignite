@@ -34,8 +34,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -43,7 +41,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests multiple parallel jobs execution.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int LOG_MOD = 100;

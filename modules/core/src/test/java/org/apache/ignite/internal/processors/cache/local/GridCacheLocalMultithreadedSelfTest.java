@@ -38,15 +38,12 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Multithreaded local cache locking test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest {
     /** Cache. */
     private static IgniteCache<Integer, String> cache;

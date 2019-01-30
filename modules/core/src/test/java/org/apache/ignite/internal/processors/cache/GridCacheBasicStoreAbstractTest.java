@@ -36,8 +36,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -48,7 +46,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Basic store test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstractTest {
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();

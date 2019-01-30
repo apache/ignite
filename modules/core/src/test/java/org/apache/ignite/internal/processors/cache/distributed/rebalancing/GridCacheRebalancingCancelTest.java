@@ -34,13 +34,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
-@RunWith(JUnit4.class)
 public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
     /** */
     private static final String DHT_PARTITIONED_CACHE = "cacheP";

@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -40,7 +38,6 @@ import static java.util.Collections.singletonList;
 /**
  * Verify we are able to escape "_" character in the metadata request.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     /** Connection. */
     private static Connection conn;

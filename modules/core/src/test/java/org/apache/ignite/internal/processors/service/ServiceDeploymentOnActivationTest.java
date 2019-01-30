@@ -29,8 +29,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests check:
@@ -39,7 +37,6 @@ import org.junit.runners.JUnit4;
  * <p/>
  * 2. Node deploys static services configuration on post-startup activation;
  */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** */
     private static final String SERVICE_NAME = "test-service";

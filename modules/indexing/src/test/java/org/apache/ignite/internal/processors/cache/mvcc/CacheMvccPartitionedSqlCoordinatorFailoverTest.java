@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.cache.CacheMode;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -32,7 +30,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * SQL Mvcc coordinator failover test for partitioned caches.
  */
-@RunWith(JUnit4.class)
 public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbstractSqlCoordinatorFailoverTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

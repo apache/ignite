@@ -49,8 +49,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Checks stop and destroy methods behavior.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /** Key-value used at test. */
     private static String KEY_VAL = "1";

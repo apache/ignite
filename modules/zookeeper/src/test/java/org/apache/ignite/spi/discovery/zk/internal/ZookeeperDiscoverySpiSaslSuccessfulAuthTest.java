@@ -18,13 +18,10 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
     /**
      * @throws Exception If failed.

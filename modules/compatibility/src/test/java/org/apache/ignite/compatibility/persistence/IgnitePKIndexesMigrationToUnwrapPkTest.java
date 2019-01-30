@@ -34,13 +34,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
-@RunWith(JUnit4.class)
 public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static String TABLE_NAME = "TEST_IDX_TABLE";

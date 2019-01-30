@@ -44,8 +44,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,7 +52,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /** Cancel latch. */
     private static CountDownLatch cancelLatch;

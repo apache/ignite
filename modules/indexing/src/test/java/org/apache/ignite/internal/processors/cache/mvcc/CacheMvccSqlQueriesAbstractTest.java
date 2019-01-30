@@ -44,8 +44,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -61,7 +59,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * TODO IGNITE-6739: dynamic index create.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.

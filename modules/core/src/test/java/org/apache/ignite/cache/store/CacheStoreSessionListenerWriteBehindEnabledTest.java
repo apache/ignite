@@ -46,8 +46,6 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
@@ -55,7 +53,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
  * {@link GridCacheWriteBehindStore} only.
  */
-@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int CNT = 100;

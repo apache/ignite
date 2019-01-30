@@ -24,13 +24,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link org.apache.ignite.IgniteSpringBean} serialization.
  */
-@RunWith(JUnit4.class)
 public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     private static Marshaller marsh;
