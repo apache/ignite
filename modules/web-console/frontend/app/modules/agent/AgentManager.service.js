@@ -148,6 +148,17 @@ export default class AgentManager {
 
     socket = null;
 
+    /** @type {Set<() => Promise>} */
+    switchClusterListeners = new Set();
+
+    addClusterSwitchListener(func) {
+        this.switchClusterListeners.add(func);
+    }
+
+    removeClusterSwitchListener(func) {
+        this.switchClusterListeners.delete(func);
+    }
+
     static restoreActiveCluster() {
         try {
             return JSON.parse(localStorage.cluster);
@@ -273,13 +284,18 @@ export default class AgentManager {
     }
 
     switchCluster(cluster) {
-        const state = this.connectionSbj.getValue();
+        return Promise.all(_.map([...this.switchClusterListeners], (lnr) => lnr()))
+            .then(() => {
+                const state = this.connectionSbj.getValue();
 
-        state.updateCluster(cluster);
+                state.updateCluster(cluster);
 
-        this.connectionSbj.next(state);
+                this.connectionSbj.next(state);
 
-        this.saveToStorage(cluster);
+                this.saveToStorage(cluster);
+
+                return Promise.resolve(true);
+            });
     }
 
     /**

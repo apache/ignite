@@ -33,6 +33,7 @@ import {default as MessagesServiceFactory} from 'app/services/Messages.service';
 import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.service';
 import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
 import {QueryActions} from './components/query-actions-button/controller';
+import {CancellationError} from 'app/errors/CancellationError';
 
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -2143,35 +2144,57 @@ export class NotebookCtrl {
         });
 
         $window.addEventListener('beforeunload', this.closeOpenedQueries);
+
+        this.onClusterSwitchLnr = () => {
+            const paragraphs = _.get(this, '$scope.notebook.paragraphs');
+
+            if (this._hasRunningQueries(paragraphs)) {
+                try {
+                    return Confirm.confirm('You have running queries. Are you sure you want to cancel them?')
+                        .then(() => this._closeOpenedQueries(paragraphs));
+                }
+                catch (err) {
+                    return Promise.reject(new CancellationError());
+                }
+            }
+
+            return Promise.resolve(true);
+        };
+
+        agentMgr.addClusterSwitchListener(this.onClusterSwitchLnr);
     }
 
     _closeOpenedQueries(paragraphs) {
-        _.forEach(paragraphs, ({cancelQuerySubject, cancelExportSubject, resNodeId, queryId, csvIsPreparing, exportNodeId, exportId}) => {
-            cancelQuerySubject.next(true);
-            cancelExportSubject.next(true);
+        return Promise.all(_.map(paragraphs, (paragraph) => {
+            paragraph.cancelQuerySubject.next(true);
+            paragraph.cancelExportSubject.next(true);
 
-            if (queryId) {
-                this.agentMgr.queryClose(resNodeId, queryId)
-                    .catch(() => { /* No-op. */ });
-            }
-
-            if (csvIsPreparing && exportId) {
-                this.agentMgr.queryClose(exportNodeId, exportId)
-                    .catch(() => { /* No-op. */ });
-            }
-        });
+            return Promise.all([paragraph.queryId
+                ? this.agentMgr.queryClose(paragraph.resNodeId, paragraph.queryId)
+                    .catch(() => Promise.resolve(true))
+                    .finally(() => delete paragraph.queryId)
+                : Promise.resolve(true),
+            paragraph.csvIsPreparing && paragraph.exportId
+                ? this.agentMgr.queryClose(paragraph.exportNodeId, paragraph.exportId)
+                    .catch(() => Promise.resolve(true))
+                    .finally(() => delete paragraph.exportId)
+                : Promise.resolve(true)]
+            );
+        }));
     }
 
-    _hasRunningQueries() {
-        return !!_.find(_.get(this, '$scope.notebook.paragraphs'),
+    _hasRunningQueries(paragraphs) {
+        return !!_.find(paragraphs,
             (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
     }
 
     async closeOpenedQueries() {
-        if (this._hasRunningQueries()) {
+        const paragraphs = _.get(this, '$scope.notebook.paragraphs');
+
+        if (this._hasRunningQueries(paragraphs)) {
             try {
                 await this.Confirm.confirm('You have running queries. Are you sure you want to cancel them?');
-                this._closeOpenedQueries(_.get(this, '$scope.notebook.paragraphs'));
+                this._closeOpenedQueries(paragraphs);
 
                 return true;
             }
@@ -2238,9 +2261,13 @@ export class NotebookCtrl {
 
     async removeParagraph(paragraph: Paragraph) {
         try {
-            await this.Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?');
-            this.$scope.stopRefresh(paragraph);
+            const msg = (this._hasRunningQueries([paragraph])
+                ? 'Query is being executed. Are you sure you want cancel and remove query: "'
+                : 'Are you sure you want to remove query: "') + paragraph.name + '"?';
 
+            await this.Confirm.confirm(msg);
+
+            this.$scope.stopRefresh(paragraph);
             this._closeOpenedQueries([paragraph]);
 
             const paragraph_idx = _.findIndex(this.$scope.notebook.paragraphs, (item) => paragraph === item);
@@ -2280,6 +2307,7 @@ export class NotebookCtrl {
         if (this.offTransitions)
             this.offTransitions();
 
+        this.agentMgr.removeClusterSwitchListener(this.onClusterSwitchLnr);
         this.$window.removeEventListener('beforeunload', this.closeOpenedQueries);
     }
 }
