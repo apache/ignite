@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -239,6 +240,8 @@ public class CacheBinaryKeyConcurrentQueryTest extends AbstractIndexingCommonTes
 
         qryEntity.addQueryField("id", Integer.class.getName(), null);
         qryEntity.addQueryField("val", Integer.class.getName(), null);
+
+        qryEntity.setKeyFields(Collections.singleton("id"));
 
         qryEntity.setIndexes(F.asList(new QueryIndex("id"), new QueryIndex("val")));
 
