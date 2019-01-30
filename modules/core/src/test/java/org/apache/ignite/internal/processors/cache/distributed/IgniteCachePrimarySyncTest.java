@@ -24,13 +24,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -109,8 +107,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGet() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10520", MvccFeatureChecker.forcedMvcc());
-
         Ignite ignite = ignite(SRVS);
 
         checkPutGet(ignite.cache(ATOMIC_CACHE), null, null, null);
