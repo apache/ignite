@@ -28,7 +28,6 @@ import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVectorSetTestTrainPair;
@@ -96,7 +95,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
 
         assertEquals(dataset.copy().colSize(), 2);
 
-        final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
+        final LabeledVector<Double> row = (LabeledVector<Double>)dataset.getRow(0);
 
         assertEquals(1.0, row.features().get(0), 0);
         assertEquals(1.0, row.label(), 0);
