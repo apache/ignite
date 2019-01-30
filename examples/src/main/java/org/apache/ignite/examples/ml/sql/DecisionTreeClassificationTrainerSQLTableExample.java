@@ -124,15 +124,14 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 "parch, " +
                 "fare from titanik_test"))) {
                 for (List<?> passenger : cursor) {
-                    Vector input = VectorUtils.of(
-                        // We have to handle null values here to avoid NpE during unboxing.
-                        replaceNull((Integer)passenger.get(0)),
-                        "male".equals(passenger.get(1)) ? 1 : 0,
-                        replaceNull((Double)passenger.get(2)),
-                        replaceNull((Integer)passenger.get(3)),
-                        replaceNull((Integer)passenger.get(4)),
-                        replaceNull((Double)passenger.get(5))
-                    );
+                    Vector input = VectorUtils.of(new Double[]{
+                        asDouble(passenger.get(0)),
+                        "male".equals(passenger.get(1)) ? 1.0 : 0.0,
+                        asDouble(passenger.get(2)),
+                        asDouble(passenger.get(3)),
+                        asDouble(passenger.get(4)),
+                        asDouble(passenger.get(5))
+                    });
 
                     double prediction = mdl.predict(input);
 
@@ -145,16 +144,22 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
     }
 
     /**
-     * Replaces NULL values by 0.
+     * Converts specified number into double.
      *
-     * @param obj Input value.
-     * @param <T> Type of value.
-     * @return Input value of 0 if value is null.
+     * @param obj Number.
+     * @param <T> Type of number.
+     * @return Double.
      */
-    private static <T extends Number> double replaceNull(T obj) {
+    private static <T extends Number> Double asDouble(Object obj) {
         if (obj == null)
-            return 0;
+            return null;
 
-        return obj.doubleValue();
+        if (obj instanceof Number) {
+            Number num = (Number) obj;
+
+            return num.doubleValue();
+        }
+
+        throw new IllegalArgumentException("Object is expected to be a number [obj=" + obj + "]");
     }
 }

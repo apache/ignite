@@ -25,24 +25,13 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
-import org.apache.ignite.ml.inference.ModelDescriptor;
-import org.apache.ignite.ml.inference.ModelSignature;
-import org.apache.ignite.ml.inference.parser.IgniteModelParser;
-import org.apache.ignite.ml.inference.reader.ModelStorageModelReader;
-import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorage;
-import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorageFactory;
-import org.apache.ignite.ml.inference.storage.model.ModelStorage;
-import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.sql.SQLFeatureExtractor;
 import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SQLLabelExtractor;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.spark.util.Utils;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer} on a data stored in SQL table and inference
@@ -132,13 +121,13 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
 
             // Model storage is used to store raw serialized model.
             System.out.println("Saving model into model storage...");
-            IgniteModelStorageUtil.save(mdl, "titanik_model_tree");
+            IgniteModelStorageUtil.saveModel(mdl, "titanik_model_tree");
 
             // Making inference using saved model.
             System.out.println("Inference...");
             try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
                 "survived as truth, " +
-                "predict('my_model', pclass, case sex when 'male' then 1 else 0 end, age, sibsp, parch, fare) as prediction " +
+                "predict('titanik_model_tree', pclass, case sex when 'male' then 1 else 0 end, age, sibsp, parch, fare) as prediction " +
                 "from titanik_train"))) {
                 // Print inference result.
                 System.out.println("| Truth | Prediction |");
@@ -147,19 +136,5 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                     System.out.println("|     " + row.get(0) + " |        " + row.get(1) + " |");
             }
         }
-    }
-
-    /**
-     * Replaces NULL values by 0.
-     *
-     * @param obj Input value.
-     * @param <T> Type of value.
-     * @return Input value of 0 if value is null.
-     */
-    private static <T extends Number> double replaceNull(T obj) {
-        if (obj == null)
-            return 0;
-
-        return obj.doubleValue();
     }
 }

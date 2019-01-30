@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.sql;
 
+import java.util.Arrays;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.inference.Model;
@@ -38,7 +39,9 @@ public class SQLFunctions {
      */
     @QuerySqlFunction
     public static double predict(String mdl, Double... x) {
-        Model<Vector, Double> infMdl = IgniteModelStorageUtil.get(mdl);
+        System.out.println("Prediction for " + Arrays.toString(x));
+
+        Model<Vector, Double> infMdl = IgniteModelStorageUtil.getModel(mdl);
 
         return infMdl.predict(VectorUtils.of(x));
     }
