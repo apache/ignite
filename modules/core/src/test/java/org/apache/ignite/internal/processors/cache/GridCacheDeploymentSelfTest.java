@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,7 +43,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Cache + Deployment test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** Name for Ignite instance without cache. */
     protected static final String IGNITE_INSTANCE_NAME = "grid-no-cache";

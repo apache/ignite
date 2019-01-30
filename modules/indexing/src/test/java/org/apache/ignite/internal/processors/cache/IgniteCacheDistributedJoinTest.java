@@ -37,12 +37,9 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     /** */
     private static Connection conn;
@@ -221,6 +218,8 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         U.closeQuiet(conn);
+
+        conn = null;
     }
 
     /**

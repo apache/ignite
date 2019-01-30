@@ -25,15 +25,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CrossCacheLockTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;

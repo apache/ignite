@@ -37,7 +37,7 @@ public interface DataStreamGenerator {
     /**
      * @return Stream of {@link LabeledVector} in according to dataset shape.
      */
-    public Stream<LabeledVector<Vector, Double>> labeled();
+    public Stream<LabeledVector<Double>> labeled();
 
     /**
      * @return Stream of unlabeled {@link Vector} in according to dataset shape.
@@ -50,7 +50,7 @@ public interface DataStreamGenerator {
      * @param classifier User defined classifier for vectors stream.
      * @return Stream of {@link LabeledVector} in according to dataset shape and user's classifier.
      */
-    public default Stream<LabeledVector<Vector, Double>> labeled(IgniteFunction<Vector, Double> classifier) {
+    public default Stream<LabeledVector<Double>> labeled(IgniteFunction<Vector, Double> classifier) {
         return labeled().map(DatasetRow::features).map(v -> new LabeledVector<>(v, classifier.apply(v)));
     }
 
@@ -62,7 +62,7 @@ public interface DataStreamGenerator {
      */
     public default DataStreamGenerator mapVectors(IgniteFunction<Vector, Vector> f) {
         return new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return DataStreamGenerator.this.labeled()
                     .map(v -> new LabeledVector<>(f.apply(v.features()), v.label()));
             }
@@ -126,7 +126,7 @@ public interface DataStreamGenerator {
      * @return Dataset builder.
      */
     public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, IgniteBiPredicate<Vector, Double> filter,
-        int partitions, UpstreamTransformerBuilder<Vector, Double> upstreamTransformerBuilder) {
+        int partitions, UpstreamTransformerBuilder upstreamTransformerBuilder) {
 
         return new DatasetBuilderAdapter(this, datasetSize, filter, partitions, upstreamTransformerBuilder);
     }

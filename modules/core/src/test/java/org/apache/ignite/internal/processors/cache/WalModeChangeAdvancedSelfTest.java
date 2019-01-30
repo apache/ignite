@@ -30,9 +30,9 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -42,7 +42,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Concurrent and advanced tests for WAL state change.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /**
      * Constructor.
@@ -141,8 +140,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      */
     @Test
     public void testJoin() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
 
         checkJoin(false);
     }
@@ -231,10 +229,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
     public void testServerRestartCoordinator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
-
         checkNodeRestart(true);
     }
 

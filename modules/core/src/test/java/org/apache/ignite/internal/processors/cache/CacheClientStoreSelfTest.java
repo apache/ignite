@@ -40,15 +40,12 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests for cache client with and without store.
  */
-@RunWith(JUnit4.class)
 public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "test-cache";

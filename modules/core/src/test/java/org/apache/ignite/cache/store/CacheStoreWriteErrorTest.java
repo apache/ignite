@@ -33,13 +33,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * This class tests handling exceptions from {@link CacheStore#write(Cache.Entry)}.
  */
-@RunWith(JUnit4.class)
 public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache";

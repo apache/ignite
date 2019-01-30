@@ -48,8 +48,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -59,7 +57,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests replicated query.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** */
     private static final boolean TEST_DEBUG = false;
@@ -115,6 +112,19 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         cache1 = jcache(ignite1, CacheKey.class, CacheValue.class);
         cache2 = jcache(ignite2, CacheKey.class, CacheValue.class);
         cache3 = jcache(ignite3, CacheKey.class, CacheValue.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ignite1 = null;
+        ignite2 = null;
+        ignite3 = null;
+
+        cache1 = null;
+        cache2 = null;
+        cache3 = null;
     }
 
     /**

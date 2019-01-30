@@ -130,6 +130,7 @@
                 <exclude>org.apache.ignite:ignite-hibernate-core</exclude>
                 <exclude>org.apache.ignite:ignite-hibernate_4.2</exclude>
                 <exclude>org.apache.ignite:ignite-hibernate_5.1</exclude>
+                <exclude>org.apache.ignite:ignite-hibernate_5.3</exclude>
                 <exclude>org.apache.ignite:ignite-schedule</exclude>
                 <exclude>org.apache.ignite:ignite-geospatial</exclude>
                 <exclude>org.apache.ignite:ignite-appserver-test</exclude>

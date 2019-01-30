@@ -17,12 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional;
@@ -36,12 +37,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.GridCacheC
 /**
  * Tests a cache with TcpClientDiscovery SPI being enabled.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTcpClientDiscoveryTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
@@ -49,8 +50,8 @@ public class IgniteCacheTcpClientDiscoveryTestSuite {
      * @param ignoredTests Tests to ignore.
      * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedAtomic.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedTransactional.class, ignoredTests);

@@ -40,13 +40,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbstractTest {
     /** Caches. */
     private static final int CACHES = 10;
@@ -134,7 +131,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
 
                 try {
                     // Stop cache without destroy.
-                    crd.context().cache().dynamicDestroyCaches(cacheNames, false, false, false).get();
+                    crd.context().cache().dynamicDestroyCaches(cacheNames, false,false).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to destroy cache", e);

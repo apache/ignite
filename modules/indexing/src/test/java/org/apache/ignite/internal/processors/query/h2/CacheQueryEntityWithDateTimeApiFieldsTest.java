@@ -34,16 +34,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests queries against entities with Java 8 Date and Time API fields.
  */
-@RunWith(JUnit4.class)
-public class CacheQueryEntityWithDateTimeApiFieldsTest extends GridCommonAbstractTest {
+public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingCommonTest {
     /**
      *  The number of days subtracted from the current time when constructing
      *  {@link LocalDate} and {@link LocalDateTime}

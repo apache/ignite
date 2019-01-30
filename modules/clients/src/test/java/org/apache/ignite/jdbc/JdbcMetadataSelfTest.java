@@ -38,8 +38,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
@@ -52,7 +50,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metadata tests.
  */
-@RunWith(JUnit4.class)
 public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/pers";

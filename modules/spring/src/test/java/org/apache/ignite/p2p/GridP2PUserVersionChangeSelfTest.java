@@ -38,10 +38,8 @@ import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -59,7 +57,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  *      make sure that a new class loader is created on remote node.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "unchecked"})
-@RunWith(JUnit4.class)
 public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. */
     private DeploymentMode depMode;
@@ -282,7 +279,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-604", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-604")
     @Test
     public void testCacheRedeployVersionChangeContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;

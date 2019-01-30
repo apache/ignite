@@ -59,7 +59,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testUnlabeled() throws IOException {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -73,7 +73,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testLabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -88,7 +88,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testMapVectors() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -103,7 +103,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testBlur() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -118,7 +118,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testAsMap() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -137,7 +137,7 @@ public class DataStreamGeneratorTest {
     public void testAsDatasetBuilder() throws Exception {
         AtomicInteger counter = new AtomicInteger();
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> {
                     int value = counter.getAndIncrement();
                     return new LabeledVector<>(VectorUtils.of(value), (double)value % 2);
@@ -152,8 +152,8 @@ public class DataStreamGeneratorTest {
         DatasetBuilder<Vector, Double> b2 = generator.asDatasetBuilder(N, (v, l) -> l == 0, 2);
         counter.set(0);
         DatasetBuilder<Vector, Double> b3 = generator.asDatasetBuilder(N, (v, l) -> l == 1, 2,
-            new UpstreamTransformerBuilder<Vector, Double>() {
-                @Override public UpstreamTransformer<Vector, Double> build(LearningEnvironment env) {
+            new UpstreamTransformerBuilder() {
+                @Override public UpstreamTransformer build(LearningEnvironment env) {
                     return new UpstreamTransformerForTest();
                 }
             });
@@ -206,10 +206,10 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private static class UpstreamTransformerForTest implements UpstreamTransformer<Vector, Double> {
-        @Override public Stream<UpstreamEntry<Vector, Double>> transform(
-            Stream<UpstreamEntry<Vector, Double>> upstream) {
-            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -entry.getValue()));
+    private static class UpstreamTransformerForTest implements UpstreamTransformer {
+        @Override public Stream<UpstreamEntry> transform(
+            Stream<UpstreamEntry> upstream) {
+            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
         }
     }
 }

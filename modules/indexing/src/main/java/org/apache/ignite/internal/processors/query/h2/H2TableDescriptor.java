@@ -437,7 +437,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (cacheInfo.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols);
+            pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols,
+                tbl.rowDescriptor().context().config().getQueryParallelism());
 
             return pkHashIdx;
         }
