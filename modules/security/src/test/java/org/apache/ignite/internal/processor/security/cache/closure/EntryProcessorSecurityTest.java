@@ -26,7 +26,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,55 +35,30 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testEntryProcessor() {
-        checkInvoke(clntAllPerms, srvAllPerms, true);
-        checkInvoke(clntAllPerms, srvReadOnlyPerm, true);
-        checkInvoke(srvAllPerms, srvReadOnlyPerm, true);
-
-        checkInvoke(clntReadOnlyPerm, srvAllPerms, false);
-        checkInvoke(srvReadOnlyPerm, srvAllPerms, false);
+    public void test() {
+        execute(srvInitiator);
+        execute(clntInitiator);
     }
 
     /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
+     * @param initiator Node that initiates an execution.
      */
-    private void checkInvoke(IgniteEx initiator, IgniteEx remote, boolean isSuccess) {
-        assert !remote.localNode().isClient();
-
-        final UUID remoteId = remote.localNode().id();
-
-        final Integer key = primaryKey(remote);
+    private void execute(IgniteEx initiator) {
+        UUID secSubjectId = secSubjectId(initiator);
 
         for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
-            if (isSuccess)
-                invoke(ime, initiator, new TestEntryProcessor(remoteId), key);
-            else {
-                forbiddenRun(
-                    () -> invoke(ime, initiator, new TestEntryProcessor(remoteId), key)
-                );
-            }
-        }
+            VERIFIER.start(secSubjectId)
+                .add(srvTransition.name(), 1)
+                .add(srvEndpoint.name(), 1);
 
-        final UUID transitionId = srvTransitionAllPerms.localNode().id();
+            invoke(ime, initiator,
+                new TestEntryProcessor(ime, srvEndpoint.name()), prmKey(srvTransition));
 
-        final Integer transitionKey = primaryKey(srvTransitionAllPerms);
-
-        for (InvokeMethodEnum ime : InvokeMethodEnum.values()) {
-            if (isSuccess) {
-                invoke(ime, initiator,
-                    new TestTransitionEntryProcessor(ime, transitionId, remoteId, key),
-                    transitionKey);
-            }
-            else {
-                forbiddenRun(
-                    () -> invoke(ime, initiator,
-                        new TestTransitionEntryProcessor(ime, transitionId, remoteId, key),
-                        transitionKey)
-                );
-            }
+            VERIFIER.checkResult();
         }
     }
 
@@ -94,27 +68,27 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param ep Entry Processor.
      * @param key Key.
      */
-    static void invoke(InvokeMethodEnum ime, IgniteEx initiator,
+    private static void invoke(InvokeMethodEnum ime, IgniteEx initiator,
         EntryProcessor<Integer, Integer, Object> ep, Integer key) {
         switch (ime) {
             case INVOKE:
-                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                initiator.<Integer, Integer>cache(CACHE_NAME)
                     .invoke(key, ep);
 
                 break;
             case INVOKE_ALL:
-                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                initiator.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAll(Collections.singleton(key), ep)
                     .values().stream().findFirst().ifPresent(EntryProcessorResult::get);
 
                 break;
             case INVOKE_ASYNC:
-                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                initiator.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAsync(key, ep).get();
 
                 break;
             case INVOKE_ALL_ASYNC:
-                initiator.<Integer, Integer>cache(COMMON_USE_CACHE)
+                initiator.<Integer, Integer>cache(CACHE_NAME)
                     .invokeAllAsync(Collections.singleton(key), ep)
                     .get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
 
@@ -125,7 +99,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     }
 
     /** Enum for ways to invoke EntryProcessor. */
-    enum InvokeMethodEnum {
+    private enum InvokeMethodEnum {
         /** Invoke. */
         INVOKE,
         /** Invoke all. */
@@ -137,53 +111,22 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     }
 
     /**
-     * Entry processor for tests.
-     */
-    static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
-        /** Remote node id. */
-        protected final UUID remoteId;
-
-        /**
-         * @param remoteId Remote id.
-         */
-        public TestEntryProcessor(UUID remoteId) {
-            this.remoteId = remoteId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Integer> entry,
-            Object... objects) throws EntryProcessorException {
-            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
-
-            assertEquals(remoteId, loc.localNode().id());
-
-            loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
-
-            return null;
-        }
-    }
-
-    /**
      * Entry processor for tests with transition invoke call.
      */
-    static class TestTransitionEntryProcessor extends TestEntryProcessor {
-        /** */
+    static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
+        /** Invoke method. */
         private final InvokeMethodEnum ime;
-        /** Transition node id */
-        private final UUID transitionId;
 
-        /** The key that is contained on primary partition on remote node for given cache. */
-        private final Integer remoteKey;
+        /** Endpoint node name. */
+        private final String endpoint;
 
         /**
-         * @param remoteId Remote id.
+         * @param ime Invoke method.
+         * @param endpoint Endpoint node name.
          */
-        public TestTransitionEntryProcessor(InvokeMethodEnum ime, UUID transitionId, UUID remoteId, Integer remoteKey) {
-            super(remoteId);
-
+        public TestEntryProcessor(InvokeMethodEnum ime, String endpoint) {
             this.ime = ime;
-            this.transitionId = transitionId;
-            this.remoteKey = remoteKey;
+            this.endpoint = endpoint;
         }
 
         /** {@inheritDoc} */
@@ -191,9 +134,13 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
             Object... objects) throws EntryProcessorException {
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
-            assertEquals(transitionId, loc.localNode().id());
+            VERIFIER.verify(loc);
 
-            invoke(ime, loc, new TestEntryProcessor(remoteId), remoteKey);
+            if (endpoint != null) {
+                invoke(
+                    ime, loc, new TestEntryProcessor(ime, null), prmKey(endpoint)
+                );
+            }
 
             return null;
         }

@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.processor.security;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -34,8 +29,6 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -47,12 +40,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /** Empty array of permissions. */
     protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
-
-    /** Cache name for tests. */
-    protected static final String CACHE_NAME = "TEST_CACHE";
-
-    /** Values. */
-    protected AtomicInteger values = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -177,44 +164,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected SecurityPermissionSet allowAllPermissionSet() {
         return builder().defaultAllowAll(true).build();
-    }
-
-    /**
-     * @return Cache entry for test.
-     */
-    protected T2<String, Integer> entry() {
-        int val = values.incrementAndGet();
-
-        return new T2<>("key_" + val, -1 * val);
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    protected void assertAllowed(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        c.accept(entry);
-
-        assertThat(validator.cache(cacheName).get(entry.getKey()), is(entry.getValue()));
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    protected void assertForbidden(Ignite validator, String cacheName, Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        try {
-            c.accept(entry);
-
-            fail("Should not happen.");
-        }
-        catch (Throwable e) {
-            assertThat(X.cause(e, SecurityException.class), notNullValue());
-        }
-
-        assertThat(validator.cache(cacheName).get(entry.getKey()), nullValue());
     }
 
     /**

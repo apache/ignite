@@ -17,63 +17,66 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Abstract compute security test.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractComputeTaskSecurityTest extends AbstractResolveSecurityContextTest {
-    /** */
-    @Test
-    public void test() {
-        checkSuccess(srvAllPerms, clntAllPerms);
-        checkSuccess(srvAllPerms, srvReadOnlyPerm);
-        checkSuccess(srvAllPerms, clntReadOnlyPerm);
-        checkSuccess(clntAllPerms, srvAllPerms);
-        checkSuccess(clntAllPerms, srvReadOnlyPerm);
-        checkSuccess(clntAllPerms, clntReadOnlyPerm);
+    /** Client node. */
+    protected IgniteEx clntTransition;
 
-        checkFail(srvReadOnlyPerm, srvAllPerms);
-        checkFail(srvReadOnlyPerm, clntAllPerms);
-        checkFail(srvReadOnlyPerm, clntReadOnlyPerm);
-        checkFail(clntReadOnlyPerm, srvAllPerms);
-        checkFail(clntReadOnlyPerm, srvReadOnlyPerm);
-        checkFail(clntReadOnlyPerm, clntAllPerms);
+    /** Client node. */
+    protected IgniteEx clntEndpoint;
+
+    /** {@inheritDoc} */
+    @Override protected void startNodes() throws Exception{
+        super.startNodes();
+
+        clntTransition = startGrid("clnt_transition", allowAllPermissionSet(), true);
+
+        clntEndpoint = startGrid("clnt_endpoint", allowAllPermissionSet());
     }
 
     /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    protected abstract void checkSuccess(IgniteEx initiator, IgniteEx remote);
-
-    /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    protected abstract void checkFail(IgniteEx initiator, IgniteEx remote);
-
-    /**
-     * Tri-consumer.
+     * Sets up VERIFIER, performs the runnable and checks the result.
      *
-     * @param <A> First parameter type.
-     * @param <B> Second parameter type.
-     * @param <C> Third parameter type.
+     * @param node Node.
+     * @param r Runnable.
      */
-    @FunctionalInterface
-    protected interface C3<A, B, C> {
-        /**
-         * Performs this operation on the given arguments.
-         *
-         * @param a First parameter.
-         * @param b Second parameter.
-         * @param c Third parameter.
-         */
-        void accept(A a, B b, C c);
+    protected void perform(IgniteEx node, Runnable r) {
+        VERIFIER.start(secSubjectId(node))
+            .add(srvTransition.name(), 1)
+            .add(clntTransition.name(), 1)
+            .add(srvEndpoint.name(), 2)
+            .add(clntEndpoint.name(), 2);
+
+        r.run();
+
+        VERIFIER.checkResult();
+    }
+
+    /**
+     * @return Collection of transition node ids.
+     */
+    protected Collection<UUID> transitions() {
+        return Arrays.asList(
+            srvTransition.localNode().id(),
+            clntTransition.localNode().id()
+        );
+    }
+
+    /**
+     * @return Collection of endpont nodes ids.
+     */
+    protected Collection<UUID> endpoints() {
+        return Arrays.asList(
+            srvEndpoint.localNode().id(),
+            clntEndpoint.localNode().id()
+        );
     }
 }

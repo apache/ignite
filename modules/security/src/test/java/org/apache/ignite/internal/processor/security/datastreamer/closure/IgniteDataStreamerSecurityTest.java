@@ -25,8 +25,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,54 +37,24 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
-    /** */
+    /**
+     *
+     */
     @Test
     public void testDataStreamer() {
-        checkDataStreamer(false);
-        checkDataStreamer(true);
-    }
-
-    /**
-     * @param isTransition True if transition test.
-     */
-    private void checkDataStreamer(boolean isTransition){
-        assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t, isTransition));
-        assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t, isTransition));
-        assertAllowed((t) -> load(srvAllPerms, srvAllPerms, t, isTransition));
-        assertAllowed((t) -> load(srvAllPerms, srvReadOnlyPerm, t, isTransition));
-
-        assertForbidden((t) -> load(clntReadOnlyPerm, srvAllPerms, t, isTransition));
-        assertForbidden((t) -> load(srvReadOnlyPerm, srvAllPerms, t, isTransition));
-        assertForbidden((t) -> load(srvReadOnlyPerm, srvReadOnlyPerm, t, isTransition));
+        perform(srvInitiator, () -> dataStreamer(srvInitiator));
+        perform(clntInitiator, () -> dataStreamer(clntInitiator));
     }
 
     /**
      * @param initiator Initiator node.
-     * @param remote Remoute node.
      */
-    private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry, boolean isTransition) {
-        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(COMMON_USE_CACHE)) {
-            strm.receiver(StreamVisitor.from(closure(remote, entry, isTransition)));
+    private void dataStreamer(Ignite initiator) {
+        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_NAME)) {
+            strm.receiver(StreamVisitor.from(new TestClosure(srvEndpoint.localNode().id())));
 
-            strm.addData(primaryKey(isTransition ? srvTransitionAllPerms : remote), 100);
+            strm.addData(prmKey(srvTransition), 100);
         }
-    }
-
-    /**
-     * @param remote Remote node.
-     * @param entry Data to put into test cache.
-     * @param isTransition True if transition test.
-     * @return Receiver's closure.
-     */
-    private TestClosure closure(IgniteEx remote, T2<String, Integer> entry, boolean isTransition) {
-        if (isTransition)
-            return new TransitionTestClosure(
-                srvTransitionAllPerms.localNode().id(),
-                remote.localNode().id(),
-                entry
-            );
-
-        return new TestClosure(remote.localNode().id(), entry);
     }
 
     /**
@@ -92,58 +62,30 @@ public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
      */
     static class TestClosure implements
         IgniteBiInClosure<IgniteCache<Integer, Integer>, Map.Entry<Integer, Integer>> {
-        /** Remote node id. */
-        protected final UUID remoteId;
-
-        /** Data to put into test cache. */
-        protected final T2<String, Integer> t2;
+        /** Endpoint node id. */
+        private final UUID endpoint;
 
         /**
-         * @param remoteId Remote node id.
-         * @param t2 Data to put into test cache.
+         * @param endpoint Endpoint node id.
          */
-        public TestClosure(UUID remoteId, T2<String, Integer> t2) {
-            this.remoteId = remoteId;
-            this.t2 = t2;
+        public TestClosure(UUID endpoint) {
+            this.endpoint = endpoint;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteCache<Integer, Integer> entries,
             Map.Entry<Integer, Integer> entry) {
-            Ignite loc = Ignition.localIgnite();
+            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
-            if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(t2.getKey(), t2.getValue());
-        }
-    }
+            VERIFIER.verify(loc);
 
-    /**
-     * Closure for transition tests.
-     */
-    static class TransitionTestClosure extends TestClosure {
-        /** Transition node id. */
-        private final UUID transitionId;
-
-        /**
-         * @param transitionId Transition node id.
-         * @param remoteId Remote node id.
-         * @param t2 Data to put into test cache.
-         */
-        public TransitionTestClosure(UUID transitionId, UUID remoteId, T2<String, Integer> t2) {
-            super(remoteId, t2);
-
-            this.transitionId = transitionId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteCache<Integer, Integer> entries,
-            Map.Entry<Integer, Integer> entry) {
-            Ignite loc = Ignition.localIgnite();
-
-            if (transitionId.equals(loc.cluster().localNode().id())){
-                loc.compute(loc.cluster().forNode(loc.cluster().node(remoteId)))
-                    .broadcast(()->Ignition.localIgnite().cache(CACHE_NAME).put(t2.getKey(), t2.getValue()));
-            }
+            //Should check a security context on the endpoint node through compute service
+            //because using streamer from receiver may be cause of system worker dead
+            loc.compute(loc.cluster().forNodeId(endpoint)).broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    VERIFIER.verify(loc);
+                }
+            });
         }
     }
 }

@@ -17,338 +17,201 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 /**
  * Testing permissions when the compute closure is executed cache operations on remote node.
  */
 public class DistributedClosureSecurityTest extends AbstractComputeTaskSecurityTest {
-    /** {@inheritDoc} */
-    @Override protected void checkSuccess(IgniteEx initiator, IgniteEx remote) {
-        for (TransitionClosure tr : transitions()) {
-            successCall(
-                remote,
-                (val) -> tr.remouteC3().accept(
-                    initiator.compute(initiator.cluster().forNode(remote.localNode())), "key", val
-                )
-            );
-
-            successCall(remote,
-                (val) -> tr.accept(
-                    initiator.compute(initiator.cluster().forNode(srvTransitionAllPerms.localNode())),
-                    remote.localNode().id(), "key", val
-                )
-            );
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void checkFail(IgniteEx initiator, IgniteEx remote) {
-        for (TransitionClosure tr : transitions()) {
-            failCall(
-                remote,
-                () ->
-                    tr.remouteC3().accept(
-                        initiator.compute(initiator.cluster().forNode(remote.localNode())), "fail_key", -1
-                    )
-            );
-
-            failCall(remote,
-                () ->
-                    tr.accept(
-                        initiator.compute(initiator.cluster().forNode(srvTransitionAllPerms.localNode())),
-                        remote.localNode().id(), "fail_key", -1
-                    )
-            );
-        }
+    /**
+     *
+     */
+    @Test
+    public void test() {
+        execute(srvInitiator);
+        execute(clntInitiator);
     }
 
     /**
-     * @param remote Remote node.
+     * @param initiator Node that initiates an execution.
      */
-    private void successCall(IgniteEx remote, Consumer<Integer> c) {
-        int val = values.getAndIncrement();
+    private void execute(IgniteEx initiator) {
+        perform(initiator,
+            () -> compute(initiator, transitions())
+                .broadcast((IgniteRunnable)new CommonClosure(endpoints(), true) {
+                    @Override protected void transit(IgniteCompute cmp) {
+                        cmp.broadcast((IgniteRunnable)endpointClosure());
+                    }
+                }));
 
-        c.accept(val);
+        perform(initiator,
+            () -> compute(initiator, transitions())
+                .broadcastAsync((IgniteRunnable)new CommonClosure(endpoints(), true) {
+                    @Override protected void transit(IgniteCompute cmp) {
+                        cmp.broadcastAsync((IgniteRunnable)endpointClosure()).get();
+                    }
+                }).get());
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        perform(initiator,
+            (cmp) -> cmp.call(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.call(endpointClosure());
+                }
+            }));
+
+        perform(initiator,
+            (cmp) -> cmp.callAsync(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.callAsync(endpointClosure()).get();
+                }
+            }).get());
+
+        perform(initiator,
+            (cmp) -> cmp.run(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.run(endpointClosure());
+                }
+            }));
+
+        perform(initiator,
+            (cmp) -> cmp.runAsync(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.runAsync(endpointClosure()).get();
+                }
+            }).get());
+
+        perform(initiator,
+            (cmp) -> cmp.apply(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.apply(endpointClosure(), new Object());
+                }
+            }, new Object()));
+
+        perform(initiator,
+            (cmp) -> cmp.applyAsync(new CommonClosure(endpoints()) {
+                @Override protected void transit(IgniteCompute cmp) {
+                    cmp.applyAsync(endpointClosure(), new Object()).get();
+                }
+            }, new Object()).get());
     }
 
     /**
-     * @param remote Remote node.
+     * @return IgniteCompute is produced by passed node for cluster group
+     * that contains nodes with ids from collection.
      */
-    private void failCall(IgniteEx remote, Runnable r) {
-        assertCauseSecurityException(
-            GridTestUtils.assertThrowsWithCause(r, SecurityException.class)
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+    private static IgniteCompute compute(Ignite ignite, Collection<UUID> ids) {
+        return ignite.compute(ignite.cluster().forNodeIds(ids));
     }
 
-    /** */
-    private Collection<TransitionClosure> transitions() {
-        return Arrays.asList(
-            //IgniteCompute.broadcast (broadcastAsync)
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.broadcast(
-                        new IgniteRunnable() {
-                            @Override public void run() {
-                                remouteC3().accept(compute(uuid), k, v);
-                            }
-                        }
-                    );
-                }
+    /**
+     * @return IgniteCompute is produced by passed node for cluster group that contains node with id.
+     */
+    private static IgniteCompute compute(Ignite ignite, UUID id) {
+        return ignite.compute(ignite.cluster().forNodeId(id));
+    }
 
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.broadcast(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-                                    }
-                                }
-                            );
-                        }
-                    };
-                }
-            },
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.broadcastAsync(
-                        new IgniteRunnable() {
-                            @Override public void run() {
-                                remouteC3().accept(compute(uuid), k, v);
-                            }
-                        }
-                    ).get();
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.broadcastAsync(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-                                    }
-                                }
-                            ).get();
-                        }
-                    };
-                }
-            },
-            //IgniteCompute.call (callAsync)
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.call(
-                        new IgniteCallable<Object>() {
-                            @Override public Object call() {
-                                remouteC3().accept(compute(uuid), k, v);
-
-                                return null;
-                            }
-                        }
-                    );
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.call(
-                                new IgniteCallable<Object>() {
-                                    @Override public Object call() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                                        return null;
-                                    }
-                                }
-                            );
-                        }
-                    };
-                }
-            },
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.callAsync(
-                        new IgniteCallable<Object>() {
-                            @Override public Object call() {
-                                remouteC3().accept(compute(uuid), k, v);
-
-                                return null;
-                            }
-                        }
-                    ).get();
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.callAsync(
-                                new IgniteCallable<Object>() {
-                                    @Override public Object call() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                                        return null;
-                                    }
-                                }
-                            ).get();
-                        }
-                    };
-                }
-            },
-            //IgniteCompute.run (runAsync)
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.run(
-                        new IgniteRunnable() {
-                            @Override public void run() {
-                                remouteC3().accept(compute(uuid), k, v);
-                            }
-                        }
-                    );
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.broadcast(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-                                    }
-                                }
-                            );
-                        }
-                    };
-                }
-            },
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.runAsync(
-                        new IgniteRunnable() {
-                            @Override public void run() {
-                                remouteC3().accept(compute(uuid), k, v);
-                            }
-                        }
-                    ).get();
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.broadcastAsync(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-                                    }
-                                }
-                            ).get();
-                        }
-                    };
-                }
-            },
-            //IgniteCompute.apply (applyAsync)
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.apply(
-                        new IgniteClosure<Object, Object>() {
-                            @Override public Object apply(Object o) {
-                                remouteC3().accept(compute(uuid), k, v);
-
-                                return null;
-                            }
-                        }, new Object()
-                    );
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.apply(
-                                new IgniteClosure<Object, Object>() {
-                                    @Override public Object apply(Object o) {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                                        return null;
-                                    }
-                                }, new Object()
-                            );
-                        }
-                    };
-                }
-            },
-            new TransitionClosure() {
-                @Override public void accept(IgniteCompute compute, UUID uuid, String k, Integer v) {
-                    compute.applyAsync(
-                        new IgniteClosure<Object, Object>() {
-                            @Override public Object apply(Object o) {
-                                remouteC3().accept(compute(uuid), k, v);
-
-                                return null;
-                            }
-                        }, new Object()
-                    ).get();
-                }
-
-                @Override protected C3<IgniteCompute, String, Integer> remouteC3() {
-                    return new C3<IgniteCompute, String, Integer>() {
-                        @Override public void accept(IgniteCompute compute, String k, Integer v) {
-                            compute.applyAsync(
-                                new IgniteClosure<Object, Object>() {
-                                    @Override public Object apply(Object o) {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                                        return null;
-                                    }
-                                }, new Object()
-                            ).get();
-                        }
-                    };
-                }
+    /**
+     * Performs test.
+     */
+    private void perform(IgniteEx initiator, Consumer<IgniteCompute> c) {
+        perform(
+            initiator,
+            () -> {
+                for (UUID nodeId : transitions())
+                    c.accept(compute(initiator, nodeId));
             }
         );
     }
 
     /**
-     * Closure for transition tests.
+     * Common closure for tests.
      */
-    private abstract static class TransitionClosure {
-        /**
-         * @return IgniteCompute for group that contains only remoteId node.
-         */
-        protected IgniteCompute compute(UUID remoteId) {
-            IgniteEx loc = (IgniteEx)Ignition.localIgnite();
+    static class CommonClosure implements IgniteRunnable, IgniteCallable<Object>,
+        IgniteClosure<Object, Object> {
+        /** Collection of endpoint node ids. */
+        private final Collection<UUID> endpoints;
 
-            return loc.compute(loc.cluster().forNode(
-                loc.cluster().node(remoteId)
-            ));
+        /** If true then execution is broadcast. */
+        private final boolean isBroadcast;
+
+        /**
+         * @param endpoints Collection of endpoint node ids.
+         * @param isBroadcast If true then execution is broadcast.
+         */
+        public CommonClosure(Collection<UUID> endpoints, boolean isBroadcast) {
+            this.endpoints = endpoints;
+            this.isBroadcast = isBroadcast;
         }
 
         /**
-         * Performs this operation on the given arguments.
+         * @param endpoints Collection of endpoint node ids.
          */
-        public abstract void accept(IgniteCompute cmpt, UUID id, String k, Integer v);
+        public CommonClosure(Collection<UUID> endpoints) {
+            this(endpoints, false);
+        }
 
         /**
-         * @return TriConsumer.
+         * Main logic of CommonClosure.
          */
-        protected abstract C3<IgniteCompute, String, Integer> remouteC3();
+        private void body() {
+            Ignite ignite = Ignition.localIgnite();
+
+            VERIFIER.verify(ignite);
+
+            if (!endpoints.isEmpty()) {
+                if (isBroadcast)
+                    transit(compute(ignite, endpoints));
+                else {
+                    for (UUID id : endpoints)
+                        transit(compute(ignite, id));
+                }
+            }
+        }
+
+        /**
+         * @return CommonClosure to execute on an endpoint node.
+         */
+        protected CommonClosure endpointClosure() {
+            return new CommonClosure(Collections.emptyList());
+        }
+
+        /**
+         * Executes transition invoke.
+         *
+         * @param cmp IgniteCompute.
+         */
+        protected void transit(IgniteCompute cmp) {
+            //no-op by default
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            body();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() {
+            body();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object o) {
+            body();
+
+            return null;
+        }
     }
 }

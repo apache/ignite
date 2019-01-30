@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processor.security.cache.CachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorCachePermissionTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCachePermissionTest;
@@ -37,37 +35,31 @@ import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerCa
 import org.apache.ignite.internal.processor.security.datastreamer.closure.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Security test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CachePermissionsTest.class,
+    DataStreamerCachePermissionTest.class,
+    ScanQueryCachePermissionTest.class,
+    LoadCachePermissionTest.class,
+    EntryProcessorCachePermissionTest.class,
+    TaskExecutePermissionForExecutorServiceTest.class,
+    TaskExecutePermissionForDistributedClosureTest.class,
+    TaskExecutePermissionForComputeTaskTest.class,
+
+    DistributedClosureSecurityTest.class,
+    ComputeTaskSecurityTest.class,
+    ExecutorServiceTaskSecurityTest.class,
+    ScanQuerySecurityTest.class,
+    EntryProcessorSecurityTest.class,
+    IgniteDataStreamerSecurityTest.class,
+    LoadCacheSecurityTest.class,
+    ThinClientSecurityTest.class,
+    IgniteMessagingTest.class,
+})
 public class AuthorizeOperationsTestSuite {
-    /** */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite(AuthorizeOperationsTestSuite.class.getName());
-
-        suite.addTest(new JUnit4TestAdapter(CachePermissionsTest.class));
-        suite.addTest(new JUnit4TestAdapter(DataStreamerCachePermissionTest.class));
-        suite.addTest(new JUnit4TestAdapter(ScanQueryCachePermissionTest.class));
-        suite.addTest(new JUnit4TestAdapter(LoadCachePermissionTest.class));
-        suite.addTest(new JUnit4TestAdapter(EntryProcessorCachePermissionTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskExecutePermissionForExecutorServiceTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskExecutePermissionForDistributedClosureTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskExecutePermissionForComputeTaskTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(DistributedClosureSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(ComputeTaskSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(ExecutorServiceTaskSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(ScanQuerySecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(EntryProcessorSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDataStreamerSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(LoadCacheSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(ThinClientSecurityTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteMessagingTest.class));
-
-        return suite;
-    }
-
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processor.security.cache.closure;
 
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -27,7 +26,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -46,12 +44,8 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
-            new CacheConfiguration<String, Integer>()
-                .setName(CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false),
             new CacheConfiguration<Integer, Integer>()
-                .setName(COMMON_USE_CACHE)
+                .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory()),
@@ -67,104 +61,53 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
      *
      */
     @Test
-    public void testLoadCache() {
-        testLoadCache(false);
-        testLoadCache(true);
-    }
-
-    /**
-     * @param isTransition True for transition case.
-     */
-    private void testLoadCache(boolean isTransition) {
-        assertAllowed((t) -> load(clntAllPerms, closure(srvAllPerms, t, isTransition)));
-        assertAllowed((t) -> load(clntAllPerms, closure(srvReadOnlyPerm, t, isTransition)));
-        assertAllowed((t) -> load(srvAllPerms, closure(srvAllPerms, t, isTransition)));
-        assertAllowed((t) -> load(srvAllPerms, closure(srvReadOnlyPerm, t, isTransition)));
-
-        assertForbidden((t) -> load(clntReadOnlyPerm, closure(srvAllPerms, t, isTransition)));
-        assertForbidden((t) -> load(srvReadOnlyPerm, closure(srvAllPerms, t, isTransition)));
-        assertForbidden((t) -> load(srvReadOnlyPerm, closure(srvReadOnlyPerm, t, isTransition)));
-    }
-
-    /**
-     * @param remote Remote.
-     * @param entry Entry to put into test cache.
-     * @param isTransition True if predicate to test transition case.
-     */
-    private IgniteBiPredicate<Integer, Integer> closure(IgniteEx remote,
-        T2<String, Integer> entry, boolean isTransition) {
-        assert !remote.localNode().isClient();
-
-        if (isTransition)
-            return new TransitionTestClosure(srvTransitionAllPerms.localNode().id(),
-                remote.localNode().id(), entry);
-        return new TestClosure(remote.localNode().id(), entry);
+    public void test() {
+        perform(srvInitiator, ()->loadCache(srvInitiator));
+        perform(clntInitiator, ()->loadCache(clntInitiator));
     }
 
     /**
      * @param initiator Initiator node.
-     * @param p Predicate.
      */
-    private void load(IgniteEx initiator, IgniteBiPredicate<Integer, Integer> p) {
-        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).loadCache(p);
+    private void loadCache(IgniteEx initiator) {
+        initiator.<Integer, Integer>cache(CACHE_NAME).loadCache(
+            new TestClosure(srvTransition.name(), srvEndpoint.name())
+        );
     }
 
     /**
      * Closure for tests.
      */
     static class TestClosure implements IgniteBiPredicate<Integer, Integer> {
-        /** Remote node id. */
-        protected final UUID remoteId;
-
-        /** Data to put into test cache. */
-        protected final T2<String, Integer> t2;
-
         /** Locale ignite. */
         @IgniteInstanceResource
-        protected Ignite loc;
+        private Ignite loc;
+
+        /** Expected local node name. */
+        private final String node;
+
+        /** Endpoint node name. */
+        private final String endpoint;
 
         /**
-         * @param remoteId Remote node id.
-         * @param t2 Data to put into test cache.
+         * @param node Expected local node name.
+         * @param endpoint Endpoint node name.
          */
-        public TestClosure(UUID remoteId, T2<String, Integer> t2) {
-            this.remoteId = remoteId;
-            this.t2 = t2;
+        public TestClosure(String node, String endpoint) {
+            this.node = node;
+            this.endpoint = endpoint;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(Integer k, Integer v) {
-            if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(t2.getKey(), t2.getValue());
+            if (node.equals(loc.name())) {
+                VERIFIER.verify(loc);
 
-            return false;
-        }
-    }
-
-    /**
-     * Closure for transition tests.
-     */
-    static class TransitionTestClosure extends TestClosure {
-        /** Transition node id. */
-        private final UUID transitionId;
-
-        /**
-         * @param transitionId Transition node id.
-         * @param remoteId Remote node id.
-         * @param t2 Data to put into test cache.
-         */
-        public TransitionTestClosure(UUID transitionId, UUID remoteId, T2<String, Integer> t2) {
-            super(remoteId, t2);
-
-            this.transitionId = transitionId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Integer k, Integer v) {
-            if (transitionId.equals(loc.cluster().localNode().id())) {
-                loc.<Integer, Integer>cache(TRANSITION_LOAD_CACHE).loadCache(
-                    new TestClosure(remoteId, t2)
-                );
+                if (endpoint != null) {
+                    loc.<Integer, Integer>cache(TRANSITION_LOAD_CACHE).loadCache(
+                        new TestClosure(endpoint, null)
+                    );
+                }
             }
 
             return false;

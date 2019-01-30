@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  *
  */
 public abstract class AbstractCachePermissionTest extends AbstractPermissionTest {
+    /** Cache name for tests. */
+    protected static final String CACHE_NAME = "TEST_CACHE";
     /** Forbidden cache. */
     protected static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
 

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,91 +34,76 @@ import org.junit.runners.JUnit4;
  * Testing permissions when the service task is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
-public class ExecutorServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
-    /** */
+public class ExecutorServiceTaskSecurityTest extends AbstractComputeTaskSecurityTest {
+    /**
+     *
+     */
     @Test
-    public void testExecute() {
-        assertAllowed((t) -> execute(clntAllPerms, clntReadOnlyPerm, t));
-        assertAllowed((t) -> execute(clntAllPerms, srvReadOnlyPerm, t));
-        assertAllowed((t) -> execute(srvAllPerms, clntReadOnlyPerm, t));
-        assertAllowed((t) -> execute(srvAllPerms, srvReadOnlyPerm, t));
-        assertAllowed((t) -> execute(srvAllPerms, srvAllPerms, t));
-        assertAllowed((t) -> execute(clntAllPerms, clntAllPerms, t));
-
-        assertAllowed((t) -> transitionExecute(clntAllPerms, clntReadOnlyPerm, t));
-        assertAllowed((t) -> transitionExecute(clntAllPerms, srvReadOnlyPerm, t));
-        assertAllowed((t) -> transitionExecute(srvAllPerms, clntReadOnlyPerm, t));
-        assertAllowed((t) -> transitionExecute(srvAllPerms, srvReadOnlyPerm, t));
-        assertAllowed((t) -> transitionExecute(srvAllPerms, srvAllPerms, t));
-        assertAllowed((t) -> transitionExecute(clntAllPerms, clntAllPerms, t));
-
-        assertForbidden((t) -> execute(clntReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> execute(clntReadOnlyPerm, clntAllPerms, t));
-        assertForbidden((t) -> execute(srvReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> execute(srvReadOnlyPerm, clntAllPerms, t));
-        assertForbidden((t) -> execute(srvReadOnlyPerm, srvReadOnlyPerm, t));
-        assertForbidden((t) -> execute(clntReadOnlyPerm, clntReadOnlyPerm, t));
-
-        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, clntAllPerms, t));
-        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, srvAllPerms, t));
-        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, clntAllPerms, t));
-        assertForbidden((t) -> transitionExecute(srvReadOnlyPerm, srvReadOnlyPerm, t));
-        assertForbidden((t) -> transitionExecute(clntReadOnlyPerm, clntReadOnlyPerm, t));
+    public void test() {
+        execute(srvInitiator);
+        execute(clntInitiator);
     }
 
     /**
-     * @param initiator Initiator node.
-     * @param remote Remoute node.
+     * @param initiator Node that initiates an execution.
      */
-    private void execute(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
-        try {
-            initiator.executorService(initiator.cluster().forNode(remote.localNode()))
-                .submit(
-                    new IgniteRunnable() {
-                        @Override public void run() {
-                            Ignition.localIgnite().cache(CACHE_NAME)
-                                .put(entry.getKey(), entry.getValue());
-                        }
-                    }
-                ).get();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private void execute(IgniteEx initiator) {
+        perform(initiator, (s) -> {
+            try {
+                s.submit(new TestIgniteRunnable(endpoints())).get();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
-     * @param initiator Initiator node.
-     * @param remote Remoute node.
+     * Performs test.
      */
-    private void transitionExecute(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
-        try {
-            final UUID remoteId = remote.localNode().id();
+    private void perform(IgniteEx initiator, Consumer<ExecutorService> c) {
+        perform(initiator,
+            () -> {
+                for (UUID nodeId : transitions()) {
+                    c.accept(
+                        initiator.executorService(initiator.cluster().forNodeId(nodeId))
+                    );
+                }
+            });
+    }
 
-            initiator.executorService(initiator.cluster().forNode(srvTransitionAllPerms.localNode()))
-                .submit(
-                    new IgniteRunnable() {
-                        @Override public void run() {
-                            Ignite ignite = Ignition.localIgnite();
+    /**
+     * Runnable for tests.
+     */
+    static class TestIgniteRunnable implements IgniteRunnable {
+        /** Collection of endpoint node ids. */
+        private final Collection<UUID> endpoints;
 
-                            try {
-                                ignite.executorService(ignite.cluster().forNode(ignite.cluster().node(remoteId)))
-                                    .submit(new IgniteRunnable() {
-                                        @Override public void run() {
-                                            Ignition.localIgnite().cache(CACHE_NAME)
-                                                .put(entry.getKey(), entry.getValue());
-                                        }
-                                    }).get();
-                            }catch (Exception e){
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }
-                ).get();
+        /**
+         * @param endpoints Collection of endpoint node ids.
+         */
+        public TestIgniteRunnable(Collection<UUID> endpoints) {
+            this.endpoints = endpoints;
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            Ignite ignite = Ignition.localIgnite();
+
+            VERIFIER.verify(ignite);
+
+            if (!endpoints.isEmpty()) {
+                try {
+                    for (UUID nodeId : endpoints) {
+                        ignite.executorService(ignite.cluster().forNodeId(nodeId))
+                            .submit(new TestIgniteRunnable(Collections.emptyList()))
+                            .get();
+                    }
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 }

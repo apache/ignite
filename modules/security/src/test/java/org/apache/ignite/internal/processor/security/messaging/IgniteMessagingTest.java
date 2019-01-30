@@ -22,93 +22,75 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertThat;
-
 /**
  * Testing permissions when the message listener is executed cache operations on remote node.
  */
 @RunWith(JUnit4.class)
 public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
-    /** Sever node that has all permissions for TEST_CACHE. */
-    private IgniteEx evntAllPerms;
+    /** Barrier. */
+    private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
 
-    /** Sever node that hasn't permissions for TEST_CACHE. */
-    private IgniteEx evntNotPerms;
+    /** Client node. */
+    protected IgniteEx clntTransition;
+
+    /** Client node. */
+    protected IgniteEx clntEndpoint;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        evntAllPerms = startGrid("evnt_all_perms", allowAllPermissionSet());
+    @Override protected void startNodes() throws Exception {
+        super.startNodes();
 
-        evntNotPerms = startGrid("evnt_not_perms",
-            builder().defaultAllowAll(true)
-                .appendCachePermissions(CACHE_NAME, EMPTY_PERMS).build());
+        clntTransition = startGrid("clnt_transition", allowAllPermissionSet(), true);
 
-        super.beforeTestsStarted();
+        clntEndpoint = startGrid("clnt_endpoint", allowAllPermissionSet());
     }
-
-    /** Barrier. */
-    private static final CyclicBarrier BARRIER = new CyclicBarrier(2);
 
     /**
      *
      */
     @Test
-    public void testMessaging() throws Exception {
-        awaitPartitionMapExchange();
+    public void test() {
+        messaging(srvInitiator, srvTransition);
+        messaging(srvInitiator, clntTransition);
 
-        assertAllowedResult(t -> messaging(clntAllPerms, clntReadOnlyPerm, evntAllPerms, t));
-        assertAllowedResult(t -> messaging(clntAllPerms, srvReadOnlyPerm, evntAllPerms, t));
-        assertAllowedResult(t -> messaging(srvAllPerms, clntReadOnlyPerm, evntAllPerms, t));
-        assertAllowedResult(t -> messaging(srvAllPerms, srvReadOnlyPerm, evntAllPerms, t));
-
-        assertAllowedResult(t -> messaging(clntAllPerms, srvReadOnlyPerm, evntNotPerms, t));
-        assertAllowedResult(t -> messaging(clntAllPerms, clntReadOnlyPerm, evntNotPerms, t));
-        assertAllowedResult(t -> messaging(srvAllPerms, srvReadOnlyPerm, evntNotPerms, t));
-        assertAllowedResult(t -> messaging(srvAllPerms, clntReadOnlyPerm, evntNotPerms, t));
-
-        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, srvAllPerms, evntAllPerms, t));
-        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, clntAllPerms, evntAllPerms, t));
-        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, srvAllPerms, evntAllPerms, t));
-        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, clntAllPerms, evntAllPerms, t));
-
-        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, srvAllPerms, evntNotPerms, t));
-        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, clntAllPerms, evntNotPerms, t));
-        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, srvAllPerms, evntNotPerms, t));
-        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, clntAllPerms, evntNotPerms, t));
+        messaging(clntInitiator, srvTransition);
+        messaging(clntInitiator, clntTransition);
     }
 
     /**
-     * @param lsnr Listener node.
-     * @param remote Remote node.
-     * @param evt Event node.
-     * @param t Entry to put into test cache.
+     * Performs the test.
+     *
+     * @param lsnrNode Node that registers a listener on a remote node.
+     * @param evtNode Node that generates an event.
      */
-    private void messaging(IgniteEx lsnr, IgniteEx remote, IgniteEx evt, T2<String, Integer> t) {
+    private void messaging(IgniteEx lsnrNode, IgniteEx evtNode) {
+        VERIFIER.start(secSubjectId(lsnrNode))
+            .add(srvEndpoint.name(), 1)
+            .add(clntEndpoint.name(), 1);
+
         BARRIER.reset();
 
-        IgniteMessaging messaging = lsnr.message(lsnr.cluster().forNode(remote.localNode()));
+        IgniteMessaging messaging = lsnrNode.message(
+            lsnrNode.cluster().forNode(srvEndpoint.localNode(), clntEndpoint.localNode())
+        );
 
-        String topic = "HOT_TOPIC " + t.getKey();
+        String topic = "HOT_TOPIC";
 
         UUID lsnrId = messaging.remoteListen(topic,
             new IgniteBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     try {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(t.getKey(), t.getValue());
+                        VERIFIER.verify(Ignition.localIgnite());
 
                         return true;
                     }
@@ -120,13 +102,15 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
         );
 
         try {
-            evt.message(evt.cluster().forNode(remote.localNode())).send(topic, "Fire!");
+            evtNode.message().send(topic, "Fire!");
         }
         finally {
             barrierAwait();
 
             messaging.stopRemoteListen(lsnrId);
         }
+
+        VERIFIER.checkResult();
     }
 
     /**
@@ -139,31 +123,5 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
         catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
             fail(e.toString());
         }
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    private void assertAllowedResult(Consumer<T2<String, Integer>> c) {
-        assertResult(c, false);
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    private void assertForbiddenResult(Consumer<T2<String, Integer>> c) {
-        assertResult(c, true);
-    }
-
-    /**
-     * @param c Consumer.
-     * @param failExp True if expectaed fail behavior.
-     */
-    private void assertResult(Consumer<T2<String, Integer>> c, boolean failExp) {
-        T2<String, Integer> t = entry();
-
-        c.accept(t);
-
-        assertThat(srvAllPerms.cache(CACHE_NAME).get(t.getKey()), failExp ? nullValue() : is(t.getValue()));
     }
 }

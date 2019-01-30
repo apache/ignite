@@ -22,13 +22,14 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  *
  */
 public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityContextTest {
     /** Cache name for tests. */
-    protected static final String COMMON_USE_CACHE = "COMMON_USE_CACHE";
+    protected static final String CACHE_NAME = "TEST_CACHE";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -44,22 +45,34 @@ public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityC
             new CacheConfiguration<>()
                 .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false),
-            new CacheConfiguration<>()
-                .setName(COMMON_USE_CACHE)
-                .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
         };
     }
 
     /**
-     * Getting the key that is contained on primary partition on passed node for given cache.
+     * Sets up VERIFIER, performs the runnable and checks the result.
+     *
+     * @param node Node.
+     * @param r Runnable.
+     */
+    protected void perform(IgniteEx node, Runnable r){
+        VERIFIER.start(secSubjectId(node))
+            .add(srvTransition.name(), 1)
+            .add(srvEndpoint.name(), 1);
+
+        r.run();
+
+        VERIFIER.checkResult();
+    }
+
+    /**
+     * Getting the key that is contained on primary partition on passed node for {@link #CACHE_NAME} cache.
      *
      * @param ignite Node.
      * @return Key.
      */
-    protected Integer primaryKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(COMMON_USE_CACHE);
+    protected static Integer prmKey(IgniteEx ignite) {
+        Affinity<Integer> affinity = ignite.affinity(CACHE_NAME);
 
         int i = 0;
         do {
@@ -70,5 +83,15 @@ public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityC
         while (i <= 1_000);
 
         throw new IllegalStateException(ignite.name() + " isn't primary node for any key.");
+    }
+
+    /**
+     * Getting the key that is contained on primary partition on passed node for {@link #CACHE_NAME} cache.
+     *
+     * @param nodeName Node name.
+     * @return Key.
+     */
+    protected static Integer prmKey(String nodeName) {
+        return prmKey((IgniteEx)G.ignite(nodeName));
     }
 }

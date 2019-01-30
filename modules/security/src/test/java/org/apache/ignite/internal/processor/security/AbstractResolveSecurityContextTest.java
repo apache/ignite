@@ -17,80 +17,67 @@
 
 package org.apache.ignite.internal.processor.security;
 
-import java.util.function.Consumer;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 /**
  *
  */
 public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
-    /** Sever node that has all permissions for TEST_CACHE. */
-    protected IgniteEx srvAllPerms;
+    /** Verifier to check results of tests. */
+    protected static final Verifier VERIFIER = new Verifier();
 
-    /** Sever node that has all permissions for TEST_CACHE. */
-    protected IgniteEx srvTransitionAllPerms;
+    /** Sever node. */
+    protected IgniteEx srvInitiator;
 
-    /** Client node that has all permissions for TEST_CACHE. */
-    protected IgniteEx clntAllPerms;
+    /** Client node. */
+    protected IgniteEx clntInitiator;
 
-    /** Sever node that has read only permission for TEST_CACHE. */
-    protected IgniteEx srvReadOnlyPerm;
+    /** Sever node. */
+    protected IgniteEx srvTransition;
 
-    /** Client node that has read only permission for TEST_CACHE. */
-    protected IgniteEx clntReadOnlyPerm;
+    /** Sever node. */
+    protected IgniteEx srvEndpoint;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        srvAllPerms = startGrid("srv_all_perms", allowAllPermissionSet());
-
-        srvTransitionAllPerms = startGrid("srv_trns_all_perms", allowAllPermissionSet());
-
-        clntAllPerms = startGrid("clnt_all_perms", allowAllPermissionSet(), true);
-
-        srvReadOnlyPerm = startGrid("srv_read_only_perm",
-            builder().defaultAllowAll(true)
-                .appendCachePermissions(CACHE_NAME, CACHE_READ).build());
-
-        clntReadOnlyPerm = startGrid("clnt_read_only_perm",
-            builder().defaultAllowAll(true)
-                .appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
+        startNodes();
 
         grid(0).cluster().active(true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(new CacheConfiguration<>()
-                .setName(CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false));
+    /**
+     * Starts nodes.
+     */
+    protected void startNodes() throws Exception {
+        srvInitiator = startGrid("srv_initiator", allowAllPermissionSet());
+
+        clntInitiator = startGrid("clnt_initiator", allowAllPermissionSet(), true);
+
+        srvTransition = startGrid("srv_transition", allowAllPermissionSet());
+
+        srvEndpoint = startGrid("srv_endpoint", allowAllPermissionSet());
     }
 
     /**
-     * @param c Consumer.
+     * @param ign Node.
+     *
+     * @return Security subject id of passed node.
      */
-    protected void assertAllowed(Consumer<T2<String, Integer>> c) {
-        assertAllowed(srvAllPerms, CACHE_NAME, c);
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    protected void assertForbidden(Consumer<T2<String, Integer>> c) {
-        assertForbidden(srvAllPerms, CACHE_NAME, c);
+    protected UUID secSubjectId(IgniteEx ign) {
+        return ign.context().security().securityContext().subject().id();
     }
 
     /**
@@ -100,5 +87,98 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
      */
     protected void assertCauseSecurityException(Throwable throwable) {
         assertThat(X.cause(throwable, SecurityException.class), notNullValue());
+    }
+
+    /**
+     * Responsible for verifying of tests results.
+     */
+    public static class Verifier {
+        /**
+         * Map that contains an expected behaviour.
+         */
+        private final ConcurrentHashMap<String, T2<Integer, Integer>> map = new ConcurrentHashMap<>();
+
+        /**
+         * Expected security subject id.
+         */
+        private UUID expSecSubjId;
+
+        /**
+         * Prepare for test.
+         *
+         * @param expSecSubjId Expected security subject id.
+         */
+        public Verifier start(UUID expSecSubjId) {
+            this.expSecSubjId = expSecSubjId;
+
+            map.clear();
+
+            return this;
+        }
+
+        /**
+         * Adds expected behaivior the method {@link #verify(IgniteEx)} will be invoke exp times on the node with passed
+         * name.
+         *
+         * @param nodeName Node name.
+         * @param exp Expected number of invokes.
+         */
+        public Verifier add(String nodeName, int exp) {
+            map.put(nodeName, new T2<>(exp, 0));
+
+            return this;
+        }
+
+        /**
+         * Checks that current security context is valid and
+         * incriments invoke's counter.
+         *
+         * @param ignite Local node.
+         */
+        public void verify(Ignite ignite) {
+            verify((IgniteEx)ignite);
+        }
+
+        /**
+         * Checks that current security context is valid and
+         * incriments invoke's counter.
+         *
+         * @param ignite Local node.
+         */
+        public void verify(IgniteEx ignite) {
+            assert expSecSubjId != null;
+            assert ignite != null;
+
+            assertThat(
+                ignite.context().security().securityContext().subject().id(),
+                is(expSecSubjId)
+            );
+
+            map.computeIfPresent(ignite.name(),
+                new BiFunction<String, T2<Integer, Integer>, T2<Integer, Integer>>() {
+                    @Override public T2<Integer, Integer> apply(String name, T2<Integer, Integer> t2) {
+                        Integer val = t2.getValue();
+
+                        t2.setValue(++val);
+
+                        return t2;
+                    }
+                });
+        }
+
+        /**
+         * Checks result of test and clears expected behavior.
+         */
+        public void checkResult() {
+            assert !map.isEmpty();
+
+            map.forEach((key, value) ->
+                assertThat("Node " + key + ". Execution of verify: ",
+                    value.get2(), is(value.get1())));
+
+            map.clear();
+
+            expSecSubjId = null;
+        }
     }
 }

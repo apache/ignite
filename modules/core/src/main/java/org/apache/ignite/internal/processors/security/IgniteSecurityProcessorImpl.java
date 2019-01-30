@@ -30,6 +30,13 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Default Grid security Manager implementation.
  */
 public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
+    /** Security session that is used if GridSecurityProcessor is not enabled. */
+    private static final IgniteSecuritySession SECURITY_SESSION_DISABLED_MODE = new IgniteSecuritySession() {
+        @Override public void close() {
+            //no-op
+        }
+    };
+
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -58,29 +65,45 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public IgniteSecuritySession startSession(SecurityContext secCtx) {
-        assert secCtx != null;
+        if (enabled()) {
+            assert secCtx != null;
 
-        SecurityContext old = curSecCtx.get();
+            SecurityContext old = curSecCtx.get();
 
-        curSecCtx.set(secCtx);
+            curSecCtx.set(secCtx);
 
-        return new IgniteSecuritySessionImpl(this, old);
+            return new IgniteSecuritySessionImpl(this, old);
+        }
+
+        return SECURITY_SESSION_DISABLED_MODE;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteSecuritySession startSession(UUID nodeId) {
-        return startSession(
-            secCtxs.computeIfAbsent(nodeId,
-                uuid -> nodeSecurityContext(
-                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
+        if (enabled()) {
+            return startSession(
+                secCtxs.computeIfAbsent(nodeId,
+                    uuid -> nodeSecurityContext(
+                        marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
+                    )
                 )
-            )
-        );
+            );
+        }
+
+        return SECURITY_SESSION_DISABLED_MODE;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        return curSecCtx.get();
+        SecurityContext res = null;
+
+        if (enabled()) {
+            res = curSecCtx.get();
+
+            assert res != null;
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -116,9 +139,13 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
-        SecurityContext secCtx = curSecCtx.get();
+        SecurityContext secCtx = null;
 
-        assert secCtx != null;
+        if (enabled()) {
+            secCtx = curSecCtx.get();
+
+            assert secCtx != null;
+        }
 
         secPrc.authorize(name, perm, secCtx);
     }
@@ -140,9 +167,11 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        ctx.event().addDiscoveryEventListener(
-            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
-        );
+        if (enabled()) {
+            ctx.event().addDiscoveryEventListener(
+                (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+            );
+        }
 
         secPrc.onKernalStart(active);
     }

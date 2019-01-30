@@ -1559,7 +1559,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        try(IgniteSecuritySession s = ctx.security().startSession(secSubjId)) {
+        UUID curSecSubjId = secSubjId != null ? secSubjId : nodeId;
+
+        try(IgniteSecuritySession s = ctx.security().startSession(curSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1621,7 +1623,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
         assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
-        UUID secSubjId = ctx.security().securityContext().subject().id();
+        UUID secSubjId  = null;
+
+        if(ctx.security().enabled()) {
+            UUID curSecSubjId = ctx.security().securityContext().subject().id();
+
+            if (!locNodeId.equals(curSecSubjId))
+                secSubjId = curSecSubjId;
+        }
 
         GridIoMessage ioMsg = new GridIoMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
