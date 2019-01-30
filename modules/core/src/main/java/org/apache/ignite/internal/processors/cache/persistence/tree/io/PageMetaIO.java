@@ -148,7 +148,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @deprecated Will be removed in 3.0.
+     * @deprecated Will be removed at 3.0.
      */
     public long getLastSuccessfulFullSnapshotId(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF);
@@ -157,7 +157,7 @@ public class PageMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param nextSnapshotTag Next snapshot tag.
-     * @deprecated Will be removed in 3.0.
+     * @deprecated Will be removed at 3.0.
      */
     public void setNextSnapshotTag(long pageAddr, long nextSnapshotTag) {
         PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotTag);
@@ -165,7 +165,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @deprecated Will be removed in 3.0.
+     * @deprecated Will be removed at 3.0.
      */
     public long getLastSuccessfulSnapshotTag(long pageAddr) {
         return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF);
