@@ -254,4 +254,28 @@ public class ChangeTopologyWatcherTest extends GridCommonAbstractTest {
         assertFalse(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBaselineAutoAdjustDisabledBaselineNotEqualGridActivation2() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+        startGrid(1);
+
+        ignite0.cluster().active(true);
+
+        assertTrue(ignite0.cluster().baselineConfiguration().isBaselineAutoAdjustEnabled());
+
+        stopGrid(1);
+
+        doSleep(AUTO_ADJUST_TIMEOUT/2);
+
+        IgniteEx igniteClient = startGrid(getConfiguration(getTestIgniteInstanceName(2)).setClientMode(true));
+
+        doSleep(AUTO_ADJUST_TIMEOUT/2);
+
+        igniteClient.close();
+
+        assertTrue(isCurrentBaselineFromOneNode(ignite0));
+    }
 }

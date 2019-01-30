@@ -108,11 +108,16 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             return;
         }
 
+        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+        if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
+            return;
+
         synchronized (this) {
-            lastBaselineData = lastBaselineData.next(evt, ((DiscoveryEvent)evt).topologyVersion());
+            lastBaselineData = lastBaselineData.next(evt, discoEvt.topologyVersion());
 
             if (isLocalNodeCoordinator()) {
-                exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion()))
+                exchangeManager.affinityReadyFuture(new AffinityTopologyVersion(discoEvt.topologyVersion()))
                     .listen((IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>)future -> {
 
                         if (exchangeManager.lastFinishedFuture().hasLostPartitions()) {
