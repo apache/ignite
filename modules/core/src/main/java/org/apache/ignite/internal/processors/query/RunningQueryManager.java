@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,9 +125,9 @@ public class RunningQueryManager {
     public List<GridRunningQueryInfo> runningSqlQueries() {
         List<GridRunningQueryInfo> res = new ArrayList<>();
 
-        for (GridRunningQueryInfo runningQryInfo : runs.values()) {
-            if (isSqlQuery(runningQryInfo))
-                res.add(runningQryInfo);
+        for (GridRunningQueryInfo run : runs.values()) {
+            if (isSqlQuery(run))
+                res.add(run);
         }
 
         return res;

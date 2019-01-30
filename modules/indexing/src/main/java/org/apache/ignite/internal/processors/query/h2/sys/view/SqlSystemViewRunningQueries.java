@@ -56,7 +56,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             String qryId = qryIdCond.valueForEquality().getString();
 
             runningSqlQueries = runningSqlQueries.stream()
-                .filter((r) -> r.clusterWideQueryId().equals(qryId))
+                .filter((r) -> r.globalQueryId().equals(qryId))
                 .findFirst()
                 .map(Collections::singletonList)
                 .orElse(Collections.emptyList());
@@ -74,7 +74,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
 
             rows.add(
                 createRow(ses,
-                    info.clusterWideQueryId(),
+                    info.globalQueryId(),
                     info.query(),
                     info.schemaName(),
                     info.cancelable(),
