@@ -277,9 +277,16 @@ class GridDhtPartitionSupplier {
             if (sctx == null || sctx.iterator == null) {
                 remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
 
-                initUpdateCntrs = new HashMap<>();
+                Set<Integer> demandParts = new HashSet<>(demandMsg.partitions().fullSet());
 
-                for (Integer part : demandMsg.partitions().fullSet()) {
+                CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
+
+                for (int i = 0; i < histMap.size(); ++i)
+                    demandParts.add(histMap.partitionAt(i));
+
+                initUpdateCntrs = new HashMap<>(demandParts.size());
+
+                for (Integer part : demandParts) {
                     GridDhtLocalPartition loc = top.localPartition(part, demandMsg.topologyVersion(), false);
 
                     if (loc != null && loc.state() == GridDhtPartitionState.OWNING)
@@ -287,8 +294,6 @@ class GridDhtPartitionSupplier {
                 }
 
                 iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
-
-                CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
 
                 for (int i = 0; i < histMap.size(); i++) {
                     int p = histMap.partitionAt(i);
