@@ -142,6 +142,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Filter. */
     private final CacheEntryPredicate filter;
 
+    /** Keep binary flag. */
+    protected boolean keepBinary;
+
     /** Timeout object. */
     @GridToStringExclude
     protected LockTimeoutObject timeoutObj;
@@ -197,6 +200,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
      * @param filter Filter.
+     * @param keepBinary Keep binary flag.
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -207,7 +211,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         GridDhtTxLocalAdapter tx,
         long timeout,
         GridCacheContext<?, ?> cctx,
-        @Nullable CacheEntryPredicate filter) {
+        @Nullable CacheEntryPredicate filter,
+        boolean keepBinary) {
         assert tx != null;
         assert timeout >= 0;
         assert nearNodeId != null;
@@ -224,6 +229,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.timeout = timeout;
         this.tx = tx;
         this.filter = filter;
+        this.keepBinary = keepBinary;
 
         lockVer = tx.xidVersion();
 
@@ -466,7 +472,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.noCreate(),
                                         needOldVal,
                                         filter,
-                                        needResult());
+                                        needResult(),
+                                        keepBinary);
 
                                     break;
 

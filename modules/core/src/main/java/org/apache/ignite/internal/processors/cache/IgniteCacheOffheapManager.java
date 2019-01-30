@@ -275,12 +275,13 @@ public interface IgniteCacheOffheapManager {
      * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
+     * @param keepBinary Keep binary flag.
      * @param entryProc Entry processor.
      * @param invokeArgs Entry processor invoke arguments.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccUpdate(
+    public MvccUpdateResult mvccUpdate(
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
@@ -292,6 +293,7 @@ public interface IgniteCacheOffheapManager {
         boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
+        boolean keepBinary,
         EntryProcessor entryProc,
         Object[] invokeArgs) throws IgniteCheckedException;
 
@@ -806,6 +808,7 @@ public interface IgniteCacheOffheapManager {
          * @param noCreate Flag indicating that row should not be created if absent.
          * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
+         * @param keepBinary Keep binary flag.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -823,7 +826,8 @@ public interface IgniteCacheOffheapManager {
             boolean needHist,
             boolean noCreate,
             boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException;
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
