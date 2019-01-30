@@ -26,9 +26,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
-import org.apache.ignite.ml.sql.SQLFeatureExtractor;
+import org.apache.ignite.ml.sql.SQLFeatureLabelExtractor;
 import org.apache.ignite.ml.sql.SQLFunctions;
-import org.apache.ignite.ml.sql.SQLLabelExtractor;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -107,10 +106,10 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             System.out.println(">>> Perform training...");
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
-                new SQLFeatureExtractor()
-                    .withFields("pclass", "age", "sibsp", "parch", "fare")
-                    .withField("sex", e -> "male".equals(e) ? 1 : 0),
-                new SQLLabelExtractor("survived")
+                new SQLFeatureLabelExtractor()
+                    .withFeatureFields("pclass", "age", "sibsp", "parch", "fare")
+                    .withFeatureField("sex", e -> "male".equals(e) ? 1 : 0)
+                    .withLabelField("survived")
             );
 
             System.out.println(">>> Saving model...");

@@ -27,8 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.sql.SQLFeatureExtractor;
-import org.apache.ignite.ml.sql.SQLLabelExtractor;
+import org.apache.ignite.ml.sql.SQLFeatureLabelExtractor;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -105,10 +104,10 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
             System.out.println(">>> Perform training...");
             DecisionTreeNode mdl = trainer.fit(
                 new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
-                new SQLFeatureExtractor()
-                    .withFields("pclass", "age", "sibsp", "parch", "fare")
-                    .withField("sex", e -> "male".equals(e) ? 1 : 0),
-                new SQLLabelExtractor("survived")
+                new SQLFeatureLabelExtractor()
+                    .withFeatureFields("pclass", "age", "sibsp", "parch", "fare")
+                    .withFeatureField("sex", e -> "male".equals(e) ? 1 : 0)
+                    .withLabelField("survived")
             );
 
             System.out.println(">>> Perform inference...");
