@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -63,7 +64,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private static final Long FAIL_L = Long.MAX_VALUE;
 
     /** */
-    private static final int MIN_PAGE_FREE_SPACE = 8;
+    private static final int MIN_PAGE_FREE_SPACE = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_MIN_PAGE_FREE_SPACE, 40);
 
     /**
      * Step between buckets in free list, measured in powers of two.

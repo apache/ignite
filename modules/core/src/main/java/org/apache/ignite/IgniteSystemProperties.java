@@ -1135,6 +1135,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_SEMAPHORE_PERMITS = "IGNITE_RECOVERY_SEMAPHORE_PERMITS";
 
     /**
+     * Minimum amount of free space (in bytes) starting from which data page will be stored in a free list.
+     */
+    public static final String IGNITE_MIN_PAGE_FREE_SPACE = "IGNITE_MIN_PAGE_FREE_SPACE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
