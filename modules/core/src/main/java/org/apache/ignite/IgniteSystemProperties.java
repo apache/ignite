@@ -260,18 +260,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
-     * Specifies delay in milliseconds before starting deadlock detection procedure when tx encounters locked key.
-     * <p>
-     * Following values could be used:
-     * <ul>
-     *     <li>&lt; 0 disable detection;</li>
-     *     <li>0 start detection without a delay;</li>
-     *     <li>&gt; 0 start detection after a specified number of milliseconds.</li>
-     * </ul>
-     */
-    public static final String IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY = "IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY";
-
-    /**
      * System property to enable pending transaction tracker.
      * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
      * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
