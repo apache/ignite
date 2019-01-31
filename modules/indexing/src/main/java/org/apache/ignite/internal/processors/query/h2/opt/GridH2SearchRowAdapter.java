@@ -125,4 +125,9 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
     @Override public byte mvccTxState() {
         return TxState.NA;
     }
+
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return 0;
+    }
 }

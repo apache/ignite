@@ -164,15 +164,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
-        // Should not be called directly. Rows are removed from underlying cache data stores.
-
-        assert false;
-
-        throw DbException.getUnsupportedException("remove");
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
         // Should not be called directly. Rows are removed from underlying cache data stores.
         assert false;

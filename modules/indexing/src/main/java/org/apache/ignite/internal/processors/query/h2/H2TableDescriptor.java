@@ -45,8 +45,6 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-
 /**
  * Information about table in database.
  */
@@ -213,7 +211,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     @Override public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {
         ArrayList<Index> idxs = new ArrayList<>();
 
-        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+        IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         if (affCol != null && H2Utils.equals(affCol, keyCol))
@@ -387,7 +385,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+        IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);

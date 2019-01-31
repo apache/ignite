@@ -88,11 +88,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
-        throw SHOULDNT_BE_INVOKED_EXCEPTION;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
         throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }

@@ -48,8 +48,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -108,14 +108,14 @@ public class H2Utils {
     private static final char ESC_CH = '\"';
 
     /** Empty cursor. */
-    public static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+    public static final GridCursor<GridH2SearchRow> EMPTY_CURSOR = new GridCursor<GridH2SearchRow>() {
         /** {@inheritDoc} */
         @Override public boolean next() {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row get() {
+        @Override public GridH2SearchRow get() {
             return null;
         }
     };

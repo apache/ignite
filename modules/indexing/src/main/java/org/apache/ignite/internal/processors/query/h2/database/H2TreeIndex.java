@@ -287,7 +287,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (!cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
                 tree.compareRows((GridH2SearchRow)lower, (GridH2SearchRow)upper) == 0) {
-                GridH2Row row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()), null);
+                GridH2SearchRow row = tree.findOne((GridH2SearchRow)lower, filter(GridH2QueryContext.get()), null);
 
                 return (row == null) ? GridH2Cursor.EMPTY : new SingleRowCursor(row);
             }
@@ -305,6 +305,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     @Override public GridH2Row put(GridH2Row row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -312,13 +313,14 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            return tree.put(row);
+            return (GridH2Row)tree.put(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
+            H2Tree.updateMode(false);
         }
     }
 
@@ -326,6 +328,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     @Override public boolean putx(GridH2Row row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -340,29 +343,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
-        assert row instanceof GridH2SearchRow : row;
-
-        try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
-            int seg = segmentForRow(row);
-
-            H2Tree tree = treeForRead(seg);
-
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-            return tree.remove((GridH2SearchRow)row);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-        finally {
-            InlineIndexHelper.clearCurrentInlineIndexes();
+            H2Tree.updateMode(false);
         }
     }
 
@@ -372,6 +353,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+            H2Tree.updateMode(true);
 
             int seg = segmentForRow(row);
 
@@ -386,6 +368,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
+            H2Tree.updateMode(false);
         }
     }
 
@@ -447,7 +430,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+    @Override protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow> filter(GridH2QueryContext qctx) {
         if (qctx == null) {
             assert !cctx.mvccEnabled();
 

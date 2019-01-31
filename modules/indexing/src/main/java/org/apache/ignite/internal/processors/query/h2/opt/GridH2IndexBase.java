@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
@@ -74,7 +75,6 @@ import java.util.UUID;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.buildCollocationModel;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
@@ -195,14 +195,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return {@code True} if existing row row has been replaced.
      */
     public abstract boolean putx(GridH2Row row);
-
-    /**
-     * Remove row from index.
-     *
-     * @param row Row.
-     * @return Removed row.
-     */
-    public abstract GridH2Row remove(SearchRow row);
 
     /**
      * Removes row from index.
@@ -459,7 +451,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param qctx Query context.
      * @return Row filter.
      */
-    protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter(GridH2QueryContext qctx) {
+    protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow> filter(GridH2QueryContext qctx) {
         throw new UnsupportedOperationException();
     }
 
@@ -589,7 +581,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         CacheObject key;
 
-        final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(QueryUtils.KEY_COL);
 
         assert keyColValue != null;
 
@@ -612,15 +604,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Iterator.
      */
     @SuppressWarnings("unchecked")
-    public Iterator<GridH2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
+    public Iterator<GridH2SearchRow> findForSegment(GridH2RowRangeBounds bounds, int segment,
+        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow> filter) {
         SearchRow first = toSearchRow(bounds.first());
         SearchRow last = toSearchRow(bounds.last());
 
         IgniteTree t = treeForRead(segment);
 
         try {
-            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
+            GridCursor<GridH2SearchRow> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
                 range = H2Utils.EMPTY_CURSOR;

@@ -29,4 +29,9 @@ public interface GridH2SearchRow extends Row, MvccVersionAware {
      * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
      */
     public boolean indexSearchRow();
+
+    /**
+     * @return Expire time.
+     */
+    public long expireTime();
 }

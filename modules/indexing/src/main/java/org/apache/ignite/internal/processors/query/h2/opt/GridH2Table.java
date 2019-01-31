@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -61,7 +62,6 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * H2 Table implementation.
@@ -197,7 +197,7 @@ public class GridH2Table extends TableBase {
 
         // If explicit affinity key field is not set, then use _KEY.
         if (affKeyFieldName == null)
-            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+            return indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
 
         // If explicit affinity key field is set, but is not found in the table, do not use anything.
         if (!doesColumnExist(affKeyFieldName))
@@ -207,7 +207,7 @@ public class GridH2Table extends TableBase {
 
         // If affinity key column is either _KEY or it's alias (QueryEntity.keyFieldName), normalize it to _KEY.
         if (desc.isKeyColumn(colId))
-            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+            return indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
 
         // Otherwise use column as is.
         return indexColumn(colId, SortOrder.ASCENDING);
@@ -1112,7 +1112,7 @@ public class GridH2Table extends TableBase {
                 size --;
             }
 
-            assert size > DEFAULT_COLUMNS_COUNT;
+            assert size > QueryUtils.DEFAULT_COLUMNS_COUNT;
 
             Column[] newCols = new Column[size];
 
@@ -1168,9 +1168,9 @@ public class GridH2Table extends TableBase {
             StackTraceElement elem = elems[2];
 
             if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[safeColumns0.length - DEFAULT_COLUMNS_COUNT];
+                Column[] columns0 = new Column[safeColumns0.length - QueryUtils.DEFAULT_COLUMNS_COUNT];
 
-                System.arraycopy(safeColumns0, DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);
+                System.arraycopy(safeColumns0, QueryUtils.DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);
 
                 return columns0;
             }

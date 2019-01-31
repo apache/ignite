@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
@@ -53,8 +54,6 @@ import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Spatial index.
@@ -170,7 +169,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            Value key = row.getValue(KEY_COL);
+            Value key = row.getValue(QueryUtils.KEY_COL);
 
             assert key != null;
 
@@ -224,8 +223,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             (float) env.getMinY(), (float) env.getMaxY());
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
+    /**
+     * Remove row.
+     *
+     * @param row Row.
+     * @return Old row.
+     */
+    private GridH2Row remove(SearchRow row) {
         Lock l = lock.writeLock();
 
         l.lock();
@@ -233,7 +237,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            Value key = row.getValue(KEY_COL);
+            Value key = row.getValue(QueryUtils.KEY_COL);
 
             assert key != null;
 
@@ -261,7 +265,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
-        GridH2Row old = remove(row);
+        GridH2SearchRow old = remove(row);
 
         return old != null;
     }
@@ -334,7 +338,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @return Iterator over rows.
      */
     @SuppressWarnings("unchecked")
-    private GridCursor<GridH2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
+    private GridCursor<GridH2SearchRow> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
             return H2Utils.EMPTY_CURSOR;
 
@@ -382,7 +386,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            GridCursor<GridH2Row> iter = rowIterator(segment.keySet().iterator(), null);
+            GridCursor<GridH2SearchRow> iter = rowIterator(segment.keySet().iterator(), null);
 
             return new SingleRowCursor(iter.next() ? iter.get() : null);
         }

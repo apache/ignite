@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
 /**
@@ -88,5 +89,36 @@ public class H2RowFactory {
         );
 
         return rowDesc.createRow(row);
+    }
+
+    public GridH2Row getRowForUpdate(long link) throws IgniteCheckedException {
+        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
+
+        row.initFromLink(
+            cctx.group(),
+            CacheDataRowAdapter.RowData.FULL,
+            true
+        );
+
+        return rowDesc.createRowForUpdate(row);
+    }
+
+    public GridH2Row getMvccRowForUpdate(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
+        throws IgniteCheckedException {
+        int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+        MvccDataRow row = new MvccDataRow(
+            cctx.group(),
+            0,
+            link,
+            partId,
+            null,
+            mvccCrdVer,
+            mvccCntr,
+            mvccOpCntr,
+            true
+        );
+
+        return rowDesc.createRowForUpdate(row);
     }
 }

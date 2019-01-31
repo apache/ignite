@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.value.Value;
@@ -31,16 +32,7 @@ import org.h2.value.ValueNull;
  */
 public class GridH2KeyValueRowOnheap extends GridH2Row {
     /** */
-    public static final int DEFAULT_COLUMNS_COUNT = 2;
-
-    /** Key column. */
-    public static final int KEY_COL = 0;
-
-    /** Value column. */
-    public static final int VAL_COL = 1;
-
-    /** */
-    protected final GridH2RowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** */
     private Value[] valCache;
@@ -59,16 +51,16 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
+        return QueryUtils.DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
         switch (col) {
-            case KEY_COL:
+            case QueryUtils.KEY_COL:
                 return keyWrapped();
 
-            case VAL_COL:
+            case QueryUtils.VAL_COL:
                 return valueWrapped();
 
             default:
@@ -77,7 +69,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                 else if (desc.isValueAliasColumn(col))
                     return valueWrapped();
 
-                return getValue0(col - DEFAULT_COLUMNS_COUNT);
+                return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
         }
     }
 
@@ -207,10 +199,10 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         sb.a(" ][ ");
 
         if (v != null) {
-            for (int i = DEFAULT_COLUMNS_COUNT, cnt = getColumnCount(); i < cnt; i++) {
+            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = getColumnCount(); i < cnt; i++) {
                 v = getValue(i);
 
-                if (i != DEFAULT_COLUMNS_COUNT)
+                if (i != QueryUtils.DEFAULT_COLUMNS_COUNT)
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))

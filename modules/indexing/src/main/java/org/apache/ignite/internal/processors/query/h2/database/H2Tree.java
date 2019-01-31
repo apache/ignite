@@ -40,9 +40,9 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
 
 /**
  */
-public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
+public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow> {
     /** */
     private final H2RowFactory rowStore;
 
@@ -214,6 +214,17 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         created = initNew;
     }
 
+    private static final ThreadLocal<GridTuple<Boolean>> UPDATE_MODE =
+        ThreadLocal.withInitial(() -> new GridTuple<>(false));
+
+    private static boolean updateMode() {
+        return UPDATE_MODE.get().get();
+    }
+
+    public static void updateMode(boolean val) {
+        UPDATE_MODE.get().set(val);
+    }
+
     /**
      * Create row from link.
      *
@@ -222,6 +233,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public GridH2SearchRow createRowFromLink(long link) throws IgniteCheckedException {
+        if (updateMode())
+            return rowStore.getRowForUpdate(link);
+
         if (rowCache != null) {
             GridH2FullRowReadOnly row = rowCache.get(link);
 
@@ -246,6 +260,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public GridH2SearchRow createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        if (updateMode())
+            return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+
         if (rowCache != null) {
             GridH2FullRowReadOnly row = rowCache.get(link);
 
@@ -262,10 +279,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
+    @Override public GridH2SearchRow getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
-        // TODO: Failure here!
-        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+        return io.getLookupRow(this, pageAddr, idx);
     }
 
     /**

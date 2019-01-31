@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -29,15 +30,6 @@ import org.h2.value.ValueNull;
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
 public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
-    /** */
-    public static final int DEFAULT_COLUMNS_COUNT = 2;
-
-    /** Key column. */
-    public static final int KEY_COL = 0;
-
-    /** Value column. */
-    public static final int VAL_COL = 1;
-
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -53,6 +45,9 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
     /** Cache ID. */
     private final int cacheId;
 
+    /** Expire time. */
+    private final long expireTime;
+
     /**
      * Constructor.
      *
@@ -62,12 +57,14 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
      * @param link Link.
      * @param cacheId Cache ID.
      */
-    public GridH2FullRowReadOnly(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId) {
+    public GridH2FullRowReadOnly(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId,
+        long expireTime) {
         this.desc = desc;
         this.key = key;
         this.val = val;
         this.link = link;
         this.cacheId = cacheId;
+        this.expireTime = expireTime;
     }
 
     /**
@@ -86,16 +83,16 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
+        return QueryUtils.DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
         switch (col) {
-            case KEY_COL:
+            case QueryUtils.KEY_COL:
                 return keyWrapped();
 
-            case VAL_COL:
+            case QueryUtils.VAL_COL:
                 return valueWrapped();
 
             default:
@@ -104,7 +101,7 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
                 else if (desc.isValueAliasColumn(col))
                     return valueWrapped();
 
-                return getValue0(col - DEFAULT_COLUMNS_COUNT);
+                return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
         }
     }
 
@@ -171,33 +168,12 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return expireTime;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        SB sb = new SB("Row@");
-
-        sb.a(Integer.toHexString(System.identityHashCode(this)));
-
-        Value v = keyWrapped();
-        sb.a("[ key: ").a(v == null ? "nil" : v.getString());
-
-        v = valueWrapped();
-        sb.a(", val: ").a(v == null ? "nil" : v.getString());
-
-        sb.a(" ][ ");
-
-        if (v != null) {
-            for (int i = DEFAULT_COLUMNS_COUNT, cnt = getColumnCount(); i < cnt; i++) {
-                v = getValue(i);
-
-                if (i != DEFAULT_COLUMNS_COUNT)
-                    sb.a(", ");
-
-                if (!desc.isKeyValueOrVersionColumn(i))
-                    sb.a(v == null ? "nil" : v.getString());
-            }
-        }
-
-        sb.a(" ]");
-
-        return sb.toString();
+        return S.toString(GridH2FullRowReadOnly.class, this);
     }
 }

@@ -18,19 +18,19 @@
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
 import java.util.Iterator;
 
 /**
  *
  */
-public final class CursorIteratorWrapper implements Iterator<GridH2Row> {
+public final class CursorIteratorWrapper implements Iterator<GridH2SearchRow> {
     /** */
     private final H2Cursor cursor;
 
     /** Next element. */
-    private GridH2Row next;
+    private GridH2SearchRow next;
 
     /**
      * @param cursor Cursor.
@@ -41,7 +41,7 @@ public final class CursorIteratorWrapper implements Iterator<GridH2Row> {
         this.cursor = cursor;
 
         if (cursor.next())
-            next = (GridH2Row)cursor.get();
+            next = (GridH2SearchRow)cursor.get();
     }
 
     /** {@inheritDoc} */
@@ -50,11 +50,11 @@ public final class CursorIteratorWrapper implements Iterator<GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row next() {
-        GridH2Row res = next;
+    @Override public GridH2SearchRow next() {
+        GridH2SearchRow res = next;
 
         if (cursor.next())
-            next = (GridH2Row)cursor.get();
+            next = (GridH2SearchRow)cursor.get();
         else
             next = null;
 
