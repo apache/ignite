@@ -493,6 +493,8 @@ public class GridReduceQueryExecutor {
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread().connection(schemaName),
                 mapQueries.size(), qry.pageSize(), sfuFut, dataPageScanEnabled);
 
+            lastRun = r;
+
             Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
@@ -786,9 +788,6 @@ public class GridReduceQueryExecutor {
                     }
                 }
                 else {
-                    assert r != null;
-                    lastRun=r;
-
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
