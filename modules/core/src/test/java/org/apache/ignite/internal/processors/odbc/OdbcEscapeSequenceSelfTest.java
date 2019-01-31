@@ -24,13 +24,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Escape sequence parser tests.
  */
-@RunWith(JUnit4.class)
 public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
     /**
      * Test simple cases.

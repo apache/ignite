@@ -42,13 +42,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static Map<String, CacheStore> firstStores = new ConcurrentHashMap<>();

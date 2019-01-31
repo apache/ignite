@@ -33,8 +33,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,7 +41,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 /**
  * Checks ordered preloading.
  */
-@RunWith(JUnit4.class)
 public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /** Number of grids in test. */
     private static final int GRID_CNT = 4;

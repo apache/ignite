@@ -46,13 +46,10 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Abstract cache store test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object, Object>>
     extends GridCommonAbstractTest {
     /** */

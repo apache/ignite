@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checkpoint triggered WAL delta records consistency test.
  */
-@RunWith(JUnit4.class)
 public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected boolean checkPagesOnCheckpoint() {
