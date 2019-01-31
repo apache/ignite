@@ -308,8 +308,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Handle getting high.
             if (g.gettingHigh) {
-                if (-idx - 1 == cnt)
-                    return RETRY; // Need to get higher if we are on the right edge.
+                if (-idx - 1 == cnt && g.fwdId != 0L)
+                    return RETRY; // Need to get higher if we are on the right edge and there are more pages to the right.
 
                 g.gettingHigh = false; // We are high enough to have valid search from here.
             }
@@ -3709,7 +3709,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Invoke on a list of rows.
      */
-    class InvokeAll extends Invoke {
+    final class InvokeAll extends Invoke {
         /** */
         Iterator<? extends L> sortedRows;
 
