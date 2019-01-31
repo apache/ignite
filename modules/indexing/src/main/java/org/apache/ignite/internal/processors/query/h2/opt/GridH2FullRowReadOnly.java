@@ -68,6 +68,13 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
     }
 
     /**
+     * @return Key.
+     */
+    public Object key() {
+        return key;
+    }
+
+    /**
      * @return Link.
      */
     public long link() {
