@@ -65,14 +65,7 @@ public class H2RowFactory {
             cctx.group(),
             GridSqlUsedColumnInfo.asRowData(colInfo));
 
-        try {
-            GridH2Row row = rowDesc.createRow(rowBuilder, colInfo);
-
-            return row;
-        }
-        finally {
-            rowBuilder.unlock();
-        }
+        return rowDesc.createRow(rowBuilder, colInfo);
     }
 
     /**

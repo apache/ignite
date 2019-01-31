@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * table alias in SQL statement contains alias name and reference to real table.
+ * Table alias in SQL statement contains alias name and reference to real table.
  */
 public class TableAlias {
     /** Alias. */

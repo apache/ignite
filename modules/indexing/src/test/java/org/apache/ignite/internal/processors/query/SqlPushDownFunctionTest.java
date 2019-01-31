@@ -67,8 +67,6 @@ public class SqlPushDownFunctionTest extends AbstractIndexingCommonTest {
 
         sql("SELECT 1, (select count(1)) FROM person p " +
             "LEFT JOIN (select id from company union select id from company) as c on c.id=p.company_id");
-
-        System.out.println("+++" + sql("EXPLAIN SELECT * from person where company_id=(SELECT MAX(company_id) FROM person)"));
     }
 
     /**

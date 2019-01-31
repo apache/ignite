@@ -19,9 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryKeyObjectOffheapImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -33,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -83,9 +79,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected int cacheId;
 
-    /** Unlock page lock run. */
-    private Runnable unlockRun;
-
     /**
      * @param link Link.
      */
@@ -131,7 +124,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     public final void initFromLink(
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
-        final PageMemory pageMem,
+        PageMemory pageMem,
         RowData rowData
     ) throws IgniteCheckedException {
         // Group is null if try evict page, with persistence evictions should be disabled.
@@ -169,7 +162,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
-        final int grpId = grp != null ? grp.groupId() : 0;
+        int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
@@ -229,31 +222,17 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
                         grpId, pageAddr, itemId, io, rowData, readCacheId);
 
-                    if (incomplete == null || (rowData == KEY_ONLY && key != null)) {
-                        if (key instanceof BinaryKeyObjectOffheapImpl || val instanceof BinaryObjectOffheapImpl ) {
-                            unlockRun = () -> {
-                                try {
-                                    pageMem.readUnlock(grpId, pageId, page);
-                                }
-                                finally {
-                                    pageMem.releasePage(grpId, pageId, page);
-                                }
-                            };
-                        }
-
+                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
                         return;
-                    }
 
                     nextLink = incomplete.getNextLink();
                 }
                 finally {
-                    if (unlockRun == null)
-                        pageMem.readUnlock(grpId, pageId, page);
+                    pageMem.readUnlock(grpId, pageId, page);
                 }
             }
             finally {
-                if (unlockRun == null)
-                    pageMem.releasePage(grpId, pageId, page);
+                pageMem.releasePage(grpId, pageId, page);
             }
         }
         while(nextLink != 0);
@@ -460,21 +439,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
-            if (rowData == RowData.FULL_TRY_OFFHEAP && type == BinaryObjectImpl.TYPE_BINARY) {
-                key = new BinaryKeyObjectOffheapImpl(
-                    ((CacheObjectBinaryProcessorImpl)coctx.kernalContext().cacheObjects()).binaryContext(),
-                    addr, off, len);
-            }
-            else {
-                byte[] bytes = PageUtils.getBytes(addr, off, len);
-
-                key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
-
-                if (rowData == RowData.KEY_ONLY)
-                    return;
-            }
-
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
             off += len;
+
+            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
+
+            if (rowData == RowData.KEY_ONLY)
+                return;
         }
         else
             off += len + 1;
@@ -485,23 +456,16 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte type = PageUtils.getByte(addr, off);
         off++;
 
-        if (rowData == RowData.FULL_TRY_OFFHEAP && type == BinaryObjectImpl.TYPE_BINARY) {
-            val = new BinaryObjectOffheapImpl(
-                ((CacheObjectBinaryProcessorImpl)coctx.kernalContext().cacheObjects()).binaryContext(),
-                addr, off, len);
-        }
-        else {
-            byte[] bytes = PageUtils.getBytes(addr, off, len);
-            off += len;
+        byte[] bytes = PageUtils.getBytes(addr, off, len);
+        off += len;
 
-            val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-            ver = CacheVersionIO.read(addr + off, false);
+        ver = CacheVersionIO.read(addr + off, false);
 
-            off += CacheVersionIO.size(ver, false);
+        off += CacheVersionIO.size(ver, false);
 
-            expireTime = PageUtils.getLong(addr, off);
-        }
+        expireTime = PageUtils.getLong(addr, off);
     }
 
     /**
@@ -802,14 +766,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * Unlock page if needs.
-     */
-    public void unlock() {
-        if (unlockRun != null)
-            unlockRun.run();
-    }
-
-    /**
      *
      */
     public enum RowData {
@@ -826,10 +782,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         LINK_ONLY,
 
         /** */
-        LINK_WITH_HEADER,
-
-        /** */
-        FULL_TRY_OFFHEAP
+        LINK_WITH_HEADER
     }
 
     /** {@inheritDoc} */

@@ -313,11 +313,10 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param originalUsedColumns Used columns info for original query.
+     * @param origUsedCols Used columns info for original query.
      */
-    public void originalUsedColumns(
-        Map<String, GridSqlUsedColumnInfo> originalUsedColumns) {
-        this.origUsedCols = originalUsedColumns;
+    public void originalUsedColumns(Map<String, GridSqlUsedColumnInfo> origUsedCols) {
+        this.origUsedCols = origUsedCols;
     }
 
     /** {@inheritDoc} */

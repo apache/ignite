@@ -203,9 +203,6 @@ public class GridH2RowDescriptor {
                 "Please make sure that you always store each value type with the same key type " +
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
-        finally {
-            // TODO: unlock special CacheDataRow
-        }
 
         return row;
     }
@@ -250,49 +247,6 @@ public class GridH2RowDescriptor {
             throw DbException.convert(e);
         }
     }
-
-    /**
-     * Gets column value by column ID.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param colId Column index.
-     * @return Column value.
-     * @throws IgniteCheckedException Om error.
-     */
-    public Value columnValueById(Object key, Object val, int colId) throws IgniteCheckedException {
-        switch (colId) {
-            case KEY_COL:
-                return H2Utils.wrap(indexing().objectContext(), key, keyType);
-
-            case VAL_COL:
-                return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
-
-            default:
-                if (isKeyAliasColumn(colId))
-                    return H2Utils.wrap(indexing().objectContext(), key, keyType);
-                else if (isValueAliasColumn(colId))
-                    return val != null ? H2Utils.wrap(indexing().objectContext(), val, valType) : null;
-
-                Object res = columnValue(key, val, colId - DEFAULT_COLUMNS_COUNT);
-
-                Value v;
-                if (res == null)
-                    v = ValueNull.INSTANCE;
-                else {
-                    try {
-                        v = H2Utils.wrap(indexing().objectContext(), res, fieldType(colId - DEFAULT_COLUMNS_COUNT));
-                    }
-                    catch (IgniteCheckedException e) {
-                        e.printStackTrace();
-                        throw DbException.convert(e);
-                    }
-                }
-
-                return v;
-        }
-    }
-
 
     /**
      * Gets column value by column index.
