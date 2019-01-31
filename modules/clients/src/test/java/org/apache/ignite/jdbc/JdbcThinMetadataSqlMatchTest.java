@@ -40,7 +40,7 @@ import static java.util.Collections.singletonList;
  */
 public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     /** Connection. */
-    private Connection conn;
+    private static Connection conn;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

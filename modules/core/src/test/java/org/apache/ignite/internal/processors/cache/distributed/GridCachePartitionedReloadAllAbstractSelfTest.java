@@ -53,10 +53,10 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private static final int BACKUP_CNT = 1;
 
     /** Map where dummy cache store values are stored. */
-    private final Map<Integer, String> map = new ConcurrentHashMap<>();
+    private static final Map<Integer, String> map = new ConcurrentHashMap<>();
 
     /** Collection of caches, one per grid node. */
-    private List<IgniteCache<Integer, String>> caches;
+    private static List<IgniteCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

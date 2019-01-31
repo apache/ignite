@@ -59,15 +59,15 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     public static final int GRP_SIZE = 128;
 
     /** Node count. */
-    private int cnt;
+    private static int cnt;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         startGrids(nodeCount());
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         G.stopAll(true);
     }
 
