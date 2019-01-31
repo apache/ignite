@@ -60,9 +60,12 @@ namespace ignite
 
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
+                
+                /** Version 1.3.0. Added: Best Effort Affinity support, IEP-23. */
+                static const ProtocolVersion VERSION_1_3_0;
 
                 /** Current version. */
-                static const ProtocolVersion VERSION_CURRENT;
+                static const ProtocolVersion VERSION_DEFAULT;
 
                 /**
                  * Operation with timeout result.
