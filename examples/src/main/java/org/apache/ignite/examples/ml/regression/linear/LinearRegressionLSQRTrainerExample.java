@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -62,8 +63,7 @@ public class LinearRegressionLSQRTrainerExample {
             LinearRegressionModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
+                (k, v) -> new LabeledVector<>(v.copyOfRange(1, v.size()), v.get(0))
             );
 
             System.out.println(">>> Linear regression model: " + mdl);

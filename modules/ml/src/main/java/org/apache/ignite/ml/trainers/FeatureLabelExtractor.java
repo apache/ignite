@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -29,7 +30,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <V> Type of values.
  * @param <L> Type of labels.
  */
-public interface FeatureLabelExtractor<K, V, L> {
+public interface FeatureLabelExtractor<K, V, L> extends Serializable {
     /**
      * Extract {@link LabeledVector} from key and value.
      *
