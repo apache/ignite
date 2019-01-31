@@ -104,7 +104,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAtomicLongLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -149,7 +149,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testOneAsyncOpLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -194,7 +194,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testSeveralAsyncOpsLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -239,7 +239,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testSyncOpAsyncCommitLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 
@@ -284,7 +284,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         mode = CacheMode.LOCAL;
 

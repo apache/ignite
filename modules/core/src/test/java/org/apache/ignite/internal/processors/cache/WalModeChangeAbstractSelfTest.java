@@ -194,7 +194,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
             // Doesn't make sense for JDBC.
             return;
 
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {

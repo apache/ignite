@@ -52,7 +52,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.setUp();
     }
@@ -67,7 +67,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         Ignite ig = testedGrid();
 
@@ -110,7 +110,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         Ignite ig = testedGrid();
 
@@ -166,7 +166,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      */
     @Test
     public void testReadThroughEvictionPolicy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         Ignite ig = testedGrid();
 
