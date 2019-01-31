@@ -45,6 +45,7 @@ import org.junit.Test;
  * Grid S3 checkpoint SPI self test.
  */
 @GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
 public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi> {
     /** */
     private static final int CHECK_POINT_COUNT = 10;

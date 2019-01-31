@@ -30,13 +30,13 @@ import org.junit.Test;
  */
 public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
-    private Marshaller marsh;
+    private static Marshaller marsh;
 
     /** Attribute key. */
     private static final String ATTR_KEY = "checkAttr";
 
     /** Bean. */
-    private IgniteSpringBean bean;
+    private static IgniteSpringBean bean;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -71,6 +71,9 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         bean.destroy();
+
+        bean = null;
+        marsh = null;
     }
 
     /**
