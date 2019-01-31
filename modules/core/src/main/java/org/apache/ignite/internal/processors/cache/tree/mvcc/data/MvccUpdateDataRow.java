@@ -48,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
@@ -300,13 +301,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         long rowCntr = row.mvccCounter();
 
         // with hint bits
-        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & MVCC_OP_COUNTER_MASK);
+        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & ~MVCC_HINTS_BIT_OFF);
 
         long rowNewCrd = row.newMvccCoordinatorVersion();
         long rowNewCntr = row.newMvccCounter();
 
         // with hint bits
-        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & MVCC_OP_COUNTER_MASK);
+        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & ~MVCC_HINTS_BIT_OFF);
 
         // Search for youngest committed by another transaction row.
         if (!isFlagsSet(LAST_COMMITTED_FOUND)) {
