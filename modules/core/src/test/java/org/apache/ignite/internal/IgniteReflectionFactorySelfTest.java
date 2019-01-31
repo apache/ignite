@@ -29,18 +29,16 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link IgniteReflectionFactory} class.
  */
 public class IgniteReflectionFactorySelfTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testByteMethod() throws Exception {
+    public void testByteMethod() {
         byte    expByteVal    = 42;
         short   expShortVal   = 42;
         int     expIntVal     = 42;
         long    expLongVal    = 42L;
         float   expFloatVal   = 42.0f;
         double  expDoubleVal  = 42.0d;
-        char    expCharVal    = 'z';
+        char expCVal = 'z';
         boolean expBooleanVal = true;
 
         Map<String, Serializable> props = new HashMap<>();
@@ -51,7 +49,7 @@ public class IgniteReflectionFactorySelfTest {
         props.put("longField", expLongVal);
         props.put("floatField", expFloatVal);
         props.put("doubleField", expDoubleVal);
-        props.put("charField", expCharVal);
+        props.put("charField", expCVal);
         props.put("booleanField", expBooleanVal);
 
         IgniteReflectionFactory<TestClass> factory = new IgniteReflectionFactory<>(TestClass.class);
@@ -64,9 +62,9 @@ public class IgniteReflectionFactorySelfTest {
         assertEquals(expShortVal, instance.getShortField());
         assertEquals(expIntVal, instance.getIntField());
         assertEquals(expLongVal, instance.getLongField());
-        assertEquals(expFloatVal, instance.getFloatField());
-        assertEquals(expDoubleVal, instance.getDoubleField());
-        assertEquals(expCharVal, instance.getCharField());
+        assertEquals(expFloatVal, instance.getFloatField(), 0);
+        assertEquals(expDoubleVal, instance.getDoubleField(), 0);
+        assertEquals(expCVal, instance.getCharField());
         assertEquals(expBooleanVal, instance.getBooleanField());
     }
 
