@@ -102,7 +102,7 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
     }
 
     /** {@inheritDoc} */
-    public byte mvccTxState() {
+    @Override public byte mvccTxState() {
         return row.mvccTxState();
     }
 

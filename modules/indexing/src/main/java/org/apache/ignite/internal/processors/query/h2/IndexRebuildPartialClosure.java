@@ -43,7 +43,7 @@ public class IndexRebuildPartialClosure implements SchemaIndexCacheVisitorClosur
         for (Map.Entry<GridH2Table, Collection<GridH2IndexBase>> tblIdxEntry : tblIdxs.entrySet()) {
             GridH2Table tbl = tblIdxEntry.getKey();
 
-            GridH2Row row0 = tbl.rowDescriptor().createRow(row);
+            GridH2Row row0 = tbl.rowDescriptor().createRowForUpdate(row);
 
             for (GridH2IndexBase idx : tblIdxEntry.getValue())
                 idx.putx(row0);

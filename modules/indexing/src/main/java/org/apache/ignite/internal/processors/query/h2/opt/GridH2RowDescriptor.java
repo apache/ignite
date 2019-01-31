@@ -167,18 +167,45 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Creates new row.
+     * Create new row.
      *
      * @param dataRow Data row.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+        return createRow0(dataRow, false);
+    }
+
+    /**
+     * Create new row for update operation.
+     *
+     * @param dataRow Data row.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridH2Row createRowForUpdate(CacheDataRow dataRow) throws IgniteCheckedException {
+        return createRow0(dataRow, true);
+    }
+
+    /**
+     * Creates new row.
+     *
+     * @param dataRow Data row.
+     * @param update Whether the row is created for update operation.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    private GridH2Row createRow0(CacheDataRow dataRow, boolean update) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
-            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
+            if (dataRow.value() == null) {
+                Value key = H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType);
+
+                // Only can happen for remove operation, can create simple search row.
+                row = new GridH2KeyRowOnheap(dataRow, key);
             }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow);
