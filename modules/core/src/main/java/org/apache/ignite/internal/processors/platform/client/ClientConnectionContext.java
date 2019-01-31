@@ -129,7 +129,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(user, pwd);
 
-        handler = new ClientRequestHandler(this, authCtx);
+        handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(kernalContext(), ver);
     }
