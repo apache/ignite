@@ -42,6 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -562,10 +563,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
-        Thread.sleep(2000);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-        assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
-        assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+
+                    return ping1 && ping2;
+                } catch (IgniteClientDisconnectedCheckedException e) {
+                    return false;
+                }
+            }
+        }, 5_000);
     }
 
     /**
