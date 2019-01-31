@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1798,7 +1799,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public void invokeAll(List<? extends L> sortedRows, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
+    public void invokeAll(Iterator<? extends L> sortedRows, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
         doInvoke(new InvokeAll(sortedRows, z, c));
     }
 
@@ -3707,32 +3708,29 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     class InvokeAll extends Invoke {
         /** */
-        int rowIdx;
-
-        /** */
-        List<? extends L> sortedRows;
+        Iterator<? extends L> sortedRows;
 
         /**
          * @param sortedRows Sorted rows.
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        InvokeAll(List<? extends L> sortedRows, Object x, InvokeClosure<T> clo) {
-            super(sortedRows.get(0), x, clo);
+        InvokeAll(Iterator<? extends L> sortedRows, Object x, InvokeClosure<T> clo) {
+            super(sortedRows.next(), x, clo);
 
             this.sortedRows = sortedRows;
         }
 
         /** {@inheritDoc} */
         @Override boolean nextRow(Result res) {
-            if (res.retry || !isFinished() || rowIdx + 1 >= sortedRows.size())
+            if (res.retry || !isFinished() || !sortedRows.hasNext())
                 return false;
 
             // The operation can not be finished while we are still getting high.
             assert !gettingHigh;
 
             // Reinitialize state to continue working with the next row.
-            row = sortedRows.get(++rowIdx);
+            row = sortedRows.next();
             lockRetriesCnt = getLockRetries();
 
             closureInvoked = FALSE;
