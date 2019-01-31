@@ -242,7 +242,7 @@ public class GridH2Table extends TableBase {
      * for external affinity calculation (e.g. on thin clients).
      * <p>
      * Note that it is different from {@link #isColumnForPartitionPruning(Column)} method in that not every column
-     * which qualifies for partition pruning can be used by thin clients or join partinion prunining logic.
+     * which qualifies for partition pruning can be used by thin clients or join partition pruning logic.
      * <p>
      * Consider the following schema:
      * <pre>
@@ -1168,9 +1168,9 @@ public class GridH2Table extends TableBase {
             StackTraceElement elem = elems[2];
 
             if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
-                Column[] columns0 = new Column[safeColumns0.length - 3];
+                Column[] columns0 = new Column[safeColumns0.length - DEFAULT_COLUMNS_COUNT];
 
-                System.arraycopy(safeColumns0, 3, columns0, 0, columns0.length);
+                System.arraycopy(safeColumns0, DEFAULT_COLUMNS_COUNT, columns0, 0, columns0.length);
 
                 return columns0;
             }
