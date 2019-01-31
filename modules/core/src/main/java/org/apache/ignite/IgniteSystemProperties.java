@@ -644,6 +644,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
 
+    /**
+     * System property to specify consistent id of Ignite node.
+     * <p>
+     * Value of the system property will overwrite matched property
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setConsistentId(Serializable)} in configuration.
+     */
+    public static final String IGNITE_OVERRIDE_CONSISTENT_ID = "IGNITE_OVERRIDE_CONSISTENT_ID";
+
     /** */
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 

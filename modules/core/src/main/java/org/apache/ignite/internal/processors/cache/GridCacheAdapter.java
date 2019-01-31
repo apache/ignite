@@ -3486,15 +3486,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean isInterrupted = false;
 
         try {
-            while (true) {
+            IgniteCheckedException e = null;
+
+            while (!ctx.shared().kernalContext().isStopping()) {
                 try {
                     return fut.get();
                 }
-                catch (IgniteInterruptedCheckedException ignored) {
+                catch (IgniteInterruptedCheckedException ex) {
                     // Interrupted status of current thread was cleared, retry to get lock.
                     isInterrupted = true;
+
+                    e = ex;
                 }
             }
+
+            try {
+                fut.cancel();
+            }
+            catch (IgniteCheckedException ex) {
+                if (e != null)
+                    ex.addSuppressed(e);
+
+                e = ex;
+            }
+
+            throw new NodeStoppingException(e);
         }
         finally {
             if (isInterrupted)

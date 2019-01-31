@@ -21,12 +21,9 @@ import java.util.List;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteTransactionSQLColumnConstraintTest extends IgniteSQLColumnConstraintsTest {
     /** {@inheritDoc} */
     @Override protected void checkSQLThrows(String sql, String sqlStateCode, Object... args) {

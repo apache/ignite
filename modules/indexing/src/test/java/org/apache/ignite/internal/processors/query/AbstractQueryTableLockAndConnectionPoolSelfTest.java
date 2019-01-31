@@ -44,7 +44,6 @@ import org.junit.runners.JUnit4;
 /**
  * Tests for query execution check cases for correct table lock/unlock.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 500;

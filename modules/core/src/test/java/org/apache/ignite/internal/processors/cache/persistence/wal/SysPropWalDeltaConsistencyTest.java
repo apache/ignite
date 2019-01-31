@@ -22,13 +22,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test enabled by system property.
  */
-@RunWith(JUnit4.class)
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

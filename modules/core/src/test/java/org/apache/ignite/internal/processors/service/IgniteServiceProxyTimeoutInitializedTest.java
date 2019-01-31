@@ -43,13 +43,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests service proxy timeouts.
  */
-@RunWith(JUnit4.class)
 public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstractTest {
     /** */
     private static Service srvc;
