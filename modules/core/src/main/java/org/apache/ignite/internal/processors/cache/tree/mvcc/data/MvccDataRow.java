@@ -151,6 +151,8 @@ public class MvccDataRow extends DataRow {
         this.mvccCntr = mvccVer.counter();
         this.mvccOpCntr = mvccVer.operationCounter();
 
+        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         if (newMvccVer == null) {
             newMvccCrd = MVCC_CRD_COUNTER_NA;
             newMvccCntr = MVCC_COUNTER_NA;
@@ -160,10 +162,9 @@ public class MvccDataRow extends DataRow {
             newMvccCrd = newMvccVer.coordinatorVersion();
             newMvccCntr = newMvccVer.counter();
             newMvccOpCntr = newMvccVer.operationCounter();
-        }
 
-        assert (mvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
-        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+            assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -207,6 +208,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
+        assert (mvccCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         return mvccOpCntr;
     }
 
@@ -227,6 +230,8 @@ public class MvccDataRow extends DataRow {
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
+        assert (newMvccOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
+
         return newMvccOpCntr;
     }
 
