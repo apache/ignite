@@ -37,7 +37,7 @@ public class TransactionConfiguration implements Serializable {
     private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
 
     /** */
-    private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.8.0");
+    private static final IgniteProductVersion DEADLOCK_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.7.3");
 
     /** */
     private static final long serialVersionUID = 0L;
