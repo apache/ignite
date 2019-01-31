@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-#include <cstring>
 #include <cstddef>
-
-#include <sstream>
 
 #include <ignite/common/fixed_size_array.h>
 #include <ignite/network/network.h>
@@ -33,13 +30,12 @@ namespace ignite
     {
         namespace thin
         {
-            /** Version 1.2.0. */
             const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
-
-            /** Current version. */
-            const ProtocolVersion DataChannel::VERSION_CURRENT(VERSION_1_2_0);
+            const ProtocolVersion DataChannel::VERSION_1_3_0(1, 3, 0);
+            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_3_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
+                DataChannel::VERSION_1_3_0,
                 DataChannel::VERSION_1_2_0,
             };
 
@@ -52,7 +48,7 @@ namespace ignite
                 address(),
                 config(cfg),
                 typeMgr(typeMgr),
-                currentVersion(VERSION_CURRENT),
+                currentVersion(VERSION_DEFAULT),
                 reqIdCounter(0),
                 socket()
             {
@@ -330,7 +326,7 @@ namespace ignite
             bool DataChannel::NegotiateProtocolVersion(int32_t timeout)
             {
                 ProtocolVersion resVer;
-                ProtocolVersion propVer = VERSION_CURRENT;
+                ProtocolVersion propVer = VERSION_DEFAULT;
 
                 bool success = MakeRequestHandshake(propVer, resVer, timeout);
 
