@@ -56,7 +56,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      *
      * @throws Throwable if any exception is thrown
      */
-    protected void runTestCase(Statement testRoutine) throws Throwable {
+    protected final void runTestCase(Statement testRoutine) throws Throwable {
         Throwable e = null;
         setUp();
         try {

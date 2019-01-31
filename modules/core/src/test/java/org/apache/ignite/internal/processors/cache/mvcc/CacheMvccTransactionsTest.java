@@ -2163,6 +2163,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10582")
     @Test
     public void testNodesRestartNoHang() throws Exception {
         final int srvs = 4;

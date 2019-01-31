@@ -161,12 +161,6 @@ import org.junit.runners.Suite;
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
-    // Tests against configuration variations framework.
-    ParametersTest.class,
-    VariationsIteratorTest.class,
-    ConfigVariationsTestSuiteBuilderTest.class,
-    NotStringSystemPropertyTest.class,
-
     MarshallerContextLockingSelfTest.class,
     MarshallerContextSelfTest.class,
 
@@ -217,7 +211,13 @@ import org.junit.runners.Suite;
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,
 
-    ConsistentIdImplicitlyExplicitlyTest.class
+    ConsistentIdImplicitlyExplicitlyTest.class,
+
+        // Tests against configuration variations framework.
+        ParametersTest.class,
+        VariationsIteratorTest.class,
+        NotStringSystemPropertyTest.class,
+        ConfigVariationsTestSuiteBuilderTest.class,
 })
 public class IgniteBasicTestSuite {
 }

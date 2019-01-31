@@ -26,13 +26,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checks consistent id in various cases.
  */
-@RunWith(JUnit4.class)
 public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest {
     /** Ipaddress with port pattern. */
     private static final String IPADDRESS_WITH_PORT_PATTERN = "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +

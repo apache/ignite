@@ -178,19 +178,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         };
 
-    /** {@inheritDoc} */
-    @Before
-    @Override public void setUp() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
-
-        super.setUp();
-    }
-
     /** Dflt grid. */
-    protected transient Ignite dfltIgnite;
+    protected static transient Ignite dfltIgnite;
 
     /** */
-    private Map<String, CacheConfiguration[]> cacheCfgMap;
+    private static Map<String, CacheConfiguration[]> cacheCfgMap;
+
+    /** */
+    @Before
+    public void beforeGridCacheAbstractFullApiSelfTest()  {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -209,6 +207,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);

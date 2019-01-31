@@ -33,7 +33,6 @@ web-console-sidebar-navigation {
     .web-console-sidebar-navigation__link-icon {
         width: 20px;
         height: auto;
-        color: var(--inactive-link-color);
     }
 
     .web-console-sidebar-navigation__link-narrow {
@@ -63,9 +62,6 @@ web-console-sidebar-navigation {
                 bottom: 0;
                 position: absolute;
                 background: var(--active-link-color);
-            }
-            .web-console-sidebar-navigation__link-icon {
-                color: inherit;
             }
         }
         .web-console-sidebar-navigation__link-content {
