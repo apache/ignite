@@ -160,6 +160,9 @@ public class IgniteSocketChannelImpl implements IgniteSocketChannel {
             "key=" + key +
             ", channel=" + channel +
             ", config=" + config +
+            ", policy=" + plc +
+            ", topic=" + topic +
+            ", grpId=" + grpId +
             '}';
     }
 }

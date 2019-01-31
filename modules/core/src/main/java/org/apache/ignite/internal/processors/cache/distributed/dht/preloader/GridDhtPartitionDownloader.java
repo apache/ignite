@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -123,12 +122,13 @@ public class GridDhtPartitionDownloader {
                 ", channel=" + channel + ", grpDir=" + grpDir + ']');
 
         assert channel != null;
+        assert channel.channel().isBlocking();
 
         if (channel.groupId() != grp.groupId())
             throw new IgniteException("Incorrect processing [expected=" + grp.groupId() +
                 ", actual=" + channel.groupId() + ']');
 
-        FileIODownloader downloader = new FileIODownloader((ReadableByteChannel)channel.channel(), ioFactory, grpDir, log);
+        FileIODownloader downloader = new FileIODownloader(channel.channel(), ioFactory, grpDir, log);
 
         try {
             File partFile = downloader.download();

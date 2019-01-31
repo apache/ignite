@@ -52,7 +52,7 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
     public void afterTestCleanup() throws Exception {
         stopAllGrids();
 
-        cleanPersistenceDir();
+//        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

@@ -80,6 +80,7 @@ public interface GridNioServerListener<T> extends EventListener {
 
     /**
      * Called when new {@link IgniteSocketChannel} is created by NIO server.
+     * Todo: add nodeId param?
      */
     public default void onChannelCreated(IgniteSocketChannel ch) {
         // No-op.

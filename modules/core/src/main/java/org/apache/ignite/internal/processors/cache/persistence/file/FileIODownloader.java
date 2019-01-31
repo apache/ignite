@@ -21,8 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,11 +35,8 @@ public class FileIODownloader {
     /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
-    /** Default connection timeout (value is <tt>10000</tt> ms). */
-    private static final long DFLT_CHANNEL_LISTEN_TIMEOUT = 15_000L;
-
     /** */
-    private final ReadableByteChannel source;
+    private final SocketChannel source;
 
     /** */
     private final FileIOFactory factory;
@@ -58,7 +54,7 @@ public class FileIODownloader {
     private final ByteBuffer buff;
 
     /** */
-    public FileIODownloader(ReadableByteChannel source, FileIOFactory factory, File outDir, IgniteLogger log) {
+    public FileIODownloader(SocketChannel source, FileIOFactory factory, File outDir, IgniteLogger log) {
         this.source = source;
         this.factory = factory;
         this.outDir = outDir;
@@ -74,18 +70,14 @@ public class FileIODownloader {
             //Read input file properties
             buff.clear();
 
-            long lastEdleTimestamp = U.currentTimeMillis();
-
             long readResult;
 
-            while (((readResult = source.read(buff)) == -1) &&
-                !Thread.currentThread().isInterrupted() &&
-                (U.currentTimeMillis() - lastEdleTimestamp) < DFLT_CHANNEL_LISTEN_TIMEOUT) {
-                // Waiting for incoming file metadata.
-                U.sleep(200);
-            }
+            if (log.isInfoEnabled())
+                log.info("Waiting file metadata [outDir=" + outDir.getPath() + ']');
 
-            if (readResult < 0)
+            readResult = source.read(buff);
+
+            if (readResult <= 0)
                 throw new IgniteCheckedException("Unable to recieve file metadata from the remote node.");
 
             buff.flip();
@@ -94,7 +86,7 @@ public class FileIODownloader {
             long size = buff.getLong();
 
             if (log.isInfoEnabled())
-                log.info("Start downloading partition file [outDir=" + outDir.getPath() + ", partId=" + partId +
+                log.info("Start downloading file [outDir=" + outDir.getPath() + ", partId=" + partId +
                 ", size=" + size + ']');
 
             File partFile = new File(getPartitionFile(outDir, partId).getAbsolutePath() + ".tmp");
@@ -108,9 +100,6 @@ public class FileIODownloader {
             }
 
             return partFile;
-        }
-        catch (ClosedByInterruptException e) {
-            throw new IgniteCheckedException("Closing selector due to thread interruption: " + e.getMessage());
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to download specified file.", e);

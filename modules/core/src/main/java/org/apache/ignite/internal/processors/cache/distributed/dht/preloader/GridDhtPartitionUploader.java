@@ -167,6 +167,8 @@ public class GridDhtPartitionUploader {
             // Need to start new partition upload routine.
             ch = cctx.io().channelToCustomTopic(nodeId, demandMsg.topic(), demandMsg, PUBLIC_POOL);
 
+            assert ch.channel().isBlocking();
+
             partUploader = new PartitionUploadFuture(ch, ctxId, upCtx, log);
 
             // Loop to read partition files.

@@ -756,9 +756,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ses.closeSocketOnSessionClose(false);
 
                         ses.close().listen(c2 -> {
-                            ch.setReady();
+                            try {
+                                ch.channel().configureBlocking(true);
 
-                            onChannelCreated(ch);
+                                ch.setReady();
+
+                                onChannelCreated(ch);
+                            }
+                            catch (IOException e) {
+                                U.error(log, "Unable to configure blocking mode.", e);
+                            }
                         });
                     });
                 }
@@ -874,13 +881,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             c.run();
                     }
                     else if (msg instanceof ChannelCreateResponseMessage) {
-                        IgniteSocketChannel nioCh = nioSrvr.getNioSocketChannel(connKey);
+                        IgniteSocketChannel ch = nioSrvr.getNioSocketChannel(connKey);
 
-                        assert nioCh != null : "Channel doesnt' exist for key: " + connKey;
+                        assert ch != null : "Channel doesnt' exist for key: " + connKey;
 
                         ses.closeSocketOnSessionClose(false);
 
-                        ses.close().listen(f -> nioCh.setReady());
+                        ses.close().listen(f -> {
+                            try {
+                                ch.channel().configureBlocking(true);
+
+                                ch.setReady();
+                            }
+                            catch (IOException e) {
+                                U.error(log, "Unable to configure blocking mode.", e);
+                            }
+                        });
 
                         if (c != null)
                             c.run();

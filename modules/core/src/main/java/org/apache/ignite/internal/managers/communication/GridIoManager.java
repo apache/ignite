@@ -941,19 +941,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ch.topic() == null)
             return;
 
-        if (log.isInfoEnabled())
-            log.info("The new channel created. Notify listeners by topic: " + ch.topic());
-
         try {
             final ConcurrentLinkedQueue<GridIoChannelListener> lsnrQueue = channelLsnrMap.get(ch.topic());
+
+            if (log.isInfoEnabled())
+                log.info("Notify listeners on channel created [channel=" + ch +
+                    ", queue=" + (lsnrQueue == null ? 0 : lsnrQueue.size()) + ']');
 
             if (lsnrQueue != null) {
                 pools.poolForPolicy(ch.policy()).execute(new Runnable() {
                     @Override public void run() {
-                        GridIoChannelListener lsnr;
-
-                        while ((lsnr = lsnrQueue.poll()) != null && lsnr != null)
-                            lsnr.onChannelCreated(ch);
+                        for (GridIoChannelListener lsnr: lsnrQueue) {
+                            if (lsnr != null)
+                                lsnr.onChannelCreated(ch);
+                        }
                     }
                 });
             }
@@ -1004,7 +1005,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     }
                 }
             }
-
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process message (will ignore): " + msg, e);

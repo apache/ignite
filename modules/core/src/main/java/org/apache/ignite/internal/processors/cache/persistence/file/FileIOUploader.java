@@ -74,12 +74,15 @@ public class FileIOUploader {
 
             long size = fileIO.size();
 
-            //Send input file length to server
+            //Send input file length to server.
             buff.clear();
 
             buff.putInt(partId);
             buff.putLong(size);
             buff.flip();
+
+            if (log.isInfoEnabled())
+                log.info("Sending file metadata [partFile=" + partFile + ", partId=" + partId + ", size=" + size + ']');
 
             target.write(buff);
 
@@ -87,9 +90,9 @@ public class FileIOUploader {
             // Todo limit thransfer speed
             while (written < size)
                 written += fileIO.transferTo(written, CHUNK_SIZE, target);
-        }
-        catch (NoSuchFileException e) {
-            log.error("Unknown partiton file: " + e.getMessage(), e);
+
+            if (log.isInfoEnabled())
+                log.info("File transferred successfully to the corresponding channel.");
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
