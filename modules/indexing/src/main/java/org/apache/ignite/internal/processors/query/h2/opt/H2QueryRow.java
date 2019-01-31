@@ -27,9 +27,9 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
 /**
- * Table row implementation based on {@link GridQueryTypeDescriptor}.
+ * Row participating in SELECT queries.
  */
-public class H2SearchRow extends H2Row {
+public class H2QueryRow extends H2Row {
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -57,7 +57,7 @@ public class H2SearchRow extends H2Row {
      * @param link Link.
      * @param cacheId Cache ID.
      */
-    public H2SearchRow(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId,
+    public H2QueryRow(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId,
         long expireTime) {
         this.desc = desc;
         this.key = key;
@@ -181,6 +181,6 @@ public class H2SearchRow extends H2Row {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(H2SearchRow.class, this);
+        return S.toString(H2QueryRow.class, this);
     }
 }

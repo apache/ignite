@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2QueryRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -236,7 +236,7 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
             return rowStore.getRowForUpdate(link);
 
         if (rowCache != null) {
-            H2SearchRow row = rowCache.get(link);
+            H2QueryRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link);
@@ -263,7 +263,7 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
             return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
         if (rowCache != null) {
-            H2SearchRow row = rowCache.get(link);
+            H2QueryRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);

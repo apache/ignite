@@ -167,8 +167,8 @@ public class GridH2RowDescriptor {
      * @param dataRow Data row.
      * @return Row.
      */
-    public H2SearchRow createRow(CacheDataRow dataRow) {
-        return new H2SearchRow(
+    public H2QueryRow createRow(CacheDataRow dataRow) {
+        return new H2QueryRow(
             this,
             dataRow.key(),
             dataRow.value(),

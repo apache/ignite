@@ -25,7 +25,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2QueryRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -37,7 +37,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.DFLT_LOAD_FACTOR;
  */
 public class H2RowCache implements GridQueryRowCacheCleaner {
     /** Cached rows. */
-    private final ConcurrentLinkedHashMap<Long, H2SearchRow> rows;
+    private final ConcurrentLinkedHashMap<Long, H2QueryRow> rows;
 
     /** Cache group ID. */
     private final CacheGroupContext grpCtx;
@@ -66,8 +66,8 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      * @return Cached on-heap row.
      * @throws IgniteCheckedException On error.
      */
-    public H2SearchRow get(long link) throws IgniteCheckedException {
-        H2SearchRow row = rows.get(link);
+    public H2QueryRow get(long link) throws IgniteCheckedException {
+        H2QueryRow row = rows.get(link);
 
         if (row != null)
             touch(link);
@@ -80,7 +80,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      *
      * @param row Row.
      */
-    public void put(H2SearchRow row) {
+    public void put(H2QueryRow row) {
         rows.put(row.link(), row);
     }
 
@@ -125,10 +125,10 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     private void clearForCache(GridCacheContextInfo cacheInfo) {
         int cacheId = cacheInfo.cacheId();
 
-        Iterator<Map.Entry<Long, H2SearchRow>> iter = rows.entrySet().iterator();
+        Iterator<Map.Entry<Long, H2QueryRow>> iter = rows.entrySet().iterator();
 
         while (iter.hasNext()) {
-            H2SearchRow row = iter.next().getValue();
+            H2QueryRow row = iter.next().getValue();
 
             if (F.eq(cacheId, row.cacheId()))
                 iter.remove();

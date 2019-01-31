@@ -22,7 +22,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
-import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2QueryRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -54,7 +54,7 @@ public class H2RowFactory {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public H2SearchRow getRow(long link) throws IgniteCheckedException {
+    public H2QueryRow getRow(long link) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(
@@ -73,7 +73,7 @@ public class H2RowFactory {
      * @param mvccOpCntr Mvcc operation counter.
      * @return Row.
      */
-    public H2SearchRow getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) {
+    public H2QueryRow getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
         MvccDataRow row = new MvccDataRow(
