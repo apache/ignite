@@ -28,15 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     /** */
     public static final int GRIDS_CNT = 5;

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -30,7 +28,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstractFailoverSelfTest {
     /**
      * @throws Exception If failed.

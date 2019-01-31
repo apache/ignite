@@ -27,13 +27,10 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests DataStreamer reconnect behaviour when client nodes arrives at the same or different topVer than it left.
  */
-@RunWith(JUnit4.class)
 public class DataStreamerClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
     /** */
     private boolean clientMode;
