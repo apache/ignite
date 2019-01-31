@@ -52,9 +52,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -64,7 +63,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
-@RunWith(JUnit4.class)
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Grids count */
     private static int GRIDS_CNT = 5;
@@ -174,10 +172,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
     @Test
     public void testLoadCacheFromStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4210");
-
         loadCache(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
                 grid.cache(DEFAULT_CACHE_NAME).loadCache(null);

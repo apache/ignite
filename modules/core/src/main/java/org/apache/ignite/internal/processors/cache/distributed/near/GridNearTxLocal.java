@@ -103,7 +103,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -749,7 +748,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
-            final Map<KeyCacheObject, Message> enlisted = new LinkedHashMap<>(keys.size());
+            final Map<KeyCacheObject, Object> enlisted = new LinkedHashMap<>(keys.size());
 
             for (Object key : keys) {
                 if (isRollbackOnly())
@@ -775,12 +774,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (transform)
                     enlisted.put(cacheKey, new GridInvokeValue(entryProcessor, invokeArgs));
                 else
-                    enlisted.put(cacheKey, cacheCtx.toCacheObject(val));
+                    enlisted.put(cacheKey, val);
             }
 
-            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, Message>>() {
+            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, Object>>() {
 
-                private Iterator<Map.Entry<KeyCacheObject, Message>> it = enlisted.entrySet().iterator();
+                private Iterator<Map.Entry<KeyCacheObject, Object>> it = enlisted.entrySet().iterator();
 
                 @Override public EnlistOperation operation() {
                     return transform ? EnlistOperation.TRANSFORM : EnlistOperation.UPSERT;
@@ -790,8 +789,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     return it.hasNext();
                 }
 
-                @Override public IgniteBiTuple<KeyCacheObject, Message> nextX() throws IgniteCheckedException {
-                    Map.Entry<KeyCacheObject, Message> next = it.next();
+                @Override public IgniteBiTuple<KeyCacheObject, Object> nextX() throws IgniteCheckedException {
+                    Map.Entry<KeyCacheObject, Object> next = it.next();
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
@@ -2054,7 +2053,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
              but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, filter, retval);
+                timeout, it, 0, sequential, filter, retval, keepBinary);
 
             fut.init();
 

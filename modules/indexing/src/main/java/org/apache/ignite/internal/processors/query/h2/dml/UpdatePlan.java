@@ -259,7 +259,7 @@ public final class UpdatePlan {
         // column order preserves their precedence for correct update of nested properties.
         Column[] tblCols = tbl.getColumns();
 
-        // First 3 columns are _key, _val and _ver. Skip 'em.
+        // First 2 columns are _key and _val Skip 'em.
         for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;

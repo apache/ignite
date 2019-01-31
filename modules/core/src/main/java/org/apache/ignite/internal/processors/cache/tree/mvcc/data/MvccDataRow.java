@@ -92,17 +92,20 @@ public class MvccDataRow extends DataRow {
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Mvcc operation counter.
+     * @param skipVer Skip version flag.
      */
-    public MvccDataRow(CacheGroupContext grp,
+    public MvccDataRow(
+        CacheGroupContext grp,
         int hash,
         long link,
         int part,
         RowData rowData,
         long crdVer,
         long mvccCntr,
-        int mvccOpCntr
+        int mvccOpCntr,
+        boolean skipVer
     ) {
-        super(grp, hash, link, part, rowData);
+        super(grp, hash, link, part, rowData, skipVer);
 
         assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr, mvccOpCntr);
 

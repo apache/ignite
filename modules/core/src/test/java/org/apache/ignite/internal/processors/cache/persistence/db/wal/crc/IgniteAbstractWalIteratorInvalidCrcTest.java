@@ -50,8 +50,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -60,7 +58,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
     /** Size of inserting dummy value. */
     private static final int VALUE_SIZE = 4 * 1024;
