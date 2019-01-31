@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
@@ -390,19 +392,26 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     @Test
     public void testTimeOutTxLock() throws Exception {
         final int longOpDumpTimeout = 1000;
+
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
-        try {
+        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
 
+        IgniteLogger oldLog = GridTestUtils.getFieldValue(GridDhtLockFuture.class, "log");
+
+        GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", testLog);
+
+        try {
             Ignite grid1 = startGrid(0);
 
-            LogListener lsnr = LogListener.matches("Timed out waiting for lock response:")
-                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, nodeId=.*"))
+            LogListener lsnr = LogListener.matches("Timed out waiting for lock response, pending locks")
+                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, " +
+                            "nearNodeId=" + grid1.cluster().localNode().id() + ".*"))
                     .build();
 
-            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
-
             testLog.registerListener(lsnr);
+
+            this.testLog = testLog;
 
             Ignite grid2 = startGrid(1);
 
@@ -410,10 +419,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             emulateTxLockTimeout(grid1, grid2);
 
-            assertTrue(waitForCondition(lsnr::check, 5000));
+            assertTrue(lsnr.check());
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+
+            GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", oldLog);
         }
     }
 
@@ -697,7 +708,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     try (Transaction tx = node1.transactions().withLabel("lock")
-                            .txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
+                            .txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 2)) {
                         node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
 
                         l1.countDown();
@@ -724,7 +735,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (Exception e) {
-                    log.error("Failed on node2", e);
+                    log.error("Failed on node2 " + node2.cluster().localNode().id(), e);
 
                     l2.countDown();
                 }
