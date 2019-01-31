@@ -36,16 +36,16 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     // Continuous queries failover tests.
-    //CacheContinuousQueryFailoverAtomicSelfTest.class,
-    //CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
-    //CacheContinuousQueryFailoverTxSelfTest.class,
-    //CacheContinuousQueryFailoverTxReplicatedSelfTest.class,
-    //CacheContinuousQueryFailoverMvccTxSelfTest.class,
-    //CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class,
+    CacheContinuousQueryFailoverAtomicSelfTest.class,
+    CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class,
+    CacheContinuousQueryFailoverTxSelfTest.class,
+    CacheContinuousQueryFailoverTxReplicatedSelfTest.class,
+    CacheContinuousQueryFailoverMvccTxSelfTest.class,
+    CacheContinuousQueryFailoverMvccTxReplicatedSelfTest.class,
 
-    //CacheContinuousQueryAsyncFailoverAtomicSelfTest.class,
-    //CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class,
-    //CacheContinuousQueryAsyncFailoverTxSelfTest.class,
+    CacheContinuousQueryAsyncFailoverAtomicSelfTest.class,
+    CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class,
+    CacheContinuousQueryAsyncFailoverTxSelfTest.class,
     CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class
 })
 public class IgniteCacheQuerySelfTestSuite4 {
