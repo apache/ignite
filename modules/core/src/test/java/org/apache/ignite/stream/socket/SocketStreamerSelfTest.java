@@ -49,15 +49,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests {@link SocketStreamer}.
  */
-@RunWith(JUnit4.class)
 public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

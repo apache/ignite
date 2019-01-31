@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.List;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 
 /**
  * Additional information about distributed update plan.

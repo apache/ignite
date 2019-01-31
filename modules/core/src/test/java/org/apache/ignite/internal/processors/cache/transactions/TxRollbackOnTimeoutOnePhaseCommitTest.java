@@ -36,8 +36,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,7 +47,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests rollback on timeout scenarios for one-phase commit protocol.
  */
-@RunWith(JUnit4.class)
 public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 2;

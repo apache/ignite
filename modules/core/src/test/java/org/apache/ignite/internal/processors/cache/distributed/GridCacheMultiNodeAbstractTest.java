@@ -34,8 +34,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -47,7 +45,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  * Multi-node cache test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
     private static Ignite ignite1;

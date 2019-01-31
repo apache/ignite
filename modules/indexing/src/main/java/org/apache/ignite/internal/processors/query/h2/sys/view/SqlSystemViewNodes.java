@@ -70,7 +70,8 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
         for (ClusterNode node : nodes) {
             if (node != null)
                 rows.add(
-                    createRow(ses, rows.size(),
+                    createRow(
+                        ses,
                         node.id(),
                         node.consistentId(),
                         node.version(),

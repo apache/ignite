@@ -22,13 +22,10 @@ import java.util.Map;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link GridBoundedConcurrentLinkedHashMap}.
  */
-@RunWith(JUnit4.class)
 public class GridBoundedConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest {
     /** Bound. */
     private static final int MAX = 3;

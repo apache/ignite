@@ -32,14 +32,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for join partition pruning.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
