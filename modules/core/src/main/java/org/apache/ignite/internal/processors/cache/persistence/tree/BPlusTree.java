@@ -291,12 +291,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 idx = io.isLeaf() ? cnt - 1 : -cnt - 1; // (-cnt - 1) mimics not_found result of findInsertionPoint
                 // in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
             else {
-                // If the page is empty and we are getting high, need to retry higher.
-                if (cnt == 0 && g.gettingHigh)
-                    return RETRY;
-
                 // If we are getting high, then try to compare with the last row before doing binary search.
-                int cmp = g.gettingHigh ? compare(lvl, io, pageAddr, cnt - 1, g.row) : 1;
+                int cmp = g.gettingHigh && cnt > 0 ? compare(lvl, io, pageAddr, cnt - 1, g.row) : 1;
 
                 if (cmp > 0)
                     idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, g.row, g.shift);
