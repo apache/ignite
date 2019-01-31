@@ -23,7 +23,7 @@ import org.h2.value.Value;
 /**
  * Row of two values.
  */
-public class PlainRowPair extends GridH2SearchRowAdapter  {
+public class PlainRowPair extends SearchRowAdapter {
     /** */
     private Value v1;
 
@@ -58,11 +58,6 @@ public class PlainRowPair extends GridH2SearchRowAdapter  {
 
             v2 = v;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
-        return true;
     }
 
     /** {@inheritDoc} */

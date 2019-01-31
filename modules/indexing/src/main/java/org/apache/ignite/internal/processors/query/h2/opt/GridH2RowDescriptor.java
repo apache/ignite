@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
-import org.h2.result.SearchRow;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -168,8 +167,8 @@ public class GridH2RowDescriptor {
      * @param dataRow Data row.
      * @return Row.
      */
-    public GridH2FullRowReadOnly createRow(CacheDataRow dataRow) {
-        return new GridH2FullRowReadOnly(
+    public SearchRow createRow(CacheDataRow dataRow) {
+        return new SearchRow(
             this,
             dataRow.key(),
             dataRow.value(),
@@ -376,7 +375,7 @@ public class GridH2RowDescriptor {
      * @param row Source row.
      * @return Result.
      */
-    public SearchRow prepareProxyIndexRow(SearchRow row) {
+    public org.h2.result.SearchRow prepareProxyIndexRow(org.h2.result.SearchRow row) {
         if (row == null)
             return null;
 

@@ -17,15 +17,45 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
 import org.h2.value.Value;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+
 /**
- * Adapter for plain row.
+ * Dummy H2 search row adadpter.
  */
-public abstract class PlainRowAdapter implements Row {
+public abstract class RowAdapter implements GridH2SearchRow {
+    /** {@inheritDoc} */
+    @Override public void setKeyAndVersion(SearchRow old) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getVersion() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKey(long key) {
+        // No-op, may be set in H2 INFORMATION_SCHEMA.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKey() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override public Row getCopy() {
         throw new UnsupportedOperationException();
@@ -77,27 +107,27 @@ public abstract class PlainRowAdapter implements Row {
     }
 
     /** {@inheritDoc} */
-    @Override public void setKeyAndVersion(SearchRow old) {
-        throw new UnsupportedOperationException();
+    @Override public long mvccCoordinatorVersion() {
+        return MVCC_CRD_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
-    @Override public int getVersion() {
-        throw new UnsupportedOperationException();
+    @Override public long mvccCounter() {
+        return MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
-    @Override public void setKey(long key) {
-        throw new UnsupportedOperationException();
+    @Override public int mvccOperationCounter() {
+        return MVCC_OP_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
-    @Override public long getKey() {
-        throw new UnsupportedOperationException();
+    @Override public byte mvccTxState() {
+        return TxState.NA;
     }
 
     /** {@inheritDoc} */
-    @Override public int getMemory() {
-        throw new UnsupportedOperationException();
+    @Override public long expireTime() {
+        return 0;
     }
 }

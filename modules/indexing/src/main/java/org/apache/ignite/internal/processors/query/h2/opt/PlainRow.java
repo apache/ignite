@@ -24,7 +24,7 @@ import org.h2.value.Value;
 /**
  * Simple array based row.
  */
-public class PlainRow extends GridH2SearchRowAdapter {
+public class PlainRow extends SearchRowAdapter {
     /** */
     @GridToStringInclude
     private Value[] vals;
@@ -56,11 +56,6 @@ public class PlainRow extends GridH2SearchRowAdapter {
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
         vals[idx] = v;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
-        return true;
     }
 
     /** {@inheritDoc} */

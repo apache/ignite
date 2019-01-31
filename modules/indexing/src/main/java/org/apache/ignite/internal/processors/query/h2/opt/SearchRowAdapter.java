@@ -17,44 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.value.Value;
-
 /**
- * Single value row.
+ * Adapter for plain row.
  */
-public class PlainRowSingle extends SearchRowAdapter {
-    /** */
-    private Value key;
-
-    /**
-     * @param key Key.
-     */
-    public PlainRowSingle(Value key) {
-        this.key = key;
-    }
-
+public abstract class SearchRowAdapter extends RowAdapter {
     /** {@inheritDoc} */
-    @Override public int getColumnCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Value getValue(int idx) {
-        assert idx == 0 : idx;
-
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setValue(int idx, Value v) {
-        assert idx == 0 : idx;
-
-        key = v;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PlainRowSingle.class, this);
+    @Override public boolean indexSearchRow() {
+        return true;
     }
 }

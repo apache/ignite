@@ -38,14 +38,13 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
+import org.apache.ignite.internal.processors.query.h2.opt.SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -237,7 +236,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
             return rowStore.getRowForUpdate(link);
 
         if (rowCache != null) {
-            GridH2FullRowReadOnly row = rowCache.get(link);
+            SearchRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link);
@@ -264,7 +263,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
             return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
         if (rowCache != null) {
-            GridH2FullRowReadOnly row = rowCache.get(link);
+            SearchRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
@@ -360,7 +359,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
 
             inlineSizeRecomendation(row);
 
-            SearchRow rowData = getRow(io, pageAddr, idx);
+            org.h2.result.SearchRow rowData = getRow(io, pageAddr, idx);
 
             for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
                 IndexColumn col = cols[i];
@@ -464,7 +463,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @param row Grid H2 row related to given inline indexes.
      */
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
-    private void inlineSizeRecomendation(SearchRow row) {
+    private void inlineSizeRecomendation(org.h2.result.SearchRow row) {
         //Do the check only for put operations.
         if(!(row instanceof GridH2KeyValueRowOnheap))
             return;

@@ -29,7 +29,7 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
+public class SearchRow extends SearchRowAdapter {
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -57,7 +57,7 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
      * @param link Link.
      * @param cacheId Cache ID.
      */
-    public GridH2FullRowReadOnly(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId,
+    public SearchRow(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId,
         long expireTime) {
         this.desc = desc;
         this.key = key;
@@ -170,17 +170,12 @@ public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public long expireTime() {
         return expireTime;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridH2FullRowReadOnly.class, this);
+        return S.toString(SearchRow.class, this);
     }
 }

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheDataRow {
+public abstract class GridH2Row extends RowAdapter implements CacheDataRow {
     /** Row. */
     protected final CacheDataRow row;
 
