@@ -3744,7 +3744,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 // Try to compare with the rightmost row before doing binary search.
                 int cmp = compare(lvl, io, pageAddr, cnt - 1, row);
 
-                if (cmp > 0) // Search row is less than the last row, need to do binary search.
+                if (cmp > 0) // Search row is less than the last row in the page, need to do binary search.
                     idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, row, shift);
                 else if (cmp == 0)
                     idx = cnt - 1; // Search row is equal to the last row in the page.
