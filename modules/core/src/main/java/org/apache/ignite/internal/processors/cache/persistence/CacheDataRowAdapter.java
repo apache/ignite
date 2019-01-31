@@ -75,6 +75,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected GridCacheVersion ver;
 
+    /** Whether version is ready. */
+    protected boolean verReady;
+
     /** */
     @GridToStringInclude
     protected int cacheId;
@@ -98,6 +101,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         this.val = val;
         this.ver = ver;
         this.expireTime = expireTime;
+
+        verReady = true;
     }
 
     /**
@@ -108,7 +113,21 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(CacheGroupContext grp, RowData rowData) throws IgniteCheckedException {
-        initFromLink(grp, grp.shared(), grp.dataRegion().pageMemory(), rowData);
+        initFromLink(grp, rowData, false);
+    }
+
+
+    /**
+     * Read row from data pages.
+     *
+     * @param grp Cache group.
+     * @param rowData Required row data.
+     * @param skipVer Whether version read should be skipped.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void initFromLink(CacheGroupContext grp, RowData rowData, boolean skipVer)
+        throws IgniteCheckedException {
+        initFromLink(grp, grp.shared(), grp.dataRegion().pageMemory(), rowData, skipVer);
     }
 
     /**
@@ -119,13 +138,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param sharedCtx Shared context.
      * @param pageMem Page memory.
      * @param rowData Row data.
+     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
-        RowData rowData
+        RowData rowData,
+        boolean skipVer
     ) throws IgniteCheckedException {
         // Group is null if try evict page, with persistence evictions should be disabled.
         assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
@@ -135,7 +156,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
-        doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null);
+        doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null, skipVer);
     }
 
     /**
@@ -146,6 +167,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param sharedCtx Cache shared context.
      * @param pageMem Page memory.
      * @param rowData Required row data.
+     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromDataPage(
@@ -155,7 +177,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
-        RowData rowData
+        RowData rowData,
+        boolean skipVer
     ) throws IgniteCheckedException {
         // Group is null if try evict page, with persistence evictions should be disabled.
         assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
@@ -166,14 +189,26 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
-            grpId, pageAddr, itemId, io, rowData, readCacheId);
+            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
         if (incomplete != null) {
             // Initialize the remaining part of the large row from other pages.
             long nextLink = incomplete.getNextLink();
 
-            if (nextLink != 0L)
-                doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, incomplete);
+            if (nextLink != 0L) {
+                doInitFromLink(
+                    nextLink,
+                    sharedCtx,
+                    coctx,
+                    pageMem,
+                    grpId,
+                    statHolder,
+                    readCacheId,
+                    rowData,
+                    incomplete,
+                    skipVer
+                );
+            }
         }
     }
 
@@ -186,6 +221,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param readCacheId {@code true} If need to read cache ID.
      * @param rowData Required row data.
      * @param incomplete Incomplete object.
+     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     private void doInitFromLink(
@@ -197,7 +233,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IoStatisticsHolder statHolder,
         boolean readCacheId,
         RowData rowData,
-        IncompleteObject<?> incomplete
+        IncompleteObject<?> incomplete,
+        boolean skipVer
     ) throws IgniteCheckedException {
         assert link != 0 : "link";
         assert key == null : "key";
@@ -220,7 +257,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     int itemId = itemId(nextLink);
 
                     incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                        grpId, pageAddr, itemId, io, rowData, readCacheId);
+                        grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
                     if (incomplete == null || (rowData == KEY_ONLY && key != null))
                         return;
@@ -235,7 +272,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 pageMem.releasePage(grpId, pageId, page);
             }
         }
-        while(nextLink != 0);
+        while (nextLink != 0);
 
         assert isReady() : "ready";
     }
@@ -250,6 +287,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param io Page IO.
      * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
+     * @param skipVer Whether version read should be skipped.
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
@@ -263,7 +301,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int itemId,
         DataPageIO io,
         RowData rowData,
-        boolean readCacheId
+        boolean readCacheId,
+        boolean skipVer
     ) throws IgniteCheckedException {
         DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
 
@@ -274,7 +313,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (incomplete == null) {
             if (nextLink == 0) {
                 // Fast path for a single page row.
-                readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
+                readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId, skipVer);
 
                 return null;
             }
@@ -296,7 +335,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         boolean keyOnly = rowData == RowData.KEY_ONLY;
 
-        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete);
+        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete, skipVer);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -323,6 +362,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param keyOnly {@code true} If need to read only key object.
      * @param readCacheId {@code true} If need to read cache ID.
      * @param incomplete Incomplete object.
+     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      * @return Read object.
      */
@@ -332,7 +372,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         boolean keyOnly,
         boolean readCacheId,
-        IncompleteObject<?> incomplete
+        IncompleteObject<?> incomplete,
+        boolean skipVer
     ) throws IgniteCheckedException {
         if (readCacheId && cacheId == 0) {
             incomplete = readIncompleteCacheId(buf, incomplete);
@@ -392,10 +433,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         // Read version.
-        if (ver == null) {
-            incomplete = readIncompleteVersion(buf, incomplete);
+        if (!verReady) {
+            incomplete = readIncompleteVersion(buf, incomplete, skipVer);
 
-            assert ver != null || incomplete != null;
+            assert skipVer || ver != null || incomplete != null;
         }
 
         return incomplete;
@@ -407,6 +448,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param addr Address.
      * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
+     * @param skipVer Whether version read should be skipped.
      * @throws IgniteCheckedException If failed.
      */
     protected void readFullRow(
@@ -414,8 +456,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx,
         long addr,
         RowData rowData,
-        boolean readCacheId)
-        throws IgniteCheckedException {
+        boolean readCacheId,
+        boolean skipVer
+    ) throws IgniteCheckedException {
         int off = 0;
 
         off += readHeader(addr, off);
@@ -461,9 +504,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-        ver = CacheVersionIO.read(addr + off, false);
+        int verLen;
 
-        off += CacheVersionIO.size(ver, false);
+        if (skipVer) {
+            ver = null;
+
+            verLen = CacheVersionIO.readSize(addr + off, false);
+        }
+        else {
+            ver = CacheVersionIO.read(addr + off, false);
+
+            verLen = CacheVersionIO.size(ver, false);
+        }
+
+        verReady = true;
+
+        off += verLen;
 
         expireTime = PageUtils.getLong(addr, off);
     }
@@ -604,12 +660,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /**
      * @param buf Buffer.
      * @param incomplete Incomplete object.
+     * @param skip Whether version should be skipped.
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
     protected IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
-        IncompleteObject<?> incomplete
+        IncompleteObject<?> incomplete,
+        boolean skip
     ) throws IgniteCheckedException {
         if (incomplete == null || incomplete.data() == null) {
             int remaining = buf.remaining();
@@ -621,10 +679,16 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             if (remaining >= size) {
                 // If the whole version is on a single page, just read it.
-                ver = CacheVersionIO.read(buf, false);
+                if (skip)
+                    buf.position(buf.position() + size);
+                else {
+                    ver = CacheVersionIO.read(buf, false);
 
-                assert !buf.hasRemaining(): buf.remaining();
-                assert ver != null;
+                    assert !buf.hasRemaining(): buf.remaining();
+                    assert ver != null;
+                }
+
+                verReady = true;
 
                 return null;
             }
@@ -636,13 +700,17 @@ public class CacheDataRowAdapter implements CacheDataRow {
         incomplete.readData(buf);
 
         if (incomplete.isReady()) {
-            final ByteBuffer verBuf = ByteBuffer.wrap(incomplete.data());
+            if (!skip) {
+                ByteBuffer verBuf = ByteBuffer.wrap(incomplete.data());
 
-            verBuf.order(buf.order());
+                verBuf.order(buf.order());
 
-            ver = CacheVersionIO.read(verBuf, false);
+                ver = CacheVersionIO.read(verBuf, false);
 
-            assert ver != null;
+                assert ver != null;
+            }
+
+            verReady = true;
         }
 
         assert !buf.hasRemaining();
@@ -654,7 +722,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return ver != null && val != null && key != null;
+        return verReady && val != null && key != null;
     }
 
     /** {@inheritDoc} */
@@ -687,7 +755,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        assert ver != null : "Version is not ready: " + this;
+        assert verReady : "Version is not ready: " + this;
 
         return ver;
     }

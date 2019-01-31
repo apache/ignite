@@ -41,8 +41,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,7 +49,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Class for {@link CacheJdbcPojoStore} tests.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstractTest {
     /** DB connection URL. */
     private static final String DFLT_CONN_URL = "jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1";

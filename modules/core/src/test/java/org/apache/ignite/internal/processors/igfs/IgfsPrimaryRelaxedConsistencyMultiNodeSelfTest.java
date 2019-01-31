@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for PRIMARY mode and relaxed consistency model.
  */
-@RunWith(JUnit4.class)
 public class IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest extends IgfsPrimaryRelaxedConsistencySelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
