@@ -15,38 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Node denoting all available partitions
+ * Composite node operator.
  */
-public class PartitionAllNode implements PartitionNode {
-    /** Singleton. */
-    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
+public enum PartitionCompositeNodeOperator {
+    /** Conjunction. */
+    AND,
+
+    /** Disjunction. */
+    OR;
+
+    /** Enumerated values. */
+    private static final PartitionCompositeNodeOperator[] VALS = values();
 
     /**
-     * Constructor.
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    private PartitionAllNode() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int joinGroup() {
-        return PartitionTableModel.GRP_NONE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PartitionAllNode.class, this);
+    @Nullable public static PartitionCompositeNodeOperator fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

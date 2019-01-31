@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -38,8 +39,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,7 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "person";
@@ -80,7 +78,8 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
             entity.addQueryField("id", Integer.class.getName(), null);
             entity.addQueryField("affKey", Integer.class.getName(), null);
             entity.addQueryField("name", String.class.getName(), null);
-            entity.setKeyFields(Collections.singleton("affKey"));
+
+            entity.setKeyFields(new HashSet<>(Arrays.asList("id", "affKey")));
 
             ccfg.setQueryEntities(F.asList(entity));
 

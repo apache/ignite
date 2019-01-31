@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.h2.message.DbException;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -44,12 +43,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     protected final GridH2RowDescriptor desc;
 
     /** */
-    private Value key;
-
-    /** */
-    private volatile Value val;
-
-    /** */
     private Value[] valCache;
 
     /**
@@ -57,25 +50,11 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      *
      * @param desc Row descriptor.
      * @param row Row.
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
-        CacheDataRow row,
-        int keyType,
-        int valType) throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row) {
         super(row);
 
         this.desc = desc;
-
-        CacheObjectValueContext coCtx = desc.indexing().objectContext();
-
-        if (row.key() != null)
-            this.key = H2Utils.wrap(coCtx, row.key(), keyType);
-
-        if (row.value() != null)
-            this.val = H2Utils.wrap(coCtx, row.value(), valType);
     }
 
     /** {@inheritDoc} */
@@ -92,16 +71,16 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     @Override public Value getValue(int col) {
         switch (col) {
             case KEY_COL:
-                return key;
+                return keyWrapped();
 
             case VAL_COL:
-                return val;
+                return valueWrapped();
 
             default:
                 if (desc.isKeyAliasColumn(col))
-                    return key;
+                    return keyWrapped();
                 else if (desc.isValueAliasColumn(col))
-                    return val;
+                    return valueWrapped();
 
                 return getValue0(col - DEFAULT_COLUMNS_COUNT);
         }
@@ -119,18 +98,12 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         if (v != null)
             return v;
 
-        Object res = desc.columnValue(key != null ? key.getObject() : null, val != null ? val.getObject() : null, col);
+        Object res = desc.columnValue(row.key(), row.value(), col);
 
         if (res == null)
             v = ValueNull.INSTANCE;
-        else {
-            try {
-                v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
-        }
+        else
+            v = wrap(res, desc.fieldType(col));
 
         setCached(col, v);
 
@@ -172,16 +145,46 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             valCache[colIdx] = val;
     }
 
+    /**
+     * @return Wrapped key value.
+     */
+    private Value keyWrapped() {
+        return wrap(row.key(), desc.keyType());
+    }
+
+    /**
+     * @return Wrapped value value.
+     */
+    private Value valueWrapped() {
+        return wrap(row.value(), desc.valueType());
+    }
+
+    /**
+     * Wrap the given object into H2 value.
+     *
+     * @param val Value.
+     * @param type Type.
+     * @return wrapped value.
+     */
+    private Value wrap(Object val, int type) {
+        try {
+            return H2Utils.wrap(desc.indexing().objectContext(), val, type);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wrap object into H2 Value.", e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
 
         sb.a(Integer.toHexString(System.identityHashCode(this)));
 
-        Value v = key;
+        Value v = keyWrapped();
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
-        v = val;
+        v = valueWrapped();
         sb.a(", val: ").a(v == null ? "nil" : v.getString());
 
         sb.a(" ][ ");
@@ -219,7 +222,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public int size() throws IgniteCheckedException {
+    @Override public int size() {
         throw new UnsupportedOperationException();
     }
 

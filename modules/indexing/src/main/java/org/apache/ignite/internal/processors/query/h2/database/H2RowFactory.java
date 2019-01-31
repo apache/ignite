@@ -56,16 +56,15 @@ public class H2RowFactory {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row getRow(long link, GridSqlUsedColumnInfo colInfo) throws IgniteCheckedException {
-        // TODO Avoid extra garbage generation. In upcoming H2 1.4.193 Row will become an interface,
-        // TODO we need to refactor all this to return CacheDataRowAdapter implementing Row here.
+        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        final CacheDataRowAdapter rowBuilder = new CacheDataRowAdapter(link);
-
-        rowBuilder.initFromLink(
+        row.initFromLink(
             cctx.group(),
-            GridSqlUsedColumnInfo.asRowData(colInfo));
+            GridSqlUsedColumnInfo.asRowData(colInfo),
+            true
+        );
 
-        return rowDesc.createRow(rowBuilder, colInfo);
+        return rowDesc.createRow(row, colInfo);
     }
 
     /**
@@ -73,11 +72,26 @@ public class H2RowFactory {
      * @param mvccCrdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @param mvccOpCntr Mvcc operation counter.
+     * @param colInfo column info to extract only specified columns.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        return rowDesc.createRow(new MvccDataRow(cctx.group(),0, link,
-            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr, mvccOpCntr));
+    public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr, GridSqlUsedColumnInfo colInfo)
+        throws IgniteCheckedException {
+        int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+        MvccDataRow row = new MvccDataRow(
+            cctx.group(),
+            0,
+            link,
+            partId,
+            null,
+            mvccCrdVer,
+            mvccCntr,
+            mvccOpCntr,
+            true
+        );
+
+        return rowDesc.createRow(row, colInfo);
     }
 }

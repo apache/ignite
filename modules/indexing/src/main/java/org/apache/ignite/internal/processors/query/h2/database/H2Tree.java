@@ -261,7 +261,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             GridH2Row row = rowCache.get(link);
 
             if (row == null) {
-                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
 
                 if (row instanceof GridH2KeyValueRowOnheap)
                     rowCache.put((GridH2KeyValueRowOnheap)row);
@@ -270,7 +270,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             return row;
         }
         else
-            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, usedColInfo);
     }
 
     /** {@inheritDoc} */

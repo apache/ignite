@@ -196,7 +196,7 @@ public class GridH2RowDescriptor {
                 row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
             }
             else
-                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
+                row = new GridH2KeyValueRowOnheap(this, dataRow);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -205,6 +205,13 @@ public class GridH2RowDescriptor {
         }
 
         return row;
+    }
+
+    /**
+     * @return Key type.
+     */
+    public int keyType() {
+        return keyType;
     }
 
     /**
