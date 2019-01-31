@@ -17,22 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.h2.value.Value;
 
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row extends RowAdapter implements CacheDataRow {
+public abstract class H2UpdateRowAdapter extends H2RowAdapter implements CacheDataRow {
     /** Row. */
     protected final CacheDataRow row;
 
     /**
      * @param row Row.
      */
-    GridH2Row(CacheDataRow row) {
+    H2UpdateRowAdapter(CacheDataRow row) {
         this.row = row;
     }
 
@@ -129,5 +131,30 @@ public abstract class GridH2Row extends RowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKey(long key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setValue(int idx, Value v) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        throw new UnsupportedOperationException();
     }
 }

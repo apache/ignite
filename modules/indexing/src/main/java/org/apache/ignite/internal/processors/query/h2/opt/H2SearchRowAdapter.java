@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 /**
  * Adapter for plain row.
  */
-public abstract class SearchRowAdapter extends RowAdapter {
+public abstract class H2SearchRowAdapter extends H2RowAdapter {
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return true;

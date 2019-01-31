@@ -167,8 +167,8 @@ public class GridH2RowDescriptor {
      * @param dataRow Data row.
      * @return Row.
      */
-    public SearchRow createRow(CacheDataRow dataRow) {
-        return new SearchRow(
+    public H2SearchRow createRow(CacheDataRow dataRow) {
+        return new H2SearchRow(
             this,
             dataRow.key(),
             dataRow.value(),
@@ -185,18 +185,18 @@ public class GridH2RowDescriptor {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRowForUpdate(CacheDataRow dataRow) throws IgniteCheckedException {
-        GridH2Row row;
+    public H2UpdateRowAdapter createRowForUpdate(CacheDataRow dataRow) throws IgniteCheckedException {
+        H2UpdateRowAdapter row;
 
         try {
             if (dataRow.value() == null) {
                 Value key = H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType);
 
                 // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, key);
+                row = new H2UpdateRowKeyOnly(dataRow, key);
             }
             else {
-                row = new GridH2KeyValueRowOnheap(this, dataRow);
+                row = new H2UpdateRow(this, dataRow);
             }
         }
         catch (ClassCastException e) {

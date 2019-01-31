@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP
 /**
  * Dummy H2 search row adadpter.
  */
-public abstract class RowAdapter implements GridH2SearchRow {
+public abstract class H2RowAdapter implements GridH2SearchRow {
     /** {@inheritDoc} */
     @Override public void setKeyAndVersion(SearchRow old) {
         throw new UnsupportedOperationException();

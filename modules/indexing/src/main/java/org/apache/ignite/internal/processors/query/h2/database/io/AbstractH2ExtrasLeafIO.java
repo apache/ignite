@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
 /**
@@ -98,7 +98,7 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public final void storeByOffset(long pageAddr, int off, GridH2SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
+        H2UpdateRowAdapter row0 = (H2UpdateRowAdapter)row;
 
         assert row0.link() != 0;
 

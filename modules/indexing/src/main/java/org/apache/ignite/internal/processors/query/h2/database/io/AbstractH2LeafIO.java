@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
 /**
@@ -41,7 +41,7 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<GridH2SearchRow> impl
 
     /** {@inheritDoc} */
     @Override public final void storeByOffset(long pageAddr, int off, GridH2SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
+        H2UpdateRowAdapter row0 = (H2UpdateRowAdapter)row;
 
         H2IOUtils.storeRow(row0, pageAddr, off, storeMvccInfo());
     }

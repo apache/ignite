@@ -30,7 +30,7 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class GridH2KeyValueRowOnheap extends GridH2Row {
+public class H2UpdateRow extends H2UpdateRowAdapter {
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -43,7 +43,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @param desc Row descriptor.
      * @param row Row.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row) {
+    public H2UpdateRow(GridH2RowDescriptor desc, CacheDataRow row) {
         super(row);
 
         this.desc = desc;
@@ -157,31 +157,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap object into H2 Value.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setValue(int idx, Value v) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final int hashCode() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

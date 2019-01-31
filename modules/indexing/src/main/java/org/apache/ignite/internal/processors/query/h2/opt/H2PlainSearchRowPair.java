@@ -21,40 +21,47 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.value.Value;
 
 /**
- * Single value row.
+ * Row of two values.
  */
-public class PlainRowSingle extends SearchRowAdapter {
+public class H2PlainSearchRowPair extends H2SearchRowAdapter {
     /** */
-    private Value key;
+    private Value v1;
+
+    /** */
+    private Value v2;
 
     /**
-     * @param key Key.
+     * @param v1 First value.
+     * @param v2 Second value.
      */
-    public PlainRowSingle(Value key) {
-        this.key = key;
+    public H2PlainSearchRowPair(Value v1, Value v2) {
+        this.v1 = v1;
+        this.v2 = v2;
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int idx) {
-        assert idx == 0 : idx;
-
-        return key;
+        return idx == 0 ? v1 : v2;
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
-        assert idx == 0 : idx;
+        if (idx == 0)
+            v1 = v;
+        else {
+            assert idx == 1 : idx;
 
-        key = v;
+            v2 = v;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlainRowSingle.class, this);
+        return S.toString(H2PlainSearchRowPair.class, this);
     }
 }

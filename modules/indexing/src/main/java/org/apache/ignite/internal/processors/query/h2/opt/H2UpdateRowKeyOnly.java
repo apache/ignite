@@ -17,51 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.h2.value.Value;
 
 /**
- * Row of two values.
+ * Heap-based key-only row for remove operations.
  */
-public class PlainRowPair extends SearchRowAdapter {
+public class H2UpdateRowKeyOnly extends H2UpdateRowAdapter {
     /** */
-    private Value v1;
-
-    /** */
-    private Value v2;
+    private Value key;
 
     /**
-     * @param v1 First value.
-     * @param v2 Second value.
+     * @param row Row.
+     * @param key Key.
      */
-    public PlainRowPair(Value v1, Value v2) {
-        this.v1 = v1;
-        this.v2 = v2;
+    public H2UpdateRowKeyOnly(CacheDataRow row, Value key) {
+        super(row);
+
+        this.key = key;
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int idx) {
-        return idx == 0 ? v1 : v2;
-    }
+        assert idx == 0 : idx;
 
-    /** {@inheritDoc} */
-    @Override public void setValue(int idx, Value v) {
-        if (idx == 0)
-            v1 = v;
-        else {
-            assert idx == 1 : idx;
-
-            v2 = v;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PlainRowPair.class, this);
+        return key;
     }
 }

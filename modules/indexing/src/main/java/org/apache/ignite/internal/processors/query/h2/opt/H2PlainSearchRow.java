@@ -17,58 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.value.Value;
 
 /**
- * Heap-based key-only row for remove operations.
+ * Simple array based row.
  */
-public class GridH2KeyRowOnheap extends GridH2Row {
+public class H2PlainSearchRow extends H2SearchRowAdapter {
     /** */
-    private Value key;
+    @GridToStringInclude
+    private Value[] vals;
 
     /**
-     * @param row Row.
-     * @param key Key.
+     * @param vals Values.
      */
-    public GridH2KeyRowOnheap(CacheDataRow row, Value key) {
-        super(row);
+    public H2PlainSearchRow(Value[] vals) {
+        this.vals = vals;
+    }
 
-        this.key = key;
+    /**
+     * @param len Length.
+     */
+    public H2PlainSearchRow(int len) {
+        this.vals = new Value[len];
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return 1;
+        return vals.length;
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int idx) {
-        assert idx == 0 : idx;
-
-        return key;
+        return vals[idx];
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
-        assert idx == 0 : idx;
-
-        key = v;
+        vals[idx] = v;
     }
 
     /** {@inheritDoc} */
-    @Override public long expireTime() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        throw new UnsupportedOperationException();
+    @Override public String toString() {
+        return S.toString(H2PlainSearchRow.class, this);
     }
 }

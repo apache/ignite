@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -532,7 +532,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                     GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
 
-                    SearchRow h2Row = gridH2RowDesc.createRow(row);
+                    H2SearchRow h2Row = gridH2RowDesc.createRow(row);
 
                     ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
@@ -674,7 +674,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
                 }
 
-                SearchRow h2Row = (SearchRow)cursor.get();
+                H2SearchRow h2Row = (H2SearchRow)cursor.get();
 
                 if (skipConditions) {
                     if (bothSkipConditions) {

@@ -17,49 +17,44 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.value.Value;
 
 /**
- * Simple array based row.
+ * Single value row.
  */
-public class PlainRow extends SearchRowAdapter {
+public class H2PlainSearchRowSingle extends H2SearchRowAdapter {
     /** */
-    @GridToStringInclude
-    private Value[] vals;
+    private Value key;
 
     /**
-     * @param vals Values.
+     * @param key Key.
      */
-    public PlainRow(Value[] vals) {
-        this.vals = vals;
-    }
-
-    /**
-     * @param len Length.
-     */
-    public PlainRow(int len) {
-        this.vals = new Value[len];
+    public H2PlainSearchRowSingle(Value key) {
+        this.key = key;
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return vals.length;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int idx) {
-        return vals[idx];
+        assert idx == 0 : idx;
+
+        return key;
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
-        vals[idx] = v;
+        assert idx == 0 : idx;
+
+        key = v;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlainRow.class, this);
+        return S.toString(H2PlainSearchRowSingle.class, this);
     }
 }

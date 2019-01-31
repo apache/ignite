@@ -38,8 +38,8 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
-import org.apache.ignite.internal.processors.query.h2.opt.SearchRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -236,7 +236,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
             return rowStore.getRowForUpdate(link);
 
         if (rowCache != null) {
-            SearchRow row = rowCache.get(link);
+            H2SearchRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link);
@@ -263,7 +263,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
             return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
         if (rowCache != null) {
-            SearchRow row = rowCache.get(link);
+            H2SearchRow row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
@@ -465,7 +465,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     private void inlineSizeRecomendation(org.h2.result.SearchRow row) {
         //Do the check only for put operations.
-        if(!(row instanceof GridH2KeyValueRowOnheap))
+        if(!(row instanceof H2UpdateRow))
             return;
 
         Long invokeCnt = inlineSizeCalculationCntr.get();

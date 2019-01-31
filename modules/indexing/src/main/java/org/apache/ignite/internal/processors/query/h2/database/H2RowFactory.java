@@ -22,8 +22,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
-import org.apache.ignite.internal.processors.query.h2.opt.SearchRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
 /**
@@ -54,7 +54,7 @@ public class H2RowFactory {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public SearchRow getRow(long link) throws IgniteCheckedException {
+    public H2SearchRow getRow(long link) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(
@@ -73,7 +73,7 @@ public class H2RowFactory {
      * @param mvccOpCntr Mvcc operation counter.
      * @return Row.
      */
-    public SearchRow getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) {
+    public H2SearchRow getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
         MvccDataRow row = new MvccDataRow(
@@ -91,7 +91,7 @@ public class H2RowFactory {
         return rowDesc.createRow(row);
     }
 
-    public GridH2Row getRowForUpdate(long link) throws IgniteCheckedException {
+    public H2UpdateRowAdapter getRowForUpdate(long link) throws IgniteCheckedException {
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
         row.initFromLink(
@@ -103,7 +103,7 @@ public class H2RowFactory {
         return rowDesc.createRowForUpdate(row);
     }
 
-    public GridH2Row getMvccRowForUpdate(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
+    public H2UpdateRowAdapter getMvccRowForUpdate(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
         throws IgniteCheckedException {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
