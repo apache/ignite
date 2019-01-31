@@ -630,13 +630,13 @@ public class MvccUtils {
 
         long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
         long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset);
+        int mvccOpCntr = dataIo.rawMvccOperationCounter(pageAddr, offset);
 
         assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr ) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
 
         long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
         long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset);
+        int newMvccOpCntr = dataIo.rawNewMvccOperationCounter(pageAddr, offset);
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
             : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);

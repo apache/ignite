@@ -319,9 +319,9 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
 
-        int opCntr = mvccOperationCounter(addr, 0);
+        int opCntr = rawMvccOperationCounter(addr, 0);
 
-        mvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+        rawMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
     }
 
     /**
@@ -335,9 +335,9 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
 
-        int opCntr = newMvccOperationCounter(addr, 0);
+        int opCntr = rawNewMvccOperationCounter(addr, 0);
 
-        newMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+        rawNewMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
     }
 
     /**
@@ -383,26 +383,26 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
-     * Returns MVCC operation counter value.
+     * Returns MVCC operation counter raw value (with hints and flags).
      *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @return MVCC counter value.
      */
-    public int mvccOperationCounter(long pageAddr, int dataOff) {
+    public int rawMvccOperationCounter(long pageAddr, int dataOff) {
         long addr = pageAddr + dataOff;
 
         return PageUtils.getInt(addr, 16);
     }
 
     /**
-     * Sets MVCC operation counter value.
+     * Sets MVCC operation counter raw value (with hints and flags).
      *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @param opCntr MVCC counter value.
      */
-    public void mvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+    public void rawMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
         long addr = pageAddr + dataOff;
 
         PageUtils.putInt(addr, 16, opCntr);
@@ -441,13 +441,13 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
-     * Returns MVCC operation counter value.
+     * Returns MVCC operation counter raw value (with hints and flags).
      *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @return MVCC counter value.
      */
-    public int newMvccOperationCounter(long pageAddr, int dataOff) {
+    public int rawNewMvccOperationCounter(long pageAddr, int dataOff) {
         long addr = pageAddr + dataOff;
 
         // Skip xid_min.
@@ -457,13 +457,13 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
-     * Sets MVCC new operation counter value.
+     * Sets MVCC new operation counter raw value (with hints and flags).
      *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @param opCntr MVCC operation counter value.
      */
-    public void newMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+    public void rawNewMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
         long addr = pageAddr + dataOff;
 
         // Skip xid_min.
