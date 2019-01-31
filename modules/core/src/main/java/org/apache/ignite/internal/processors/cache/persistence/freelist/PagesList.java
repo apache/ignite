@@ -1145,9 +1145,11 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
-                        if (initIoVers != null)
-                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, 0, FLAG_DATA, initIoVers.latest());
-                        else
+                        if (initIoVers != null) {
+                            int partId = PageIdUtils.partId(tailId);
+
+                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, partId, FLAG_DATA, initIoVers.latest());
+                        } else
                             dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
 
                         dirty = true;
