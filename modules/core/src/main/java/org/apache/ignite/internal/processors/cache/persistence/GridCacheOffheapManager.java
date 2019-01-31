@@ -173,6 +173,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        /* No-op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
         Executor execSvc = ctx.executor();
@@ -2020,11 +2025,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean needHistory,
             boolean noCreate,
             boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException {
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, entryProc, invokeArgs, primary,
-                needHistory, noCreate, needOldVal, retVal);
+                needHistory, noCreate, needOldVal, retVal, keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -2050,20 +2056,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccLock(cctx, key, mvccSnapshot);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridLongList mvccUpdateNative(GridCacheContext cctx, boolean primary, KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            return delegate.mvccUpdateNative(cctx, primary, key, val, ver, expireTime, mvccSnapshot);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridLongList mvccRemoveNative(GridCacheContext cctx, boolean primary, KeyCacheObject key, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            return delegate.mvccRemoveNative(cctx, primary, key, mvccSnapshot);
         }
 
         /** {@inheritDoc} */

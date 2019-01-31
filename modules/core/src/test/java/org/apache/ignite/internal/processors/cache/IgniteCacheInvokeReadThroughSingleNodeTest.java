@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
@@ -33,7 +32,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -114,40 +112,36 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testInvokeReadThroughMvccTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testInvokeReadThroughMvccTxNearCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testInvokeReadThroughMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     public void testInvokeReadThroughMvccTxLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         invokeReadThrough(cacheConfiguration(LOCAL, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 }

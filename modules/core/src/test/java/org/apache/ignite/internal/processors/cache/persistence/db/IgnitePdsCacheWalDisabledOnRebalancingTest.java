@@ -56,8 +56,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -65,7 +63,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
  * such as client nodes join/leave, server nodes from BLT leave/join, server nodes out of BLT join/leave.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstractTest {
     /** Block message predicate to set to Communication SPI in node configuration. */
     private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
@@ -274,6 +271,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalancedPartitionsOwningWithConcurrentAffinityChange() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
         fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);

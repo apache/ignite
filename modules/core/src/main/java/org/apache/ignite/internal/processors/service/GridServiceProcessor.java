@@ -1461,7 +1461,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
             GridCacheQueryManager qryMgr = cache.context().queries();
 
-            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
+            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false, null);
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 

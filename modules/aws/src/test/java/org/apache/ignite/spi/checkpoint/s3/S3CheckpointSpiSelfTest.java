@@ -37,17 +37,15 @@ import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid S3 checkpoint SPI self test.
  */
 @GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
-@RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
 public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi> {
     /** */
     private static final int CHECK_POINT_COUNT = 10;
@@ -99,7 +97,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
     /**
      * @throws Exception Thrown in case of any errors.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
     @Test
     public void testSaveLoadRemoveWithoutExpire() throws Exception {
         String dataPrefix = "Test check point data ";
@@ -159,7 +157,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
     /**
      * @throws Exception Thrown in case of any errors.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
     @Test
     public void testSaveWithExpire() throws Exception {
         // Save states.
@@ -188,7 +186,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
     /**
      * @throws Exception Thrown in case of any errors.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
     @Test
     public void testDuplicates() throws Exception {
         int idx1 = 1;
