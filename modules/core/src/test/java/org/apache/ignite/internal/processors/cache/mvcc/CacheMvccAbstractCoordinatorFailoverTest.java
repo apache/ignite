@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
@@ -53,7 +52,6 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testAccountsTxScan_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 0, 0, 64,

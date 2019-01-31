@@ -31,10 +31,10 @@ import org.junit.Test;
 @GridCommonTest(group = "Kernal Self")
 public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /** Grid instance. */
-    private Ignite ignite;
+    private static Ignite ignite;
 
     /** Remote instance. */
-    private Ignite rmtIgnite;
+    private static Ignite rmtIgnite;
 
     /** */
     public GridNodeFilterSelfTest() {
@@ -47,6 +47,13 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
 
         rmtIgnite = startGrid(2);
         startGrid(3);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        ignite = null;
+
+        rmtIgnite = null;
     }
 
     /**

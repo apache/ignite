@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -114,7 +113,6 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10750")
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups1__PutGet_CoordinatorFails() throws Exception {
         updateNObjectsTest(10, 3, 2, 1, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.io.Serializable;
-import java.util.Objects;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
+
+import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Class fro extracting features and vectors from upstream.

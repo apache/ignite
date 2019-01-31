@@ -90,7 +90,6 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
-
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -98,7 +97,6 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
         DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
-
         if (!learnLabels(datasetBuilder, CompositionUtils.asFeatureExtractor(extractor), CompositionUtils.asLabelExtractor(extractor)))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 

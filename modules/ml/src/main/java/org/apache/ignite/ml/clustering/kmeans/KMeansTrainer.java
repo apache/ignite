@@ -77,7 +77,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
-
         assert datasetBuilder != null;
 
         IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
