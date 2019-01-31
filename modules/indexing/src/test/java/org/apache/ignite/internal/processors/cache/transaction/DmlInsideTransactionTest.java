@@ -31,15 +31,12 @@ import org.apache.ignite.testframework.GridTestUtils.SystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests DML allow/disallow operation inside transaction.
  */
-@RunWith(JUnit4.class)
 public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";

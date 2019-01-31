@@ -39,15 +39,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link TcpDiscoveryZookeeperIpFinder}.
  *
  * @author Raul Kripalani
  */
-@RunWith(JUnit4.class)
 public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /** Per test timeout */
     @Rule

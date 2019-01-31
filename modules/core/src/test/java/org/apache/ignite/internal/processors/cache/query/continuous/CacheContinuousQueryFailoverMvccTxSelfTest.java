@@ -20,8 +20,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -29,7 +27,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousQueryFailoverMvccTxSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -45,6 +42,13 @@ public class CacheContinuousQueryFailoverMvccTxSelfTest extends CacheContinuousQ
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
     @Test
     @Override public void testBackupQueueEvict() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11148")
+    @Test
+    @Override public void testMultiThreadedFailover() throws Exception {
         // No-op.
     }
 }

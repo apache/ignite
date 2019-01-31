@@ -28,8 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -38,7 +36,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Send message test.
  */
-@RunWith(JUnit4.class)
 public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest {
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;

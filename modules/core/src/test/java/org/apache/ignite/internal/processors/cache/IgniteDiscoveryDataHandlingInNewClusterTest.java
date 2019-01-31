@@ -34,13 +34,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteDiscoveryDataHandlingInNewClusterTest extends GridCommonAbstractTest {
     /** */
     private static final String NODE_1_CONS_ID = "node01";
