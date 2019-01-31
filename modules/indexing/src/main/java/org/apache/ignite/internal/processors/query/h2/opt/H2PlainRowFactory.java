@@ -24,7 +24,7 @@ import org.h2.value.Value;
 /**
  * Plain row factory.
  */
-public class PlainRowFactory extends RowFactory {
+public class H2PlainRowFactory extends RowFactory {
     /**
      * @param v Value.
      * @return Row.

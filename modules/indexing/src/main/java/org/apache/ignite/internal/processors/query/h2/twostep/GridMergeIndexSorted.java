@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.PlainRowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -370,7 +370,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
             if (!iter.hasNext())
                 return false;
 
-            cur = PlainRowFactory.create(iter.next());
+            cur = H2PlainRowFactory.create(iter.next());
 
             return true;
         }

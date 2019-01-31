@@ -386,7 +386,7 @@ public class GridH2RowDescriptor {
         copyAliasColumnData(data, QueryUtils.KEY_COL, keyAliasColId);
         copyAliasColumnData(data, QueryUtils.VAL_COL, valAliasColId);
 
-        return PlainRowFactory.create(data);
+        return H2PlainRowFactory.create(data);
     }
 
     /**

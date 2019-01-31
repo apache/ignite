@@ -86,7 +86,7 @@ public class GridH2MetaTable extends TableBase {
     /** {@inheritDoc} */
     @Override public SearchRow getTemplateSimpleRow(boolean singleColumn) {
         if (singleColumn)
-            return PlainRowFactory.create((Value)null);
+            return H2PlainRowFactory.create((Value)null);
 
         return new H2PlainRow(4);
     }
