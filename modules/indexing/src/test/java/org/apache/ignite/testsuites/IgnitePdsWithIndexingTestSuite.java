@@ -21,6 +21,7 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
@@ -49,6 +50,7 @@ public class IgnitePdsWithIndexingTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreSchemaLoadTest.class));
         suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteTwoRegionsRebuildIndexTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTcBotInitNewPageTest.class));
 
         return suite;
     }

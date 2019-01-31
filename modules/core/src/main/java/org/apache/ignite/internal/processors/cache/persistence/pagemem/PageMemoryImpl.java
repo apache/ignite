@@ -1532,9 +1532,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
-        assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
-        assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
-        assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
+            assert pageId != 0 : U.hexLong(PageHeader.readPageId(page));
+            assert PageIO.getVersion(page + PAGE_OVERHEAD) != 0 : dumpPage(pageId, fullId.groupId());
+            assert PageIO.getType(page + PAGE_OVERHEAD) != 0 : U.hexLong(pageId);
 
         try {
             rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
@@ -1547,6 +1547,20 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             throw ex;
         }
+    }
+
+    /**
+     * Prepares page details for assertion.
+     * @param pageId Page id.
+     * @param grpId Group id.
+     */
+    @NotNull private String dumpPage(long pageId, int grpId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+        int partId = PageIdUtils.partId(pageId);
+        long off = (long)(pageIdx + 1) * pageSize();
+
+        return U.hexLong(pageId) + " (grpId=" + grpId + ", pageIdx=" + pageIdx + ", partId=" + partId + ", offH=" +
+            Long.toHexString(off) + ")";
     }
 
     /**
