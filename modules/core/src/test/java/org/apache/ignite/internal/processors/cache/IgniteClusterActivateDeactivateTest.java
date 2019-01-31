@@ -1216,7 +1216,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8220")
     @Test
     public void testActivateFailover3() throws Exception {
         stateChangeFailover3(true);
@@ -1225,7 +1224,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8220")
     @Test
     public void testDeactivateFailover3() throws Exception {
         stateChangeFailover3(false);
