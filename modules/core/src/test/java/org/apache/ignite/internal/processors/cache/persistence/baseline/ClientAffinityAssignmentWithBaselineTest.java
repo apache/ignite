@@ -49,12 +49,11 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -159,8 +158,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -539,10 +536,9 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      * Tests that if dynamic cache has no affinity nodes at the moment of start,
      * it will still work correctly when affinity nodes will appear.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8652")
     @Test
     public void testDynamicCacheStartNoAffinityNodes() throws Exception {
-        fail("IGNITE-8652");
-
         IgniteEx ig0 = startGrid(0);
 
         ig0.cluster().active(true);

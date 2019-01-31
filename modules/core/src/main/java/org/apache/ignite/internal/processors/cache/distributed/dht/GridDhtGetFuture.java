@@ -194,6 +194,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         // TODO get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251
         GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
 
+        assert !cctx.mvccEnabled() || fut == null; // Do not use force key requests for MVCC.
+
         if (fut != null) {
             if (!F.isEmpty(fut.invalidPartitions())) {
                 if (retries == null)
