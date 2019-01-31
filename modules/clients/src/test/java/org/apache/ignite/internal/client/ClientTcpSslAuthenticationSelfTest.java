@@ -33,13 +33,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests
  */
-@RunWith(JUnit4.class)
 public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /** REST TCP port. */
     private static final int REST_TCP_PORT = 12121;

@@ -48,8 +48,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -62,7 +60,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Backups tests.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
     /** Test timeout. */
     private final long txLongTimeout = getTestTimeout() / 4;

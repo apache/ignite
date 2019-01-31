@@ -38,8 +38,6 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import scala.Tuple2;
 
 import java.lang.reflect.Field;
@@ -49,7 +47,6 @@ import java.util.List;
 /**
  * Tests for {@link JavaIgniteRDD} (standalone mode).
  */
-@RunWith(JUnit4.class)
 public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

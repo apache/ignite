@@ -15,30 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity;
+package org.apache.ignite.console.testsuites;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.console.configuration.WebConsoleConfigurationSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Composite node operator.
+ * Ignite Web Console test suite.
  */
-public enum PartitionCompositeNodeOperator {
-    /** Conjunction. */
-    AND,
-
-    /** Disjunction. */
-    OR;
-
-    /** Enumerated values. */
-    private static final PartitionCompositeNodeOperator[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    @Nullable public static PartitionCompositeNodeOperator fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    WebConsoleConfigurationSelfTest.class,
+})
+public class WebConsoleTestSuite {
 }

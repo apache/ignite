@@ -74,8 +74,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -89,7 +87,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 /**
  * Client-based discovery tests.
  */
-@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

@@ -38,6 +38,9 @@ public enum SupportedSparkModels {
     /** Random forest. */
     RANDOM_FOREST,
 
+    /** K-Means. */
+    KMEANS,
+
     /**
      * Gradient boosted trees.
      * NOTE: support binary classification only with raw labels 0 and 1

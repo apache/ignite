@@ -41,8 +41,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
@@ -50,7 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** Cache mode for the current test. */
     private CacheMode mode;

@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Spring cache test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridSpringCacheManagerAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE_NAME = "testCache";
