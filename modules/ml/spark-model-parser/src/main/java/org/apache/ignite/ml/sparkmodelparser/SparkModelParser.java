@@ -87,11 +87,21 @@ public class SparkModelParser {
                 return loadRandomForestModel(ignitePathToMdl);
             case KMEANS:
                 return loadKMeansModel(ignitePathToMdl);
+            case DECISION_TREE_REGRESSION:
+                return loadDecisionTreeRegressionModel(ignitePathToMdl);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
     }
 
+    /**
+     * Load Decision Tree Regression model.
+     *
+     * @param pathToMdl Path to model.
+     */
+    private static Model loadDecisionTreeRegressionModel(String pathToMdl) {
+        return loadDecisionTreeModel(pathToMdl);
+    }
 
     private static Model loadKMeansModel(String pathToMdl) {
         Vector[] centers = null;
