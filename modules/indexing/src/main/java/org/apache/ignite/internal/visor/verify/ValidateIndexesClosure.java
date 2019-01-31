@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -532,7 +533,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                     GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
 
-                    GridH2Row h2Row = gridH2RowDesc.createRow(row);
+                    GridH2FullRowReadOnly h2Row = gridH2RowDesc.createRow(row);
 
                     ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 

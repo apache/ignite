@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
@@ -91,11 +92,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final IoStatisticsHolder stats;
 
     /** */
-    private final Comparator<Value> comp = new Comparator<Value>() {
-        @Override public int compare(Value o1, Value o2) {
-            return compareValues(o1, o2);
-        }
-    };
+    private final Comparator<Value> comp = this::compareValues;
 
     /** Row cache. */
     private final H2RowCache rowCache;
@@ -197,10 +194,11 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         assert rowStore != null;
 
         this.rowStore = rowStore;
-        this.inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
-        this.cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
 
-        this.columnIds = new int[cols.length];
+        inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
+        cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
+
+        columnIds = new int[cols.length];
 
         for (int i = 0; i < cols.length; i++)
             columnIds[i] = cols[i].column.getColumnId();
@@ -213,7 +211,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         initTree(initNew, inlineSize);
 
-        this.created = initNew;
+        created = initNew;
     }
 
     /**
@@ -223,15 +221,14 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link) throws IgniteCheckedException {
+    public GridH2SearchRow createRowFromLink(long link) throws IgniteCheckedException {
         if (rowCache != null) {
-            GridH2Row row = rowCache.get(link);
+            GridH2FullRowReadOnly row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getRow(link);
 
-                if (row instanceof GridH2KeyValueRowOnheap)
-                    rowCache.put((GridH2KeyValueRowOnheap)row);
+                rowCache.put(row);
             }
 
             return row;
@@ -248,15 +245,14 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public GridH2SearchRow createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (rowCache != null) {
-            GridH2Row row = rowCache.get(link);
+            GridH2FullRowReadOnly row = rowCache.get(link);
 
             if (row == null) {
                 row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
-                if (row instanceof GridH2KeyValueRowOnheap)
-                    rowCache.put((GridH2KeyValueRowOnheap)row);
+                rowCache.put(row);
             }
 
             return row;
@@ -268,6 +264,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @Override public GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
+        // TODO: Failure here!
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 
@@ -450,6 +447,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      *
      * @param row Grid H2 row related to given inline indexes.
      */
+    @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     private void inlineSizeRecomendation(SearchRow row) {
         //Do the check only for put operations.
         if(!(row instanceof GridH2KeyValueRowOnheap))
@@ -538,9 +536,10 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /**
      *
      */
-    private class MetaPageInfo {
+    private static class MetaPageInfo {
         /** */
         int inlineSize;
+
         /** */
         boolean useUnwrappedPk;
 

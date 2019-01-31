@@ -95,11 +95,10 @@ public class GridH2RowDescriptor {
     /**
      * Update metadata of this row descriptor according to current state of type descriptor.
      */
-    @SuppressWarnings("WeakerAccess")
+    @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
     public final void refreshMetadataFromTypeDescriptor() {
-        Map<String, Class<?>> allFields = new LinkedHashMap<>();
 
-        allFields.putAll(type.fields());
+        Map<String, Class<?>> allFields = new LinkedHashMap<>(type.fields());
 
         fields = allFields.keySet().toArray(new String[allFields.size()]);
 
@@ -171,10 +170,9 @@ public class GridH2RowDescriptor {
      *
      * @param dataRow Data row.
      * @return Row.
-     * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        return createRow0(dataRow, false);
+    public GridH2FullRowReadOnly createRow(CacheDataRow dataRow) {
+        return new GridH2FullRowReadOnly(this, dataRow.key(), dataRow.value(), dataRow.link(), dataRow.cacheId());
     }
 
     /**
@@ -185,19 +183,6 @@ public class GridH2RowDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row createRowForUpdate(CacheDataRow dataRow) throws IgniteCheckedException {
-        return createRow0(dataRow, true);
-    }
-
-    /**
-     * Creates new row.
-     *
-     * @param dataRow Data row.
-     * @param update Whether the row is created for update operation.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    private GridH2Row createRow0(CacheDataRow dataRow, boolean update) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
@@ -207,8 +192,9 @@ public class GridH2RowDescriptor {
                 // Only can happen for remove operation, can create simple search row.
                 row = new GridH2KeyRowOnheap(dataRow, key);
             }
-            else
+            else {
                 row = new GridH2KeyValueRowOnheap(this, dataRow);
+            }
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -368,6 +354,7 @@ public class GridH2RowDescriptor {
      * @param mask Index Condition to check.
      * @return Result.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public boolean checkKeyIndexCondition(int masks[], int mask) {
         assert masks != null;
         assert masks.length > 0;

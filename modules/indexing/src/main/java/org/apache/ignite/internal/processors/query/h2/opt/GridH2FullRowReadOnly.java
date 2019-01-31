@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -29,7 +28,7 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class GridH2KeyValueRowOnheap extends GridH2Row {
+public class GridH2FullRowReadOnly extends GridH2SearchRowAdapter {
     /** */
     public static final int DEFAULT_COLUMNS_COUNT = 2;
 
@@ -40,21 +39,49 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     public static final int VAL_COL = 1;
 
     /** */
-    protected final GridH2RowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
-    /** */
-    private Value[] valCache;
+    /** Key. */
+    private final Object key;
+
+    /** Value. */
+    private final Object val;
+
+    /** Link. */
+    private final long link;
+
+    /** Cache ID. */
+    private final int cacheId;
 
     /**
      * Constructor.
      *
      * @param desc Row descriptor.
-     * @param row Row.
+     * @param key Key.
+     * @param val Value.
+     * @param link Link.
+     * @param cacheId Cache ID.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row) {
-        super(row);
-
+    public GridH2FullRowReadOnly(GridH2RowDescriptor desc, Object key, Object val, long link, int cacheId) {
         this.desc = desc;
+        this.key = key;
+        this.val = val;
+        this.link = link;
+        this.cacheId = cacheId;
+    }
+
+    /**
+     * @return Link.
+     */
+    public long link() {
+        return link;
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
     }
 
     /** {@inheritDoc} */
@@ -88,67 +115,23 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @return Value.
      */
     private Value getValue0(int col) {
-        Value v = getCached(col);
+        Object res = desc.columnValue(key, val, col);
 
-        if (v != null)
-            return v;
-
-        Object res = desc.columnValue(row.key(), row.value(), col);
-
-        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col));
-
-        setCached(col, v);
-
-        return v;
-    }
-
-    /**
-     * Prepare values cache.
-     */
-    public void prepareValuesCache() {
-        valCache = new Value[desc.fieldsCount()];
-    }
-
-    /**
-     * Clear values cache.
-     */
-    public void clearValuesCache() {
-        valCache = null;
-    }
-
-    /**
-     * Get cached value (if any).
-     *
-     * @param colIdx Column index.
-     * @return Value.
-     */
-    private Value getCached(int colIdx) {
-        return valCache != null ? valCache[colIdx] : null;
-    }
-
-    /**
-     * Set cache value.
-     *
-     * @param colIdx Column index.
-     * @param val Value.
-     */
-    private void setCached(int colIdx, Value val) {
-        if (valCache != null)
-            valCache[colIdx] = val;
+        return res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col));
     }
 
     /**
      * @return Wrapped key value.
      */
     private Value keyWrapped() {
-        return wrap(row.key(), desc.keyType());
+        return wrap(key, desc.keyType());
     }
 
     /**
      * @return Wrapped value value.
      */
     private Value valueWrapped() {
-        return wrap(row.value(), desc.valueType());
+        return wrap(val, desc.valueType());
     }
 
     /**
@@ -183,13 +166,8 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        throw new UnsupportedOperationException();
+    @Override public boolean indexSearchRow() {
+        return true;
     }
 
     /** {@inheritDoc} */
