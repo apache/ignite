@@ -84,6 +84,8 @@ import org.junit.runners.Suite;
     TcpCommunicationSpiFaultyClientTest.class,
     TcpCommunicationSpiFaultyClientSslTest.class,
 
+    TcpCommunicationSpiFreezingClientTest.class,
+
     TcpCommunicationSpiDropNodesTest.class,
     TcpCommunicationSpiHalfOpenedConnectionTest.class,
 

@@ -315,9 +315,6 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         if (filter)
             cfg.setUserAttributes(Collections.singletonMap(FILTER_ATTR, true));
 
-        if (cli) // Speed up reconnect time on client node fail.
-            cfg.setFailureDetectionTimeout(1000);
-
         return cfg;
     }
 

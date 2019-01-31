@@ -52,8 +52,6 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(1000);
-
         if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
 

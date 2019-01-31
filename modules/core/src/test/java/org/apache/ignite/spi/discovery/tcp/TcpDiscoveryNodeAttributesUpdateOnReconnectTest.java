@@ -58,7 +58,6 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
             cfg.setUserAttributes(attrs);
             cfg.setClientMode(true);
-            cfg.setFailureDetectionTimeout(1000); // Speed up reconnect time on client node fail.
         }
 
         IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi spi = new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi();

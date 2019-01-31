@@ -39,11 +39,6 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
 
         cfg.setClientMode(igniteInstanceName.contains("client"));
 
-        final boolean client = igniteInstanceName.contains("client");
-
-        if (client)
-            cfg.setClientMode(true).setFailureDetectionTimeout(1000);
-
         return cfg;
     }
 

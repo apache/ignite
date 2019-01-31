@@ -666,9 +666,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        if (client)
-            cfg.setFailureDetectionTimeout(1000);
-
         return (IgniteEx)Ignition.start(cfg);
     }
 

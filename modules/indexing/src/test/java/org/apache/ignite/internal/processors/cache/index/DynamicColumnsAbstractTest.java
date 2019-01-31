@@ -159,7 +159,7 @@ public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonT
 
         e.setFields(flds);
 
-        return commonConfiguration(idx).setClientMode(true).setFailureDetectionTimeout(1000).setCacheConfiguration(
+        return commonConfiguration(idx).setClientMode(true).setCacheConfiguration(
             new CacheConfiguration<>("idx").setQueryEntities(Collections.singletonList(e))
         );
     }
