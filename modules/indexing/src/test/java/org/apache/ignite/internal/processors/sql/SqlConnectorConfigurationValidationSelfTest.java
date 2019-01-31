@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,15 +34,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * SQL connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexingCommonTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
@@ -228,7 +225,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexin
 
                 assertTrue(rs.next());
 
-                TestCase.assertEquals(1, rs.getInt(1));
+                Assert.assertEquals(1, rs.getInt(1));
             }
         }
     }

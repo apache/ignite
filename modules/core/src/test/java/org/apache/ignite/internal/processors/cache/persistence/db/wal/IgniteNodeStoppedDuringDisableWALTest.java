@@ -40,9 +40,8 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
@@ -57,7 +56,6 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 /***
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -92,8 +90,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      */
     @Test
     public void test() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
 
         for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
             testStopNodeWithDisableWAL(nodeStopPoint);

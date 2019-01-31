@@ -36,27 +36,29 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test hidden _key, _val, _ver columns
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_BAD_CONF_MISS_KEY_FIELD = "badConf1";
+
     /** */
     private static String NODE_BAD_CONF_MISS_VAL_FIELD = "badConf2";
+
     /** */
     private static String NODE_CLIENT = "client";
 
     /** */
     private static String CACHE_PERSON_NO_KV = "PersonNoKV";
+
     /** */
     private static String CACHE_INT_NO_KV_TYPE = "IntNoKVType";
+
     /** */
     private static String CACHE_PERSON = "Person";
+
     /** */
     private static String CACHE_JOB = "Job";
 
@@ -271,29 +273,6 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         checkSelect(cache, "select _key, _val from Person where id=1", 1, alice);
     }
 
-    /** Check _ver version field is accessible */
-    @Test
-    public void testVersionField() throws Exception {
-        Person alice = new Person("Alice", 1);
-        Person bob = new Person("Bob", 2);
-
-        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 1, alice);
-        assertNotNull(getVersion(cache, 1));
-
-        checkInsert(cache, "insert into Person (id, v) values (?,?)", 2, bob);
-        assertNotNull(getVersion(cache, 2));
-
-        GridCacheVersion v1 = getVersion(cache, 1);
-
-        checkInsert(cache, "update Person set age = ? where id = ?", 3, 1);
-
-        GridCacheVersion v2 = getVersion(cache, 1);
-
-        assertFalse( v1.equals(v2) );
-    }
-
     /** Check that joins are working on keyFieldName, valueFieldName columns */
     @Test
     public void testJoinKeyValFields() throws Exception {
@@ -323,12 +302,12 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
 
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select * from Person where id = 1"));
         List<List<?>> results = cursor.getAll();
-        assertEquals(2, results.size());
+        assertEquals(1, results.size());
         assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK_proxy\""));
 
         cursor = cache.query(new SqlFieldsQuery("explain select * from Person where _key = 1"));
         results = cursor.getAll();
-        assertEquals(2, results.size());
+        assertEquals(1, results.size());
         assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK\""));
     }
 

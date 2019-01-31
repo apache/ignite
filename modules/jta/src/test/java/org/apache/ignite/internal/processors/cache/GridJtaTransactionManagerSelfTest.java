@@ -27,8 +27,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
 
@@ -38,7 +36,6 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /**
  * JTA Tx Manager test.
  */
-@RunWith(JUnit4.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /** Java Open Transaction Manager facade. */
     private static Jotm jotm;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.websession;
 
 import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests web sessions with TRANSACTIONAL cache.
@@ -30,19 +31,22 @@ public class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
 
     /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Override public void testRestarts() throws Exception {
+    @Test
+    @Override public void testRestarts() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Override public void testInvalidatedSession() throws Exception {
+    @Test
+    @Override public void testInvalidatedSession() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
-    @Override public void testClientReconnectRequest() throws Exception {
+    @Test
+    @Override public void testClientReconnectRequest() {
         // No-op.
     }
 }

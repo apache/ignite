@@ -2073,6 +2073,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryParallelism(int qryParallelism) {
+        A.ensure(qryParallelism > 0, "Query parallelism must be positive.");
+
         this.qryParallelism = qryParallelism;
 
         return this;

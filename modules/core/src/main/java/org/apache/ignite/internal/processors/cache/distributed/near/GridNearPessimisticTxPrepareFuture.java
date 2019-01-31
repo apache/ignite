@@ -274,7 +274,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     @SuppressWarnings("unchecked")
     private void preparePessimistic() {
-        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
+        assert !tx.implicitSingle() || tx.txState().mvccEnabled(); // Non-mvcc implicit-single tx goes fast commit way.
 
         Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 

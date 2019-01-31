@@ -24,14 +24,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
 
 /** */
-@RunWith(JUnit4.class)
 public class FsyncWalRolloverDoesNotBlockTest extends GridCommonAbstractTest {
     /** */
     private static class RolloverRecord extends CheckpointRecord {

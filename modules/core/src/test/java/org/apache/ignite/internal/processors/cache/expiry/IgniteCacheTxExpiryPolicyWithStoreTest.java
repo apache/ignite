@@ -22,8 +22,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -31,7 +29,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPolicyWithStoreAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

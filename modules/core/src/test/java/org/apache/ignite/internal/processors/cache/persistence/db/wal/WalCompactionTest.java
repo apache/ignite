@@ -39,13 +39,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class WalCompactionTest extends GridCommonAbstractTest {
     /** Wal segment size. */
     private static final int WAL_SEGMENT_SIZE = 4 * 1024 * 1024;
@@ -315,7 +312,19 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
-        assertTrue(walSegment.exists()); // Failed to compress WAL segment shoudn't be deleted.
+        if (!walSegment.exists()) {
+            File[] list = nodeArchiveDir.listFiles();
+
+            Arrays.sort(list);
+
+            log.info("Files in archive:" + list.length);
+
+            for (File f : list)
+                log.info(f.getAbsolutePath());
+
+            // Failed to compress WAL segment shoudn't be deleted.
+            fail("File " + walSegment.getAbsolutePath() + " does not exist.");
+        }
     }
 
     /**

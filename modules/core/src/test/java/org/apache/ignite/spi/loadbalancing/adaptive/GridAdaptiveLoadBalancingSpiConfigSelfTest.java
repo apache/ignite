@@ -20,14 +20,11 @@ package org.apache.ignite.spi.loadbalancing.adaptive;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = AdaptiveLoadBalancingSpi.class, group = "LoadBalancing SPI")
-@RunWith(JUnit4.class)
 public class GridAdaptiveLoadBalancingSpiConfigSelfTest
     extends GridSpiAbstractConfigTest<AdaptiveLoadBalancingSpi> {
     /**
