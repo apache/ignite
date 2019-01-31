@@ -43,6 +43,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -65,7 +67,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
@@ -80,17 +81,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "-1");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
-
-        super.afterTestsStopped();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName)
+            .setTransactionConfiguration(new TransactionConfiguration().setDeadlockTimeout(0));
     }
 
     /**

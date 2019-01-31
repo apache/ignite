@@ -51,6 +51,8 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setGridLogger(strLog);
@@ -64,7 +66,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         super.beforeTestsStarted();
     }

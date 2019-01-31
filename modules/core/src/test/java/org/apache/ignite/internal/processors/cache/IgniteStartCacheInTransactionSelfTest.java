@@ -251,7 +251,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         if (atomicityMode() != TRANSACTIONAL)
             return;
 
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         final Ignite ignite = grid(0);
 
