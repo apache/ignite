@@ -195,9 +195,8 @@ public class GridH2RowDescriptor {
                 // Only can happen for remove operation, can create simple search row.
                 row = new H2UpdateRowKeyOnly(dataRow, key);
             }
-            else {
+            else
                 row = new H2UpdateRow(this, dataRow);
-            }
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +

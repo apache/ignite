@@ -38,9 +38,9 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRow;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
 
 /**
  */
-public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow> {
+public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** */
     private final H2RowFactory rowStore;
 
@@ -231,7 +231,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2SearchRow createRowFromLink(long link) throws IgniteCheckedException {
+    public H2Row createRowFromLink(long link) throws IgniteCheckedException {
         if (updateMode())
             return rowStore.getRowForUpdate(link);
 
@@ -258,7 +258,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2SearchRow createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public H2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (updateMode())
             return rowStore.getMvccRowForUpdate(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
@@ -278,7 +278,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2SearchRow getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
+    @Override public H2Row getRow(BPlusIO<H2Row> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
         return io.getLookupRow(this, pageAddr, idx);
     }
@@ -319,8 +319,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override protected int compare(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx,
-        GridH2SearchRow row) throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<H2Row> io, long pageAddr, int idx,
+        H2Row row) throws IgniteCheckedException {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -391,7 +391,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @param r2 Row 2.
      * @return Compare result: see {@link Comparator#compare(Object, Object)} for values.
      */
-    public int compareRows(GridH2SearchRow r1, GridH2SearchRow r2) {
+    public int compareRows(H2Row r1, H2Row r2) {
         assert !mvccEnabled || r2.indexSearchRow() || MvccUtils.mvccVersionIsValid(r2.mvccCoordinatorVersion(), r2.mvccCounter()) : r2;
         if (r1 == r2)
             return 0;
@@ -423,7 +423,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @param r2 Search row.
      * @return Comparison result.
      */
-    private int mvccCompare(H2RowLinkIO io, long pageAddr, int idx, GridH2SearchRow r2) {
+    private int mvccCompare(H2RowLinkIO io, long pageAddr, int idx, H2Row r2) {
         if (!mvccEnabled || r2.indexSearchRow())
             return 0;
 
@@ -441,7 +441,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2SearchRow>
      * @param r2 Second row.
      * @return Comparison result.
      */
-    private int mvccCompare(GridH2SearchRow r1, GridH2SearchRow r2) {
+    private int mvccCompare(H2Row r1, H2Row r2) {
         if (!mvccEnabled || r2.indexSearchRow())
             return 0;
 

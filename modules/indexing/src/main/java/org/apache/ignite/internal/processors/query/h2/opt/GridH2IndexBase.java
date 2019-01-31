@@ -451,7 +451,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param qctx Query context.
      * @return Row filter.
      */
-    protected BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow> filter(GridH2QueryContext qctx) {
+    protected BPlusTree.TreeRowClosure<H2Row, H2Row> filter(GridH2QueryContext qctx) {
         throw new UnsupportedOperationException();
     }
 
@@ -604,15 +604,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Iterator.
      */
     @SuppressWarnings("unchecked")
-    public Iterator<GridH2SearchRow> findForSegment(GridH2RowRangeBounds bounds, int segment,
-        BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow> filter) {
+    public Iterator<H2Row> findForSegment(GridH2RowRangeBounds bounds, int segment,
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filter) {
         SearchRow first = toSearchRow(bounds.first());
         SearchRow last = toSearchRow(bounds.last());
 
         IgniteTree t = treeForRead(segment);
 
         try {
-            GridCursor<GridH2SearchRow> range = ((BPlusTree)t).find(first, last, filter, null);
+            GridCursor<H2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
                 range = H2Utils.EMPTY_CURSOR;

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2UpdateRowAdapter;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
 /**
  *
@@ -66,7 +66,7 @@ class H2IOUtils {
      */
     static void store(long dstPageAddr,
         int dstOff,
-        BPlusIO<GridH2SearchRow> srcIo,
+        BPlusIO<H2Row> srcIo,
         long srcPageAddr,
         int srcIdx,
         boolean storeMvcc)

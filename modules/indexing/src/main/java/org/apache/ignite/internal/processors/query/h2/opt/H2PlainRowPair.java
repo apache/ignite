@@ -23,7 +23,7 @@ import org.h2.value.Value;
 /**
  * Row of two values.
  */
-public class H2PlainSearchRowPair extends H2SearchRowAdapter {
+public class H2PlainRowPair extends H2Row {
     /** */
     private Value v1;
 
@@ -34,7 +34,7 @@ public class H2PlainSearchRowPair extends H2SearchRowAdapter {
      * @param v1 First value.
      * @param v2 Second value.
      */
-    public H2PlainSearchRowPair(Value v1, Value v2) {
+    public H2PlainRowPair(Value v1, Value v2) {
         this.v1 = v1;
         this.v2 = v2;
     }
@@ -61,7 +61,12 @@ public class H2PlainSearchRowPair extends H2SearchRowAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(H2PlainSearchRowPair.class, this);
+        return S.toString(H2PlainRowPair.class, this);
     }
 }

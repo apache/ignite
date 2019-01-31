@@ -29,7 +29,7 @@ import org.h2.value.ValueNull;
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
  */
-public class H2SearchRow extends H2SearchRowAdapter {
+public class H2SearchRow extends H2Row {
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -172,6 +172,11 @@ public class H2SearchRow extends H2SearchRowAdapter {
     /** {@inheritDoc} */
     @Override public long expireTime() {
         return expireTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return true;
     }
 
     /** {@inheritDoc} */

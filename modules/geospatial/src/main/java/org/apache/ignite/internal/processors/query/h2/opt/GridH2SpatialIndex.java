@@ -265,7 +265,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
-        GridH2SearchRow old = remove(row);
+        H2Row old = remove(row);
 
         return old != null;
     }
@@ -338,7 +338,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @return Iterator over rows.
      */
     @SuppressWarnings("unchecked")
-    private GridCursor<GridH2SearchRow> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
+    private GridCursor<H2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
             return H2Utils.EMPTY_CURSOR;
 
@@ -386,7 +386,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            GridCursor<GridH2SearchRow> iter = rowIterator(segment.keySet().iterator(), null);
+            GridCursor<H2Row> iter = rowIterator(segment.keySet().iterator(), null);
 
             return new SingleRowCursor(iter.next() ? iter.get() : null);
         }

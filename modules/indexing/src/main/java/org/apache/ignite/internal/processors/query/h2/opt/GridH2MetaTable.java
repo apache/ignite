@@ -80,7 +80,7 @@ public class GridH2MetaTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Row getTemplateRow() {
-        return new H2PlainSearchRow(4);
+        return new H2PlainRow(4);
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public class GridH2MetaTable extends TableBase {
         if (singleColumn)
             return PlainRowFactory.create((Value)null);
 
-        return new H2PlainSearchRow(4);
+        return new H2PlainRow(4);
     }
 
     /** {@inheritDoc} */

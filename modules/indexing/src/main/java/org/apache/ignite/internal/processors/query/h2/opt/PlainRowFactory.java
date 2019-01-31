@@ -30,7 +30,7 @@ public class PlainRowFactory extends RowFactory {
      * @return Row.
      */
     public static Row create(Value v) {
-        return new H2PlainSearchRowSingle(v);
+        return new H2PlainRowSingle(v);
     }
 
     /**
@@ -43,13 +43,13 @@ public class PlainRowFactory extends RowFactory {
                 throw new IllegalStateException("Zero columns row.");
 
             case 1:
-                return new H2PlainSearchRowSingle(data[0]);
+                return new H2PlainRowSingle(data[0]);
 
             case 2:
-                return new H2PlainSearchRowPair(data[0], data[1]);
+                return new H2PlainRowPair(data[0], data[1]);
 
             default:
-                return new H2PlainSearchRow(data);
+                return new H2PlainRow(data);
         }
     }
 

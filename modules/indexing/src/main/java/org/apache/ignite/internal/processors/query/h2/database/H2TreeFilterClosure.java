@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVer
 /**
  *
  */
-public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRow, GridH2SearchRow>, MvccDataPageClosure {
+public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<H2Row, H2Row>, MvccDataPageClosure {
     /** */
     private final MvccSnapshot mvccSnapshot;
 
@@ -69,7 +69,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(BPlusTree<GridH2SearchRow, GridH2SearchRow> tree, BPlusIO<GridH2SearchRow> io,
+    @Override public boolean apply(BPlusTree<H2Row, H2Row> tree, BPlusIO<H2Row> io,
         long pageAddr, int idx)  throws IgniteCheckedException {
         return (filter  == null || applyFilter((H2RowLinkIO)io, pageAddr, idx))
             && (mvccSnapshot == null || applyMvcc((H2RowLinkIO)io, pageAddr, idx));
