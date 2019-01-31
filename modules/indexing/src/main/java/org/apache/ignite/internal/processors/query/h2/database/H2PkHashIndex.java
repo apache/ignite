@@ -99,7 +99,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-        return find(filter.getSession(), first, last, GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()));
+        return find(filter.getSession(), first, last,
+            GridH2QueryContext.get().usedColumsInfo() != null ?
+                GridH2QueryContext.get().usedColumsInfo().get(filter.getTableAlias()) : null);
     }
 
     /** {@inheritDoc} */
