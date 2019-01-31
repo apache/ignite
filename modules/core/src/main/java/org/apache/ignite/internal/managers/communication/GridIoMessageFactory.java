@@ -124,8 +124,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
@@ -137,7 +139,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
@@ -184,8 +185,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
-import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
+import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
@@ -1010,11 +1011,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 142:
-                msg = new MvccWaitTxsRequest();
-
-                break;
-
             case 143:
                 msg = new GridCacheMvccEntryInfo();
 
@@ -1147,6 +1143,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 169:
                 msg = new ServiceSingleNodeDeploymentResult();
+
+                break;
+
+            case 170:
+                msg = new DeadlockProbe();
+
+                break;
+
+            case 171:
+                msg = new ProbedTx();
 
                 break;
 

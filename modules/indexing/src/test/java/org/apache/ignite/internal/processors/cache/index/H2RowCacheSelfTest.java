@@ -38,14 +38,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnhea
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
-@RunWith(JUnit4.class)
 public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
@@ -176,12 +173,14 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
         assertEquals(0, rowCache.size());
 
         // Warmup cache.
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
         // Query again - are there any leaks?
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize / 2, rowCache.size());
 
@@ -191,7 +190,8 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(maxSize / 2, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")
+            .setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
@@ -201,16 +201,16 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(maxSize, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(maxSize, rowCache.size());
 
         // Delete all.
-        cache.query(new SqlFieldsQuery("DELETE FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("DELETE FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
 
-        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value").setDataPageScanEnabled(false)).getAll();
 
         assertEquals(0, rowCache.size());
     }

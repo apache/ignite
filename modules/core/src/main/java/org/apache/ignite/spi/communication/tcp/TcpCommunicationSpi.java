@@ -3379,7 +3379,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            int lastWaitingTimeout = 1;
+            long needWaitDelay0 = 200;
 
             while (session == null) { // Reconnection on handshake timeout.
                 if (stopping)
@@ -3496,10 +3496,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 recoveryDesc.release();
 
                             if (needWait) {
-                                if (lastWaitingTimeout < 60000)
-                                    lastWaitingTimeout *= 2;
+                                /*
+                                    https://issues.apache.org/jira/browse/IGNITE-7648
+                                    We should add failure detection check here like exception case.
+                                */
+                                if (needWaitDelay0 < 60_000)
+                                    needWaitDelay0 *= 2;
 
-                                U.sleep(lastWaitingTimeout);
+                                if (log.isDebugEnabled())
+                                    log.debug("NEED_WAIT received, reconnect after delay [node = "
+                                        + node + ", delay = " + needWaitDelay0 + "ms]");
+
+                                U.sleep(needWaitDelay0);
                             }
                         }
                     }
@@ -3851,10 +3859,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                U.writeFully(ch, sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
             }
             else
-                ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
+                U.writeFully(ch, ByteBuffer.wrap(U.IGNITE_HEADER));
 
             // Step 2. Prepare Handshake message to send remote node.
             if (log.isDebugEnabled())
@@ -3873,13 +3881,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                ch.write(sslHnd.encrypt(buf));
+                U.writeFully(ch, sslHnd.encrypt(buf));
             }
             else
-                ch.write(buf);
+                U.writeFully(ch, buf);
 
             if (log.isDebugEnabled())
                 log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
+
 
             // Step 3. Waiting the response from remote node with their receive count.
             if (isSslEnabled()) {

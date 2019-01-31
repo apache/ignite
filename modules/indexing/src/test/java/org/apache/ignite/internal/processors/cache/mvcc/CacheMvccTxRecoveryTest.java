@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -54,10 +55,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,7 +71,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** */
-@RunWith(JUnit4.class)
 public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /** */
     public enum TxEndResult {
@@ -401,9 +398,10 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10766")
     @Test
     public void testCountersNeighborcastServerFailed() throws Exception {
+        // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing
+
         int srvCnt = 4;
 
         startGridsMultiThreaded(srvCnt);
@@ -479,13 +477,13 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
                 latch1.countDown();
 
-                latch2.await();
+                latch2.await(getTestTimeout(), TimeUnit.MILLISECONDS);
             }
 
             return null;
         });
 
-        latch1.await();
+        latch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // drop primary
         victim.close();
@@ -499,7 +497,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         latch2.countDown();
 
-        backgroundTxFut.get();
+        backgroundTxFut.get(getTestTimeout());
 
         assertTrue(liveNodes.stream()
             .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())

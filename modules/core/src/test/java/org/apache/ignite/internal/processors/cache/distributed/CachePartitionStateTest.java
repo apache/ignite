@@ -39,8 +39,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -50,7 +48,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CachePartitionStateTest extends GridCommonAbstractTest {
     /** */
     private boolean client;

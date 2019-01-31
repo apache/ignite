@@ -127,6 +127,9 @@ public class GridNioServer<T> {
     /** Selection key meta key. */
     private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Meta key for pending requests to be written. */
+    private static final int REQUESTS_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -1426,12 +1429,18 @@ public class GridNioServer<T> {
 
                         return;
                     }
+                    else {
+                        List<SessionWriteRequest> requests = ses.removeMeta(REQUESTS_META_KEY);
+
+                        if (requests != null)
+                            onRequestsWritten(ses, requests);
+                    }
                 }
 
                 ByteBuffer buf = ses.writeBuffer();
 
                 if (ses.meta(WRITE_BUF_LIMIT) != null)
-                    buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                    buf.limit(ses.meta(WRITE_BUF_LIMIT));
 
                 SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
@@ -1462,8 +1471,10 @@ public class GridNioServer<T> {
                     Message msg;
                     boolean finished = false;
 
+                    List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
+
                     if (req != null) {
-                        msg = (Message)req.message();
+                        msg = (Message) req.message();
 
                         assert msg != null;
 
@@ -1473,7 +1484,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            onMessageWritten(ses, msg);
+                            pendingRequests.add(req);
 
                             if (writer != null)
                                 writer.reset();
@@ -1482,8 +1493,6 @@ public class GridNioServer<T> {
 
                     // Fill up as many messages as possible to write buffer.
                     while (finished) {
-                        req.onMessageWritten();
-
                         req = systemMessage(ses);
 
                         if (req == null)
@@ -1492,7 +1501,7 @@ public class GridNioServer<T> {
                         if (req == null)
                             break;
 
-                        msg = (Message)req.message();
+                        msg = (Message) req.message();
 
                         assert msg != null;
 
@@ -1502,7 +1511,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            onMessageWritten(ses, msg);
+                            pendingRequests.add(req);
 
                             if (writer != null)
                                 writer.reset();
@@ -1556,13 +1565,17 @@ public class GridNioServer<T> {
                     if (buf.hasRemaining()) {
                         ses.addMeta(BUF_META_KEY, buf);
 
+                        ses.addMeta(REQUESTS_META_KEY, pendingRequests);
+
                         break;
                     }
                     else {
+                        onRequestsWritten(ses, pendingRequests);
+
                         buf = ses.writeBuffer();
 
                         if (ses.meta(WRITE_BUF_LIMIT) != null)
-                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                            buf.limit(ses.meta(WRITE_BUF_LIMIT));
                     }
                 }
             }
@@ -1752,6 +1765,19 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DirectNioClientWorker.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Notifies SessionWriteRequests and it's messages when requests were actually written.
+     * @param ses GridNioSession.
+     * @param requests SessionWriteRequests.
+     */
+    private void onRequestsWritten(GridSelectorNioSessionImpl ses, List<SessionWriteRequest> requests) {
+        for (SessionWriteRequest request : requests) {
+            request.onMessageWritten();
+
+            onMessageWritten(ses, (Message)request.message());
         }
     }
 

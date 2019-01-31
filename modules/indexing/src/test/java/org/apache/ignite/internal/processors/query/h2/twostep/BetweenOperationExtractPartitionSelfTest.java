@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -41,17 +40,13 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test checks partition extraction for between (where x between 10 and 17) and simple range (where x > 10 and x < 17)
  * expressions.
  */
-@RunWith(JUnit4.class)
 public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 8;
@@ -478,22 +473,6 @@ public class BetweenOperationExtractPartitionSelfTest extends GridCommonAbstract
 
         // Default limit (16) exceeded.
         testBetweenConstOperator(BETWEEN_QRY, 1, 17,  17, EMPTY_PARTITIONS_ARRAY);
-    }
-
-    /**
-     * Check custom partitions limit exceeding.
-     */
-    @Test
-    public void testBetweenPartitionsCustomLimitExceeding() {
-        try (GridTestUtils.SystemProperty ignored = new GridTestUtils.
-            SystemProperty(IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN, "4")){
-
-            // Default limit (16) not exceeded.
-            testBetweenConstOperator(BETWEEN_QRY, 1, 4, 4);
-
-            // Default limit (16) exceeded.
-            testBetweenConstOperator(BETWEEN_QRY, 1, 5, 5, EMPTY_PARTITIONS_ARRAY);
-        }
     }
 
     /**

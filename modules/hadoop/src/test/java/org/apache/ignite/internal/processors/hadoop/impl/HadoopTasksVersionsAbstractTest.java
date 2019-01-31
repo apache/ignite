@@ -33,13 +33,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
  */
-@RunWith(JUnit4.class)
 abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTest {
     /** Empty hosts array. */
     private static final String[] HOSTS = new String[0];
