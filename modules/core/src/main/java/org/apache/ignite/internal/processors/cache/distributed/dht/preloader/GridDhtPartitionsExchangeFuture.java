@@ -3170,7 +3170,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (grp.hasCache(cacheName)) {
                             grp.topology().resetLostPartitions(initialVersion());
 
-                            return null;
+                            break;
                         }
                     }
 
