@@ -46,6 +46,7 @@ namespace ignite
                 binary::BinaryTypeManager& typeMgr) :
                 ioMutex(),
                 address(),
+                nodeGuid(),
                 config(cfg),
                 typeMgr(typeMgr),
                 currentVersion(VERSION_DEFAULT),
@@ -310,6 +311,11 @@ namespace ignite
                     reader.ReadInt32();
 
                     return false;
+                }
+
+                if (propVer >= VERSION_1_3_0)
+                {
+                    nodeGuid = reader.ReadGuid();
                 }
 
                 return true;

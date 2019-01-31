@@ -24,6 +24,7 @@
 
 #include <ignite/thin/ignite_client_configuration.h>
 
+#include <ignite/guid.h>
 #include <ignite/common/concurrent.h>
 
 #include <ignite/network/end_point.h>
@@ -161,6 +162,15 @@ namespace ignite
                 const network::EndPoint& GetAddress() const
                 {
                     return address;
+                }
+
+                /**
+                 * Get GUID of the remote node.
+                 * @return GUID.
+                 */
+                const Guid& GetGuid() const
+                {
+                    return nodeGuid;
                 }
 
             private:
@@ -311,6 +321,9 @@ namespace ignite
 
                 /** Remote host address. */
                 network::EndPoint address;
+
+                /** Guid of the remote node. */
+                Guid nodeGuid;
 
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration& config;
