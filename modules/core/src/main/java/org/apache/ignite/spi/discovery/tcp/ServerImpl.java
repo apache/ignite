@@ -52,6 +52,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -115,6 +116,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
+import org.apache.ignite.spi.discovery.tcp.internal.FutureTask;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
@@ -129,6 +131,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDummyWakeupMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
@@ -188,6 +191,9 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
+
+    /** */
+    private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
     /** When this interval pass connection check will be performed. */
     private static final int CON_CHECK_INTERVAL = 500;
@@ -944,49 +950,47 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!auth && spi.nodeAuth != null)
                     localAuthentication(locCred);
 
-                final CountDownLatch execLatch = new CountDownLatch(1);
+                FutureTask<Void> fut = msgWorker.addTask(new FutureTask<Void>() {
+                    @Override protected Void body() {
+                        pendingCustomMsgs.clear();
+                        msgWorker.pendingMsgs.reset(null, null, null);
+                        msgWorker.next = null;
+                        failedNodes.clear();
+                        leavingNodes.clear();
+                        failedNodesMsgSent.clear();
 
-                msgWorker.addTask(() -> {
-                    pendingCustomMsgs.clear();
-                    msgWorker.pendingMsgs.reset(null, null, null);
-                    msgWorker.next = null;
-                    failedNodes.clear();
-                    leavingNodes.clear();
-                    failedNodesMsgSent.clear();
+                        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
-                    locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                        locNode.order(1);
+                        locNode.internalOrder(1);
 
-                    locNode.order(1);
-                    locNode.internalOrder(1);
+                        spi.gridStartTime = U.currentTimeMillis();
 
-                    spi.gridStartTime = U.currentTimeMillis();
+                        locNode.visible(true);
 
-                    locNode.visible(true);
+                        ring.clear();
 
-                    ring.clear();
+                        ring.topologyVersion(1);
 
-                    ring.topologyVersion(1);
+                        synchronized (mux) {
+                            topHist.clear();
 
-                    synchronized (mux) {
-                        topHist.clear();
+                            spiState = CONNECTED;
 
-                        spiState = CONNECTED;
+                            mux.notifyAll();
+                        }
 
-                        mux.notifyAll();
+                        notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
+
+                        return null;
                     }
-
-                    notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
-
-                    execLatch.countDown();
                 });
 
                 try {
-                    execLatch.await();
+                    fut.get();
                 }
-                catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-
-                    throw new IgniteSpiException("Thread has been interrupted.");
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSpiException(e);
                 }
 
                 break;
@@ -1022,7 +1026,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else if (spiState == CHECK_FAILED)
                     throw spi.checkFailedError((TcpDiscoveryCheckFailedMessage)joinRes.get());
                 else if (spiState == RING_FAILED) {
-                    // TODO add more info about failed nodes.
                     throw new IgniteSpiException("Unable to connect to next nodes in a ring, it seems local node is " +
                         "experiencing connectivity issues or the rest of the cluster is undergoing massive restarts. " +
                         "Failing local node join to avoid case when one node fails a big part of cluster. To disable" +
@@ -2673,12 +2676,15 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Message worker for discovery messages processing.
      */
-    private class RingMessageWorker extends MessageWorker<Object> {
+    private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Next node. */
         private TcpDiscoveryNode next;
 
         /** Pending messages. */
         private final PendingMessages pendingMsgs = new PendingMessages();
+
+        /** */
+        private final ConcurrentLinkedQueue<FutureTask<Void>> tasks = new ConcurrentLinkedQueue<>();
 
         /** Last message that updated topology. */
         private TcpDiscoveryAbstractMessage lastMsg;
@@ -2725,6 +2731,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 updateHeartbeat();
 
                 onIdle();
+
+                runTasks();
             });
         }
 
@@ -2733,8 +2741,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param task Task to run in the message worker thread.
          */
-        void addTask(Runnable task) {
-            queue.addFirst(task);
+        FutureTask<Void> addTask(FutureTask<Void> task) {
+            tasks.add(task);
+
+            addMessage(WAKEUP);
+
+            return task;
         }
 
         /**
@@ -2756,7 +2768,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            queue.add(msg);
+            if (msg.highPriority())
+                queue.addFirst(msg);
+            else
+                queue.add(msg);
 
             if (log.isDebugEnabled())
                 log.debug("Message has been added to queue: " + msg);
@@ -2833,27 +2848,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.info("Connection check threshold is calculated: " + connCheckThreshold);
         }
 
+        /**
+         */
+        protected void runTasks() {
+            FutureTask<Void> task;
+
+            while ((task = tasks.poll()) != null)
+                task.run();
+        }
+
         /** {@inheritDoc} */
-        @Override protected void processMessage(Object obj) {
-            if (obj instanceof TcpDiscoveryAbstractMessage)
-                processDiscoveryMessage((TcpDiscoveryAbstractMessage)obj);
-            else if (obj instanceof Runnable)
-                processTask((Runnable)obj);
-            else
-                U.error(log, "Invalid object submitted to ring message worker: " + obj);
-        }
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            if (msg == WAKEUP)
+                return;
 
-        /**
-         * @param task Task to execute in message worker thread.
-         */
-        protected void processTask(Runnable task) {
-            task.run();
-        }
-
-        /**
-         * @param msg Message to process.
-         */
-        protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
             spi.startMessageProcess(msg);
 
             sendMetricsUpdateMessage();
@@ -3185,7 +3193,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     sock = null;
 
                                     if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail();
+                                        segmentLocalNodeOnSendFail(failedNodes);
 
                                         return; // Nothing to do here.
                                     }
@@ -3520,7 +3528,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (sndState != null && sndState.isFailed()) {
-                        segmentLocalNodeOnSendFail();
+                        segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
                     }
@@ -3597,7 +3605,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Segment local node on failed message send.
          */
-        private void segmentLocalNodeOnSendFail() {
+        private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
+            String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
+
             synchronized (mux) {
                 if (spiState == CONNECTING) {
                     U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
@@ -3605,7 +3615,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         "local node join to avoid case when one node fails a big part of cluster. To disable" +
                         " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
                         "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                        + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+                        + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
 
                     spiState = RING_FAILED;
 
@@ -3620,7 +3630,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 "to avoid case when one node fails a big part of cluster. To disable" +
                 " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
                 "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+                + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
 
             notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
@@ -5124,7 +5134,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 else if (locNodeId.equals(failedNodeId)) {
-                    segmentLocalNodeOnSendFail();
+                    segmentLocalNodeOnSendFail(null);
 
                     return;
                 }
