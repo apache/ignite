@@ -13,9 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.query.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -24,44 +25,39 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Cancel map part of query request.
+ * Query kill request.
  */
-public class GridQueryCancelRequest implements Message {
+public class GridQueryKillRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private long qryReqId;
+    /** Query id on a node. */
+    private long nodeQryId;
 
     /**
      * Default constructor.
      */
-    public GridQueryCancelRequest() {
+    public GridQueryKillRequest() {
         // No-op.
     }
 
     /**
-     * @param qryReqId Query request ID.
+     * @param nodeQryId Query ID on a node.
      */
-    public GridQueryCancelRequest(long qryReqId) {
-        this.qryReqId = qryReqId;
+    public GridQueryKillRequest(long nodeQryId) {
+        this.nodeQryId = nodeQryId;
     }
 
     /**
-     * @return Query request ID.
+     * @return Query id on a node.
      */
-    public long queryRequestId() {
-        return qryReqId;
+    public long nodeQryId() {
+        return nodeQryId;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryCancelRequest.class, this);
     }
 
     /** {@inheritDoc} */
@@ -77,11 +73,10 @@ public class GridQueryCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong("nodeQryId", nodeQryId))
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -96,7 +91,7 @@ public class GridQueryCancelRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                qryReqId = reader.readLong("qryReqId");
+                nodeQryId = reader.readLong("nodeQryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -105,16 +100,21 @@ public class GridQueryCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryCancelRequest.class);
+        return reader.afterMessageRead(GridQueryKillRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 106;
+        return -54;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryKillRequest.class, this);
     }
 }

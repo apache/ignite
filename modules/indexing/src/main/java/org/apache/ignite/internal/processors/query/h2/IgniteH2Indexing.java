@@ -46,6 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -92,9 +93,8 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
-import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -120,6 +120,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -136,8 +137,10 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -145,6 +148,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -174,6 +178,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
@@ -199,7 +204,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Q
 public class IgniteH2Indexing implements GridQueryIndexing {
     /** A pattern for commands having internal implementation in Ignite. */
     public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user",
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user|^kill\\s+query",
         Pattern.CASE_INSENSITIVE);
 
     /*
@@ -214,7 +219,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
-        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+        singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
 
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
@@ -287,6 +292,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridKernalContext kernalContext() {
         return ctx;
     }
+
+    /** */
+    private final CIX2<ClusterNode, Message> locNodeQueryHnd = new CIX2<ClusterNode, Message>() {
+        @Override public void applyx(ClusterNode locNode, Message msg) {
+            onMessage(locNode.id(), msg);
+        }
+    };
 
     /**
      * @param c Connection.
@@ -1273,7 +1285,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || cmd instanceof SqlSetStreamingCommand
                 || cmd instanceof SqlCreateUserCommand
                 || cmd instanceof SqlAlterUserCommand
-                || cmd instanceof SqlDropUserCommand))
+                || cmd instanceof SqlDropUserCommand
+                || cmd instanceof SqlKillQueryCommand))
                 return null;
 
             return cmd;
@@ -1314,7 +1327,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Execute.
         if (cmd instanceof SqlBulkLoadCommand)
-            return Collections.singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
+            return singletonList(dmlProc.runNativeDmlStatement(schemaName, qry.getSql(), cmd));
 
         //Always registry new running query for native commands except COPY. Currently such operations don't support cancellation.
         Long qryId = registerRunningQuery(schemaName, null, qry.getSql(), qry.isLocal(), true);
@@ -1326,7 +1339,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || cmd instanceof SqlCreateUserCommand
                 || cmd instanceof SqlAlterUserCommand
                 || cmd instanceof SqlDropUserCommand)
-                return Collections.singletonList(ddlProc.runDdlStatement(qry.getSql(), cmd));
+                return singletonList(ddlProc.runDdlStatement(qry.getSql(), cmd));
             else if (cmd instanceof SqlSetStreamingCommand) {
                 if (cliCtx == null)
                     throw new IgniteSQLException("SET STREAMING command can only be executed from JDBC or ODBC driver.");
@@ -1339,10 +1352,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 else
                     cliCtx.disableStreaming();
             }
+            else if (cmd instanceof SqlKillQueryCommand)
+                processKillQueryCommand((SqlKillQueryCommand)cmd, qry);
             else
                 processTxCommand(cmd, qry);
 
-            return Collections.singletonList(H2Utils.zeroCursor());
+            return singletonList(H2Utils.zeroCursor());
         }
         catch (IgniteCheckedException e) {
             fail = true;
@@ -1353,6 +1368,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             runningQueryMgr.unregister(qryId, fail);
         }
+    }
+
+    /**
+     * Process kill query command
+     *
+     * @param cmd Command.
+     * @param qry Query.
+     */
+    private void processKillQueryCommand(SqlKillQueryCommand cmd, SqlFieldsQuery qry) {
+        ClusterNode node = ctx.cluster().get().node(cmd.getNodeId());
+
+        if (node != null) {
+            send(GridTopic.TOPIC_QUERY,
+                GridTopic.TOPIC_QUERY.ordinal(),
+                Collections.singleton(node),
+                new GridQueryKillRequest(cmd.getNodeQryId()),
+                null,
+                locNodeQueryHnd,
+                GridIoPolicy.MANAGEMENT_POOL,
+                false);
+        }
+        else
+            U.warn(log, "Kill query command runs on unknown node [qry=" + qry.getSql() + ", nodeId=" + cmd.getNodeId() + "]");
     }
 
     /**
@@ -1371,6 +1409,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Process transactional command.
+     *
      * @param cmd Command.
      * @param qry Query.
      * @throws IgniteCheckedException if failed.
@@ -1509,7 +1548,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-                    res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+                    res = singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                         startTx, tracker, cancel, registerAsNewQry));
 
 
@@ -1630,7 +1669,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             final GridQueryFieldsResult updRes =
                                 dmlProc.updateSqlFieldsLocal(schemaName, conn, prepared, qry, filter, cancel);
 
-                            return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                            return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                                 @SuppressWarnings("NullableProblems")
                                 @Override public Iterator<List<?>> iterator() {
                                     try {
@@ -1660,11 +1699,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                     }
 
-                    return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
+                    return singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
                 }
 
                 if (prepared instanceof NoOperation)
-                    return Collections.singletonList(H2Utils.zeroCursor());
+                    return singletonList(H2Utils.zeroCursor());
 
                 fail = true;
 
@@ -1685,7 +1724,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (ctx.security().enabled())
                 checkSecurity(twoStepQry.cacheIds());
 
-            return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+            return singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                 startTx, tracker, cancel, registerAsNewQry));
 
         }
@@ -1694,7 +1733,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, sqlQry, loc, registerAsNewQry);
 
         try {
-            return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
+            return singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
             runningQueryMgr.unregister(qryId, true);
@@ -2429,6 +2468,60 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
         JdbcUtils.serializer = h2Serializer();
+
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, (nodeId, msg, plc) -> {
+            if (!busyLock.enterBusy())
+                return;
+
+            try {
+                if (msg instanceof GridCacheQueryMarshallable)
+                    ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+
+                onMessage(nodeId, msg);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        });
+
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
+        try {
+            assert msg != null;
+
+            ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node == null)
+                return; // Node left, ignore.
+
+            boolean processed = true;
+
+            if (msg instanceof GridQueryKillRequest)
+                onQueryKillRequest((GridQueryKillRequest)msg);
+            else
+                processed = false;
+
+            if (processed && log.isDebugEnabled())
+                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+        }
+        catch(Throwable th) {
+            U.error(log, "Failed to process message: " + msg, th);
+        }
+    }
+
+
+    /**
+     * Process request to kill query.
+     *
+     * @param msg Message.
+     */
+    private void onQueryKillRequest(GridQueryKillRequest msg) {
+        cancelQueries(singletonList(msg.nodeQryId()));
     }
 
     /**
