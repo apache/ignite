@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -4278,8 +4279,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         try {
                             tx.rollback();
 
-                            e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
-                                tx.xid(), e);
+                            if (!(e instanceof TransactionCheckedException))
+                                e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
+                                    tx.xid(), e);
                         }
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
                             U.error(log, "Failed to rollback transaction (cache may contain stale locks): " +

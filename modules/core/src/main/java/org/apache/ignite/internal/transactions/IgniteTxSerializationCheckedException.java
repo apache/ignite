@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Exception thrown whenever transaction can't be serialized due to write conflict.
  */
-public class IgniteTxSerializationCheckedException extends IgniteCheckedException {
+public class IgniteTxSerializationCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

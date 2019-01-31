@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
  */
-public class IgniteTxDuplicateKeyCheckedException extends IgniteCheckedException {
+public class IgniteTxDuplicateKeyCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
