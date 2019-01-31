@@ -309,7 +309,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Handle getting high.
             if (g.gettingHigh) {
                 if (-idx - 1 == cnt)
-                    return RETRY; // Need to get higher if we are on the rightmost edge.
+                    return RETRY; // Need to get higher if we are on the right edge.
 
                 g.gettingHigh = false; // We are high enough to have valid search from here.
             }
@@ -1829,7 +1829,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     default:
                         if (!x.isFinished()) {
-                            if (!x.tryFinish() || x.nextRow(FOUND)) {
+                            if (!x.tryFinish()) {
                                 checkInterrupted();
 
                                 continue;
@@ -1837,6 +1837,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             assert x.isFinished(): res;
                         }
+
+                        if (x.nextRow(FOUND))
+                            continue;
 
                         return;
                 }
