@@ -35,6 +35,9 @@ public class ExponentialBackoffSpiTimeout {
     /** Default backoff coefficient. */
     private static final int DLFT_BACKOFF_COEFF = 2;
 
+    /** Default initial delay for out of topology and reconnects. */
+    private static final int DLFT_INITIAL_DELAY = 200;
+
     /** Initial connection totalTimeout. */
     private final long connTimeout;
 
@@ -53,6 +56,12 @@ public class ExponentialBackoffSpiTimeout {
     /** Start of operation to check totalTimeout. */
     private final long start;
 
+    /** Failure detection timeout. */
+    private final long failureDetectionTimeout;
+
+    /** Failure detection timeout enabled. */
+    private final boolean failureDetectionTimeoutEnabled;
+
     /** Current connection totalTimeout, ms. */
     private long currConnTimeout;
 
@@ -60,10 +69,10 @@ public class ExponentialBackoffSpiTimeout {
     private long currHandshakeTimeout;
 
     /** Current out of topology delay, ms. */
-    private long currOutOfTopDelay = 200;
+    private long currOutOfTopDelay = DLFT_INITIAL_DELAY;
 
     /** Delay between reconnects in case of recoverable network errors (like unavailable network routes, DNS), ms. */
-    private long currReconnectDelay = 200;
+    private long currReconnectDelay = DLFT_INITIAL_DELAY;
 
     /**
      *
@@ -80,6 +89,9 @@ public class ExponentialBackoffSpiTimeout {
         long maxConnTimeout,
         int reconCnt
     ) {
+        this.failureDetectionTimeout = failureDetectionTimeout;
+        this.failureDetectionTimeoutEnabled = failureDetectionTimeoutEnabled;
+
         this.connTimeout = connTimeout;
         this.maxConnTimeout = maxConnTimeout;
 
@@ -103,8 +115,12 @@ public class ExponentialBackoffSpiTimeout {
 
     /**
      * @return Current hanshakeTimeout.
+     * @throws IgniteSpiOperationTimeoutException in case of timeout reached at the moment.
      */
-    public long handshakeTimeout() {
+    public long handshakeTimeout() throws IgniteSpiOperationTimeoutException {
+        if(checkTimeout(0))
+            throw new IgniteSpiOperationTimeoutException("Network operation timed out [timeout = " +this +"]");
+
         return currHandshakeTimeout;
     }
 
@@ -176,27 +192,29 @@ public class ExponentialBackoffSpiTimeout {
     }
 
     /**
-     * Check whether totalTimeout of operation reached.
      *
-     * @return True if totalTimeout reached.
+     * @param timeInFut Some time in millis in future.
+     * @return True if timeout enabled.
      */
-    public boolean checkTimeout() {
-        return remainingTime(U.currentTimeMillis()) <= 0;
+    public boolean checkTimeout(long timeInFut) {
+        return remainingTime(U.currentTimeMillis() + timeInFut) <= 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "ExponentialBackoffSpiTimeout{" +
-            "connTimeout=" + connTimeout +
-            ", maxConnTimeout=" + maxConnTimeout +
-            ", reconCnt=" + reconCnt +
-            ", backoffCoeff=" + backoffCoeff +
-            ", totalTimeout=" + totalTimeout +
-            ", start=" + start +
-            ", currConnTimeout=" + currConnTimeout +
-            ", currHandshakeTimeout=" + currHandshakeTimeout +
-            ", currOutOfTopDelay=" + currOutOfTopDelay +
-            ", currReconnectDelay=" + currReconnectDelay +
-            '}';
+                "connTimeout=" + connTimeout +
+                ", maxConnTimeout=" + maxConnTimeout +
+                ", reconCnt=" + reconCnt +
+                ", backoffCoeff=" + backoffCoeff +
+                ", totalTimeout=" + totalTimeout +
+                ", start=" + start +
+                ", failureDetectionTimeout=" + failureDetectionTimeout +
+                ", failureDetectionTimeoutEnabled=" + failureDetectionTimeoutEnabled +
+                ", currConnTimeout=" + currConnTimeout +
+                ", currHandshakeTimeout=" + currHandshakeTimeout +
+                ", currOutOfTopDelay=" + currOutOfTopDelay +
+                ", currReconnectDelay=" + currReconnectDelay +
+                '}';
     }
 }

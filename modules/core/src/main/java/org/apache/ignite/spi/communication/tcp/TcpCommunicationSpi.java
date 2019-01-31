@@ -3355,7 +3355,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
                         else if (rcvCnt == NEED_WAIT) {
-                            if (timeoutHelper.checkTimeout()) {
+                            long outOfTopDelay = timeoutHelper.getAndBackOffOutOfTopDelay();
+
+                            //check that failure timeout will be reached after sleep(outOfTopDelay).
+                            if (timeoutHelper.checkTimeout(outOfTopDelay)) {
                                 U.warn(log, "Handshake NEED_WAIT timed out (will stop attempts to perform the handshake) " +
                                     "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
                                     ", addr=" + addr + ']');
@@ -3367,8 +3370,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                         "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
                             }
                             else {
-                                long outOfTopDelay = timeoutHelper.getAndBackOffOutOfTopDelay();
-
                                 if (log.isDebugEnabled())
                                     log.debug("NEED_WAIT received, handshake after delay [node = "
                                         + node + ", outOfTopologyDelay = " + outOfTopDelay + "ms]");
@@ -3415,7 +3416,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 ", addr=" + addr + ", err=" + e + ']'
                         );
 
-                    if (timeoutHelper.checkTimeout()) {
+                    if (timeoutHelper.checkTimeout(0)) {
                         U.warn(log, "Handshake timed out (will stop attempts to perform the handshake) " +
                             "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
                             ", err=" + e.getMessage() + ", addr=" + addr + ']');
@@ -3451,15 +3452,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
-                    if (timeoutHelper.checkTimeout()) {
+                    long reconnectDelay = 0;
+
+                    if (isRecoverableException(e))
+                        reconnectDelay = timeoutHelper.getAndBackoffReconnectDelay();
+
+                    // check if timeout occured in case of unrecoverable exception
+                    // or will occur after sleep(reconnect) delay in future.
+                    if (timeoutHelper.checkTimeout(reconnectDelay)) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
-                            "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
-                            ", err=" + e.getMessage() + ", addr=" + addr + ']');
+                                "[node=" + node.id() + ", timeoutHelper=" + timeoutHelper +
+                                ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         String msg = "Failed to connect to node (is node still alive?). " +
-                            "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                            "in order to prevent parties from waiting forever in case of network issues " +
-                            "[nodeId=" + node.id() + ", addrs=" + addrs + ']';
+                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                                "in order to prevent parties from waiting forever in case of network issues " +
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']';
 
                         if (errs == null)
                             errs = new IgniteCheckedException(msg, e);
@@ -3468,12 +3476,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         break;
                     }
-                    else if (isRecoverableException(e)) {
-                        long reconnectDelay = timeoutHelper.getAndBackoffReconnectDelay();
 
+                    if (isRecoverableException(e)) {
                         if (log.isDebugEnabled())
                             log.debug("Connection recoverable exception delay [node = "
-                                + node + ", delay = " + reconnectDelay + "ms]");
+                                    + node + ", delay = " + reconnectDelay + "ms]");
 
                         U.sleep(reconnectDelay);
                     }

@@ -64,7 +64,7 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void backoff() {
+    public void backoff() throws IgniteSpiOperationTimeoutException {
         ExponentialBackoffSpiTimeout helper = new ExponentialBackoffSpiTimeout(
             true,
             5_000L,
@@ -114,7 +114,7 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         while (true) {
-            boolean timedOut = helper.checkTimeout();
+            boolean timedOut = helper.checkTimeout(0);
 
             if (timedOut) {
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);
