@@ -898,7 +898,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             /** {@inheritDoc} */
             @Override public void onChannelCreated(IgniteSocketChannel ch) {
-                log.info("New channel connection established [key=" + ch.id() + ", channel=" + ch.channel() + ']');
+                log.info("Notify corresponding listeners due to the new channel created: " + ch);
 
                 notifyListener(ch);
             }

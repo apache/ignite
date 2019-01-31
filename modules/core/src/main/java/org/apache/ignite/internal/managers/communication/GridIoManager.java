@@ -945,6 +945,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ch.topic() == null)
             return;
 
+        if (log.isInfoEnabled())
+            log.info("The new channel created. Notify listeners by topic: " + ch.topic());
+
         try {
             final ConcurrentLinkedQueue<GridIoChannelListener> lsnrQueue = channelLsnrMap.get(ch.topic());
 

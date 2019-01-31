@@ -948,7 +948,12 @@ public class GridNioServer<T> {
         IgniteSocketChannel nioSocketCh =
             new IgniteSocketChannelImpl(connKey, (SocketChannel)key.channel(), filterChain);
 
-        channels.putIfAbsent(connKey, nioSocketCh);
+        IgniteSocketChannel ch0 = channels.putIfAbsent(connKey, nioSocketCh);
+
+        assert ch0 == null;
+
+        if (log.isInfoEnabled())
+            log.info("Channel successfully created: " + nioSocketCh);
 
         return nioSocketCh;
     }
