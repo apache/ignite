@@ -200,6 +200,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** */
     private long qryId = MVCC_TRACKER_ID_NA;
+
     /** */
     private long crdVer;
 
@@ -3400,6 +3401,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         assert mvccSnapshot == null;
 
         if (state() != ACTIVE) {
+            // The transaction were concurrently rolled back.
+            // We need to notify the coordinator about that.
             assert isRollbackOnly();
 
             cctx.coordinators().ackTxRollback(res);
@@ -3409,7 +3412,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else if (crdVer != res.coordinatorVersion()) {
             setRollbackOnly();
 
-            fut.onDone(new IgniteTxRollbackCheckedException("Mvcc coordinator has been changed during request."));
+            fut.onDone(new IgniteTxRollbackCheckedException(
+                "Mvcc coordinator has been changed during request. " +
+                "Please retry on a stable topology."));
         }
         else
             fut.onDone(mvccSnapshot = res);
@@ -3418,7 +3423,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (isDone // Already finished.
-            || crdVer == 0 // Mvcc snapshot has not been requested yet.
+            || crdVer == 0 // Mvcc snapshot has not been requested yet or it's an non-mvcc transaction.
             || newCrd.version() == crdVer) // Acceptable operations reordering.
             return MVCC_TRACKER_ID_NA;
 
@@ -3428,7 +3433,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return MVCC_TRACKER_ID_NA;
 
         if (qryId == MVCC_TRACKER_ID_NA) {
-            long qryId0 = ID_CNTR.incrementAndGet();
+            long qryId0 = qryId = ID_CNTR.incrementAndGet();
 
             finishFuture().listen(f -> cctx.coordinators().ackQueryDone(mvccSnapshot, qryId0));
         }
