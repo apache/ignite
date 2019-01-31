@@ -3739,7 +3739,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             int idx;
 
             if (cnt == 0)
-                idx = -1; // The page is empty, nothing to search.
+                idx = -1; // The page is empty, nothing to search (and need to get higher if there are forward pages).
             else {
                 // Try to compare with the rightmost row before doing binary search.
                 int cmp = compare(lvl, io, pageAddr, cnt - 1, row);
