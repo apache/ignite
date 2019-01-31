@@ -294,7 +294,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (cnt == 0 && g.gettingHigh)
                     return RETRY;
 
-                // If we are getting high, then try to compare with the last row before binary search.
+                // If we are getting high, then try to compare with the last row before doing binary search.
                 int cmp = g.gettingHigh ? compare(lvl, io, pageAddr, cnt - 1, g.row) : 1;
 
                 if (cmp > 0)
@@ -310,7 +310,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (-idx - 1 == cnt)
                     return RETRY; // Need to get higher if we are on the rightmost edge.
 
-                g.gettingHigh = false; // We are high enough to have valid search.
+                g.gettingHigh = false; // We are high enough to have valid search from here.
             }
 
             boolean found = idx >= 0;
@@ -1799,156 +1799,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public void invokeAll(List<? extends L> sortedRows, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
-        checkDestroyed();
-
-        InvokeAll x = new InvokeAll(sortedRows, z, c);
-
-        try {
-            for (;;) {
-                x.init();
-
-                Result res = invokeAllDown(x, x.rootId, 0L, 0L, x.rootLvl);
-
-                switch (res) {
-                    case RETRY:
-                    case RETRY_ROOT:
-                        checkInterrupted();
-
-                        continue;
-
-                    default:
-                        if (!x.isFinished()) {
-                            if (!x.tryFinish()) {
-                                checkInterrupted();
-
-                                continue;
-                            }
-
-                            assert x.isFinished(): res;
-                        }
-
-                        return;
-                }
-            }
-        }
-        catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on rows: " + sortedRows, e);
-        }
-        catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on rows: " + sortedRows, e);
-        }
-        finally {
-            x.releaseAll();
-            checkDestroyed();
-        }
-    }
-
-    /**
-     * @param x Invoke operation.
-     * @param pageId Page ID.
-     * @param backId Expected backward page ID if we are going to the right.
-     * @param fwdId Expected forward page ID.
-     * @param lvl Level.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Result invokeAllDown(final InvokeAll x, final long pageId, final long backId, final long fwdId, final int lvl)
-        throws IgniteCheckedException {
-        assert lvl >= 0 : lvl;
-
-        if (x.isTail(pageId, lvl))
-            return FOUND; // We've already locked this page, so return that we are ok.
-
-        long page = acquirePage(pageId);
-
-        try {
-            Result res = RETRY;
-
-            for (;;) {
-                if (res == RETRY)
-                    x.checkLockRetry();
-
-                // Init args.
-                x.pageId(pageId);
-                x.fwdId(fwdId);
-                x.backId(backId);
-
-                res = read(pageId, page, search, x, lvl, RETRY);
-
-                switch (res) {
-                    case GO_DOWN_X:
-                        assert backId != 0;
-                        assert x.backId == 0; // We did not setup it yet.
-
-                        x.backId(pageId); // Dirty hack to setup a check inside of askNeighbor.
-
-                        // We need to get backId here for our child page, it must be the last child of our back.
-                        res = askNeighbor(backId, x, true);
-
-                        if (res != FOUND)
-                            return res; // Retry.
-
-                        assert x.backId != pageId; // It must be updated in askNeighbor.
-
-                        // Intentional fallthrough.
-                    case GO_DOWN:
-                        res = x.tryReplaceInner(pageId, page, fwdId, lvl);
-
-                        if (res != RETRY)
-                            res = invokeAllDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
-
-                        if (res == RETRY_ROOT || x.isFinished())
-                            return res;
-
-                        if (res == RETRY) {
-                            checkInterrupted();
-
-                            continue;
-                        }
-
-                        // Unfinished Put does insertion on the same level.
-                        if (x.isPut())
-                            continue;
-
-                        assert x.isRemove(); // Guarded by isFinished.
-
-                        res = x.finishOrLockTail(pageId, page, backId, fwdId, lvl);
-
-                        return res;
-
-                    case NOT_FOUND:
-                        if (lvl == 0)
-                            x.invokeClosure();
-
-                        return x.onNotFound(pageId, page, fwdId, lvl);
-
-                    case FOUND:
-                        if (lvl == 0)
-                            x.invokeClosure();
-
-                        return x.onFound(pageId, page, backId, fwdId, lvl);
-
-                    default:
-                        return res;
-                }
-            }
-        }
-        finally {
-            x.levelExit();
-
-            if (x.canRelease(pageId, lvl))
-                releasePage(pageId, page);
-        }
+        doInvoke(new InvokeAll(sortedRows, z, c));
     }
 
     /** {@inheritDoc} */
     @Override public void invoke(L row, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
-        checkDestroyed();
+        doInvoke(new Invoke(row, z, c));
+    }
 
-        Invoke x = new Invoke(row, z, c);
+    /**
+     * @param x Invoke operation.
+     */
+    private void doInvoke(Invoke x) throws IgniteCheckedException {
+        checkDestroyed();
 
         try {
             for (;;) {
@@ -1965,7 +1828,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     default:
                         if (!x.isFinished()) {
-                            if (!x.tryFinish()) {
+                            if (!x.tryFinish() || x.nextRow(FOUND)) {
                                 checkInterrupted();
 
                                 continue;
@@ -1982,10 +1845,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw e;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
+            throw new IgniteCheckedException("Runtime failure on search row: " + x.row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw new CorruptedTreeException("Runtime failure on search row: " + x.row, e);
         }
         finally {
             x.releaseAll();
@@ -2047,6 +1910,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (res != RETRY)
                             res = invokeDown(x, x.pageId, x.backId, x.fwdId, lvl - 1);
 
+                        if (x.nextRow(res))
+                            continue;
+
                         if (res == RETRY_ROOT || x.isFinished())
                             return res;
 
@@ -2064,19 +1930,32 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         res = x.finishOrLockTail(pageId, page, backId, fwdId, lvl);
 
+                        if (x.nextRow(res))
+                            continue;
+
                         return res;
 
                     case NOT_FOUND:
                         if (lvl == 0)
                             x.invokeClosure();
 
-                        return x.onNotFound(pageId, page, fwdId, lvl);
+                        res = x.onNotFound(pageId, page, fwdId, lvl);
+
+                        if (x.nextRow(res))
+                            continue;
+
+                        return res;
 
                     case FOUND:
                         if (lvl == 0)
                             x.invokeClosure();
 
-                        return x.onFound(pageId, page, backId, fwdId, lvl);
+                        res = x.onFound(pageId, page, backId, fwdId, lvl);
+
+                        if (x.nextRow(res))
+                            continue;
+
+                        return res;
 
                     default:
                         return res;
@@ -3838,22 +3717,30 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        InvokeAll(List<? extends L>  sortedRows, Object x, InvokeClosure<T> clo) {
+        InvokeAll(List<? extends L> sortedRows, Object x, InvokeClosure<T> clo) {
             super(sortedRows.get(0), x, clo);
 
             this.sortedRows = sortedRows;
         }
 
-        boolean nextRow() {
-            if (++rowIdx >= sortedRows.size())
+        /** {@inheritDoc} */
+        @Override boolean nextRow(Result res) {
+            if (res.retry || !isFinished() || rowIdx + 1 >= sortedRows.size())
                 return false;
 
-            row = sortedRows.get(rowIdx);
+            // The operation can not be finished while we are still getting high.
+            assert !gettingHigh;
+
+            // Reinitialize state to continue working with the next row.
+            row = sortedRows.get(++rowIdx);
             lockRetriesCnt = getLockRetries();
 
             closureInvoked = FALSE;
             foundRow = null;
             op = null;
+
+            // Now we will have to get high enough in the tree to be able to find place for the next row.
+            gettingHigh = true;
 
             return true;
         }
@@ -3890,6 +3777,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             this.clo = clo;
             this.x = x;
+        }
+
+        /**
+         * @param res Last result.
+         * @return {@code true} If we have switched to the next row to process it.
+         */
+        boolean nextRow(Result res) {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -4101,23 +3996,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert op != null; // Must be guarded by isFinished.
 
             if (isPut())
-                return false;
+                return false; // We still have to insert some split key to upper levels.
 
-            Result res = ((Remove)op).finishTail();
-
-            assert res == NOT_FOUND || res == FOUND || res == RETRY: res;
-
+            Result res = ((Remove)op).finishTail(); // Merge tail and finish.
+            assert res == FOUND || res == NOT_FOUND || res == RETRY: res;
             return res == FOUND;
         }
 
         /** {@inheritDoc} */
         @Override boolean isFinished() {
             if (closureInvoked != DONE)
-                return false;
+                return false; // Closure was not invoked yet.
 
             if (op == null)
-                return true;
+                return true; // Closure was invoked and it decided that there is nothing to do here.
 
+            // Closure was invoked and we have performed some operation, need to check its state.
             return op.isFinished();
         }
 
@@ -5914,10 +5808,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         NOT_FOUND,
 
         /** */
-        RETRY,
+        RETRY(true),
 
         /** */
-        RETRY_ROOT
+        RETRY_ROOT(true);
+
+        /** If it is one of retry variants. */
+        final boolean retry;
+
+        /**
+         * @param retry If it is one of retry variants.
+         */
+        Result(boolean retry) {
+            this.retry = retry;
+        }
+
+        /**
+         */
+        Result() {
+            this(false);
+        }
     }
 
     /**
