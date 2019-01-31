@@ -135,7 +135,7 @@ public class MvccFeatureChecker {
     public static void assertMvccWriteConflict(Exception e) {
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
+        if (sqlEx == null || sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
             fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
