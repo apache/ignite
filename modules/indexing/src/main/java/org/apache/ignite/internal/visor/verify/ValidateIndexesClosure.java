@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2FullRowReadOnly;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -675,7 +674,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
                 }
 
-                GridH2Row h2Row = (GridH2Row)cursor.get();
+                GridH2FullRowReadOnly h2Row = (GridH2FullRowReadOnly)cursor.get();
 
                 if (skipConditions) {
                     if (bothSkipConditions) {
@@ -698,7 +697,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     }
                 }
 
-                h2key = h2Row.key();
+                h2key = (KeyCacheObject)h2Row.key();
 
                 if (h2Row.link() != 0L) {
                     CacheDataRow cacheDataStoreRow = ctx.group().offheap().read(ctx, h2key);
