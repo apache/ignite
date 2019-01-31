@@ -1779,7 +1779,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param sortedRows Iterator over sorted according to this tree sort order rows.
+     * @param sortedRows Iterator over search rows sorted according to this tree sort order.
      * @param z Implementation specific argument.
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
