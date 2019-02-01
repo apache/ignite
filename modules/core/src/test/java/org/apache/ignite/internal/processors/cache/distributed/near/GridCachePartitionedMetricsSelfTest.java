@@ -35,7 +35,7 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
     }

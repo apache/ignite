@@ -45,7 +45,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGrid(1);
 
