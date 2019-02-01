@@ -1373,6 +1373,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx);
 
+            ctx.kernalContext().coordinators().onCacheStop(ctx);
+
             ctx.group().stopCache(ctx, destroy);
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
@@ -1529,7 +1531,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
-        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grp.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
         sharedCtx.jta().registerCache(cfg);
@@ -2343,7 +2345,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
@@ -5625,6 +5627,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStopCaches(true);
 
             stopCaches(true);
+
+            sharedCtx.coordinators().stopTxLog();
 
             sharedCtx.database().cleanupRestoredCaches();
         }

@@ -29,8 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -142,8 +140,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      */
     @Test
     public void testJoin() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
-
         checkJoin(false);
     }
 
