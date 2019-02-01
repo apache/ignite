@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.nio.channels.WritableByteChannel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -113,20 +112,18 @@ public class GridDhtPartitionUploader {
         ClusterNode demanderNode = grp.shared().discovery().node(nodeId);
 
         if (demanderNode == null) {
-            if (log.isInfoEnabled())
-                log.info("Initial demand message rejected (demander left the cluster) ["
-                    + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId + ", topVer=" + demandMsg.topologyVersion() +
-                    ", topic=" + topicId + "]");
+            U.log(log, "Initial demand message rejected (demander left the cluster) ["
+                + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId + ", topVer=" + demandMsg.topologyVersion() +
+                ", topic=" + topicId + "]");
 
             return;
         }
 
         // Demand request should not contain empty partitions for initial message processing.
         if (demandMsg.partitions() == null || demandMsg.partitions().isEmpty()) {
-            if (log.isInfoEnabled())
-                log.info("Empty demand message (no context and partitions) ["
-                    + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId + ", topVer=" + demandMsg.topologyVersion() +
-                    ", topic=" + topicId + "]");
+            U.log(log, "Empty demand message (no context and partitions) ["
+                + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId +
+                ", topVer=" + demandMsg.topologyVersion() + ", topic=" + topicId + "]");
 
             return;
         }
@@ -142,12 +139,11 @@ public class GridDhtPartitionUploader {
                 upCtx = uploadCtx.get(ctxId);
 
                 if (upCtx == null) {
-                    if (log.isInfoEnabled())
-                        log.info("Starting supplying rebalancing ["
-                            + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId +
-                            ", topVer=" + demandMsg.topologyVersion() + ", topic=" + topicId +
-                            ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
-                            ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
+                    U.log(log, "Starting supplying rebalancing ["
+                        + "grp=" + grp.cacheOrGroupName() + ", nodeId=" + nodeId +
+                        ", topVer=" + demandMsg.topologyVersion() + ", topic=" + topicId +
+                        ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
+                        ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
 
                     uploadCtx.put(ctxId, upCtx = new UploadContext(demandMsg.partitions().fullSet(), demandMsg.rebalanceId()));
                 }
@@ -167,8 +163,6 @@ public class GridDhtPartitionUploader {
             // Need to start new partition upload routine.
             ch = cctx.io().channelToCustomTopic(nodeId, demandMsg.topic(), demandMsg, PUBLIC_POOL);
 
-            assert ch.channel().isBlocking();
-
             partUploader = new PartitionUploadFuture(ch, ctxId, upCtx, log);
 
             // Loop to read partition files.
@@ -178,17 +172,19 @@ public class GridDhtPartitionUploader {
             // Future -
             // Checkpointed file - ?
             //
-            FileIOUploader uploader = new FileIOUploader((WritableByteChannel)ch.channel(), ioFactory, log);
+            FileIOUploader uploader = new FileIOUploader(ch.channel(), ioFactory, log);
 
-            int partId = upCtx.parts.iterator().next();
+            U.log(log, "Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
+                ", channel=" + ch + ", upCtx=" + upCtx + ']');
 
-            File partFile = getPartitionFile(grpDir, partId);
+            for (Integer partId : upCtx.parts) {
 
-            if (log.isInfoEnabled())
-                log.info("Start uploading cache group partition procedure [grp=" + grp.cacheOrGroupName() +
-                    ", part=" + partFile.getName() + ", channel=" + ch + ']');
+                File partFile = getPartitionFile(grpDir, partId);
 
-            uploader.upload(partFile, partId);
+                uploader.upload(partFile, partId);
+
+                U.log(log, "Partition file uploaded: " + partFile.getPath());
+            }
         }
         catch (Exception e) {
             if (upCtx != null)
@@ -222,7 +218,10 @@ public class GridDhtPartitionUploader {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(GridDhtPartitionUploader.UploadContext.class, this);
+            return "UploadContext{" +
+                "parts=" + parts +
+                ", rebalanceId=" + rebalanceId +
+                '}';
         }
     }
 

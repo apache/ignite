@@ -90,7 +90,8 @@ public class GridCacheRebalancingPartitionUploadTest extends GridCommonAbstractT
                 .setBackups(1)
                 .setRebalanceOrder(2)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setAffinity(new RendezvousAffinityFunction(false)));
+                .setAffinity(new RendezvousAffinityFunction(false)
+                    .setPartitions(8)));
 
         for (int i = 0; i < 2048; i++)
             cache.put(i, i);

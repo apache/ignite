@@ -25,7 +25,9 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
  * Communication TCP/IP socket.
  */
 public interface IgniteSocketChannel extends Closeable {
-    /** */
+    /**
+     * Todo ConnectionKey is the inner object to CommunicationSpi. Change
+     */
     public ConnectionKey id();
 
     /** */

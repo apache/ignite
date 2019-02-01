@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.NoSuchFileException;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,7 +36,7 @@ public class FileIOUploader {
     private static final int CHUNK_SIZE = 1024 * 1024;
 
     /** */
-    private final WritableByteChannel target;
+    private final SocketChannel target;
 
     /** */
     private final FileIOFactory factory;
@@ -50,7 +51,7 @@ public class FileIOUploader {
     private final ByteBuffer buff;
 
     /** */
-    public FileIOUploader(WritableByteChannel target, FileIOFactory factory, IgniteLogger log) {
+    public FileIOUploader(SocketChannel target, FileIOFactory factory, IgniteLogger log) {
         this.target = target;
         this.factory = factory;
         this.log = log;
@@ -65,6 +66,8 @@ public class FileIOUploader {
      * @throws IgniteCheckedException If fails.
      */
     public void upload(File partFile, int partId) throws IgniteCheckedException {
+        assert target.isBlocking();
+
         FileIO fileIO = null;
 
         try {
@@ -81,8 +84,7 @@ public class FileIOUploader {
             buff.putLong(size);
             buff.flip();
 
-            if (log.isInfoEnabled())
-                log.info("Sending file metadata [partFile=" + partFile + ", partId=" + partId + ", size=" + size + ']');
+            U.log(log, "Sending file metadata [partFile=" + partFile + ", partId=" + partId + ", size=" + size + ']');
 
             target.write(buff);
 
@@ -90,9 +92,6 @@ public class FileIOUploader {
             // Todo limit thransfer speed
             while (written < size)
                 written += fileIO.transferTo(written, CHUNK_SIZE, target);
-
-            if (log.isInfoEnabled())
-                log.info("File transferred successfully to the corresponding channel.");
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

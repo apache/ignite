@@ -425,6 +425,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
+        if (downloader != null)
+            downloader.addAssignments(assignments);
+
         return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
     }
 

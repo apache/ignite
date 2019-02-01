@@ -66,16 +66,15 @@ public class FileIODownloader {
 
     /** */
     public File download() throws IgniteCheckedException {
+        assert source.isBlocking();
+
         try {
-            //Read input file properties
             buff.clear();
 
-            long readResult;
+            U.log(log, "Read file metadata [outDir=" + outDir.getPath() + ']');
 
-            if (log.isInfoEnabled())
-                log.info("Waiting file metadata [outDir=" + outDir.getPath() + ']');
-
-            readResult = source.read(buff);
+            //Read input file properties
+            long readResult = source.read(buff);
 
             if (readResult <= 0)
                 throw new IgniteCheckedException("Unable to recieve file metadata from the remote node.");
@@ -85,8 +84,7 @@ public class FileIODownloader {
             int partId = buff.getInt();
             long size = buff.getLong();
 
-            if (log.isInfoEnabled())
-                log.info("Start downloading file [outDir=" + outDir.getPath() + ", partId=" + partId +
+            U.log(log, "Start downloading file [outDir=" + outDir.getPath() + ", partId=" + partId +
                 ", size=" + size + ']');
 
             File partFile = new File(getPartitionFile(outDir, partId).getAbsolutePath() + ".tmp");

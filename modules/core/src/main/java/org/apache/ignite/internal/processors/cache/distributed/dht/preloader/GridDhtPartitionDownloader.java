@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
@@ -36,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 
 /**
@@ -108,6 +113,25 @@ public class GridDhtPartitionDownloader {
         }
     }
 
+    /** */
+    public void addAssignments(GridDhtPreloaderAssignments assignments) {
+        try {
+            downloadFut.cancel();
+
+            Map<UUID, Set<Integer>> assignsCopy = assignments.entrySet()
+                .stream()
+                .collect(Collectors.toMap(k -> k.getKey().id(),
+                    v -> v.getValue().partitions().fullSet()));
+
+            downloadFut = new PartitionDonwloadFuture(assignsCopy);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Unable to handle new assignments: " + assignments);
+
+            downloadFut.onDone(false);
+        }
+    }
+
     /**
      * @param lastFut Last future to set.
      */
@@ -117,26 +141,46 @@ public class GridDhtPartitionDownloader {
 
     /** */
     public void handleChannelCreated(IgniteSocketChannel channel) {
-        if (log.isInfoEnabled())
-            log.info("Handle cache group channel creation event [grp=" + grp.cacheOrGroupName() +
-                ", channel=" + channel + ", grpDir=" + grpDir + ']');
-
         assert channel != null;
-        assert channel.channel().isBlocking();
+        assert channel.groupId() == grp.groupId();
 
-        if (channel.groupId() != grp.groupId())
-            throw new IgniteException("Incorrect processing [expected=" + grp.groupId() +
-                ", actual=" + channel.groupId() + ']');
+        UUID rmtId = channel.id().nodeId();
 
-        FileIODownloader downloader = new FileIODownloader(channel.channel(), ioFactory, grpDir, log);
+        final Set<Integer> parts = downloadFut.remaining.get(rmtId);
+
+        if (parts == null || parts.isEmpty())
+            return;
+
+        U.log(log, "Handle created channel [grp=" + grp.cacheOrGroupName() +
+            ", channel=" + channel + ", grpDir=" + grpDir + ", rmtId=" + rmtId +
+            ", parts=" + parts + ']');
 
         try {
-            File partFile = downloader.download();
+            File out = new File(grpDir, "downloads");
 
-            if (log.isInfoEnabled())
-                log.info("Partition file downloaded: " + partFile.getPath());
+            Files.createDirectory(out.toPath());
+
+            FileIODownloader downloader =
+                new FileIODownloader(channel.channel(), ioFactory, out, log);
+
+            for (Integer partId : parts) {
+                File partFile = downloader.download();
+
+                // Check file name. Remove after at final implementation line.
+                String fname = partFile.getName();
+                int pos = fname.lastIndexOf('.');
+
+                assert pos > 0;
+
+                fname.substring(0, pos).equals(String.format(PART_FILE_TEMPLATE, partId));
+
+                // Merge procedure should be implemented here.
+
+                if (log.isInfoEnabled())
+                    log.info("Partition file downloaded: " + partFile.getName());
+            }
         }
-        catch (IgniteCheckedException e) {
+        catch (IOException | IgniteCheckedException e) {
             log.error("Download process terminated unexpectedly.", e);
         }
         finally {
@@ -144,13 +188,38 @@ public class GridDhtPartitionDownloader {
         }
     }
 
+    /** */
+    private static class PartitionDonwloadFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private final Map<UUID, Set<Integer>> remaining;
+
+        /** */
+        public PartitionDonwloadFuture() {
+            this(new HashMap<>());
+        }
+
+        /** */
+        public PartitionDonwloadFuture(Map<UUID, Set<Integer>> remaining) {
+            this.remaining = remaining;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            remaining.clear();
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "PartitionDonwloadFuture{" +
+                "remaining=" + remaining +
+                '}';
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionDownloader.class, this);
-    }
-
-    /** */
-    private static class PartitionDonwloadFuture extends GridFutureAdapter<Boolean> {
-
     }
 }
