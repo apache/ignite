@@ -35,6 +35,7 @@ import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
+import org.apache.ignite.ml.util.generators.DataStreamGeneratorTestSuite;
 import org.apache.ignite.ml.util.UtilTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -58,6 +59,7 @@ import org.junit.runners.Suite;
     StructuresTestSuite.class,
     CommonTestSuite.class,
     MultiClassTestSuite.class,
+    DataStreamGeneratorTestSuite.class,
     UtilTestSuite.class,
 
     /** JUnit 3 tests. */

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
@@ -30,7 +32,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP
 /**
  * Dummy H2 search row adadpter.
  */
-public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
+public abstract class H2Row implements Row, MvccVersionAware {
     /** {@inheritDoc} */
     @Override public void setKeyAndVersion(SearchRow old) {
         throw new UnsupportedOperationException();
@@ -125,4 +127,16 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
     @Override public byte mvccTxState() {
         return TxState.NA;
     }
+
+    /**
+     * @return Expire time.
+     */
+    public long expireTime() {
+        return 0;
+    }
+
+    /**
+     * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
+     */
+    public abstract boolean indexSearchRow();
 }

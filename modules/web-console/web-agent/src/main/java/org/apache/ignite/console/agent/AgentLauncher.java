@@ -358,6 +358,9 @@ public class AgentLauncher {
                 cfg.serverTrustStorePassword()
             );
 
+            if (serverTrustAll)
+                builder.hostnameVerifier((hostname, session) -> true);
+
             SSLSocketFactory sslSocketFactory = sslSocketFactory(
                 cfg.serverKeyStore(),
                 cfg.serverKeyStorePassword(),

@@ -73,7 +73,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.setUp();
     }

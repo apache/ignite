@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 public class GridCacheInterceptorTransactionalRebalanceTest extends GridAbstractCacheInterceptorRebalanceTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
     }
 
     /** {@inheritDoc} */
