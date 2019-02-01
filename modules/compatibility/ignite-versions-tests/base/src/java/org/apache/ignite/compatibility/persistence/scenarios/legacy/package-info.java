@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains scenarios for less Ignite versions.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.persistence.scenarios.legacy;

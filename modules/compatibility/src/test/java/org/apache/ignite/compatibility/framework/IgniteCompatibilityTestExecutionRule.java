@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,28 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility.framework;
+
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ *
  */
-package org.apache.ignite.compatibility.testsuites;
+public class IgniteCompatibilityTestExecutionRule implements TestRule  {
+    /** */
+    private final long timeout;
+
+    /**
+     * @param timeout Timeout.
+     */
+    public IgniteCompatibilityTestExecutionRule(long timeout) {
+        this.timeout = timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Statement apply(Statement base, Description description) {
+        return new IgniteCompatibilityTestExecutor(base, timeout);
+    }
+}

@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility.persistence.api;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Interface to validate the state of persistence on latest node after {@link PdsCompatibilityLegacyNodeScenario} execution.
  */
-package org.apache.ignite.compatibility.testsuites;
+public interface PdsCompatibilityLatestNodeScenario extends Configurable {
+    /**
+     * @param ignite Latest node instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void validate(Ignite ignite) throws IgniteCheckedException;
+}

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains persistence test classes.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.framework.persistence;

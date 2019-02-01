@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains util classes.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.utils;

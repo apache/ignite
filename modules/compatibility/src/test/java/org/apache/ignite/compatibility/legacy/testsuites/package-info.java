@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains test-suites which contains compatibility tests.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.legacy.testsuites;

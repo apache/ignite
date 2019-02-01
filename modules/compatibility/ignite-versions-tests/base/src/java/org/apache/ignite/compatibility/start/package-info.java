@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains start node util classes.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.start;

@@ -15,8 +15,27 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility.legacy.testsuites;
+
+import org.apache.ignite.compatibility.PdsWithTtlCompatibilityTest;
+import org.apache.ignite.compatibility.legacy.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.compatibility.legacy.persistence.MigratingToWalV2SerializerWithCompactionTest;
+import org.apache.ignite.compatibility.legacy.persistence.PersistenceBasicCompatibilityTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Compatibility tests basic test suite.
  */
-package org.apache.ignite.compatibility.testsuites;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    PersistenceBasicCompatibilityTest.class,
+
+    PdsWithTtlCompatibilityTest.class,
+
+    FoldersReuseCompatibilityTest.class,
+
+    MigratingToWalV2SerializerWithCompactionTest.class
+})
+public class IgniteCompatibilityBasicTestSuite {
+}

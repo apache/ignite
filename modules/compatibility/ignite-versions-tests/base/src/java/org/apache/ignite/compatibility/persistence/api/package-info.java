@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains basic interfaces for PDS compatibility testing scenarios.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.persistence.api;

@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility.persistence.api;
+
+import java.io.Serializable;
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Interface to provide configuration for testing node.
  */
-package org.apache.ignite.compatibility.testsuites;
+public interface Configurable extends Serializable {
+    /**
+     * @return Ignite configuration.
+     */
+    public default IgniteConfiguration configure() {
+        return new IgniteConfiguration();
+    }
+}

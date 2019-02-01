@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
- */
 package org.apache.ignite.compatibility.testsuites;
+
+import org.apache.ignite.compatibility.tests.persistence.PdsCompatibilityBasicTest;
+import org.apache.ignite.compatibility.tests.persistence.PdsCompatibilityWithPKIndexMigrationTest;
+import org.apache.ignite.compatibility.tests.persistence.PdsCompatibilityWithTtlMigrationTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    PdsCompatibilityBasicTest.class,
+    PdsCompatibilityWithTtlMigrationTest.class,
+    PdsCompatibilityWithPKIndexMigrationTest.class
+})
+public class IgnitePdsCompatibilitySuite {
+}

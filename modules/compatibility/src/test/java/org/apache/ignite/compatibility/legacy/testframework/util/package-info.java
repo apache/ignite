@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains compatibility test framework related classes and interfaces.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.legacy.testframework.util;

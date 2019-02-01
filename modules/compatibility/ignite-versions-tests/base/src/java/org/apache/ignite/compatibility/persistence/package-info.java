@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Persistence compatibility utils and tests package.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.persistence;

@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,21 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Annotation to specify minimal product version on what closure or class can be compiled and executed.
  */
-package org.apache.ignite.compatibility.testsuites;
+@Target(value= ElementType.TYPE)
+@Retention(value= RetentionPolicy.RUNTIME)
+public @interface Since {
+    /**
+     *
+     */
+    String value();
+}

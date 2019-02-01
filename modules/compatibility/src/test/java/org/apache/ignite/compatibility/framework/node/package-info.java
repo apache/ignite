@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Contains util classes for node representation.
  */
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.compatibility.framework.node;

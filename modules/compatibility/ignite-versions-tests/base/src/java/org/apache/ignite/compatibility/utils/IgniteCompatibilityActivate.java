@@ -4,7 +4,7 @@
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.compatibility.utils;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.lang.IgniteInClosure;
+
 /**
- * <!-- Package description. -->
- * Contains compatibility tests suites.
+ * Command for cluster activation.
  */
-package org.apache.ignite.compatibility.testsuites;
+public class IgniteCompatibilityActivate implements IgniteInClosure<Ignite> {
+    /** {@inheritDoc} */
+    @Override public void apply(Ignite ignite) {
+        ignite.log().info("Call activate on " + ignite.name());
+
+        ignite.active(true);
+    }
+}
