@@ -300,7 +300,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int newBucket = bucket(newFreeSpace, false);
 
-                boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
+                // If data page was't stored in any free list bucket so far, we definetely need to store it now.
+                boolean putIsNeeded = io.getFreeListPageId(pageAddr) == 0;
 
                 if (!putIsNeeded) {
                     int oldBucket = bucket(oldFreeSpace, false);
@@ -499,8 +500,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 initIo = ioVersions().latest();
             }
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) {
+                // Tag represents two oldest bytes in page ID. If it's not equal to FLAG_DATA,
+                // page has been recycled - PageIdUtils.rotatePageId ensures non-zero oldest byte.
                 pageId = initReusedPage(pageId, row.partition(), statHolder);
+            }
             else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 

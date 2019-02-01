@@ -376,9 +376,13 @@ public abstract class DataStructure implements PageLockListener {
         boolean needWalDeltaRecord = needWalDeltaRecord(pageId, page, walPlc);
 
         if (PageIdUtils.flag(pageId) == FLAG_DATA) {
+            // Tag represents two oldest bytes in page ID. If it's equal to FLAG_DATA, oldest byte is zero,
+            // so we are probably recycling a data page.
             int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
             if (rotatedIdPart != 0) {
+                // It's a data page that was recycled before. To prevent ABA problem, we need to restore
+                // oldest byte (which is basically recycle counter) that was saved within data page.
                 recycled = PageIdUtils.link(pageId, rotatedIdPart > MAX_ITEMID_NUM ? 1 : rotatedIdPart);
 
                 PageIO.setRotatedIdPart(pageAddr, 0);
