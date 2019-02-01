@@ -114,13 +114,16 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
                 /** {@inheritDoc} */
                 @Override public IgniteTree.InvokeClosure<Long> apply(Long searchRow) {
                     opType = puts.contains(searchRow) ? PUT : REMOVE;
-                    newRow = opType == PUT ? searchRow : null;
+                    newRow = searchRow;
 
                     return this;
                 }
 
                 /** {@inheritDoc} */
                 @Override public void call(@Nullable Long foundRow) throws IgniteCheckedException {
+                    if (foundRow != null)
+                        assertEquals(newRow, foundRow);
+
                     if ((foundRow == null && opType == REMOVE) || (foundRow != null && opType == PUT)) {
                         opType = NOOP;
                         newRow = null;
@@ -129,12 +132,16 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
                 /** {@inheritDoc} */
                 @Override public Long newRow() {
-                    return Objects.requireNonNull(newRow);
+                    Long r = newRow;
+                    newRow = null;
+                    return Objects.requireNonNull(r);
                 }
 
                 /** {@inheritDoc} */
                 @Override public IgniteTree.OperationType operationType() {
-                    return Objects.requireNonNull(opType);
+                    IgniteTree.OperationType t = opType;
+                    opType = null;
+                    return Objects.requireNonNull(t);
                 }
             }
 
