@@ -683,7 +683,7 @@ export default class ConfigEffects {
             switchMap(([action, edit]) => {
                 const changedItems = _applyChangedIDs(edit, {cluster: action.cluster});
                 const actions = [{
-                    type: cachesActionTypes.UPSERT,
+                    type: cachesActionTypes.REMOVE,
                     items: changedItems.caches
                 },
                 {

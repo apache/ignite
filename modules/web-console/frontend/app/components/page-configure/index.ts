@@ -116,8 +116,8 @@ export default angular
         $uiRouter.plugin(UIRouterRx);
 
         ConfigureState.addReducer(refsReducer({
-            models: {at: 'domains', store: 'caches'},
-            caches: {at: 'caches', store: 'models'}
+            models: {at: 'domains', store: 'caches', internal: 'caches'},
+            caches: {at: 'caches', store: 'models', internal: 'domains' }
         }));
 
         ConfigureState.addReducer((state, action) => Object.assign({}, state, {

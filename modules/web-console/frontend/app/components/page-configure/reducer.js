@@ -436,8 +436,8 @@ export const refsReducer = (refs) => (state, action) => {
                 action.changedItems[ref].filter((s) => !addedSources.has(s._id)).forEach((source) => {
                     const newSource = source;
                     const oldSource = state[ref].get(source._id);
-                    const addedTargets = difference(newSource[refs[ref].store], oldSource[refs[ref].store]);
-                    const removedCaches = difference(oldSource[refs[ref].store], newSource[refs[ref].store]);
+                    const addedTargets = difference(newSource[refs[ref].internal], oldSource[refs[ref].internal]);
+                    const removedCaches = difference(oldSource[refs[ref].internal], newSource[refs[ref].internal]);
                     addedTargets.forEach((targetID) => {
                         maybeTarget(targetID)[refs[ref].at].add.add(source._id);
                     });
