@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1781,11 +1782,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param sortedRows Iterator over search rows sorted according to this tree sort order.
      * @param z Implementation specific argument.
-     * @param c Closure.
+     * @param closures Provider of closures for each search row.
      * @throws IgniteCheckedException If failed.
      */
-    public void invokeAll(Iterator<? extends L> sortedRows, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
-        doInvoke(new InvokeAll(sortedRows, z, c));
+    public void invokeAll(Iterator<? extends L> sortedRows, Object z, Function<L, InvokeClosure<T>> closures)
+        throws IgniteCheckedException {
+        doInvoke(new InvokeAll(sortedRows.next(), sortedRows, z, closures));
     }
 
     /** {@inheritDoc} */
@@ -3710,15 +3712,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         Iterator<? extends L> sortedRows;
 
+        /** */
+        Function<L, InvokeClosure<T>> closures;
+
         /**
+         * @param firstRow The first row.
          * @param sortedRows Sorted rows.
          * @param x Implementation specific argument.
          * @param clo Closure.
          */
-        InvokeAll(Iterator<? extends L> sortedRows, Object x, InvokeClosure<T> clo) {
-            super(sortedRows.next(), x, clo);
+        InvokeAll(L firstRow, Iterator<? extends L> sortedRows, Object x, Function<L, InvokeClosure<T>> closures) {
+            super(firstRow, x, closures.apply(firstRow));
 
             this.sortedRows = sortedRows;
+            this.closures = closures;
         }
 
         /** {@inheritDoc} */
@@ -3765,18 +3772,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (res.retry || !isFinished() || !sortedRows.hasNext())
                 return false;
 
-            // The operation can not be finished while we are still getting high.
-            assert !gettingHigh;
-
             // Reinitialize state to continue working with the next row.
-            row = sortedRows.next();
             lockRetriesCnt = getLockRetries();
+
+            row = sortedRows.next();
+            assert row != null;
+            clo = closures.apply(row);
+            assert clo != null;
 
             closureInvoked = FALSE;
             foundRow = null;
             op = null;
 
-            // Now we will have to get high enough in the tree to be able to find place for the next row.
+            assert !gettingHigh;
             gettingHigh = true;
 
             return true;
