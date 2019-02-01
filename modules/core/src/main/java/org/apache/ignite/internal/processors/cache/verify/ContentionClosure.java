@@ -105,6 +105,9 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
                         catch (GridCacheEntryRemovedException ignored) {
                             cached = entry.context().cache().entryEx(entry.key());
                         }
+                        finally {
+                            cached.touch();
+                        }
                     }
 
                     if (locs != null)

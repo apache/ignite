@@ -391,7 +391,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTimeOutTxLock() throws Exception {
-        final int longOpDumpTimeout = 1000;
+        final int longOpDumpTimeout = 500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
@@ -714,6 +714,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                         l1.countDown();
 
                         U.awaitQuiet(l2);
+
+                        U.sleep(100);
 
                         tx.commit();
                     }

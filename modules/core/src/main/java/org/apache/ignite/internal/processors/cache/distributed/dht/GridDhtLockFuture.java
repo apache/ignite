@@ -81,6 +81,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 
@@ -1158,7 +1159,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
         /** */
         final long longOpDumpTimeout = IgniteSystemProperties.getLong(
-                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000L);
+                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
+                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
+        );
         /**
          * Default constructor.
          */
@@ -1170,7 +1173,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         @Override public void onTimeout() {
             synchronized (GridDhtLockFuture.this) {
                 if (log.isDebugEnabled() || timeout >= longOpDumpTimeout) {
-                    String msg = "Timed out waiting for lock response, pending locks: " + dump();
+                    String msg = dumpPendingLocks();
 
                     if (log.isDebugEnabled())
                         log.debug(msg);
@@ -1201,8 +1204,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          *
          * @return String representation of pending locks.
          */
-        private String dump() {
-            StringBuilder sb = new StringBuilder().append("[");
+        private String dumpPendingLocks() {
+            StringBuilder sb = new StringBuilder().append("Timed out waiting for lock response, pending locks: [");
 
             Iterator<KeyCacheObject> locks = pendingLocks.iterator();
 
@@ -1211,34 +1214,43 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                 sb.append("[key=").append(key).append(", owner=");
 
-                try {
-                    Collection<GridCacheMvccCandidate> candidates = cctx.cache().entryEx(key, topVer).localCandidates();
+                GridCacheEntryEx entry = cctx.cache().entryEx(key, topVer);
 
-                    Iterator<GridCacheMvccCandidate> candidateIter = candidates.iterator();
+                while (true) {
+                    try {
+                        Collection<GridCacheMvccCandidate> candidates = entry.localCandidates();
 
-                    while (candidateIter.hasNext()) {
-                        GridCacheMvccCandidate candidate = candidateIter.next();
-                        IgniteInternalTx tx = cctx.tm().tx(candidate.version());
+                        Iterator<GridCacheMvccCandidate> candidateIter = candidates.iterator();
 
-                        if (tx != null && candidate.owner()) {
-                            sb.append("[xid=").append(tx.xid()).append(", ");
-                            sb.append("xidVer=").append(tx.xidVersion()).append(", ");
-                            sb.append("nearXid=").append(tx.nearXidVersion().asGridUuid()).append(", ");
-                            sb.append("nearXidVer=").append(tx.nearXidVersion()).append(", ");
-                            sb.append("label=").append(tx.label()).append(", ");
-                            sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
+                        while (candidateIter.hasNext()) {
+                            GridCacheMvccCandidate candidate = candidateIter.next();
+                            IgniteInternalTx tx = cctx.tm().tx(candidate.version());
 
-                            break;
+                            if (tx != null && candidate.owner()) {
+                                sb.append("[xid=").append(tx.xid()).append(", ");
+                                sb.append("xidVer=").append(tx.xidVersion()).append(", ");
+                                sb.append("nearXid=").append(tx.nearXidVersion().asGridUuid()).append(", ");
+                                sb.append("nearXidVer=").append(tx.nearXidVersion()).append(", ");
+                                sb.append("label=").append(tx.label()).append(", ");
+                                sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
+
+                                break;
+                            }
+
+                            if (!candidateIter.hasNext())
+                                sb.append("null");
                         }
 
-                        if (!candidateIter.hasNext())
-                            sb.append("null");
-                    }
+                        sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1).append("]");
 
-                    sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1).append("]");
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // No-op.
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        entry = cctx.cache().entryEx(key, topVer);
+                    }
+                    finally {
+                        entry.touch();
+                    }
                 }
 
                 if (locks.hasNext())
