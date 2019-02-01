@@ -41,6 +41,9 @@ public enum SupportedSparkModels {
     /** K-Means. */
     KMEANS,
 
+    /** Decision tree regression. */
+    DECISION_TREE_REGRESSION,
+
     /**
      * Gradient boosted trees.
      * NOTE: support binary classification only with raw labels 0 and 1

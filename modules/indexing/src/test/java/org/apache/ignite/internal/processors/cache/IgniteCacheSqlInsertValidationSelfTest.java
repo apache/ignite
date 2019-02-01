@@ -34,15 +34,12 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for validation of inserts sql queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTest {
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
