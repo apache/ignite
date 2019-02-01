@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 
 /**
- * Splitter context to delegate optimization information to H2 internals.
+ * Splitter context while delegates optimization information to H2 internals.
  */
 public class SplitterContext {
     /** Empty context. */

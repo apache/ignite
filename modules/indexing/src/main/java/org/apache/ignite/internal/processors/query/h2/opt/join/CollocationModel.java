@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import javax.cache.CacheException;
 
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
+import org.h2.engine.Session;
 import org.h2.expression.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
@@ -513,14 +515,6 @@ public final class CollocationModel {
     }
 
     /**
-     * @return Multiplier.
-     */
-    public int calculateMultiplier() {
-        // We don't need multiplier for union here because it will be summarized in H2.
-        return multiplier(false);
-    }
-
-    /**
      * @param withUnion With respect to union.
      * @return Multiplier.
      */
@@ -629,6 +623,28 @@ public final class CollocationModel {
     }
 
     /**
+     * Get distributed multiplier for the given sequence of tables.
+     *
+     * @param ctx Splitter context.
+     * @param ses Session.
+     * @param filters Filters.
+     * @param filter Filter index.
+     * @return Multiplier.
+     */
+    public static int distributedMultiplier(
+        SplitterContext ctx,
+        Session ses,
+        TableFilter[] filters,
+        int filter
+    ) {
+        clearViewIndexCache(ses);
+
+        CollocationModel model = buildCollocationModel(ctx, ses.getSubQueryInfo(), filters, filter, false);
+
+        return model.multiplier(false);
+    }
+
+    /**
      * @param ctx Splitter context.
      * @param info Sub-query info.
      * @param filters Filters.
@@ -636,8 +652,13 @@ public final class CollocationModel {
      * @param validate Query validation flag.
      * @return Collocation.
      */
-    public static CollocationModel buildCollocationModel(SplitterContext ctx, SubQueryInfo info,
-        TableFilter[] filters, int filter, boolean validate) {
+    private static CollocationModel buildCollocationModel(
+        SplitterContext ctx,
+        SubQueryInfo info,
+        TableFilter[] filters,
+        int filter,
+        boolean validate
+    ) {
         CollocationModel cm;
 
         if (info != null) {
@@ -713,11 +734,13 @@ public final class CollocationModel {
      * @param validate Query validation flag.
      * @return Built model.
      */
-    private static CollocationModel buildCollocationModel(CollocationModel upper,
+    private static CollocationModel buildCollocationModel(
+        CollocationModel upper,
         int filter,
         Query qry,
         List<CollocationModel> unions,
-        boolean validate) {
+        boolean validate
+    ) {
         if (qry.isUnion()) {
             if (unions == null)
                 unions = new ArrayList<>();
@@ -766,6 +789,19 @@ public final class CollocationModel {
         return new CacheException("Failed to prepare distributed join query: can not use distributed joins for cache " +
             "with custom AffinityKeyMapper configured. " +
             "Please use AffinityKeyMapped annotation instead [cache=" + cacheName + ']');
+    }
+
+    /**
+     * @param ses Session.
+     */
+    private static void clearViewIndexCache(Session ses) {
+        // We have to clear this cache because normally sub-query plan cost does not depend on anything
+        // other than index condition masks and sort order, but in our case it can depend on order
+        // of previous table filters.
+        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
+
+        if (!viewIdxCache.isEmpty())
+            viewIdxCache.clear();
     }
 
     /**

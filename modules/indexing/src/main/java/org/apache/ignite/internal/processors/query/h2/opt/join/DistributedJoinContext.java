@@ -33,23 +33,11 @@ public class DistributedJoinContext {
     /** Local flag. */
     private final boolean loc;
 
-    /** Range streams for indexes. */
-    private Map<Integer, Object> streams;
-
-    /** Range sources for indexes. */
-    private Map<SourceKey, Object> sources;
-
-    /** */
-    private int batchLookupIdGen;
-
     /** */
     private final AffinityTopologyVersion topVer;
 
     /** */
     private final Map<UUID, int[]> partsMap;
-
-    /** */
-    private UUID[] partsNodes;
 
     /** */
     private final UUID originNodeId;
@@ -61,12 +49,34 @@ public class DistributedJoinContext {
     private final int segment;
 
     /** */
-    private boolean cancelled;
-
-    /** */
     private final int pageSize;
 
-    // TODO
+    /** Range streams for indexes. */
+    private Map<Integer, Object> streams;
+
+    /** Range sources for indexes. */
+    private Map<SourceKey, Object> sources;
+
+    /** */
+    private int batchLookupIdGen;
+
+    /** */
+    private UUID[] partsNodes;
+
+    /** */
+    private boolean cancelled;
+
+    /**
+     * Constructor.
+     *
+     * @param loc Local flag.
+     * @param topVer Topology version.
+     * @param partsMap Partitions map.
+     * @param originNodeId ID of the node started the query.
+     * @param qryId Query ID.
+     * @param segment Segment.
+     * @param pageSize Pahe size.
+     */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public DistributedJoinContext(boolean loc, AffinityTopologyVersion topVer, Map<UUID, int[]> partsMap,
         UUID originNodeId, long qryId, int segment, int pageSize) {

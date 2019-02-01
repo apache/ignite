@@ -57,7 +57,6 @@ import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
-import org.h2.index.ViewIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -75,7 +74,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.buildCollocationModel;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
@@ -206,16 +204,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /**
      * @param ses Session.
-     */
-    private static void clearViewIndexCache(Session ses) {
-        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
-
-        if (!viewIdxCache.isEmpty())
-            viewIdxCache.clear();
-    }
-
-    /**
-     * @param ses Session.
      * @param filters All joined table filters.
      * @param filter Current filter.
      * @return Multiplier.
@@ -230,16 +218,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
         if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
             return CollocationModel.MULTIPLIER_COLLOCATED;
 
-        // We have to clear this cache because normally sub-query plan cost does not depend on anything
-        // other than index condition masks and sort order, but in our case it can depend on order
-        // of previous table filters.
-        clearViewIndexCache(ses);
-
         assert filters != null;
 
-        CollocationModel c = buildCollocationModel(ctx, ses.getSubQueryInfo(), filters, filter, false);
-
-        return c.calculateMultiplier();
+        return CollocationModel.distributedMultiplier(ctx, ses, filters, filter);
     }
 
     /** {@inheritDoc} */

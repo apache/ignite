@@ -187,7 +187,15 @@ public class GridSqlQuerySplitter {
         SplitterContext.set(distributedJoins);
 
         try {
-            return split0(conn, prepared, params, collocatedGrpBy, distributedJoins, enforceJoinOrder, partExtractor);
+            return split0(
+                conn,
+                prepared,
+                params,
+                collocatedGrpBy,
+                distributedJoins,
+                enforceJoinOrder,
+                partExtractor
+            );
         }
         finally {
             SplitterContext.set(false);
