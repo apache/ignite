@@ -3761,7 +3761,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // If we are not on the right edge of the page or there are no forward pages,
             // then we are high enough to have valid search from here.
-            if (-idx - 1 != cnt || fwdId != 0L)
+            if (-idx - 1 != cnt || fwdId == 0L)
                 gettingHigh = false;
 
             return idx;
