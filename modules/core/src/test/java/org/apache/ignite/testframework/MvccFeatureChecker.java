@@ -62,7 +62,10 @@ public class MvccFeatureChecker {
         if (!forcedMvcc())
             return;
 
-        validateFeature(f);
+        String reason = unsupportedReason(f);
+
+        if (reason != null)
+            fail(reason);
     }
 
     /**
@@ -93,14 +96,7 @@ public class MvccFeatureChecker {
      * @return {@code True} if feature is supported, {@code False} otherwise.
      */
     public static boolean isSupported(Feature f) {
-        try {
-            validateFeature(f);
-
-            return true;
-        }
-        catch (AssertionError ignore) {
-            return false;
-        }
+        return unsupportedReason(f) == null;
     }
 
     /**
@@ -135,7 +131,7 @@ public class MvccFeatureChecker {
     public static void assertMvccWriteConflict(Exception e) {
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
+        if (sqlEx == null || sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
             fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
@@ -145,21 +141,6 @@ public class MvccFeatureChecker {
      * @param feature Mvcc feature.
      * @throws AssertionError If failed.
      */
-    @SuppressWarnings("fallthrough")
-    private static void validateFeature(Feature feature) {
-        String reason = unsupportedReason(feature);
-
-        if (reason != null)
-            fail(reason);
-    }
-
-    /**
-     * Fails if feature is not supported in Mvcc mode.
-     *
-     * @param feature Mvcc feature.
-     * @throws AssertionError If failed.
-     */
-    @SuppressWarnings("fallthrough")
     private static String unsupportedReason(Feature feature) {
         switch (feature) {
             case NEAR_CACHE:
