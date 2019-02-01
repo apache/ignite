@@ -130,6 +130,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 for (List<?> row : cursor)
                     System.out.println("|     " + row.get(0) + " |        " + row.get(1) + " |");
             }
+
+            IgniteModelStorageUtil.removeModel("titanik_model_tree");
         }
     }
 }

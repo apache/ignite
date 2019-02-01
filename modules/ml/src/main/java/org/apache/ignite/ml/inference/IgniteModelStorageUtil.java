@@ -57,8 +57,31 @@ public class IgniteModelStorageUtil {
         byte[] serializedMdl = Utils.serialize(mdlWrapper);
         UUID mdlId = UUID.randomUUID();
 
-        saveModelStorage(serializedMdl, mdlId);
         saveModelDescriptorStorage(name, mdlId);
+
+        try {
+            saveModelStorage(serializedMdl, mdlId);
+        }
+        catch (Exception e) {
+            // Here we need to do a rollback and remove descriptor from correspondent storage.
+            removeModelStorage(mdlId);
+            throw e;
+        }
+    }
+
+    /**
+     * Removes model with specified name.
+     *
+     * @param name Mode name to be removed.
+     */
+    public static void removeModel(String name) {
+        ModelDescriptor desc = getModelDescriptor(name);
+        if (desc == null)
+            return;
+
+        UUID mdlId = UUID.fromString(desc.getName());
+        removeModel(IGNITE_MDL_FOLDER + "/" + mdlId);
+        removeModelDescriptorStorage(name);
     }
 
     /**
@@ -112,7 +135,20 @@ public class IgniteModelStorageUtil {
 
         ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
         storage.mkdirs(IGNITE_MDL_FOLDER);
-        storage.putFile(IGNITE_MDL_FOLDER + "/" + mdlId, serializedMdl);
+        storage.putFile(IGNITE_MDL_FOLDER + "/" + mdlId, serializedMdl, true);
+    }
+
+    /**
+     * Removes model with specified identifier from model storage.
+     *
+     * @param mdlId Model identifier.
+     */
+    private static void removeModelStorage(UUID mdlId) {
+        Ignite ignite = Ignition.ignite();
+
+        ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
+        storage.mkdirs(IGNITE_MDL_FOLDER);
+        storage.remove(IGNITE_MDL_FOLDER + "/" + mdlId);
     }
 
     /**
@@ -125,13 +161,30 @@ public class IgniteModelStorageUtil {
         Ignite ignite = Ignition.ignite();
 
         ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
-        descStorage.put(name, new ModelDescriptor(
-            name,
+
+        boolean saved = descStorage.putIfAbsent(name, new ModelDescriptor(
+            mdlId.toString(),
             null,
             new ModelSignature(null, null, null),
             new ModelStorageModelReader(IGNITE_MDL_FOLDER + "/" + mdlId),
             new IgniteModelParser<>()
         ));
+
+        if (!saved)
+            throw new IllegalArgumentException("Model descriptor with given name already exists [name=" + name + "]");
+    }
+
+    /**
+     * Removes model descriptor from descriptor storage.
+     *
+     * @param name Model name.
+     */
+    private static void removeModelDescriptorStorage(String name) {
+        Ignite ignite = Ignition.ignite();
+
+        ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
+
+        descStorage.remove(name);
     }
 
     /**
