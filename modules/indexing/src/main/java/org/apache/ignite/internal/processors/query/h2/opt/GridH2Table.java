@@ -36,8 +36,8 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
-import org.apache.ignite.internal.processors.query.h2.database.H2CacheRowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -107,9 +107,6 @@ public class GridH2Table extends TableBase {
     private final LongAdder size = new LongAdder();
 
     /** */
-    private final H2CacheRowFactory rowFactory;
-
-    /** */
     private volatile boolean rebuildFromHashInProgress;
 
     /** Identifier. */
@@ -129,16 +126,19 @@ public class GridH2Table extends TableBase {
      *
      * @param createTblData Table description.
      * @param desc Row descriptor.
-     * @param rowFactory Row factory.
-     * @param idxsFactory Indexes factory.
+     * @param tblDesc Indexes factory.
      * @param cacheInfo Cache context info.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2CacheRowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cacheInfo) {
+    public GridH2Table(
+        CreateTableData createTblData,
+        GridH2RowDescriptor desc,
+        H2TableDescriptor tblDesc,
+        GridCacheContextInfo cacheInfo
+    ) {
         super(createTblData);
 
-        assert idxsFactory != null;
+        assert tblDesc != null;
 
         this.desc = desc;
         this.cacheInfo = cacheInfo;
@@ -146,14 +146,12 @@ public class GridH2Table extends TableBase {
         affKeyCol = calculateAffinityKeyColumn();
         affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
 
-        this.rowFactory = rowFactory;
-
         identifier = new QueryTable(getSchema().getName(), getName());
 
         identifierStr = identifier.schema() + "." + identifier.table();
 
         // Indexes must be created in the end when everything is ready.
-        idxs = idxsFactory.createSystemIndexes(this);
+        idxs = tblDesc.createSystemIndexes(this);
 
         assert idxs != null;
 
@@ -971,13 +969,6 @@ public class GridH2Table extends TableBase {
         res.sortType = sorting;
 
         return res;
-    }
-
-    /**
-     * @return Data store.
-     */
-    public H2CacheRowFactory rowFactory() {
-        return rowFactory;
     }
 
     /**

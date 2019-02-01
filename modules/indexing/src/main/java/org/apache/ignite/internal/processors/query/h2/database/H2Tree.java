@@ -26,18 +26,23 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRowAdapter;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
@@ -51,10 +56,14 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
 
 /**
+ * H2 tree index implementation.
  */
-public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
-    /** */
-    private final H2CacheRowFactory rowStore;
+public class H2Tree extends BPlusTree<H2Row, H2Row> {
+    /** Cache context. */
+    private final GridCacheContext cctx;
+
+    /** Owning table. */
+    private final GridH2Table table;
 
     /** */
     private final int inlineSize;
@@ -116,6 +125,8 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
     /**
      * Constructor.
      *
+     * @param cctx Cache context.
+     * @param table Owning table.
      * @param name Tree name.
      * @param idxName Name of index.
      * @param cacheName Cache name.
@@ -124,7 +135,6 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param rowStore Row data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
@@ -137,6 +147,8 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
+        GridCacheContext cctx,
+        GridH2Table table,
         String name,
         String idxName,
         String cacheName,
@@ -146,7 +158,6 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
-        H2CacheRowFactory rowStore,
         long metaPageId,
         boolean initNew,
         H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,
@@ -162,6 +173,8 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
+        this.cctx = cctx;
+        this.table = table;
         this.stats = stats;
 
         if (!initNew) {
@@ -189,10 +202,6 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         this.mvccEnabled = mvccEnabled;
 
-        assert rowStore != null;
-
-        this.rowStore = rowStore;
-
         inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
         cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
 
@@ -219,12 +228,12 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public H2Row createRowFromLink(long link) throws IgniteCheckedException {
+    public H2Row createRow(long link) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRowAdapter row = rowCache.get(link);
 
             if (row == null) {
-                row = rowStore.getRow(link);
+                row = createRow0(link);
 
                 rowCache.put(row);
             }
@@ -232,7 +241,28 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return rowStore.getRow(link);
+            return createRow0(link);
+    }
+
+    /**
+     * !!! This method must be invoked in read or write lock of referring index page. It is needed to
+     * !!! make sure that row at this link will be invisible, when the link will be removed from
+     * !!! from all the index pages, so that row can be safely erased from the data page.
+     *
+     * @param link Link.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    private H2CacheRowAdapter createRow0(long link) throws IgniteCheckedException {
+        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
+
+        row.initFromLink(
+            cctx.group(),
+            CacheDataRowAdapter.RowData.FULL,
+            true
+        );
+
+        return table.rowDescriptor().createRow(row);
     }
 
     /**
@@ -243,12 +273,12 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public H2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    public H2Row createMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (rowCache != null) {
             H2CacheRowAdapter row = rowCache.get(link);
 
             if (row == null) {
-                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+                row = createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
                 rowCache.put(row);
             }
@@ -256,7 +286,33 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
             return row;
         }
         else
-            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return createMvccRow0(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+    }
+
+    /**
+     * @param link Link.
+     * @param mvccCrdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Mvcc operation counter.
+     * @return Row.
+     */
+    private H2CacheRowAdapter createMvccRow0(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr)
+        throws IgniteCheckedException {
+        int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+        MvccDataRow row = new MvccDataRow(
+            cctx.group(),
+            0,
+            link,
+            partId,
+            null,
+            mvccCrdVer,
+            mvccCntr,
+            mvccOpCntr,
+            true
+        );
+
+        return table.rowDescriptor().createRow(row);
     }
 
     /** {@inheritDoc} */
@@ -569,7 +625,9 @@ public abstract class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param v2 Second value.
      * @return Comparison result.
      */
-    public abstract int compareValues(Value v1, Value v2);
+    public int compareValues(Value v1, Value v2) {
+        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+    }
 
     /**
      * @return {@code True} if index was created during curren node's lifetime, {@code False} if it was restored from

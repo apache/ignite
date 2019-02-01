@@ -56,10 +56,10 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<H2Row> implements H
             long mvccCntr = getMvccCounter(pageAddr, idx);
             int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return ((H2Tree)tree).createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
-        return ((H2Tree)tree).createRowFromLink(link);
+        return ((H2Tree)tree).createRow(link);
     }
 
     /** {@inheritDoc} */

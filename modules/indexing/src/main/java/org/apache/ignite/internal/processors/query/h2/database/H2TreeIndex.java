@@ -51,7 +51,6 @@ import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -161,6 +160,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 RootPage page = getMetaPage(i);
 
                 segments[i] = new H2Tree(
+                    cctx,
+                    tbl,
                     treeName,
                     idxName,
                     tblName,
@@ -170,7 +171,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     cctx.dataRegion().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
-                    tbl.rowFactory(),
                     page.pageId().pageId(),
                     page.isAllocated(),
                     unwrappedColsInfo,
@@ -182,11 +182,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     rowCache,
                     cctx.kernalContext().failure(),
                     log,
-                    stats) {
-                    @Override public int compareValues(Value v1, Value v2) {
-                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                    }
-                };
+                    stats
+                );
             }
             finally {
                 db.checkpointReadUnlock();
