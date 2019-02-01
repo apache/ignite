@@ -225,7 +225,7 @@ public class MvccUtils {
         int opCntr = opCntrWithHints & MVCC_OP_COUNTER_MASK;
 
         if (mvccCrd == MVCC_CRD_COUNTER_NA) {
-            assert mvccCntr == MVCC_COUNTER_NA && opCntr == MVCC_OP_COUNTER_NA
+            assert mvccCntr == MVCC_COUNTER_NA && opCntrWithHints == MVCC_OP_COUNTER_NA
                 : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntrWithHints) + ", snapshot=" + snapshot;
 
             return false; // Unassigned version is always invisible
@@ -238,6 +238,8 @@ public class MvccUtils {
 
         long snapshotCntr = snapshot.counter();
         int snapshotOpCntr = snapshot.operationCounter();
+
+        assert (snapshotOpCntr & ~MVCC_OP_COUNTER_MASK) == 0;
 
         if (mvccCrd > snapshotCrd)
             return false; // Rows in the future are never visible.
