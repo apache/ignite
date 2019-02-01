@@ -76,6 +76,15 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** */
+    public static final int DEFAULT_COLUMNS_COUNT = 2;
+
+    /** Key column. */
+    public static final int KEY_COL = 0;
+
+    /** Value column. */
+    public static final int VAL_COL = 1;
+
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
