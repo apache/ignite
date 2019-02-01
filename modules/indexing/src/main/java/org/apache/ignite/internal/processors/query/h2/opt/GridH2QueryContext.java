@@ -67,11 +67,13 @@ public class GridH2QueryContext {
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId,
+    public GridH2QueryContext(
+        UUID locNodeId,
         UUID nodeId,
         long qryId,
         int segmentId,
-        GridH2QueryType type) {
+        GridH2QueryType type
+    ) {
         assert segmentId == 0 || type == MAP;
 
         key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
