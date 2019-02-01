@@ -30,12 +30,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class IgniteCacheTxStoreValueTest extends IgniteCacheStoreValueAbstractTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
-
-        super.setUp();
+    public void beforeIgniteCacheTxStoreValueTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
     }
 
     /** {@inheritDoc} */

@@ -25,12 +25,10 @@ import org.junit.Before;
  *
  */
 public class IgniteCacheTxNearEnabledStoreValueTest extends IgniteCacheTxStoreValueTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
+    public void beforeIgniteCacheTxNearEnabledStoreValueTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

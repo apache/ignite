@@ -39,8 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,7 +49,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test for IGFS metrics.
  */
-@RunWith(JUnit4.class)
 public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";
@@ -64,9 +61,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
-
-    /** IP finder for the grid with the primary file system. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary IGFS instances. */
     private static IgniteFileSystem[] igfsPrimary;
@@ -153,11 +147,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setIgniteInstanceName("grid-" + idx);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

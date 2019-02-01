@@ -22,9 +22,9 @@ import java.io.IOException;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.xgboost.XGModel;
-import org.apache.ignite.ml.xgboost.XGObject;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
 
 /** XGBoost model parser. Uses the following ANTLR grammar to parse file:
@@ -63,13 +63,12 @@ import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
  * xgModel : xgTree+ ;
  * </pre>
  */
-// TODO: IGNITE-10718 Merge XGBoost and Ignite ML trees together.
-public class XGModelParser implements InfModelParser<XGObject, Double> {
+public class XGModelParser implements ModelParser<NamedVector, Double, XGModelComposition> {
     /** */
     private static final long serialVersionUID = -5819843559270294718L;
 
     /** {@inheritDoc} */
-    @Override public XGModel parse(byte[] mdl) {
+    @Override public XGModelComposition parse(byte[] mdl) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(mdl)) {
             CharStream cStream = CharStreams.fromStream(bais);
             XGBoostModelLexer lexer = new XGBoostModelLexer(cStream);

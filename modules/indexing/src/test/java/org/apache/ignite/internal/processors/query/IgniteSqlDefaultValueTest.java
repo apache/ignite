@@ -29,20 +29,13 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Name of client node. */
     private static final String NODE_CLIENT = "client";
 
@@ -53,12 +46,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
-
-        c.setDiscoverySpi(disco);
+        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         if (gridName.equals(NODE_CLIENT))
             c.setClientMode(true);

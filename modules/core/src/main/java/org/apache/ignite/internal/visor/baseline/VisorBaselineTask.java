@@ -19,12 +19,14 @@ package org.apache.ignite.internal.visor.baseline;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -133,10 +135,10 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             for (String consistentId : consistentIds) {
                 BaselineNode node = srvrs.get(consistentId);
 
-                if (node == null)
-                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
-
-                baselineTop.add(node);
+                if (node != null)
+                    baselineTop.add(node);
+                else
+                    baselineTop.add(new DetachedClusterNode(consistentId, null));
             }
 
             return set0(baselineTop);
@@ -172,6 +174,9 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          */
         private VisorBaselineTaskResult remove(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
+
+            if (F.isEmpty(baseline))
+                return set0(Collections.emptyList());
 
             for (String consistentId : consistentIds) {
                 BaselineNode node = baseline.remove(consistentId);

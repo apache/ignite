@@ -24,32 +24,23 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test P2P deployment tasks which loaded from different class loaders.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
 @GridCommonTest(group = "P2P")
-@RunWith(JUnit4.class)
 public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     /** Class Name of task 1. */
     private static final String TEST_TASK1_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Class Name of task 2. */
     private static final String TEST_TASK2_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2";
-
-    /** */
-    private static final TcpDiscoveryIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final ClassLoader CLASS_LOADER;
@@ -76,8 +67,6 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(depMode);
         cfg.setMetricsUpdateFrequency(500);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(FINDER);
 
         cfg.setCacheConfiguration();
 

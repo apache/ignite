@@ -29,14 +29,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,11 +40,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Base tests of {@link AffinityFunction} implementations with user provided backup filter.
  */
-@RunWith(JUnit4.class)
 public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Split attribute name. */
     private static final String SPLIT_ATTRIBUTE_NAME = "split-attribute";
 
@@ -135,13 +126,9 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-        spi.setIpFinder(IP_FINDER);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
-        cfg.setDiscoverySpi(spi);
         cfg.setUserAttributes(F.asMap(SPLIT_ATTRIBUTE_NAME, splitAttrVal));
 
         return cfg;

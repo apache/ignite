@@ -20,16 +20,14 @@ package org.apache.ignite.internal.processors.datastreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  * Check DataStreamer with Mvcc enabled.
  */
-@RunWith(JUnit4.class)
 public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -55,22 +53,29 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
     @Test
     @Override public void testUpdateStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
         super.testUpdateStore();
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
     @Test
-    @Override public void testFlushTimeout() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+    @Override public void testFlushTimeout() throws Exception {
+        super.testFlushTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    @Override public void testLocal() throws Exception {
+        super.testLocal();
     }
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testLocal() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+    @Override public void testTryFlush() throws Exception {
+        super.testTryFlush();
     }
 }

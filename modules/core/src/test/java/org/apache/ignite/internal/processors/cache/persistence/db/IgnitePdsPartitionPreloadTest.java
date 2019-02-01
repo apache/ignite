@@ -37,13 +37,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,11 +49,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Test partition preload for varios cache modes.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test entry count. */
     public static final int ENTRY_CNT = 500;
 
@@ -119,8 +111,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setCacheConfiguration(cfgFactory.get());
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
     }
@@ -567,10 +557,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(
@@ -587,9 +576,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
     public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(

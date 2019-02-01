@@ -65,7 +65,6 @@ public class ANNClassificationExample {
                 .withDistance(new ManhattanDistance())
                 .withK(50)
                 .withMaxIterations(1000)
-                .withSeed(1234L)
                 .withEpsilon(1e-2);
 
             long startTrainingTime = System.currentTimeMillis();
@@ -97,7 +96,7 @@ public class ANNClassificationExample {
                     double groundTruth = val[0];
 
                     long startPredictionTime = System.currentTimeMillis();
-                    double prediction = knnMdl.apply(new DenseVector(inputs));
+                    double prediction = knnMdl.predict(new DenseVector(inputs));
                     long endPredictionTime = System.currentTimeMillis();
 
                     totalPredictionTime += (endPredictionTime - startPredictionTime);

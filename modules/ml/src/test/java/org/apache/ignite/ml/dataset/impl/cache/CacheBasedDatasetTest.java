@@ -41,6 +41,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link CacheBasedDataset}.
@@ -76,6 +77,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
      * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
      * completed.
      */
+    @Test
     public void testPartitionExchangeDuringComputeCall() {
         int partitions = 4;
 
@@ -132,6 +134,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
      * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
      * completed.
      */
+    @Test
     public void testPartitionExchangeDuringComputeWithCtxCall() {
         int partitions = 4;
 

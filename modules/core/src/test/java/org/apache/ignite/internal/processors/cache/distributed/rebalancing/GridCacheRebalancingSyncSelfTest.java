@@ -56,15 +56,12 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -72,11 +69,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);
 
@@ -114,7 +107,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
         TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
@@ -268,8 +260,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSimpleRebalancing() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10560");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
 
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
@@ -511,8 +502,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComplexRebalancing() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10561");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10561", MvccFeatureChecker.forcedMvcc());
 
         final Ignite ignite = startGrid(0);
 

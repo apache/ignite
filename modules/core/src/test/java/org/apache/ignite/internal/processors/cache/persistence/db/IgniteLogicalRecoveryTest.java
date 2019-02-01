@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,10 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -68,14 +61,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
-@RunWith(JUnit4.class)
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int[] EVTS_DISABLED = {};
@@ -267,10 +258,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10582")
     @Test
     public void testRecoveryWithMvccCaches() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10582");
-
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
@@ -369,7 +359,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         stopGrid(2, false);
 
-        ioFactory = new CheckpointFailIoFactory();
+        ioFactory = new CheckpointFailingIoFactory();
 
         IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> startGrid(2));
 
@@ -632,33 +622,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(cacheName);
-        }
-    }
-
-    /**
-     *
-     */
-    static class CheckpointFailIoFactory implements FileIOFactory {
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
-
-            if (file.getName().contains("part-"))
-                return new FileIODecorator(delegate) {
-                    @Override public int write(ByteBuffer srcBuf) throws IOException {
-                        throw new IOException("test");
-                    }
-
-                    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                        throw new IOException("test");
-                    }
-
-                    @Override public int write(byte[] buf, int off, int len) throws IOException {
-                        throw new IOException("test");
-                    }
-                };
-
-            return delegate;
         }
     }
 

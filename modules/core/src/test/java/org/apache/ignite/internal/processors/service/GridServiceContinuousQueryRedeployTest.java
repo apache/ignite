@@ -40,14 +40,11 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests whether concurrent service cancel and registering ContinuousQuery doesn't causes
  * service redeployment.
  */
-@RunWith(JUnit4.class)
 public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "TEST_CACHE";
@@ -132,11 +129,7 @@ public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTe
         svcCfg.setName(SERVICE_NAME);
         svcCfg.setTotalCount(1);
         svcCfg.setMaxPerNodeCount(1);
-        svcCfg.setNodeFilter(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return !node.isClient();
-            }
-        });
+        svcCfg.setNodeFilter((IgnitePredicate<ClusterNode>)node -> !node.isClient());
 
         ignite.services().deploy(svcCfg);
     }

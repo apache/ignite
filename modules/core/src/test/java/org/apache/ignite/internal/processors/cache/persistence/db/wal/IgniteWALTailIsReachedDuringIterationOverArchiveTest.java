@@ -44,14 +44,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -60,11 +55,7 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** WAL segment size. */
     private static final int WAL_SEGMENT_SIZE = 10 * 1024 * 1024;
 
@@ -81,8 +72,6 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
                         .setPersistenceEnabled(true)
                 )
         );
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 

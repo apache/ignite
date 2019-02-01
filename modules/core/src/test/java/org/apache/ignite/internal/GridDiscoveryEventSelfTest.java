@@ -36,13 +36,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -52,11 +47,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests discovery event topology snapshots.
  */
-@RunWith(JUnit4.class)
 public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Daemon flag. */
     private boolean daemon;
 
@@ -83,13 +74,6 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDaemon(daemon);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         c.setConnectorConfiguration(null);
 
         return c;

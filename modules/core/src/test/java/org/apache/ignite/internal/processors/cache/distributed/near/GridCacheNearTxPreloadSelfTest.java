@@ -30,12 +30,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests cache transaction during preloading.
  */
 public class GridCacheNearTxPreloadSelfTest extends IgniteTxPreloadAbstractTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
+    public void beforeGridCacheNearTxPreloadSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

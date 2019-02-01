@@ -57,8 +57,7 @@ public class KMeansClusterizationExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            KMeansTrainer trainer = new KMeansTrainer()
-                .withSeed(7867L);
+            KMeansTrainer trainer = new KMeansTrainer();
 
             KMeansModel mdl = trainer.fit(
                 ignite,
@@ -82,7 +81,7 @@ public class KMeansClusterizationExample {
                     Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
-                    double prediction = mdl.apply(inputs);
+                    double prediction = mdl.predict(inputs);
 
                     System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }

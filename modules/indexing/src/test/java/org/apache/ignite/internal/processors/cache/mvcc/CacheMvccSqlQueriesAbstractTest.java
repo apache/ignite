@@ -42,9 +42,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -60,7 +59,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * TODO IGNITE-6739: dynamic index create.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
@@ -139,6 +137,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_SingleNode() throws Exception {
         updateSingleValue(true, false);
@@ -147,6 +146,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_LocalQuery_SingleNode() throws Exception {
         updateSingleValue(true, true);
@@ -155,6 +155,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_ClientServer() throws Exception {
         updateSingleValue(false, false);
@@ -370,6 +371,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_SingleNode() throws Exception {
         joinTransactional(true, false);
@@ -378,6 +380,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_ClientServer() throws Exception {
         joinTransactional(false, false);
@@ -386,6 +389,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_DistributedJoins_ClientServer() throws Exception {
         joinTransactional(false, true);

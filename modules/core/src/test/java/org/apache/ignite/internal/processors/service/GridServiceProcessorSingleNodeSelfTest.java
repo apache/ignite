@@ -17,22 +17,18 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
-@RunWith(JUnit4.class)
 public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
     }
-
 
     /**
      * @throws Exception If failed.
@@ -41,17 +37,20 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
     public void testNodeSingletonNotDeployedProxy() throws Exception {
         String name = "testNodeSingletonNotDeployedProxy";
 
-        Ignite ignite = randomGrid();
-
-        // Deploy only on remote nodes.
-        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
-
-        info("Deployed service: " + name);
-
-        // Get local proxy.
-        CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
+        IgniteEx ignite = randomGrid();
 
         try {
+            // Deploy only on remote nodes.
+            ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
+
+            assertFalse("Should not reach here in this mode, because exception should be thrown.",
+                ignite.context().service() instanceof IgniteServiceProcessor);
+
+            info("Deployed service: " + name);
+
+            // Get local proxy.
+            CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
+
             svc.increment();
 
             fail("Should never reach here.");

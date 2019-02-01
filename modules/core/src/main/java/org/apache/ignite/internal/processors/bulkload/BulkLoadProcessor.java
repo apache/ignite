@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.util.List;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
@@ -45,6 +45,12 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Becomes true after {@link #close()} method is called. */
     private boolean isClosed;
 
+    /** Running query manager. */
+    private final RunningQueryManager runningQryMgr;
+
+    /** Query id. */
+    private final Long qryId;
+
     /**
      * Creates bulk load processor.
      *
@@ -52,12 +58,16 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
      *     key+value entry to add to the cache.
      * @param outputStreamer Streamer that puts actual key/value into the cache.
+     * @param runningQryMgr Running query manager.
+     * @param qryId Running query id.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer) {
+        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
+        this.runningQryMgr = runningQryMgr;
+        this.qryId = qryId;
         isClosed = false;
     }
 
@@ -97,8 +107,20 @@ public class BulkLoadProcessor implements AutoCloseable {
         if (isClosed)
             return;
 
-        isClosed = true;
+        boolean failed = false;
 
-        outputStreamer.close();
+        try {
+            isClosed = true;
+
+            outputStreamer.close();
+        }
+        catch (Exception e) {
+            failed = true;
+
+            throw e;
+        }
+        finally {
+            runningQryMgr.unregister(qryId, failed);
+        }
     }
 }

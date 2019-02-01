@@ -40,16 +40,18 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
@@ -114,6 +116,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateInactiveCluster() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10582", MvccFeatureChecker.forcedMvcc());
+
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
                 .setGroupName("test_cache")
@@ -232,6 +236,21 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }
 
         checkCachesData(cacheData, dsCfg);
+    }
+
+    /**
+     * Verifies correctness of BaselineTopology checks when working in persistent mode.
+     */
+    @Override protected void doFinalChecks() {
+        for (int i = 0; i < 4; i++) {
+            int j = i;
+
+            assertThrowsAnyCause(log, () -> {
+                startGrid(j);
+
+                return null;
+            }, IgniteSpiException.class, "not compatible");
+        }
     }
 
     /**

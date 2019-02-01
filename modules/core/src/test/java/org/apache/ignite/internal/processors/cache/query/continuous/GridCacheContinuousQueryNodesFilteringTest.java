@@ -31,22 +31,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** */
 @SuppressWarnings("unused")
-@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstractTest implements Serializable {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String ENTRY_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter";
 
@@ -133,8 +124,6 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      */
     private IgniteConfiguration getConfiguration(String name, boolean setAttr, GridStringLogger log) throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration(name));
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         if (setAttr)
             cfg.setUserAttributes(Collections.singletonMap("node-type", "data"));

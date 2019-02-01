@@ -30,12 +30,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test sql queries with parameters for all types.
@@ -44,11 +40,7 @@ import org.junit.runners.JUnit4;
  * @author Sergey Chernolyas &amp;sergey_chernolyas@gmail.com&amp;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
  */
-@RunWith(JUnit4.class)
-public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest {
     /** */
     private static final String CACHE_BOOKMARK = "Bookmark";
 
@@ -58,12 +50,6 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(buildCacheConfiguration(CACHE_BOOKMARK));
         if (gridName.equals(NODE_CLIENT))

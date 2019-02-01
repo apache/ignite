@@ -51,8 +51,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -60,7 +58,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /** Test cache name. */
     private static final String CACHE_NAME = "persons-cache-vi";
@@ -95,8 +92,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                 "--cache",
                 "validate_indexes",
                 CACHE_NAME,
-                "checkFirst", "10000",
-                "checkThrough", "10"));
+                "--check-first", "10000",
+                "--check-through", "10"));
 
         assertTrue(testOut.toString().contains("issues found (listed above)"));
 
@@ -168,7 +165,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        try (IgniteDataStreamer<Integer, Person> streamer = client.dataStreamer(CACHE_NAME);) {
+        try (IgniteDataStreamer<Integer, Person> streamer = client.dataStreamer(CACHE_NAME)) {
             for (int i = 0; i < 10_000; i++)
                 streamer.addData(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
         }

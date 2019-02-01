@@ -21,14 +21,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test with explicit checks.
  */
-@RunWith(JUnit4.class)
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -42,9 +40,6 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
      */
     @Test
     public final void testPutRemoveAfterCheckpoint() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -76,9 +71,9 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     /**
      * @throws Exception If failed.
      */
+    @Test
     public final void testNotEmptyPds() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10822", MvccFeatureChecker.forcedMvcc());
 
         IgniteEx ignite = startGrid(0);
 

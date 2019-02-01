@@ -56,14 +56,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -84,16 +81,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     nodes or tx will fail on commit.</li>
  * </ul>
  */
-@RunWith(JUnit4.class)
 public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbstractTest {
     /** */
     private static final int FIELDS = 2;
 
     /** */
     private static final int MB = 1024 * 1024;
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -108,7 +101,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         rndAddrsField.set(spi, true);
 
-        cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
+        cfg.setDiscoverySpi(spi.setIpFinder(sharedStaticIpFinder));
 
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
 

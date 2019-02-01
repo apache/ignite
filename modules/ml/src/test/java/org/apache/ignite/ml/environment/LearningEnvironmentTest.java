@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -33,10 +33,10 @@ import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.junit.Test;
@@ -85,10 +85,10 @@ public class LearningEnvironmentTest {
         int partitions = 10;
         int iterations = 2;
 
-        DatasetTrainer<Model<Object, Vector>, Void> trainer = new DatasetTrainer<Model<Object, Vector>, Void>() {
+        DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-            @Override public <K, V> Model<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
+            @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
+                FeatureLabelExtractor<K, V, Void> extractor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -103,26 +103,26 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(Model<Object, Vector> mdl) {
+            @Override public boolean isUpdateable(IgniteModel<Object, Vector> mdl) {
                 return false;
             }
 
             /** {@inheritDoc} */
-            @Override protected <K, V> Model<Object, Vector> updateModel(Model<Object, Vector> mdl,
+            @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
+                FeatureLabelExtractor<K, V, Void> extractor) {
                 return null;
             }
         };
         trainer.withEnvironmentBuilder(envBuilder);
-        Model<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
+        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
 
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)
             exp.set(i, i * iterations);
 
 
-        Vector res = mdl.apply(null);
+        Vector res = mdl.predict(null);
         assertEquals(exp, res);
     }
 

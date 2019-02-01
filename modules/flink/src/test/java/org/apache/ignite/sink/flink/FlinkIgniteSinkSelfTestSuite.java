@@ -17,21 +17,13 @@
 
 package org.apache.ignite.sink.flink;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Apache Flink sink tests.
  */
-public class FlinkIgniteSinkSelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Apache Flink sink Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(FlinkIgniteSinkSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({FlinkIgniteSinkSelfTest.class})
+public class FlinkIgniteSinkSelfTestSuite {
 }

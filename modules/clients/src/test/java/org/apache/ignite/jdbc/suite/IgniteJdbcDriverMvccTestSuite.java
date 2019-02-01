@@ -17,8 +17,6 @@
 
 package org.apache.ignite.jdbc.suite;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.jdbc.JdbcVersionMismatchSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
@@ -27,26 +25,22 @@ import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSe
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /** */
-public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
-    /**
-     * @return JDBC Driver Test Suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    JdbcThinConnectionMvccEnabledSelfTest.class,
+    JdbcVersionMismatchSelfTest.class,
 
-        suite.addTest(new JUnit4TestAdapter(JdbcThinConnectionMvccEnabledSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcVersionMismatchSelfTest.class));
-
-        // Transactions
-        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsWithMvccEnabledSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest.class));
-
-        return suite;
-    }
+    // Transactions
+    JdbcThinTransactionsWithMvccEnabledSelfTest.class,
+    JdbcThinTransactionsClientAutoCommitComplexSelfTest.class,
+    JdbcThinTransactionsServerAutoCommitComplexSelfTest.class,
+    JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class,
+    JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class,
+    MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest.class
+})
+public class IgniteJdbcDriverMvccTestSuite {
 }

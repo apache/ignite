@@ -28,15 +28,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
-import static org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectsAbstractSelfTest.IP_FINDER;
 
 /**
  * GridTcpDiscoveryVmIpFinder test.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryVmIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
     /**
@@ -212,27 +207,27 @@ public class TcpDiscoveryVmIpFinderSelfTest
     public void testUnregistration() throws Exception {
         Ignition.start(config("server1", false, false));
 
-        int srvSize = IP_FINDER.getRegisteredAddresses().size();
+        int srvSize = sharedStaticIpFinder.getRegisteredAddresses().size();
 
         Ignition.start(config("server2", false, false));
         Ignition.start(config("client1", true, false));
 
-        assertEquals(2 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+        assertEquals(2 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
         Ignition.start(config("client2", true, false));
         Ignition.start(config("client3", true, false));
 
-        assertEquals(2 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+        assertEquals(2 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
         Ignition.start(config("client4", true, true));
 
-        assertEquals(3 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+        assertEquals(3 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
         Ignition.stop("client1", true);
         Ignition.stop("client2", true);
         Ignition.stop("client3", true);
 
-        assertEquals(3 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+        assertEquals(3 * srvSize, sharedStaticIpFinder.getRegisteredAddresses().size());
 
         Ignition.stop("client4", true);
 
@@ -253,7 +248,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
 
         assertTrue(res);
 
-        assertTrue(3 * srvSize >= IP_FINDER.getRegisteredAddresses().size());
+        assertTrue(3 * srvSize >= sharedStaticIpFinder.getRegisteredAddresses().size());
     }
 
     /**
@@ -269,7 +264,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setForceServerMode(forceServerMode);
-        disco.setIpFinder(IP_FINDER);
+        disco.setIpFinder(sharedStaticIpFinder);
 
         cfg.setDiscoverySpi(disco);
 

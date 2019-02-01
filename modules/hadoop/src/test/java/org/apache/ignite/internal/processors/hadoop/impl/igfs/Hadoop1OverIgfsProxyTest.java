@@ -24,13 +24,10 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * DUAL_ASYNC mode test.
  */
-@RunWith(JUnit4.class)
 public class Hadoop1OverIgfsProxyTest extends Hadoop1DualAbstractTest {
     /**
      * Constructor.

@@ -33,14 +33,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -49,10 +45,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
     /** Cache size */
@@ -60,8 +53,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10560");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10560", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTest();
 
@@ -99,8 +91,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
         };
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -128,7 +118,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setClientMode(true);
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
     }

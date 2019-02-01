@@ -38,8 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstractTest {
     /** */
     public static final String QUERY_CACHE = "query";

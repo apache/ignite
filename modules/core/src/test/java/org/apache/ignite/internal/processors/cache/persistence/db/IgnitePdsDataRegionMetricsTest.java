@@ -44,18 +44,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
@@ -63,11 +59,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final long INIT_REGION_SIZE = 20 << 20;
 
@@ -89,8 +81,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -164,7 +154,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 cache.putAll(map);
 
-                forceCheckpoint();
+                forceCheckpoint(node);
 
                 checkMetricsConsistency(node);
             }
@@ -315,6 +305,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private void checkMetricsConsistency(final IgniteEx node) throws Exception {
         checkMetricsConsistency(node, DEFAULT_CACHE_NAME);
         checkMetricsConsistency(node, UTILITY_CACHE_NAME);
+        checkMetricsConsistency(node, TX_LOG_CACHE_NAME);
         checkMetricsConsistency(node, METASTORAGE_CACHE_NAME);
     }
 
@@ -325,8 +316,10 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         assert pageStoreMgr != null : "Persistence is not enabled";
 
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
+        boolean txLog = TX_LOG_CACHE_NAME.equals(cacheName);
 
         File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), META_STORAGE_NAME) :
+            txLog ? new File(pageStoreMgr.workDir(), TX_LOG_CACHE_NAME) :
             pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;
@@ -353,6 +346,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         GridCacheSharedContext cctx = node.context().cache().context();
 
         String regionName = metaStore ? GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME :
+            txLog ? TX_LOG_CACHE_NAME :
             cctx.cacheContext(CU.cacheId(cacheName)).group().dataRegion().config().getName();
 
         long totalAllocatedPagesFromMetrics = cctx.database().memoryMetrics(regionName).getTotalAllocatedPages();
