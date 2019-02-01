@@ -63,7 +63,7 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
         executeSql("INSERT INTO t2 VALUES ('1', '1', '1')");
 
         executeSql("INSERT INTO t1 VALUES ('2', '2')");
-        executeSingle("INSERT INTO t2 VALUES ('2', '2', '2')");
+        executeSql("INSERT INTO t2 VALUES ('2', '2', '2')");
 
         executeSql("INSERT INTO t1 VALUES ('3', '3')");
         executeSql("INSERT INTO t2 VALUES ('3', '3', '3')");
@@ -658,6 +658,7 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
      * @param persistent Whether to enable persistence.
      * @return Cache configuration.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private static CacheConfiguration cacheConfiguration(
         int parts,
         int backups,
