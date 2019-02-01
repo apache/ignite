@@ -49,7 +49,7 @@ public class GridH2QueryContext {
     private List<GridReservable> reservations;
 
     /** */
-    private IndexingQueryFilter filter;
+    private final IndexingQueryFilter filter;
 
     /** Distributed join context. */
     private DistributedJoinContext distributedJoinCtx;
@@ -72,11 +72,14 @@ public class GridH2QueryContext {
         UUID nodeId,
         long qryId,
         int segmentId,
-        GridH2QueryType type
+        GridH2QueryType type,
+        IndexingQueryFilter filter
     ) {
         assert segmentId == 0 || type == MAP;
 
         key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
+
+        this.filter = filter;
     }
 
     /**
@@ -94,13 +97,6 @@ public class GridH2QueryContext {
         this.mvccSnapshot = mvccSnapshot;
 
         return this;
-    }
-
-    /**
-     * @return Type.
-     */
-    public GridH2QueryType type() {
-        return key.type();
     }
 
     /**
@@ -281,16 +277,6 @@ public class GridH2QueryContext {
      */
     public IndexingQueryFilter filter() {
         return filter;
-    }
-
-    /**
-     * @param filter Filter.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext filter(IndexingQueryFilter filter) {
-        this.filter = filter;
-
-        return this;
     }
 
     /**

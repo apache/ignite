@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -859,13 +860,15 @@ public class GridMapQueryExecutor {
                 );
             }
 
+            GridH2QueryType qryTyp = replicated ? REPLICATED : MAP;
+
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
                 reqId,
                 segmentId,
-                replicated ? REPLICATED : MAP
+                qryTyp,
+                h2.backupFilter(topVer, parts)
             )
-                .filter(h2.backupFilter(topVer, parts))
                 .distributedJoinContext(distirbutedJoinCtx)
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot)
@@ -882,7 +885,7 @@ public class GridMapQueryExecutor {
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qryTyp);
 
                     nodeRess.cancelRequest(reqId);
 
