@@ -17,10 +17,13 @@
 
 package org.apache.ignite.spi;
 
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import java.io.IOException;
 
 import static org.mockito.Mockito.mock;
 
@@ -45,7 +48,7 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void checkTimeoutNoFailureDetection() {
+    public void checkTimeoutNoFailureDetection() throws IOException, IgniteSpiOperationTimeoutException {
         ExponentialBackoffSpiTimeout helper = new ExponentialBackoffSpiTimeout(
             false,
             5_000L,
@@ -56,6 +59,9 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
 
         int expDelay = 1000;
 
+        assertEquals(1000L, helper.connTimeout());
+        assertEquals(1000L, helper.handshakeTimeout());
+
         for (int i = 1; i < 3 && expDelay < 3000; i++)
             expDelay += Math.min(expDelay * 2, 3000);
 
@@ -64,7 +70,7 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void backoff() throws IgniteSpiOperationTimeoutException {
+    public void backoff() throws IgniteSpiOperationTimeoutException, IOException {
         ExponentialBackoffSpiTimeout helper = new ExponentialBackoffSpiTimeout(
             true,
             5_000L,
@@ -119,8 +125,26 @@ public class ExponentialBackoffSpiTimeoutTest extends GridCommonAbstractTest {
             if (timedOut) {
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);
 
+                try {
+                    helper.connTimeout();
+
+                    fail("Should fail with IOException");
+                } catch (IOException ignored) {
+                    //No-op
+                }
+
+                try {
+                    helper.handshakeTimeout();
+
+                    fail("Should fail with IgniteSpiOperationTimeoutException");
+                } catch (IgniteSpiOperationTimeoutException ignored) {
+                    //No-op
+                }
+
                 return;
             }
         }
+
+
     }
 }

@@ -19,6 +19,8 @@ package org.apache.ignite.spi;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import java.io.IOException;
+
 /**
  * Strategy which incorporates retriable network operation, handling of totalTimeout logic.
  *
@@ -109,7 +111,10 @@ public class ExponentialBackoffSpiTimeout {
      * Get next timeout calculated on exponential backoffConnTimeout function.
      * @return Timeout value;
      */
-    public int connTimeout() {
+    public int connTimeout() throws IOException {
+        if(checkTimeout(0))
+            throw new IOException("Network operation timed out [timeout = " +this +"]");
+
         return (int)currConnTimeout;
     }
 
